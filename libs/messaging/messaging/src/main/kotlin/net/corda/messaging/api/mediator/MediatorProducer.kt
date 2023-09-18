@@ -6,6 +6,11 @@ package net.corda.messaging.api.mediator
 interface MediatorProducer: AutoCloseable {
 
     /**
+     * Producer's name. Name is used for routing messages to producers, so it should be unique.
+     */
+    val name: String
+
+    /**
      * Determines whether producer supports request-reply messaging pattern.
      */
     val isRequestReply: Boolean
@@ -18,5 +23,5 @@ interface MediatorProducer: AutoCloseable {
      * @returns ProducerReply Holds producer's reply if producer supports request-reply messaging pattern
      *   (@see [isRequestReply]).
      */
-    fun send(message: Message): ProducerReply
+    fun send(message: Message, address: String): ProducerReply
 }

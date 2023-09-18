@@ -1,11 +1,13 @@
 package net.corda.messaging.api.mediator.config
 
 import net.corda.libs.configuration.SmartConfig
-import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
 import net.corda.messaging.api.mediator.factory.MediatorProducerFactory
+import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.schema.configuration.MessagingConfig
+import java.time.Duration
 
 /**
  * Class to store the required params to create a [MultiSourceEventMediator].
@@ -15,7 +17,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
  * @property consumerFactories Factories for creating message consumers.
  * @property producerFactories Factories for creating message producers.
  * @property messageProcessor State and event processor.
- * @property messageRouter Message router that routes output messages of the state and event processor to producers.
+ * @property messageRouterFactory Message router factory.
  */
 data class EventMediatorConfig<K: Any, S: Any, E: Any>(
     val name: String,
@@ -23,5 +25,17 @@ data class EventMediatorConfig<K: Any, S: Any, E: Any>(
     val consumerFactories: Collection<MediatorConsumerFactory>,
     val producerFactories: Collection<MediatorProducerFactory>,
     val messageProcessor : StateAndEventProcessor<K, S, E>,
-    val messageRouter: MessageRouter,
-)
+    val messageRouterFactory: MessageRouterFactory,
+) {
+    /**
+     * Timeout for polling consumers.
+     */
+    val pollTimeout: Duration
+        get() = Duration.ofMillis(messagingConfig.getLong(MessagingConfig.Subscription.POLL_TIMEOUT))
+
+    /**
+     * Maximal number of event processing retries.
+     */
+    val processorRetries: Int
+        get() = messagingConfig.getInt(MessagingConfig.Subscription.PROCESSOR_RETRIES)
+}

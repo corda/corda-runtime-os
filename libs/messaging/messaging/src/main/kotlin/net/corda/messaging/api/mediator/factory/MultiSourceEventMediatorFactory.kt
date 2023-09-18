@@ -4,9 +4,9 @@ import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
 
 /**
- * Factory for creating multi-source event mediator configuration.
+ * Factory for creating multi-source event mediator.
  */
-interface EventMediatorFactory {
+interface MultiSourceEventMediatorFactory {
 
     /**
      * Creates a multi-source event mediator configuration.
@@ -16,7 +16,7 @@ interface EventMediatorFactory {
      * @param <E> The type of the event.
      * @param eventMediatorConfig Multi-source event mediator configuration.
      */
-    fun <K : Any, S : Any, E : Any> createMultiSourceEventMediator(
+    fun <K : Any, S : Any, E : Any> create(
         eventMediatorConfig: EventMediatorConfig<K, S, E>,
     ): MultiSourceEventMediator<K, S, E>
 }

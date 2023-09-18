@@ -6,11 +6,11 @@ import net.corda.messagebus.api.producer.CordaProducer
  * Message bus producer that sends messages to message bus topics.
  */
 class MessageBusProducer(
-    private val name: String,
+    override val name: String,
     private val producer: CordaProducer,
 ): MediatorProducer {
 
-    override fun send(message: Message): ProducerReply {
+    override fun send(message: Message, address: String): ProducerReply {
         TODO("Not implemented yet")
     }
 

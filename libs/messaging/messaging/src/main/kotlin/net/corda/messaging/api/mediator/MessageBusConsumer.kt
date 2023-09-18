@@ -3,6 +3,7 @@ package net.corda.messaging.api.mediator
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
+import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 
@@ -31,6 +32,9 @@ class MessageBusConsumer<K: Any, V: Any>(
         }
         return result
     }
+
+    override fun resetEventOffsetPosition() =
+        consumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.EARLIEST)
 
     override fun close() =
         consumer.close()

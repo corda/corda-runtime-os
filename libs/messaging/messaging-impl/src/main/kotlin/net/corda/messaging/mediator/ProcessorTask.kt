@@ -1,47 +1,49 @@
 package net.corda.messaging.mediator
 
-import net.corda.avro.serialization.CordaAvroDeserializer
-import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
-import net.corda.messaging.api.mediator.statemanager.Metadata
 import net.corda.messaging.api.mediator.statemanager.State
-import net.corda.messaging.api.mediator.statemanager.StateManager
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.utils.toRecord
-import net.corda.v5.base.exceptions.CordaRuntimeException
+import java.util.concurrent.Callable
 
+/**
+ * [ProcessorTask] uses [StateAndEventProcessor] to process input events (that have the same key) and related states.
+ * Events are processed sequentially and updated state of the current event is used as the input state of the next
+ * event. Result of processing are output events and final updated state.
+ */
 @Suppress("LongParameterList")
-class ProcessorTask<K: Any, S: Any, E: Any>(
-    private val key: String,
-    private val events: Collection<CordaConsumerRecord<K, E>>,
+data class ProcessorTask<K: Any, S: Any, E: Any>(
+    val key: String,
+    val persistedState: State?,
+    val events: Collection<CordaConsumerRecord<K, E>>,
     private val processor: StateAndEventProcessor<K, S, E>,
-    private val stateManager: StateManager,
-    private val serializer: CordaAvroSerializer<Any>,
-    private val stateDeserializer: CordaAvroDeserializer<S>,
-) {
+    private val mediatorStateManager: MediatorStateManager<K, S, E>,
+): Callable<ProcessorTask.Result<K, S, E>> {
 
-    var responseEvents = emptyList<Record<*, *>>()
-        private set
-    fun run() {
-        val persistedState = stateManager.get(setOf(key))[key]
+    class Result<K: Any, S: Any, E: Any>(
+        val processorTask: ProcessorTask<K, S, E>,
+        val outputEvents: List<Record<*, *>>,
+        val updatedState: State?,
+    ) {
+        val key get() = processorTask.key
+    }
 
-        var updatedState = persistedState?.value?.let { stateDeserializer.deserialize(it) }
-        responseEvents = events.map { event ->
-            val response = processor.onNext(updatedState, event.toRecord())
-            response.updatedState?.let { updatedState = it }
+    override fun call(): Result<K, S, E> {
+        var stateValue = mediatorStateManager.deserializeValue(persistedState)
+
+        val outputEvents = events.map { event ->
+            val response = processor.onNext(stateValue, event.toRecord())
+            response.updatedState?.let { stateValue = it }
             response.responseEvents
         }.flatten()
 
-        val serializedState = serializer.serialize(updatedState!!)
-            ?: throw CordaRuntimeException("Cannot serialize updated state: $updatedState")
-
-        val newState = State(
+        val updatedState = mediatorStateManager.createOrUpdateState(
             key,
-            serializedState,
-            (persistedState?.version ?: -1) + 1,
-            persistedState?.metadata ?: Metadata()
+            persistedState,
+            stateValue
         )
-        stateManager.update(setOf(newState))
+
+        return Result(this, outputEvents, updatedState)
     }
 }

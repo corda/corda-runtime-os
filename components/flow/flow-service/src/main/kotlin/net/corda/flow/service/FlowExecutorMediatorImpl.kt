@@ -2,6 +2,7 @@ package net.corda.flow.service
 
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.libs.configuration.SmartConfig
@@ -17,12 +18,15 @@ import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
+import net.corda.messaging.api.mediator.RoutingDestination.Companion.routeTo
 import net.corda.messaging.api.mediator.config.EventMediatorConfigBuilder
-import net.corda.messaging.api.mediator.factory.EventMediatorFactory
 import net.corda.messaging.api.mediator.factory.MessageBusConsumerFactory
 import net.corda.messaging.api.mediator.factory.MessageBusProducerFactory
+import net.corda.messaging.api.mediator.factory.MessageRouterFactory
+import net.corda.messaging.api.mediator.factory.MultiSourceEventMediatorFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
@@ -37,7 +41,7 @@ import org.slf4j.LoggerFactory
 class FlowExecutorMediatorImpl (
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val flowEventProcessorFactory: FlowEventProcessorFactory,
-    private val eventMediatorFactory: EventMediatorFactory,
+    private val eventMediatorFactory: MultiSourceEventMediatorFactory,
     private val cordaConsumerBuilder: CordaConsumerBuilder,
     private val cordaProducerBuilder: CordaProducerBuilder,
     private val toMessagingConfig: (Map<String, SmartConfig>) -> SmartConfig
@@ -49,8 +53,8 @@ class FlowExecutorMediatorImpl (
         coordinatorFactory: LifecycleCoordinatorFactory,
         @Reference(service = FlowEventProcessorFactory::class)
         flowEventProcessorFactory: FlowEventProcessorFactory,
-        @Reference(service = EventMediatorFactory::class)
-        eventMediatorFactory: EventMediatorFactory,
+        @Reference(service = MultiSourceEventMediatorFactory::class)
+        eventMediatorFactory: MultiSourceEventMediatorFactory,
         @Reference(service = CordaConsumerBuilder::class)
         cordaConsumerBuilder: CordaConsumerBuilder,
         @Reference(service = CordaProducerBuilder::class)
@@ -67,6 +71,7 @@ class FlowExecutorMediatorImpl (
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val CONSUMER_GROUP = "FlowEventConsumer"
+        private const val MESSAGE_BUS_PRODUCER = "MessageBusProducer"
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<FlowExecutor> { event, _ -> eventHandler(event) }
@@ -82,10 +87,11 @@ class FlowExecutorMediatorImpl (
             subscriptionRegistrationHandle?.close()
             multiSourceEventMediator?.close()
 
-            multiSourceEventMediator = createEventMediator(
-                messagingConfig,
-                flowEventProcessorFactory.create(updatedConfigs),
-                eventMediatorFactory,
+            multiSourceEventMediator = eventMediatorFactory.create(
+                createEventMediatorConfig(
+                    messagingConfig,
+                    flowEventProcessorFactory.create(updatedConfigs),
+                )
             )
 
             subscriptionRegistrationHandle = coordinator.followStatusChangesByName(
@@ -143,28 +149,31 @@ class FlowExecutorMediatorImpl (
         }
     }
 
-    private fun createEventMediator(
+    private fun createEventMediatorConfig(
         messagingConfig: SmartConfig,
         messageProcessor: StateAndEventProcessor<String, Checkpoint, FlowEvent>,
-        eventMediatorFactory: EventMediatorFactory
-    ): MultiSourceEventMediator<String, Checkpoint, FlowEvent> {
-
-        val eventMediatorConfig = EventMediatorConfigBuilder<String, Checkpoint, FlowEvent>()
+    ) = EventMediatorConfigBuilder<String, Checkpoint, FlowEvent>()
             .name("FlowEventMediator")
             .messagingConfig(messagingConfig)
             .consumerFactories(
                 MessageBusConsumerFactory(FLOW_EVENT_TOPIC, CONSUMER_GROUP, messagingConfig, cordaConsumerBuilder),
             )
             .producerFactories(
-                MessageBusProducerFactory("messageBusProducer", messagingConfig, cordaProducerBuilder),
-                //RpcProducerFactory("cryptoWorkerProducer", messagingConfig, cordaRpcBuilder),
+                MessageBusProducerFactory(MESSAGE_BUS_PRODUCER, messagingConfig, cordaProducerBuilder),
+                //RpcProducerFactory(CRYPTO_RPC_PRODUCER, messagingConfig, cordaRpcBuilder),
             )
             .messageProcessor(messageProcessor)
-            .messageRouter(MessageRouter())
+            .messageRouterFactory(createMessageRouterFactory())
             .build()
 
-        return eventMediatorFactory.createMultiSourceEventMediator(
-            eventMediatorConfig
-        )
+    private fun createMessageRouterFactory() = MessageRouterFactory { producerFinder ->
+        val messageBusProducer = producerFinder.find(MESSAGE_BUS_PRODUCER)
+
+        MessageRouter { message ->
+            when (message.body) {
+                is FlowMapperEvent -> routeTo(messageBusProducer, FLOW_MAPPER_EVENT_TOPIC)
+                else -> throw IllegalStateException("No route defined for message $message")
+            }
+        }
     }
 }

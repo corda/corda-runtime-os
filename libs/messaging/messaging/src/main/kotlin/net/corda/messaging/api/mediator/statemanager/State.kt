@@ -19,7 +19,7 @@ data class State(
     /**
      * Version of the state.
      */
-    val version: Int = -1,
+    val version: Int = INITIAL_VERSION,
 
     /**
      * Arbitrary Map of primitive types that can be used to store and query data associated with the state.
@@ -31,6 +31,11 @@ data class State(
      */
     val modifiedTime: Instant = Instant.now(),
 ) {
+
+    companion object {
+        const val INITIAL_VERSION = -1
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false

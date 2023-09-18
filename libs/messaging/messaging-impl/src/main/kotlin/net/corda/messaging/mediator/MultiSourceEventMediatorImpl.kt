@@ -10,10 +10,9 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorConsumer
 import net.corda.messaging.api.mediator.MediatorProducer
+import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
-import net.corda.messaging.api.mediator.config.MediatorConsumerConfig
-import net.corda.messaging.api.mediator.config.MediatorProducerConfig
 import net.corda.messaging.api.mediator.statemanager.StateManager
 import net.corda.messaging.api.mediator.taskmanager.TaskManager
 import net.corda.messaging.api.mediator.taskmanager.TaskType
@@ -36,7 +35,17 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 
     private var consumers = listOf<MediatorConsumer<K, E>>()
     private var producers = listOf<MediatorProducer>()
-    private val pollTimeoutInNanos = Duration.ofMillis(100).toNanos() // TODO take from config
+    private lateinit var messageRouter: MessageRouter
+    private val mediatorComponentFactory = MediatorComponentFactory<K, S, E>(
+        config.messageProcessor, config.consumerFactories, config.producerFactories, config.messageRouterFactory
+    )
+    private val mediatorStateManager = MediatorStateManager<K, S, E>(
+        stateManager, serializer, stateDeserializer
+    )
+    private val mediatorTaskManager = MediatorTaskManager(
+        taskManager, mediatorStateManager
+    )
+    private val pollTimeoutInNanos = config.pollTimeout.toNanos()
     private val uniqueId = UUID.randomUUID().toString()
     private val lifecycleCoordinatorName = LifecycleCoordinatorName(
         "MultiSourceEventMediator--${config.name}", uniqueId
@@ -55,8 +64,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 
     private fun stop() =
         Thread.currentThread().interrupt()
-    private fun stopped() =
-        Thread.currentThread().isInterrupted
+    private val stopped get() = Thread.currentThread().isInterrupted
 
     /**
      * This method is for closing the loop/thread externally. From inside the loop use the private [stopConsumeLoop].
@@ -68,17 +76,18 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     private fun run() {
         var attempts = 0
 
-        while (!stopped()) {
+        while (!stopped) {
             attempts++
             try {
-                createConsumers()
-                createProducers()
+                consumers = mediatorComponentFactory.createConsumers(::onSerializationError)
+                producers = mediatorComponentFactory.createProducers(::onSerializationError)
+                messageRouter = mediatorComponentFactory.createRouter(producers)
 
                 consumers.forEach{ it.subscribe() }
                 lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
 
-                while (!stopped()) {
-                    // TODO processEvents()
+                while (!stopped) {
+                    processEventsWithRetries()
                 }
 
             } catch (ex: Exception) {
@@ -111,78 +120,23 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         TODO()
     }
 
-    private fun createConsumers() {
-        check (config.consumerFactories.isNotEmpty()) {
-            "None consumer factory set in configuration"
-        }
-        consumers = config.consumerFactories.map { consumerFactory ->
-            consumerFactory.create(
-                MediatorConsumerConfig(
-                    config.messageProcessor.keyClass,
-                    config.messageProcessor.eventValueClass,
-                    ::onSerializationError
-                )
-            )
-        }
-    }
-
-    private fun createProducers() {
-        check (config.producerFactories.isNotEmpty()) {
-            "None producer factory set in configuration"
-        }
-        producers = config.producerFactories.map { producerFactory ->
-            producerFactory.create(
-                MediatorProducerConfig(
-                    ::onSerializationError
-                )
-            )
-        }
-    }
-
     private fun closeConsumersAndProducers() {
         consumers.forEach { it.close() }
         producers.forEach { it.close() }
     }
 
-    private fun processEvents(isTaskStopped: Boolean) {
+    private fun processEventsWithRetries() {
         var attempts = 0
-        while (!isTaskStopped) {
+        var keepProcessing = true
+        while (keepProcessing && !stopped) {
             try {
-                log.debug { "Polling and processing events" }
-                val messages = poll(pollTimeoutInNanos)
-                val msgGroups = messages.groupBy { it.key }
-//                val states = stateManager.get(
-//                    config.messageProcessor.stateValueClass, msgGroups.keys.mapTo(HashSet()) { it.toString() }
-//                )
-                val processorTasks =  msgGroups.map { msgGroup ->
-                    val key = msgGroup.key.toString()
-                    val events = msgGroup.value.map { it }
-                    ProcessorTask(
-                        key,
-//                        states[key],
-                        events,
-                        config.messageProcessor,
-                        stateManager,
-                        serializer,
-                        stateDeserializer,
-                    )
-                }
-
-                processorTasks.map { processorTask ->
-                    taskManager.execute(TaskType.SHORT_RUNNING, processorTask::run)
-                        .thenApply { //outputEvents ->
-                            // TODO
-                        }
-                }
-//                val commitResults = consumers.map { consumer ->
-//                    consumer.commitAsync()
-//                }
-
+                processEvents()
+                keepProcessing = false
             } catch (ex: Exception) {
                 when (ex) {
                     is CordaMessageAPIIntermittentException -> {
                         attempts++
-                        // TODO handleProcessEventRetries(attempts, ex)
+                        handleProcessEventRetries(attempts, ex)
                     }
 
                     else -> {
@@ -196,6 +150,33 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         }
     }
 
+    private fun processEvents() {
+        log.debug { "Polling and processing events" }
+        val messages = poll(pollTimeoutInNanos)
+        if (messages.isNotEmpty()) {
+            val msgGroups = messages.groupBy { it.key }
+            val persistedStates = stateManager.get(msgGroups.keys.map { it.toString() })
+            var msgProcessorTasks = mediatorTaskManager.createMsgProcessorTasks(
+                msgGroups, persistedStates, config.messageProcessor
+            )
+            do {
+                val processingResults = mediatorTaskManager.executeProcessorTasks(msgProcessorTasks)
+                val conflictingStates = mediatorStateManager.persistStates(processingResults)
+                val (validResults, invalidResults) = processingResults.partition {
+                    !conflictingStates.contains(it.key)
+                }
+                val producerTasks = mediatorTaskManager.createProducerTasks(validResults, messageRouter)
+                val producerResults = mediatorTaskManager.executeProducerTasks(producerTasks)
+                msgProcessorTasks =
+                    mediatorTaskManager.createMsgProcessorTasks(producerResults) + mediatorTaskManager.createMsgProcessorTasks(
+                        invalidResults,
+                        conflictingStates
+                    )
+            } while (msgProcessorTasks.isNotEmpty())
+        }
+        commitOffsets()
+    }
+
     private fun poll(pollTimeoutInNanos: Long):  List<CordaConsumerRecord<K, E>> {
         val maxEndTime = System.nanoTime() + pollTimeoutInNanos
         return consumers.map { consumer ->
@@ -203,6 +184,40 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
             consumer.poll(Duration.ofNanos(remainingTime))
         }.flatten()
     }
+
+    private fun commitOffsets() {
+        consumers.map { consumer ->
+            consumer.commitAsync()
+        }.map {
+            it.join()
+        }
+    }
+
+    /**
+     * Handle retries for event processing.
+     * Reset [MediatorConsumer]s position and retry poll and process of event records
+     * Retry a max of [EventMediatorConfig.processorRetries] times.
+     * If [EventMediatorConfig.processorRetries] is exceeded then throw a [CordaMessageAPIIntermittentException]
+     */
+    private fun handleProcessEventRetries(
+        attempts: Int,
+        ex: Exception
+    ) {
+        if (attempts <= config.processorRetries) {
+            log.warn(
+                "Multi-source event mediator ${config.name} failed to process records, " +
+                        "Retrying poll and process. Attempts: $attempts."
+            )
+            consumers.forEach { it.resetEventOffsetPosition() }
+        } else {
+            val message = "Multi-source event mediator ${config.name} failed to process records, " +
+                    "Attempts: $attempts. Max reties exceeded."
+            log.warn(message, ex)
+            throw CordaMessageAPIIntermittentException(message, ex)
+        }
+    }
+
+
 
 //    private fun generateDeadLetterRecord(event: CordaConsumerRecord<K, E>, state: S?): Record<*, *> {
 //        val keyBytes = ByteBuffer.wrap(cordaAvroSerializer.serialize(event.key))
