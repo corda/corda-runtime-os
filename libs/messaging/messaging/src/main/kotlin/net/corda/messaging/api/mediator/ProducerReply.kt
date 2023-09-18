@@ -5,7 +5,7 @@ package net.corda.messaging.api.mediator
  */
 data class ProducerReply(
     /** Reply message (set only if [MediatorProducer] supports request-reply messaging pattern). */
-    val reply: Message?,
+    val reply: MediatorMessage?,
     /** Exception (set in case of error). */
     val exception: Exception?,
 )

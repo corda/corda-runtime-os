@@ -1,8 +1,8 @@
 package net.corda.messaging.mediator
 
 import net.corda.messagebus.api.producer.CordaProducer
+import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MediatorProducer
-import net.corda.messaging.api.mediator.Message
 import net.corda.messaging.api.mediator.ProducerReply
 
 /**
@@ -13,7 +13,7 @@ class MessageBusProducer(
     private val producer: CordaProducer,
 ): MediatorProducer {
 
-    override fun send(message: Message, address: String): ProducerReply {
+    override fun send(message: MediatorMessage, address: String): ProducerReply {
         TODO("Not implemented yet")
     }
 

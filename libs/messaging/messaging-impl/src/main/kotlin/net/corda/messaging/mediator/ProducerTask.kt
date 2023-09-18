@@ -1,22 +1,22 @@
 package net.corda.messaging.mediator
 
+import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MediatorProducer
-import net.corda.messaging.api.mediator.Message
 import net.corda.messaging.api.mediator.MessageRouter
 import java.util.concurrent.Callable
 
 /**
- * [ProducerTask] sends a [Message] to [MediatorProducer] selected by [MessageRouter].
+ * [ProducerTask] sends a [MediatorMessage] to [MediatorProducer] selected by [MessageRouter].
  */
 class ProducerTask<K: Any, S: Any, E: Any>(
-    private val message: Message,
+    private val message: MediatorMessage,
     private val messageRouter: MessageRouter,
     val processorTask: ProcessorTask<K, S, E>,
 ): Callable<ProducerTask.Result<K, S, E>> {
 
     class Result<K: Any, S: Any, E: Any>(
         val producerTask: ProducerTask<K, S, E>,
-        val replyMessage: Message?,
+        val replyMessage: MediatorMessage?,
     ) {
         fun hasReply() = replyMessage != null
     }

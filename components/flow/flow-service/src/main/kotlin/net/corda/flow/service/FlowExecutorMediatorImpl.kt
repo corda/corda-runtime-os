@@ -20,11 +20,11 @@ import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.messaging.api.mediator.RoutingDestination.Companion.routeTo
 import net.corda.messaging.api.mediator.config.EventMediatorConfigBuilder
-import net.corda.messaging.api.mediator.factory.MessageBusConsumerFactory
-import net.corda.messaging.api.mediator.factory.MessageBusProducerFactory
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.mediator.factory.MultiSourceEventMediatorFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.mediator.factory.MessageBusConsumerFactory
+import net.corda.messaging.mediator.factory.MessageBusProducerFactory
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG

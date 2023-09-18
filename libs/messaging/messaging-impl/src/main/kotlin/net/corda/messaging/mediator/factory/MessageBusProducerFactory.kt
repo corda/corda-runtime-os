@@ -6,9 +6,9 @@ import net.corda.messagebus.api.constants.ProducerRoles
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.mediator.MediatorProducer
-import net.corda.messaging.api.mediator.MessageBusProducer
 import net.corda.messaging.api.mediator.config.MediatorProducerConfig
 import net.corda.messaging.api.mediator.factory.MediatorProducerFactory
+import net.corda.messaging.mediator.MessageBusProducer
 import net.corda.schema.configuration.BootConfig
 import java.util.UUID
 

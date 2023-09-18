@@ -1,7 +1,7 @@
 package net.corda.messaging.mediator
 
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
-import net.corda.messaging.api.mediator.Message
+import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.statemanager.State
 import net.corda.messaging.api.mediator.statemanager.StateManager
@@ -111,7 +111,7 @@ internal class MediatorTaskManager<K : Any, S : Any, E : Any>(
     ): List<ProducerTask<K, S, E>> {
         return processorTaskResults.map { result ->
             result.outputEvents.map { event ->
-                val message = Message(event.value!!, emptyMap())
+                val message = MediatorMessage(event.value!!, emptyMap())
                 ProducerTask(
                     message,
                     messageRouter,

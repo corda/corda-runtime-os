@@ -16,10 +16,10 @@ package net.corda.messaging.api.mediator
 fun interface MessageRouter {
 
     /**
-     * Provides [RoutingDestination] for given [Message].
+     * Provides [RoutingDestination] for given [MediatorMessage].
      *
      * @param message Message.
      * @return Destination for given message.
      */
-    fun getDestination(message: Message): RoutingDestination
+    fun getDestination(message: MediatorMessage): RoutingDestination
 }

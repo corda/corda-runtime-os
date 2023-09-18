@@ -3,7 +3,7 @@ package net.corda.messaging.api.mediator
 /**
  * Class for storing message data and metadata.
  */
-data class Message(
+data class MediatorMessage(
     /** Message body (payload). */
     val body: Any,
     /** Message properties (metadata). */
