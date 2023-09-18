@@ -6,7 +6,6 @@ import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.state.external.ExternalEventState
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
-import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 
 /**

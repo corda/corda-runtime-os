@@ -21,7 +21,6 @@ import net.corda.flow.REQUEST_ID_1
 import net.corda.flow.application.crypto.external.events.CreateSignatureExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.pipeline.exceptions.FlowFatalException
-import net.corda.libs.configuration.SmartConfig
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -365,7 +364,7 @@ class ExternalEventManagerImplTest {
         )
 
         assertEquals(now, updatedExternalEventState.eventToSend.timestamp)
-        assertEquals(now.plusSeconds(1), updatedExternalEventState.sendTimestamp)
+        assertEquals(now, updatedExternalEventState.sendTimestamp)
         assertEquals(TOPIC, record!!.topic)
         assertEquals(key.array(), record.key)
         assertEquals(payload.array(), record.value)
@@ -399,7 +398,7 @@ class ExternalEventManagerImplTest {
         )
 
         assertEquals(now, updatedExternalEventState.eventToSend.timestamp)
-        assertEquals(now.plusSeconds(1), updatedExternalEventState.sendTimestamp)
+        assertEquals(now, updatedExternalEventState.sendTimestamp)
         assertEquals(TOPIC, record!!.topic)
         assertEquals(key.array(), record.key)
         assertEquals(payload.array(), record.value)
@@ -465,7 +464,7 @@ class ExternalEventManagerImplTest {
         )
 
         assertEquals(now, updatedExternalEventState.eventToSend.timestamp)
-        assertEquals(now.plusSeconds(1), updatedExternalEventState.sendTimestamp)
+        assertEquals(now, updatedExternalEventState.sendTimestamp)
         assertEquals(TOPIC, record!!.topic)
         assertEquals(key.array(), record.key)
         assertEquals(payload.array(), record.value)

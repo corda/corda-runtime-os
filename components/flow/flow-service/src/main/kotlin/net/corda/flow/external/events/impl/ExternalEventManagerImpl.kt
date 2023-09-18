@@ -12,9 +12,7 @@ import net.corda.data.flow.state.external.ExternalEventStateStatus
 import net.corda.data.flow.state.external.ExternalEventStateType
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.pipeline.exceptions.FlowFatalException
-import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
-import net.corda.schema.configuration.FlowConfig
 import net.corda.utilities.FLOW_TRACING_MARKER
 import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
