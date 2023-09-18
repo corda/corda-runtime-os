@@ -66,10 +66,6 @@ interface MembershipGroupReadLifecycleHandler : LifecycleEventHandler {
                 }
                 is RegistrationStatusChangeEvent -> handleRegistrationStatusChangeEvent(event, coordinator)
                 is ConfigChangedEvent -> handleConfigChangedEvent(event, coordinator)
-                is OnSnapshotFinished ->  activateImplFunction.invoke(
-                    "Starting component due to dependencies UP and configuration received.",
-                    event.membershipGroupReadCache,
-                )
             }
         }
 
@@ -94,13 +90,14 @@ interface MembershipGroupReadLifecycleHandler : LifecycleEventHandler {
             }
         }
 
-        private data class OnSnapshotFinished(val membershipGroupReadCache: MembershipGroupReadCache) : LifecycleEvent
-
-        private fun callBack(coordinator: LifecycleCoordinator, membershipGroupReadCache: MembershipGroupReadCache) {
-            coordinator.postEvent(OnSnapshotFinished(membershipGroupReadCache))
+        private fun onReady(membershipGroupReadCache: MembershipGroupReadCache) {
+            activateImplFunction.invoke(
+                "Starting component due to dependencies UP and configuration received.",
+                membershipGroupReadCache,
+            )
         }
 
-        private fun handleConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator): MembershipGroupReadCache {
+        private fun handleConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
             logger.info(MembershipGroupReaderProvider::class.simpleName + " handling new config event.")
             val membershipGroupReadCache = MembershipGroupReadCache.Impl()
             coordinator.createManagedResource(SUBSCRIPTION_RESOURCE) {
@@ -109,11 +106,10 @@ interface MembershipGroupReadLifecycleHandler : LifecycleEventHandler {
                         CONSUMER_GROUP,
                         Schemas.Membership.MEMBER_LIST_TOPIC
                     ),
-                    processor = MemberListProcessor(membershipGroupReadCache, memberInfoFactory) { cache -> callBack(coordinator, cache) },
+                    processor = MemberListProcessor(membershipGroupReadCache, memberInfoFactory) { cache -> onReady(cache) },
                     messagingConfig = event.config.getConfig(MESSAGING_CONFIG),
                 ).also { it.start() }
             }
-            return membershipGroupReadCache
         }
     }
 }

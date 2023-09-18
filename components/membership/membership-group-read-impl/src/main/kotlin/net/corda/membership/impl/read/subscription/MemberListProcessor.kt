@@ -14,7 +14,7 @@ import net.corda.virtualnode.toCorda
 class MemberListProcessor(
     private val membershipGroupReadCache: MembershipGroupReadCache,
     private val memberInfoFactory: MemberInfoFactory,
-    private val callback: (membershipGroupReadCache: MembershipGroupReadCache) -> Any
+    private val onReady: (membershipGroupReadCache: MembershipGroupReadCache) -> Unit
 ) : CompactedProcessor<String, PersistentMemberInfo> {
     override val keyClass: Class<String>
         get() = String::class.java
@@ -32,7 +32,7 @@ class MemberListProcessor(
             membershipGroupReadCache.memberListCache.put(owner.toCorda(), memberInfos)
         }
         // signal to lifecycle handling that the on snapshot finished running and the services can start
-        callback(membershipGroupReadCache)
+        onReady(membershipGroupReadCache)
     }
 
     /**
