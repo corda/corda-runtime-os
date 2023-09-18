@@ -1,4 +1,4 @@
-package net.corda.messaging.api.mediator.factory
+package net.corda.messaging.mediator.factory
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
@@ -8,6 +8,7 @@ import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.mediator.MediatorProducer
 import net.corda.messaging.api.mediator.MessageBusProducer
 import net.corda.messaging.api.mediator.config.MediatorProducerConfig
+import net.corda.messaging.api.mediator.factory.MediatorProducerFactory
 import net.corda.schema.configuration.BootConfig
 import java.util.UUID
 

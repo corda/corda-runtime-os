@@ -1,9 +1,10 @@
-package net.corda.messaging.api.mediator
+package net.corda.messaging.mediator
 
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
+import net.corda.messaging.api.mediator.MediatorConsumer
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 

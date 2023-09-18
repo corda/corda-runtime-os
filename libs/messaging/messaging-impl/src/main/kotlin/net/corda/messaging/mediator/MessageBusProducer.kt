@@ -1,6 +1,9 @@
-package net.corda.messaging.api.mediator
+package net.corda.messaging.mediator
 
 import net.corda.messagebus.api.producer.CordaProducer
+import net.corda.messaging.api.mediator.MediatorProducer
+import net.corda.messaging.api.mediator.Message
+import net.corda.messaging.api.mediator.ProducerReply
 
 /**
  * Message bus producer that sends messages to message bus topics.
