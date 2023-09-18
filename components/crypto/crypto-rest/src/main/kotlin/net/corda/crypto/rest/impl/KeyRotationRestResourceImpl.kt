@@ -27,7 +27,13 @@ class KeyRotationRestResourceImpl @Activate constructor(
         TODO("Not yet implemented")
     }
 
-    override fun rotateWrappingKey(oldKeyAlias: String, newKeyAlias: String): ResponseEntity<KeyRotationResponse> {
+    override fun rotateWrappingKey(
+        oldKeyAlias: String,
+        newKeyAlias: String,
+        simulate: Boolean,
+        timeToLive: Int,
+        limit: Int
+    ): ResponseEntity<KeyRotationResponse> {
         TODO("Not yet implemented")
     }
 
