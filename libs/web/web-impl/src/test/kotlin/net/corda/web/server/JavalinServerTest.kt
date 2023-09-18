@@ -11,6 +11,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
@@ -85,7 +86,7 @@ class JavalinServerTest {
     }
 
     @Test
-    fun `register endpoints when the server is started `() {
+    fun `register endpoints when the server is started`() {
         val endpoint = Endpoint(HTTPMethod.GET, "/url", webHandler)
         javalinServer.registerEndpoint(endpoint)
         //check it hasn't been registered yet
@@ -99,6 +100,28 @@ class JavalinServerTest {
     }
 
     @Test
+    fun `register an endpoint with existing path and method throws`() {
+        val endpoint = Endpoint(HTTPMethod.GET, "/url", webHandler)
+        // same path and method, different handler
+        val endpoint2 = Endpoint(HTTPMethod.GET, "/url", mock())
+        javalinServer.registerEndpoint(endpoint)
+        assertThrows<IllegalArgumentException> {
+            javalinServer.registerEndpoint(endpoint2)
+        }
+    }
+
+    @Test
+    fun `register an endpoint with existing path and different method is valid`() {
+        val endpoint = Endpoint(HTTPMethod.GET, "/url", webHandler)
+        // same path and different method
+        val endpoint2 = Endpoint(HTTPMethod.POST, "/url", mock())
+        javalinServer.registerEndpoint(endpoint)
+        assertDoesNotThrow {
+            javalinServer.registerEndpoint(endpoint2)
+        }
+    }
+
+    @Test
     fun `registering an endpoint add it to the endpoints list`() {
         javalinServer.start(port)
         val getEndpoint = Endpoint(HTTPMethod.GET, "/url1", webHandler)
@@ -108,8 +131,8 @@ class JavalinServerTest {
         javalinServer.registerEndpoint(postEndpoint)
 
         assertEquals(2, javalinServer.endpoints.size)
-        assertEquals(getEndpoint, javalinServer.endpoints[0])
-        assertEquals(postEndpoint, javalinServer.endpoints[1])
+        assertEquals(getEndpoint, javalinServer.endpoints.elementAt(0))
+        assertEquals(postEndpoint, javalinServer.endpoints.elementAt(1))
     }
 
     @Test
@@ -129,6 +152,38 @@ class JavalinServerTest {
 
         val endpoints = javalinServer.endpoints
         assertEquals(1, endpoints.size)
-        assertEquals(postEndpoint, endpoints[0])
+        assertEquals(postEndpoint, endpoints.elementAt(0))
+    }
+
+    @Test
+    fun `unregistering an endpoint when server not started just removes it from the endpoints list`() {
+        val getEndpoint = Endpoint(HTTPMethod.GET, "/url1", webHandler)
+        val postEndpoint = Endpoint(HTTPMethod.POST, "/url2", webHandler)
+
+        javalinServer.registerEndpoint(getEndpoint)
+        javalinServer.registerEndpoint(postEndpoint)
+
+        javalinServer.removeEndpoint(getEndpoint)
+
+        verify(javalinMock, never()).stop()
+        verify(javalinMock, never()).start(port)
+
+        val endpoints = javalinServer.endpoints
+        assertEquals(1, endpoints.size)
+        assertEquals(postEndpoint, endpoints.elementAt(0))
+    }
+
+    @Test
+    fun `unregistering a non-existing endpoint does nothing`() {
+        val getEndpoint = Endpoint(HTTPMethod.GET, "/url1", webHandler)
+        val postEndpoint = Endpoint(HTTPMethod.POST, "/url2", webHandler)
+
+        javalinServer.registerEndpoint(postEndpoint)
+
+        javalinServer.removeEndpoint(getEndpoint)
+
+        val endpoints = javalinServer.endpoints
+        assertEquals(1, endpoints.size)
+        assertEquals(postEndpoint, endpoints.elementAt(0))
     }
 }

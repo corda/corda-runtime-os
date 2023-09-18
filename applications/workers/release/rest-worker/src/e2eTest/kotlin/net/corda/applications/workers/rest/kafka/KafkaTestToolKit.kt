@@ -112,8 +112,8 @@ class KafkaTestToolKit(
             messagingChunkFactory,
             object : WebServer {
                 override val port: Int? = 9999
-                override val endpoints: List<Endpoint>
-                    get() = emptyList()
+                override val endpoints: Set<Endpoint>
+                    get() = emptySet()
 
                 override fun start(port: Int) = Unit
                 override fun stop() = Unit

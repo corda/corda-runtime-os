@@ -233,8 +233,8 @@ class ConfigTests {
         override fun registerEndpoint(endpoint: Endpoint) = Unit
         override fun removeEndpoint(endpoint: Endpoint)  = Unit
         override val port = 7000
-        override val endpoints: List<Endpoint>
-            get() = emptyList()
+        override val endpoints: Set<Endpoint>
+            get() = emptySet()
 
         override fun start(port: Int) = Unit
     }

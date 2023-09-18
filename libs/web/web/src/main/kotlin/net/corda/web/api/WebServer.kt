@@ -14,7 +14,7 @@ interface WebServer{
     /**
      * Return list of all registered endpoints
      */
-    val endpoints: List<Endpoint>
+    val endpoints: Set<Endpoint>
 
     /**
      * Start the webserver

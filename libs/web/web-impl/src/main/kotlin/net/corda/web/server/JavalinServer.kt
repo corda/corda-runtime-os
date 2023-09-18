@@ -42,7 +42,7 @@ class JavalinServer(
     private var server: Javalin? = null
     private val coordinator = coordinatorFactory.createCoordinator<WebServer> { _, _ -> }
 
-    override val endpoints: MutableList<Endpoint> = mutableListOf()
+    override val endpoints: MutableSet<Endpoint> = mutableSetOf<Endpoint>()
 
     override fun start(port: Int) {
         check(null == server) { "The Javalin webserver is already initialized" }
@@ -99,6 +99,8 @@ class JavalinServer(
     }
 
     override fun registerEndpoint(endpoint: Endpoint) {
+        if(endpoints.any { it.path == endpoint.path && it.methodType == endpoint.methodType })
+            throw IllegalArgumentException("Endpoint with path ${endpoint.path} and method ${endpoint.methodType} already exists.")
         // register immediately when the server has been started
         if(null != server) registerEndpointInternal(endpoint)
         // record the path in case we need to register when it's already started
@@ -106,14 +108,14 @@ class JavalinServer(
     }
 
     override fun removeEndpoint(endpoint: Endpoint) {
-        if(null != server) endpoints.remove(endpoint)
+        endpoints.remove(endpoint)
         // NOTE:
         //  The server needs to be restarted to un-register the path. However, this means everything dependent on
         //  this is impacted by a restart, which doesn't feel quite right.
         //  This also means we can't really DOWN/UP the lifecycle status of this because this would end up in a
-        //  relentless yoyo-ing of this component as dependent components keen calling this function.
-        // TODO - review if it is really needed to de-register an path when a Subscription goes down, for example.
-        restartServer()
+        //  relentless yoyo-ing of this component as dependent components keep calling this function.
+        // TODO - review if it is really needed to de-register a path when a Subscription goes down, for example.
+        if(null != server) restartServer()
     }
 
     private fun registerEndpointInternal(endpoint: Endpoint) {
