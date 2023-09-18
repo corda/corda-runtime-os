@@ -390,14 +390,14 @@ class StateManagerIntegrationTest {
     @DisplayName(value = "can filter states by last update time")
     fun canFilterStatesByLastUpdatedTime() {
         val count = 10
-        val startTime = Instant.now()
+        val startTime = System.currentTimeMillis()
         persistStateEntities(
             (1..count),
             { _, _ -> State.VERSION_INITIAL_VALUE },
             { i, _ -> "state_$i" },
             { _, _ -> "{}" }
         )
-        val finishTime = Instant.now()
+        val finishTime = System.currentTimeMillis()
 
         val filteredStates = stateManager.getUpdatedBetween(startTime, finishTime)
         assertThat(filteredStates).hasSize(count)
