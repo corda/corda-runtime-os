@@ -74,7 +74,7 @@ class IssueAssetFlow : ClientStartableFlow {
 
             val signedTransaction = txBuilder.toSignedTransaction()
 
-            val transactionId = flowEngine.subFlow(FinalizeFlow(signedTransaction, listOf()))
+            val transactionId = flowEngine.subFlow(FinalizeFlow(signedTransaction, listOf(myInfo.name)))
 
             return jsonMarshallingService.format(IssueAssetFlowResult(transactionId, outputState.assetId))
 
