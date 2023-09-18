@@ -51,15 +51,6 @@ class FlowGlobalPostProcessorImplTest {
         const val SESSION_ID_1 = "s1"
         const val SESSION_ID_2 = "s2"
         const val SESSION_ID_3 = "s3"
-
-        @JvmStatic
-        fun sessionStatuses(): Stream<Arguments> {
-            return Stream.of(
-                Arguments.of(SessionStateType.CLOSED, SessionStateType.CONFIRMED),
-                Arguments.of(SessionStateType.ERROR, SessionStateType.CONFIRMED),
-                Arguments.of(SessionStateType.CLOSED, SessionStateType.ERROR),
-            )
-        }
     }
 
     private val sessionState1 = SessionState().apply {
@@ -276,7 +267,7 @@ class FlowGlobalPostProcessorImplTest {
         val updatedExternalEventState = ExternalEventState().apply { REQUEST_ID_1 }
 
         whenever(checkpoint.externalEventState).thenReturn(externalEventState)
-        whenever(externalEventManager.getEventToSend(eq(externalEventState), any(), eq(testContext.flowConfig)))
+        whenever(externalEventManager.getEventToSend(eq(externalEventState), any()))
             .thenReturn(updatedExternalEventState to externalEventRecord)
 
         val outputContext = flowGlobalPostProcessor.postProcess(testContext)
@@ -291,7 +282,7 @@ class FlowGlobalPostProcessorImplTest {
         val updatedExternalEventState = ExternalEventState().apply { REQUEST_ID_1 }
 
         whenever(checkpoint.externalEventState).thenReturn(externalEventState)
-        whenever(externalEventManager.getEventToSend(eq(externalEventState), any(), eq(testContext.flowConfig)))
+        whenever(externalEventManager.getEventToSend(eq(externalEventState), any()))
             .thenReturn(updatedExternalEventState to null)
 
         val outputContext = flowGlobalPostProcessor.postProcess(testContext)
@@ -307,7 +298,7 @@ class FlowGlobalPostProcessorImplTest {
         val outputContext = flowGlobalPostProcessor.postProcess(testContext)
 
         assertThat(outputContext.outputRecords).doesNotContain(externalEventRecord)
-        verify(externalEventManager, never()).getEventToSend(any(), any(), any())
+        verify(externalEventManager, never()).getEventToSend(any(), any())
         verify(checkpoint, never()).externalEventState = any()
     }
 

@@ -153,8 +153,7 @@ class ExternalEventManagerImpl(
 
     override fun getEventToSend(
         externalEventState: ExternalEventState,
-        instant: Instant,
-        config: SmartConfig
+        instant: Instant
     ): Pair<ExternalEventState, Record<*, *>?> {
         return when {
             hasNotSentOriginalEvent(externalEventState) -> {
@@ -162,7 +161,7 @@ class ExternalEventManagerImpl(
                     "Sending external event request ${externalEventState.requestId} " +
                             externalEventState.eventToSend
                 }
-                getAndUpdateEventToSend(externalEventState, instant, config)
+                getAndUpdateEventToSend(externalEventState, instant)
             }
 
             canRetryEvent(externalEventState, instant) -> {
@@ -179,7 +178,7 @@ class ExternalEventManagerImpl(
                     externalEventState.status.type = ExternalEventStateType.RETRY
                     externalEventState.retries = externalEventState.retries.inc()
                 }
-                getAndUpdateEventToSend(externalEventState, instant, config)
+                getAndUpdateEventToSend(externalEventState, instant)
             }
 
             else -> externalEventState to null
@@ -206,12 +205,11 @@ class ExternalEventManagerImpl(
 
     private fun getAndUpdateEventToSend(
         externalEventState: ExternalEventState,
-        instant: Instant,
-        config: SmartConfig
+        instant: Instant
     ): Pair<ExternalEventState, Record<*, *>?> {
         val eventToSend = externalEventState.eventToSend
         eventToSend.timestamp = instant
-        externalEventState.sendTimestamp = instant.plusMillis(config.getLong(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW))
+        externalEventState.sendTimestamp = instant
         log.info(flowTraceMarker, "Dispatching external event with id '{}' to '{}'", externalEventState.requestId, eventToSend.topic)
 
         return externalEventState to Record(eventToSend.topic, eventToSend.key.array(), eventToSend.payload.array())

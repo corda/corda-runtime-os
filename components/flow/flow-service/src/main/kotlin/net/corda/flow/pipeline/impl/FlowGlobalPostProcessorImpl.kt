@@ -150,12 +150,11 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
      * Check to see if any external events needs to be sent or resent due to no response being received within a given time period.
      */
     private fun getExternalEvent(context: FlowEventContext<Any>, now: Instant): List<Record<*, *>> {
-        val config = context.flowConfig
         val externalEventState = context.checkpoint.externalEventState
         return if (externalEventState == null) {
             listOf()
         } else {
-            externalEventManager.getEventToSend(externalEventState, now, config)
+            externalEventManager.getEventToSend(externalEventState, now)
                 .let { (updatedExternalEventState, record) ->
                     context.checkpoint.externalEventState = updatedExternalEventState
                     if (record != null) {

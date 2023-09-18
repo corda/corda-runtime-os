@@ -73,15 +73,6 @@ class ExternalEventResponseHandler(
 
         checkpoint.externalEventState = updatedExternalEventState
 
-        if (updatedExternalEventState.status.type == ExternalEventStateType.RETRY) {
-            checkpoint.setFlowSleepDuration(
-                Duration.between(
-                    clock.instant(),
-                    updatedExternalEventState.sendTimestamp
-                ).toMillis().toInt().coerceAtLeast(0)
-            )
-        }
-
         return context
     }
 }

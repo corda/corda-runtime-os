@@ -72,14 +72,12 @@ interface ExternalEventManager {
      *
      * @param externalEventState The [ExternalEventState] to get the event from.
      * @param instant The current time.
-     * @param config The [SmartConfig] to use.
      *
      * @return A [Pair] containing an updated [ExternalEventState] and a nullable [Record] representing the event to
      * send to external processors. If the event does not need to be sent/resent, then `null` will be returned.
      */
     fun getEventToSend(
         externalEventState: ExternalEventState,
-        instant: Instant,
-        config: SmartConfig
+        instant: Instant
     ): Pair<ExternalEventState, Record<*, *>?>
 }

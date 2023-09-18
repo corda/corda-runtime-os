@@ -22,8 +22,6 @@ import net.corda.flow.application.crypto.external.events.CreateSignatureExternal
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.libs.configuration.SmartConfig
-import net.corda.schema.configuration.FlowConfig
-import net.corda.utilities.seconds
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -102,8 +100,6 @@ class ExternalEventManagerImplTest {
     private val stringDeserializer = mock<CordaAvroDeserializer<String>>()
     private val byteArrayDeserializer = mock<CordaAvroDeserializer<ByteArray>>()
     private val anyDeserializer = mock<CordaAvroDeserializer<Any>>()
-
-    private val config = mock<SmartConfig>()
 
     private val externalEventManager = ExternalEventManagerImpl(
         serializer,
@@ -363,12 +359,9 @@ class ExternalEventManagerImplTest {
             status = ExternalEventStateStatus(ExternalEventStateType.OK, null)
         }
 
-        whenever(config.getLong(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW)).thenReturn(1.seconds.toMillis())
-
         val (updatedExternalEventState, record) = externalEventManager.getEventToSend(
             externalEventState,
-            now,
-            config
+            now
         )
 
         assertEquals(now, updatedExternalEventState.eventToSend.timestamp)
@@ -400,12 +393,9 @@ class ExternalEventManagerImplTest {
             status = ExternalEventStateStatus(stateType, ExceptionEnvelope())
         }
 
-        whenever(config.getLong(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW)).thenReturn(1.seconds.toMillis())
-
         val (updatedExternalEventState, record) = externalEventManager.getEventToSend(
             externalEventState,
-            now,
-            config
+            now
         )
 
         assertEquals(now, updatedExternalEventState.eventToSend.timestamp)
@@ -437,12 +427,9 @@ class ExternalEventManagerImplTest {
             status = ExternalEventStateStatus(stateType, ExceptionEnvelope())
         }
 
-        whenever(config.getLong(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW)).thenReturn(1.seconds.toMillis())
-
         val (updatedExternalEventState, record) = externalEventManager.getEventToSend(
             externalEventState,
-            now,
-            config
+            now
         )
 
         assertEquals(now.minusSeconds(10), updatedExternalEventState.eventToSend.timestamp)
@@ -472,12 +459,9 @@ class ExternalEventManagerImplTest {
             status = ExternalEventStateStatus(stateType, ExceptionEnvelope())
         }
 
-        whenever(config.getLong(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW)).thenReturn(1.seconds.toMillis())
-
         val (updatedExternalEventState, record) = externalEventManager.getEventToSend(
             externalEventState,
-            now,
-            config
+            now
         )
 
         assertEquals(now, updatedExternalEventState.eventToSend.timestamp)
