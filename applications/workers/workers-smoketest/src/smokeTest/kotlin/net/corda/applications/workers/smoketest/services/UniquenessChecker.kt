@@ -25,6 +25,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.slf4j.LoggerFactory
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -56,6 +57,7 @@ class UniquenessChecker {
         const val TEST_CPI_NAME = "ledger-utxo-demo-app"
         const val TEST_CPB_LOCATION = "/META-INF/ledger-utxo-demo-app.cpb"
         const val NOTARY_SERVICE_X500 = "O=MyNotaryService, L=London, C=GB"
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val testRunUniqueId = UUID.randomUUID()
@@ -116,6 +118,8 @@ class UniquenessChecker {
     @Test
     fun `when call service with valid payload return idempotently`() {
         val url = "${System.getProperty("uniquenessWorkerHealthHttp")}api/5.1/uniqueness-checker"
+
+        logger.warn("uniqueness url: $url")
         val serializedPayload = avroSerializer.serialize(payloadBuilder().build())
 
         val request = HttpRequest.newBuilder()
@@ -125,7 +129,7 @@ class UniquenessChecker {
             .build()
         val response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
 
-        assertThat(response.statusCode()).isEqualTo(200)
+        assertThat(response.statusCode()).isEqualTo(200).withFailMessage("status code on response: ${response.statusCode()} url: $url")
 
         val responseBody: ByteArray = response.body()
         val responseEvent = avroFlowEventDeserializer.deserialize(responseBody)
