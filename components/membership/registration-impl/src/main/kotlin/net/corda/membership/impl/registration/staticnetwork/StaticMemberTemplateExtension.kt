@@ -11,10 +11,10 @@ class StaticMemberTemplateExtension {
         /** Key name for member status. */
         const val MEMBER_STATUS = "memberStatus"
 
-        /** Key name for path URL. */
+        /** Key name for endpoint URL. */
         const val ENDPOINT_URL = "endpointUrl-%s"
 
-        /** Key name for path protocol. */
+        /** Key name for endpoint protocol. */
         const val ENDPOINT_PROTOCOL = "endpointProtocol-%s"
 
         /** Key name for software version. */

@@ -203,7 +203,7 @@ internal class StartRegistrationHandler(
                 pendingMemberInfo.groupId == mgmMemberInfo.groupId
             ) { "Group ID in registration request does not match the group ID of the target MGM." }
 
-            // There is at least one path specified
+            // There is at least one endpoint specified
             validateRegistrationRequest(
                 pendingMemberInfo.endpoints.isNotEmpty()
             ) { "Registering member has not specified any endpoints" }
