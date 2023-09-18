@@ -15,4 +15,8 @@ data class Asset (
     override fun getParticipants(): List<PublicKey> {
         return participants
     }
+
+    fun withNewOwner(newOwner: Member, newParticipants: List<PublicKey>): Asset {
+        return Asset(newOwner, assetName, assetId, newParticipants)
+    }
 }

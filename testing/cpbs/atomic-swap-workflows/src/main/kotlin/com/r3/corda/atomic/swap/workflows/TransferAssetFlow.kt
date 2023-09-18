@@ -1,4 +1,5 @@
 @file:Suppress("WildcardImport")
+
 package com.r3.corda.atomic.swap.workflows
 
 import com.r3.corda.atomic.swap.contracts.AssetContract
@@ -58,7 +59,8 @@ class TransferAssetFlow : ClientStartableFlow {
             val unconsumedStatesWithId = unconsumedStates.filter { it.state.contractState.assetId == stateId }
 
             if (unconsumedStatesWithId.size != 1) {
-                throw CordaRuntimeException("Multiple or zero states with id '$stateId' found")
+                throw CordaRuntimeException("Multiple or zero states with id '$stateId' found, " +
+                        "number of states is ${unconsumedStatesWithId.size}")
             }
 
             val stateAndRef = unconsumedStatesWithId.first()
