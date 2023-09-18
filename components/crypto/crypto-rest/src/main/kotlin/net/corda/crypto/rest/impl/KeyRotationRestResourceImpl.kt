@@ -23,7 +23,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
 
     }
 
-    override fun getRotationStatus(): List<Pair<String, List<String>>> {
+    override fun getKeyRotationStatus(): List<Pair<String, List<String>>> {
         TODO("Not yet implemented")
     }
 
