@@ -9,7 +9,6 @@ dependencies {
     compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
-    implementation project(path: ':libs:kotlin-coroutines', configuration: 'bundle')
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:messaging:message-bus")
     implementation project(":libs:schema-registry:schema-registry")
