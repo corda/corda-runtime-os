@@ -122,12 +122,13 @@ tasks.register('smokeTest', Test) {
     testClassesDirs = project.sourceSets["smokeTest"].output.classesDirs
     classpath = project.sourceSets["smokeTest"].runtimeClasspath
 
-    def combinedWorker = project.getProperties().getOrDefault("isCombinedWorker", true)
+    // TODO - switch default around so this can be run locally.
+    def combinedWorker = project.getProperties().getOrDefault("isCombinedWorker", false)
 
     // Note these port values have to match what is setup as part of port forwarding at cluster bootstrap time.
     // E.g. during Jenkins pipeline setup.
     def combinedWorkerAddress = "http://localhost:7004/"
-    systemProperty "cryptoWorkerHealthHttp","http://localhost:7004/"
+    systemProperty "cryptoWorkerHealthHttp",
             project.getProperties().getOrDefault("cryptoWorkerHealthHttp", combinedWorker ? combinedWorkerAddress : "http://localhost:7001/")
     systemProperty "restWorkerHealthHttp",
             project.getProperties().getOrDefault("restWorkerHealthHttp", combinedWorker ? combinedWorkerAddress : "http://localhost:7002/")
