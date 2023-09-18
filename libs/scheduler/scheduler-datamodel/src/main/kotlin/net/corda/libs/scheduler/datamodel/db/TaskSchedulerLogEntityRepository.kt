@@ -21,8 +21,11 @@ class TaskSchedulerLogEntityRepository {
         val readQuery = em.createNamedQuery(TASK_SCHEDULER_LOG_GET_QUERY_NAME, TaskSchedulerLogEntity::class.java)
         readQuery.setParameter(TASK_SCHEDULER_LOG_QUERY_PARAM_NAME, taskName)
         readQuery.lockMode = LockModeType.PESSIMISTIC_WRITE
-        return readQuery.resultList.singleOrNull()?: TaskSchedulerLogEntity(taskName, schedulerId, Instant.MIN, Date.from(
-            Instant.now()))
+        return readQuery.resultList.singleOrNull()?:
+            TaskSchedulerLogEntity(taskName, schedulerId, Instant.MIN, Date.from(Instant.now()))
+                .also {
+                    em.persist(it)
+                }
     }
 
     /**

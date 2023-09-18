@@ -1,15 +1,6 @@
 @file:JvmName("KotlinClassUtils")
 package net.corda.kotlin.reflect.impl
 
-import kotlinx.metadata.KmClass
-import kotlinx.metadata.KmPackage
-import kotlinx.metadata.jvm.KotlinClassMetadata
-import net.corda.kotlin.reflect.KotlinClass
-import net.corda.kotlin.reflect.types.KFunctionInternal
-import net.corda.kotlin.reflect.types.KPropertyInternal
-import net.corda.kotlin.reflect.types.MemberSignature
-import net.corda.kotlin.reflect.types.jvmSuperClasses
-import net.corda.kotlin.reflect.types.toSignature
 import java.lang.reflect.Method
 import java.util.Collections.unmodifiableMap
 import kotlin.LazyThreadSafetyMode.PUBLICATION
@@ -38,8 +29,17 @@ import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.full.staticFunctions
 import kotlin.reflect.full.staticProperties
 import kotlin.reflect.full.superclasses
+import kotlinx.metadata.KmClass
+import kotlinx.metadata.KmPackage
+import kotlinx.metadata.jvm.KotlinClassMetadata
+import net.corda.kotlin.reflect.KotlinClass
+import net.corda.kotlin.reflect.types.KFunctionInternal
+import net.corda.kotlin.reflect.types.KPropertyInternal
+import net.corda.kotlin.reflect.types.MemberSignature
+import net.corda.kotlin.reflect.types.jvmSuperClasses
+import net.corda.kotlin.reflect.types.toSignature
 
-sealed class KotlinClassImpl<T : Any> constructor(
+sealed class KotlinClassImpl<T : Any>(
     @JvmField protected val clazz: Class<T>,
     @JvmField protected val klazz: KClass<T>,
     @JvmField protected val kClassPool: KClassPool
@@ -377,11 +377,14 @@ private fun <T : Any> Metadata.forKotlinType(
     pool: KClassPool
 ): KotlinClassImpl<T> {
     return when (val km = KotlinClassMetadata.read(this)) {
-        is KotlinClassMetadata.Class -> KotlinClassImpl.KmClassType(clazz, klazz, pool, km.toKmClass())
-        is KotlinClassMetadata.FileFacade -> KotlinClassImpl.KmPackageType(clazz, klazz, pool, km.toKmPackage())
-        is KotlinClassMetadata.MultiFileClassPart -> KotlinClassImpl.KmPackageType(clazz, klazz, pool, km.toKmPackage())
-        null -> throw IllegalArgumentException("Incompatible Kotlin metadata version '${metadataVersion.joinToString(".")}'.")
-        else -> throw IllegalArgumentException("Unsupported Kotlin class type: $km")
+        is KotlinClassMetadata.Class ->
+            KotlinClassImpl.KmClassType(clazz, klazz, pool, km.kmClass)
+        is KotlinClassMetadata.FileFacade ->
+            KotlinClassImpl.KmPackageType(clazz, klazz, pool, km.kmPackage)
+        is KotlinClassMetadata.MultiFileClassPart ->
+            KotlinClassImpl.KmPackageType(clazz, klazz, pool, km.kmPackage)
+        else ->
+            throw IllegalArgumentException("Unsupported Kotlin class type: $km")
     }
 }
 
