@@ -2,12 +2,10 @@ package net.corda.flow.pipeline.impl
 
 import net.corda.crypto.core.ShortHash
 import net.corda.data.flow.FlowStartContext
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.data.flow.state.waiting.external.ExternalEventResponse
 import net.corda.flow.BOB_X500
-import net.corda.flow.FLOW_ID_1
 import net.corda.flow.pipeline.FlowGlobalPostProcessor
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
@@ -22,6 +20,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -31,14 +30,8 @@ class FlowEventPipelineImplTest {
 
     private val payload = ExternalEventResponse("foo")
     private val waitingForWakeup = WaitingFor(WakeUpWaitingFor())
-    private val retryStartFlow = StartFlow()
 
     private val RUN_OR_CONTINUE_TIMEOUT = 60000L
-
-    private val retryEvent = FlowEvent().apply {
-        flowId = FLOW_ID_1
-        payload = retryStartFlow
-    }
 
     private val mockHoldingIdentity = mock<HoldingIdentity>().apply {
         whenever(shortHash).thenReturn(ShortHash.Companion.of("0123456789abc"))
@@ -72,7 +65,7 @@ class FlowEventPipelineImplTest {
     }
 
     private val mockFlowExecutionPipelineStage = mock<FlowExecutionPipelineStage>().apply {
-        whenever(runFlow(any(), any())).thenReturn(outputContext)
+        whenever(runFlow(any(), any(), any())).thenReturn(outputContext)
     }
 
     private val virtualNodeInfo = mock<VirtualNodeInfo>()
@@ -124,7 +117,7 @@ class FlowEventPipelineImplTest {
     fun `execute flow invokes the execute flow pipeline stage`() {
         val pipeline = buildPipeline()
         pipeline.executeFlow(RUN_OR_CONTINUE_TIMEOUT)
-        verify(mockFlowExecutionPipelineStage).runFlow(defaultinputContext, RUN_OR_CONTINUE_TIMEOUT)
+        verify(mockFlowExecutionPipelineStage).runFlow(eq(defaultinputContext), eq(RUN_OR_CONTINUE_TIMEOUT), any())
     }
 
     @Test

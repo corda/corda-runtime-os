@@ -34,13 +34,14 @@ class SchedulerEventHandlerTest {
     private val coordinator = mock<LifecycleCoordinator>()
 
     @Test
-    fun `when ScheduleEvent publish and schedule again`() {
+    fun `when ScheduleEvent publish and update DB log entry and schedule again`() {
         val handler = SchedulerEventHandler(schedule, publisher, schedulerLog, schedulerName)
         val name = "${SchedulerEventHandler::class.java.name}-${schedule.taskName}"
         handler.processEvent(SchedulerEventHandler.ScheduleEvent(name), coordinator)
 
         verify(schedulerLog).getLastTriggerAndLock(schedule.taskName, schedulerName)
         verify(publisher).publish(schedule.taskName, schedule.scheduleTriggerTopic)
+        verify(schedulerLock).updateLog(schedulerName)
         verify(coordinator).setTimer(
             eq(name),
             eq(schedule.scheduleIntervalInSeconds * 1000 / 2),
@@ -49,7 +50,7 @@ class SchedulerEventHandlerTest {
     }
 
     @Test
-    fun `when ScheduleEvent don't publish if too soon`() {
+    fun `when ScheduleEvent don't schedule if too soon`() {
         val schedule =
             Schedule("hulk", 1230, "Nananana")
         val handler = SchedulerEventHandler(schedule, publisher, schedulerLog, schedulerName)
@@ -57,6 +58,7 @@ class SchedulerEventHandlerTest {
         handler.processEvent(SchedulerEventHandler.ScheduleEvent(name), coordinator)
 
         verify(publisher, times(0)).publish(any(), any())
+        verify(schedulerLock, times(0)).updateLog(schedulerName)
     }
 
     @Test
@@ -128,6 +130,4 @@ class SchedulerEventHandlerTest {
 
         verify(coordinator).cancelTimer("${SchedulerEventHandler::class.java.name}-${schedule.taskName}")
     }
-
-
 }

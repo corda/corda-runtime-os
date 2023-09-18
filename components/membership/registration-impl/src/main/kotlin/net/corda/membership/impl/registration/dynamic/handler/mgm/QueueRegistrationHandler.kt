@@ -2,6 +2,8 @@ package net.corda.membership.impl.registration.dynamic.handler.mgm
 
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.SignatureVerificationService
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.CheckForPendingRegistration
@@ -11,10 +13,13 @@ import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
+import net.corda.membership.lib.MemberInfoExtension.Companion.KEYS_PEM_SUFFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS
 import net.corda.membership.lib.VersionedMessageBuilder
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
+import net.corda.membership.p2p.helpers.Verifier
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
@@ -24,13 +29,20 @@ import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+@Suppress("LongParameterList")
 internal class QueueRegistrationHandler(
     private val clock: Clock,
     private val membershipPersistenceClient: MembershipPersistenceClient,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    signatureVerificationService: SignatureVerificationService,
+    private val keyEncodingService: KeyEncodingService,
     private val p2pRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
         cordaAvroSerializationFactory,
         clock,
+    ),
+    private val verifier: Verifier = Verifier(
+        signatureVerificationService,
+        keyEncodingService,
     ),
 ) : RegistrationHandler<QueueRegistration> {
     private companion object {
@@ -91,6 +103,21 @@ internal class QueueRegistrationHandler(
         key: String, command: QueueRegistration, registrationId: String
     ): List<Record<*, *>> {
         val context = deserialize(command.memberRegistrationRequest.memberContext.data.array())
+
+        // we should not queue request for re-try which failed on signature verification
+        try {
+            verifier.verify(
+                context.getSessionKeys(),
+                command.memberRegistrationRequest.memberContext.signature,
+                command.memberRegistrationRequest.memberContext.signatureSpec,
+                command.memberRegistrationRequest.memberContext.data.array(),
+            )
+        } catch (e: Exception) {
+            logger.warn("Signature verification failed. Discarding the registration with ID `$registrationId`. " +
+                    "Reason: ${e.message}")
+            return emptyList()
+        }
+
         val platformVersion = context.items.first { it.key == PLATFORM_VERSION }.value.toInt()
         // we need to create the status message based on which platform the member is on
         val statusUpdateMessage = VersionedMessageBuilder.retrieveRegistrationStatusMessage(
@@ -131,6 +158,13 @@ internal class QueueRegistrationHandler(
             )
         )
     }
+
+    private fun KeyValuePairList.getSessionKeys() =
+        this.items.filter { items ->
+            items.key.startsWith(SESSION_KEYS) && items.key.endsWith(KEYS_PEM_SUFFIX)
+        }.map {  sessionKeys ->
+            keyEncodingService.decodePublicKey(sessionKeys.value)
+        }
 
     private fun increaseNumberOfRetries(key: String, command: QueueRegistration) = listOf(
         Record(
