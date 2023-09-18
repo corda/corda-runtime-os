@@ -32,32 +32,32 @@ class DeduplicationTableCleanUpProcessor(
 
     override fun onNext(events: List<Record<String, ScheduledTaskTrigger>>): List<Record<*, *>> {
         // TODO Add metric around it?
-        events.filter {
+        events.forEach { it ->
             val taskName = it.key
-            taskName == DEDUPLICATION_TABLE_CLEAN_UP_TASK
-        }.forEach { _ ->
-            log.info("Cleaning up deduplication table for all vnodes")
-            val startTime = System.nanoTime()
-            virtualNodeInfoReadService.getAll().forEach {
-                log.debug { "Cleaning up deduplication table for vnode: ${it.holdingIdentity.shortHash}" }
-                dbConnectionManager.createEntityManagerFactory(
-                    it.vaultDmlConnectionId,
-                    // We don't really want to make use of any entities here.
-                    object : JpaEntitiesSet {
-                        override val persistenceUnitName: String
-                            get() = ""
-                        override val classes: Set<Class<*>>
-                            get() = emptySet()
-                    }
-                ).use { emf ->
-                    emf.createEntityManager().transaction { em ->
-                        // TODO The below interval needs to be made configurable
-                        requestsIdsRepository.deleteRequestsOlderThan(120, em)
+            if (taskName == DEDUPLICATION_TABLE_CLEAN_UP_TASK) {
+                log.info("Cleaning up deduplication table for all vnodes")
+                val startTime = System.nanoTime()
+                virtualNodeInfoReadService.getAll().forEach {
+                    log.debug { "Cleaning up deduplication table for vnode: ${it.holdingIdentity.shortHash}" }
+                    dbConnectionManager.createEntityManagerFactory(
+                        it.vaultDmlConnectionId,
+                        // We don't really want to make use of any entities here.
+                        object : JpaEntitiesSet {
+                            override val persistenceUnitName: String
+                                get() = ""
+                            override val classes: Set<Class<*>>
+                                get() = emptySet()
+                        }
+                    ).use { emf ->
+                        emf.createEntityManager().transaction { em ->
+                            // TODO The below interval needs to be made configurable
+                            requestsIdsRepository.deleteRequestsOlderThan(120, em)
+                        }
                     }
                 }
+                val cleanUpTime = Duration.ofNanos(System.nanoTime() - startTime)
+                log.info("Cleaning up deduplication table for all vnodes COMPLETED in ${cleanUpTime.toMillis()} ms")
             }
-            val cleanUpTime = Duration.ofNanos(System.nanoTime() - startTime)
-            log.info("Cleaning up deduplication table for all vnodes COMPLETED in ${cleanUpTime.toMillis()} ms")
         }
         // TODO Fix the response (at the minute the Scheduler ignores them)
         return emptyList()
