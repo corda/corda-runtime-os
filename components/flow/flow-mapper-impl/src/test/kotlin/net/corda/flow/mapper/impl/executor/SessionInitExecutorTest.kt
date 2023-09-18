@@ -33,7 +33,6 @@ class SessionInitExecutorTest {
     private val recordFactory = mock<RecordFactory>() {
         on { forwardError(any(), any(), any(), any(), any()) } doReturn record
         on { forwardEvent(any(), any(), any(), any()) } doReturn record
-        on { getSessionEventOutputTopic(any(), any()) } doReturn "Topic"
     }
 
     @Test

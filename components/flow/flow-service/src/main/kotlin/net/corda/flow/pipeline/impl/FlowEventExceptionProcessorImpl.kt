@@ -30,7 +30,6 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig
 import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_WINDOW_DURATION
-import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -93,25 +92,20 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
                 )
             }
 
-            log.debug {
-                "A transient exception was thrown the event that failed will be retried. event='${context.inputEvent}',  $exception"
-            }
+            log.info("Flow ${context.checkpoint.flowId} encountered a transient problem and is retrying: ${exception.message}")
 
-            /**
-             * When retrying, the flow engine switches on whether to retry a previous event on whether the current input
-             * is a Wakeup or not. The mechanism for generating the Wakeup events that would trigger a retry has been
-             * removed, however, so publishing a Wakeup here is required to keep the retry feature alive.
-             *
-             * This is really only a temporary solution and a bit of a hack. Longer term this should be replaced with
-             * the new scheduler mechanism. It may also be possible to remove all sources of transient exceptions if
-             * the state storage solution is changed, which would allow this feature to be removed entirely.
-             */
             val payload = context.inputEventPayload ?: return@withEscalation process(
                 FlowFatalException(
                     "Could not process a retry as the input event has no payload.",
                     exception
                 ), context
             )
+
+            /**
+             * As we're still inside the retry window, republish the record that needs retrying here. If the system is
+             * under load, there may be some delay before it is retried. This is reasonable however, as the system may
+             * need to wait for the underlying transient problem to clear up.
+             */
             val records = createStatusRecord(context.checkpoint.flowId) {
                 flowMessageFactory.createFlowRetryingStatusMessage(context.checkpoint)
             } + flowRecordFactory.createFlowEventRecord(context.checkpoint.flowId, payload)
@@ -194,8 +188,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             // correctly. This shouldn't matter however - in this case we're treating the issue as the flow never
             // starting at all. We'll still log that the error was seen.
             log.warn(
-                "Could not create a flow status message for a failed flow with ID $id as " +
-                        "the flow start context was missing."
+                "Could not create a flow status message for a flow with ID $id as the flow start context was missing."
             )
             listOf()
         }

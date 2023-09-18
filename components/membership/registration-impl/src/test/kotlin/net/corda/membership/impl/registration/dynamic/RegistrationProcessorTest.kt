@@ -3,6 +3,7 @@ package net.corda.membership.impl.registration.dynamic
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
@@ -37,6 +38,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
@@ -58,6 +60,7 @@ import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import java.security.PublicKey
 import java.time.Instant
 import java.util.*
 
@@ -77,21 +80,31 @@ class  RegistrationProcessorTest {
         const val testTopicKey = "key"
         const val SERIAL = 0L
 
-        val memberContext = KeyValuePairList(listOf(KeyValuePair("key", "value"), KeyValuePair(PLATFORM_VERSION, "50100")))
+        const val encodedSessionKey = "BBC123456789"
+        val memberContext = KeyValuePairList(
+            listOf(
+                KeyValuePair("key", "value"),
+                KeyValuePair(PLATFORM_VERSION, "50100"),
+                KeyValuePair(PARTY_SESSION_KEYS_PEM.format(0), encodedSessionKey),
+            )
+        )
         val registrationContext = KeyValuePairList(listOf(KeyValuePair("key-2", "value-2")))
+        val serialisedSigningKey = "456".toByteArray()
+        val signingKey = mock<PublicKey>()
         val signature = CryptoSignatureWithKey(
-            ByteBuffer.wrap("456".toByteArray()),
+            ByteBuffer.wrap(serialisedSigningKey),
             ByteBuffer.wrap("789".toByteArray())
         )
+        val signatureSpec = CryptoSignatureSpec("test", null, null)
         val signedMemberContext = SignedData(
             memberContext.toByteBuffer(),
             signature,
-            CryptoSignatureSpec("", null, null)
+            signatureSpec,
         )
         val signedRegistrationContext = SignedData(
             registrationContext.toByteBuffer(),
             signature,
-            CryptoSignatureSpec("", null, null)
+            signatureSpec,
         )
         val registrationRequest =
             MembershipRegistrationRequest(
@@ -157,8 +170,9 @@ class  RegistrationProcessorTest {
     private lateinit var deserializer: CordaAvroDeserializer<KeyValuePairList>
     private lateinit var verificationRequestResponseSerializer: CordaAvroSerializer<Any>
     private lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
-    lateinit var membershipPersistenceClient: MembershipPersistenceClient
+    private lateinit var membershipPersistenceClient: MembershipPersistenceClient
     private lateinit var membershipQueryClient: MembershipQueryClient
+    private lateinit var keyEncodingService: KeyEncodingService
     private val operation = mock<MembershipPersistenceOperation<Unit>> {
         on { createAsyncCommands() } doReturn emptyList()
     }
@@ -242,6 +256,10 @@ class  RegistrationProcessorTest {
                 )
             } doReturn MembershipQueryResult.Success(listOf(registrationRequestDetails))
         }
+        keyEncodingService = mock {
+            on { decodePublicKey(serialisedSigningKey) } doReturn signingKey
+            on { decodePublicKey(encodedSessionKey) } doReturn signingKey
+        }
 
         processor = RegistrationProcessor(
             clock,
@@ -252,6 +270,8 @@ class  RegistrationProcessorTest {
             membershipQueryClient,
             mock(),
             mock(),
+            mock(),
+            keyEncodingService,
         )
     }
 
