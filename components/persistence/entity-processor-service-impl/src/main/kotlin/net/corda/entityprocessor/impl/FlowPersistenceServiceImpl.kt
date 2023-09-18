@@ -66,7 +66,6 @@ class FlowPersistenceServiceImpl  @Activate constructor(
             }
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
-                    initialiseRpcSubscription()
                     configHandle = configurationReadService.registerComponentForUpdates(
                         coordinator,
                         setOf(BOOT_CONFIG, MESSAGING_CONFIG)

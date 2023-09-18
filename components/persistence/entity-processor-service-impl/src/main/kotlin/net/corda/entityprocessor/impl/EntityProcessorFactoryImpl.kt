@@ -1,13 +1,10 @@
 package net.corda.entityprocessor.impl
 
-import net.corda.data.flow.event.FlowEvent
-import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.entityprocessor.EntityProcessor
 import net.corda.entityprocessor.EntityProcessorFactory
 import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
-import net.corda.messaging.api.subscription.config.SyncRPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.PayloadChecker
@@ -52,20 +49,5 @@ class EntityProcessorFactoryImpl @Activate constructor(
         )
 
         return EntityProcessorImpl(subscription)
-    }
-
-    private fun initialiseRpcSubscription() {
-        val processor = UniquenessCheckRpcMessageProcessor(
-            this,
-            externalEventResponseFactory,
-            UniquenessCheckRequestAvro::class.java,
-            FlowEvent::class.java
-        )
-        lifecycleCoordinator.createManagedResource(RPC_SUBSCRIPTION) {
-            val rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, UNIQUENESS_CHECKER_PATH)
-            subscriptionFactory.createHttpRPCSubscription(rpcConfig, processor).also {
-                it.start()
-            }
-        }
     }
 }
