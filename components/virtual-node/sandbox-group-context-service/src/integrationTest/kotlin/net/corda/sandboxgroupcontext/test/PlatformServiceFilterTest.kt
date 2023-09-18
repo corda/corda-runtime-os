@@ -32,7 +32,7 @@ import org.osgi.test.junit5.service.ServiceExtension
 class PlatformServiceFilterTest {
     companion object {
         private const val PLATFORM_SERVICE_NAME = "platform.service"
-        private const val CPB = "META-INF/sandbox-messenger-cpk.cpb"
+        private const val MESSENGER_CPB = "META-INF/sandbox-messenger-cpk.cpb"
         private const val MESSENGER_FLOW = "com.example.messenger.PlatformMessengerFlow"
         private const val TIMEOUT_MILLIS = 10000L
     }
@@ -59,7 +59,7 @@ class PlatformServiceFilterTest {
     }
 
     private fun getMessageFor(filter: String?): String {
-        return virtualNode.withSandbox(CPB, FLOW, filter) { vns, ctx ->
+        return virtualNode.withSandbox(MESSENGER_CPB, FLOW, filter) { vns, ctx ->
             val messengerClass = vns.getFlowClass(MESSENGER_FLOW, ctx)
             vns.runFlow(messengerClass)
         }
