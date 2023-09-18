@@ -67,6 +67,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import kotlin.streams.toList
 import net.corda.data.identity.HoldingIdentity as AvroHoldingIdentity
 
 class MemberInfoReconcilerTest {

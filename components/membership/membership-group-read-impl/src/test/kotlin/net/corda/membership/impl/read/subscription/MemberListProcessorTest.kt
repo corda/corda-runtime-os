@@ -42,6 +42,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
@@ -49,12 +50,14 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
 
 class MemberListProcessorTest {
     companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private val clock = TestClock(Instant.ofEpochSecond(100))
         private val keyEncodingService: CipherSchemeMetadata = mock()
         private val knownKey: PublicKey = mock()
@@ -196,6 +199,12 @@ class MemberListProcessorTest {
             ).thenReturn(member.memberProvidedContext.toAvro())
         }
 
+        private var timesCallbackCalled = 0
+        private fun test(cache: MembershipGroupReadCache) {
+            logger.info("OnSnapshot finished and ${cache.javaClass.name} is ready to use.")
+            timesCallbackCalled += 1
+        }
+
         @JvmStatic
         @BeforeAll
         fun setUp() {
@@ -204,7 +213,7 @@ class MemberListProcessorTest {
                 cordaAvroSerializationFactory
             )
             membershipGroupReadCache = MembershipGroupReadCache.Impl()
-            memberListProcessor = MemberListProcessor(membershipGroupReadCache, memberInfoFactory)
+            memberListProcessor = MemberListProcessor(membershipGroupReadCache, memberInfoFactory, ::test)
             whenever(keyEncodingService.decodePublicKey(knownKeyAsString)).thenReturn(knownKey)
             whenever(keyEncodingService.encodeAsString(knownKey)).thenReturn(knownKeyAsString)
             alice = createTestMemberInfo("O=Alice,L=London,C=GB", MEMBER_STATUS_PENDING)
@@ -216,6 +225,11 @@ class MemberListProcessorTest {
             memberListFromTopic = convertToTestTopicData(listOf(alice, bob, charlie))
             mockSerializer(listOf(alice, bob, charlie))
         }
+    }
+
+    @BeforeEach
+    fun reset() {
+        timesCallbackCalled = 0
     }
 
     @AfterEach
@@ -239,6 +253,7 @@ class MemberListProcessorTest {
         assertEquals(listOf(alice, bob, charlie), membershipGroupReadCache.memberListCache.get(aliceIdentity))
         assertEquals(listOf(bob), membershipGroupReadCache.memberListCache.get(bobIdentity))
         assertEquals(listOf(charlie), membershipGroupReadCache.memberListCache.get(charlieIdentity))
+        assertThat(timesCallbackCalled).isEqualTo(1)
     }
 
     @Test
