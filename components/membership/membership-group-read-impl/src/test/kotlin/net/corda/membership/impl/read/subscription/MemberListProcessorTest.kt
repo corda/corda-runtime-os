@@ -54,6 +54,7 @@ import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
+import java.util.concurrent.atomic.AtomicInteger
 
 class MemberListProcessorTest {
     companion object {
@@ -199,10 +200,10 @@ class MemberListProcessorTest {
             ).thenReturn(member.memberProvidedContext.toAvro())
         }
 
-        private var timesCallbackCalled = 0
+        private val timesCallbackCalled = AtomicInteger(0)
         private fun test(cache: MembershipGroupReadCache) {
             logger.info("OnSnapshot finished and ${cache.javaClass.name} is ready to use.")
-            timesCallbackCalled += 1
+            timesCallbackCalled.incrementAndGet()
         }
 
         @JvmStatic
@@ -229,7 +230,7 @@ class MemberListProcessorTest {
 
     @BeforeEach
     fun reset() {
-        timesCallbackCalled = 0
+        timesCallbackCalled.set(0)
     }
 
     @AfterEach
@@ -253,7 +254,7 @@ class MemberListProcessorTest {
         assertEquals(listOf(alice, bob, charlie), membershipGroupReadCache.memberListCache.get(aliceIdentity))
         assertEquals(listOf(bob), membershipGroupReadCache.memberListCache.get(bobIdentity))
         assertEquals(listOf(charlie), membershipGroupReadCache.memberListCache.get(charlieIdentity))
-        assertThat(timesCallbackCalled).isEqualTo(1)
+        assertThat(timesCallbackCalled.get()).isEqualTo(1)
     }
 
     @Test
