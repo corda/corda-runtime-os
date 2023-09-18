@@ -27,6 +27,7 @@ data class StableResultSetImpl<R> internal constructor(
     }
 
     override fun hasNext(): Boolean {
+        // A null resume point means that the query does not have any more data to return
         return resumePoint != null
     }
 
@@ -36,22 +37,18 @@ data class StableResultSetImpl<R> internal constructor(
             throw NoSuchElementException("The result set has no more pages to query")
         }
 
-        val (serializedResults, nextResumePoint) = resultSetExecutor.execute(
-            serializedParameters,
-            if (firstExecution) null else resumePoint
-        )
+        val (serializedResults, nextResumePoint) =
+            resultSetExecutor.execute(serializedParameters, resumePoint)
 
-        if (serializedResults.size > limit) {
-            throw IllegalStateException("The query returned too many results")
-        }
+        check(serializedResults.size <= limit) {"The query returned too many results" }
 
         results = serializedResults.map { serializationService.deserialize(it.array(), resultClass) }
 
-        if (nextResumePoint != null && nextResumePoint == resumePoint) {
-            throw IllegalStateException("Infinite query detected; resume point has not been updated")
-        } else {
-            resumePoint = nextResumePoint
+        check(nextResumePoint == null || nextResumePoint != resumePoint) {
+            "Infinite query detected; resume point has not been updated"
         }
+
+        resumePoint = nextResumePoint
 
         firstExecution = false
 

@@ -10,7 +10,9 @@ import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
 import net.corda.orm.utils.transaction
 import net.corda.persistence.common.exceptions.NullParameterException
+import net.corda.utilities.debug
 import net.corda.utilities.serialization.deserialize
+import net.corda.utilities.trace
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.ledger.utxo.ContractState
@@ -42,6 +44,9 @@ class VaultNamedQueryExecutorImpl(
      * Captures data passed back and forth between this query execution and the caller in a flow
      * processor to enable subsequent pages to know where to resume from. Data is opaque outside
      * this class.
+     *
+     * This class is not part of the corda-api data module because it is not exposed outside of the
+     * internal query API.
      */
     @CordaSerializable
     data class ResumePoint(
@@ -51,7 +56,7 @@ class VaultNamedQueryExecutorImpl(
     )
 
     /*
-     * Stores query results following processing / filtering, in a form ready to return to th
+     * Stores query results following processing / filtering, in a form ready to return to the
      * caller.
      */
     private data class ProcessedQueryResults(
@@ -76,26 +81,46 @@ class VaultNamedQueryExecutorImpl(
                 .toStateAndRef(serializationService)
         }
 
-         val resumePoint: ResumePoint? by lazy {
-             created?.let { ResumePoint(created, txId, leafIdx) }
-         }
+        val resumePoint: ResumePoint? by lazy {
+            created?.let { ResumePoint(created, txId, leafIdx) }
+        }
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as RawQueryData
+
+            if (txId != other.txId) return false
+            if (leafIdx != other.leafIdx) return false
+            if (created != other.created) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = txId.hashCode()
+            result = 31 * result + leafIdx
+            result = 31 * result + (created?.hashCode() ?: 0)
+            return result
+        }
     }
 
     /*
      * Stores a set of raw query data returned from a single database query invocation. To support
-     * paging, this not only returns the raw query data, but also a `more` flag to indicate whether
-     * another page of data is available.
+     * paging, this not only returns the raw query data, but also a `hasMore` flag to indicate
+     * whether another page of data is available.
      */
     private data class RawQueryResults(
         val results: List<RawQueryData>,
-        val more: Boolean
+        val hasMore: Boolean
     )
 
     override fun executeQuery(
         request: FindWithNamedQuery
     ): EntityResponse {
 
-        log.debug("Executing query: ${request.queryName}")
+        log.debug { "Executing query: ${request.queryName}" }
 
         // Get the query from the registry and make sure it exists
         val vaultNamedQuery = registry.getQuery(request.queryName)
@@ -107,7 +132,7 @@ class VaultNamedQueryExecutorImpl(
 
         // Deserialize the parameters into readable objects instead of bytes
         val deserializedParams = request.parameters.mapValues {
-            serializationService.deserialize(it.value.array(), Any::class.java)
+            serializationService.deserialize<Any>(it.value.array())
         }
 
         // Fetch and filter the results and try to fill up the page size then map the results
@@ -118,12 +143,13 @@ class VaultNamedQueryExecutorImpl(
             deserializedParams
         )
 
-        log.trace("Fetched ${fetchedRecords.size} records in this page " +
-                "(${numberOfRowsReturned - fetchedRecords.size} records filtered)")
+        log.trace { "Fetched ${fetchedRecords.size} records in this page " +
+                "(${numberOfRowsReturned - fetchedRecords.size} records filtered)" }
 
         val filteredAndTransformedResults = fetchedRecords.mapNotNull {
             vaultNamedQuery.mapper?.transform(it, deserializedParams) ?: it
         }
+
         // Once filtering and transforming are done collector function can be applied (if present)
         val collectedResults = vaultNamedQuery.collector?.collect(
             filteredAndTransformedResults,
@@ -170,13 +196,13 @@ class VaultNamedQueryExecutorImpl(
         var currentRetry = 0
         var numberOfRowsFromQuery = 0
         var currentResumePoint = request.resumePoint?.let {
-            serializationService.deserialize(request.resumePoint.array(), ResumePoint::class.java)
+            serializationService.deserialize<ResumePoint>(request.resumePoint.array())
         }
 
         while (filteredRawData.size < request.limit && currentRetry < RESULT_SET_FILL_RETRY_LIMIT ) {
             ++currentRetry
 
-            log.trace("Executing try: $currentRetry, fetched ${filteredRawData.size} number of results so far.")
+            log.trace { "Executing try: $currentRetry, fetched ${filteredRawData.size} number of results so far." }
 
             // Fetch the state and refs for the given transaction IDs
             val rawResults = fetchStateAndRefs(
@@ -190,7 +216,7 @@ class VaultNamedQueryExecutorImpl(
                 with (rawResults) {
                     return ProcessedQueryResults(
                         results.map { it.stateAndRef },
-                        if (more) results.last().resumePoint else null,
+                        if (hasMore) results.last().resumePoint else null,
                         results.size
                     )
                 }
@@ -202,14 +228,17 @@ class VaultNamedQueryExecutorImpl(
                     filteredRawData.add(result)
                 }
 
+
                 if (filteredRawData.size >= request.limit) {
                     // Page filled. We need to set the resume point based on the final filtered
                     // result (as we may be throwing out additional records returned by the query).
+                    // Note that we should never get to the > part of the condition; this is a
+                    // purely defensive check.
                     //
                     // There are more results if either we didn't get through all the results
                     // returned by the query invocation, or if the query itself indicated there are
                     // more results to return.
-                    val moreResults = rawResults.results.size > filteredRawData.size || rawResults.more
+                    val moreResults = (result != rawResults.results.last()) || rawResults.hasMore
 
                     return ProcessedQueryResults(
                         filteredRawData.map { it.stateAndRef },
@@ -220,7 +249,7 @@ class VaultNamedQueryExecutorImpl(
             }
 
             // If we can't fetch more states we just return the result set as-is
-            if (!rawResults.more) {
+            if (!rawResults.hasMore) {
                 currentResumePoint = null
                 break
             } else {
@@ -283,7 +312,7 @@ class VaultNamedQueryExecutorImpl(
                 Tuple::class.java)
 
             if (resumePoint != null) {
-                log.debug("Query is resuming from $resumePoint")
+                log.trace { "Query is resuming from $resumePoint" }
                 query.setParameter("created", resumePoint.created)
                 query.setParameter("txId", resumePoint.txId)
                 query.setParameter("leafIdx", resumePoint.leafIdx)
@@ -305,9 +334,9 @@ class VaultNamedQueryExecutorImpl(
         return if (resultList.size > request.limit) {
             // We need to truncate the list to the number requested, but also flag that there is
             // another page to be returned
-            RawQueryResults(resultList.subList(0, request.limit).map { RawQueryData(it) }, more = true)
+            RawQueryResults(resultList.subList(0, request.limit).map { RawQueryData(it) }, hasMore = true)
         } else {
-            RawQueryResults(resultList.map { RawQueryData(it) }, more = false)
+            RawQueryResults(resultList.map { RawQueryData(it) }, hasMore = false)
         }
     }
 
