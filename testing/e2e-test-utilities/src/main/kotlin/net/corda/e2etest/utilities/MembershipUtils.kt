@@ -64,6 +64,7 @@ fun ClusterInfo.onboardMember(
     addSoftHsmFor(holdingId, CAT_SESSION_INIT)
     val sessionKeyId = createKeyFor(holdingId, "$holdingId$CAT_SESSION_INIT", CAT_SESSION_INIT, DEFAULT_KEY_SCHEME)
     var memberSessionCert: String? = null
+    val mgmSessionCertAlias = "$CERT_ALIAS_SESSION-$holdingId"
     if (useSessionCertificate) {
         val memberSessionCsr = generateCsr(x500Name, sessionKeyId, holdingId)
         memberSessionCert = getCa().generateCert(memberSessionCsr)
@@ -71,7 +72,7 @@ fun ClusterInfo.onboardMember(
             it.deleteOnExit()
             it.writeBytes(memberSessionCert.toByteArray())
         }
-        importCertificate(mgmSessionCertFile, CERT_USAGE_SESSION, "$CERT_ALIAS_SESSION-$holdingId", holdingId)
+        importCertificate(mgmSessionCertFile, CERT_USAGE_SESSION, mgmSessionCertAlias, holdingId)
     }
 
     addSoftHsmFor(holdingId, CAT_LEDGER)
@@ -95,7 +96,7 @@ fun ClusterInfo.onboardMember(
     ) + (getAdditionalContext?.let { it(holdingId) } ?: emptyMap())
 
     if (memberSessionCert != null) {
-        configureNetworkParticipant(holdingId, sessionKeyId, memberSessionCert)
+        configureNetworkParticipant(holdingId, sessionKeyId, mgmSessionCertAlias)
     } else {
         configureNetworkParticipant(holdingId, sessionKeyId)
     }
