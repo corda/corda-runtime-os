@@ -226,7 +226,7 @@ class TransactionBackchainReceiverFlowV1(
         // but its dependencies need to be retrieved and verified
         transactionsToRetrieve.filter {
             existingTransactionIdsInDb[it] == UNVERIFIED
-        }.map { transactionId ->
+        }.forEach { transactionId ->
             // Fetch the transaction object from the database, so we can get the dependencies
             val transactionFromDb = utxoLedgerPersistenceService.findSignedTransaction(
                 transactionId,
