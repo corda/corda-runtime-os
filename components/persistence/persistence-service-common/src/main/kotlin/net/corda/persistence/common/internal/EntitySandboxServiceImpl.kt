@@ -271,7 +271,7 @@ class EntitySandboxServiceImpl @Activate constructor(
             clazz.getConstructor().newInstance() as T
         } catch (e: Exception) {
             logger.error(
-                "The UTXO  state observer '${clazz}' must implement a default public constructor.",
+                "The UTXO state observer '${clazz}' must implement a default public constructor.",
                 e
             )
             null
