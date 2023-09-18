@@ -22,7 +22,6 @@ import net.corda.test.util.time.AutoTickTestClock
 import net.corda.uniqueness.utils.UniquenessAssertions
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -127,16 +126,18 @@ class UniquenessChecker {
             .POST(HttpRequest.BodyPublishers.ofByteArray(serializedPayload))
             .build()
         val response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
+
+        assertThat(response.statusCode()).isEqualTo(200)
+
         val responseBody: ByteArray = response.body()
         val responseEvent = avroFlowEventDeserializer.deserialize(responseBody)
-        val resp = avroUniquenessDeserializer.deserialize((responseEvent?.payload as ExternalEventResponse).payload.array())
+
+        assertThat(responseEvent).isNotNull
+
+        val deserializedExternalEventResponse = avroUniquenessDeserializer.deserialize((responseEvent?.payload as ExternalEventResponse).payload.array())
         // TODO: assert response
-        assertSoftly {
-            assertThat(response.statusCode()).isEqualTo(200)
-            assertThat(responseEvent).isNotNull
-            assertThat(resp).isNotNull
-            UniquenessAssertions.assertStandardSuccessResponse(resp!!, testClock)
-        }
+        assertThat(deserializedExternalEventResponse).isNotNull
+        UniquenessAssertions.assertStandardSuccessResponse(deserializedExternalEventResponse!!, testClock)
     }
 
     private val testClock = AutoTickTestClock(Instant.MAX, Duration.ofSeconds(1))
