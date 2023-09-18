@@ -3,6 +3,7 @@ package net.corda.ledger.utxo.flow.impl.flows.backchain.v1
 import net.corda.flow.application.services.FlowConfigService
 import net.corda.crypto.core.parseSecureHash
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.utxo.flow.impl.UtxoLedgerMetricRecorder
@@ -72,23 +73,12 @@ class TransactionBackchainReceiverFlowV1(
         val ledgerConfig = flowConfigService.getConfig(UTXO_LEDGER_CONFIG)
 
         val batchSize = ledgerConfig.getInt(BACKCHAIN_BATCH_CONFIG_PATH)
-
-        val existingTransactionsInDb = mutableSetOf<SecureHash>()
+        val existingTransactionIdsInDb = mutableMapOf<SecureHash, TransactionStatus>()
 
         while (transactionsToRetrieve.isNotEmpty()) {
 
-            // Fetch the existing transaction with Verified/Unverified status from the DB and store them
-            existingTransactionsInDb.addAll(
-                utxoLedgerPersistenceService.findTransactionIdsAndStatuses(
-                    // Make sure we don't fetch the same transaction multiple times
-                    (transactionsToRetrieve - existingTransactionsInDb)
-                ).filterValues {
-                    it == VERIFIED || it == UNVERIFIED
-                }.keys
-            )
+            handleExistingTransactionsAndTheirDependencies(existingTransactionIdsInDb, transactionsToRetrieve)
 
-            // Remove the transaction from the "to retrieve" set if they are in our DB
-            transactionsToRetrieve.removeAll(existingTransactionsInDb)
             val batch = transactionsToRetrieve.take(batchSize)
 
             if (batch.isEmpty()) {
@@ -210,6 +200,51 @@ class TransactionBackchainReceiverFlowV1(
                 transactionsToRetrieve.addAll(unseenDependencies)
             }
         }
+    }
+
+    private fun handleExistingTransactionsAndTheirDependencies(
+        existingTransactionIdsInDb: MutableMap<SecureHash, TransactionStatus>,
+        transactionsToRetrieve: LinkedHashSet<SecureHash>
+    ) {
+        // Fetch the existing transaction with Verified/Unverified status from the DB and store them
+        existingTransactionIdsInDb.putAll(
+            utxoLedgerPersistenceService.findTransactionIdsAndStatuses(
+                // Make sure we don't fetch the same transaction multiple times
+                (transactionsToRetrieve - existingTransactionIdsInDb.keys)
+            ).filterValues {
+                // We throw away transactions that are "INVALID"
+                it == VERIFIED || it == UNVERIFIED
+            }
+        )
+
+        // Remove the transaction from the "to retrieve" set if they are in our DB, and they are verified
+        transactionsToRetrieve.removeIf {
+            existingTransactionIdsInDb[it] == VERIFIED
+        }
+
+        // Transactions that are present in the DB with unverified status don't need to be retrieved
+        // but its dependencies need to be retrieved and verified
+        transactionsToRetrieve.filter {
+            existingTransactionIdsInDb[it] == UNVERIFIED
+        }.map { transactionId ->
+            // Fetch the transaction object from the database, so we can get the dependencies
+            val transactionFromDb = utxoLedgerPersistenceService.findSignedTransaction(
+                transactionId,
+                UNVERIFIED
+            )
+            if (transactionFromDb != null) {
+                // Add the dependencies to the "to retrieve" set
+                transactionsToRetrieve.addAll(transactionFromDb.dependencies)
+            } else {
+                log.trace {
+                    "Transaction with ID $transactionId is present in the database with unverified status " +
+                            "but could not fetch the signed transaction object and its dependencies."
+                }
+            }
+        }
+        // Once we added the unverified transactions' dependencies into the "to retrieve" set
+        // we can remove those from the set as we don't need to get those from the initiator
+        transactionsToRetrieve.removeIf { existingTransactionIdsInDb[it] == UNVERIFIED }
     }
 
     override fun equals(other: Any?): Boolean {

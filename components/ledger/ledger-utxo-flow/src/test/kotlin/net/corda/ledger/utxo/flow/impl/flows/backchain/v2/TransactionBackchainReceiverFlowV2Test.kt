@@ -94,7 +94,7 @@ class TransactionBackchainReceiverFlowV2Test {
      * requested.
      */
     @Test
-    fun `transaction will not be requested if it is present in the database`() {
+    fun `transaction will not be requested if it is present in the database (VERIFIED) and DB data will not be in the topological sort`() {
         whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
             .thenReturn(mapOf(TX_ID_1 to UNVERIFIED))
 
@@ -127,6 +127,49 @@ class TransactionBackchainReceiverFlowV2Test {
             TX_ID_2
         )).complete())
             .isEqualTo(listOf(TX_ID_2)) // TX_ID_1 is already present in the DB so should not be retrieved
+    }
+
+    /**
+     * This test is simulating a scenario where we want to fetch one transaction, but we already have that in our database.
+     * However, it is in an unverified status. In that case it will be removed from the `transactionsToRetrieve` list
+     * and will not be requested but its dependencies WILL BE requested.
+     */
+    @Test
+    fun `transaction will not be requested if it is present in the database (UNVERIFIED) but their dependencies will be`() {
+        // Have a transaction with TX_ID_2 that is unverified, but it's in the database and has dependencies
+        whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
+            .thenReturn(mapOf(TX_ID_2 to UNVERIFIED))
+
+        whenever(utxoLedgerPersistenceService.findSignedTransaction(eq(TX_ID_2), eq(UNVERIFIED)))
+            .thenReturn(retrievedTransaction1)
+
+        whenever(retrievedTransaction1.id).thenReturn(TX_ID_2)
+        whenever(retrievedTransaction1.inputStateRefs).thenReturn(listOf(TX_3_INPUT_DEPENDENCY_STATE_REF_1))
+        whenever(retrievedTransaction1.referenceStateRefs).thenReturn(emptyList())
+        whenever(retrievedTransaction1.metadata).thenReturn(tx1Metadata)
+        whenever(tx1Metadata.getMembershipGroupParametersHash()).thenReturn(groupParametersHash1.toString())
+
+        whenever(session.sendAndReceive(eq(SignedGroupParameters::class.java), any())).thenReturn(
+            groupParameters
+        )
+        whenever(groupParameters.hash).thenReturn(groupParametersHash1)
+
+        whenever(session.sendAndReceive(eq(List::class.java),
+            eq(TransactionBackchainRequestV1.Get(setOf(TX_3_INPUT_DEPENDENCY_STATE_REF_1.transactionId))))).thenReturn(
+            listOf(retrievedTransaction2)
+        )
+        whenever(retrievedTransaction2.id).thenReturn(TX_3_INPUT_DEPENDENCY_STATE_REF_1.transactionId)
+        whenever(retrievedTransaction2.inputStateRefs).thenReturn(emptyList())
+        whenever(retrievedTransaction2.referenceStateRefs).thenReturn(emptyList())
+        whenever(retrievedTransaction2.metadata).thenReturn(tx1Metadata)
+        whenever(tx1Metadata.getMembershipGroupParametersHash()).thenReturn(groupParametersHash1.toString())
+
+
+        whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(any(), eq(UNVERIFIED)))
+            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
+
+        assertThat(callTransactionBackchainReceiverFlow(setOf(TX_ID_2)).complete())
+            .isEqualTo(listOf(TX_3_INPUT_DEPENDENCY_STATE_REF_1.transactionId))
     }
 
     @Test
