@@ -1,24 +1,28 @@
 package net.corda.db.testkit.dbutilsimpl
 
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
+import net.corda.db.core.CloseableDataSource
+import net.corda.schema.configuration.DatabaseConfig
+import net.corda.test.util.LoggingUtils.emphasise
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import java.security.InvalidParameterException
 import java.sql.Connection
 
 class SQLServerHelper : AbstractDBHelper() {
-    companion object {
-        private const val MSSQL_HOST_PROPERTY = "mssqlHost"
-        private const val MSSQL_PORT_PROPERTY = "mssqlPort"
-    }
+    private val logger: Logger = LoggerFactory.getLogger(this::class.java)
 
     override fun isInMemory() = false
 
-    override fun getDatabase() = getPropertyNonBlank("mssqlDb", "")
+    override fun getDatabase() = getPropertyNonBlank(DBNAME_PROPERTY, "master")
 
-    override fun getAdminUser() = getPropertyNonBlank("mssqlUser", "sa")
+    override fun getAdminUser() = getPropertyNonBlank(DB_ADMIN_USER_PROPERTY, "sa")
 
-    override fun getAdminPassword() = getPropertyNonBlank("mssqlPassword", "password")
+    override fun getAdminPassword() = getPropertyNonBlank(DB_ADMIN_PASSWORD_PROPERTY, "yourStrong(!)Password")
 
-    override val port: String = System.getProperty(MSSQL_PORT_PROPERTY)
-
-    override val host = getPropertyNonBlank(MSSQL_HOST_PROPERTY, "localhost")
+    override val port: String = getPropertyNonBlank(DBPORT_PROPERTY, "1433")
 
     override val jdbcUrl : String
         get() {
@@ -28,11 +32,9 @@ class SQLServerHelper : AbstractDBHelper() {
 
     override val driverClass = "com.microsoft.sqlserver.jdbc.SQLServerDriver"
 
-    override fun createSchemaAndLogin(
+    fun createSchemaAndLogin(
         connection: Connection,
-        schemaName: String,
-        user: String,
-        password: String
+        schemaName: String
     ): Pair<String, String> {
         val schemaUser = "user_$schemaName"
         val schemaPassword = "password${schemaName}123(!)"
@@ -49,6 +51,59 @@ class SQLServerHelper : AbstractDBHelper() {
                 conn.commit()
         }
         return schemaUser to schemaPassword
+    }
+
+    override fun createDataSource(
+        dbUser: String?,
+        dbPassword: String?,
+        schemaName: String?,
+        createSchema: Boolean,
+        rewriteBatchedInserts: Boolean
+    ): CloseableDataSource {
+        val user = dbUser ?: getAdminUser()
+        val password = dbPassword ?: getAdminPassword()
+        var credentials = user to password
+
+        if (!schemaName.isNullOrBlank()) {
+            if (createSchema) {
+                logger.info("Creating schema: $schemaName".emphasise())
+                credentials = createSchemaAndLogin(
+                    net.corda.db.core.createDataSource(
+                        driverClass,
+                        jdbcUrl,
+                        user,
+                        password,
+                        maximumPoolSize = 1
+                    ).connection, schemaName
+                )
+            }
+            else if (dbUser.isNullOrBlank()){
+                throw InvalidParameterException("MS Sqlserver requires a schema specific user - if you set a schema," +
+                        " you must created a user for it.")
+            }
+        }
+
+        logger.info("Using URL $jdbcUrl".emphasise())
+        return net.corda.db.core.createDataSource(driverClass, jdbcUrl, credentials.first, credentials.second)
+    }
+
+    override fun createConfig(
+        inMemoryDbName: String,
+        dbUser: String?,
+        dbPassword: String?,
+        schemaName: String?
+    ): Config {
+        val user = dbUser ?: getAdminUser()
+        val password = dbPassword ?: getAdminPassword()
+        // This needs more thought: what do we do with the schema? MS SQL maps schemas to users, not by URL
+        if (!schemaName.isNullOrBlank() and dbUser.isNullOrBlank()){
+            throw InvalidParameterException("MS Sqlserver requires a schema specific user - if you set a schema," +
+                    " you must created a user for it.")
+        }
+        return ConfigFactory.empty()
+            .withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(jdbcUrl))
+            .withValue(DatabaseConfig.DB_USER, ConfigValueFactory.fromAnyRef(user))
+            .withValue(DatabaseConfig.DB_PASS, ConfigValueFactory.fromAnyRef(password))
     }
 
 }

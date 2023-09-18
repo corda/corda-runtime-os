@@ -10,16 +10,20 @@ import net.corda.orm.EntityManagerConfiguration
 
 object DbUtils {
 
-    private val isPostgres = !System.getProperty("postgresPort").isNullOrBlank()
-    private val isMSSQL = !System.getProperty("mssqlPort").isNullOrBlank()
+    private const val DBTYPE_PROPERTY = "databaseType"
 
-    private val utilsHelper: DbUtilsHelper = when {
-        isMSSQL && isPostgres -> throw IllegalArgumentException(
-            "Both postgres and SQL server are set, please only set properties for one DB type"
-        )
-        isMSSQL -> SQLServerHelper()
-        isPostgres -> PostgresHelper()
-        else -> HSQLHelper()
+    enum class DatabaseType {
+        HSQL,
+        POSTGRES,
+        MSSQL
+    }
+
+    val databaseType = DatabaseType.valueOf(System.getProperty(DBTYPE_PROPERTY, "HSQL"))
+
+    private val utilsHelper: DbUtilsHelper = when(databaseType) {
+        DatabaseType.MSSQL -> SQLServerHelper()
+        DatabaseType.POSTGRES -> PostgresHelper()
+        DatabaseType.HSQL -> HSQLHelper()
     }
 
     val isInMemory = utilsHelper.isInMemory()

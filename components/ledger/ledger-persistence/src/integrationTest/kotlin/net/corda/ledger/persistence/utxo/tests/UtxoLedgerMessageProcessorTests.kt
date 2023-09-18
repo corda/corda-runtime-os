@@ -70,7 +70,7 @@ import java.util.UUID
  *
  *     docker run --rm --name test-instance -e POSTGRES_PASSWORD=password -p 5432:5432 postgres
  *
- *     gradlew integrationTest -PpostgresPort=5432
+ *     gradlew integrationTest -PdatabaseType=POSTGRES [-PdatabaseAdminPassword=<password> -PdatabaseAdminUser=<user>]
  *
  * Rather than creating a new serializer in these tests from scratch,
  * we grab a reference to the one in the sandbox and use that to serialize and de-serialize.

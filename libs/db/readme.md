@@ -50,17 +50,30 @@ Start container like so:
 docker run --rm --name test-instance -e POSTGRES_PASSWORD=password -p 5432:5432 postgres
 ```
 
-Set the `postgresPort` gradle property, e.g.:
+Set the `databaseType` gradle property, e.g.:
 
 ```bash
-gradle clean :libs:db:osgi-integration-tests:integrationTest -PpostgresPort=5432
+gradle clean :libs:db:osgi-integration-tests:integrationTest -PdatabaseType=POSTGRES
 ```
+
+Currently supported database testing properties are:
+
+- `-PdatabaseType`: choose the type of database to connect to. Supported values
+   are `HSQL` (the default) and `POSTGRES`. There is also experimental support 
+   for MS SQL server (`MSSQL`).
+- `-PdatabasePort`: connection port for database servers. This will default to the
+   standard port for the chose DB server.
+- `-PdatabaseHost`: database host to connect to. Will default to `localhost`
+- `-PdatabaseAdminUser` and `-PdatabaseAdminPassword`: defaults depend on database type
+   chosen. This should match the respective docker command line examples.
+- `-PdatabaseName`: name of the database instance to use. Defaults depend on 
+   the chosen database type.
 
 NOTES: 
 * we cannot use the `testcontainers` library as it does not work with OSGi.
 * Change the port forwarding if needed.
 * Other postgres properties could be added (e.g. host etc)
-* System property must be set in the bndrun file, which can use gradle properties: `postgresPort=${project.postgresPort}`
+* System property must be set in the bndrun file, which can use gradle properties: `databaseType=${project.databaseType}`
 * If integration test has to be executed repeatedly `clean` or `cleanTestOSGi` target has to be executed before `integrationTest`
 or else Gradle may skip execution.
 
@@ -102,7 +115,7 @@ gradle :libs:db:osgi-integration-tests:integrationTest -D-runjdb=1046
 or against Postgres like so:
 
 ```bash
-gradle :libs:db:osgi-integration-tests:integrationTest -D-runjdb=1046 -PpostgresPort=5432
+gradle :libs:db:osgi-integration-tests:integrationTest -D-runjdb=1046 -PdatabaseType=POSTGRES
 ```
 
 ## Data definition (DDL)

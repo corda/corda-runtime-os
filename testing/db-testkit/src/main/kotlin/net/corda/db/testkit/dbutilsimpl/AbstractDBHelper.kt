@@ -1,18 +1,8 @@
 package net.corda.db.testkit.dbutilsimpl
 
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
-import net.corda.db.core.CloseableDataSource
-import net.corda.db.core.createDataSource
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.DdlManage
 import net.corda.orm.EntityManagerConfiguration
-import net.corda.schema.configuration.DatabaseConfig
-import net.corda.test.util.LoggingUtils.emphasise
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-import java.sql.Connection
 
 /**
  * An abstract class that provides common functionality for working with databases using JDBC.
@@ -30,9 +20,15 @@ import java.sql.Connection
  * @property driverClass The name of the JDBC driver to be used.
  */
 abstract class AbstractDBHelper : DbUtilsHelper {
-    abstract override fun isInMemory(): Boolean
 
-    private val logger: Logger = LoggerFactory.getLogger(this::class.java)
+    companion object {
+        const val DBPORT_PROPERTY = "databasePort"
+        const val DBHOST_PROPERTY = "databaseHost"
+        const val DBNAME_PROPERTY = "databaseName"
+        const val DB_ADMIN_USER_PROPERTY = "databaseAdminUser"
+        const val DB_ADMIN_PASSWORD_PROPERTY = "databaseAdminPassword"
+    }
+    abstract override fun isInMemory(): Boolean
 
     abstract override fun getDatabase(): String
 
@@ -42,7 +38,7 @@ abstract class AbstractDBHelper : DbUtilsHelper {
 
     abstract val port: String
 
-    abstract val host: String
+    val host: String = getPropertyNonBlank(DBHOST_PROPERTY, "localhost")
 
     abstract val jdbcUrl: String
 
@@ -60,68 +56,4 @@ abstract class AbstractDBHelper : DbUtilsHelper {
         val ds = createDataSource(dbUser, dbPassword, schemaName, createSchema, rewriteBatchedInserts)
         return DbEntityManagerConfiguration(ds, showSql, true, DdlManage.NONE)
     }
-
-    /**
-     * Creates the schema
-     * This function will also return the credentials to use for login to use
-     * as some database implementations require a mapping of user to schema.
-     */
-    abstract fun createSchemaAndLogin(connection: Connection, schemaName: String, user: String, password: String ): Pair<String, String>
-
-    override fun createDataSource(
-        dbUser: String?,
-        dbPassword: String?,
-        schemaName: String?,
-        createSchema: Boolean,
-        rewriteBatchedInserts: Boolean
-    ): CloseableDataSource {
-        val user = dbUser ?: getAdminUser()
-        val password = dbPassword ?: getAdminPassword()
-        var credentials = user to password
-
-        val jdbcUrlCopy = if (!schemaName.isNullOrBlank()) {
-            if (createSchema) {
-                logger.info("Creating schema: $schemaName".emphasise())
-                credentials = createSchemaAndLogin(
-                    createDataSource(
-                        driverClass,
-                        jdbcUrl,
-                        user,
-                        password,
-                        maximumPoolSize = 1
-                    ).connection, schemaName, user, password
-                )
-            }
-
-            if (rewriteBatchedInserts) {
-                "$jdbcUrl?currentSchema=$schemaName&reWriteBatchedInserts=true"
-            } else {
-                "$jdbcUrl?currentSchema=$schemaName"
-            }
-        } else {
-            jdbcUrl
-        }
-        logger.info("Using URL $jdbcUrlCopy".emphasise())
-        return createDataSource(driverClass, jdbcUrlCopy, credentials.first, credentials.second)
-    }
-
-    override fun createConfig(
-        inMemoryDbName: String,
-        dbUser: String?,
-        dbPassword: String?,
-        schemaName: String?
-    ): Config {
-        val user = dbUser ?: getAdminUser()
-        val password = dbPassword ?: getAdminPassword()
-        val currentJdbcUrl = if (!schemaName.isNullOrBlank()) {
-            "$jdbcUrl?currentSchema=$schemaName"
-        } else {
-            jdbcUrl
-        }
-        return ConfigFactory.empty()
-            .withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(currentJdbcUrl))
-            .withValue(DatabaseConfig.DB_USER, ConfigValueFactory.fromAnyRef(user))
-            .withValue(DatabaseConfig.DB_PASS, ConfigValueFactory.fromAnyRef(password))
-    }
-
 }
