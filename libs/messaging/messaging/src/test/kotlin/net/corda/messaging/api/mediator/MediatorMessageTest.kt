@@ -1,46 +1,46 @@
-package net.corda.messagebus.api.producer
+package net.corda.messaging.api.mediator
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 
-class CordaMessageTest {
+class MediatorMessageTest {
     private val payload: String = "payload"
     private val topicKey: String = "topic"
     private val topicValue: String = "topic"
     private val partitionKey: String = "partition"
     private val partitionValue: Long = 1L
 
-    private val defaultMessage: CordaMessage<Any> = CordaMessage(payload, mutableMapOf(
+    private val defaultMessage: MediatorMessage<Any> = MediatorMessage(payload, mutableMapOf(
         topicKey to topicValue,
         partitionKey to partitionValue
     ))
 
     @Test
     fun `Test add property (string)`() {
-        val message: CordaMessage<Any> = CordaMessage(payload)
+        val message: MediatorMessage<Any> = MediatorMessage(payload)
         message.addProperty(topicKey, topicValue)
 
-        assertEquals(message.props, mutableMapOf(topicKey to topicValue))
+        assertEquals(message.properties, mutableMapOf(topicKey to topicValue))
     }
 
     @Test
     fun `Test add property (long)`() {
-        val message: CordaMessage<Any> = CordaMessage(payload)
+        val message: MediatorMessage<Any> = MediatorMessage(payload)
         message.addProperty(partitionKey, partitionValue)
 
-        assertEquals(message.props, mutableMapOf(partitionKey to partitionValue))
+        assertEquals(message.properties, mutableMapOf(partitionKey to partitionValue))
     }
 
     @Test
     fun `Test create message with props`() {
-        val message: CordaMessage<Any> = CordaMessage(payload, mutableMapOf(
+        val message: MediatorMessage<Any> = MediatorMessage(payload, mutableMapOf(
             topicKey to topicValue,
             partitionKey to partitionValue
         ))
 
-        assertEquals(message.props, mutableMapOf(topicKey to topicValue, partitionKey to partitionValue))
+        assertEquals(message.properties, mutableMapOf(topicKey to topicValue, partitionKey to partitionValue))
     }
 
     @Test

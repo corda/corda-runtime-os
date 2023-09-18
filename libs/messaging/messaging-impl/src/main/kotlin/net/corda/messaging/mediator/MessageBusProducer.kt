@@ -1,31 +1,25 @@
-package net.corda.messagebus.kafka.producer
+package net.corda.messaging.mediator
 
-import io.micrometer.core.instrument.binder.MeterBinder
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
-import net.corda.messagebus.api.producer.CordaMessage
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
-import net.corda.messagebus.api.producer.MessageProducer
-import net.corda.metrics.CordaMetrics
+import net.corda.messaging.api.mediator.MediatorMessage
+import net.corda.messaging.api.mediator.MediatorProducer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-class MessageProducerImpl(
-    private val clientId: String,
+class MessageBusProducer(
+    override val id: String,
     private val producer: CordaProducer,
-    private val producerMetricsBinder: MeterBinder,
-) : MessageProducer {
-    init {
-        producerMetricsBinder.bindTo(CordaMetrics.registry)
-    }
+) : MediatorProducer {
 
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun send(message: CordaMessage<*>): Deferred<CordaMessage<*>?> =
-        CompletableDeferred<CordaMessage<*>?>().apply {
+    override fun send(message: MediatorMessage<*>): Deferred<MediatorMessage<*>?> =
+        CompletableDeferred<MediatorMessage<*>?>().apply {
             producer.send(message.toCordaProducerRecord()) { ex ->
                 if (ex != null) {
                     completeExceptionally(ex)
@@ -40,16 +34,13 @@ class MessageProducerImpl(
             producer.close()
         } catch (ex: Exception) {
             log.info(
-                "MessageProducerImpl failed to close producer safely. This can be observed when there are " +
-                        "no reachable brokers. ClientId: $clientId", ex
+                "Failed to close producer [$id] safely.", ex
             )
-        } finally {
-            (producerMetricsBinder as? AutoCloseable)?.close()
         }
     }
 }
 
-private fun CordaMessage<*>.toCordaProducerRecord() : CordaProducerRecord<*, *> {
+private fun MediatorMessage<*>.toCordaProducerRecord() : CordaProducerRecord<*, *> {
     return CordaProducerRecord(
         topic = this.getProperty<String>("topic"),
         key = this.getProperty("key"),

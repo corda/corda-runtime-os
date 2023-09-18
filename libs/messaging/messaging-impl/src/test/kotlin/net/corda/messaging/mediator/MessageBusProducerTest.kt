@@ -1,12 +1,10 @@
-package net.corda.messaging.kafka.subscription.net.corda.messagebus.kafka.producer
+package net.corda.messaging.mediator
 
-import io.micrometer.core.instrument.binder.kafka.KafkaClientMetrics
 import kotlinx.coroutines.runBlocking
-import net.corda.messagebus.api.producer.CordaMessage
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
-import net.corda.messagebus.kafka.producer.MessageProducerImpl
-import org.apache.kafka.common.KafkaException
+import net.corda.messaging.api.mediator.MediatorMessage
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -18,29 +16,28 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
-class MessageProducerImplTest {
+class MessageBusProducerTest {
     private lateinit var cordaProducer: CordaProducer
-    private lateinit var messageProducer: MessageProducerImpl
+    private lateinit var mediatorProducer: MessageBusProducer
 
-    private val metricsBinder: KafkaClientMetrics = mock()
     private val defaultHeaders: List<Pair<String, String>> = emptyList()
     private val messageProps: MutableMap<String, Any> = mutableMapOf(
         "topic" to "topic",
         "key" to "key",
         "headers" to defaultHeaders
     )
-    private val message: CordaMessage<Any> = CordaMessage("value", messageProps)
+    private val message: MediatorMessage<Any> = MediatorMessage("value", messageProps)
 
 
     @BeforeEach
     fun setup() {
         cordaProducer = mock()
-        messageProducer = MessageProducerImpl("client-id", cordaProducer, metricsBinder)
+        mediatorProducer = MessageBusProducer("client-id", cordaProducer)
     }
 
     @Test
     fun testSend() {
-        messageProducer.send(message)
+        mediatorProducer.send(message)
 
         val expected = CordaProducerRecord(
             message.getProperty<String>("topic"),
@@ -59,18 +56,17 @@ class MessageProducerImplTest {
             message.payload
         )
 
-        doThrow(KafkaException("")).whenever(cordaProducer).send(eq(record), any())
-        assertThrows<KafkaException> {
+        doThrow(CordaRuntimeException("")).whenever(cordaProducer).send(eq(record), any())
+        assertThrows<CordaRuntimeException> {
             runBlocking {
-                messageProducer.send(message).await()
+                mediatorProducer.send(message).await()
             }
         }
     }
 
     @Test
     fun testClose() {
-        messageProducer.close()
+        mediatorProducer.close()
         verify(cordaProducer, times(1)).close()
-        verify(metricsBinder, times(1)).close()
     }
 }

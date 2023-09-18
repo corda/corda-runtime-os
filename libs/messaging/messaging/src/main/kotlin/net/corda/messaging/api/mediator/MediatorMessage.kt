@@ -1,22 +1,22 @@
-package net.corda.messagebus.api.producer
+package net.corda.messaging.api.mediator
 
 /**
- * Object to encapsulate a generic producer message.
+ * Object to encapsulate a generic mediator message.
  * @property payload the payload of the message.
- * @property props an additional properties map.
+ * @property properties an additional properties map.
  */
-@Suppress("UNCHECKED_CAST")
-data class CordaMessage<T: Any>(
+data class MediatorMessage<T: Any>(
     val payload: T?,
-    val props: MutableMap<String, Any> = mutableMapOf()
+    val properties: MutableMap<String, Any> = mutableMapOf()
 ) {
     /**
      * Adds a new property to the internal storage.
      *
-     * @param property A key value [Pair] to insert into our additional properties map.
+     * @param key Property key.
+     * @param value Property value.
      */
     fun addProperty(key: String, value: Any) {
-        props[key] = value
+        properties[key] = value
     }
 
     /**
@@ -51,7 +51,7 @@ data class CordaMessage<T: Any>(
      * @return The property associated with the given key, or null if not found.
      */
     fun getPropertyOrNull(key: String) : Any? {
-        return props[key]
+        return properties[key]
     }
 
     /**
@@ -63,7 +63,7 @@ data class CordaMessage<T: Any>(
      */
     @JvmName("getPropertyOrNullTyped")
     inline fun <reified T> getPropertyOrNull(key: String) : T? {
-        val value = props[key] ?: return null
+        val value = properties[key] ?: return null
         return (value as? T)
             ?: throw ClassCastException(
                 "Property '$key' could not be cast to type: '${T::class.java}'."
