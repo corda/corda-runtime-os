@@ -23,7 +23,7 @@ class ProducerTask<K: Any, S: Any, E: Any>(
 
     override fun call(): Result<K, S, E> {
         val destination = messageRouter.getDestination(message)
-        val reply = with(destination) { producer.send(message, address) }
+        val reply = with(destination) { producer.send(message, endpoint) }
         return Result(this, reply.reply)
     }
 }

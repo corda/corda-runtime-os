@@ -20,8 +20,9 @@ interface MediatorProducer: AutoCloseable {
      * Sends message to producer's endpoint and returns reply.
      *
      * @param message Message
+     * @param endpoint Endpoint where messages is sent to.
      * @returns ProducerReply Holds producer's reply if producer supports request-reply messaging pattern
      *   (@see [isRequestReply]).
      */
-    fun send(message: MediatorMessage, address: String): ProducerReply
+    fun send(message: MediatorMessage, endpoint: String): ProducerReply
 }

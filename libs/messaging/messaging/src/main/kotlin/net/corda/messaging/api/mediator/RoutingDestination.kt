@@ -5,10 +5,10 @@ package net.corda.messaging.api.mediator
  */
 data class RoutingDestination(
     val producer: MediatorProducer,
-    val address: String,
+    val endpoint: String,
 ) {
     companion object {
-        fun routeTo(producer: MediatorProducer, address: String) =
-            RoutingDestination(producer, address)
+        fun routeTo(producer: MediatorProducer, endpoint: String) =
+            RoutingDestination(producer, endpoint)
     }
 }

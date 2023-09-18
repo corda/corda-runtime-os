@@ -13,7 +13,7 @@ class MessageBusProducer(
     private val producer: CordaProducer,
 ): MediatorProducer {
 
-    override fun send(message: MediatorMessage, address: String): ProducerReply {
+    override fun send(message: MediatorMessage, endpoint: String): ProducerReply {
         TODO("Not implemented yet")
     }
 
