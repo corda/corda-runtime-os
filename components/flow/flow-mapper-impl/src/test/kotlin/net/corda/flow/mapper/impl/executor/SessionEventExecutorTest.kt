@@ -23,6 +23,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.lang.IllegalArgumentException
 import java.nio.ByteBuffer
 import java.time.Instant
 
@@ -183,6 +184,24 @@ class SessionEventExecutorTest {
             sessionInitProcessor
         ).execute()
         verify(sessionInitProcessor, times(1)).processSessionInit(any(), any(), any(), any())
+    }
+
+    @Test
+    fun `Session data with null state and null session init, when record factory throws returns no records`() {
+        val payload =
+            buildSessionEvent(MessageDirection.OUTBOUND, sessionId, 1, SessionData(ByteBuffer.allocate(1), null))
+        whenever(recordFactory.sendBackError(any(), any(), any(), any())).thenThrow(IllegalArgumentException())
+        val output = SessionEventExecutor(
+            sessionId,
+            payload,
+            null,
+            flowConfig,
+            recordFactory,
+            Instant.now(),
+            sessionInitProcessor
+        ).execute()
+        verify(sessionInitProcessor, times(0)).processSessionInit(any(), any(), any(), any())
+        assertThat(output.outputEvents.size).isEqualTo(0)
     }
 
 }
