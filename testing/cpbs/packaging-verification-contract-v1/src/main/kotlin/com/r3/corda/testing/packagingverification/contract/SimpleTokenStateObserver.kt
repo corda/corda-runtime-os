@@ -11,7 +11,11 @@ import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 class SimpleTokenStateObserver : UtxoTokenTransactionStateObserver<SimpleState> {
     override fun getStateType() = SimpleState::class.java
 
-    override fun onCommit(stateAndRef: StateAndRef<SimpleState>, transaction: UtxoLedgerTransaction, digestService: DigestService) = UtxoToken(
+    override fun onCommit(
+        stateAndRef: StateAndRef<SimpleState>,
+        transaction: UtxoLedgerTransaction,
+        digestService: DigestService
+    ) = UtxoToken(
         UtxoTokenPoolKey(STATE_NAME, stateAndRef.state.contractState.issuer.toSecureHash(digestService), STATE_SYMBOL),
         stateAndRef.state.contractState.value.toBigDecimal(),
         UtxoTokenFilterFields()
