@@ -3,6 +3,7 @@ package net.corda.ledger.utxo.flow.impl.flows.backchain.v1
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.flow.application.services.FlowConfigService
 import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
+import net.corda.ledger.common.data.transaction.TransactionStatus.INVALID
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.utxo.flow.impl.UtxoLedgerMetricRecorder
@@ -15,6 +16,7 @@ import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
@@ -22,6 +24,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -136,6 +139,39 @@ class TransactionBackchainReceiverFlowV1Test {
 
         assertThat(callTransactionBackchainReceiverFlow(setOf(TX_ID_2)).complete())
             .isEqualTo(listOf(TX_3_INPUT_DEPENDENCY_STATE_REF_1.transactionId))
+    }
+
+    /**
+     * This test is simulating a scenario where we want to fetch a transaction that has one dependency.
+     * Both the transaction and its dependency is in the database but the dependency has an INVALID status.
+     * The flow should throw an exception in this case.
+     */
+    @Test
+    fun `flow will throw exception if any of the transactions are invalid`() {
+        // Have a transaction with TX_ID_2 that is unverified, but it's in the database and has dependencies
+        whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
+            .thenReturn(mapOf(
+                TX_ID_2 to UNVERIFIED,
+                TX_3_INPUT_DEPENDENCY_STATE_REF_1.transactionId to INVALID
+            ))
+
+        whenever(utxoLedgerPersistenceService.findSignedTransaction(eq(TX_ID_2), eq(UNVERIFIED)))
+            .thenReturn(retrievedTransaction1)
+
+        whenever(retrievedTransaction1.id).thenReturn(TX_ID_2)
+        whenever(retrievedTransaction1.inputStateRefs).thenReturn(listOf(TX_3_INPUT_DEPENDENCY_STATE_REF_1))
+        whenever(retrievedTransaction1.referenceStateRefs).thenReturn(emptyList())
+
+        whenever(retrievedTransaction2.id).thenReturn(TX_3_INPUT_DEPENDENCY_STATE_REF_1.transactionId)
+        whenever(retrievedTransaction2.inputStateRefs).thenReturn(emptyList())
+        whenever(retrievedTransaction2.referenceStateRefs).thenReturn(emptyList())
+
+        val exception = assertThrows<CordaRuntimeException> {
+            callTransactionBackchainReceiverFlow(setOf(TX_ID_2))
+        }
+
+        assertThat(exception).hasStackTraceContaining("Found the following invalid transaction(s) during back-chain resolution: " +
+            "[${TX_3_INPUT_DEPENDENCY_STATE_REF_1.transactionId}]. Back-chain resolution cannot be continued.")
     }
 
     @Test

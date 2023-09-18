@@ -4,6 +4,7 @@ import net.corda.flow.application.services.FlowConfigService
 import net.corda.crypto.core.parseSecureHash
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.common.data.transaction.TransactionStatus.INVALID
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.utxo.flow.impl.UtxoLedgerMetricRecorder
@@ -31,6 +32,9 @@ import org.slf4j.LoggerFactory
  * The V2 protocol is an extension of the V1 protocol, which can be enabled via a switch (on both sides).
  * In order to avoid huge code duplication, we kept V1 class implementing both protocols and added a switch that makes
  * it behave according to the V2 protocol.
+ *
+ * This flow will throw a [CordaRuntimeException] if we found any transactions in the database with an [INVALID] status
+ * during the back-chain resolution.
  */
 
 @CordaSystemFlow
@@ -206,13 +210,22 @@ class TransactionBackchainReceiverFlowV1(
         existingTransactionIdsInDb: MutableMap<SecureHash, TransactionStatus>,
         transactionsToRetrieve: LinkedHashSet<SecureHash>
     ) {
+
+        val transactionsFromDb = utxoLedgerPersistenceService.findTransactionIdsAndStatuses(
+            // Make sure we don't fetch the same transaction multiple times
+            (transactionsToRetrieve - existingTransactionIdsInDb.keys)
+        )
+
+        // Check if we have any invalid transactions. If yes, we can't continue the back-chain resolution.
+        val invalidTransactions = transactionsFromDb.filterValues { it == INVALID }.keys
+        if (invalidTransactions.isNotEmpty()) {
+            throw InvalidBackchainException("Found the following invalid transaction(s) during back-chain resolution: " +
+                    "$invalidTransactions. Back-chain resolution cannot be continued.")
+        }
+
         // Fetch the existing transaction with Verified/Unverified status from the DB and store them
         existingTransactionIdsInDb.putAll(
-            utxoLedgerPersistenceService.findTransactionIdsAndStatuses(
-                // Make sure we don't fetch the same transaction multiple times
-                (transactionsToRetrieve - existingTransactionIdsInDb.keys)
-            ).filterValues {
-                // We throw away transactions that are "INVALID"
+            transactionsFromDb.filterValues {
                 it == VERIFIED || it == UNVERIFIED
             }
         )
@@ -283,3 +296,5 @@ class TransactionBackchainReceiverFlowV1(
         return result
     }
 }
+
+class InvalidBackchainException(message: String) : CordaRuntimeException(message, null)
