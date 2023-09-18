@@ -22,7 +22,7 @@ import net.corda.rest.response.ResponseEntity
 interface KeyRotationRestResource : RestResource {
 
     /**
-     * The [getRotationStatus] gets a list of unmanaged wrapping keys [{alias, [requestIds]}] where requestIds is
+     * The [getKeyRotationStatus] gets a list of unmanaged wrapping keys [{alias, [requestIds]}] where requestIds is
      *                         list of rotations runs in progress.
      *
      * @return A list of unmanaged wrapping keys [{alias, [requestIds]}] where requestIds is
@@ -33,7 +33,7 @@ interface KeyRotationRestResource : RestResource {
         description = "This method gets the status of the current rotation.",
         responseDescription = "",
     )
-    fun getRotationStatus(): List<Pair<String, List<String>>>
+    fun getKeyRotationStatus(): List<Pair<String, List<String>>>
 
     /**
      * Initiates the key rotation process. 
