@@ -42,7 +42,7 @@ fun ClusterInfo.onboardMgm(
             it.deleteOnExit()
             it.writeBytes(mgmSessionCert.toByteArray())
         }
-        importCertificate(mgmSessionCertFile, CERT_USAGE_SESSION, "$CERT_ALIAS_SESSION-$mgmHoldingId")
+        importCertificate(mgmSessionCertFile, CERT_USAGE_SESSION, "$CERT_ALIAS_SESSION-$mgmHoldingId", mgmHoldingId)
     }
 
     addSoftHsmFor(mgmHoldingId, CAT_PRE_AUTH)

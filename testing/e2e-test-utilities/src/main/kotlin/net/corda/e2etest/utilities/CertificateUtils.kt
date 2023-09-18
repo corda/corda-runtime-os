@@ -85,12 +85,13 @@ fun ClusterInfo.generateCsr(
 fun ClusterInfo.importCertificate(
     file: File,
     usage: String,
-    alias: String
+    alias: String,
+    holdingIdentity: String? = null
 ) {
     cluster {
         assertWithRetryIgnoringExceptions {
             interval(1.seconds)
-            command { importCertificate(file, usage, alias) }
+            command { importCertificate(file, usage, alias, holdingIdentity) }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
         }
     }

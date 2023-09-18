@@ -102,12 +102,30 @@ class ClusterBuilder {
     fun deprecatedImportCertificate(resourceName: String, usage: String, alias: String) =
         uploadCertificateResource("/api/${RestApiVersion.C5_0.versionPath}/certificates/cluster/$usage", resourceName, alias)
 
+    /**
+     * If [holdingIdentity] is not specified, it will be uploaded as a cluster-level certificate.
+     * If [holdingIdentity] is specified, it will be uploaded as a vnode-level certificate under the specified vnode.
+     */
+    fun importCertificate(file: File, usage: String, alias: String, holdingIdentityId: String?): SimpleResponse {
+        return if (holdingIdentityId == null) {
+            importClusterCertificate(file, usage, alias)
+        } else {
+            importVnodeCertificate(file, usage, alias, holdingIdentityId)
+        }
+    }
 
-    fun importCertificate(file: File, usage: String, alias: String) =
+    private fun importClusterCertificate(file: File, usage: String, alias: String) =
         uploadCertificateFile(
             "/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.certificatePath()}/cluster/$usage",
             file,
             alias,
+        )
+
+    private fun importVnodeCertificate(file: File, usage: String, alias: String, holdingIdentityId: String) =
+        uploadCertificateFile(
+            "/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.certificatePath()}/vnode/$holdingIdentityId/$usage",
+            file,
+            alias
         )
 
     fun getCertificateChain(usage: String, alias: String) =
