@@ -161,9 +161,6 @@ class TransactionBackchainReceiverFlowV1(
             return
         }
 
-        if (utxoLedgerGroupParametersPersistenceService.find(groupParametersHash) != null) {
-            return
-        }
         log.trace {
             "Backchain resolution of $initialTransactionIds - Retrieving group parameters ($groupParametersHash) " +
                     "for transaction (${retrievedTransaction.id})"
