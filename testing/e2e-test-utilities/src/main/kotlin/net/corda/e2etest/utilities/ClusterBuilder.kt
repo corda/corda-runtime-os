@@ -590,9 +590,9 @@ class ClusterBuilder {
     fun configureNetworkParticipant(
         holdingIdentityShortHash: String,
         sessionKeyId: String,
-        sessionKeyCertAlias: String? = null
+        sessionCertAlias: String? = null
     ): SimpleResponse {
-        val body = if (sessionKeyCertAlias == null) {
+        val body = if (sessionCertAlias == null) {
             """
                 {
                     "p2pTlsCertificateChainAlias": "$CERT_ALIAS_P2P",
@@ -611,7 +611,7 @@ class ClusterBuilder {
                     "sessionKeysAndCertificates": [{
                       "preferred": true,
                       "sessionKeyId": "$sessionKeyId",
-                      "sessionCertificateChainAlias": "$sessionKeyCertAlias"
+                      "sessionCertificateChainAlias": "$sessionCertAlias"
                     }]
                 }
             """.trimIndent()

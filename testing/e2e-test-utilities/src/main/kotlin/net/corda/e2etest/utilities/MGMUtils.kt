@@ -35,6 +35,7 @@ fun ClusterInfo.onboardMgm(
         mgmHoldingId, "$mgmHoldingId$CAT_SESSION_INIT", CAT_SESSION_INIT, DEFAULT_KEY_SCHEME
     )
     var mgmSessionCert: String? = null
+    val mgmSessionCertAlias = "$CERT_ALIAS_SESSION-$mgmHoldingId"
     if (groupPolicyConfig.sessionPkiMode == "Standard") {
         val mgmSessionCsr = generateCsr(mgmName, sessionKeyId, mgmHoldingId)
         mgmSessionCert = getCa().generateCert(mgmSessionCsr)
@@ -42,7 +43,7 @@ fun ClusterInfo.onboardMgm(
             it.deleteOnExit()
             it.writeBytes(mgmSessionCert.toByteArray())
         }
-        importCertificate(mgmSessionCertFile, CERT_USAGE_SESSION, "$CERT_ALIAS_SESSION-$mgmHoldingId", mgmHoldingId)
+        importCertificate(mgmSessionCertFile, CERT_USAGE_SESSION, mgmSessionCertAlias, mgmHoldingId)
     }
 
     addSoftHsmFor(mgmHoldingId, CAT_PRE_AUTH)
@@ -68,7 +69,7 @@ fun ClusterInfo.onboardMgm(
     }
     val registrationId = register(mgmHoldingId, registrationContext, waitForApproval = true)
     if (mgmSessionCert != null) {
-        configureNetworkParticipant(mgmHoldingId, sessionKeyId, mgmSessionCert)
+        configureNetworkParticipant(mgmHoldingId, sessionKeyId, mgmSessionCertAlias)
     } else {
         configureNetworkParticipant(mgmHoldingId, sessionKeyId)
     }

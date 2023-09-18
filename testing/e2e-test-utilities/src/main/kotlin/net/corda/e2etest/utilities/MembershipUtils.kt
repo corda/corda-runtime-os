@@ -168,12 +168,12 @@ fun ClusterInfo.onboardNotaryMember(
 fun ClusterInfo.configureNetworkParticipant(
     holdingId: String,
     sessionKeyId: String,
-    sessionKeyCert: String? = null
+    sessionCertAlias: String? = null
 ) {
     return cluster {
         assertWithRetryIgnoringExceptions {
             interval(1.seconds)
-            command { configureNetworkParticipant(holdingId, sessionKeyId, sessionKeyCert) }
+            command { configureNetworkParticipant(holdingId, sessionKeyId, sessionCertAlias) }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
             failMessage("Failed to configure member '$holdingId' as a network participant")
         }
