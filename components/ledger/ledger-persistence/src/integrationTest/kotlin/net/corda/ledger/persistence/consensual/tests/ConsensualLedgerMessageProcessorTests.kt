@@ -128,7 +128,6 @@ class ConsensualLedgerMessageProcessorTests {
         val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
 
         val transaction = createTestTransaction(ctx)
-        // transaction.wireTransaction.componentGroupLists.mapIndexed { i, it -> it.mapIndexed { j, d -> println("   QQ Q   $i $j: ${d.decodeToString()}") } }
 
         // Serialise tx into bytebuffer and add to PersistTransaction payload
         val serializedTransaction = ctx.serialize(transaction)
@@ -181,7 +180,6 @@ class ConsensualLedgerMessageProcessorTests {
         assertThat(entityResponse.results).hasSize(1)
         val retrievedTransaction = ctx.deserialize<SignedTransactionContainer>(entityResponse.results.first())
         assertThat(retrievedTransaction).isEqualTo(transaction)
-        // todo re-check with CORE-12472
         assertThat(entityResponse.results.first()).isEqualTo(serializedTransaction)
     }
 
