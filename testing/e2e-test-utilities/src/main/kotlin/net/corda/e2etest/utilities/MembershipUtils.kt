@@ -14,7 +14,6 @@ import java.io.File
 private val mapper = ObjectMapper()
 
 const val MEMBER_STATUS_ACTIVE = "ACTIVE"
-const val MEMBER_STATUS_SUSPENDED = "SUSPENDED"
 const val REGISTRATION_KEY_PRE_AUTH = "corda.auth.token"
 const val REGISTRATION_DECLINED = "DECLINED"
 const val REGISTRATION_INVALID = "INVALID"
