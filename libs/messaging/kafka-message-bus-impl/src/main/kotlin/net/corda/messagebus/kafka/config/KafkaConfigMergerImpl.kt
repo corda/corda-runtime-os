@@ -14,14 +14,13 @@ import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PROPERTIES_COMMO
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Component
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @Component(service = [BusConfigMerger::class])
 class KafkaConfigMergerImpl : BusConfigMerger {
 
     private companion object {
-        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun getMessagingConfig(bootConfig: SmartConfig, messagingConfig: SmartConfig?): SmartConfig {

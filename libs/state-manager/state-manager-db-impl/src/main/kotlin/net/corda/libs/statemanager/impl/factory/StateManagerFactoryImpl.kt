@@ -6,6 +6,7 @@ import net.corda.libs.configuration.getIntOrDefault
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.libs.statemanager.impl.StateManagerImpl
+import net.corda.libs.statemanager.impl.configuration.StateManagerConfigProvider
 import net.corda.libs.statemanager.impl.model.v1.StateManagerEntities
 import net.corda.libs.statemanager.impl.repository.impl.StateRepositoryImpl
 import net.corda.orm.DbEntityManagerConfiguration
@@ -32,18 +33,20 @@ class StateManagerFactoryImpl @Activate constructor(
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
 ) : StateManagerFactory {
 
-    override fun create(config: SmartConfig): StateManager {
-        val user = config.getString(JDBC_USER)
-        val pass = config.getString(JDBC_PASS)
-        val jdbcUrl = config.getString(JDBC_URL)
-        val jdbcDiver = config.getString(JDBC_DRIVER)
-        val persistenceUnitName = config.getString(JDBC_PERSISTENCE_UNIT_NAME)
-        val maxPoolSize = config.getInt(JDBC_POOL_MAX_SIZE)
-        val minPoolSize = config.getIntOrDefault(JDBC_POOL_MIN_SIZE, maxPoolSize)
-        val idleTimeout = config.getInt(JDBC_POOL_IDLE_TIMEOUT_SECONDS).toLong().run(Duration::ofSeconds)
-        val maxLifetime = config.getInt(JDBC_POOL_MAX_LIFETIME_SECONDS).toLong().run(Duration::ofSeconds)
-        val keepAliveTime = config.getInt(JDBC_POOL_KEEP_ALIVE_TIME_SECONDS).toLong().run(Duration::ofSeconds)
-        val validationTimeout = config.getInt(JDBC_POOL_VALIDATION_TIMEOUT_SECONDS).toLong().run(Duration::ofSeconds)
+    override fun create(messagingConfig: SmartConfig): StateManager {
+        val configWithFallback = StateManagerConfigProvider.getConfigWithFallback(messagingConfig)
+
+        val user = configWithFallback.getString(JDBC_USER)
+        val pass = configWithFallback.getString(JDBC_PASS)
+        val jdbcUrl = configWithFallback.getString(JDBC_URL)
+        val jdbcDiver = configWithFallback.getString(JDBC_DRIVER)
+        val persistenceUnitName = configWithFallback.getString(JDBC_PERSISTENCE_UNIT_NAME)
+        val maxPoolSize = configWithFallback.getInt(JDBC_POOL_MAX_SIZE)
+        val minPoolSize = configWithFallback.getIntOrDefault(JDBC_POOL_MIN_SIZE, maxPoolSize)
+        val idleTimeout = configWithFallback.getInt(JDBC_POOL_IDLE_TIMEOUT_SECONDS).toLong().run(Duration::ofSeconds)
+        val maxLifetime = configWithFallback.getInt(JDBC_POOL_MAX_LIFETIME_SECONDS).toLong().run(Duration::ofSeconds)
+        val keepAliveTime = configWithFallback.getInt(JDBC_POOL_KEEP_ALIVE_TIME_SECONDS).toLong().run(Duration::ofSeconds)
+        val validationTimeout = configWithFallback.getInt(JDBC_POOL_VALIDATION_TIMEOUT_SECONDS).toLong().run(Duration::ofSeconds)
 
         val dataSource = HikariDataSourceFactory().create(
             username = user,

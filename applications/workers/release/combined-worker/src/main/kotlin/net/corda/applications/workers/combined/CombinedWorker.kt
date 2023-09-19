@@ -1,5 +1,7 @@
 package net.corda.applications.workers.combined
 
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory.fromAnyRef
 import net.corda.application.dbsetup.PostgresDbSetup
 import net.corda.applications.workers.workercommon.ApplicationBanner
@@ -35,8 +37,14 @@ import net.corda.processors.token.cache.TokenCacheProcessor
 import net.corda.processors.uniqueness.UniquenessProcessor
 import net.corda.processors.verification.VerificationProcessor
 import net.corda.schema.configuration.BootConfig
+import net.corda.schema.configuration.BootConfig.BOOT_JDBC_PASS
+import net.corda.schema.configuration.BootConfig.BOOT_JDBC_URL
+import net.corda.schema.configuration.BootConfig.BOOT_JDBC_USER
+import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER_DB_PASS
+import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER_DB_USER
+import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER_JDBC_URL
+import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER_TYPE
 import net.corda.schema.configuration.DatabaseConfig
-import net.corda.schema.configuration.MessagingConfig.StateManager
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.tracing.configureTracing
 import net.corda.tracing.shutdownTracing
@@ -47,7 +55,6 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
-import java.time.Duration
 
 
 // We use a different port for the combined worker since it is often run on Macs, which 
@@ -103,6 +110,10 @@ class CombinedWorker @Activate constructor(
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private const val DEFAULT_BOOT_STATE_MANAGER_TYPE = "DATABASE"
+        private const val STATE_MANAGER_SCHEMA_NAME = "STATEMANAGER"
+        private const val MESSAGEBUS_SCHEMA_NAME = "MESSAGEBUS"
+        private const val CONFIG_SCHEMA_NAME = "CONFIG"
     }
 
     /** Parses the arguments, then initialises and starts the processors. */
@@ -121,10 +132,12 @@ class CombinedWorker @Activate constructor(
         // Extract the schemaless db url from the params, the combined worker needs this to set up all the schemas which
         // it does in the same db.
         val dbUrl = params.databaseParams[DatabaseConfig.JDBC_URL] ?: "jdbc:postgresql://localhost:5432/cordacluster"
-        // Add the config schema to the JDBC URL in the params so that any processors which need the JDBC URL are using
-        // the config schema.
-        params.addSchemaToJdbcUrl("CONFIG")
-        params.addDatabaseParam(DatabaseConfig.JDBC_URL + "_messagebus", "$dbUrl?currentSchema=MESSAGEBUS")
+
+        val dbConfig = createConfigFromParams(BootConfig.BOOT_DB, params.databaseParams)
+        val stateManagerConfig = createOrDeriveStateManagerConfig(params.defaultParams.stateManagerParams, dbConfig)
+
+        val preparedDbConfig = prepareDbConfig(dbConfig)
+        val preparedStateManagerConfig = prepareStateManagerConfig(stateManagerConfig)
 
         if (printHelpOrVersion(params.defaultParams, CombinedWorker::class.java, shutDownService)) return
         if (params.hsmId.isBlank()) {
@@ -132,14 +145,15 @@ class CombinedWorker @Activate constructor(
             params.hsmId = SOFT_HSM_ID
         }
 
-        var config = getBootstrapConfig(
+        val config = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
             listOf(
-                createConfigFromParams(BootConfig.BOOT_DB, params.databaseParams),
+                preparedDbConfig,
                 createConfigFromParams(BootConfig.BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId)),
-                createConfigFromParams(BootConfig.BOOT_REST, params.restParams)
+                createConfigFromParams(BootConfig.BOOT_REST, params.restParams),
+                preparedStateManagerConfig
             )
         )
 
@@ -150,17 +164,6 @@ class CombinedWorker @Activate constructor(
             config.getConfig(BootConfig.BOOT_DB).getString(DatabaseConfig.DB_USER) else "user"
         val dbAdminPassword = if (config.getConfig(BootConfig.BOOT_DB).hasPath(DatabaseConfig.DB_PASS))
             config.getConfig(BootConfig.BOOT_DB).getString(DatabaseConfig.DB_PASS) else "password"
-
-        // Default pool settings for State Manager
-        if (config.hasPath(BootConfig.BOOT_STATE_MANAGER)) {
-            config = config
-                .withValue(StateManager.JDBC_POOL_MIN_SIZE, fromAnyRef(1))
-                .withValue(StateManager.JDBC_POOL_MAX_SIZE, fromAnyRef(5))
-                .withValue(StateManager.JDBC_POOL_IDLE_TIMEOUT_SECONDS, fromAnyRef(Duration.ofMinutes(2).toSeconds()))
-                .withValue(StateManager.JDBC_POOL_MAX_LIFETIME_SECONDS, fromAnyRef(Duration.ofMinutes(30).toSeconds()))
-                .withValue(StateManager.JDBC_POOL_KEEP_ALIVE_TIME_SECONDS, fromAnyRef(Duration.ZERO.toSeconds()))
-                .withValue(StateManager.JDBC_POOL_VALIDATION_TIMEOUT_SECONDS, fromAnyRef(Duration.ofSeconds(5).toSeconds()))
-        }
 
         // Part of DB setup is to generate defaults for the crypto code. That currently includes a
         // default master wrapping key passphrase and salt, which we want to keep secret, and so
@@ -211,6 +214,47 @@ class CombinedWorker @Activate constructor(
         schedulerProcessor.start(config)
     }
 
+    /**
+     * Combined worker parameter for state manager's JDBC URL should be the schemaless database URL because the combined worker sets up
+     * schemas itself. However, Corda processors all expect the JDBC URL in the config to point to the config schema
+     * directly, so the name of that schema must be added to the params that are used to create the config.
+     */
+    private fun prepareStateManagerConfig(stateManagerConfig: Config): Config {
+        // add the state manager schema to the JDBC URL.
+        return stateManagerConfig.withValue(
+            BOOT_STATE_MANAGER_JDBC_URL,
+            fromAnyRef("${stateManagerConfig.getString(BOOT_STATE_MANAGER_JDBC_URL)}?currentSchema=$STATE_MANAGER_SCHEMA_NAME")
+        )
+    }
+
+    /**
+     * When no state manager configuration is provided, we default to the cluster db configuration. Note, this JDBC URL is before any
+     * preparation or alteration performed in [prepareDbConfig].
+     */
+    private fun createOrDeriveStateManagerConfig(stateManagerParams: Map<String, String>, dbConfig: Config): Config {
+        return if (stateManagerParams.isEmpty()) {
+            ConfigFactory.empty()
+                .withValue(BOOT_STATE_MANAGER_TYPE, fromAnyRef(DEFAULT_BOOT_STATE_MANAGER_TYPE))
+                .withValue(BOOT_STATE_MANAGER_JDBC_URL, fromAnyRef(dbConfig.getString(BOOT_JDBC_URL)))
+                .withValue(BOOT_STATE_MANAGER_DB_USER, fromAnyRef(dbConfig.getString(BOOT_JDBC_USER)))
+                .withValue(BOOT_STATE_MANAGER_DB_PASS, fromAnyRef(dbConfig.getString(BOOT_JDBC_PASS)))
+        } else {
+            createConfigFromParams(BootConfig.BOOT_STATE_MANAGER, stateManagerParams)
+        }
+    }
+
+    /**
+     * Combined worker parameter for JDBC URL should be the schemaless database URL because the combined worker sets up
+     * schemas itself. However, Corda processors all expect the JDBC URL in the config to point to the config schema
+     * directly, so the name of that schema must be added to the params that are used to create the config.
+     */
+    private fun prepareDbConfig(dbConfig: Config): Config {
+        val tempJdbcUrl = dbConfig.getString(BOOT_JDBC_URL)
+        return dbConfig
+            .withValue(BOOT_JDBC_URL, fromAnyRef("$tempJdbcUrl?currentSchema=$CONFIG_SCHEMA_NAME"))
+            .withValue(BOOT_JDBC_URL + "_messagebus", fromAnyRef("$tempJdbcUrl?currentSchema=$MESSAGEBUS_SCHEMA_NAME"))
+    }
+
     override fun shutdown() {
         logger.info("Combined worker stopping.")
 
@@ -247,19 +291,4 @@ private class CombinedWorkerParams {
     // TODO - remove when reviewing crypto config
     @Option(names = ["--hsm-id"], description = ["HSM ID which is handled by this worker instance."])
     var hsmId = ""
-
-    /**
-     * Combined worker parameter for JDBC URL should be the schemaless database URL because the combined worker sets up
-     * schemas itself. However, Corda processors all expect the JDBC URL in the config to point to the config schema
-     * directly, so the name of that schema must be added to the params that are used to create the config.
-     */
-    fun addSchemaToJdbcUrl(schema: String) {
-        val databaseParamsWithSchema = databaseParams.toMutableMap()
-        databaseParamsWithSchema[DatabaseConfig.JDBC_URL] += "?currentSchema=$schema"
-        databaseParams = databaseParamsWithSchema.toMap()
-    }
-
-    fun addDatabaseParam(key: String, value: String) {
-        databaseParams += Pair(key, value)
-    }
 }

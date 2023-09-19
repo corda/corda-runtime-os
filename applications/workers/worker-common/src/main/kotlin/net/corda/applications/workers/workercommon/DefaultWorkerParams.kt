@@ -72,7 +72,7 @@ class DefaultWorkerParams(healthPortOverride: Int = WORKER_MONITOR_PORT) {
     var traceSamplesPerSecond: String? = null
 
     @Option(
-        names = ["-S", "--${BootConfig.BOOT_STATE_MANAGER}"],
+        names = ["--${BootConfig.BOOT_STATE_MANAGER}"],
         description = ["Configuration for the state manager."]
     )
     var stateManagerParams = emptyMap<String, String>()
