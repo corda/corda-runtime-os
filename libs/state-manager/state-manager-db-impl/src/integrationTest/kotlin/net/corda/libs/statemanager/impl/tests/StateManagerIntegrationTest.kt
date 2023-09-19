@@ -36,6 +36,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import javax.persistence.PersistenceException
@@ -390,14 +391,14 @@ class StateManagerIntegrationTest {
     @DisplayName(value = "can filter states by last update time")
     fun canFilterStatesByLastUpdatedTime() {
         val count = 10
-        val startTime = System.currentTimeMillis()
+        val startTime = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         persistStateEntities(
             (1..count),
             { _, _ -> State.VERSION_INITIAL_VALUE },
             { i, _ -> "state_$i" },
             { _, _ -> "{}" }
         )
-        val finishTime = System.currentTimeMillis()
+        val finishTime = Instant.now().truncatedTo(ChronoUnit.MILLIS)
 
         val filteredStates = stateManager.getUpdatedBetween(startTime, finishTime)
         assertThat(filteredStates).hasSize(count)
