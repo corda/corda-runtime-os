@@ -34,7 +34,7 @@ fun WireTransactionFactory.createExample(
         componentGroups +
         List(
             (metadata as TransactionMetadataInternal).getNumberOfComponentGroups() - 1 - componentGroups.size,
-        ) { emptyList() }
+        ) { arrayListOf() }
     return create(allGroupLists)
 }
 
