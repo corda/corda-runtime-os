@@ -10,5 +10,6 @@ data class InteropIdentityResponse(
     val facadeIds: List<FacadeId>,
     val applicationName: String,
     val endpointUrl: String,
-    val endpointProtocol: String
+    val endpointProtocol: String,
+    val enabled: Boolean
 )

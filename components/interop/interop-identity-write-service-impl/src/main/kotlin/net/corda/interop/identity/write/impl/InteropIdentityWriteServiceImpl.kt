@@ -79,6 +79,25 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
         }
     }
 
+    override fun updateInteropIdentityEnablement(
+        vNodeShortHash: ShortHash,
+        identity: InteropIdentity,
+        enablementState: Boolean
+    ) {
+        val updatedIdentity = InteropIdentity(
+            x500Name = identity.x500Name,
+            groupId = identity.groupId,
+            owningVirtualNodeShortHash = identity.owningVirtualNodeShortHash,
+            facadeIds = identity.facadeIds,
+            applicationName = identity.applicationName,
+            endpointUrl = identity.endpointUrl,
+            endpointProtocol = identity.endpointProtocol,
+            enabled = enablementState
+        )
+
+        writeInteropIdentityTopic(vNodeShortHash, updatedIdentity)
+    }
+
     override fun removeInteropIdentity(vNodeShortHash: ShortHash, identity: InteropIdentity) {
         clearMemberInfoTopic(vNodeShortHash, identity.shortHash)
         clearInteropIdentityTopic(vNodeShortHash, identity.shortHash)

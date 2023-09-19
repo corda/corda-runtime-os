@@ -12,7 +12,8 @@ data class InteropIdentity(
     val facadeIds: List<FacadeId>,
     val applicationName: String,
     val endpointUrl: String,
-    val endpointProtocol: String
+    val endpointProtocol: String,
+    var enabled: Boolean
 ) {
     val shortHash = Utils.computeShortHash(x500Name, groupId)
 
@@ -24,7 +25,8 @@ data class InteropIdentity(
             interopIdentity.facadeIds.map { FacadeId.of(it) },
             interopIdentity.applicationName,
             interopIdentity.endpointUrl,
-            interopIdentity.endpointProtocol
+            interopIdentity.endpointProtocol,
+            interopIdentity.enabled
         )
     }
 }

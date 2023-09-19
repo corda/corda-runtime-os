@@ -40,7 +40,8 @@ class InteropIdentityProducer(
             listOfFacades,
             identity.applicationName,
             identity.endpointUrl,
-            identity.endpointProtocol
+            identity.endpointProtocol,
+            identity.enabled
         )
 
         val futures = publisher.get()!!.publish(listOf(Record(INTEROP_IDENTITY_TOPIC, key, recordValue)))

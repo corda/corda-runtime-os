@@ -51,11 +51,45 @@ interface InteropRestResource : RestResource {
     ): CreateInteropIdentityRest.Response
 
     /**
-     * Endpoint to remove an interop identity
+     * Suspend an interop identity so that it may no longer be used for lookups at the flow level.
+     */
+    @HttpGET(
+        path = "{holdingIdentityShortHash}/suspend/identity/{interopIdentityShortHash}",
+        title = "Suspend interop identity.",
+        description = "Suspends an interop identity. Prevents more lookups at the flow level without" +
+                      "disrupting active flow sessions.",
+        responseDescription = "Response entity with the status of the request."
+    )
+    fun suspendInteropIdentity(
+        @RestPathParameter(description = "View owning holding identity short hash.")
+        holdingIdentityShortHash: String,
+        @RestPathParameter(description = "Short hash of the interop identity to delete.")
+        interopIdentityShortHash: String
+    ): ResponseEntity<String>
+
+    /**
+     * Enable a previously disabled interop identity so that it may no longer be used for lookups at the flow level.
+     */
+    @HttpGET(
+        path = "{holdingIdentityShortHash}/enable/identity/{interopIdentityShortHash}",
+        title = "Enable interop identity.",
+        description = "Enables a suspended interop identity so that it is available for lookups at the flow level.",
+        responseDescription = "Response entity with the status of the request."
+    )
+    fun enableInteropIdentity(
+        @RestPathParameter(description = "View owning holding identity short hash.")
+        holdingIdentityShortHash: String,
+        @RestPathParameter(description = "Short hash of the interop identity to delete.")
+        interopIdentityShortHash: String
+    ): ResponseEntity<String>
+
+    /**
+     * Endpoint to remove an interop identity.
+     * Only suspended identities can be deleted.
      */
     @HttpDELETE(
         path = "{holdingIdentityShortHash}/delete/identity/{interopIdentityShortHash}",
-        title = "Delete interop identity.",
+        title = "Delete a suspended interop identity.",
         description = "Delete an interop identity.",
         responseDescription = "Response entity with the status of the request."
     )
