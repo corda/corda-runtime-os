@@ -4,7 +4,6 @@ import net.corda.flow.persistence.query.StableResultSetExecutor
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
-import java.lang.IllegalStateException
 import java.nio.ByteBuffer
 
 /**
