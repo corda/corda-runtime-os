@@ -33,7 +33,7 @@ class WorkerHelpers {
         private const val BOOT_CONFIG_PATH = "net/corda/applications/workers/workercommon/boot/corda.boot.json"
         private val SENSITIVE_ARGS = setOf(
             "-ddatabase.pass",
-            "-Sdatabase.pass",
+            "database.pass",
             "--stateManager.database.pass",
             "-spassphrase",
             "-msasl.jaas.config"
@@ -160,8 +160,7 @@ class WorkerHelpers {
             val smartConfigFactory = SmartConfigFactory
                 .createWith(
                     configWithFiles.getConfig(BootConfig.BOOT_SECRETS).atPath(BootConfig.BOOT_SECRETS),
-                    secretsServiceFactoryResolver.findAll()
-                )
+                    secretsServiceFactoryResolver.findAll())
 
             val bootConfig = smartConfigFactory.create(configWithFiles.withoutPath(BootConfig.BOOT_SECRETS))
 
@@ -249,9 +248,8 @@ class WorkerHelpers {
 
             val arguments = processInfo.arguments()
             if (arguments.isPresent) {
-                arguments.get().map { arg ->
-                    SENSITIVE_ARGS.firstOrNull { arg.trim().startsWith(it) }
-                        .let { prefix -> if (prefix == null) arg else "$prefix=[REDACTED]" }
+                arguments.get().map { arg -> SENSITIVE_ARGS.firstOrNull { arg.trim().startsWith(it) }
+                    .let { prefix -> if (prefix == null) arg else "$prefix=[REDACTED]" }
                 }.forEachIndexed { i, redactedArg -> info("argument $i, $redactedArg") }
             } else {
                 info("arguments: Null")

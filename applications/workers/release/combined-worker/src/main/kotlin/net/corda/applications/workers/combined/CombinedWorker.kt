@@ -111,7 +111,7 @@ class CombinedWorker @Activate constructor(
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val DEFAULT_BOOT_STATE_MANAGER_TYPE = "DATABASE"
-        private const val STATE_MANAGER_SCHEMA_NAME = "STATEMANAGER"
+        private const val STATE_MANAGER_SCHEMA_NAME = "STATE_MANAGER"
         private const val MESSAGEBUS_SCHEMA_NAME = "MESSAGEBUS"
         private const val CONFIG_SCHEMA_NAME = "CONFIG"
     }

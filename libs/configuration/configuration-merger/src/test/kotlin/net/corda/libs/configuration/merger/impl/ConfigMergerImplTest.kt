@@ -17,7 +17,7 @@ class ConfigMergerImplTest {
     private val merger = ConfigMergerImpl(busConfigMerger)
 
     @Test
-    fun `merger correctly merges messaging config with state manager config using fallback`() {
+    fun `merger correctly merges messaging config with boot config using messaging as fallback`() {
         val messagingConfig = SmartConfigImpl.empty()
         val bootConfig = smartConfigFactory.create(
             ConfigFactory.parseMap(

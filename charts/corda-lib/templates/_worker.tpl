@@ -279,19 +279,19 @@ spec:
           {{- end }}
           {{- /* TODO-[CORE-16419]: isolate StateManager database from the Cluster database */ -}}
           {{- if $optionalArgs.stateManagerDbAccess }}
-          - "-Stype=DATABASE"
-          - "-Sdatabase.user=$(DB_CLUSTER_USERNAME)"
-          - "-Sdatabase.pass=$(DB_CLUSTER_PASSWORD)"
-          - "-Sdatabase.jdbc.url=jdbc:postgresql://{{ required "Must specify db.cluster.host" $.Values.db.cluster.host }}:{{ $.Values.db.cluster.port }}/{{ $.Values.db.cluster.database }}?currentSchema={{ $.Values.db.cluster.schema }}"
-          - "-Sdatabase.jdbc.directory=/opt/jdbc-driver"
-          - "-Sdatabase.pool.maxSize={{ .stateManagerDbConnectionPool.maxSize }}"
+          - "--stateManager type=DATABASE"
+          - "--stateManager database.user=$(DB_CLUSTER_USERNAME)"
+          - "--stateManager database.pass=$(DB_CLUSTER_PASSWORD)"
+          - "--stateManager database.jdbc.url=jdbc:postgresql://{{ required "Must specify db.cluster.host" $.Values.db.cluster.host }}:{{ $.Values.db.cluster.port }}/{{ $.Values.db.cluster.database }}?currentSchema={{ $.Values.db.cluster.schema }}"
+          - "--stateManager database.jdbc.directory=/opt/jdbc-driver"
+          - "--stateManager database.pool.maxSize={{ .stateManagerDbConnectionPool.maxSize }}"
           {{- if .stateManagerDbConnectionPool.minSize }}
-          - "-Sdatabase.pool.minSize={{ .stateManagerDbConnectionPool.minSize }}"
+          - "--stateManager database.pool.minSize={{ .stateManagerDbConnectionPool.minSize }}"
           {{- end }}
-          - "-Sdatabase.pool.idleTimeoutSeconds={{ .stateManagerDbConnectionPool.idleTimeoutSeconds }}"
-          - "-Sdatabase.pool.maxLifetimeSeconds={{ .stateManagerDbConnectionPool.maxLifetimeSeconds }}"
-          - "-Sdatabase.pool.keepAliveTimeSeconds={{ .stateManagerDbConnectionPool.keepAliveTimeSeconds }}"
-          - "-Sdatabase.pool.validationTimeoutSeconds={{ .stateManagerDbConnectionPool.validationTimeoutSeconds }}"
+          - "--stateManager database.pool.idleTimeoutSeconds={{ .stateManagerDbConnectionPool.idleTimeoutSeconds }}"
+          - "--stateManager database.pool.maxLifetimeSeconds={{ .stateManagerDbConnectionPool.maxLifetimeSeconds }}"
+          - "--stateManager database.pool.keepAliveTimeSeconds={{ .stateManagerDbConnectionPool.keepAliveTimeSeconds }}"
+          - "--stateManager database.pool.validationTimeoutSeconds={{ .stateManagerDbConnectionPool.validationTimeoutSeconds }}"
           {{- end }}
           {{- if $.Values.tracing.endpoint }}
           - "--send-trace-to={{ $.Values.tracing.endpoint }}"
