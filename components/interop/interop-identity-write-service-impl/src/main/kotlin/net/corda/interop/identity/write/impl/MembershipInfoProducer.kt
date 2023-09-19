@@ -104,4 +104,24 @@ class MembershipInfoProducer(private val publisher: AtomicReference<Publisher?>)
 
         publisher.get()!!.publish(memberInfoList)
     }
+
+    fun clearMemberInfo(
+        ownedInteropIdentity: InteropIdentity,
+        identityToRemove: InteropIdentity
+    ) {
+        if (publisher.get() == null) {
+            log.error("Member info publisher is null, not deleting.")
+            return
+        }
+
+        val record = Record(
+            Schemas.Membership.MEMBER_LIST_TOPIC,
+            "${ownedInteropIdentity.shortHash}-${identityToRemove.shortHash}",
+            null
+        )
+
+        publisher.get()!!.publish(listOf(record))
+
+        log.info("Cleared member info for interop identity '${identityToRemove.shortHash}'")
+    }
 }

@@ -11,6 +11,7 @@ import net.corda.rest.annotations.HttpRestResource
 import net.corda.rest.annotations.RestPathParameter
 import net.corda.rest.response.ResponseEntity
 import java.util.UUID
+import net.corda.rest.annotations.HttpDELETE
 
 /** Rest operations for interop management. */
 @HttpRestResource(
@@ -48,6 +49,22 @@ interface InteropRestResource : RestResource {
         @RestPathParameter(description = "Short hash of holding identity to create interop identity for.")
         holdingIdentityShortHash: String
     ): CreateInteropIdentityRest.Response
+
+    /**
+     * Endpoint to remove an interop identity
+     */
+    @HttpDELETE(
+        path = "{holdingIdentityShortHash}/delete/identity/{interopIdentityShortHash}",
+        title = "Delete interop identity.",
+        description = "Delete an interop identity.",
+        responseDescription = "Response entity with the status of the request."
+    )
+    fun deleteInteropIdentity(
+        @RestPathParameter(description = "View owning holding identity short hash.")
+        holdingIdentityShortHash: String,
+        @RestPathParameter(description = "Short hash of the interop identity to delete.")
+        interopIdentityShortHash: String
+    ): ResponseEntity<String>
 
     /**
      * Get a list of interop identities belonging to the given holding identity.

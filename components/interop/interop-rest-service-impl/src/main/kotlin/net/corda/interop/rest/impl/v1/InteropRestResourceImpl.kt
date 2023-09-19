@@ -44,6 +44,7 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
+import net.corda.rest.ResponseCode
 
 @Suppress("LongParameterList")
 @Component(service = [PluggableRestResource::class])
@@ -252,6 +253,28 @@ internal class InteropRestResourceImpl @Activate constructor(
         return CreateInteropIdentityRest.Response(
             Utils.computeShortHash(ownedInteropIdentityX500, interopGroupId).toString()
         )
+    }
+
+    override fun deleteInteropIdentity(
+        holdingIdentityShortHash: String,
+        interopIdentityShortHash: String
+    ): ResponseEntity<String> {
+        val validHoldingIdentityShortHash = validateShortHash(holdingIdentityShortHash)
+        val validInteropIdentityShortHash = validateShortHash(interopIdentityShortHash)
+
+        val vNodeInfo = getAndValidateVirtualNodeInfoByShortHash(validHoldingIdentityShortHash)
+        val vNodeShortHash = vNodeInfo.getVNodeShortHash()
+
+        val registryView = interopIdentityRegistryService.getVirtualNodeRegistryView(vNodeShortHash)
+        val identityToRemove = registryView.getIdentityWithShortHash(validInteropIdentityShortHash) ?:
+            throw InvalidInputDataException(
+                "No interop identity with short hash '$validInteropIdentityShortHash' found for holding " +
+                        "identity '$validHoldingIdentityShortHash'."
+            )
+
+        interopIdentityWriteService.removeInteropIdentity(vNodeShortHash, identityToRemove)
+
+        return ResponseEntity(ResponseCode.OK, "OK")
     }
 
     private fun facadeIds() = listOf(

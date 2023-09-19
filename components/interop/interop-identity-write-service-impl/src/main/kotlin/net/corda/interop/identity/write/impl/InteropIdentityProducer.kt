@@ -49,4 +49,25 @@ class InteropIdentityProducer(
 
         logger.info("Interop identity published with key : $key and value : $identity")
     }
+
+    fun clearInteropIdentity(holdingIdentityShortHash: ShortHash, interopIdentityShortHash: ShortHash) {
+        if (publisher.get() == null) {
+            logger.error("Interop identity publisher is null, not publishing.")
+            return
+        }
+
+        val key = "$holdingIdentityShortHash:$interopIdentityShortHash"
+
+        val record = Record(
+            INTEROP_IDENTITY_TOPIC,
+            key,
+            null
+        )
+
+        val futures = publisher.get()!!.publish(listOf(record))
+
+        futures.forEach { it.get() }
+
+        logger.info("Interop identity with key : $key cleared from interop identity topic.")
+    }
 }

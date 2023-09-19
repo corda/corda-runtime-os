@@ -3,12 +3,12 @@ package net.corda.interop.identity.write.impl
 import java.util.concurrent.ExecutionException
 import net.corda.data.p2p.HostedIdentityEntry
 import net.corda.data.p2p.HostedIdentitySessionKeyAndCert
-import net.corda.interop.core.Utils.Companion.computeShortHash
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
+import net.corda.crypto.core.ShortHash
 import net.corda.data.identity.HoldingIdentity
 import net.corda.interop.core.InteropIdentity
 
@@ -23,13 +23,33 @@ class HostedIdentityProducer(private val publisher: AtomicReference<Publisher?>)
         private val DUMMY_PUBLIC_SESSION_KEY = this::class.java.getResource("/dummy_session_key.pem")?.readText()
     }
 
+    fun clearHostedInteropIdentity(interopIdentityShortHash: ShortHash) {
+        if (publisher.get() == null) {
+            logger.error("Interop hosted identity publisher is null, not clearing.")
+            return
+        }
+
+        val record = createHostedIdentityRecord(interopIdentityShortHash, null)
+
+        val futures = publisher.get()!!.publish(listOf(record))
+
+        try {
+            futures.single().get()
+        } catch (e: ExecutionException) {
+            logger.error("Failed to clear interop identity from hosted identities topic.", e)
+            return
+        }
+
+        logger.info("Interop hosted identity with key : ${record.key} cleared from hosted identities topic.")
+    }
+
     fun publishHostedInteropIdentity(identity: InteropIdentity) {
         if (publisher.get() == null) {
             logger.error("Interop hosted identity publisher is null, not publishing.")
             return
         }
 
-        val record = createHostedIdentityRecord(identity)
+        val record = createHostedIdentityRecord(identity.shortHash, identity)
 
         val futures = publisher.get()!!.publish(listOf(record))
 
@@ -37,23 +57,24 @@ class HostedIdentityProducer(private val publisher: AtomicReference<Publisher?>)
             futures.single().get()
         } catch (e: ExecutionException) {
             logger.error("Failed to publish interop identity to hosted identities topic.", e)
+            return
         }
 
         logger.info("Interop hosted identity published with key : ${record.key} and value : ${record.value}")
     }
 
-    private fun createHostedIdentityRecord(interopIdentity: InteropIdentity): Record<String, HostedIdentityEntry> {
-        val interopIdentityShortHash = computeShortHash(interopIdentity.x500Name, interopIdentity.groupId)
+    private fun createHostedIdentityRecord(key: ShortHash, identity: InteropIdentity?): Record<String, HostedIdentityEntry> {
+        val hostedIdentity = identity?.let {
+            HostedIdentityEntry(
+                HoldingIdentity(it.x500Name, it.groupId),
+                key.toString(),
+                //TODO CORE-15168
+                emptyList(),
+                HostedIdentitySessionKeyAndCert(DUMMY_PUBLIC_SESSION_KEY, null),
+                emptyList()
+            )
+        }
 
-        val hostedIdentity = HostedIdentityEntry(
-            HoldingIdentity(interopIdentity.x500Name, interopIdentity.groupId),
-            interopIdentityShortHash.toString(),
-            //TODO CORE-15168
-            emptyList(),
-            HostedIdentitySessionKeyAndCert(DUMMY_PUBLIC_SESSION_KEY, null),
-            emptyList()
-        )
-
-        return Record(P2P_HOSTED_IDENTITIES_TOPIC, interopIdentityShortHash.toString(), hostedIdentity)
+        return Record(P2P_HOSTED_IDENTITIES_TOPIC, key.toString(), hostedIdentity)
     }
 }
