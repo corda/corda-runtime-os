@@ -73,7 +73,7 @@ class AMQPSerializationProvider @Activate constructor(
             serializationService = SerializationServiceImpl(
                 outputFactory = factory,
                 inputFactory = factory,
-                AMQP_P2P_CONTEXT.withSandboxGroup(context.sandboxGroup) //todo double check in CORE-12472
+                AMQP_P2P_CONTEXT.withSandboxGroup(context.sandboxGroup)
             ),
             context
         )
