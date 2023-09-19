@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@5.1') _
+@Library('corda-shared-build-pipeline-steps@driessamyn/CORE-17202/swap-default-smoketest-behaviour') _
 
 import groovy.transform.Field
 import com.r3.build.utils.PipelineUtils
@@ -119,7 +119,7 @@ pipeline {
                         junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
                     }
                 }
-        } 	        
+        }
     }
     post {
         always {

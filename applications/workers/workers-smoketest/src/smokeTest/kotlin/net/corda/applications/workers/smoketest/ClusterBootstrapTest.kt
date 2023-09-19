@@ -27,14 +27,14 @@ class ClusterBootstrapTest {
     }
 
     private val healthChecks = mapOf(
-        "crypto-worker" to System.getProperty("cryptoWorkerHealthHttp"),
-        "db-worker" to System.getProperty("dbWorkerHealthHttp"),
-        "flow-worker" to System.getProperty("flowWorkerHealthHttp"),
-        "flow-mapper-worker" to System.getProperty("flowMapperWorkerHealthHttp"),
-        "verification-worker" to System.getProperty("verificationWorkerHealthHttp"),
-        "persistence-worker" to System.getProperty("persistenceWorkerHealthHttp"),
-        "rest-worker" to System.getProperty("restWorkerHealthHttp"),
-        "uniqueness-worker" to System.getProperty("uniquenessWorkerHealthHttp"),
+        "crypto-worker" to System.getProperty("cryptoWorkerUrl"),
+        "db-worker" to System.getProperty("dbWorkerUrl"),
+        "flow-worker" to System.getProperty("flowWorkerUrl"),
+        "flow-mapper-worker" to System.getProperty("flowMapperWorkerUrl"),
+        "verification-worker" to System.getProperty("verificationWorkerUrl"),
+        "persistence-worker" to System.getProperty("persistenceWorkerUrl"),
+        "rest-worker" to System.getProperty("restWorkerUrl"),
+        "uniqueness-worker" to System.getProperty("uniquenessWorkerUrl"),
     )
     private val client = HttpClient.newBuilder().build()
 
