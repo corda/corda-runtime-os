@@ -8,6 +8,7 @@ import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedData
+import net.corda.interop.group.policy.read.InteropGroupPolicyReadService
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -33,8 +34,9 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
-import net.corda.membership.lib.grouppolicy.InteropGroupPolicyReader
+import net.corda.membership.lib.grouppolicy.InteropGroupPolicy
 import net.corda.membership.lib.grouppolicy.MGMGroupPolicy
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
@@ -105,6 +107,17 @@ class GroupPolicyProviderImplTest {
     private val groupPolicy4: String? = null
     private val groupPolicy5 = "{\"$registrationProtocolKey\": \"$regProtocol3\", \"$groupIdKey\": \"$groupId2\"}"
     private val groupPolicy6 = "{\"$registrationProtocolKey\": \"$regProtocol3\", \"$groupIdKey\": \"$groupId3\"}"
+    private val interopGroupPolicy = """
+                                        {
+                                          "groupId": "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08",
+                                          "p2pParameters": {
+                                            "tlsPki": "Standard",
+                                            "tlsVersion": "1.3",
+                                            "protocolMode": "Authenticated_Encryption",
+                                            "tlsType": "OneWay"
+                                          }
+                                        }
+                                     """
 
     private val parsedGroupPolicy1: GroupPolicy = mock {
         on { groupId } doReturn groupId1
@@ -121,6 +134,13 @@ class GroupPolicyProviderImplTest {
     private val parsedGroupPolicy6: GroupPolicy = mock {
         on { groupId } doReturn groupId3
         on { registrationProtocol }.doReturn(regProtocol3)
+    }
+    private val p2pParams : GroupPolicy.P2PParameters = mock{
+        on { tlsPki } doReturn GroupPolicyConstants.PolicyValues.P2PParameters.TlsPkiMode.STANDARD
+    }
+    private val parsedInteropGroupPolicy: InteropGroupPolicy = mock {
+        on { groupId } doReturn groupId3
+        on { p2pParameters } doReturn p2pParams
     }
     private val parsedMgmGroupPolicy: MGMGroupPolicy = mock()
 
@@ -182,6 +202,7 @@ class GroupPolicyProviderImplTest {
         LifecycleCoordinatorName.forComponent<CpiInfoReadService>(),
         LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+        LifecycleCoordinatorName.forComponent<InteropGroupPolicyReadService>(),
     )
     private val dependencyServiceRegistration: RegistrationHandle = mock()
     private val configHandle: Resource = mock()
@@ -201,8 +222,8 @@ class GroupPolicyProviderImplTest {
         on { registerComponentForUpdates(eq(coordinator), eq(configs)) } doReturn configHandle
     }
 
-    private val interopGroupPolicyReader: InteropGroupPolicyReader = mock {
-        on { getGroupPolicy(holdingIdentity6) } doReturn groupPolicy6
+    private val interopGroupPolicyReadService: InteropGroupPolicyReadService = mock {
+        on { getGroupPolicy(eq(holdingIdentity6.groupId)) } doReturn interopGroupPolicy
     }
 
     private val subscriptionFactory: SubscriptionFactory = mock {
@@ -218,6 +239,7 @@ class GroupPolicyProviderImplTest {
         on { parse(eq(holdingIdentity4), eq(null), any()) }.doThrow(BadGroupPolicyException(""))
         on { parse(eq(holdingIdentity5), eq(groupPolicy3), any()) }.doReturn(parsedMgmGroupPolicy)
         on { parse(eq(holdingIdentity6), eq(groupPolicy6), any()) }.doReturn(parsedGroupPolicy6)
+        on { parseInteropGroupPolicy(eq(interopGroupPolicy)) }.doReturn(parsedInteropGroupPolicy)
     }
 
     private val membershipQueryClient: MembershipQueryClient = mock {
@@ -295,7 +317,7 @@ class GroupPolicyProviderImplTest {
             subscriptionFactory,
             configurationReadService,
             memberInfoFactory,
-            interopGroupPolicyReader
+            interopGroupPolicyReadService
         )
     }
 
@@ -1032,13 +1054,11 @@ class GroupPolicyProviderImplTest {
     }
 
     @Test
-    fun `Interop groupPolicy is returned when CPI metadata is null `() {
+    fun `Interop p2p parameters are returned when mgm group policy not found `() {
         startComponentAndDependencies()
         postConfigChangedEvent()
-        assertExpectedGroupPolicy(
-            groupPolicyProvider.getGroupPolicy(holdingIdentity6),
-            groupId3,
-            regProtocol3
-        )
+        val actualParams = groupPolicyProvider.getP2PParameters(holdingIdentity6)
+        assertNotNull(actualParams)
+        assertEquals(GroupPolicyConstants.PolicyValues.P2PParameters.TlsPkiMode.STANDARD, actualParams?.tlsPki)
     }
 }
