@@ -374,6 +374,9 @@ internal class InteropRestResourceImpl @Activate constructor(
                         "& yours is $vNodeShortHash"
             )
         }
+        if (!interopIdentityToExport.enabled) {
+            throw InvalidInputDataException("Cannot export a suspended identity.")
+        }
         val groupPolicy = checkNotNull(interopGroupPolicyReadService.getGroupPolicy(interopIdentityToExport.groupId)) {
             "Could not find group policy info for interop identity $validInteropIdentityShortHash"
         }
