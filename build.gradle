@@ -245,6 +245,15 @@ allprojects {
     }
 
     tasks.register('integrationTest', Test) {
+        // Conversion of legacy arguments to keep old Jenkins pipeline happy
+        if (!postgresPort.isBlank()){
+            databasePort = postgresPort
+            databaseType = 'POSTGRES'
+            databaseName = postgresDatabase
+            databaseHost = postgresHost
+            databaseAdminUser = postgresUser
+            databaseAdminPassword = postgresPassword
+        }
         inputs.property('databaseHost', databaseHost)
         inputs.property('databaseName', databaseName)
         inputs.property('databasePort', databasePort)
