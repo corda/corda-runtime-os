@@ -592,30 +592,30 @@ class ClusterBuilder {
         sessionKeyId: String,
         sessionCertAlias: String? = null
     ): SimpleResponse {
-        val body = if (sessionCertAlias == null) {
+        val sessionKeysSection = if (sessionCertAlias == null) {
             """
-                {
-                    "p2pTlsCertificateChainAlias": "$CERT_ALIAS_P2P",
-                    "useClusterLevelTlsCertificateAndKey": true,
                     "sessionKeysAndCertificates": [{
                       "preferred": true,
                       "sessionKeyId": "$sessionKeyId"
                     }]
-                }
-            """.trimIndent()
+            """.trim()
         } else {
             """
-                {
-                    "p2pTlsCertificateChainAlias": "$CERT_ALIAS_P2P",
-                    "useClusterLevelTlsCertificateAndKey": true,
                     "sessionKeysAndCertificates": [{
                       "preferred": true,
                       "sessionKeyId": "$sessionKeyId",
                       "sessionCertificateChainAlias": "$sessionCertAlias"
                     }]
+            """.trim()
+        }
+        val body =
+            """
+                {
+                    "p2pTlsCertificateChainAlias": "$CERT_ALIAS_P2P",
+                    "useClusterLevelTlsCertificateAndKey": true,
+                    $sessionKeysSection
                 }
             """.trimIndent()
-        }
         return put(
             "/api/$REST_API_VERSION_PATH/network/setup/$holdingIdentityShortHash",
             body = body

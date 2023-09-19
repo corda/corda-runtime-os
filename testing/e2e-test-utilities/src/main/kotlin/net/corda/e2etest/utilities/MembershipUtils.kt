@@ -54,7 +54,7 @@ fun ClusterInfo.onboardMember(
     x500Name: String,
     waitForApproval: Boolean = true,
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null,
-    certificateUploadedCallback: (String) -> Unit = {},
+    tlsCertificateUploadedCallback: (String) -> Unit = {},
     useSessionCertificate: Boolean = false
 ): NetworkOnboardingMetadata {
     conditionallyUploadCpiSigningCertificate()
@@ -87,7 +87,7 @@ fun ClusterInfo.onboardMember(
             it.writeBytes(tlsCert.toByteArray())
         }
         importCertificate(tlsCertFile, CERT_USAGE_P2P, CERT_ALIAS_P2P)
-        certificateUploadedCallback(tlsCert)
+        tlsCertificateUploadedCallback(tlsCert)
     }
 
     val registrationContext = createRegistrationContext(
@@ -140,7 +140,7 @@ fun ClusterInfo.onboardNotaryMember(
     x500Name: String,
     wait: Boolean = true,
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null,
-    certificateUploadedCallback: (String) -> Unit = {}
+    tlsCertificateUploadedCallback: (String) -> Unit = {}
 ) = onboardMember(
     resourceName,
     cpiName,
@@ -160,7 +160,7 @@ fun ClusterInfo.onboardNotaryMember(
             "corda.notary.keys.0.signature.spec" to DEFAULT_SIGNATURE_SPEC
         ) + (getAdditionalContext?.let { it(holdingId) } ?: emptyMap())
     },
-    certificateUploadedCallback = certificateUploadedCallback
+    tlsCertificateUploadedCallback = tlsCertificateUploadedCallback
 )
 
 /**
