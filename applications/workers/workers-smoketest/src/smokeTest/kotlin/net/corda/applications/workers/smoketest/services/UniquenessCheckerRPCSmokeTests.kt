@@ -1,5 +1,6 @@
 package net.corda.applications.workers.smoketest.services
 
+import net.corda.applications.workers.smoketest.utils.PLATFORM_VERSION
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
@@ -118,7 +119,7 @@ class UniquenessCheckerRPCSmokeTests {
 
     @Test
     fun `RPC endpoint accepts a request and returns back a response`() {
-        val url = "${System.getProperty("uniquenessWorkerHealthHttp")}api/5.1/uniqueness-checker"
+        val url = "${System.getProperty("uniquenessWorkerHealthHttp")}api/$PLATFORM_VERSION/uniqueness-checker"
 
         logger.info("uniqueness url: $url")
         val serializedPayload = avroSerializer.serialize(payloadBuilder().build())
