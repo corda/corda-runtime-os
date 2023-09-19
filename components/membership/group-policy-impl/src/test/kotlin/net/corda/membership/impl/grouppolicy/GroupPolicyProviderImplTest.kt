@@ -1053,12 +1053,12 @@ class GroupPolicyProviderImplTest {
         assertThat(called).isZero
     }
 
-//    @Test
-//    fun `Interop p2p parameters are returned when mgm group policy not found `() {
-//        startComponentAndDependencies()
-//        postConfigChangedEvent()
-//        val actualParams = groupPolicyProvider.getP2PParameters(holdingIdentity6)
-//        assertNotNull(actualParams)
-//        assertEquals(GroupPolicyConstants.PolicyValues.P2PParameters.TlsPkiMode.STANDARD, actualParams?.tlsPki)
-//    }
+    @Test
+    fun `Interop p2p parameters are returned when mgm group policy not found `() {
+        startComponentAndDependencies()
+        postConfigChangedEvent()
+        val actualParams = groupPolicyProvider.getP2PParameters(holdingIdentity6)
+        assertNotNull(actualParams)
+        assertEquals(GroupPolicyConstants.PolicyValues.P2PParameters.TlsPkiMode.STANDARD, actualParams?.tlsPki)
+    }
 }
