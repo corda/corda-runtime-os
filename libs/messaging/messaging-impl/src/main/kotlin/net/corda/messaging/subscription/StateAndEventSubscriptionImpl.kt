@@ -27,16 +27,12 @@ import net.corda.messaging.utils.toCordaProducerRecords
 import net.corda.messaging.utils.toRecord
 import net.corda.messaging.utils.tryGetResult
 import net.corda.metrics.CordaMetrics
-import net.corda.schema.Schemas
 import net.corda.schema.Schemas.getDLQTopic
 import net.corda.schema.Schemas.getStateAndEventStateTopic
 import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.net.URI
 import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
 import java.nio.ByteBuffer
 import java.time.Clock
 import java.util.UUID
@@ -261,32 +257,6 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
         commitTimer.recordCallable {
             producer.beginTransaction()
-
-            // HACK for testing only
-            outputRecords.firstOrNull { it.topic == Schemas.UniquenessChecker.UNIQUENESS_CHECK_TOPIC }?.also { record ->
-                // call HTTP RPC service for testing
-                val url = "http://localhost:7004/api/5.1/uniqueness-checker"
-                log.info("Posting ${record.value} to $url")
-                try {
-                    val payload = record.value?.run { avroSerializer.serialize(record.value!!) }
-                    val request = HttpRequest.newBuilder()
-                        .uri(URI.create(url))
-                        .headers("Content-Type", "application/octet-stream")
-                        .POST(HttpRequest.BodyPublishers.ofByteArray(payload))
-                        .build()
-                    val response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
-                    val responseBody: ByteArray = response.body()
-
-                    @Suppress("UNCHECKED_CAST")
-                    val responseEvent = avroDeserializer.deserialize(responseBody) as? E
-                    log.info("Got a response: $responseEvent")
-                }
-                catch (e: Exception) {
-                    log.error("POST to $url failed", e)
-                }
-            }
-            // end hack
-
             producer.sendRecords(outputRecords.toCordaProducerRecords())
             if (deadLetterRecords.isNotEmpty()) {
                 producer.sendRecords(deadLetterRecords.map {
