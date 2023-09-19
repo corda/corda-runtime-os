@@ -174,6 +174,65 @@ class TransactionBackchainReceiverFlowV1Test {
             "[${TX_3_INPUT_DEPENDENCY_STATE_REF_1.transactionId}]. Back-chain resolution cannot be continued.")
     }
 
+    /**
+     * This test is simulating a scenario where we want to fetch a transaction that has one dependency and
+     * that dependency has another dependency. Both the transaction and its dependencies are in the database
+     * with UNVERIFIED status. In this case, we shouldn't go to the counterparty since we have everything in
+     * our database.
+     */
+    @Test
+    fun `dependency of dependency of transaction will not be fetched if it is in the database`() {
+        // Have a transaction with TX_ID_2 that is unverified, but it's in the database and has dependencies
+        whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
+            .thenReturn(mapOf(
+                TX_ID_1 to UNVERIFIED,
+                TX_ID_2 to UNVERIFIED,
+                TX_ID_3 to UNVERIFIED,
+            ))
+
+        // Base transaction
+        whenever(utxoLedgerPersistenceService.findSignedTransaction(eq(TX_ID_1), eq(UNVERIFIED)))
+            .thenReturn(retrievedTransaction1)
+
+        whenever(retrievedTransaction1.id)
+            .thenReturn(TX_ID_1)
+        whenever(retrievedTransaction1.inputStateRefs)
+            .thenReturn(listOf(StateRef(TX_ID_2, 0)))
+        whenever(retrievedTransaction1.referenceStateRefs)
+            .thenReturn(emptyList())
+
+        // Dependency
+        whenever(utxoLedgerPersistenceService.findSignedTransaction(
+            eq(TX_ID_2),
+            eq(UNVERIFIED))
+        ).thenReturn(retrievedTransaction2)
+
+        whenever(retrievedTransaction2.id)
+            .thenReturn(TX_ID_2)
+        whenever(retrievedTransaction2.inputStateRefs)
+            .thenReturn(listOf(StateRef(TX_ID_3, 0)))
+        whenever(retrievedTransaction2.referenceStateRefs)
+            .thenReturn(emptyList())
+
+        // Dependency of dependency
+        whenever(utxoLedgerPersistenceService.findSignedTransaction(
+            eq(TX_ID_3),
+            eq(UNVERIFIED))
+        ).thenReturn(retrievedTransaction3)
+
+        whenever(retrievedTransaction3.id)
+            .thenReturn(TX_ID_3)
+        whenever(retrievedTransaction3.inputStateRefs)
+            .thenReturn(emptyList())
+        whenever(retrievedTransaction3.referenceStateRefs)
+            .thenReturn(emptyList())
+
+        // Since both the base, dependency and dependency of dependency transaction were present in the database,
+        // nothing should have been retrieved
+        assertThat(callTransactionBackchainReceiverFlow(setOf(TX_ID_1)).complete())
+            .isEmpty()
+    }
+
     @Test
     fun `a resolved transaction has its dependencies retrieved from its peer and persisted`() {
         whenever(utxoLedgerPersistenceService.findSignedTransaction(any(), any())).thenReturn(null)

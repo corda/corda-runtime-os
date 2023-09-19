@@ -207,57 +207,65 @@ class TransactionBackchainReceiverFlowV1(
         existingTransactionIdsInDb: MutableMap<SecureHash, TransactionStatus>,
         transactionsToRetrieve: LinkedHashSet<SecureHash>
     ) {
+        var transactionsToCheck = transactionsToRetrieve.toMutableList()
 
-        val transactionsFromDb = utxoLedgerPersistenceService.findTransactionIdsAndStatuses(
-            // Make sure we don't fetch the same transaction multiple times
-            (transactionsToRetrieve - existingTransactionIdsInDb.keys)
-        )
+        while (transactionsToCheck.isNotEmpty()) {
+            val transactionsFromDb = utxoLedgerPersistenceService.findTransactionIdsAndStatuses(transactionsToCheck)
 
-        // Check if we have any invalid transactions. If yes, we can't continue the back-chain resolution.
-        val invalidTransactions = transactionsFromDb.filterValues { it == INVALID }.keys
-        if (invalidTransactions.isNotEmpty()) {
-            throw InvalidBackchainException("Found the following invalid transaction(s) during back-chain resolution: " +
-                    "$invalidTransactions. Back-chain resolution cannot be continued.")
-        }
-
-        // Fetch the existing transaction with Verified/Unverified status from the DB and store them
-        existingTransactionIdsInDb.putAll(
-            transactionsFromDb.filterValues {
-                it == VERIFIED || it == UNVERIFIED
+            // Check if we have any invalid transactions. If yes, we can't continue the back-chain resolution.
+            val invalidTransactions = transactionsFromDb.filterValues { it == INVALID }.keys
+            if (invalidTransactions.isNotEmpty()) {
+                throw InvalidBackchainException(
+                    "Found the following invalid transaction(s) during back-chain resolution: " +
+                            "$invalidTransactions. Back-chain resolution cannot be continued."
+                )
             }
-        )
 
-        // Remove the transaction from the "to retrieve" set if they are in our DB, and they are verified
-        transactionsToRetrieve.removeIf {
-            existingTransactionIdsInDb[it] == VERIFIED
-        }
-
-        // Transactions that are present in the DB with unverified status don't need to be retrieved
-        // but its dependencies need to be retrieved and verified
-        transactionsToRetrieve.filter {
-            existingTransactionIdsInDb[it] == UNVERIFIED
-        }.forEach { transactionId ->
-            // Fetch the transaction object from the database, so we can get the dependencies
-            val transactionFromDb = utxoLedgerPersistenceService.findSignedTransaction(
-                transactionId,
-                UNVERIFIED
+            // Store the Verified/Unverified transactions from the database
+            existingTransactionIdsInDb.putAll(
+                transactionsFromDb.filterValues {
+                    it == VERIFIED || it == UNVERIFIED
+                }
             )
-            if (transactionFromDb != null) {
-                // Add the dependencies to the "to retrieve" set
-                transactionsToRetrieve.addAll(transactionFromDb.dependencies)
 
-                // Once we added the unverified transactions' dependencies into the "to retrieve" set
-                // we can remove those from the set as we don't need to get those from the initiator
-                // but only if we "know" its group parameters, otherwise we need to keep it there
-                if (fetchGroupParametersAndHashForTransaction(transactionFromDb).second != null) {
-                    transactionsToRetrieve.remove(transactionId)
-                }
-            } else {
-                log.trace {
-                    "Transaction with ID $transactionId is present in the database with unverified status " +
-                            "but could not fetch the signed transaction object and its dependencies."
+            // Remove the transaction from the "to retrieve" and "to check" collections if they are in our DB,
+            // and they are verified
+            listOf(transactionsToCheck, transactionsToRetrieve).forEach { collection ->
+                collection.removeIf { existingTransactionIdsInDb[it] == VERIFIED }
+            }
+
+            val newTransactionsToCheck = mutableListOf<SecureHash>()
+            transactionsToCheck.forEach { transactionId ->
+                if (existingTransactionIdsInDb[transactionId] != null) {
+                    // Fetch the transaction object from the database, so we can get the dependencies
+                    val transactionFromDb = utxoLedgerPersistenceService.findSignedTransaction(
+                        transactionId,
+                        UNVERIFIED
+                    )
+
+                    if (transactionFromDb != null) {
+                        // Add the dependencies to the "to retrieve" set (we might remove them later)
+                        transactionsToRetrieve.addAll(transactionFromDb.dependencies)
+                        // and we also need to check them
+                        newTransactionsToCheck.addAll(transactionFromDb.dependencies)
+
+                        // Once we added the unverified transactions' dependencies into the "to retrieve" set
+                        // we can remove those from the set as we don't need to get those from the initiator
+                        // but only if we "know" its group parameters, otherwise we need to keep it there
+                        if (version == TransactionBackChainResolutionVersion.V1) {
+                            transactionsToRetrieve.remove(transactionId)
+                        } else if (fetchGroupParametersAndHashForTransaction(transactionFromDb).second != null) {
+                            transactionsToRetrieve.remove(transactionId)
+                        }
+                    } else {
+                        log.trace {
+                            "Transaction with ID $transactionId is present in the database with unverified status " +
+                                    "but could not fetch the signed transaction object and its dependencies."
+                        }
+                    }
                 }
             }
+            transactionsToCheck = newTransactionsToCheck
         }
     }
 
