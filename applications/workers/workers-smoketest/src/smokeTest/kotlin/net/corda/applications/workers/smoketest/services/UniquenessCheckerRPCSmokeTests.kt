@@ -36,6 +36,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.UUID
+import kotlin.random.Random
 
 /**
  * Tests for the UniquenessChecker RPC service
@@ -145,18 +146,11 @@ class UniquenessCheckerRPCSmokeTests {
     private val testClock = AutoTickTestClock(Instant.MAX, Duration.ofSeconds(1))
 
     /**
-     * Returns a random set of bytes
-     */
-    private fun randomBytes(): ByteArray {
-        return (1..16).map { ('0'..'9').random() }.joinToString("").toByteArray()
-    }
-
-    /**
      * Returns a random secure hash of the specified algorithm
      */
     private fun randomSecureHash(algorithm: String = "SHA-256"): SecureHash {
         val digest = MessageDigest.getInstance(algorithm)
-        return SecureHashImpl(digest.algorithm, digest.digest(randomBytes()))
+        return SecureHashImpl(digest.algorithm, digest.digest(Random.nextBytes(16)))
     }
 
     private val defaultNotaryVNodeHoldingIdentity = HoldingIdentity(notaryX500, groupId)
