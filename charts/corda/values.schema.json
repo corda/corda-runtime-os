@@ -121,6 +121,290 @@
                 "Always"
             ]
         },
+        "containerSecurityContext": {
+            "type": "object",
+            "default": {},
+            "title": "define privilege and access control settings for a pod",
+            "properties": {
+                "runAsUser": {
+                    "type": "integer",
+                    "title": "specify what user ID that processes will run with",
+                    "examples": [
+                        "10001"
+                    ]
+                },
+                "runAsNonRoot": {
+                    "type": "boolean", 
+                    "description": "indicates that the container must run as a non-root user",
+                    "examples": [
+                        true
+                    ]
+                }, 
+                "runAsGroup": {
+                    "type": "integer",
+                    "title": "specify what group ID that processes will run with",
+                    "examples": [
+                        "10002"
+                    ]
+                },
+                "allowPrivilegeEscalation": {
+                    "type": "boolean",
+                    "title": "enable scraping of worker metrics through Prometheus annotations",
+                    "examples": [
+                        true
+                    ]
+                },
+                "readOnlyRootFilesystem": {
+                    "type": "boolean",
+                    "title": "mount the container's root filesystem as read-only",
+                    "examples": [
+                        true
+                    ]
+                },
+                "procMount": {
+                    "type": "string", 
+                    "description": "denotes the type of proc mount to use for the containers - cannot be set when spec.os.name is windows", 
+                    "examples": [
+                        "DefaultProcMount"
+                    ]
+                }, 
+                "privileged": {
+                    "type": "boolean",
+                    "title": "run container in privileged mode",
+                    "examples": [
+                        true
+                    ]
+                },
+                "capabilities": {
+                    "type": "object",
+                    "default": {},
+                    "title": "linux capabilities for users",
+                    "properties": {
+                        "add": {
+                            "items": {
+                                "type": [
+                                    "string", 
+                                    "null"
+                                ]
+                            }, 
+                            "type": [
+                                "array", 
+                                "null"
+                            ], 
+                            "description": "added capabilities"
+                        }, 
+                        "drop": {
+                            "items": {
+                                "type": [
+                                    "string", 
+                                    "null"
+                                ]
+                            }, 
+                            "type": [
+                                "array", 
+                                "null"
+                            ], 
+                            "description": "removed capabilities"
+                        }
+                    }
+                },
+                "seccompProfile": {
+                    "type": "object",
+                    "description": "the seccomp options to use by the containers in this pod - this field cannot be set if spec.os.name is windows",
+                    "properties": {
+                        "type": {
+                            "description": "type indicates which kind of seccomp profile will be applied",
+                            "type": "string"
+                        },
+                        "localhostProfile": {
+                            "description": "localhostProfile indicates a profile defined in a file on the node should be used",
+                            "type": "string"
+                        }
+                    }
+                },
+                "seLinuxOptions": {
+                    "type": "object",
+                    "description": "SELinuxOptions are the labels to be applied to the container",
+                    "properties": {
+                        "level": {
+                            "description": "Level is SELinux level label that applies to the container.",
+                            "type": "string"
+                        },
+                        "role": {
+                            "description": "Role is a SELinux role label that applies to the container.",
+                            "type": "string"
+                        },
+                        "type": {
+                            "description": "Type is a SELinux type label that applies to the container.",
+                            "type": "string"
+                        },
+                        "user": {
+                            "description": "User is a SELinux user label that applies to the container.",
+                            "type": "string"
+                        }
+                    }
+                },
+                "windowsOptions": {
+                    "type": "object",
+                    "description": "the Windows specific settings applied to all containers",
+                    "properties": {
+                        "gmsaCredentialSpec": {
+                            "description": "this is where the GMSA admission webhook inlines the contents of the GMSA credential spec named by the GMSACredentialSpecName field",
+                            "type": "string"
+                        },
+                        "gmsaCredentialSpecName": {
+                            "description": "the name of the GMSA credential spec to use",
+                            "type": "string"
+                        },
+                        "hostProcess": {
+                            "description": "determines if a container should be run as a 'Host Process' container",
+                            "type": "string"
+                        },
+                        "runAsUserName": {
+                            "description": "the UserName in Windows to run the entrypoint of the container process",
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "podSecurityContext": {
+            "type": "object",
+            "default": {},
+            "title": "define privilege and access control settings for a pod",
+            "properties": {
+                "runAsNonRoot": {
+                    "type": "boolean", 
+                    "description": "indicates that the container must run as a non-root user",
+                    "examples": [
+                        true
+                    ]
+                }, 
+                "fsGroup": {
+                    "type": "integer", 
+                    "description": "a special supplemental group that applies to all containers in a pod", 
+                    "format": "int64",
+                    "examples": [
+                        "1000"
+                    ]
+                },
+                "fsGroupChangePolicy": {
+                    "type": "string", 
+                    "description": "defines behavior of changing ownership and permission of the volume before being exposed inside Pod", 
+                    "enum": ["Always", "OnRootMismatch"]
+                }, 
+                "seccompProfile": {
+                    "type": "object",
+                    "description": "the seccomp options to use by the containers in this pod - this field cannot be set if spec.os.name is windows",
+                    "properties": {
+                        "type": {
+                            "description": "type indicates which kind of seccomp profile will be applied",
+                            "type": "string"
+                        },
+                        "localhostProfile": {
+                            "description": "localhostProfile indicates a profile defined in a file on the node should be used",
+                            "type": "string"
+                        }
+                    }
+                },
+                "seLinuxOptions": {
+                    "type": "object",
+                    "description": "SELinuxOptions are the labels to be applied to the container",
+                    "properties": {
+                        "level": {
+                            "description": "Level is SELinux level label that applies to the container.",
+                            "type": "string"
+                        },
+                        "role": {
+                            "description": "Role is a SELinux role label that applies to the container.",
+                            "type": "string"
+                        },
+                        "type": {
+                            "description": "Type is a SELinux type label that applies to the container.",
+                            "type": "string"
+                        },
+                        "user": {
+                            "description": "User is a SELinux user label that applies to the container.",
+                            "type": "string"
+                        }
+                    }
+                },
+                "sysctls": {
+                    "items": {
+                        "description": "Sysctl defines a kernel parameter to be set",
+                        "properties": {
+                            "name": {
+                                "description": "Name of a property to set",
+                                "type": "string"
+                            },
+                            "value": {
+                                "description": "Value of a property to set",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "name",
+                            "value"
+                        ],
+                        "type": "object"
+                    },
+                    "description": "sysctls holds a list of namespaced sysctls used for the pod",
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "windowsOptions": {
+                    "type": "object",
+                    "description": "the Windows specific settings applied to all containers",
+                    "properties": {
+                        "gmsaCredentialSpec": {
+                            "description": "this is where the GMSA admission webhook inlines the contents of the GMSA credential spec named by the GMSACredentialSpecName field",
+                            "type": "string"
+                        },
+                        "gmsaCredentialSpecName": {
+                            "description": "the name of the GMSA credential spec to use",
+                            "type": "string"
+                        },
+                        "hostProcess": {
+                            "description": "determines if a container should be run as a 'Host Process' container",
+                            "type": "string"
+                        },
+                        "runAsUserName": {
+                            "description": "the UserName in Windows to run the entrypoint of the container process",
+                            "type": "string"
+                        }
+                    }
+                },
+                "supplementalGroups": {
+                    "items": {
+                        "type": "integer", 
+                        "format": "int64"
+                    }, 
+                    "type": [
+                        "array", 
+                        "null"
+                    ], 
+                    "description": "a list of groups applied to the first process run in each container, in addition to the container's primary GID"
+                }, 
+                "runAsUser": {
+                    "type": "integer", 
+                    "description": "The UID to run the entrypoint of the container process", 
+                    "format": "int64",
+                    "examples": [
+                        "10001"
+                    ]
+                },
+                "runAsGroup": {
+                    "type": "integer", 
+                    "description": "The GID to run the entrypoint of the container process", 
+                    "format": "int64",
+                    "examples": [
+                        "10002"
+                    ]
+                }
+            }
+        },
         "resources": {
             "type": "object",
             "default": {},
@@ -1077,6 +1361,12 @@
                             "examples": [
                                 3
                             ]
+                        },
+                        "timeoutSeconds": {
+                            "type": "integer",
+                            "default": 60,
+                            "minimum": 60,
+                            "title": "Maximum time, in seconds, to wait for Kafka topic creation operation to finish (might vary depending on the amount of partitions and replicas configured)"
                         },
                         "sasl": {
                             "type": "object",

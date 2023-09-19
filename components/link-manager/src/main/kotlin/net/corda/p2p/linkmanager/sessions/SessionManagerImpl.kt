@@ -432,10 +432,10 @@ internal class SessionManagerImpl(
         multiplicity: Int
     ): List<Pair<AuthenticationProtocolInitiator, InitiatorHelloMessage>> {
 
-        val groupPolicy = groupPolicyProvider.getGroupPolicy(counterparties.ourId)
-        if (groupPolicy == null) {
+        val p2pParams = groupPolicyProvider.getP2PParameters(counterparties.ourId)
+        if (p2pParams == null) {
             logger.warn(
-                "Could not find the group information in the GroupPolicyProvider for ${counterparties.ourId}." +
+                "Could not find the p2p parameters in the GroupPolicyProvider for ${counterparties.ourId}." +
                     " The sessionInit message was not sent."
             )
             return emptyList()
@@ -452,12 +452,12 @@ internal class SessionManagerImpl(
 
         val sessionManagerConfig = config.get()
         val messagesAndProtocol = mutableListOf<Pair<AuthenticationProtocolInitiator, InitiatorHelloMessage>>()
-        val pkiMode = pkiMode(groupPolicy, sessionManagerConfig) ?: return emptyList()
+        val pkiMode = pkiMode(p2pParams, sessionManagerConfig) ?: return emptyList()
         (1..multiplicity).map {
             val sessionId = UUID.randomUUID().toString()
             val session = protocolFactory.createInitiator(
                 sessionId,
-                groupPolicy.protocolModes,
+                p2pParams.protocolModes,
                 sessionManagerConfig.maxMessageSize,
                 ourIdentityInfo.preferredSessionKeyAndCertificates.sessionPublicKey,
                 ourIdentityInfo.holdingIdentity.groupId,
@@ -469,15 +469,15 @@ internal class SessionManagerImpl(
     }
 
     private fun pkiMode(
-        groupPolicy: GroupPolicy,
+        p2pParameters: GroupPolicy.P2PParameters,
         sessionManagerConfig: SessionManagerConfig
     ): CertificateCheckMode? {
-        return when (groupPolicy.p2pParameters.sessionPki) {
+        return when (p2pParameters.sessionPki) {
             STANDARD -> {
-                val trustedCertificates = groupPolicy.p2pParameters.sessionTrustRoots?.toList()
+                val trustedCertificates = p2pParameters.sessionTrustRoots?.toList()
 
                 if (trustedCertificates == null) {
-                    logger.error("Expected session trust stores to be in group policy for group ${groupPolicy.groupId}.")
+                    logger.error("Expected session trust stores to be in p2p parameters ${p2pParameters}.")
                     return null
                 }
                 CertificateCheckMode.CheckCertificate(
@@ -487,7 +487,7 @@ internal class SessionManagerImpl(
                 )
             }
             STANDARD_EV3, CORDA_4 -> {
-                logger.error("PkiMode ${groupPolicy.p2pParameters.sessionPki} is unsupported by the link manager.")
+                logger.error("PkiMode ${p2pParameters.sessionPki} is unsupported by the link manager.")
                 return null
             }
             NO_PKI -> CertificateCheckMode.NoCertificate
@@ -549,8 +549,8 @@ internal class SessionManagerImpl(
             return null
         }
 
-        val groupPolicy = groupPolicyProvider.getGroupPolicy(sessionCounterparties.ourId)
-        if (groupPolicy == null) {
+        val p2pParams = groupPolicyProvider.getP2PParameters(sessionCounterparties.ourId)
+        if (p2pParams == null) {
             logger.warn(
                 "Could not find the group information in the GroupPolicyProvider for ${sessionCounterparties.ourId}." +
                     " The sessionInit message was not sent."
@@ -564,7 +564,7 @@ internal class SessionManagerImpl(
             linkOutMessages.add(
                 Pair(
                     message.first.sessionId,
-                    createLinkOutMessage(message.second, sessionCounterparties.ourId, responderMemberInfo, groupPolicy.networkType)
+                    createLinkOutMessage(message.second, sessionCounterparties.ourId, responderMemberInfo, p2pParams.networkType)
                 )
             )
         }
@@ -649,8 +649,8 @@ internal class SessionManagerImpl(
             sessionInfo
         )
 
-        val groupPolicy = groupPolicyProvider.getGroupPolicy(ourIdentityInfo.holdingIdentity)
-        if (groupPolicy == null) {
+        val p2pParams = groupPolicyProvider.getP2PParameters(ourIdentityInfo.holdingIdentity)
+        if (p2pParams == null) {
             logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, ourIdentityInfo.holdingIdentity)
             return null
         }
@@ -659,7 +659,7 @@ internal class SessionManagerImpl(
             message.header.sessionId,
         )
 
-        return createLinkOutMessage(payload, sessionInfo.ourId, responderMemberInfo, groupPolicy.networkType)
+        return createLinkOutMessage(payload, sessionInfo.ourId, responderMemberInfo, p2pParams.networkType)
     }
 
     private fun processResponderHandshake(message: ResponderHandshakeMessage): LinkOutMessage? {
@@ -762,8 +762,8 @@ internal class SessionManagerImpl(
         }
 
         val (hostedIdentityInSameGroup, peerMemberInfo) = locallyHostedIdentityWithPeerMemberInfo
-        val groupPolicy = groupPolicyProvider.getGroupPolicy(hostedIdentityInSameGroup)
-        if (groupPolicy == null) {
+        val p2pParams = groupPolicyProvider.getP2PParameters(hostedIdentityInSameGroup)
+        if (p2pParams == null) {
             logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, hostedIdentityInSameGroup)
             return null
         }
@@ -776,7 +776,7 @@ internal class SessionManagerImpl(
         val responderHello = session.generateResponderHello()
 
         logger.info("Remote identity ${peerMemberInfo.holdingIdentity} initiated new session ${message.header.sessionId}.")
-        return createLinkOutMessage(responderHello, hostedIdentityInSameGroup, peerMemberInfo, groupPolicy.networkType)
+        return createLinkOutMessage(responderHello, hostedIdentityInSameGroup, peerMemberInfo, p2pParams.networkType)
     }
 
     private fun processInitiatorHandshake(message: InitiatorHandshakeMessage): LinkOutMessage? {
@@ -827,16 +827,16 @@ internal class SessionManagerImpl(
             return null
         }
 
-        val groupPolicy = groupPolicyProvider.getGroupPolicy(ourIdentityInfo.holdingIdentity)
-        if (groupPolicy == null) {
+        val p2pParams = groupPolicyProvider.getP2PParameters(ourIdentityInfo.holdingIdentity)
+        if (p2pParams == null) {
             logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, ourIdentityInfo.holdingIdentity)
             return null
         }
 
         val sessionManagerConfig = config.get()
-        val pkiMode = pkiMode(groupPolicy, sessionManagerConfig) ?: return null
+        val pkiMode = pkiMode(p2pParams, sessionManagerConfig) ?: return null
         try {
-            session.validateEncryptedExtensions(pkiMode, groupPolicy.protocolModes, peer.holdingIdentity.x500Name)
+            session.validateEncryptedExtensions(pkiMode, p2pParams.protocolModes, peer.holdingIdentity.x500Name)
         } catch (exception: InvalidPeerCertificate) {
             logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
             return null
@@ -881,7 +881,7 @@ internal class SessionManagerImpl(
          * We delay removing the session from pendingInboundSessions until we receive the first data message as before this point
          * the other side (Initiator) might replay [InitiatorHandshakeMessage] in the case where the [ResponderHandshakeMessage] was lost.
          * */
-        return createLinkOutMessage(response, ourIdentityInfo.holdingIdentity, peer, groupPolicy.networkType)
+        return createLinkOutMessage(response, ourIdentityInfo.holdingIdentity, peer, p2pParams.networkType)
     }
 
     private fun AuthenticationProtocolResponder.validatePeerHandshakeMessageHandleError(

@@ -1,28 +1,22 @@
 package net.corda.messaging.api.mediator
 
+import kotlinx.coroutines.Deferred
+
 /**
  * Multi-source event mediator message producer.
  */
-interface MediatorProducer: AutoCloseable {
-
+interface MediatorProducer : AutoCloseable {
     /**
-     * Producer's name. Name is used for routing messages to producers, so it should be unique.
+     * Producer's unique ID.
      */
-    val name: String
+    val id: String
 
     /**
-     * Determines whether producer supports request-reply messaging pattern.
-     */
-    val isRequestReply: Boolean
-        get() = false
-
-    /**
-     * Sends message to producer's endpoint and returns reply.
+     * Asynchronously sends a generic [MediatorMessage], and returns any result/error through a [Deferred] response.
      *
-     * @param message Message
-     * @param endpoint Endpoint where messages is sent to.
-     * @returns ProducerReply Holds producer's reply if producer supports request-reply messaging pattern
-     *   (@see [isRequestReply]).
-     */
-    fun send(message: MediatorMessage, endpoint: String): ProducerReply
+     * @param message The [MediatorMessage] to send.
+     * @return [Deferred] instance representing the asynchronous computation result, or null if the destination doesn't
+     * provide a response.
+     * */
+    fun send(message: MediatorMessage<*>) : Deferred<MediatorMessage<*>?>
 }

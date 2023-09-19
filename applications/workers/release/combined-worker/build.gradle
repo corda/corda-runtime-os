@@ -80,6 +80,7 @@ dependencies {
     implementation project(':processors:persistence-processor')
     implementation project(':processors:rest-processor')
     implementation project(':processors:uniqueness-processor')
+    implementation project(':processors:scheduler-processor')
     implementation project(':processors:token-cache-processor')
     implementation project(':processors:verification-processor')
     implementation project(':processors:link-manager-processor')

@@ -88,30 +88,35 @@ internal class VirtualNodeDbFactoryImpl(
         ddlConfig: String?,
         dmlConfig: String?
     ): VirtualNodeDb {
-        val connectionsProvided = !dmlConfig.isNullOrBlank()
+        val usingClusterDb = dmlConfig.isNullOrBlank()
+        val noUniquenessDb = dbType == UNIQUENESS && dmlConfig == "none"
+
         val dbConnections =
-            if (connectionsProvided) {
-                if (dbType == UNIQUENESS && dmlConfig == "none") {
-                    mapOf(
-                        Pair(DDL, null),
-                        Pair(DML, null)
-                    )
-                } else {
-                    mapOf(
-                        Pair(
-                            DDL,
-                            ddlConfig?.let { createConnection(dbType, holdingIdentityShortHash, DDL, ddlConfig) }),
-                        Pair(DML, dmlConfig?.let { createConnection(dbType, holdingIdentityShortHash, DML, dmlConfig) })
-                    )
-                }
-            } else {
+            if (usingClusterDb) {
                 mapOf(
                     Pair(DDL, createClusterConnection(dbType, holdingIdentityShortHash, DDL)),
                     Pair(DML, createClusterConnection(dbType, holdingIdentityShortHash, DML))
                 )
             }
+            else if (noUniquenessDb) {
+                mapOf(
+                    Pair(DDL, null),
+                    Pair(DML, null)
+                )
+            }
+            else {
+                mapOf(
+                    Pair(DDL, ddlConfig?.let { createConnection(dbType, holdingIdentityShortHash, DDL, ddlConfig) }),
+                    Pair(DML, dmlConfig?.let { createConnection(dbType, holdingIdentityShortHash, DML, dmlConfig) })
+                )
+            }
+
+        val ddlProvided = ddlConfig?.isNotBlank() == true
+        val hasConnections = dbConnections.values.any { it != null }
+        val isPlatformManagedDb = hasConnections && (usingClusterDb || ddlProvided)
+
         return VirtualNodeDbImpl(
-            !connectionsProvided,
+            isPlatformManagedDb,
             dbConnections,
             dbType,
             holdingIdentityShortHash,
