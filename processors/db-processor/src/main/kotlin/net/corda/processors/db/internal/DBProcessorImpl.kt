@@ -281,7 +281,6 @@ class DBProcessorImpl @Activate constructor(
         coordinator.updateStatus(event.status)
     }
 
-    @Suppress("warnings")
     private fun onConfigChangedEvent(
         event: ConfigChangedEvent,
         coordinator: LifecycleCoordinator
