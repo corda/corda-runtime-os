@@ -119,7 +119,7 @@ class UniquenessCheckerRPCSmokeTests {
     fun `when call service with valid payload return idempotently`() {
         val url = "${System.getProperty("uniquenessWorkerHealthHttp")}api/5.1/uniqueness-checker"
 
-        logger.warn("uniqueness url: $url")
+        logger.info("uniqueness url: $url")
         val serializedPayload = avroSerializer.serialize(payloadBuilder().build())
 
         val request = HttpRequest.newBuilder()
