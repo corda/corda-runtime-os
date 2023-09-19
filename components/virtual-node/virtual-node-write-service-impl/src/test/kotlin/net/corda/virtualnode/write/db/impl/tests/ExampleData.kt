@@ -55,8 +55,8 @@ internal fun getValidRequest(): VirtualNodeCreateRequest {
 internal fun getVNodeDb(
     dbType: VirtualNodeDbType,
     isPlatformManagedDb: Boolean = true,
-    ddlConnection: DbConnection = mock(),
-    dmlConnection: DbConnection = mock(),
+    ddlConnection: DbConnection? = mock(),
+    dmlConnection: DbConnection? = mock(),
 ): VirtualNodeDb {
     return  mock<VirtualNodeDb>().apply {
         whenever(this.isPlatformManagedDb).thenReturn(isPlatformManagedDb)

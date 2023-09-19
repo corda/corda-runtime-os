@@ -1,5 +1,6 @@
 package net.corda.cli.plugins.preinstall
 
+import java.util.concurrent.Callable
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.Configurations
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.PluginContext
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.ReportEntry
@@ -7,7 +8,6 @@ import net.corda.cli.plugins.preinstall.PreInstallPlugin.ResourceConfig
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.ResourceValues
 import picocli.CommandLine
 import picocli.CommandLine.Parameters
-import java.util.concurrent.Callable
 
 @CommandLine.Command(name = "check-limits", description = ["Check the resource limits have been assigned correctly."])
 class CheckLimits : Callable<Int>, PluginContext() {
@@ -19,8 +19,6 @@ class CheckLimits : Callable<Int>, PluginContext() {
 
     private var defaultRequests: ResourceValues? = null
     private var defaultLimits: ResourceValues? = null
-
-    private var resourceRequestsChecked = false
 
     private fun parseMemoryString(memoryString: String): Double {
         val regex = Regex("(\\d+)([EPTGMKk]?i?[Bb]?)?")
@@ -81,13 +79,48 @@ class CheckLimits : Callable<Int>, PluginContext() {
 
     // use the checkResource function to check each individual resource
     private fun checkResources(resources: ResourceConfig?, name: String) {
-        resourceRequestsChecked = true
-
         val requests: ResourceValues? = resources?.requests ?: defaultRequests
         val limits: ResourceValues? = resources?.limits ?: defaultLimits
 
-        logger.info("${name.uppercase()}:")
+        checkCpu(requests, limits, name)
+        checkMemory(requests, limits, name)
+    }
 
+    private fun checkCpu(requests: ResourceValues?, limits: ResourceValues?, name: String) {
+        try {
+            if (requests?.cpu == null) {
+                requests?.cpu = defaultRequests?.cpu
+            }
+            if (limits?.cpu == null) {
+                limits?.cpu = defaultLimits?.cpu
+            }
+
+            if (requests?.cpu != null || limits?.cpu != null) {
+                if (requests?.cpu == null || limits?.cpu == null) {
+                    report.addEntry(ReportEntry("${name.uppercase()} cpu resources contains both a request and a limit", false))
+                    return
+                }
+                report.addEntry(ReportEntry("${name.uppercase()} cpu resources contains both a request and a limit", true))
+                logger.info("${name.uppercase()} CPU: \n\t request - ${requests.cpu}\n\t limit - ${limits.cpu}")
+                val limit: Double = parseCpuString(limits.cpu!!)
+                val request: Double = parseCpuString(requests.cpu!!)
+                report.addEntry(ReportEntry("Parse \"$name\" cpu resource strings", true))
+
+                if (limit >= request) {
+                    report.addEntry(ReportEntry("$name cpu requests do not exceed limits", true))
+                } else {
+                    report.addEntry(ReportEntry("$name cpu requests do not exceed limits", false,
+                        ResourceLimitsExceededException("Request ($requests.cpu!!) is greater than it's limit ($limits.cpu!!)")))
+                }
+            }
+
+        } catch(e: IllegalArgumentException) {
+            report.addEntry(ReportEntry("Parse \"$name\" cpu resource strings", false, e))
+        }
+    }
+
+    // use the checkResource function to check each individual resource
+    private fun checkMemory(requests: ResourceValues?, limits: ResourceValues?, name: String) {
         try {
             if (requests?.memory == null) {
                 requests?.memory = defaultRequests?.memory
@@ -102,43 +135,21 @@ class CheckLimits : Callable<Int>, PluginContext() {
                     return
                 }
                 report.addEntry(ReportEntry("${name.uppercase()} memory resources contains both a request and a limit", true))
-                logger.info("Memory: \n\t request - ${requests.memory}\n\t limit - ${limits.memory}")
+                logger.info("${name.uppercase()} Memory: \n\t request - ${requests.memory}\n\t limit - ${limits.memory}")
                 val limit = parseMemoryString(limits.memory!!)
                 val request = parseMemoryString(requests.memory!!)
-                if (limit < request) {
-                    throw ResourceLimitsExceededException("Request ($requests.memory!!) is greater than it's limit ($limits.memory!!)")
+                report.addEntry(ReportEntry("Parse \"$name\" memory resource strings", true))
+
+                if (limit >= request) {
+                    report.addEntry(ReportEntry("$name memory requests do not exceed limits", true))
+                } else {
+                    report.addEntry(ReportEntry("$name memory requests do not exceed limits", false,
+                        ResourceLimitsExceededException("Request ($requests.memory!!) is greater than it's limit ($limits.memory!!)")))
                 }
             }
 
-            if (requests?.cpu == null) {
-                requests?.cpu = defaultRequests?.cpu
-            }
-            if (limits?.cpu == null) {
-                limits?.cpu = defaultLimits?.cpu
-            }
-
-            if (requests?.cpu != null || limits?.cpu != null) {
-                if (requests?.cpu == null || limits?.cpu == null) {
-                    report.addEntry(ReportEntry("${name.uppercase()} cpu resources contains both a request and a limit", false))
-                    return
-                }
-                report.addEntry(ReportEntry("${name.uppercase()} cpu resources contains both a request and a limit", true))
-                logger.info("CPU: \n\t request - ${requests.cpu}\n\t limit - ${limits.cpu}")
-                val limit: Double = parseCpuString(limits.cpu!!)
-                val request: Double = parseCpuString(requests.cpu!!)
-                if (limit < request) {
-                    throw ResourceLimitsExceededException("Request ($requests.cpu!!) is greater than it's limit ($limits.cpu!!)")
-                }
-            }
-
-            report.addEntry(ReportEntry("Parse \"$name\" resource strings", true))
-            report.addEntry(ReportEntry("$name requests do not exceed limits", true))
         } catch(e: IllegalArgumentException) {
-            report.addEntry(ReportEntry("Parse \"$name\" resource strings", false, e))
-            return
-        } catch (e: ResourceLimitsExceededException) {
-            report.addEntry(ReportEntry("$name requests do not exceed limits", false, e))
-            return
+            report.addEntry(ReportEntry("Parse \"$name\" memory resource strings", false, e))
         }
     }
 
@@ -162,10 +173,13 @@ class CheckLimits : Callable<Int>, PluginContext() {
         checkResources(yaml.bootstrap?.resources, "bootstrap")
         checkResources(yaml.workers?.db?.resources, "DB")
         checkResources(yaml.workers?.flow?.resources, "flow")
+        checkResources(yaml.workers?.flowMapper?.resources, "flowMapper")
+        checkResources(yaml.workers?.verification?.resources, "verification")
         checkResources(yaml.workers?.membership?.resources, "membership")
         checkResources(yaml.workers?.rest?.resources, "rest")
         checkResources(yaml.workers?.p2pLinkManager?.resources, "P2P link manager")
         checkResources(yaml.workers?.p2pGateway?.resources, "P2P gateway")
+        checkResources(yaml.workers?.persistence?.resources, "persistence")
         checkResources(yaml.workers?.uniqueness?.resources, "uniqueness")
 
         return if (report.testsPassed()) {

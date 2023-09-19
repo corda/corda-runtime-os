@@ -49,6 +49,7 @@ dependencies {
     implementation project(':libs:membership:membership-datamodel')
     implementation project(':libs:messaging:messaging')
     implementation project(":libs:permissions:permission-datamodel")
+    implementation project(":libs:scheduler:scheduler-datamodel")
     implementation project(':libs:serialization:serialization-avro')
     implementation 'net.corda:corda-topic-schema'
     implementation project(":libs:utilities")
@@ -100,6 +101,7 @@ dependencies {
     runtimeOnly project(':libs:permissions:permission-storage-writer-impl')
     runtimeOnly project(":libs:sandbox-internal")
     runtimeOnly project(':libs:schema-registry:schema-registry-impl')
+    runtimeOnly project(":libs:web:web-impl")
 
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"

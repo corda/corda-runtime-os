@@ -84,6 +84,7 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFacto
 import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toWire
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
+import net.corda.membership.p2p.helpers.KeySpecExtractor
 import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.spec
 import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.validateSpecName
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -575,9 +576,13 @@ class DynamicMemberRegistrationService @Activate constructor(
             }
         }
 
-        private fun getSignatureSpec(key: CryptoSigningKey, specFromContext: String?): SignatureSpec {
+        private fun getSignatureSpec(
+            key: CryptoSigningKey,
+            specFromContext: String?,
+            specType: KeySpecExtractor.KeySpecType = KeySpecExtractor.KeySpecType.OTHER
+        ): SignatureSpec {
             if (specFromContext != null) {
-                key.validateSpecName(specFromContext)
+                key.validateSpecName(specFromContext, specType)
                 return SignatureSpecImpl(specFromContext)
             }
             logger.info(
@@ -592,7 +597,8 @@ class DynamicMemberRegistrationService @Activate constructor(
 
         private inner class Key(
             key: CryptoSigningKey,
-            defaultSpec: String?
+            defaultSpec: String?,
+            specType: KeySpecExtractor.KeySpecType = KeySpecExtractor.KeySpecType.OTHER,
         ) : KeyDetails {
             private val publicKey by lazy {
                 keyEncodingService.decodePublicKey(key.publicKey.array())
@@ -604,7 +610,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 publicKey.fullIdHash()
             }
             override val spec by lazy {
-                getSignatureSpec(key, defaultSpec)
+                getSignatureSpec(key, defaultSpec, specType)
             }
         }
 
@@ -625,7 +631,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     String.format(LEDGER_KEY_HASHES_KEY, index) to ledgerKey.fullId(),
                     String.format(LEDGER_KEY_SIGNATURE_SPEC, index) to getSignatureSpec(
                         ledgerKeys[index],
-                        context[String.format(LEDGER_KEY_SIGNATURE_SPEC, index)]
+                        context[String.format(LEDGER_KEY_SIGNATURE_SPEC, index)],
                     ).signatureName
                 )
             }.toMap()
@@ -650,6 +656,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     specKey to getSignatureSpec(
                         sessionKey,
                         spec,
+                        KeySpecExtractor.KeySpecType.SESSION,
                     ).signatureName,
                 )
             }.toMap()
@@ -662,7 +669,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             return getKeysFromIds(keyIds, tenantId, NOTARY).mapIndexed { index, key ->
                 Key(
                     key,
-                    context[String.format(NOTARY_KEY_SPEC, index)]
+                    context[String.format(NOTARY_KEY_SPEC, index)],
                 )
             }
         }

@@ -36,7 +36,6 @@ class InitialCheckpointRequestHandler @Activate constructor(
         val status = flowMessageFactory.createFlowStartedStatusMessage(checkpoint)
 
         val records = listOf(
-            flowRecordFactory.createFlowEventRecord(checkpoint.flowId,net.corda.data.flow.event.Wakeup()),
             flowRecordFactory.createFlowStatusRecord(status)
         )
 

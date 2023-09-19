@@ -27,7 +27,7 @@ interface FlowEventPipelineFactory {
     fun create(
         checkpoint: Checkpoint?,
         event: FlowEvent,
-        config: SmartConfig,
+        configs: Map<String, SmartConfig>,
         mdcProperties: Map<String, String>,
         traceContext: TraceContext,
         eventRecordTimestamp: Long

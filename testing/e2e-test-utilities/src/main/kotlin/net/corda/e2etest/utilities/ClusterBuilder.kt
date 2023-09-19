@@ -1,5 +1,6 @@
 package net.corda.e2etest.utilities
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.rest.annotations.RestApiVersion
 import java.io.File
 import java.io.FileNotFoundException
@@ -16,22 +17,37 @@ import java.time.Instant
  */
 @Suppress("TooManyFunctions")
 class ClusterBuilder {
-    
+
     internal companion object {
-        val REST_API_VERSION_PATH = RestApiVersion.C5_1.versionPath
+        var REST_API_VERSION_PATH = ""
     }
-    
+
     private var client: HttpsClient? = null
 
     private fun endpoint(uri: URI, username: String, password: String) {
         client = UnirestHttpsClient(uri, username, password)
     }
 
-    fun init(clusterInfo: ClusterInfo) {
+    fun init(
+        clusterInfo: ClusterInfo,
+        apiVersion: String,
+    ) {
+        REST_API_VERSION_PATH = apiVersion
         with(clusterInfo.rest) {
             endpoint(uri, user, password)
         }
     }
+
+    data class VNodeCreateBody(
+        val cpiFileChecksum: String,
+        val x500Name: String,
+        val cryptoDdlConnection: String?,
+        val cryptoDmlConnection: String?,
+        val uniquenessDdlConnection: String?,
+        val uniquenessDmlConnection: String?,
+        val vaultDdlConnection: String?,
+        val vaultDmlConnection: String?
+    )
 
     /** POST, but most useful for running flows */
     fun post(cmd: String, body: String) = client!!.post(cmd, body)
@@ -88,17 +104,58 @@ class ClusterBuilder {
             ?: throw FileNotFoundException("No such resource: '$resourceName'")
 
     fun importCertificate(resourceName: String, usage: String, alias: String) =
-        uploadCertificateResource("/api/$REST_API_VERSION_PATH/certificate/cluster/$usage", resourceName, alias)
+        uploadCertificateResource(
+            "/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.certificatePath()}/cluster/$usage",
+            resourceName,
+            alias,
+        )
 
-    fun importCertificate(file: File, usage: String, alias: String) =
-        uploadCertificateFile("/api/$REST_API_VERSION_PATH/certificate/cluster/$usage", file, alias)
-
-    // Used to test RestApiVersion.C5_0 CertificateRestResource, remove after LTS
+    // Used to test RestApiVersion.C5_0 CertificateRestResource from 5.1 cluster, remove after LTS
     fun deprecatedImportCertificate(resourceName: String, usage: String, alias: String) =
-        uploadCertificateResource("/api/${RestApiVersion.C5_0.versionPath}/certificates/cluster/$usage", resourceName, alias)
+        uploadCertificateResource(
+            "/api/${RestApiVersion.C5_0.versionPath}/certificates/cluster/$usage",
+            resourceName,
+            alias
+        )
+
+    /**
+     * If [holdingIdentity] is not specified, it will be uploaded as a cluster-level certificate.
+     * If [holdingIdentity] is specified, it will be uploaded as a vnode-level certificate under the specified vnode.
+     */
+    fun importCertificate(file: File, usage: String, alias: String, holdingIdentityId: String?): SimpleResponse {
+        return if (holdingIdentityId == null) {
+            importClusterCertificate(file, usage, alias)
+        } else {
+            importVnodeCertificate(file, usage, alias, holdingIdentityId)
+        }
+    }
+
+    private fun importClusterCertificate(file: File, usage: String, alias: String) =
+        uploadCertificateFile(
+            "/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.certificatePath()}/cluster/$usage",
+            file,
+            alias,
+        )
+
+    private fun importVnodeCertificate(file: File, usage: String, alias: String, holdingIdentityId: String) =
+        uploadCertificateFile(
+            "/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.certificatePath()}/vnode/$holdingIdentityId/$usage",
+            file,
+            alias
+        )
 
     fun getCertificateChain(usage: String, alias: String) =
-        client!!.get("/api/$REST_API_VERSION_PATH/certificate/cluster/$usage/$alias")
+        client!!.get("/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.certificatePath()}/cluster/$usage/$alias")
+
+    /**
+     * Returns the correct path for certificate rest resource based on the rest api version we use.
+     */
+    private fun String.certificatePath(): String =
+        if (this == RestApiVersion.C5_0.versionPath) {
+            "certificates"
+        } else {
+            "certificate"
+        }
 
     /** Assumes the resource *is* a CPB */
     fun cpbUpload(resourceName: String) = uploadUnmodifiedResource("/api/$REST_API_VERSION_PATH/cpi/", resourceName)
@@ -166,8 +223,29 @@ class ClusterBuilder {
     /** List all CPIs in the system */
     fun cpiList() = client!!.get("/api/$REST_API_VERSION_PATH/cpi")
 
-    private fun vNodeBody(cpiHash: String, x500Name: String) =
-        """{ "cpiFileChecksum" : "$cpiHash", "x500Name" : "$x500Name"}"""
+    @Suppress("LongParameterList")
+    private fun vNodeBody(
+        cpiHash: String,
+        x500Name: String,
+        cryptoDdlConnection: String?,
+        cryptoDmlConnection: String?,
+        uniquenessDdlConnection: String?,
+        uniquenessDmlConnection: String?,
+        vaultDdlConnection: String?,
+        vaultDmlConnection: String?
+    ): String {
+        val body = VNodeCreateBody(
+            cpiHash,
+            x500Name,
+            cryptoDdlConnection,
+            cryptoDmlConnection,
+            uniquenessDdlConnection,
+            uniquenessDmlConnection,
+            vaultDdlConnection,
+            vaultDmlConnection
+        )
+        return jacksonObjectMapper().writeValueAsString(body)
+    }
 
     private fun registerMemberBody(
         customMetadata: Map<String, String>,
@@ -186,8 +264,8 @@ class ClusterBuilder {
             "corda.key.scheme" to "CORDA.ECDSA.SECP256R1",
             "corda.roles.0" to "notary",
             "corda.notary.service.name" to "$notaryServiceName",
-             "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.nonvalidating",
-             "corda.notary.service.flow.protocol.version.0" to "1",
+            "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.nonvalidating",
+            "corda.notary.service.flow.protocol.version.0" to "1",
         ) + customMetadata)
             .map { "\"${it.key}\" : \"${it.value}\"" }
             .joinToString()
@@ -196,7 +274,7 @@ class ClusterBuilder {
 
     private fun createRbacRoleBody(roleName: String, groupVisibility: String?): String {
         val body: List<String> = mutableListOf(""""roleName": "$roleName"""").apply {
-            groupVisibility?.let { add(""""groupVisibility": "$groupVisibility"""") }
+            groupVisibility?.let { add(""""groupVisibility": "$it"""") }
         }
         return body.joinToString(prefix = "{", postfix = "}")
     }
@@ -216,8 +294,8 @@ class ClusterBuilder {
             """"initialPassword": "$password"""",
             """"loginName": "$loginName""""
         ).apply {
-            parentGroup?.let { add(""""parentGroup": "$parentGroup"""") }
-            passwordExpiry?.let { add(""""passwordExpiry": "$passwordExpiry"""") }
+            parentGroup?.let { add(""""parentGroup": "$it"""") }
+            passwordExpiry?.let { add(""""passwordExpiry": "$it"""") }
         }
         return body.joinToString(prefix = "{", postfix = "}")
     }
@@ -232,8 +310,8 @@ class ClusterBuilder {
             """"permissionString": "$permissionString"""",
             """"permissionType": "$permissionType""""
         ).apply {
-            groupVisibility?.let { add(""""groupVisibility": "$groupVisibility"""") }
-            virtualNode?.let { add(""""virtualNode": "$virtualNode"""") }
+            groupVisibility?.let { add(""""groupVisibility": "$it"""") }
+            virtualNode?.let { add(""""virtualNode": "$it"""") }
         }
         return body.joinToString(prefix = "{", postfix = "}")
     }
@@ -244,7 +322,7 @@ class ClusterBuilder {
     ): String {
 
         val body1 = permissionsToCreate.map { createPermissionBody(it.second, it.first, null, null) }
-        
+
         val bodyStr1 = if (body1.isEmpty()) {
             ""
         } else {
@@ -261,8 +339,30 @@ class ClusterBuilder {
     }
 
     /** Create a virtual node */
-    fun vNodeCreate(cpiHash: String, x500Name: String) =
-        post("/api/$REST_API_VERSION_PATH/virtualnode", vNodeBody(cpiHash, x500Name))
+    @Suppress("LongParameterList")
+    fun vNodeCreate(
+        cpiHash: String,
+        x500Name: String,
+        cryptoDdlConnection: String? = null,
+        cryptoDmlConnection: String? = null,
+        uniquenessDdlConnection: String? = null,
+        uniquenessDmlConnection: String? = null,
+        vaultDdlConnection: String? = null,
+        vaultDmlConnection: String? = null
+    ) =
+        post(
+            "/api/$REST_API_VERSION_PATH/virtualnode",
+            vNodeBody(
+                cpiHash,
+                x500Name,
+                cryptoDdlConnection,
+                cryptoDmlConnection,
+                uniquenessDdlConnection,
+                uniquenessDmlConnection,
+                vaultDdlConnection,
+                vaultDmlConnection
+            )
+        )
 
     /** Trigger upgrade of a virtual node's CPI to the given  */
     fun vNodeUpgrade(virtualNodeShortHash: String, targetCpiFileChecksum: String) =
@@ -275,7 +375,8 @@ class ClusterBuilder {
     fun vNodeList() = client!!.get("/api/$REST_API_VERSION_PATH/virtualnode")
 
     /** List all virtual nodes */
-    fun getVNode(holdingIdentityShortHash: String) = client!!.get("/api/$REST_API_VERSION_PATH/virtualnode/$holdingIdentityShortHash")
+    fun getVNode(holdingIdentityShortHash: String) =
+        client!!.get("/api/$REST_API_VERSION_PATH/virtualnode/$holdingIdentityShortHash")
 
     fun getVNodeStatus(requestId: String) = client!!.get("/api/$REST_API_VERSION_PATH/virtualnode/status/$requestId")
 
@@ -294,9 +395,11 @@ class ClusterBuilder {
         notaryServiceName: String? = null,
         customMetadata: Map<String, String> = emptyMap(),
     ) = register(
-            holdingIdShortHash,
-            if (notaryServiceName != null) registerNotaryBody(notaryServiceName, customMetadata) else registerMemberBody(customMetadata)
+        holdingIdShortHash,
+        if (notaryServiceName != null) registerNotaryBody(notaryServiceName, customMetadata) else registerMemberBody(
+            customMetadata
         )
+    )
 
     fun register(holdingIdShortHash: String, registrationContext: String) =
         post(
@@ -314,9 +417,17 @@ class ClusterBuilder {
         post("/api/$REST_API_VERSION_PATH/hsm/soft/$holdingIdentityShortHash/$category", body = "")
 
     fun createKey(holdingIdentityShortHash: String, alias: String, category: String, scheme: String) =
-        post("/api/$REST_API_VERSION_PATH/key/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme", body = "")
+        if (REST_API_VERSION_PATH == RestApiVersion.C5_0.versionPath) {
+            // Used to test RestApiVersion.C5_0 CertificateRestResource, remove after LTS
+            deprecatedCreateKey(holdingIdentityShortHash, alias, category, scheme)
+        } else {
+            post(
+                "/api/$REST_API_VERSION_PATH/key/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme",
+                body = ""
+            )
+        }
 
-    // Used to test RestApiVersion.C5_0 KeysRestResource, remove after LTS
+    // Used to test RestApiVersion.C5_0 KeysRestResource from 5.1 cluster, remove after LTS
     fun deprecatedCreateKey(holdingIdentityShortHash: String, alias: String, category: String, scheme: String) =
         post(
             "/api/${RestApiVersion.C5_0.versionPath}/keys/$holdingIdentityShortHash/alias/$alias/category/$category/scheme/$scheme",
@@ -324,7 +435,7 @@ class ClusterBuilder {
         )
 
     fun getKey(tenantId: String, keyId: String) =
-        get("/api/$REST_API_VERSION_PATH/key/$tenantId/$keyId")
+        get("/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.keyPath()}/$tenantId/$keyId")
 
     fun getKey(
         tenantId: String,
@@ -342,8 +453,18 @@ class ClusterBuilder {
         } else {
             queries.joinToString(prefix = "?", separator = "&")
         }
-        return get("/api/$REST_API_VERSION_PATH/key/$tenantId$queryStr")
+        return get("/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.keyPath()}/$tenantId$queryStr")
     }
+
+    /**
+     * Returns the correct path for key rest resource based on the rest api version we use.
+     */
+    private fun String.keyPath(): String =
+        if (this == RestApiVersion.C5_0.versionPath) {
+            "keys"
+        } else {
+            "key"
+        }
 
     /** Get status of a flow */
     fun flowStatus(holdingIdentityShortHash: String, clientRequestId: String) =
@@ -381,7 +502,8 @@ class ClusterBuilder {
         parentGroup: String? = null,
         passwordExpiry: Instant? = null
     ) =
-        post("/api/$REST_API_VERSION_PATH/user",
+        post(
+            "/api/$REST_API_VERSION_PATH/user",
             createRbacUserBody(enabled, fullName, password, loginName, parentGroup, passwordExpiry)
         )
 
@@ -408,7 +530,8 @@ class ClusterBuilder {
         groupVisibility: String? = null,
         virtualNode: String? = null
     ) =
-        post("/api/$REST_API_VERSION_PATH/permission",
+        post(
+            "/api/$REST_API_VERSION_PATH/permission",
             createPermissionBody(permissionString, permissionType, groupVisibility, virtualNode)
         )
 
@@ -426,7 +549,7 @@ class ClusterBuilder {
         permissionStringPrefix: String? = null
     ): SimpleResponse {
         val queries: List<String> = mutableListOf("limit=$limit", "permissiontype=$permissionType").apply {
-            permissionStringPrefix?.let { add("permissionstringprefix=$permissionStringPrefix") }
+            permissionStringPrefix?.let { add("permissionstringprefix=$it") }
         }
         val queryStr = queries.joinToString(prefix = "?", separator = "&")
         return get("/api/$REST_API_VERSION_PATH/permission$queryStr")
@@ -490,25 +613,45 @@ class ClusterBuilder {
 
     fun configureNetworkParticipant(
         holdingIdentityShortHash: String,
-        sessionKeyId: String
-    ) =
-        put(
-            "/api/$REST_API_VERSION_PATH/network/setup/$holdingIdentityShortHash",
-            body = """
-                {
-                    "p2pTlsCertificateChainAlias": "$CERT_ALIAS_P2P",
-                    "useClusterLevelTlsCertificateAndKey": true,
+        sessionKeyId: String,
+        sessionCertAlias: String? = null
+    ): SimpleResponse {
+        val sessionKeysSection = if (sessionCertAlias == null) {
+            """
                     "sessionKeysAndCertificates": [{
                       "preferred": true,
                       "sessionKeyId": "$sessionKeyId"
                     }]
+            """.trim()
+        } else {
+            """
+                    "sessionKeysAndCertificates": [{
+                      "preferred": true,
+                      "sessionKeyId": "$sessionKeyId",
+                      "sessionCertificateChainAlias": "$sessionCertAlias"
+                    }]
+            """.trim()
+        }
+        val body =
+            """
+                {
+                    "p2pTlsCertificateChainAlias": "$CERT_ALIAS_P2P",
+                    "useClusterLevelTlsCertificateAndKey": true,
+                    $sessionKeysSection
                 }
             """.trimIndent()
+        return put(
+            "/api/$REST_API_VERSION_PATH/network/setup/$holdingIdentityShortHash",
+            body = body
         )
+    }
+
 }
 
-fun <T> cluster(initialize: ClusterBuilder.() -> T): T = DEFAULT_CLUSTER.cluster(initialize)
+fun <T> cluster(
+    initialize: ClusterBuilder.() -> T,
+): T = DEFAULT_CLUSTER.cluster(initialize)
 
 fun <T> ClusterInfo.cluster(
     initialize: ClusterBuilder.() -> T
-): T = ClusterBuilder().apply { init(this@cluster) }.let(initialize)
+): T = ClusterBuilder().apply { init(this@cluster, restApiVersion.versionPath) }.let(initialize)

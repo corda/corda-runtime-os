@@ -1,9 +1,10 @@
 package net.corda.kotlin.reflect.types
 
-import kotlinx.metadata.KmType
 import kotlin.reflect.KClassifier
 import kotlin.reflect.KType
 import kotlin.reflect.KTypeProjection
+import kotlinx.metadata.KmType
+import kotlinx.metadata.isNullable
 
 class KotlinType(private val kmType: KmType) : KType, KInternal {
     override val annotations: List<Annotation>

@@ -2,6 +2,7 @@ package net.corda.membership.impl.registration.staticnetwork
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -15,10 +16,12 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 
 class RegistrationServiceLifecycleHandler(
     staticMemberRegistrationService: StaticMemberRegistrationService
@@ -62,6 +65,9 @@ class RegistrationServiceLifecycleHandler(
                     LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
                     LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>(),
                     LifecycleCoordinatorName.forComponent<HSMRegistrationClient>(),
+                    LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
+                    LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
+                    LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
                 )
             )
         }

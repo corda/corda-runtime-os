@@ -576,7 +576,7 @@ class OutboundMessageProcessorTest {
     @Test
     fun `unauthenticated messages are dropped if group info is not available`() {
         val groupPolicyProvider = mock<GroupPolicyProvider> {
-            on { getGroupPolicy(localIdentity) } doReturn null
+            on { getP2PParameters(localIdentity) } doReturn null
         }
 
         val processor = OutboundMessageProcessor(

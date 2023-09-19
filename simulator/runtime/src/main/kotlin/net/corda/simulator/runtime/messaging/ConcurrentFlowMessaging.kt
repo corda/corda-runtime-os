@@ -64,6 +64,25 @@ class ConcurrentFlowMessaging(
         return doInitiate(x500Name, null)
     }
 
+    override fun initiateFlow(x500Name: MemberX500Name, requireClose: Boolean): FlowSession {
+        return doInitiate(x500Name, null)
+    }
+
+    override fun initiateFlow(
+        x500Name: MemberX500Name,
+        requireClose: Boolean,
+        flowContextPropertiesBuilder: FlowContextPropertiesBuilder
+    ): FlowSession {
+        return doInitiate(x500Name, flowContextPropertiesBuilder)
+    }
+
+    override fun initiateFlow(
+        x500Name: MemberX500Name,
+        flowContextPropertiesBuilder: FlowContextPropertiesBuilder
+    ): FlowSession {
+        return initiateFlow(x500Name, true, flowContextPropertiesBuilder)
+    }
+
     private fun doInitiate(
         x500Name: MemberX500Name,
         flowContextPropertiesBuilder: FlowContextPropertiesBuilder?): FlowSession {
@@ -119,12 +138,6 @@ class ConcurrentFlowMessaging(
         return initiatorSession
     }
 
-    override fun initiateFlow(
-        x500Name: MemberX500Name,
-        flowContextPropertiesBuilder: FlowContextPropertiesBuilder
-    ): FlowSession {
-        return doInitiate(x500Name, flowContextPropertiesBuilder)
-    }
 
     /**
      * Not yet implemented.

@@ -16,6 +16,7 @@ dependencies {
     implementation project(':libs:configuration:configuration-validation')
     implementation project(':libs:platform-info')
     implementation project(':libs:tracing')
+    implementation project(':libs:web:web')
     // Processor list must be kept in sync with workersForProcessor in net.corda.cli.plugins.topicconfig.Create
     implementation project(':processors:link-manager-processor')
 
@@ -27,8 +28,10 @@ dependencies {
     implementation "info.picocli:picocli:$picocliVersion"
 
     runtimeOnly project(":libs:messaging:kafka-message-bus-impl")
+    runtimeOnly project(':libs:tracing-impl')
 
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     runtimeOnly "org.apache.felix:org.apache.felix.scr:$felixScrVersion"
     runtimeOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"

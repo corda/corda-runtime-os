@@ -1,13 +1,5 @@
 package net.corda.kotlin.reflect.types
 
-import kotlinx.metadata.Flag.Function.IS_EXTERNAL
-import kotlinx.metadata.Flag.Function.IS_INFIX
-import kotlinx.metadata.Flag.Function.IS_INLINE
-import kotlinx.metadata.Flag.Function.IS_OPERATOR
-import kotlinx.metadata.Flag.Function.IS_SUSPEND
-import kotlinx.metadata.KmFunction
-import kotlinx.metadata.jvm.lambdaClassOriginName
-import kotlinx.metadata.jvm.signature
 import java.lang.reflect.Method
 import java.util.Objects
 import kotlin.contracts.ExperimentalContracts
@@ -15,6 +7,17 @@ import kotlin.reflect.KParameter
 import kotlin.reflect.KType
 import kotlin.reflect.KTypeParameter
 import kotlin.reflect.KVisibility
+import kotlinx.metadata.KmFunction
+import kotlinx.metadata.isExternal
+import kotlinx.metadata.isInfix
+import kotlinx.metadata.isInline
+import kotlinx.metadata.isNullable
+import kotlinx.metadata.isOperator
+import kotlinx.metadata.isSuspend
+import kotlinx.metadata.jvm.lambdaClassOriginName
+import kotlinx.metadata.jvm.signature
+import kotlinx.metadata.modality
+import kotlinx.metadata.visibility
 
 class KotlinFunction<V> private constructor(
     private val kmFunction: KmFunction,
@@ -32,24 +35,24 @@ class KotlinFunction<V> private constructor(
     )
 
     override val isAbstract: Boolean
-        get() = isAbstract(javaMethod, kmFunction.flags)
+        get() = isAbstract(javaMethod, kmFunction.modality)
     override val isFinal: Boolean
-        get() = isFinal(javaMethod, kmFunction.flags)
+        get() = isFinal(javaMethod, kmFunction.modality)
     override val isOpen: Boolean
-        get() = isOpen(javaMethod, kmFunction.flags)
+        get() = isOpen(javaMethod, kmFunction.modality)
     override val isExternal: Boolean
-        get() = IS_EXTERNAL(kmFunction.flags)
+        get() = kmFunction.isExternal
     override val isInfix: Boolean
-        get() = IS_INFIX(kmFunction.flags)
+        get() = kmFunction.isInfix
     override val isInline: Boolean
-        get() = IS_INLINE(kmFunction.flags)
+        get() = kmFunction.isInline
     override val isOperator: Boolean
-        get() = IS_OPERATOR(kmFunction.flags)
+        get() = kmFunction.isOperator
     override val isSuspend: Boolean
-        get() = IS_SUSPEND(kmFunction.flags)
+        get() = kmFunction.isSuspend
 
     override val visibility: KVisibility?
-        get() = getVisibility(kmFunction.flags)
+        get() = getVisibility(kmFunction.visibility)
 
     override val annotations: List<Annotation>
         get() = TODO("KotlinFunction.annotations: Not yet implemented")
@@ -69,7 +72,9 @@ class KotlinFunction<V> private constructor(
             // (or vice versa), which means that the original "value parameter"
             // information no longer applies. So create a new KmFunction object
             // without any value parameters.
-            KmFunction(kmFunction.flags, kmFunction.name).also { kmf ->
+            @Suppress("deprecation")
+            KmFunction(kmFunction.name).also { kmf ->
+                kmf.flags = kmFunction.flags
                 // Copy values from KmFunction.
                 kmf.receiverParameterType = kmFunction.receiverParameterType
                 kmf.versionRequirements += kmFunction.versionRequirements

@@ -104,10 +104,10 @@ spec:
         {{- include "corda.workerSelectorLabels" ( list $ $worker ) | nindent 8 }}
     spec:
       {{- if and ( not $.Values.dumpHostPath ) ( not .profiling.enabled ) }}
+      {{- with $.Values.podSecurityContext }}
       securityContext:
-        runAsUser: 10001
-        runAsGroup: 10002
-        fsGroup: 1000
+        {{ . | toYaml | nindent 8 }}
+      {{- end }}
       {{- end }}
       {{- include "corda.imagePullSecrets" $ | nindent 6 }}
       {{- include "corda.tolerations" $ | nindent 6 }}
@@ -159,6 +159,13 @@ spec:
               fieldRef:
                 apiVersion: v1
                 fieldPath: metadata.namespace
+          - name: ENABLE_CLOUDWATCH
+            value:
+              {{- if eq $.Values.serviceAccount.name "cloudwatch-writer" }}
+                "true"
+              {{- else }}
+                "false"
+              {{- end }}
           - name: JAVA_TOOL_OPTIONS
             value:
               {{ .javaOptions }}

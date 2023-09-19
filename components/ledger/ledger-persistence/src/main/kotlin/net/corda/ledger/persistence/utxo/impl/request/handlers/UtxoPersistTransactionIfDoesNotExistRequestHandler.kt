@@ -27,7 +27,7 @@ class UtxoPersistTransactionIfDoesNotExistRequestHandler(
         return listOf(
             externalEventResponseFactory.success(
                 externalEventContext,
-                EntityResponse(listOf(ByteBuffer.wrap(serializationService.serialize(result).bytes)), KeyValuePairList(emptyList()))
+                EntityResponse(listOf(ByteBuffer.wrap(serializationService.serialize(result).bytes)), KeyValuePairList(emptyList()), null)
             )
         )
     }

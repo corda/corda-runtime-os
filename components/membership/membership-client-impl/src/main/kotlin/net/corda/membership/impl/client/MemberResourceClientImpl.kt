@@ -24,7 +24,8 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.membership.client.CouldNotFindMemberException
+import net.corda.membership.client.CouldNotFindEntityException
+import net.corda.membership.client.Entity
 import net.corda.membership.client.MemberResourceClient
 import net.corda.membership.client.RegistrationProgressNotFoundException
 import net.corda.membership.client.ServiceNotReadyException
@@ -247,7 +248,7 @@ class MemberResourceClientImpl @Activate constructor(
             val holdingIdentity =
                 virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
                     ?.holdingIdentity
-                    ?: throw CouldNotFindMemberException(holdingIdentityShortHash)
+                    ?: throw CouldNotFindEntityException(Entity.VIRTUAL_NODE, holdingIdentityShortHash)
             try {
                 asyncPublisher.publish(
                     listOf(
@@ -357,7 +358,7 @@ class MemberResourceClientImpl @Activate constructor(
 
         override fun checkRegistrationProgress(holdingIdentityShortHash: ShortHash): List<RegistrationRequestStatusDto> {
             val holdingIdentity = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
-                ?: throw CouldNotFindMemberException(holdingIdentityShortHash)
+                ?: throw CouldNotFindEntityException(Entity.VIRTUAL_NODE, holdingIdentityShortHash)
             return try {
                 membershipQueryClient.queryRegistrationRequests(
                     holdingIdentity.holdingIdentity
@@ -374,7 +375,7 @@ class MemberResourceClientImpl @Activate constructor(
             registrationRequestId: String,
         ): RegistrationRequestStatusDto {
             val holdingIdentity = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
-                ?: throw CouldNotFindMemberException(holdingIdentityShortHash)
+                ?: throw CouldNotFindEntityException(Entity.VIRTUAL_NODE, holdingIdentityShortHash)
             return try {
                 val status =
                     membershipQueryClient.queryRegistrationRequest(

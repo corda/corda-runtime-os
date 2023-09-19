@@ -1,15 +1,15 @@
 package net.corda.kotlin.reflect.types
 
-import kotlinx.metadata.Flag.TypeParameter.IS_REIFIED
-import kotlinx.metadata.KmTypeParameter
-import kotlinx.metadata.KmVariance
 import kotlin.reflect.KType
 import kotlin.reflect.KTypeParameter
 import kotlin.reflect.KVariance
+import kotlinx.metadata.KmTypeParameter
+import kotlinx.metadata.KmVariance
+import kotlinx.metadata.isReified
 
 class KotlinTypeParameter(private val kmTypeParameter: KmTypeParameter) : KTypeParameter, KInternal {
     override val isReified: Boolean
-        get() = IS_REIFIED(kmTypeParameter.flags)
+        get() = kmTypeParameter.isReified
     override val name: String
         get() = kmTypeParameter.name
     override val upperBounds: List<KType>
