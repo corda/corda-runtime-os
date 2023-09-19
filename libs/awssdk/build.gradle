@@ -1,3 +1,5 @@
+import static aQute.bnd.version.MavenVersion.parseMavenString
+
 plugins {
     id 'biz.aQute.bnd.builder'
     id 'com.jfrog.artifactory'
@@ -28,11 +30,15 @@ dependencies {
 tasks.named('jar', Jar) {
     archiveBaseName = 'corda-awssdk'
 
+    ext {
+        bundleVersion = parseMavenString(awssdkVersion).OSGiVersion
+    }
+
     bundle {
         bnd """\
 Bundle-Name: \${project.description}
 Bundle-SymbolicName: \${project.group}.awssdk
-Bundle-Version: ${awssdkVersion}
+Bundle-Version: \${task.bundleVersion}
 Export-Package: \
     !software.amazon.awssdk.http.apache.*,\
     !software.amazon.awssdk.http.nio.netty.*,\
@@ -86,5 +92,5 @@ publishing {
 }
 
 artifactoryPublish {
-    publications('awsSDK')
+    publications 'awsSDK'
 }
