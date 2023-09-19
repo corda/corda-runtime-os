@@ -87,8 +87,10 @@ class JavalinServer(
 
     private fun restartServer() {
         // restart server without marking the component down.
-        val port = server?.port()?:throw java.lang.IllegalStateException("Cannot restart a non-existing server")
+        checkNotNull(server) { "Cannot restart a non-existing server" }
+        val port = server?.port()
         stopServer()
+        checkNotNull(port) { "Required port is null" }
         startServer(port)
     }
 
