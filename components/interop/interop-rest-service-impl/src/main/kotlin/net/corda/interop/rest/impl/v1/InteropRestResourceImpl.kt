@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory
 import java.util.*
 import net.corda.rest.ResponseCode
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 @Component(service = [PluggableRestResource::class])
 internal class InteropRestResourceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)

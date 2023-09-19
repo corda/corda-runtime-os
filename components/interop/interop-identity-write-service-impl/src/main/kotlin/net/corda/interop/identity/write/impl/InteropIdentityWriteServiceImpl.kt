@@ -34,7 +34,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import java.util.UUID
 
 
-@Suppress("ForbiddenComment")
+@Suppress("ForbiddenComment", "TooManyFunctions")
 @Component(service = [InteropIdentityWriteService::class])
 class InteropIdentityWriteServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
