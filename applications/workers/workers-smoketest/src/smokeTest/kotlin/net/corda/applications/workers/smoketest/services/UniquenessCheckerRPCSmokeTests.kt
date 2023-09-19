@@ -117,7 +117,7 @@ class UniquenessCheckerRPCSmokeTests {
     }
 
     @Test
-    fun `when call service with valid payload return idempotently`() {
+    fun `RPC endpoint accepts a request and returns back a response`() {
         val url = "${System.getProperty("uniquenessWorkerHealthHttp")}api/5.1/uniqueness-checker"
 
         logger.info("uniqueness url: $url")
