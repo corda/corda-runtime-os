@@ -110,7 +110,7 @@ internal class HttpServer(
             pipeline.addLast("sslHandler", createServerSslHandler(keyStore, serverTrustManager))
             pipeline.addLast("idleStateHandler", IdleStateHandler(0, 0, SERVER_IDLE_TIME_SECONDS))
             pipeline.addLast(HttpServerCodec())
-            pipeline.addLast(HttpServerChannelHandler(this@HttpServer, maxRequestSize, serverConfiguration.urlPath, logger))
+            pipeline.addLast(HttpServerChannelHandler(this@HttpServer, maxRequestSize, serverConfiguration.urlPaths, logger))
         }
     }
 
@@ -132,8 +132,9 @@ internal class HttpServer(
             }
             val host = serverConfiguration.hostAddress
             val port = serverConfiguration.hostPort
-            val path = serverConfiguration.urlPath
-            logger.info("Stopping HTTP Server $host:$port$path")
+            serverConfiguration.urlPaths.forEach { path ->
+                logger.info("Stopping HTTP Server $host:$port$path")
+            }
             shutdownSequence.clear()
         }
     }
