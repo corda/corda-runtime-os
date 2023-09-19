@@ -37,7 +37,7 @@ private class MockSandboxGroup(
 val testSerializationContext = SerializationContextImpl(
     preferredSerializationVersion = amqpMagic,
     properties = mutableMapOf(),
-    objectReferencesEnabled = false, // CORE-12472
+    objectReferencesEnabled = true,
     useCase = SerializationContext.UseCase.Testing,
     encoding = null,
     sandboxGroup = MockSandboxGroup(UUID.randomUUID())
