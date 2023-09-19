@@ -28,6 +28,6 @@ class UniquenessCheckRpcMessageProcessor(
             } else {
                 externalEventResponseFactory.success(request.flowExternalEventContext, response)
             }
-        }.first().value!!
+        }.single().value!!
     }
 }
