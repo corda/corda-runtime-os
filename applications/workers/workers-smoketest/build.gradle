@@ -137,7 +137,7 @@ tasks.register('smokeTest', Test) {
             project.getProperties().getOrDefault("flowWorkerHealthHttp", combinedWorker ? combinedWorkerAddress : "http://localhost:7003/")
     systemProperty "flowMapperWorkerHealthHttp",
             project.getProperties().getOrDefault("flowMapperWorkerHealthHttp", combinedWorker ? combinedWorkerAddress : "http://localhost:7004/")
-    systemProperty "flowMapperWorkerHealthHttp",
+    systemProperty "verificationWorkerHealthHttp",
             project.getProperties().getOrDefault("verificationWorkerHealthHttp", combinedWorker ? combinedWorkerAddress : "http://localhost:7005/")
     systemProperty "dbWorkerHealthHttp",
             project.getProperties().getOrDefault("dbWorkerHealthHttp", combinedWorker ? combinedWorkerAddress : "http://localhost:7006/")
