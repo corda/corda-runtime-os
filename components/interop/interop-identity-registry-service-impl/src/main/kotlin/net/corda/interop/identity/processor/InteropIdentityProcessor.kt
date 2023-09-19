@@ -104,7 +104,7 @@ class InteropIdentityProcessor(
 
         // Remove the entry if present, log if not present when expected.
         if (interopIdentities.contains(oldEntry)) {
-            registryService.putInteropIdentity(key.holdingIdentityShortHash, oldEntry)
+            registryService.removeInteropIdentity(key.holdingIdentityShortHash, oldEntry)
         } else {
             logger.warn("Remove: No cache entry exists for the provided group ID. Ignoring.")
         }
