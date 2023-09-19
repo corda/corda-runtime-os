@@ -807,7 +807,7 @@ class PersistenceServiceInternalTests {
         val rec = when (querySetup) {
             is QuerySetup.NamedQuery -> {
                 val paramsSerialized = querySetup.params.mapValues { v -> sandbox.serialize(v.value) }
-                FindWithNamedQuery(querySetup.query, paramsSerialized, offset, limit)
+                FindWithNamedQuery(querySetup.query, paramsSerialized, offset, limit, null)
             }
             is QuerySetup.All -> {
                 FindAll(querySetup.className, offset, limit)
