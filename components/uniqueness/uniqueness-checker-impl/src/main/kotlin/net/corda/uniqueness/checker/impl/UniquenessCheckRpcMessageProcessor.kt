@@ -19,17 +19,12 @@ class UniquenessCheckRpcMessageProcessor(
 ) : SyncRPCProcessor<UniquenessCheckRequestAvro, FlowEvent> {
 
     override fun process(request: UniquenessCheckRequestAvro): FlowEvent {
-        val result = uniquenessChecker.processRequests(listOf(request))
-
-        return result.map { (request, response) ->
+        return uniquenessChecker.processRequests(listOf(request)).map { (request, response) ->
             if (response.result is UniquenessCheckResultUnhandledExceptionAvro) {
-
                 externalEventResponseFactory.platformError(
                     request.flowExternalEventContext,
                     (response.result as UniquenessCheckResultUnhandledExceptionAvro).exception
                 )
-
-
             } else {
                 externalEventResponseFactory.success(request.flowExternalEventContext, response)
             }

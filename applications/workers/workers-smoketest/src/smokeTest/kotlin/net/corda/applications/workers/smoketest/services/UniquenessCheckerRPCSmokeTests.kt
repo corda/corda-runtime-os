@@ -41,7 +41,7 @@ import java.util.UUID
  * Tests for the UniquenessChecker RPC service
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class UniquenessChecker {
+class UniquenessCheckerRPCSmokeTests {
     private val httpClient: HttpClient = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(30))
         .build()
