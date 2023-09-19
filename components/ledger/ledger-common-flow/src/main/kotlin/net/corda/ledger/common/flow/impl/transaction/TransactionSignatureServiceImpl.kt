@@ -134,5 +134,4 @@ class TransactionSignatureServiceImpl @Activate constructor(
             ) + batchSettings
         )
     }
-
 }
