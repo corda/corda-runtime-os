@@ -36,7 +36,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     private var consumers = listOf<MediatorConsumer<K, E>>()
     private var producers = listOf<MediatorProducer>()
     private lateinit var messageRouter: MessageRouter
-    private val mediatorComponentFactory = MediatorComponentFactory<K, S, E>(
+    private val mediatorComponentFactory = MediatorComponentFactory(
         config.messageProcessor, config.consumerFactories, config.producerFactories, config.messageRouterFactory
     )
     private val mediatorStateManager = MediatorStateManager<K, S, E>(

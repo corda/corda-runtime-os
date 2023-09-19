@@ -10,14 +10,14 @@ fun interface MessageRouterFactory {
 
     /**
      * Creates a new instance of [MessageRouter]. Provided [MediatorProducerFinder] is used to find [MediatorProducer]s
-     * by their names. Example:
+     * by their IDs. Example:
      *
      * ```
      * MessageRouterFactory { producerFinder ->
      *     val messageBusProducer = producerFinder.find("MessageBusProducer")
      *
      *     MessageRouter { message ->
-     *         when (message.body) {
+     *         when (message.payload) {
      *             is FlowEvent -> RoutingDestination(messageBusProducer, "flow.event.topic")
      *             else -> throw IllegalStateException("No route defined for message $message")
      *         }

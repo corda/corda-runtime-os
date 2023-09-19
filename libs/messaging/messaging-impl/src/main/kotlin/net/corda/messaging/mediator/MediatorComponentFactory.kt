@@ -71,10 +71,10 @@ internal class MediatorComponentFactory<K : Any, S : Any, E : Any>(
     fun createRouter(
         producers: Collection<MediatorProducer>
     ): MessageRouter {
-        val producersByName = producers.associateBy { it.name }
-        return messageRouterFactory.create { name ->
-            producersByName[name]
-                ?: throw IllegalStateException("Producer with name \"$name\" not found")
+        val producersById = producers.associateBy { it.id }
+        return messageRouterFactory.create { id ->
+            producersById[id]
+                ?: throw IllegalStateException("Producer with ID \"$id\" not found")
         }
     }
 }

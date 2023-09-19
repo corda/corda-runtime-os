@@ -1,5 +1,6 @@
 package net.corda.messaging.mediator
 
+import kotlinx.coroutines.runBlocking
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
@@ -111,7 +112,7 @@ internal class MediatorTaskManager<K : Any, S : Any, E : Any>(
     ): List<ProducerTask<K, S, E>> {
         return processorTaskResults.map { result ->
             result.outputEvents.map { event ->
-                val message = MediatorMessage(event.value!!, emptyMap())
+                val message = MediatorMessage(event.value!!)
                 ProducerTask(
                     message,
                     messageRouter,
@@ -130,10 +131,13 @@ internal class MediatorTaskManager<K : Any, S : Any, E : Any>(
     fun executeProducerTasks(
         producerTasks: Collection<ProducerTask<K, S, E>>
     ): List<ProducerTask.Result<K, S, E>> {
-        return producerTasks.map { producerTask ->
-            taskManager.execute(TaskType.SHORT_RUNNING, producerTask::call)
-        }.map {
-            it.join()
+//        return producerTasks.map { producerTask ->
+//            taskManager.execute(TaskType.SHORT_RUNNING, producerTask::call)
+//        }.map {
+//            it.join()
+//        }
+        return runBlocking {
+            producerTasks.map { it.call() }
         }
     }
 
@@ -141,13 +145,12 @@ internal class MediatorTaskManager<K : Any, S : Any, E : Any>(
      * Converts [ProducerTask.Result] to [CordaConsumerRecord].
      */
     private fun ProducerTask.Result<K, S, E>.toCordaConsumerRecord() =
-        @Suppress("UNCHECKED_CAST")
         (CordaConsumerRecord(
         "",
         -1,
         -1,
         producerTask.processorTask.events.first().key,
-        replyMessage!!.body as E,
+        replyMessage!!.payload,
         Instant.now().toEpochMilli()
     ))
 }

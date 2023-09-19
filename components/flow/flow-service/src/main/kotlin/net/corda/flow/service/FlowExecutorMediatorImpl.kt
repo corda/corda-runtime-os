@@ -14,17 +14,15 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
-import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.messaging.api.mediator.RoutingDestination.Companion.routeTo
 import net.corda.messaging.api.mediator.config.EventMediatorConfigBuilder
+import net.corda.messaging.api.mediator.factory.MediatorConsumerFactoryFactory
+import net.corda.messaging.api.mediator.factory.MediatorProducerFactoryFactory
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.mediator.factory.MultiSourceEventMediatorFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
-import net.corda.messaging.mediator.factory.MessageBusConsumerFactory
-import net.corda.messaging.mediator.factory.MessageBusProducerFactory
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
@@ -42,8 +40,8 @@ class FlowExecutorMediatorImpl (
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val flowEventProcessorFactory: FlowEventProcessorFactory,
     private val eventMediatorFactory: MultiSourceEventMediatorFactory,
-    private val cordaConsumerBuilder: CordaConsumerBuilder,
-    private val cordaProducerBuilder: CordaProducerBuilder,
+    private val mediatorConsumerFactoryFactory: MediatorConsumerFactoryFactory,
+    private val mediatorProducerFactoryFactory: MediatorProducerFactoryFactory,
     private val toMessagingConfig: (Map<String, SmartConfig>) -> SmartConfig
 ) : FlowExecutor {
 
@@ -55,16 +53,16 @@ class FlowExecutorMediatorImpl (
         flowEventProcessorFactory: FlowEventProcessorFactory,
         @Reference(service = MultiSourceEventMediatorFactory::class)
         eventMediatorFactory: MultiSourceEventMediatorFactory,
-        @Reference(service = CordaConsumerBuilder::class)
-        cordaConsumerBuilder: CordaConsumerBuilder,
-        @Reference(service = CordaProducerBuilder::class)
-        cordaProducerBuilder: CordaProducerBuilder,
+        @Reference(service = MediatorConsumerFactoryFactory::class)
+        mediatorConsumerFactoryFactory: MediatorConsumerFactoryFactory,
+        @Reference(service = MediatorProducerFactoryFactory::class)
+        mediatorProducerFactoryFactory: MediatorProducerFactoryFactory,
     ) : this(
         coordinatorFactory,
         flowEventProcessorFactory,
         eventMediatorFactory,
-        cordaConsumerBuilder,
-        cordaProducerBuilder,
+        mediatorConsumerFactoryFactory,
+        mediatorProducerFactoryFactory,
         { cfg -> cfg.getConfig(MESSAGING_CONFIG) }
     )
 
@@ -156,10 +154,14 @@ class FlowExecutorMediatorImpl (
             .name("FlowEventMediator")
             .messagingConfig(messagingConfig)
             .consumerFactories(
-                MessageBusConsumerFactory(FLOW_EVENT_TOPIC, CONSUMER_GROUP, messagingConfig, cordaConsumerBuilder),
+                mediatorConsumerFactoryFactory.createMessageBusProducerFactory(
+                    FLOW_EVENT_TOPIC, CONSUMER_GROUP, messagingConfig
+                ),
             )
             .producerFactories(
-                MessageBusProducerFactory(MESSAGE_BUS_PRODUCER, messagingConfig, cordaProducerBuilder),
+                mediatorProducerFactoryFactory.createMessageBusProducerFactory(
+                    MESSAGE_BUS_PRODUCER, messagingConfig
+                ),
                 //RpcProducerFactory(CRYPTO_RPC_PRODUCER, messagingConfig, cordaRpcBuilder),
             )
             .messageProcessor(messageProcessor)
@@ -170,7 +172,7 @@ class FlowExecutorMediatorImpl (
         val messageBusProducer = producerFinder.find(MESSAGE_BUS_PRODUCER)
 
         MessageRouter { message ->
-            when (message.body) {
+            when (message.payload) {
                 is FlowMapperEvent -> routeTo(messageBusProducer, FLOW_MAPPER_EVENT_TOPIC)
                 else -> throw IllegalStateException("No route defined for message $message")
             }

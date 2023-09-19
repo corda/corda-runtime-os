@@ -6,7 +6,7 @@ package net.corda.messaging.api.mediator
  *
  * ```
  * MessageRouter { message ->
- *     when (message.body) {
+ *     when (message.payload) {
  *         is FlowEvent -> RoutingDestination(messageBusProducer, "flow.event.topic")
  *         else -> throw IllegalStateException("No route defined for message $message")
  *     }
@@ -21,5 +21,5 @@ fun interface MessageRouter {
      * @param message Message.
      * @return Destination for given message.
      */
-    fun getDestination(message: MediatorMessage): RoutingDestination
+    fun getDestination(message: MediatorMessage<Any>): RoutingDestination
 }
