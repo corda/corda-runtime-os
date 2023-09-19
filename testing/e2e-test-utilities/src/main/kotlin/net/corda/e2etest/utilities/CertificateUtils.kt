@@ -96,7 +96,3 @@ fun ClusterInfo.importCertificate(
         }
     }
 }
-
-fun TestConfigManager.disableCertificateRevocationChecks() {
-        load(P2P_GATEWAY_CONFIG, "sslConfig.revocationCheck.mode", "OFF")
-}
