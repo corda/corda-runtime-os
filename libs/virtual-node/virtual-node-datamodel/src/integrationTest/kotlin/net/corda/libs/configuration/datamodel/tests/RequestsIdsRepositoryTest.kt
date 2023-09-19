@@ -6,6 +6,7 @@ import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.libs.virtualnode.datamodel.repository.RequestsIdsRepository
 import net.corda.libs.virtualnode.datamodel.repository.RequestsIdsRepositoryImpl
+import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import org.junit.jupiter.api.AfterAll
@@ -21,10 +22,8 @@ import javax.persistence.EntityManagerFactory
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RequestsIdsRepositoryTest {
 
-    private val dbConfig = run {
-        //System.setProperty("postgresPort", "5432")
-        DbUtils.getEntityManagerConfiguration(this::class.java.simpleName)
-    }
+    @Suppress("JoinDeclarationAndAssignment")
+    private val dbConfig: EntityManagerConfiguration
 
     private val entityManagerFactory: EntityManagerFactory
 
@@ -37,6 +36,9 @@ class RequestsIdsRepositoryTest {
      * [entityManagerFactory].
      */
     init {
+        //System.setProperty("postgresPort", "5432")
+        dbConfig = DbUtils.getEntityManagerConfiguration(this::class.java.simpleName)
+
         val dbChange = ClassloaderChangeLog(
             linkedSetOf(
                 ClassloaderChangeLog.ChangeLogResourceFiles(
