@@ -119,7 +119,13 @@ class SessionEventProcessorFactoryTest {
     fun `Receive a SessionCounterpartyInfoRQ`() {
         val processor = sessionEventProcessorFactory.createEventReceivedProcessor(
             "key",
-            buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionCounterpartyInfoRQ(), contextSessionProps = emptyKeyValuePairList()),
+            buildSessionEvent(
+                MessageDirection.INBOUND,
+                "sessionId",
+                1,
+                SessionCounterpartyInfoRQ(),
+                contextSessionProps = emptyKeyValuePairList()
+            ),
             null,
             Instant.now()
         )
@@ -131,8 +137,10 @@ class SessionEventProcessorFactoryTest {
     fun `Receive a SessionCounterpartyInfoRS`() {
         val processor = sessionEventProcessorFactory.createEventReceivedProcessor(
             "key",
-            buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionCounterpartyInfoRS(), contextSessionProps =
-            emptyKeyValuePairList()),
+            buildSessionEvent(
+                MessageDirection.INBOUND, "sessionId", 1, SessionCounterpartyInfoRS(), contextSessionProps =
+                emptyKeyValuePairList()
+            ),
             null,
             Instant.now()
         )
@@ -144,7 +152,13 @@ class SessionEventProcessorFactoryTest {
     fun `Send a SessionCounterpartyInfoRQ`() {
         val processor = sessionEventProcessorFactory.createEventToSendProcessor(
             "key",
-            buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionCounterpartyInfoRQ(), contextSessionProps = emptyKeyValuePairList()),
+            buildSessionEvent(
+                MessageDirection.OUTBOUND,
+                "sessionId",
+                1,
+                SessionCounterpartyInfoRQ(),
+                contextSessionProps = emptyKeyValuePairList()
+            ),
             sessionState,
             Instant.now(),
             maxMsgSize
