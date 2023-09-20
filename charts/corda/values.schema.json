@@ -1261,7 +1261,7 @@
                         "stateManager": {
                             "type": "object",
                             "default": {},
-                            "title": "State-manager db configuration",
+                            "title": "State Manager db configuration",
                             "required": [
                                 "dbConnectionPool",
                                 "schema"
@@ -1270,7 +1270,7 @@
                                 "schema": {
                                     "type": "string",
                                     "default": "STATE_MANAGER",
-                                    "title": "the schema in which the state-manager entities will be stored",
+                                    "title": "the schema in which the State Manager entities will be stored",
                                     "examples": [
                                         "STATE_MANAGER"
                                     ],
@@ -1285,7 +1285,7 @@
                                 "dbConnectionPool": {
                                     "type": "object",
                                     "default": {},
-                                    "title": "JDBC connection pool configuration for state-manager DB",
+                                    "title": "JDBC connection pool configuration for State Manager DB",
                                     "required": [
                                         "maxSize",
                                         "idleTimeoutSeconds",
@@ -1297,7 +1297,7 @@
                                         "maxSize": {
                                             "type": "integer",
                                             "default": 5,
-                                            "title": "maximum JDBC connection pool size for state-manager DB",
+                                            "title": "maximum JDBC connection pool size for State Manager DB",
                                             "examples": [
                                                 5
                                             ]
