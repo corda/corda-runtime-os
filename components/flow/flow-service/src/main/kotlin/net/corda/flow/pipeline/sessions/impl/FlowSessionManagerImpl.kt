@@ -6,7 +6,8 @@ import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionClose
-import net.corda.data.flow.event.session.SessionConfirm
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRQ
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRS
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
@@ -57,7 +58,7 @@ class FlowSessionManagerImpl @Activate constructor(
             .map { event -> flowRecordFactory.createFlowMapperEventRecord(event.sessionId, event) }
     }
 
-    override fun sendInitMessage(
+    override fun sendCounterpartyInfoRQ(
         checkpoint: FlowCheckpoint,
         sessionId: String,
         contextUserProperties: KeyValuePairList,
@@ -66,7 +67,7 @@ class FlowSessionManagerImpl @Activate constructor(
         instant: Instant
     ): SessionState {
         val sessionState = getAndRequireSession(checkpoint, sessionId)
-        val payload = SessionInit.newBuilder()
+        val sessionInit = SessionInit.newBuilder()
             .setFlowId(checkpoint.flowId)
             .setCpiId(checkpoint.flowStartContext.cpiId)
             .setContextPlatformProperties(contextPlatformProperties)
@@ -79,7 +80,7 @@ class FlowSessionManagerImpl @Activate constructor(
             .setSequenceNum(null)
             .setInitiatingIdentity(checkpoint.holdingIdentity.toAvro())
             .setInitiatedIdentity(HoldingIdentity(x500Name.toString(), checkpoint.holdingIdentity.groupId))
-            .setPayload(payload)
+            .setPayload(SessionCounterpartyInfoRQ(sessionInit))
             .setContextSessionProperties(sessionState.sessionProperties)
             .build()
 
@@ -108,7 +109,7 @@ class FlowSessionManagerImpl @Activate constructor(
     }
 
 
-    override fun sendConfirmMessage(
+    override fun sendSessionCounterpartyInfoRS(
         checkpoint: FlowCheckpoint,
         sessionId: String,
         contextSessionProperties: KeyValuePairList,
@@ -117,7 +118,7 @@ class FlowSessionManagerImpl @Activate constructor(
         return sendSessionMessageToExistingSession(
             checkpoint,
             sessionId,
-            payload = SessionConfirm(),
+            payload = SessionCounterpartyInfoRS(),
             instant,
             contextSessionProperties
         )

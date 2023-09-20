@@ -49,7 +49,7 @@ interface FlowSessionManager {
     ): SessionState
 
     /**
-     * Generate a new session state
+     * Generate a new counterparty info request
      * @param checkpoint The flow's [FlowCheckpoint].
      * @param sessionId The session id of the new [SessionState].
      * @param x500Name The [MemberX500Name] that the [SessionInit] is addressed to.
@@ -59,7 +59,7 @@ interface FlowSessionManager {
      * @param instant The [Instant] used within the created [SessionEvent].
      */
     @Suppress("LongParameterList")
-    fun sendInitMessage(
+    fun sendCounterpartyInfoRQ(
         checkpoint: FlowCheckpoint,
         sessionId: String,
         contextUserProperties: KeyValuePairList,
@@ -81,7 +81,7 @@ interface FlowSessionManager {
      * @throws FlowSessionStateException If a session does not exist within the flow's [FlowCheckpoint], or is not in
      * the CONFIRMED state.
      */
-    fun sendConfirmMessage(
+    fun sendSessionCounterpartyInfoRS(
         checkpoint: FlowCheckpoint,
         sessionId: String,
         contextSessionProperties: KeyValuePairList,

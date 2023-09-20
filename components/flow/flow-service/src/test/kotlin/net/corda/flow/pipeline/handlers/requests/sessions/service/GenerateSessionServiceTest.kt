@@ -47,7 +47,7 @@ class GenerateSessionServiceTest {
         whenever(testContext.flowSandboxService.get(any(), any())).thenReturn(sandboxGroupContext)
         whenever(sandboxGroupContext.protocolStore).thenReturn(protocolStore)
         whenever(protocolStore.protocolsForInitiator(any(), any())).thenReturn(Pair("protocol", listOf(1)))
-        whenever(testContext.flowSessionManager.sendInitMessage(any(), any(), any(), any(), any(), any())).thenReturn(sessionState1)
+        whenever(testContext.flowSessionManager.sendCounterpartyInfoRQ(any(), any(), any(), any(), any(), any())).thenReturn(sessionState1)
         whenever(testContext.flowCheckpoint.getSessionState(sessionId1)).thenReturn(null)
         whenever(testContext.flowCheckpoint.getSessionState(sessionId1)).thenReturn(null)
         whenever(testContext.flowStack.nearestFirst(any())).thenReturn(
@@ -76,14 +76,14 @@ class GenerateSessionServiceTest {
     }
 
     @Test
-    fun `Session init event sent to session manager and checkpoint updated with session state`() {
+    fun `Session counterpartyInfoRQ event sent to session manager and checkpoint updated with session state`() {
         generateSessionService.generateSessions(testContext.flowEventContext, sessionInfo, true)
         verify(testContext.flowCheckpoint, times(2)).putSessionState(any())
         verify(testContext.flowSessionManager).generateSessionState(any(), any(), any(), any(), any())
     }
 
     @Test
-    fun `No Session init event sent to session manager and checkpoint updated with session state`() {
+    fun `No counterpartyInfoRQ event sent to session manager and checkpoint updated with session state`() {
         generateSessionService.generateSessions(testContext.flowEventContext, sessionInfo, false)
         verify(testContext.flowCheckpoint, times(1)).putSessionState(any())
         verify(testContext.flowSessionManager).generateSessionState(any(), any(), any(), any(), any())

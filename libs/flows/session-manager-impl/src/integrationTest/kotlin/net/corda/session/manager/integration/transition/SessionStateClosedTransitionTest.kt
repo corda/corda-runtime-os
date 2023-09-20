@@ -47,7 +47,7 @@ class SessionStateClosedTransitionTest {
     fun `Receive duplicate init when in state closed`() {
         val sessionState = buildClosedState()
 
-        val sessionEvent = generateMessage(SessionMessageType.INIT, instant, MessageDirection.INBOUND)
+        val sessionEvent = generateMessage(SessionMessageType.COUNTERPARTY_INFO, instant, MessageDirection.INBOUND)
         sessionEvent.sequenceNum = 1
         val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CLOSED)

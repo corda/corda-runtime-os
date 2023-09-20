@@ -7,6 +7,7 @@ import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRQ
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
@@ -28,6 +29,7 @@ import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSIONS_SUPPORTED
+import net.corda.session.manager.Constants.Companion.FLOW_SESSION_REQUIRE_CLOSE
 import net.corda.session.manager.SessionManager
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
@@ -39,11 +41,9 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -122,48 +122,33 @@ class SessionEventHandlerTest {
     }
 
     @Test
-    fun `Receiving a session init payload creates a checkpoint if one does not exist for the initiated flow and adds the new session to it`() {
-        val sessionEvent = createSessionInit()
+    fun `Receiving a counteparty message creates a checkpoint if one does not exist for the initiated flow and adds the new session to it`() {
+        val sessionEvent = createCounterpartyRQ()
         val inputContext = buildFlowEventContext(checkpoint = expectedCheckpoint, inputEventPayload = sessionEvent)
 
         whenever(sessionManager.getNextReceivedEvent(updatedSessionState)).thenReturn(sessionEvent)
 
         sessionEventHandler.preProcess(inputContext)
 
-        verify(flowSessionManager, times(1)).sendConfirmMessage(any(), any(), anyOrNull(), any())
+        verify(sessionManager, times(1)).generateSessionState(any(), any(), any(), any(), any())
     }
 
     @Test
     fun `Receiving a session data with init payload creates a checkpoint and adds the new session to it, does not reply with confirm`() {
-        val sessionEvent = createSessionDatWithInit()
+        val sessionEvent = createSessionDataWithInit()
         val inputContext = buildFlowEventContext(checkpoint = expectedCheckpoint, inputEventPayload = sessionEvent)
 
         whenever(sessionManager.getNextReceivedEvent(updatedSessionState)).thenReturn(sessionEvent)
 
         sessionEventHandler.preProcess(inputContext)
 
-        verify(flowSessionManager, times(0)).sendConfirmMessage(any(), any(), anyOrNull(), any())
+        verify(sessionManager, times(1)).generateSessionState(any(), any(), any(), any(), any())
+        verify(flowSessionManager, times(0)).sendSessionCounterpartyInfoRS(any(), any(), anyOrNull(), any())
     }
 
     @Test
-    fun `Receiving a session init payload throws an exception when the session manager returns no next received event`() {
-        val sessionEvent = createSessionInit()
-        val inputContext = buildFlowEventContext(checkpoint = expectedCheckpoint, inputEventPayload = sessionEvent)
-
-        whenever(sessionManager.getNextReceivedEvent(updatedSessionState)).thenReturn(null)
-
-        assertThrows<FlowEventException> {
-            sessionEventHandler.preProcess(inputContext)
-        }
-
-        val spyFakeCheckpointInitializerService = Mockito.spy(fakeCheckpointInitializerService)
-
-        verify(spyFakeCheckpointInitializerService, never()).initialize(any(), any(), any(), any())
-    }
-
-    @Test
-    fun `Receiving a session init payload sends an error message if there is no matching initiated flow`() {
-        val sessionEvent = createSessionInit()
+    fun `Receiving a counterparty request payload sends an error message if there is no matching initiated flow`() {
+        val sessionEvent = createCounterpartyRQ()
         val inputContext = buildFlowEventContext(checkpoint = expectedCheckpoint, inputEventPayload = sessionEvent)
 
         whenever(sandboxGroupContext.protocolStore)
@@ -190,7 +175,7 @@ class SessionEventHandlerTest {
         }
     }
 
-    private fun createSessionInit(): SessionEvent {
+    private fun createCounterpartyRQ(): SessionEvent {
         val payload = SessionInit.newBuilder()
             .setFlowId(FLOW_ID)
             .setCpiId(CPI_ID)
@@ -198,10 +183,10 @@ class SessionEventHandlerTest {
             .setContextUserProperties(emptyKeyValuePairList())
             .build()
 
-        return createSessionEvent(payload)
+        return createSessionEvent(SessionCounterpartyInfoRQ(payload))
     }
 
-    private fun createSessionDatWithInit(): SessionEvent {
+    private fun createSessionDataWithInit(): SessionEvent {
         val sessionInit = SessionInit.newBuilder()
             .setFlowId(FLOW_ID)
             .setCpiId(CPI_ID)
@@ -218,6 +203,7 @@ class SessionEventHandlerTest {
         return KeyValueStore().apply {
             put(FLOW_PROTOCOL, PROTOCOL.protocol)
             put(FLOW_PROTOCOL_VERSIONS_SUPPORTED, "1")
+            put(FLOW_SESSION_REQUIRE_CLOSE, "true")
         }.avro
     }
     private fun createSessionEvent(payload: Any): SessionEvent {

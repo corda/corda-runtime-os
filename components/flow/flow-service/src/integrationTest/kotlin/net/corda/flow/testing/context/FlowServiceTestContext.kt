@@ -19,6 +19,8 @@ import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.external.ExternalEventResponseError
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.data.flow.event.session.SessionClose
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRQ
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRS
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
@@ -267,7 +269,7 @@ class FlowServiceTestContext @Activate constructor(
         return addTestRun(createFlowEventRecord(flowId, StartFlow(flowStart, "{}")))
     }
 
-    override fun sessionInitEventReceived(
+    override fun sessionCounterpartyInfoRQReceived(
         flowId: String,
         sessionId: String,
         cpiId: String,
@@ -281,13 +283,14 @@ class FlowServiceTestContext @Activate constructor(
             sessionId,
             initiatingIdentity,
             initiatedIdentity,
-            SessionInit.newBuilder()
+            SessionCounterpartyInfoRQ(SessionInit.newBuilder()
                 .setFlowId(flowId)
                 .setCpiId(cpiId)
                 .setContextPlatformProperties(emptyKeyValuePairList())
                 .setContextUserProperties(emptyKeyValuePairList())
-                .build(),
-            sequenceNum = 0,
+                .build()
+            ),
+            null,
             getContextSessionProps(protocol, requireClose)
         )
     }
@@ -314,6 +317,21 @@ class FlowServiceTestContext @Activate constructor(
             SessionData(ByteBuffer.wrap(data), null),
             sequenceNum,
             null
+        )
+    }
+
+    override fun sessionCounterpartyInfoRSReceived(
+        flowId: String,
+        sessionId: String,
+    ): FlowIoRequestSetup {
+        return createAndAddSessionEvent(
+            flowId,
+            sessionId,
+            null,
+            null,
+            SessionCounterpartyInfoRS(),
+            null,
+            emptyKeyValuePairList()
         )
     }
 

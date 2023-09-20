@@ -17,8 +17,6 @@ import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
-import net.corda.data.p2p.HostedIdentityEntry
-import net.corda.data.p2p.HostedIdentitySessionKeyAndCert
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.libs.configuration.SmartConfigFactory
@@ -31,7 +29,6 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Config.CONFIG_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
@@ -55,7 +52,6 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.lang.AssertionError
 import java.lang.System.currentTimeMillis
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
@@ -137,7 +133,7 @@ class FlowMapperServiceIntegrationTest {
         val publisher = publisherFactory.createPublisher(PublisherConfig(testId), messagingConfig)
 
         //send 2 session init, 1 is duplicate
-        val sessionInitEvent = Record<Any, Any>(
+        val sessionDataAndInitEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
                 buildSessionEvent(
                     MessageDirection.OUTBOUND, testId, 1, SessionData(ByteBuffer.wrap("bytes".toByteArray()), SessionInit(
@@ -149,7 +145,7 @@ class FlowMapperServiceIntegrationTest {
             )
         )
 
-        publisher.publish(listOf(sessionInitEvent, sessionInitEvent))
+        publisher.publish(listOf(sessionDataAndInitEvent, sessionDataAndInitEvent))
 
         //validate p2p out only receives 1 init
         val p2pLatch = CountDownLatch(1)

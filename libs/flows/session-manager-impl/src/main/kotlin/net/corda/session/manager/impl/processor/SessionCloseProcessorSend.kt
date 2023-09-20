@@ -45,7 +45,7 @@ class SessionCloseProcessorSend(
                 handleUnprocessedReceivedDataEvents(sessionId, sessionState)
             }
             else -> {
-                val nextSeqNum = sessionState.sendEventsState.lastProcessedSequenceNum + 1
+                 val nextSeqNum = sessionState.sendEventsState.lastProcessedSequenceNum + 1
                 sessionEvent.sequenceNum = nextSeqNum
                 getResultByCurrentState(sessionState, nextSeqNum)
             }

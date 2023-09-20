@@ -4,6 +4,7 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRQ
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.checkpoint.FlowStackItem
@@ -81,8 +82,8 @@ class FlowRunnerImpl @Activate constructor(
 
     private fun getInitPayload(sessionEvent: SessionEvent): SessionInit? {
         return when (val payload = sessionEvent.payload) {
-            is SessionInit -> payload
-            is SessionData -> if (sessionEvent.sequenceNum == 1) payload.sessionInit else null
+            is SessionCounterpartyInfoRQ -> payload.sessionInit
+            is SessionData -> payload.sessionInit
             else -> null
         }
     }

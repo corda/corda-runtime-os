@@ -29,12 +29,11 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
             sessionInitiatingIdentity(ALICE_HOLDING_IDENTITY)
             sessionInitiatedIdentity(BOB_HOLDING_IDENTITY)
             initiatingToInitiatedFlow(PROTOCOL, FAKE_FLOW_NAME, FAKE_FLOW_NAME)
-
         }
     }
 
     @Test
-    fun `Requesting counterparty info flow sends a session init event`() {
+    fun `Requesting counterparty info flow sends a CounterpartyInfoRQ event`() {
         `when` {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.CounterPartyFlowInfo(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName)))
@@ -42,16 +41,21 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                sessionInitEvents(SESSION_ID_1)
+                sessionCounterpartyInfoRQEvents(SESSION_ID_1)
             }
         }
     }
 
     @Test
-    fun `Requesting counterparty info from the flow engine that has already sent a session init event does not send another SessionInit`() {
+    fun `Requesting counterparty info from the flow engine that has already sent a CounterpartyInfoRQ event does not send another SessionInit`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(FlowIORequest.Send(mapOf(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0)))
+                .suspendsWith(FlowIORequest.CounterPartyFlowInfo(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName)))
+        }
+
+        `when` {
+            sessionCounterpartyInfoRSReceived(FLOW_ID1, SESSION_ID_1)
+                .suspendsWith(FlowIORequest.CounterPartyFlowInfo(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName)))
         }
 
         then {
@@ -62,7 +66,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Receiving a session init event starts an initiated flow and sends a session confirm`() {
+    fun `Receiving a CounterpartyInfoRQ event starts an initiated flow and sends a session confirm`() {
         given {
             virtualNode(CPI1, BOB_HOLDING_IDENTITY)
             membershipGroupFor(BOB_HOLDING_IDENTITY)
@@ -70,7 +74,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL, ALICE_HOLDING_IDENTITY, BOB_HOLDING_IDENTITY, true)
+            sessionCounterpartyInfoRQReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL, ALICE_HOLDING_IDENTITY, BOB_HOLDING_IDENTITY, true)
                 .suspendsWith(FlowIORequest.InitialCheckpoint)
                 .suspendsWith(
                     FlowIORequest.Receive(
@@ -84,7 +88,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 flowStatus(FlowStates.RUNNING)
-                sessionConfirmEvents(INITIATED_SESSION_ID_1)
+                sessionCounterpartyInfoRS(INITIATED_SESSION_ID_1)
                 flowFiberCacheContainsKey(BOB_HOLDING_IDENTITY, INITIATED_SESSION_ID_1)
                 flowResumedWith(Unit)
             }

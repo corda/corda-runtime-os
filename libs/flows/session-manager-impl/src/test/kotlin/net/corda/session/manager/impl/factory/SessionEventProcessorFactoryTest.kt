@@ -3,21 +3,23 @@ package net.corda.session.manager.impl.factory
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.session.SessionClose
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRQ
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRS
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
-import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionState
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.messaging.api.chunking.MessagingChunkFactory
 import net.corda.session.manager.SessionManagerException
 import net.corda.session.manager.impl.processor.SessionCloseProcessorReceive
 import net.corda.session.manager.impl.processor.SessionCloseProcessorSend
+import net.corda.session.manager.impl.processor.SessionCounterpartyInfoRQProcessorReceive
+import net.corda.session.manager.impl.processor.SessionCounterpartyInfoRQProcessorSend
+import net.corda.session.manager.impl.processor.SessionCounterpartyInfoRSProcessorReceive
 import net.corda.session.manager.impl.processor.SessionDataProcessorReceive
 import net.corda.session.manager.impl.processor.SessionDataProcessorSend
 import net.corda.session.manager.impl.processor.SessionErrorProcessorReceive
 import net.corda.session.manager.impl.processor.SessionErrorProcessorSend
-import net.corda.session.manager.impl.processor.SessionInitProcessorReceive
-import net.corda.session.manager.impl.processor.SessionInitProcessorSend
 import net.corda.test.flow.util.buildSessionEvent
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -114,28 +116,41 @@ class SessionEventProcessorFactoryTest {
     }
 
     @Test
-    fun testInboundInitMessage() {
+    fun `Receive a SessionCounterpartyInfoRQ`() {
         val processor = sessionEventProcessorFactory.createEventReceivedProcessor(
             "key",
-            buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionInit(), contextSessionProps = emptyKeyValuePairList()),
+            buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionCounterpartyInfoRQ(), contextSessionProps = emptyKeyValuePairList()),
             null,
             Instant.now()
         )
 
-        assertThat(processor::class.java).isEqualTo(SessionInitProcessorReceive::class.java)
+        assertThat(processor::class.java).isEqualTo(SessionCounterpartyInfoRQProcessorReceive::class.java)
     }
 
     @Test
-    fun testOutboundInitMessage() {
+    fun `Receive a SessionCounterpartyInfoRS`() {
+        val processor = sessionEventProcessorFactory.createEventReceivedProcessor(
+            "key",
+            buildSessionEvent(MessageDirection.INBOUND, "sessionId", 1, SessionCounterpartyInfoRS(), contextSessionProps =
+            emptyKeyValuePairList()),
+            null,
+            Instant.now()
+        )
+
+        assertThat(processor::class.java).isEqualTo(SessionCounterpartyInfoRSProcessorReceive::class.java)
+    }
+
+    @Test
+    fun `Send a SessionCounterpartyInfoRQ`() {
         val processor = sessionEventProcessorFactory.createEventToSendProcessor(
             "key",
-            buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionInit(), contextSessionProps = emptyKeyValuePairList()),
+            buildSessionEvent(MessageDirection.OUTBOUND, "sessionId", 1, SessionCounterpartyInfoRQ(), contextSessionProps = emptyKeyValuePairList()),
             sessionState,
             Instant.now(),
             maxMsgSize
         )
 
-        assertThat(processor::class.java).isEqualTo(SessionInitProcessorSend::class.java)
+        assertThat(processor::class.java).isEqualTo(SessionCounterpartyInfoRQProcessorSend::class.java)
     }
 
     @Test

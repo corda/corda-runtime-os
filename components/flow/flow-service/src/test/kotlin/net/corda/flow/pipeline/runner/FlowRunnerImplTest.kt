@@ -6,6 +6,7 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRQ
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.checkpoint.FlowStackItem
@@ -196,13 +197,13 @@ class FlowRunnerImplTest {
     }
 
     @Test
-    fun `initiate flow session event should create a new flow and execute it in a new fiber`() {
-        val eventPayload = SessionInit().apply {
+    fun `Counterparty request flow session event should create a new flow and execute it in a new fiber`() {
+        val sessionInit = SessionInit().apply {
             contextPlatformProperties = platformContext.avro
             contextUserProperties = userContext.avro
         }
 
-        runInitiatedTest(eventPayload)
+        runInitiatedTest(SessionCounterpartyInfoRQ(sessionInit))
     }
 
     @Test
@@ -323,6 +324,7 @@ class FlowRunnerImplTest {
 
     @Test
     fun `Second SessionData with Init Info should resume existing flow`() {
+        whenever(flowCheckpoint.waitingFor).thenReturn(WaitingFor(net.corda.data.flow.state.waiting.SessionData()))
         val sessionInitPayload = SessionInit().apply {
             contextPlatformProperties = platformContext.avro
             contextUserProperties = userContext.avro

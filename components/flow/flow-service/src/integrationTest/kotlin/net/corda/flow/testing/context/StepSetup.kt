@@ -46,7 +46,7 @@ interface StepSetup {
         platformContext: Map<String, String> = emptyMap()
     ): FlowIoRequestSetup
 
-    fun sessionInitEventReceived(
+    fun sessionCounterpartyInfoRQReceived(
         flowId: String,
         sessionId: String,
         cpiId: String,
@@ -61,6 +61,11 @@ interface StepSetup {
         sessionId: String,
         data: ByteArray,
         sequenceNum: Int
+    ): FlowIoRequestSetup
+
+    fun sessionCounterpartyInfoRSReceived(
+        flowId: String,
+        sessionId: String,
     ): FlowIoRequestSetup
 
     fun sessionCloseEventReceived(
