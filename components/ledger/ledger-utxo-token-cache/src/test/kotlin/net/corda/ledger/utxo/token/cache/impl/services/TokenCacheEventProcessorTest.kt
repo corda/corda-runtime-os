@@ -72,16 +72,24 @@ class TokenCacheEventProcessorTest {
     fun `when the event has no payload the event should be sent to the DLQ`() {
 
         val target =
-            TokenCacheEventProcessor(eventConverter, entityConverter, tokenPoolCache, tokenCacheEventHandlerMap, externalEventResponseFactory)
+            TokenCacheEventProcessor(
+                eventConverter,
+                entityConverter,
+                tokenPoolCache,
+                tokenCacheEventHandlerMap,
+                externalEventResponseFactory
+            )
 
         val result = target.onNext(stateIn, eventIn)
 
         verify(externalEventResponseFactory).platformError(
-            eq(ExternalEventContext(
-                FakeTokenEvent().externalEventRequestId,
-                FakeTokenEvent().flowId,
-                KeyValuePairList(listOf())
-            )),
+            eq(
+                ExternalEventContext(
+                    FakeTokenEvent().externalEventRequestId,
+                    FakeTokenEvent().flowId,
+                    KeyValuePairList(listOf())
+                )
+            ),
             any<Throwable>()
         )
 
@@ -106,11 +114,13 @@ class TokenCacheEventProcessorTest {
         val result = target.onNext(stateIn, eventIn)
 
         verify(externalEventResponseFactory).platformError(
-            eq(ExternalEventContext(
-                FakeTokenEvent().externalEventRequestId,
-                FakeTokenEvent().flowId,
-                KeyValuePairList(listOf())
-            )),
+            eq(
+                ExternalEventContext(
+                    FakeTokenEvent().externalEventRequestId,
+                    FakeTokenEvent().flowId,
+                    KeyValuePairList(listOf())
+                )
+            ),
             any<Throwable>()
         )
 
