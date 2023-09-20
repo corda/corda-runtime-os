@@ -108,7 +108,6 @@ class FlowSessionManagerImpl @Activate constructor(
         )
     }
 
-
     override fun sendSessionCounterpartyInfoRS(
         checkpoint: FlowCheckpoint,
         sessionId: String,

@@ -38,6 +38,7 @@ import net.corda.flow.testing.fakes.FakeMembershipGroupReaderProvider
 import net.corda.flow.testing.fakes.FakeSandboxGroupContextComponent
 import net.corda.flow.testing.tests.ALL_TEST_VIRTUAL_NODES
 import net.corda.flow.testing.tests.FLOW_NAME
+import net.corda.flow.testing.tests.SESSION_PROPERTIES
 import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.flow.utils.keyValuePairListOf
@@ -307,16 +308,17 @@ class FlowServiceTestContext @Activate constructor(
         flowId: String,
         sessionId: String,
         data: ByteArray,
-        sequenceNum: Int
+        sequenceNum: Int,
+        sessionInit: SessionInit?
     ): FlowIoRequestSetup {
         return createAndAddSessionEvent(
             flowId,
             sessionId,
             null,
             null,
-            SessionData(ByteBuffer.wrap(data), null),
+            SessionData(ByteBuffer.wrap(data), sessionInit),
             sequenceNum,
-            null
+            SESSION_PROPERTIES
         )
     }
 

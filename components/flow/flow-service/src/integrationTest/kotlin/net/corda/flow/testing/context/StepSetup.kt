@@ -1,6 +1,7 @@
 package net.corda.flow.testing.context
 
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
+import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
@@ -60,7 +61,8 @@ interface StepSetup {
         flowId: String,
         sessionId: String,
         data: ByteArray,
-        sequenceNum: Int
+        sequenceNum: Int,
+        sessionInit: SessionInit? = null
     ): FlowIoRequestSetup
 
     fun sessionCounterpartyInfoRSReceived(

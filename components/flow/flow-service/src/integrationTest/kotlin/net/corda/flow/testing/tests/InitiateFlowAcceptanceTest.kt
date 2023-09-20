@@ -96,6 +96,47 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
+    fun `Receiving 2 out of order SessionData events starts an initiated flow and processes both datas in order`() {
+        given {
+            virtualNode(CPI1, BOB_HOLDING_IDENTITY)
+            membershipGroupFor(BOB_HOLDING_IDENTITY)
+            initiatingToInitiatedFlow(PROTOCOL, FAKE_FLOW_NAME, FAKE_FLOW_NAME)
+        }
+
+        `when` {
+            sessionDataEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, DATA_MESSAGE_2, 2, SESSION_INIT)
+                .suspendsWith(FlowIORequest.InitialCheckpoint)
+                .suspendsWith(
+                    FlowIORequest.Receive(
+                        setOf(
+                            SessionInfo(INITIATED_SESSION_ID_1, initiatingIdentityMemberName),
+                        )
+                    )
+                )
+
+            sessionDataEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, DATA_MESSAGE_1, 1, SESSION_INIT)
+                .suspendsWith(
+                    FlowIORequest.Receive(
+                        setOf(
+                            SessionInfo(INITIATED_SESSION_ID_1, initiatingIdentityMemberName),
+                        )
+                    )
+                )
+                .completedSuccessfullyWith("hello")
+
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                flowStatus(FlowStates.RUNNING)
+            }
+
+            expectOutputForFlow(FLOW_ID1) {
+                flowResumedWithData(mapOf(INITIATED_SESSION_ID_1 to DATA_MESSAGE_1, INITIATED_SESSION_ID_1 to DATA_MESSAGE_2))
+            }
+        }
+    }
+    @Test
     fun `Receiving a session error event resumes the flow with an error`() {
         given {
             startFlow(this)
