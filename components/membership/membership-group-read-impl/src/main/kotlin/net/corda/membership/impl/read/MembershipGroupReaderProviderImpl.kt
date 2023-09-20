@@ -1,8 +1,6 @@
 package net.corda.membership.impl.read
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
@@ -11,13 +9,11 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.impl.read.lifecycle.MembershipGroupReadLifecycleHandler
 import net.corda.membership.impl.read.reader.MembershipGroupReaderFactory
-import net.corda.membership.impl.read.subscription.MembershipGroupReadSubscriptions
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.configuration.ConfigKeys
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -60,8 +56,10 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     // Handler for lifecycle events.
     private val lifecycleHandler = MembershipGroupReadLifecycleHandler.Impl(
         configurationReadService,
+        subscriptionFactory,
+        memberInfoFactory,
         ::activate,
-        ::deactivate
+        ::deactivate,
     )
 
     // Component lifecycle coordinator
@@ -70,9 +68,9 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
 
     private var impl: InnerMembershipGroupReaderProvider = InactiveImpl
 
-    private fun activate(configs: Map<String, SmartConfig>, reason: String) {
+    private fun activate(reason: String, membershipGroupReadCache: MembershipGroupReadCache) {
         impl.close()
-        impl = ActiveImpl(configs)
+        impl = ActiveImpl(membershipGroupReadCache)
         coordinator.updateStatus(LifecycleStatus.UP, reason)
     }
 
@@ -111,23 +109,12 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     }
 
     private inner class ActiveImpl(
-        configs: Map<String, SmartConfig>
-    ) : InnerMembershipGroupReaderProvider {
         // Group data cache instance shared across services.
-        private val membershipGroupReadCache = MembershipGroupReadCache.Impl()
-
+        private val membershipGroupReadCache: MembershipGroupReadCache,
+    ) : InnerMembershipGroupReaderProvider {
         // Factory responsible for creating group readers or taking existing instances from the cache.
-        private val membershipGroupReaderFactory =
+        private val membershipGroupReaderFactory: MembershipGroupReaderFactory =
             MembershipGroupReaderFactory.Impl(membershipGroupReadCache, groupParametersReaderService)
-
-        // Membership group topic subscriptions
-        private val membershipGroupReadSubscriptions = MembershipGroupReadSubscriptions.Impl(
-            subscriptionFactory,
-            membershipGroupReadCache,
-            memberInfoFactory
-        ).also {
-            it.start(configs.getConfig(ConfigKeys.MESSAGING_CONFIG))
-        }
 
         /**
          * Get the [MembershipGroupReader] instance for the given holding identity.
@@ -137,7 +124,6 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
         ) = membershipGroupReaderFactory.getGroupReader(holdingIdentity)
 
         override fun close() {
-            membershipGroupReadSubscriptions.stop()
             membershipGroupReadCache.clear()
         }
     }
