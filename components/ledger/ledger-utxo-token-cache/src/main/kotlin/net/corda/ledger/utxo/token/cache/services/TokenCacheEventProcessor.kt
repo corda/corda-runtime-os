@@ -89,7 +89,7 @@ class TokenCacheEventProcessor constructor(
                 ),
                 e
             )
-            StateAndEventProcessor.Response(state, listOf(responseMessage), markForDLQ = true)
+            StateAndEventProcessor.Response(state, listOf(responseMessage), markForDLQ = false)
         }
     }
 }

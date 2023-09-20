@@ -87,7 +87,7 @@ class TokenCacheEventProcessorTest {
 
         assertThat(result.responseEvents).isNotEmpty()
         assertThat(result.updatedState).isSameAs(stateIn)
-        assertThat(result.markForDLQ).isTrue
+        assertThat(result.markForDLQ).isFalse()
     }
 
     @Test
@@ -116,7 +116,7 @@ class TokenCacheEventProcessorTest {
 
         assertThat(result.responseEvents).isNotEmpty()
         assertThat(result.updatedState).isSameAs(stateIn)
-        assertThat(result.markForDLQ).isTrue
+        assertThat(result.markForDLQ).isFalse()
     }
 
     @Test
