@@ -15,7 +15,7 @@ class MediatorConsumerFactoryFactoryImpl @Activate constructor(
     @Reference(service = CordaConsumerBuilder::class)
     private val cordaConsumerBuilder: CordaConsumerBuilder,
 ): MediatorConsumerFactoryFactory {
-    override fun createMessageBusProducerFactory(
+    override fun createMessageBusConsumerFactory(
         topicName: String,
         groupName: String,
         messageBusConfig: SmartConfig

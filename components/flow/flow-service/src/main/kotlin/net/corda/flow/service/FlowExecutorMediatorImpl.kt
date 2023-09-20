@@ -154,7 +154,7 @@ class FlowExecutorMediatorImpl (
             .name("FlowEventMediator")
             .messagingConfig(messagingConfig)
             .consumerFactories(
-                mediatorConsumerFactoryFactory.createMessageBusProducerFactory(
+                mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
                     FLOW_EVENT_TOPIC, CONSUMER_GROUP, messagingConfig
                 ),
             )

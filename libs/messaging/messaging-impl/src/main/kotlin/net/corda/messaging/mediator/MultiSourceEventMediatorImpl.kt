@@ -1,5 +1,6 @@
 package net.corda.messaging.mediator
 
+import kotlinx.coroutines.runBlocking
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -186,10 +187,12 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun commitOffsets() {
-        consumers.map { consumer ->
-            consumer.commitAsync()
-        }.map {
-            it.join()
+        runBlocking {
+            consumers.map { consumer ->
+                consumer.commitAsyncOffsets()
+            }.map {
+                it.await()
+            }
         }
     }
 

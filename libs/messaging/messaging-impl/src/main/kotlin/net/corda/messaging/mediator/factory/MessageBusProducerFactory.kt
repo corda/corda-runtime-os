@@ -15,19 +15,19 @@ import java.util.UUID
 /**
  * Factory for creating multi-source event mediator message bus producers.
  *
- * @param name Producer name.
+ * @param id Producer's unique ID.
  * @param messageBusConfig Message bus related configuration.
  * @param cordaProducerBuilder [CordaProducer] builder.
  */
 class MessageBusProducerFactory(
-    private val name: String,
+    private val id: String,
     private val messageBusConfig: SmartConfig,
     private val cordaProducerBuilder: CordaProducerBuilder,
 ): MediatorProducerFactory {
 
     override fun create(config: MediatorProducerConfig): MediatorProducer {
         val uniqueId = UUID.randomUUID().toString()
-        val clientId = "$name--$uniqueId"
+        val clientId = "$id--$uniqueId"
 
         val eventProducerConfig = ProducerConfig(
             clientId,
@@ -44,7 +44,7 @@ class MessageBusProducerFactory(
         )
 
         return MessageBusProducer(
-            name,
+            id,
             eventProducer,
         )
     }

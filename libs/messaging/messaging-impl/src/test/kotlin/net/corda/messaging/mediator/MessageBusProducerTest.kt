@@ -17,12 +17,15 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class MessageBusProducerTest {
+    companion object {
+        private const val TOPIC = "topic"
+    }
+
     private lateinit var cordaProducer: CordaProducer
     private lateinit var mediatorProducer: MessageBusProducer
 
     private val defaultHeaders: List<Pair<String, String>> = emptyList()
     private val messageProps: MutableMap<String, Any> = mutableMapOf(
-        "topic" to "topic",
         "key" to "key",
         "headers" to defaultHeaders
     )
@@ -37,10 +40,10 @@ class MessageBusProducerTest {
 
     @Test
     fun testSend() {
-        mediatorProducer.send(message)
+        mediatorProducer.send(message, TOPIC)
 
         val expected = CordaProducerRecord(
-            message.getProperty<String>("topic"),
+            TOPIC,
             message.getProperty("key"),
             message.payload
         )
@@ -51,7 +54,7 @@ class MessageBusProducerTest {
     @Test
     fun testSendWithError() {
         val record = CordaProducerRecord(
-            message.getProperty<String>("topic"),
+            TOPIC,
             message.getProperty("key"),
             message.payload
         )
@@ -59,7 +62,7 @@ class MessageBusProducerTest {
         doThrow(CordaRuntimeException("")).whenever(cordaProducer).send(eq(record), any())
         assertThrows<CordaRuntimeException> {
             runBlocking {
-                mediatorProducer.send(message).await()
+                mediatorProducer.send(message, TOPIC).await()
             }
         }
     }

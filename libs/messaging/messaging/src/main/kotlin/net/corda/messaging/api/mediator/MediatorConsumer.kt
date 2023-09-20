@@ -1,9 +1,9 @@
 package net.corda.messaging.api.mediator
 
+import kotlinx.coroutines.Deferred
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import java.time.Duration
-import java.util.concurrent.CompletableFuture
 
 /**
  * Multi-source event mediator message consumer.
@@ -27,7 +27,7 @@ interface MediatorConsumer<K : Any, V : Any> : AutoCloseable {
      *
      * @return [CompletableFuture] with committed offsets.
      */
-    fun commitAsync(): CompletableFuture<Map<CordaTopicPartition, Long>>
+    fun commitAsyncOffsets(): Deferred<Map<CordaTopicPartition, Long>>
 
     /**
      * Resets consumer's offsets to the last committed positions.

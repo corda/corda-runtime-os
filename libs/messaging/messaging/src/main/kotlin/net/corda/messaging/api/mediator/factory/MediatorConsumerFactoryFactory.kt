@@ -13,7 +13,7 @@ interface MediatorConsumerFactoryFactory {
      * @param groupName Consumer group name.
      * @param messageBusConfig Message bus related configuration.
      */
-    fun createMessageBusProducerFactory(
+    fun createMessageBusConsumerFactory(
         topicName: String,
         groupName: String,
         messageBusConfig: SmartConfig,

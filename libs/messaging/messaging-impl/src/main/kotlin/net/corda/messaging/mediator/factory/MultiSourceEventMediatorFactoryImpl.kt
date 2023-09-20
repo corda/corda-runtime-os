@@ -43,6 +43,7 @@ class MultiSourceEventMediatorFactoryImpl @Activate constructor(
         )
     }
 
+    // TODO
 //        val msgConfig = messagingConfig.withFallback(defaults)
 //        messagingConfig.getInt(BootConfig.INSTANCE_ID),
 //        Duration.ofMillis(messagingConfig.getLong(MessagingConfig.Subscription.POLL_TIMEOUT)),
