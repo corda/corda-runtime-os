@@ -291,7 +291,7 @@
                     "null"
                   ]
                 },
-                "keepaliveTimeSeconds": {
+                "keepAliveTimeSeconds": {
                   "description": "Interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled",
                   "default": 0,
                   "minimum": 0,
