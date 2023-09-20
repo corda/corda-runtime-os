@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.databind.node.TextNode
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.client.CryptoOpsClient
 import net.corda.interop.identity.write.InteropIdentityWriteService
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -46,7 +47,9 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
     @Reference(service = InteropIdentityRegistryService::class)
     private val interopIdentityRegistryService: InteropIdentityRegistryService,
     @Reference(service = VirtualNodeInfoReadService::class)
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = CryptoOpsClient::class)
+    private val cryptoOpsClient: CryptoOpsClient
 ) : InteropIdentityWriteService, LifecycleEventHandler {
     companion object {
         val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -63,8 +66,8 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
     private val publisher: AtomicReference<Publisher?> = AtomicReference()
 
     private val interopIdentityProducer = InteropIdentityProducer(publisher)
-    private val hostedIdentityProducer = HostedIdentityProducer(publisher)
-    private val membershipInfoProducer = MembershipInfoProducer(publisher)
+    private val hostedIdentityProducer = HostedIdentityProducer(publisher, cryptoOpsClient)
+    private val membershipInfoProducer = MembershipInfoProducer(publisher,cryptoOpsClient)
     private val interopGroupPolicyProducer = InteropGroupPolicyProducer(publisher)
 
     override val isRunning: Boolean
@@ -75,7 +78,7 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
         writeInteropIdentityTopic(vNodeShortHash, identity)
 
         if (vNodeShortHash == identity.owningVirtualNodeShortHash) {
-            writeHostedIdentitiesTopic(identity)
+            writeHostedIdentitiesTopic(vNodeShortHash, identity)
         }
     }
 
@@ -137,8 +140,8 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
         interopIdentityProducer.publishInteropIdentity(vNodeShortHash, identity)
     }
 
-    private fun writeHostedIdentitiesTopic(identity: InteropIdentity) {
-        hostedIdentityProducer.publishHostedInteropIdentity(identity)
+    private fun writeHostedIdentitiesTopic(vNodeShortHash: ShortHash, identity: InteropIdentity) {
+        hostedIdentityProducer.publishHostedInteropIdentity(vNodeShortHash, identity)
     }
 
     override fun start() {
@@ -169,7 +172,8 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
         configurationReadService.start()
         registration?.close()
         registration = coordinator.followStatusChangesByName(setOf(
-            LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+            LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+//            LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
         ))
     }
 

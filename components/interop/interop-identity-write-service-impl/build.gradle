@@ -15,7 +15,6 @@ dependencies {
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-topic-schema"
-
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
@@ -23,25 +22,23 @@ dependencies {
     implementation project(':libs:virtual-node:virtual-node-info')
     implementation project(':libs:interop:interop-core')
     implementation project(":libs:membership:membership-common")
-
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
-
     implementation project(":components:interop:interop-identity-write-service")
     implementation project(":components:interop:interop-identity-registry-service")
     implementation project(":components:virtual-node:virtual-node-info-read-service")
+    implementation project(":libs:crypto:crypto-core")
+    implementation project(":components:crypto:crypto-client")
+    implementation project(":components:crypto:crypto-client-hsm")
+    implementation project(":libs:configuration:configuration-core")
+    implementation project(":components:configuration:configuration-read-service")
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
 
     runtimeOnly project(":components:interop:interop-identity-write-service-impl")
     runtimeOnly project(":components:interop:interop-identity-registry-service-impl")
-
-    implementation project(":libs:configuration:configuration-core")
-
-    implementation project(":components:configuration:configuration-read-service")
-
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
 
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:registry")
-
+    testImplementation project(":libs:crypto:crypto-impl")
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
