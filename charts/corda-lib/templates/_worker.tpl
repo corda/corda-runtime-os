@@ -300,7 +300,7 @@ spec:
           - "--stateManager"
           - "database.pool.maxLifetimeSeconds={{ .stateManagerDbConnectionPool.maxLifetimeSeconds }}"
           - "--stateManager"
-          - "database.pool.keepAliveTimeSeconds={{ .stateManagerDbConnectionPool.keepAliveTimeSeconds }}"
+          - "database.pool.keepaliveTimeSeconds={{ .stateManagerDbConnectionPool.keepaliveTimeSeconds }}"
           - "--stateManager"
           - "database.pool.validationTimeoutSeconds={{ .stateManagerDbConnectionPool.validationTimeoutSeconds }}"
           {{- end }}

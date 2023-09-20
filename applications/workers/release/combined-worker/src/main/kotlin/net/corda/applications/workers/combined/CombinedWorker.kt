@@ -45,6 +45,7 @@ import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER_DB_USER
 import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER_JDBC_URL
 import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER_TYPE
 import net.corda.schema.configuration.DatabaseConfig
+import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.tracing.configureTracing
 import net.corda.tracing.shutdownTracing
@@ -55,6 +56,7 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
+import java.time.Duration
 
 
 // We use a different port for the combined worker since it is often run on Macs, which 
@@ -112,6 +114,7 @@ class CombinedWorker @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val DEFAULT_BOOT_STATE_MANAGER_TYPE = "DATABASE"
         private const val STATE_MANAGER_SCHEMA_NAME = "STATE_MANAGER"
+        private const val MESSAGE_BUS_CONFIG_PATH_SUFFIX = "_messagebus"
         private const val MESSAGEBUS_SCHEMA_NAME = "MESSAGEBUS"
         private const val CONFIG_SCHEMA_NAME = "CONFIG"
     }
@@ -220,8 +223,20 @@ class CombinedWorker @Activate constructor(
      * directly, so the name of that schema must be added to the params that are used to create the config.
      */
     private fun prepareStateManagerConfig(stateManagerConfig: Config): Config {
+        val defaultConfig = ConfigFactory.empty()
+            .withValue(MessagingConfig.StateManager.JDBC_DRIVER, fromAnyRef("org.postgresql.Driver"))
+            .withValue(MessagingConfig.StateManager.JDBC_PERSISTENCE_UNIT_NAME, fromAnyRef("corda-state-manager"))
+            .withValue(MessagingConfig.StateManager.JDBC_POOL_MIN_SIZE, fromAnyRef(1))
+            .withValue(MessagingConfig.StateManager.JDBC_POOL_MAX_SIZE, fromAnyRef(5))
+            .withValue(MessagingConfig.StateManager.JDBC_POOL_IDLE_TIMEOUT_SECONDS, fromAnyRef(Duration.ofMinutes(2).toSeconds()))
+            .withValue(MessagingConfig.StateManager.JDBC_POOL_MAX_LIFETIME_SECONDS, fromAnyRef(Duration.ofMinutes(30).toSeconds()))
+            .withValue(MessagingConfig.StateManager.JDBC_POOL_KEEP_ALIVE_TIME_SECONDS, fromAnyRef(Duration.ZERO.toSeconds()))
+            .withValue(
+                MessagingConfig.StateManager.JDBC_POOL_VALIDATION_TIMEOUT_SECONDS, fromAnyRef(Duration.ofSeconds(5).toSeconds())
+            )
+        val stateManagerConfigWithFallback = stateManagerConfig.withFallback(defaultConfig)
         // add the state manager schema to the JDBC URL.
-        return stateManagerConfig.withValue(
+        return stateManagerConfigWithFallback.withValue(
             BOOT_STATE_MANAGER_JDBC_URL,
             fromAnyRef("${stateManagerConfig.getString(BOOT_STATE_MANAGER_JDBC_URL)}?currentSchema=$STATE_MANAGER_SCHEMA_NAME")
         )
@@ -252,7 +267,10 @@ class CombinedWorker @Activate constructor(
         val tempJdbcUrl = dbConfig.getString(BOOT_JDBC_URL)
         return dbConfig
             .withValue(BOOT_JDBC_URL, fromAnyRef("$tempJdbcUrl?currentSchema=$CONFIG_SCHEMA_NAME"))
-            .withValue(BOOT_JDBC_URL + "_messagebus", fromAnyRef("$tempJdbcUrl?currentSchema=$MESSAGEBUS_SCHEMA_NAME"))
+            .withValue(
+                BOOT_JDBC_URL + MESSAGE_BUS_CONFIG_PATH_SUFFIX,
+                fromAnyRef("$tempJdbcUrl?currentSchema=$MESSAGEBUS_SCHEMA_NAME")
+            )
     }
 
     override fun shutdown() {

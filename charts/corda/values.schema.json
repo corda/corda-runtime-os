@@ -1914,7 +1914,7 @@
                                         "maxSize",
                                         "idleTimeoutSeconds",
                                         "maxLifetimeSeconds",
-                                        "keepAliveTimeSeconds",
+                                        "keepaliveTimeSeconds",
                                         "validationTimeoutSeconds"
                                     ],
                                     "additionalProperties": false,
@@ -1952,7 +1952,7 @@
                                             "minimum": 1,
                                             "title": "maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached \"maxLifetime\" timeout, it will be removed from the pool only when it becomes idle"
                                         },
-                                        "keepAliveTimeSeconds": {
+                                        "keepaliveTimeSeconds": {
                                             "type": "integer",
                                             "default": 0,
                                             "minimum": 0,
