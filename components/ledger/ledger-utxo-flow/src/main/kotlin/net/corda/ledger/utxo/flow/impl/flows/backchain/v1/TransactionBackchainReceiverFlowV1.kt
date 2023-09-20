@@ -122,9 +122,7 @@ class TransactionBackchainReceiverFlowV1(
             }
         }
 
-        if (sortedTransactionIds.isNotEmpty()) {
-            session.send(TransactionBackchainRequestV1.Stop)
-        }
+        session.send(TransactionBackchainRequestV1.Stop)
 
         utxoLedgerMetricRecorder.recordTransactionBackchainLength(sortedTransactionIds.size)
 
@@ -135,8 +133,8 @@ class TransactionBackchainReceiverFlowV1(
     private fun retrieveGroupParameters(
         retrievedTransaction: UtxoSignedTransaction
     ) {
-        if(version == TransactionBackChainResolutionVersion.V1){
-            log.trace("Backchain resolution of $initialTransactionIds - Group parameters retrieval is not available in V1")
+        if (version == TransactionBackChainResolutionVersion.V1) {
+            log.trace { "Backchain resolution of $initialTransactionIds - Group parameters retrieval is not available in V1" }
             return
         }
         val retrievedTransactionId = retrievedTransaction.id

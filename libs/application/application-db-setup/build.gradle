@@ -44,9 +44,11 @@ dependencies {
 // without `resolution=optional` which then fails to resolve at runtime.
 // https://bnd.bndtools.org/instructions/noclassforname.html
 tasks.named('jar', Jar) {
-    bnd '''\
+    bundle {
+        bnd '''\
 -noclassforname: true
 Import-Package: org.postgresql;resolution:=optional,\
     *
 '''
+    }
 }

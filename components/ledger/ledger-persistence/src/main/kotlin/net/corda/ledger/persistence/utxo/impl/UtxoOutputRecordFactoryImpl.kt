@@ -69,7 +69,8 @@ class UtxoOutputRecordFactoryImpl(
             externalEventContext,
             EntityResponse(
                 listOf(transactionContainer to status).map { ByteBuffer.wrap(serializationService.serialize(it).bytes) },
-                KeyValuePairList(emptyList())
+                KeyValuePairList(emptyList()),
+                null
             )
         )
     }
@@ -83,7 +84,8 @@ class UtxoOutputRecordFactoryImpl(
             externalEventContext,
             EntityResponse(
                 listOf(transactionContainer to status).map { ByteBuffer.wrap(serializationService.serialize(it).bytes) },
-                KeyValuePairList(emptyList())
+                KeyValuePairList(emptyList()),
+                null
             )
         )
     }
@@ -112,7 +114,7 @@ class UtxoOutputRecordFactoryImpl(
     ): Record<String, FlowEvent> {
         return responseFactory.successResponse(
             externalEventContext,
-            EntityResponse(emptyList(), KeyValuePairList(emptyList()))
+            EntityResponse(emptyList(), KeyValuePairList(emptyList()), null),
         )
     }
 

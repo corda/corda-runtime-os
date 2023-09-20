@@ -5,6 +5,12 @@ import org.osgi.framework.ServiceReference
 import org.slf4j.LoggerFactory
 import java.lang.reflect.InvocationTargetException
 
+/**
+ * Implements OSGi's [ServiceObjects] interface for a sandbox service,
+ * except without reference-counting.
+ *
+ * For registering either an injectable or a non-injectable service.
+ */
 class SandboxServiceObjects(
     private val reference: ServiceReference<*>,
     private val definition: ServiceDefinition,

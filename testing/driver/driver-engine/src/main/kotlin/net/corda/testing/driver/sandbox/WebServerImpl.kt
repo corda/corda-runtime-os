@@ -12,6 +12,9 @@ class WebServerImpl : WebServer {
     override val port: Int
         get() = 0
 
+    override val endpoints: Set<Endpoint>
+        get() = emptySet()
+
     override fun start(port: Int) {
     }
 

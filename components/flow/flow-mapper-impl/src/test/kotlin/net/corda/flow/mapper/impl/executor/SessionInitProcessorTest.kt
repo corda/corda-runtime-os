@@ -1,12 +1,15 @@
 package net.corda.flow.mapper.impl.executor
 
 import com.typesafe.config.ConfigValueFactory
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
+import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.flow.mapper.factory.RecordFactory
 import net.corda.flow.utils.emptyKeyValuePairList
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
@@ -14,16 +17,42 @@ import net.corda.schema.configuration.FlowConfig
 import net.corda.test.flow.util.buildSessionEvent
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import java.time.Instant
 
 class SessionInitProcessorTest {
 
-    private val recordFactory = mock<RecordFactory>().apply {
-        whenever(this.forwardEvent(any(), any(), any(), any())).thenReturn(Record(Schemas.P2P.P2P_OUT_TOPIC, "sessionId", ""))
+    private val recordFactory = object : RecordFactory {
+        override fun forwardEvent(
+            sourceEvent: SessionEvent,
+            instant: Instant,
+            flowConfig: SmartConfig,
+            flowId: String
+        ): Record<*, *> {
+            return if (sourceEvent.messageDirection == MessageDirection.INBOUND) {
+                Record(Schemas.Flow.FLOW_EVENT_TOPIC, flowId, FlowEvent(flowId, sourceEvent))
+            } else {
+                Record(Schemas.P2P.P2P_OUT_TOPIC, "sessionId", "")
+            }
+        }
+
+        override fun forwardError(
+            sourceEvent: SessionEvent,
+            exceptionEnvelope: ExceptionEnvelope,
+            instant: Instant,
+            flowConfig: SmartConfig,
+            flowId: String
+        ): Record<*, *> {
+            TODO("Not yet implemented")
+        }
+
+        override fun sendBackError(
+            sourceEvent: SessionEvent,
+            exceptionEnvelope: ExceptionEnvelope,
+            instant: Instant,
+            flowConfig: SmartConfig
+        ): Record<*, *> {
+            TODO("Not yet implemented")
+        }
     }
     private val flowConfig = SmartConfigImpl.empty().withValue(FlowConfig.SESSION_P2P_TTL, ConfigValueFactory.fromAnyRef(10000))
     private val sessionInitProcessor = SessionInitProcessor(recordFactory)
@@ -73,6 +102,5 @@ class SessionInitProcessorTest {
         Assertions.assertThat(state?.expiryTime).isEqualTo(null)
 
         Assertions.assertThat(outboundEvents.size).isEqualTo(1)
-        verify(recordFactory).forwardEvent(any(), any(), any(), any())
     }
 }
