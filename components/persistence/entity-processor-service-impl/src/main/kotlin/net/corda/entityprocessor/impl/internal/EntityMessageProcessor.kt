@@ -152,7 +152,7 @@ class EntityMessageProcessor(
                     requestId,
                     em,
                     onDuplication = {
-                        EntityResponse(emptyList(), KeyValuePairList(emptyList()))
+                        EntityResponse(emptyList(), KeyValuePairList(emptyList()), null)
                     }
                 ) {
                     persistenceServiceInternal.persist(serializationService, it, entityRequest)
