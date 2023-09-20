@@ -6,9 +6,13 @@ import java.io.Serializable
 import java.nio.ByteBuffer
 
 /**
- * [ResultSetExecutor] defines the database operation that is executed to retrieve data within [ResultSet.next].
+ * [OffsetResultSetExecutor] defines the database operation that is executed to retrieve data within [ResultSet.next].
+ *
+ * Offset based queries are not stable, and can miss data if using paging and the where clause / ordering criteria
+ * are mutable. It is strongly recommended to use [StableResultSetExecutor] instead, which should always return
+ * data reliably, and is likely to be more performant.
  */
-fun interface ResultSetExecutor<R> : Serializable {
+fun interface OffsetResultSetExecutor<R> : Serializable {
 
     /**
      * Retrieve data for a [ResultSet].

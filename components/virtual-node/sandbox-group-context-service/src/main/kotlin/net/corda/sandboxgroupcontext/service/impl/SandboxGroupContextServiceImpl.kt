@@ -240,7 +240,8 @@ class SandboxGroupContextServiceImpl @Activate constructor(
      * the sandbox. We assume that the OSGi isolation hooks protect us from
      * finding any pre-existing services inside the sandbox itself.
      *
-     * Identify which of these services should be registered with the OSGi framework.
+     * Identify which of these services should be registered with the OSGi framework
+     * as "injectable" services, i.e. candidates for `@CordaInject`.
      */
     @Suppress("ComplexMethod")
     private fun createSandboxServiceContext(
@@ -432,10 +433,10 @@ class SandboxGroupContextServiceImpl @Activate constructor(
 
     /**
      * An [AutoCloseable] associated with a non-injectable service. This service
-     * has not been registered with the OSGi framework, but may still hold
-     * references to other OSGi services which should be released at the end.
+     * has not actually been registered with the OSGi framework, but may still
+     * hold references to other OSGi services which should be released at the end.
      */
-    private class NonInjectableService(
+    private class NonInjectableServiceRegistration(
         private val serviceFactory: ServiceObjects<out Any>,
         private val serviceObj: Any
     ) : AutoCloseable {
@@ -489,8 +490,10 @@ class SandboxGroupContextServiceImpl @Activate constructor(
         private val serviceRegistry = mutableMapOf<ServiceReference<*>, Any>()
 
         init {
+            // Allow injectables to compute their own sandbox service references.
+            // We must do this before we can invoke registerInjectables().
             for (injectable in injectables.values) {
-                injectable.initialise(serviceIndex)
+                injectable.withServiceReferences(serviceIndex)
             }
         }
 
@@ -499,6 +502,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
          * that they may also require. Register the injectable services as singletons for
          * [targetContext], and return both the services and whatever [AutoCloseable]
          * clean-up actions are required to dispose of them all nicely afterwards.
+         * @param targetContext a [BundleContext] for one of the sandbox bundles.
          */
         fun registerInjectables(targetContext: BundleContext): Pair<Set<*>, Collection<AutoCloseable>> {
             val closeables = LinkedList<AutoCloseable>()
@@ -536,6 +540,10 @@ class SandboxGroupContextServiceImpl @Activate constructor(
             }
         }
 
+        /**
+         * Iterate over [injectables], registering those which have no requirements to satisfy.
+         * We will also identify any [nonInjectables] which the [injectables] require.
+         */
         private fun registerSimpleInjectables(targetContext: BundleContext, closeables: Deque<AutoCloseable>) {
             val totalRequirements = mutableSetOf<ServiceReference<*>>()
             val iter = injectables.iterator()
@@ -546,8 +554,11 @@ class SandboxGroupContextServiceImpl @Activate constructor(
 
                 if (!injectable.isByConstructor) {
                     logger.warn("{} must only use constructor injection - IGNORED", injectable)
-                    injectable.broken()
+                    injectable.asBroken()
                 } else if (sandboxRequirements.isNotEmpty()) {
+                    // Collect this service's requirements so that
+                    // we can examine all requirements afterwards.
+                    // We will not process this service further.
                     sandboxRequirements.values.forEach(totalRequirements::addAll)
                 } else if (serviceFilter == null) {
                     // This service doesn't use any of our prototypes, and we don't
@@ -561,17 +572,21 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                         )?.also { svc ->
                             closeables.addFirst(svc)
                             iter.remove()
-                        } ?: run(injectable::broken)
+                        } ?: run(injectable::asBroken)
                     }
                 }
             }
 
-            // Discover any new and unsatisfied service references, which will be non-injectable.
+            // Discover any new and unsatisfied service references, which we will consider to be non-injectable.
             getUnknownServicesFrom(totalRequirements).forEach { nonInjectable ->
                 addNonInjectable(nonInjectable, closeables)
             }
         }
 
+        /**
+         * Iterate over [injectables], registering those whose requirements can be satisfied.
+         * @return true if at least one new injectable service was registered.
+         */
         private fun registerComplexInjectables(targetContext: BundleContext, closeables: Deque<AutoCloseable>): Boolean {
             var modified = false
             val iter = injectables.iterator()
@@ -599,6 +614,11 @@ class SandboxGroupContextServiceImpl @Activate constructor(
             return modified
         }
 
+        /**
+         * Creates a service object using [serviceFactory], and then registers
+         * it as a singleton service for [targetContext]. The service object
+         * is then added to [serviceRegistry] as a "satisfied" reference.
+         */
         private fun registerInjectableSandboxService(
             serviceFactory: ServiceObjects<out Any>,
             serviceClassNames: Set<String>,
@@ -633,6 +653,10 @@ class SandboxGroupContextServiceImpl @Activate constructor(
             }
         }
 
+        /**
+         * Repeatedly iterate over [nonInjectables], registering those whose requirements can be satisfied.
+         * Continue until we can no longer register existing non-injectable services or discover new ones.
+         */
         private tailrec fun createNonInjectables(closeables: Deque<AutoCloseable>) {
             var modified = false
             val totalRequirements = mutableSetOf<ServiceReference<*>>()
@@ -660,7 +684,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                 }
             }
 
-            // Discover any new and unsatisfied service references, which will also be non-injectable.
+            // Discover any new and unsatisfied service references, which we will also consider to be non-injectable.
             getUnknownServicesFrom(totalRequirements).forEach { ref ->
                 if (addNonInjectable(ref, closeables)) {
                     modified = true
@@ -677,24 +701,25 @@ class SandboxGroupContextServiceImpl @Activate constructor(
         private fun addNonInjectable(serviceRef: ServiceReference<*>, closeables: Deque<AutoCloseable>): Boolean {
             var modified = false
             serviceComponentRuntime.getComponentDescriptionDTO(serviceRef)?.let { description ->
-                val nonInjectable = ServiceDefinition(description, serviceFilter).initialise(serviceIndex)
-                if (nonInjectable.sandboxReferences.isEmpty()) {
-                    // This service doesn't use any of our prototypes, which means that
+                val nonInjectable = ServiceDefinition(description, serviceFilter).withServiceReferences(serviceIndex)
+                if (!nonInjectable.isByConstructor) {
+                    logger.warn("{} must only use constructor injection - IGNORED", nonInjectable)
+                    nonInjectables[serviceRef] = nonInjectable.asBroken()
+                    null
+                } else if (nonInjectable.sandboxReferences.isEmpty() && serviceFilter == null) {
+                    // This service doesn't use any of our prototypes, and we don't
+                    // need to filter the set of available services, which means that
                     // the OSGi framework can safely create our new service instance.
                     sourceContext.getServiceObjects(serviceRef)
                         ?.let(::registerNonInjectableSandboxService)
                         ?: run {
-                            nonInjectables[serviceRef] = nonInjectable.broken()
+                            nonInjectables[serviceRef] = nonInjectable.asBroken()
                             null
                         }
-                } else if (nonInjectable.isByConstructor) {
+                } else {
                     logger.debug("Discovered non-injectable sandbox service {}", serviceRef)
                     nonInjectables[serviceRef] = nonInjectable
                     modified = true
-                    null
-                } else {
-                    logger.warn("{} must only use constructor injection - IGNORED", nonInjectable)
-                    nonInjectables[serviceRef] = nonInjectable.broken()
                     null
                 }
             }?.also { closeable ->
@@ -704,6 +729,10 @@ class SandboxGroupContextServiceImpl @Activate constructor(
             return modified
         }
 
+        /**
+         * Creates a service object using [serviceFactory], and then adds it
+         * to [serviceRegistry] as a "satisfied" reference.
+         */
         private fun registerNonInjectableSandboxService(serviceFactory: ServiceObjects<out Any>): AutoCloseable? {
             val serviceRef = serviceFactory.serviceReference
             return try {
@@ -713,14 +742,24 @@ class SandboxGroupContextServiceImpl @Activate constructor(
             }?.let { serviceObj ->
                 logger.debug("Created non-injectable sandbox service: {}", serviceObj::class.java.name)
                 serviceRegistry[serviceRef] = serviceObj
-                NonInjectableService(serviceFactory, serviceObj)
+                NonInjectableServiceRegistration(serviceFactory, serviceObj)
             }
         }
 
+        /**
+         * @return those [services] which are neither unsatisfied [injectables], unsatisfied
+         * [nonInjectables], nor satisfied services from [serviceRegistry].
+         */
         private fun getUnknownServicesFrom(services: Set<ServiceReference<*>>): Set<ServiceReference<*>> {
             return services - serviceRegistry.keys - injectables.keys - nonInjectables.keys
         }
 
+        /**
+         * Assemble a [SatisfiedServiceReferences] for the given [requirements],
+         * based on the contents of [serviceRegistry].
+         * @return [SatisfiedServiceReferences], or `null` if any [ServiceReference] we need is
+         * still missing from [serviceRegistry].
+         */
         private fun satisfy(requirements: Map<String, Set<ServiceReference<*>>>): SatisfiedServiceReferences? {
             return buildMap {
                 requirements.forEach { (svcType, svcRefs) ->

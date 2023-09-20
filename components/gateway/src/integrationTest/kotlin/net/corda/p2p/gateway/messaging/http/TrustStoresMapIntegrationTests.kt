@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import java.io.StringWriter
 
-class TrustStoresMapIntegrationTests : TestBase() {
+internal class TrustStoresMapIntegrationTests : TestBase() {
     companion object {
         private const val GROUP_ID = "Group-A"
         private const val ALICE_NAME = "O=Alice, L=LDN, C=GB"
