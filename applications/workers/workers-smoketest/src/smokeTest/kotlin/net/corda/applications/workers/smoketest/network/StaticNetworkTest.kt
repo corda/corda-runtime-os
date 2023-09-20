@@ -60,7 +60,5 @@ class StaticNetworkTest {
         allMembers.forEach { (memberHoldingId, _) ->
             DEFAULT_CLUSTER.containsExactlyInAnyOrderActiveMembers(memberHoldingId, allMembers.map { it.second })
         }
-
-        DEFAULT_CLUSTER
     }
 }

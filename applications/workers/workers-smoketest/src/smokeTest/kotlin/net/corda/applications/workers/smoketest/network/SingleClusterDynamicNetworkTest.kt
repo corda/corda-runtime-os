@@ -8,7 +8,7 @@ import net.corda.e2etest.utilities.onboardMember
 import net.corda.e2etest.utilities.onboardMgm
 import net.corda.e2etest.utilities.onboardNotaryMember
 import net.corda.v5.base.types.MemberX500Name
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.util.UUID
 
@@ -24,7 +24,7 @@ class SingleClusterDynamicNetworkTest {
     fun `Create mgm and allow members to join the group`() {
         val mgmInfo = DEFAULT_CLUSTER.onboardMgm(mgmX500)
         val groupPolicy = DEFAULT_CLUSTER.exportGroupPolicy(mgmInfo.holdingId).also {
-            Assertions.assertThat(it).isNotEmpty.isNotBlank
+            assertThat(it).isNotEmpty.isNotBlank
         }
 
         val aliceInfo = DEFAULT_CLUSTER.onboardMember(TEST_CPB_LOCATION, testUniqueId.toString(), groupPolicy, aliceX500)
