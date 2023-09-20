@@ -50,4 +50,10 @@ dependencies {
         exclude group: 'org.apache.felix'
         exclude group: 'org.osgi'
     }
+
+    // This puts the jdbc driver into the docker image in the /opt/jdbc-driver folder
+    // this folder can contain many jdbc drivers (and DataSourceFactory provider bundles).
+    // Postgres doesn't need a DataSourceFactory provider bundle (e.g. pax-jdbc), because
+    // the postgres devs have written their own and it's in this jar (PGDataSourceFactory).
+    dockerImageJdbc "org.postgresql:postgresql:$postgresDriverVersion"
 }
