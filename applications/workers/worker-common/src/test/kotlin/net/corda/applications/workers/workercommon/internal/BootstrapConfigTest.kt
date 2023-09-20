@@ -9,6 +9,7 @@ import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.ConfigDefaults
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.MessagingConfig
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
@@ -48,7 +49,7 @@ class BootstrapConfigTest {
 
     @Test
     fun `when 2 files are provided use last (properties)`() {
-        defaultWorkerParams.configFiles = listOf(file1,file2)
+        defaultWorkerParams.configFiles = listOf(file1, file2)
         val config = WorkerHelpers.getBootstrapConfig(
             mockSecretsServiceFactoryResolver,
             defaultWorkerParams,
@@ -165,10 +166,12 @@ class BootstrapConfigTest {
             defaultWorkerParams,
             mockConfigurationValidator,
             listOf(
-                ConfigFactory.parseMap(mapOf(
-                    "dir.tmp" to "newConf",
-                    "maxAllowedMessageSize" to 0
-                )),
+                ConfigFactory.parseMap(
+                    mapOf(
+                        "dir.tmp" to "newConf",
+                        "maxAllowedMessageSize" to 0
+                    )
+                ),
             )
         )
 
@@ -178,6 +181,33 @@ class BootstrapConfigTest {
             softly.assertThat(config.getInt("instanceId")).isNotNull
             softly.assertThat(config.getInt("maxAllowedMessageSize")).isEqualTo(0)
             softly.assertThat(config.getString("topicPrefix")).isEqualTo("")
+        }
+
+    }
+
+    @Test
+    fun `getBootstrapConfig converts integers to strings at predefined paths`() {
+        defaultWorkerParams.stateManagerParams = mapOf(
+            "database.pool.maxSize" to "111",
+            "database.pool.minSize" to "222",
+            "database.pool.idleTimeoutSeconds" to "333",
+            "database.pool.maxLifetimeSeconds" to "444",
+            "database.pool.keepAliveTimeSeconds" to "555",
+            "database.pool.validationTimeoutSeconds" to "666",
+        )
+        val config = WorkerHelpers.getBootstrapConfig(
+            mockSecretsServiceFactoryResolver,
+            defaultWorkerParams,
+            mockConfigurationValidator
+        )
+
+        assertSoftly { softly ->
+            softly.assertThat(config.getInt(MessagingConfig.StateManager.JDBC_POOL_MAX_SIZE)).isEqualTo(111)
+            softly.assertThat(config.getInt(MessagingConfig.StateManager.JDBC_POOL_MIN_SIZE)).isEqualTo(222)
+            softly.assertThat(config.getInt(MessagingConfig.StateManager.JDBC_POOL_IDLE_TIMEOUT_SECONDS)).isEqualTo(333)
+            softly.assertThat(config.getInt(MessagingConfig.StateManager.JDBC_POOL_MAX_LIFETIME_SECONDS)).isEqualTo(444)
+            softly.assertThat(config.getInt(MessagingConfig.StateManager.JDBC_POOL_KEEP_ALIVE_TIME_SECONDS)).isEqualTo(555)
+            softly.assertThat(config.getInt(MessagingConfig.StateManager.JDBC_POOL_VALIDATION_TIMEOUT_SECONDS)).isEqualTo(666)
         }
 
     }

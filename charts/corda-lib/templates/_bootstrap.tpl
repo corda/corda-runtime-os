@@ -510,7 +510,6 @@ a second init container to execute the output SQL to the relevant database
   imagePullPolicy: {{ .Values.imagePullPolicy }}
   {{- include "corda.bootstrapResources" . | nindent 2 }}
   {{- include "corda.containerSecurityContext" . | nindent 2 }}
-  {{- /* TODO-[CORE-16419]: isolate StateManager database from the Cluster database */ -}}
   {{- if eq .name "db" }}
   args: [ 'database', 'spec', '-g', 'config:{{ .Values.db.cluster.schema }},rbac:{{ .Values.bootstrap.db.rbac.schema }},crypto:{{ .Values.bootstrap.db.crypto.schema }},stateManager:{{ .Values.bootstrap.db.stateManager.schema }}', '-c', '-l', '/tmp', '--jdbc-url', 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}', '-u', $(PGUSER), '-p', $(PGPASSWORD) ]
   {{- else }}
