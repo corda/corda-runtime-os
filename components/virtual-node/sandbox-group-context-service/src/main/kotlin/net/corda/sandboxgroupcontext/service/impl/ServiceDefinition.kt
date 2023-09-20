@@ -77,7 +77,7 @@ class ServiceDefinition(
      * Declare this [ServiceDefinition] as impossible to instantiate.
      * This means we have tried and failed, and should not try again.
      */
-    fun broken(): ServiceDefinition {
+    fun asBroken(): ServiceDefinition {
         broken = true
         return this
     }
@@ -155,7 +155,7 @@ class ServiceDefinition(
             } ?: throw IllegalStateException("No suitable constructor found for ${serviceClass.name}")
         } catch (e: Exception) {
             closeables.forEach(::closeSafely)
-            broken()
+            asBroken()
             throw e
         }
     }

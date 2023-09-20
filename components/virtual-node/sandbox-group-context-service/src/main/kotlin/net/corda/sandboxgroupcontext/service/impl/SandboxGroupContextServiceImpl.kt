@@ -554,7 +554,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
 
                 if (!injectable.isByConstructor) {
                     logger.warn("{} must only use constructor injection - IGNORED", injectable)
-                    injectable.broken()
+                    injectable.asBroken()
                 } else if (sandboxRequirements.isNotEmpty()) {
                     // Collect this service's requirements so that
                     // we can examine all requirements afterwards.
@@ -572,7 +572,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                         )?.also { svc ->
                             closeables.addFirst(svc)
                             iter.remove()
-                        } ?: run(injectable::broken)
+                        } ?: run(injectable::asBroken)
                     }
                 }
             }
@@ -704,7 +704,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                 val nonInjectable = ServiceDefinition(description, serviceFilter).withServiceReferences(serviceIndex)
                 if (!nonInjectable.isByConstructor) {
                     logger.warn("{} must only use constructor injection - IGNORED", nonInjectable)
-                    nonInjectables[serviceRef] = nonInjectable.broken()
+                    nonInjectables[serviceRef] = nonInjectable.asBroken()
                     null
                 } else if (nonInjectable.sandboxReferences.isEmpty() && serviceFilter == null) {
                     // This service doesn't use any of our prototypes, and we don't
@@ -713,7 +713,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                     sourceContext.getServiceObjects(serviceRef)
                         ?.let(::registerNonInjectableSandboxService)
                         ?: run {
-                            nonInjectables[serviceRef] = nonInjectable.broken()
+                            nonInjectables[serviceRef] = nonInjectable.asBroken()
                             null
                         }
                 } else {
