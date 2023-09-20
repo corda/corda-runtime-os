@@ -68,6 +68,15 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
         tokenObservers: UtxoTokenObserverMap
     ): List<Pair<StateAndRef<*>, UtxoToken>> =
         visibleStates.flatMap { stateAndRef ->
+            val observerV2 = tokenObservers.getObserverForV2(stateAndRef.state.contractStateType)
+            if (observerV2 != null) {
+                return@flatMap  onCommit(observerV2, stateAndRef) { obs, context ->
+                    obs.onCommit(context)
+                }
+            }
+
+            // No observer with the new interface was found
+            // Look for an observer that implements the deprecated interface
             val observer = tokenObservers.getObserverFor(stateAndRef.state.contractStateType)
             if (observer != null) {
                 return@flatMap onCommit(observer, stateAndRef) { obs, context ->
@@ -75,15 +84,6 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
                         context.stateAndRef.state.contractState,
                         digestService
                     )
-                }
-            }
-
-            // No observer with the deprecated interface was found
-            // Look for an observer that implements the new interface
-            val observerV2 = tokenObservers.getObserverForV2(stateAndRef.state.contractStateType)
-            if (observerV2 != null) {
-                return@flatMap  onCommit(observerV2, stateAndRef) { obs, context ->
-                    obs.onCommit(context)
                 }
             }
 
