@@ -9,10 +9,12 @@ import net.corda.ledger.persistence.utxo.UtxoOutputRecordFactory
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoTokenObserverMap
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
+import net.corda.ledger.persistence.utxo.impl.TokenStateObserverContextImpl
 import net.corda.messaging.api.records.Record
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
+import net.corda.v5.ledger.utxo.observer.TokenStateObserverContext
 import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.v5.ledger.utxo.observer.UtxoTokenPoolKey
 import net.corda.virtualnode.HoldingIdentity
@@ -68,9 +70,9 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
         visibleStates.flatMap { stateAndRef ->
             val observer = tokenObservers.getObserverFor(stateAndRef.state.contractStateType)
             if (observer != null) {
-                return@flatMap onCommit(observer, stateAndRef) { obs, sAndRef ->
+                return@flatMap onCommit(observer, stateAndRef) { obs, context ->
                     obs.onCommit(
-                        sAndRef.state.contractState,
+                        context.stateAndRef.state.contractState,
                         digestService
                     )
                 }
@@ -80,12 +82,8 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
             // Look for an observer that implements the new interface
             val observerV2 = tokenObservers.getObserverForV2(stateAndRef.state.contractStateType)
             if (observerV2 != null) {
-                return@flatMap  onCommit(observerV2, stateAndRef) { obs, sAndRef ->
-                    obs.onCommit(
-                        sAndRef,
-                        transactionReader.getUtxoTransaction(persistenceService),
-                        digestService
-                    )
+                return@flatMap  onCommit(observerV2, stateAndRef) { obs, context ->
+                    obs.onCommit(context)
                 }
             }
 
@@ -97,10 +95,10 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
     private fun<T> onCommit(
         observer: T,
         stateAndRef: StateAndRef<ContractState>,
-        observerOnCommitCallBlock: (T,  StateAndRef<ContractState>) -> UtxoToken
+        observerOnCommitCallBlock: (T, TokenStateObserverContext<ContractState>) -> UtxoToken
     ): List<Pair<StateAndRef<*>, UtxoToken>> {
         return try {
-            val token = observerOnCommitCallBlock(observer, stateAndRef).let { token ->
+            val token = observerOnCommitCallBlock(observer, TokenStateObserverContextImpl(stateAndRef, digestService)).let { token ->
                 if (token.poolKey.tokenType != null) {
                     token
                 } else {
