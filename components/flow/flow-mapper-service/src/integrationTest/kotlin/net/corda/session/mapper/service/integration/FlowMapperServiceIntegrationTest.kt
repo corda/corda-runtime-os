@@ -13,6 +13,7 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRQ
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
@@ -293,9 +294,9 @@ class FlowMapperServiceIntegrationTest {
         val sessionInitEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
                 buildSessionEvent(
-                    MessageDirection.OUTBOUND, testId, 1, SessionInit(
+                    MessageDirection.OUTBOUND, testId, 1, SessionCounterpartyInfoRQ(SessionInit(
                         testId, testId, emptyKeyValuePairList(), emptyKeyValuePairList()
-                    ),
+                    )),
                     initiatedIdentity = charlieHoldingIdentity,
                     contextSessionProps = emptyKeyValuePairList()
                 )
