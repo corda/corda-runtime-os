@@ -136,6 +136,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
             }
         }
     }
+
     @Test
     fun `Receiving a session error event resumes the flow with an error`() {
         given {
