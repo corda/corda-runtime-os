@@ -1,6 +1,5 @@
 package com.r3.corda.demo.utxo.contract
 
-import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.v5.ledger.utxo.observer.UtxoTokenFilterFields
 import net.corda.v5.ledger.utxo.observer.UtxoTokenPoolKey
