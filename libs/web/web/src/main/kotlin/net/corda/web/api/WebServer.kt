@@ -12,6 +12,11 @@ interface WebServer{
     val port: Int?
 
     /**
+     * Return list of all registered endpoints
+     */
+    val endpoints: Set<Endpoint>
+
+    /**
      * Start the webserver
      *
      * @param port the port for the server to listen on
@@ -26,7 +31,7 @@ interface WebServer{
     /**
      * Register an endpoint
      *
-     * @param endpoint The Endpoint to be registered on the webserver, containing a handler to be ran when
+     * @param endpoint The Endpoint to be registered on the webserver, containing a handler to be run when
      * the endpoint is hit
      */
     fun registerEndpoint(endpoint: Endpoint)

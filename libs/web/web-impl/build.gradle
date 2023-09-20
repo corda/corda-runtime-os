@@ -9,6 +9,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':libs:utilities')
     implementation project(":libs:lifecycle:lifecycle")
+    api project(':libs:platform-info')
     implementation project(":libs:rest:rest")
     implementation project(":libs:web:web")
 

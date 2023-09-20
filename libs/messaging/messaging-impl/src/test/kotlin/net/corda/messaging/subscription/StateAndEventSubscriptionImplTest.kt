@@ -1,5 +1,6 @@
 package net.corda.messaging.subscription
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
@@ -49,6 +50,7 @@ class StateAndEventSubscriptionImplTest {
     }
 
     private val config = createResolvedSubscriptionConfig(SubscriptionType.STATE_AND_EVENT)
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock()
     private val cordaAvroSerializer: CordaAvroSerializer<Any> = mock()
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
     private val chunkSerializerService: ChunkSerializerService = mock()
@@ -143,7 +145,9 @@ class StateAndEventSubscriptionImplTest {
             mock(),
             cordaAvroSerializer,
             lifecycleCoordinatorFactory,
-            chunkSerializerService
+            chunkSerializerService,
+            null,
+            cordaAvroSerializationFactory
         )
 
         subscription.start()
@@ -191,7 +195,9 @@ class StateAndEventSubscriptionImplTest {
             mock(),
             cordaAvroSerializer,
             lifecycleCoordinatorFactory,
-            chunkSerializerService
+            chunkSerializerService,
+            null,
+            cordaAvroSerializationFactory
         )
 
         subscription.start()
@@ -242,7 +248,9 @@ class StateAndEventSubscriptionImplTest {
             mock(),
             cordaAvroSerializer,
             lifecycleCoordinatorFactory,
-            chunkSerializerService
+            chunkSerializerService,
+            null,
+            cordaAvroSerializationFactory
         )
 
         subscription.start()
@@ -262,7 +270,9 @@ class StateAndEventSubscriptionImplTest {
             mock(),
             cordaAvroSerializer,
             lifecycleCoordinatorFactory,
-            chunkSerializerService
+            chunkSerializerService,
+            null,
+            cordaAvroSerializationFactory
         )
 
         subscription.start()
@@ -314,7 +324,9 @@ class StateAndEventSubscriptionImplTest {
             mock(),
             cordaAvroSerializer,
             lifecycleCoordinatorFactory,
-            chunkSerializerService
+            chunkSerializerService,
+            null,
+            cordaAvroSerializationFactory
         )
 
         subscription.start()
@@ -366,7 +378,9 @@ class StateAndEventSubscriptionImplTest {
             mock(),
             cordaAvroSerializer,
             lifecycleCoordinatorFactory,
-            chunkSerializerService
+            chunkSerializerService,
+            null,
+            cordaAvroSerializationFactory
         )
 
         subscription.start()
@@ -418,7 +432,9 @@ class StateAndEventSubscriptionImplTest {
             mock(),
             cordaAvroSerializer,
             lifecycleCoordinatorFactory,
-            chunkSerializerService
+            chunkSerializerService,
+            null,
+            cordaAvroSerializationFactory
         )
 
         subscription.start()
@@ -480,7 +496,9 @@ class StateAndEventSubscriptionImplTest {
             mock(),
             cordaAvroSerializer,
             lifecycleCoordinatorFactory,
-            chunkSerializerService
+            chunkSerializerService,
+            null,
+            cordaAvroSerializationFactory
         )
 
         subscription.start()
@@ -537,7 +555,9 @@ class StateAndEventSubscriptionImplTest {
             mock(),
             cordaAvroSerializer,
             lifecycleCoordinatorFactory,
-            chunkSerializerService
+            chunkSerializerService,
+            null,
+            cordaAvroSerializationFactory
         )
 
         subscription.start()
