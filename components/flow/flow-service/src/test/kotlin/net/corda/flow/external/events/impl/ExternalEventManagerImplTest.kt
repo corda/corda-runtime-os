@@ -29,12 +29,12 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
-import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
+import java.time.Duration
 
 class ExternalEventManagerImplTest {
 
@@ -360,7 +360,8 @@ class ExternalEventManagerImplTest {
 
         val (updatedExternalEventState, record) = externalEventManager.getEventToSend(
             externalEventState,
-            now
+            now,
+            Duration.ofMillis(0L)
         )
 
         assertEquals(now, updatedExternalEventState.eventToSend.timestamp)
@@ -370,10 +371,8 @@ class ExternalEventManagerImplTest {
         assertEquals(payload.array(), record.value)
     }
 
-    @ParameterizedTest(name = "getEventToSend returns an external event and updates the state if the state is {0} and the sendTimestamp is surpassed")
-    @EnumSource(names = ["RETRY", "OK"])
-    @Suppress("MaxLineLength")
-    fun `getEventToSend returns an external event and updates the state if the state is non-error and the sendTimestamp is surpassed`(stateType: ExternalEventStateType) {
+    @Test
+    fun `getEventToSend returns an external event if the event has been sent previously but the window has not expired`() {
         val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val key = ByteBuffer.wrap(KEY.toByteArray())
         val payload = ByteBuffer.wrap(byteArrayOf(1, 2, 3))
@@ -388,26 +387,27 @@ class ExternalEventManagerImplTest {
         val externalEventState = ExternalEventState().apply {
             requestId = REQUEST_ID_1
             eventToSend = externalEvent
-            sendTimestamp = now.minusSeconds(1)
-            status = ExternalEventStateStatus(stateType, ExceptionEnvelope())
+            sendTimestamp = now.minusSeconds(10)
+            status = ExternalEventStateStatus(ExternalEventStateType.RETRY, ExceptionEnvelope())
+            retries = 0
         }
 
         val (updatedExternalEventState, record) = externalEventManager.getEventToSend(
             externalEventState,
-            now
+            now,
+            Duration.ofSeconds(100L)
         )
 
+        assertEquals(now.minusSeconds(10), updatedExternalEventState.sendTimestamp)
+        assertEquals(0, externalEventState.retries)
         assertEquals(now, updatedExternalEventState.eventToSend.timestamp)
-        assertEquals(now, updatedExternalEventState.sendTimestamp)
         assertEquals(TOPIC, record!!.topic)
         assertEquals(key.array(), record.key)
         assertEquals(payload.array(), record.value)
     }
 
-    @ParameterizedTest(name = "getEventToSend does not return an external event if the state is {0} and the sendTimestamp is not surpassed")
-    @EnumSource(names = ["RETRY", "OK"])
-    @Suppress("MaxLineLength")
-    fun `getEventToSend does not return an external event if the state is non-error and the sendTimestamp is not surpassed`(stateType: ExternalEventStateType) {
+    @Test
+    fun `getEventToSend returns an external event if the event is outside the retry window but has not been resent yet`() {
         val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val key = ByteBuffer.wrap(KEY.toByteArray())
         val payload = ByteBuffer.wrap(byteArrayOf(1, 2, 3))
@@ -422,24 +422,27 @@ class ExternalEventManagerImplTest {
         val externalEventState = ExternalEventState().apply {
             requestId = REQUEST_ID_1
             eventToSend = externalEvent
-            sendTimestamp = now.plusSeconds(1)
-            status = ExternalEventStateStatus(stateType, ExceptionEnvelope())
+            sendTimestamp = now.minusSeconds(10)
+            status = ExternalEventStateStatus(ExternalEventStateType.RETRY, ExceptionEnvelope())
+            retries = 0
         }
 
         val (updatedExternalEventState, record) = externalEventManager.getEventToSend(
             externalEventState,
-            now
+            now,
+            Duration.ofMillis(100L)
         )
 
-        assertEquals(now.minusSeconds(10), updatedExternalEventState.eventToSend.timestamp)
-        assertEquals(now.plusSeconds(1), updatedExternalEventState.sendTimestamp)
-        assertNull(record)
+        assertEquals(now.minusSeconds(10), updatedExternalEventState.sendTimestamp)
+        assertEquals(1, externalEventState.retries)
+        assertEquals(now, updatedExternalEventState.eventToSend.timestamp)
+        assertEquals(TOPIC, record!!.topic)
+        assertEquals(key.array(), record.key)
+        assertEquals(payload.array(), record.value)
     }
 
-    @ParameterizedTest
-    @EnumSource(names = ["RETRY", "OK"])
-    @Suppress("MaxLineLength")
-    fun `getEventToSend sets the state status to RETRY, increments the retry count, sets the exception and returns an external event if the sendTimestamp is surpassed and the status is OK`(stateType: ExternalEventStateType) {
+    @Test
+    fun `getEventToSend throws a fatal exception if the event is outside the retry window and has already been retried`() {
         val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val key = ByteBuffer.wrap(KEY.toByteArray())
         val payload = ByteBuffer.wrap(byteArrayOf(1, 2, 3))
@@ -454,35 +457,17 @@ class ExternalEventManagerImplTest {
         val externalEventState = ExternalEventState().apply {
             requestId = REQUEST_ID_1
             eventToSend = externalEvent
-            sendTimestamp = now.minusSeconds(1)
-            status = ExternalEventStateStatus(stateType, ExceptionEnvelope())
+            sendTimestamp = now.minusSeconds(10)
+            status = ExternalEventStateStatus(ExternalEventStateType.RETRY, ExceptionEnvelope())
+            retries = 1
         }
 
-        val (updatedExternalEventState, record) = externalEventManager.getEventToSend(
-            externalEventState,
-            now
-        )
-
-        assertEquals(now, updatedExternalEventState.eventToSend.timestamp)
-        assertEquals(now, updatedExternalEventState.sendTimestamp)
-        assertEquals(TOPIC, record!!.topic)
-        assertEquals(key.array(), record.key)
-        assertEquals(payload.array(), record.value)
-        if(stateType == ExternalEventStateType.OK) {
-            val expectedException = ExceptionEnvelope(
-                "NoResponse",
-                "Received no response for external event request, ensure all workers are running"
+        assertThrows<FlowFatalException> {
+            externalEventManager.getEventToSend(
+                externalEventState,
+                now,
+                Duration.ofMillis(100L)
             )
-
-            assertEquals(ExternalEventStateType.RETRY, updatedExternalEventState.status.type)
-            assertEquals(1, updatedExternalEventState.retries)
-            assertEquals(expectedException, updatedExternalEventState.status.exception)
-        } else{
-            val nullExceptionEnvelope = ExceptionEnvelope(null, null)
-
-            assertEquals(ExternalEventStateType.RETRY, updatedExternalEventState.status.type)
-            assertEquals(0, updatedExternalEventState.retries)
-            assertEquals(nullExceptionEnvelope, updatedExternalEventState.status.exception)
         }
     }
 }
