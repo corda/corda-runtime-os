@@ -161,6 +161,7 @@ class ExternalEventManagerImpl(
         when {
             sendTimestamp == null -> {
                 externalEventState.sendTimestamp = instant
+                externalEventState.retries = 0
             }
             (sendTimestamp + retryWindow) >= instant -> {
                 // Do nothing. This check ensures that subsequent branches are checking the case where the external

@@ -80,7 +80,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
             cpkMetadata(CPI1, CPK1, CPK1_CHECKSUM)
             sandboxCpk(CPK1_CHECKSUM)
             membershipGroupFor(ALICE_HOLDING_IDENTITY)
-            flowConfiguration(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW, -50000L) // -5 seconds (in the past)
+            flowConfiguration(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW, 500L)
         }
     }
 
