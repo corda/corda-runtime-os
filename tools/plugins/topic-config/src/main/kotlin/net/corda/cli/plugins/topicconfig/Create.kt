@@ -2,6 +2,7 @@ package net.corda.cli.plugins.topicconfig
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
 import com.fasterxml.jackson.module.kotlin.KotlinFeature
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -12,7 +13,7 @@ import java.util.jar.JarEntry
 import java.util.jar.JarFile
 import picocli.CommandLine
 
-@CommandLine.Command(name = "create", description = ["Create Kafka topics"], subcommands = [CreateScript::class, CreateConnect::class])
+@CommandLine.Command(name = "create", description = ["Create Kafka topics"], subcommands = [Generate::class, CreateConnect::class])
 class Create(
     private val cl: ClassLoader = TopicPlugin.classLoader,
     private val resourceGetter: (String) -> List<URL> = { path -> cl.getResources(path).toList().filterNotNull() }
@@ -50,8 +51,10 @@ class Create(
         val topics: Map<String, TopicConfig>
     )
 
-    private val mapper: ObjectMapper = ObjectMapper(YAMLFactory()).registerModule(
-        KotlinModule.Builder()
+    val mapper: ObjectMapper = ObjectMapper(YAMLFactory()
+        .enable(YAMLGenerator.Feature.MINIMIZE_QUOTES)
+        .disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER))
+        .registerModule(KotlinModule.Builder()
             .withReflectionCacheSize(512)
             .configure(KotlinFeature.NullToEmptyCollection, true)
             .configure(KotlinFeature.NullToEmptyMap, true)

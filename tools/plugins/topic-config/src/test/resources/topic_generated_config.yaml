@@ -1,0 +1,936 @@
+topics:
+  - name: avro.schema
+    config:
+      cleanup.policy: compact
+      segment.ms: 600000
+      delete.retention.ms: 300000
+      min.compaction.lag.ms: 60000
+      max.compaction.lag.ms: 604800000
+      min.cleanable.dirty.ratio: 0.5
+  - name: certificates.rpc.ops
+    config: {}
+  - name: certificates.rpc.ops.resp
+    config: {}
+  - name: config.management.request
+    config: {}
+  - name: config.management.request.resp
+    config: {}
+  - name: config.topic
+    config:
+      cleanup.policy: compact
+      segment.ms: 600000
+      delete.retention.ms: 300000
+      min.compaction.lag.ms: 60000
+      max.compaction.lag.ms: 604800000
+      min.cleanable.dirty.ratio: 0.5
+  - name: crypto.hsm.rpc.registration
+    config: {}
+  - name: crypto.hsm.rpc.registration.resp
+    config: {}
+  - name: crypto.ops.flow
+    config: {}
+  - name: crypto.ops.rpc
+    config: {}
+  - name: crypto.ops.rpc.resp
+    config: {}
+  - name: flow.event
+    config: {}
+  - name: flow.event.state
+    config:
+      cleanup.policy: compact
+      segment.ms: 600000
+      delete.retention.ms: 300000
+      min.compaction.lag.ms: 60000
+      max.compaction.lag.ms: 604800000
+      min.cleanable.dirty.ratio: 0.5
+  - name: flow.event.dlq
+    config: {}
+  - name: flow.mapper.event
+    config: {}
+  - name: flow.mapper.event.state
+    config:
+      cleanup.policy: compact
+      segment.ms: 600000
+      delete.retention.ms: 300000
+      min.compaction.lag.ms: 60000
+      max.compaction.lag.ms: 604800000
+      min.cleanable.dirty.ratio: 0.5
+  - name: flow.mapper.event.dlq
+    config: {}
+  - name: flow.status
+    config:
+      cleanup.policy: compact
+      segment.ms: 600000
+      delete.retention.ms: 300000
+      min.compaction.lag.ms: 60000
+      max.compaction.lag.ms: 604800000
+      min.cleanable.dirty.ratio: 0.5
+  - name: membership.group.params
+    config:
+      cleanup.policy: compact
+      segment.ms: 600000
+      delete.retention.ms: 300000
+      min.compaction.lag.ms: 60000
+      max.compaction.lag.ms: 604800000
+      min.cleanable.dirty.ratio: 0.5
+  - name: membership.event
+    config: {}
+  - name: membership.actions
+    config: {}
+  - name: membership.registration
+    config: {}
+  - name: membership.registration.state
+    config: {}
+  - name: membership.registration.dlq
+    config: {}
+  - name: membership.members
+    config:
+      cleanup.policy: compact
+      segment.ms: 600000
+      delete.retention.ms: 300000
+      min.compaction.lag.ms: 60000
+      max.compaction.lag.ms: 604800000
+      min.cleanable.dirty.ratio: 0.5
+  - name: membership.rpc.ops
+    config: {}
+  - name: membership.rpc.ops.resp
+    config: {}
+  - name: membership.db.rpc.ops
+    config: {}
+  - name: membership.db.rpc.ops.resp
+    config: {}
+  - name: membership.db.async.ops
+    config: {}
+  - name: membership.db.async.ops.state
+    config:
+      cleanup.policy: compact
+      segment.ms: 600000
+      delete.retention.ms: 300000
+      min.compaction.lag.ms: 60000
+      max.compaction.lag.ms: 604800000
+      min.cleanable.dirty.ratio: 0.5
+  - name: membership.db.async.ops.dlq
+    config: {}
+  - name: membership.async.request
+    config: {}
+  - name: membership.async.request.retries
+    config: {}
+  - name: membership.async.request.retries.state
+    config:
+      cleanup.policy: compact
+      segment.ms: 600000
+      delete.retention.ms: 300000
+      min.compaction.lag.ms: 60000
+      max.compaction.lag.ms: 604800000
+      min.cleanable.dirty.ratio: 0.5
+  - name: membership.async.request.retries.dlq
+    config: {}
+  - name: membership.sync
+    config: {}
+  - name: p2p.in
+    config: {}
+  - name: p2p.out
+    config: {}
+  - name: p2p.out.dlq
+    config: {}
+  - name: p2p.out.markers
+    config: {}
+  - name: p2p.out.markers.state
+    config:
+      cleanup.policy: compact
+      segment.ms: 600000
+      delete.retention.ms: 300000
+      min.compaction.lag.ms: 60000
+      max.compaction.lag.ms: 604800000
+      min.cleanable.dirty.ratio: 0.5
+  - name: p2p.out.markers.dlq
+    config: {}
+  - name: p2p.hosted.identities
+    config:
+      cleanup.policy: compact
+      segment.ms: 600000
+      delete.retention.ms: 300000
+      min.compaction.lag.ms: 60000
+      max.compaction.lag.ms: 604800000
+      min.cleanable.dirty.ratio: 0.5
+  - name: p2p.mtls.member.client.certificate.subject
+    config:
+      cleanup.policy: compact
+      segment.ms: 600000
+      delete.retention.ms: 300000
+      min.compaction.lag.ms: 60000
+      max.compaction.lag.ms: 604800000
+      min.cleanable.dirty.ratio: 0.5
+  - name: p2p.mgm.allowed.client.certificate.subjects
+    config:
+      cleanup.policy: compact
+      segment.ms: 600000
+      delete.retention.ms: 300000
+      min.compaction.lag.ms: 60000
+      max.compaction.lag.ms: 604800000
+      min.cleanable.dirty.ratio: 0.5
+  - name: gateway.allowed.client.certificate.subjects
+    config:
+      cleanup.policy: compact
+      segment.ms: 600000
+      delete.retention.ms: 300000
+      min.compaction.lag.ms: 60000
+      max.compaction.lag.ms: 604800000
+      min.cleanable.dirty.ratio: 0.5
+  - name: link.in
+    config: {}
+  - name: link.out
+    config: {}
+  - name: gateway.tls.certs
+    config:
+      cleanup.policy: compact
+      segment.ms: 600000
+      delete.retention.ms: 300000
+      min.compaction.lag.ms: 60000
+      max.compaction.lag.ms: 604800000
+      min.cleanable.dirty.ratio: 0.5
+  - name: gateway.tls.truststores
+    config:
+      cleanup.policy: compact
+      segment.ms: 600000
+      delete.retention.ms: 300000
+      min.compaction.lag.ms: 60000
+      max.compaction.lag.ms: 604800000
+      min.cleanable.dirty.ratio: 0.5
+  - name: gateway.revocation.request
+    config: {}
+  - name: gateway.revocation.request.resp
+    config: {}
+  - name: session.out.partitions
+    config:
+      cleanup.policy: compact
+      segment.ms: 600000
+      delete.retention.ms: 300000
+      min.compaction.lag.ms: 60000
+      max.compaction.lag.ms: 604800000
+      min.cleanable.dirty.ratio: 0.5
+  - name: permissions.user.summary
+    config:
+      cleanup.policy: compact
+      segment.ms: 600000
+      delete.retention.ms: 300000
+      min.compaction.lag.ms: 60000
+      max.compaction.lag.ms: 604800000
+      min.cleanable.dirty.ratio: 0.5
+  - name: persistence.entity.processor
+    config: {}
+  - name: persistence.ledger.processor
+    config: {}
+  - name: rest.permissions.management
+    config: {}
+  - name: rest.permissions.management.resp
+    config: {}
+  - name: rest.permissions.group
+    config:
+      cleanup.policy: compact
+      segment.ms: 600000
+      delete.retention.ms: 300000
+      min.compaction.lag.ms: 60000
+      max.compaction.lag.ms: 604800000
+      min.cleanable.dirty.ratio: 0.5
+  - name: rest.permissions.permission
+    config:
+      cleanup.policy: compact
+      segment.ms: 600000
+      delete.retention.ms: 300000
+      min.compaction.lag.ms: 60000
+      max.compaction.lag.ms: 604800000
+      min.cleanable.dirty.ratio: 0.5
+  - name: rest.permissions.user
+    config:
+      cleanup.policy: compact
+      segment.ms: 600000
+      delete.retention.ms: 300000
+      min.compaction.lag.ms: 60000
+      max.compaction.lag.ms: 604800000
+      min.cleanable.dirty.ratio: 0.5
+  - name: rest.permissions.role
+    config:
+      cleanup.policy: compact
+      segment.ms: 600000
+      delete.retention.ms: 300000
+      min.compaction.lag.ms: 60000
+      max.compaction.lag.ms: 604800000
+      min.cleanable.dirty.ratio: 0.5
+  - name: services.token.event
+    config: {}
+  - name: services.token.event.state
+    config:
+      cleanup.policy: compact
+      segment.ms: 600000
+      delete.retention.ms: 300000
+      min.compaction.lag.ms: 60000
+      max.compaction.lag.ms: 604800000
+      min.cleanable.dirty.ratio: 0.5
+  - name: services.token.event.dlq
+    config: {}
+  - name: services.token.sync.event
+    config: {}
+  - name: services.token.sync.event.state
+    config:
+      cleanup.policy: compact
+      segment.ms: 600000
+      delete.retention.ms: 300000
+      min.compaction.lag.ms: 60000
+      max.compaction.lag.ms: 604800000
+      min.cleanable.dirty.ratio: 0.5
+  - name: services.token.sync.event.dlq
+    config: {}
+  - name: uniqueness.check
+    config: {}
+  - name: verification.ledger.processor
+    config: {}
+  - name: cpi.info
+    config:
+      cleanup.policy: compact
+      segment.ms: 600000
+      delete.retention.ms: 300000
+      min.compaction.lag.ms: 60000
+      max.compaction.lag.ms: 604800000
+      min.cleanable.dirty.ratio: 0.5
+  - name: cpi.upload
+    config: {}
+  - name: cpi.upload.status
+    config: {}
+  - name: cpk.file
+    config:
+      cleanup.policy: compact
+      segment.ms: 600000
+      delete.retention.ms: 300000
+      min.compaction.lag.ms: 60000
+      max.compaction.lag.ms: 604800000
+      min.cleanable.dirty.ratio: 0.5
+  - name: virtual.node.creation.request
+    config: {}
+  - name: virtual.node.creation.request.resp
+    config: {}
+  - name: virtual.node.info
+    config:
+      cleanup.policy: compact
+      segment.ms: 600000
+      delete.retention.ms: 300000
+      min.compaction.lag.ms: 60000
+      max.compaction.lag.ms: 604800000
+      min.cleanable.dirty.ratio: 0.5
+  - name: virtual.node.async.request
+    config: {}
+  - name: virtual.node.operation.status
+    config:
+      cleanup.policy: compact
+      segment.ms: 600000
+      delete.retention.ms: 300000
+      min.compaction.lag.ms: 60000
+      max.compaction.lag.ms: 604800000
+      min.cleanable.dirty.ratio: 0.5
+acls:
+  - topic: avro.schema
+    users:
+      - name: Chris
+        operations:
+          - read
+          - write
+          - describe
+      - name: Dan
+        operations:
+          - read
+          - write
+          - describe
+      - name: Fiona
+        operations:
+          - read
+          - write
+          - describe
+      - name: Mo
+        operations:
+          - read
+          - write
+          - describe
+  - topic: certificates.rpc.ops
+    users:
+      - name: Dan
+        operations:
+          - read
+          - describe
+  - topic: certificates.rpc.ops.resp
+    users:
+      - name: Dan
+        operations:
+          - write
+          - describe
+  - topic: config.management.request
+    users:
+      - name: Dan
+        operations:
+          - read
+          - describe
+  - topic: config.management.request.resp
+    users:
+      - name: Dan
+        operations:
+          - write
+          - describe
+  - topic: config.topic
+    users:
+      - name: Chris
+        operations:
+          - read
+          - describe
+      - name: Dan
+        operations:
+          - read
+          - write
+          - describe
+      - name: Fiona
+        operations:
+          - read
+          - describe
+      - name: Mo
+        operations:
+          - read
+          - describe
+  - topic: crypto.hsm.rpc.registration
+    users:
+      - name: Chris
+        operations:
+          - read
+          - describe
+      - name: Mo
+        operations:
+          - write
+          - describe
+  - topic: crypto.hsm.rpc.registration.resp
+    users:
+      - name: Mo
+        operations:
+          - read
+          - describe
+      - name: Chris
+        operations:
+          - write
+          - describe
+  - topic: crypto.ops.flow
+    users:
+      - name: Chris
+        operations:
+          - read
+          - describe
+      - name: Fiona
+        operations:
+          - write
+          - describe
+  - topic: crypto.ops.rpc
+    users:
+      - name: Chris
+        operations:
+          - read
+          - write
+          - describe
+      - name: Mo
+        operations:
+          - write
+          - describe
+  - topic: crypto.ops.rpc.resp
+    users:
+      - name: Chris
+        operations:
+          - read
+          - write
+          - describe
+      - name: Mo
+        operations:
+          - read
+          - describe
+  - topic: flow.event
+    users:
+      - name: Fiona
+        operations:
+          - read
+          - write
+          - describe
+      - name: Dan
+        operations:
+          - write
+          - describe
+      - name: Chris
+        operations:
+          - write
+          - describe
+  - topic: flow.event.state
+    users:
+      - name: Fiona
+        operations:
+          - read
+          - write
+          - describe
+  - topic: flow.event.dlq
+    users:
+      - name: Fiona
+        operations:
+          - read
+          - write
+          - describe
+  - topic: flow.mapper.event
+    users:
+      - name: Fiona
+        operations:
+          - read
+          - write
+          - describe
+  - topic: flow.mapper.event.state
+    users:
+      - name: Fiona
+        operations:
+          - read
+          - write
+          - describe
+  - topic: flow.mapper.event.dlq
+    users:
+      - name: Fiona
+        operations:
+          - read
+          - describe
+  - topic: flow.status
+    users:
+      - name: Fiona
+        operations:
+          - write
+          - describe
+  - topic: membership.group.params
+    users:
+      - name: Dan
+        operations:
+          - read
+          - write
+          - describe
+      - name: Fiona
+        operations:
+          - read
+          - describe
+      - name: Mo
+        operations:
+          - read
+          - write
+          - describe
+  - topic: membership.event
+    users:
+      - name: Mo
+        operations:
+          - write
+          - describe
+  - topic: membership.actions
+    users:
+      - name: Mo
+        operations:
+          - read
+          - write
+          - describe
+  - topic: membership.registration
+    users:
+      - name: Mo
+        operations:
+          - read
+          - write
+          - describe
+      - name: Dan
+        operations:
+          - write
+          - describe
+  - topic: membership.registration.state
+    users:
+      - name: Mo
+        operations:
+          - read
+          - write
+          - describe
+  - topic: membership.registration.dlq
+    users:
+      - name: Mo
+        operations:
+          - read
+          - write
+          - describe
+  - topic: membership.members
+    users:
+      - name: Mo
+        operations:
+          - read
+          - write
+          - describe
+      - name: Fiona
+        operations:
+          - read
+          - describe
+      - name: Dan
+        operations:
+          - read
+          - write
+          - describe
+  - topic: membership.rpc.ops
+    users:
+      - name: Mo
+        operations:
+          - read
+          - describe
+  - topic: membership.rpc.ops.resp
+    users:
+      - name: Mo
+        operations:
+          - write
+          - describe
+  - topic: membership.db.rpc.ops
+    users:
+      - name: Dan
+        operations:
+          - read
+          - write
+          - describe
+      - name: Fiona
+        operations:
+          - read
+          - describe
+      - name: Mo
+        operations:
+          - write
+          - describe
+  - topic: membership.db.rpc.ops.resp
+    users:
+      - name: Mo
+        operations:
+          - read
+          - describe
+      - name: Fiona
+        operations:
+          - read
+          - describe
+      - name: Dan
+        operations:
+          - read
+          - write
+          - describe
+  - topic: membership.db.async.ops
+    users:
+      - name: Dan
+        operations:
+          - read
+          - write
+          - describe
+      - name: Mo
+        operations:
+          - write
+          - describe
+  - topic: membership.db.async.ops.state
+    users:
+      - name: Dan
+        operations:
+          - read
+          - write
+          - describe
+  - topic: membership.db.async.ops.dlq
+    users:
+      - name: Dan
+        operations:
+          - read
+          - write
+          - describe
+  - topic: membership.async.request
+    users:
+      - name: Mo
+        operations:
+          - read
+          - write
+          - describe
+      - name: Dan
+        operations:
+          - write
+          - describe
+  - topic: membership.async.request.retries
+    users:
+      - name: Mo
+        operations:
+          - read
+          - write
+          - describe
+  - topic: membership.async.request.retries.state
+    users:
+      - name: Mo
+        operations:
+          - read
+          - write
+          - describe
+  - topic: membership.async.request.retries.dlq
+    users:
+      - name: Mo
+        operations:
+          - read
+          - write
+          - describe
+  - topic: membership.sync
+    users:
+      - name: Mo
+        operations:
+          - read
+          - write
+          - describe
+  - topic: p2p.in
+    users:
+      - name: Mo
+        operations:
+          - read
+          - describe
+  - topic: p2p.out
+    users:
+      - name: Mo
+        operations:
+          - write
+          - describe
+  - topic: p2p.out.dlq
+    users: []
+  - topic: p2p.out.markers
+    users:
+      - name: Mo
+        operations:
+          - read
+          - describe
+  - topic: p2p.out.markers.state
+    users: []
+  - topic: p2p.out.markers.dlq
+    users: []
+  - topic: p2p.hosted.identities
+    users:
+      - name: Mo
+        operations:
+          - read
+          - write
+          - describe
+  - topic: p2p.mtls.member.client.certificate.subject
+    users:
+      - name: Mo
+        operations:
+          - write
+          - describe
+  - topic: p2p.mgm.allowed.client.certificate.subjects
+    users:
+      - name: Dan
+        operations:
+          - read
+          - write
+          - describe
+  - topic: gateway.allowed.client.certificate.subjects
+    users: []
+  - topic: link.in
+    users: []
+  - topic: link.out
+    users: []
+  - topic: gateway.tls.certs
+    users: []
+  - topic: gateway.tls.truststores
+    users: []
+  - topic: gateway.revocation.request
+    users: []
+  - topic: gateway.revocation.request.resp
+    users: []
+  - topic: session.out.partitions
+    users: []
+  - topic: permissions.user.summary
+    users:
+      - name: Dan
+        operations:
+          - read
+          - write
+          - describe
+  - topic: persistence.entity.processor
+    users:
+      - name: Fiona
+        operations:
+          - write
+          - describe
+  - topic: persistence.ledger.processor
+    users:
+      - name: Fiona
+        operations:
+          - write
+          - describe
+  - topic: rest.permissions.management
+    users:
+      - name: Dan
+        operations:
+          - read
+          - describe
+  - topic: rest.permissions.management.resp
+    users:
+      - name: Dan
+        operations:
+          - write
+          - describe
+  - topic: rest.permissions.group
+    users:
+      - name: Dan
+        operations:
+          - read
+          - write
+          - describe
+  - topic: rest.permissions.permission
+    users:
+      - name: Dan
+        operations:
+          - read
+          - write
+          - describe
+  - topic: rest.permissions.user
+    users:
+      - name: Dan
+        operations:
+          - read
+          - write
+          - describe
+  - topic: rest.permissions.role
+    users:
+      - name: Dan
+        operations:
+          - read
+          - write
+          - describe
+  - topic: services.token.event
+    users:
+      - name: Dan
+        operations:
+          - read
+          - write
+          - describe
+      - name: Fiona
+        operations:
+          - write
+          - describe
+  - topic: services.token.event.state
+    users:
+      - name: Dan
+        operations:
+          - read
+          - write
+          - describe
+  - topic: services.token.event.dlq
+    users:
+      - name: Dan
+        operations:
+          - read
+          - write
+          - describe
+  - topic: services.token.sync.event
+    users:
+      - name: Dan
+        operations:
+          - read
+          - write
+          - describe
+  - topic: services.token.sync.event.state
+    users:
+      - name: Dan
+        operations:
+          - read
+          - write
+          - describe
+  - topic: services.token.sync.event.dlq
+    users:
+      - name: Dan
+        operations:
+          - read
+          - write
+          - describe
+  - topic: uniqueness.check
+    users:
+      - name: Fiona
+        operations:
+          - write
+          - describe
+  - topic: verification.ledger.processor
+    users:
+      - name: Fiona
+        operations:
+          - write
+          - describe
+  - topic: cpi.info
+    users:
+      - name: Dan
+        operations:
+          - read
+          - write
+          - describe
+      - name: Fiona
+        operations:
+          - read
+          - describe
+      - name: Mo
+        operations:
+          - read
+          - describe
+  - topic: cpi.upload
+    users:
+      - name: Dan
+        operations:
+          - read
+          - describe
+  - topic: cpi.upload.status
+    users:
+      - name: Dan
+        operations:
+          - write
+          - describe
+  - topic: cpk.file
+    users:
+      - name: Fiona
+        operations:
+          - read
+          - describe
+      - name: Dan
+        operations:
+          - read
+          - write
+          - describe
+  - topic: virtual.node.creation.request
+    users:
+      - name: Dan
+        operations:
+          - read
+          - describe
+  - topic: virtual.node.creation.request.resp
+    users:
+      - name: Dan
+        operations:
+          - write
+          - describe
+  - topic: virtual.node.info
+    users:
+      - name: Chris
+        operations:
+          - read
+          - describe
+      - name: Dan
+        operations:
+          - read
+          - write
+          - describe
+      - name: Fiona
+        operations:
+          - read
+          - describe
+      - name: Mo
+        operations:
+          - read
+          - describe
+  - topic: virtual.node.async.request
+    users:
+      - name: Dan
+        operations:
+          - read
+          - describe
+  - topic: virtual.node.operation.status
+    users:
+      - name: Dan
+        operations:
+          - write
+          - describe
