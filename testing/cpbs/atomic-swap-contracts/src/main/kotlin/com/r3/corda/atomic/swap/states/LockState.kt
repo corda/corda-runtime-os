@@ -7,7 +7,7 @@ import java.security.PublicKey
 
 @BelongsToContract(LockContract::class)
 data class LockState (
-    val owner : PublicKey,
+    val creator : PublicKey,
     val receiver: PublicKey,
     val assetName: String,
     val assetId: String,

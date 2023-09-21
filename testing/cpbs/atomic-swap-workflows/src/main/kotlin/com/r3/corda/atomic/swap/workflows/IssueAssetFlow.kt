@@ -2,7 +2,6 @@ package com.r3.corda.atomic.swap.workflows
 
 import com.r3.corda.atomic.swap.contracts.AssetContract
 import com.r3.corda.atomic.swap.states.Asset
-import com.r3.corda.atomic.swap.states.Member
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
@@ -17,10 +16,9 @@ import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 
-
 data class IssueAssetFlowArgs(val assetName: String)
 
-data class IssueAssetFlowResult(val transactionId: String, val stateId: String)
+data class IssueAssetFlowResult(val transactionId: String, val stateId: String, val ownerPublicKey: String)
 
 
 class IssueAssetFlow : ClientStartableFlow {
@@ -54,7 +52,7 @@ class IssueAssetFlow : ClientStartableFlow {
             val myInfo = memberLookup.myInfo()
 
             val outputState = Asset(
-                Member(myInfo.name,myInfo.ledgerKeys[0]),
+                myInfo.ledgerKeys[0],
                 "Gold",
                 UUID.randomUUID().toString(),
                 listOf(myInfo.ledgerKeys[0])
@@ -76,7 +74,7 @@ class IssueAssetFlow : ClientStartableFlow {
 
             val transactionId = flowEngine.subFlow(FinalizeFlow(signedTransaction, listOf(myInfo.name)))
 
-            return jsonMarshallingService.format(IssueAssetFlowResult(transactionId, outputState.assetId))
+            return jsonMarshallingService.format(IssueAssetFlowResult(transactionId, outputState.assetId, outputState.owner.toString()))
 
         } catch (e: Exception) {
             log.warn("Failed to process utxo flow for request body '$requestBody' because: '${e.message}'")

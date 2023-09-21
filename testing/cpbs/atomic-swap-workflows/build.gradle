@@ -16,7 +16,7 @@ cordapp {
 dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    cordaProvided 'net.corda:corda-ledger-utxo'
+    implementation("com.r3.corda.ledger.utxo:ownable:0.9.0-beta-1695278468058")
 
     cordapp project(':testing:cpbs:atomic-swap-contracts')
 

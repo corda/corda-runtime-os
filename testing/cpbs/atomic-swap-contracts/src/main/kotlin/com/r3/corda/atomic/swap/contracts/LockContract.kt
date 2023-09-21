@@ -8,29 +8,31 @@ import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 
 
 class LockContract : Contract {
-    class Lock : Command
-    class Unlock(val bool: Boolean) : Command
+
+    interface LockCommands : Command {
+        class Lock : LockCommands
+        class Unlock(val bool: Boolean) : LockCommands
+    }
 
     override fun verify(transaction: UtxoLedgerTransaction) {
 
-        val command = transaction.commands.singleOrNull() ?: throw CordaRuntimeException("Requires a single command.")
+        val command = transaction.getCommands(LockCommands::class.java).singleOrNull()
+            ?: throw CordaRuntimeException("Requires a single command.")
 
-        "There should be only one output state" using { transaction.outputContractStates.size == 1 }
+//        "There should be only one output state" using { transaction.outputContractStates.size == 1 }
+//        "There should be only one output state" using { transaction.getOutputStates(LockState::class.java).size == 1 }
 
 //        val inputState = transaction.inputContractStates.first() as LockState
         val outputState = transaction.outputContractStates.first() as LockState
 
         when (command) {
-            is Lock -> {
+            is LockCommands.Lock -> {
                 "When command is Lock there should be exactly two participants." using (outputState.participants.size == 2)
-                "There should be no lock input states" using (transaction.inputStateAndRefs.isEmpty())
-                "There should be only one lock output states" using (transaction.outputStateAndRefs.size == 1 &&
-                        transaction.outputStateAndRefs.javaClass.isInstance(
-                            LockState::class.java
-                        ))
+                "There should be no lock input states" using (transaction.getInputStates(LockState::class.java).isEmpty())
+                "There should be only one lock output state" using (transaction.getOutputStates(LockState::class.java).size == 1)
             }
 
-            is Unlock -> {
+            is LockCommands.Unlock -> {
                 "When command is Unlock there should be exactly two participants." using (outputState.participants.size == 2)
                 "Unlock takes one command input of type Boolean and the value should be true." using
                         (command.bool.javaClass.isInstance(

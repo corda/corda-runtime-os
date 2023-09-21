@@ -41,20 +41,19 @@ class AssetContract: Contract {
                 REQUIRES_ONE_ASSET_OUTPUT using (transaction.getOutputStates(Asset::class.java).size == 1)
 
                 val asset = transaction.getOutputStates(Asset::class.java)[0]
-                REQUIRES_OWNER_SIGN using (transaction.signatories.contains(asset.owner.ledgerKey))
+                REQUIRES_OWNER_SIGN using (transaction.signatories.contains(asset.owner))
             }
             // Rules applied only to transactions with the Update Command.
             is AssetCommands.Transfer -> {
                 REQUIRES_ONE_INPUT using (transaction.inputContractStates.size == 1)
-                REQUIRES_ONE_OUTPUT using (transaction.outputContractStates.size == 1)
                 REQUIRES_ONE_ASSET_OUTPUT using (transaction.getOutputStates(Asset::class.java).size == 1)
                 REQUIRES_ONE_ASSET_INPUT using (transaction.getInputStates(Asset::class.java).size == 1)
 
                 val input = transaction.getInputStates(Asset::class.java)[0]
-                REQUIRES_OWNER_SIGN using (transaction.signatories.contains(input.owner.ledgerKey))
+                REQUIRES_OWNER_SIGN using (transaction.signatories.contains(input.owner))
 
                 val output = transaction.getOutputStates(Asset::class.java)[0]
-                REQUIRES_DIFFERENT_OWNER using (input.owner.name != output.owner.name)
+                REQUIRES_DIFFERENT_OWNER using (input.owner != output.owner)
             }
             is AssetCommands.Lock -> {
                 // Verification logic required while locking the asset goes here
