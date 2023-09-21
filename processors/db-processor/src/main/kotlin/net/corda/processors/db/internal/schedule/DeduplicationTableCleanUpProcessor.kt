@@ -9,6 +9,7 @@ import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.utilities.debug
+import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.LoggerFactory
 import java.time.Duration
@@ -33,39 +34,41 @@ class DeduplicationTableCleanUpProcessor(
     override fun onNext(events: List<Record<String, ScheduledTaskTrigger>>): List<Record<*, *>> {
         // TODO Add metric around it?
         events
-            .filter {
+            .forEach {
                 val taskName = it.key
-                taskName == DEDUPLICATION_TABLE_CLEAN_UP_TASK
-            }.forEach { _ ->
-                log.debug { "Cleaning up deduplication table for all vnodes" }
-                val startTime = System.nanoTime()
-                virtualNodeInfoReadService.getAll()
-                    .forEach {
-                        log.debug { "Cleaning up deduplication table for vnode: ${it.holdingIdentity.shortHash}" }
-                        try {
-                            dbConnectionManager.createEntityManagerFactory(
-                                it.vaultDmlConnectionId,
-                                // We don't really want to make use of any entities here.
-                                object : JpaEntitiesSet {
-                                    override val persistenceUnitName: String
-                                        get() = ""
-                                    override val classes: Set<Class<*>>
-                                        get() = emptySet()
-                                }
-                            ).use { emf ->
-                                emf.createEntityManager().transaction { em ->
-                                    // TODO The below interval needs to be made configurable
-                                    requestsIdsRepository.deleteRequestsOlderThan(120, em)
-                                }
-                            }
-                        } catch (e: Exception) {
-                            log.info("Cleaning up deduplication table for vnode: ${it.holdingIdentity.shortHash} FAILED", e)
-                        }
-                    }
-                val cleanUpTime = Duration.ofNanos(System.nanoTime() - startTime)
-                log.info("Cleaning up deduplication table for all vnodes COMPLETED in ${cleanUpTime.toMillis()} ms")
+                if (taskName == DEDUPLICATION_TABLE_CLEAN_UP_TASK) {
+                    log.debug { "Cleaning up deduplication table for all vnodes" }
+                    val startTime = System.nanoTime()
+                    virtualNodeInfoReadService.getAll()
+                        .forEach(::cleanUpDeduplicationTable)
+                    val cleanUpTime = Duration.ofNanos(System.nanoTime() - startTime)
+                    log.info("Cleaning up deduplication table for all vnodes COMPLETED in ${cleanUpTime.toMillis()} ms")
+                }
             }
         // TODO Fix the response (at the minute the Scheduler ignores them)
         return emptyList()
+    }
+
+    private fun cleanUpDeduplicationTable(virtualNodeInfo: VirtualNodeInfo) {
+        log.debug { "Cleaning up deduplication table for vnode: ${virtualNodeInfo.holdingIdentity.shortHash}" }
+        try {
+            dbConnectionManager.createEntityManagerFactory(
+                virtualNodeInfo.vaultDmlConnectionId,
+                // We don't really want to make use of any entities here.
+                object : JpaEntitiesSet {
+                    override val persistenceUnitName: String
+                        get() = ""
+                    override val classes: Set<Class<*>>
+                        get() = emptySet()
+                }
+            ).use { emf ->
+                emf.createEntityManager().transaction { em ->
+                    // TODO The below interval needs to be made configurable
+                    requestsIdsRepository.deleteRequestsOlderThan(120, em)
+                }
+            }
+        } catch (e: Exception) {
+            log.info("Cleaning up deduplication table for vnode: ${virtualNodeInfo.holdingIdentity.shortHash} FAILED", e)
+        }
     }
 }
