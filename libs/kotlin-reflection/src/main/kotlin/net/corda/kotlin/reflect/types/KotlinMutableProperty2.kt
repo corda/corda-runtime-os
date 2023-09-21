@@ -1,14 +1,5 @@
 package net.corda.kotlin.reflect.types
 
-import kotlinx.metadata.Flag.Function.IS_EXTERNAL
-import kotlinx.metadata.Flag.Function.IS_INFIX
-import kotlinx.metadata.Flag.Function.IS_INLINE
-import kotlinx.metadata.Flag.Function.IS_OPERATOR
-import kotlinx.metadata.Flag.Function.IS_SUSPEND
-import kotlinx.metadata.Flags
-import kotlinx.metadata.KmProperty
-import kotlinx.metadata.jvm.getterSignature
-import kotlinx.metadata.jvm.setterSignature
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.util.Objects
@@ -18,21 +9,29 @@ import kotlin.reflect.KType
 import kotlin.reflect.KTypeParameter
 import kotlin.reflect.KVisibility
 import kotlin.reflect.full.starProjectedType
+import kotlinx.metadata.KmProperty
+import kotlinx.metadata.KmPropertyAccessorAttributes
+import kotlinx.metadata.isExternal
+import kotlinx.metadata.isInline
+import kotlinx.metadata.jvm.getterSignature
+import kotlinx.metadata.jvm.setterSignature
+import kotlinx.metadata.modality
+import kotlinx.metadata.visibility
 
 @Suppress("LongParameterList", "MaxLineLength")
 class KotlinMutableProperty2<D, E, V> private constructor(
-    property: KmProperty,
+    kmProperty: KmProperty,
     getterSignature: MemberSignature?,
     override val setterSignature: MemberSignature?,
     javaField: Field?,
     javaGetter: Method?,
     override val javaSetter: Method?,
     instanceClass: Class<*>
-) : KotlinProperty2<D, E, V>(property, getterSignature, javaField, javaGetter, instanceClass), KMutableProperty2<D, E, V>, KMutablePropertyAccessorInternal<V> {
-    constructor(property: KmProperty, declaringClass: Class<*>) : this(
-        property = property,
-        getterSignature = property.getterSignature?.toSignature(declaringClass.classLoader),
-        setterSignature = property.setterSignature?.toSignature(declaringClass.classLoader),
+) : KotlinProperty2<D, E, V>(kmProperty, getterSignature, javaField, javaGetter, instanceClass), KMutableProperty2<D, E, V>, KMutablePropertyAccessorInternal<V> {
+    constructor(kmProperty: KmProperty, declaringClass: Class<*>) : this(
+        kmProperty = kmProperty,
+        getterSignature = kmProperty.getterSignature?.toSignature(declaringClass.classLoader),
+        setterSignature = kmProperty.setterSignature?.toSignature(declaringClass.classLoader),
         javaField = null,
         javaGetter = null,
         javaSetter = null,
@@ -40,15 +39,15 @@ class KotlinMutableProperty2<D, E, V> private constructor(
     )
 
     override val isAbstract: Boolean
-        get() = isAbstract(javaGetter, javaSetter, kmProperty.flags)
+        get() = isAbstract(javaGetter, javaSetter, kmProperty.setter!!.modality)
     override val isFinal: Boolean
-        get() = isFinal(javaGetter, javaSetter, kmProperty.flags)
+        get() = isFinal(javaGetter, javaSetter, kmProperty.setter!!.modality)
 
     override val isJava: Boolean
         get() = super.isJava && !javaSetter.isKotlin
 
     override fun asPropertyFor(instanceClass: Class<*>) = KotlinMutableProperty2<D, E, V>(
-        property = kmProperty,
+        kmProperty = kmProperty,
         getterSignature = getterSignature,
         setterSignature = setterSignature,
         javaField = javaField,
@@ -57,7 +56,7 @@ class KotlinMutableProperty2<D, E, V> private constructor(
         instanceClass = instanceClass
     )
     override fun withJavaAccessors(getter: Method, setter: Method) = KotlinMutableProperty2<D, E, V>(
-        property = kmProperty,
+        kmProperty = kmProperty,
         getterSignature = getter.toSignature(),
         setterSignature = setter.toSignature(),
         javaField = javaField,
@@ -66,7 +65,7 @@ class KotlinMutableProperty2<D, E, V> private constructor(
         instanceClass = instanceClass
     )
     override fun withJavaSetter(setter: Method) = KotlinMutableProperty2<D, E, V>(
-        property = kmProperty,
+        kmProperty = kmProperty,
         getterSignature = getterSignature,
         setterSignature = setter.toSignature(),
         javaField = javaField,
@@ -75,7 +74,7 @@ class KotlinMutableProperty2<D, E, V> private constructor(
         instanceClass = instanceClass
     )
     override fun withJavaGetter(getter: Method) = KotlinMutableProperty2<D, E, V>(
-        property = kmProperty,
+        kmProperty = kmProperty,
         getterSignature = getter.toSignature(),
         setterSignature = setterSignature,
         javaField = javaField,
@@ -84,7 +83,7 @@ class KotlinMutableProperty2<D, E, V> private constructor(
         instanceClass = instanceClass
     )
     override fun withJavaField(field: Field) = KotlinMutableProperty2<D, E, V>(
-        property = kmProperty,
+        kmProperty = kmProperty,
         getterSignature = getterSignature,
         setterSignature = setterSignature,
         javaField = field,
@@ -95,7 +94,7 @@ class KotlinMutableProperty2<D, E, V> private constructor(
 
     override val setter: KSetter2Internal<D, E, V> = Setter(
         name = "<set-${kmProperty.name}>",
-        flags = kmProperty.setterFlags,
+        attributes = kmProperty.setter!!,
         property = this,
         javaSetter
     )
@@ -125,26 +124,26 @@ class KotlinMutableProperty2<D, E, V> private constructor(
 
     private data class Setter<D, E, V>(
         override val name: String,
-        private val flags: Flags,
+        private val attributes: KmPropertyAccessorAttributes,
         override val property: KotlinMutableProperty2<D, E, V>,
         private val javaSetter: Method?
     ) : KSetter2Internal<D, E, V> {
         override val isAbstract: Boolean
-            get() = isAbstract(javaSetter, flags)
+            get() = isAbstract(javaSetter, attributes.modality)
         override val isFinal: Boolean
-            get() = isFinal(javaSetter, flags)
+            get() = isFinal(javaSetter, attributes.modality)
         override val isOpen: Boolean
-            get() = isOpen(javaSetter, flags)
+            get() = isOpen(javaSetter, attributes.modality)
         override val isExternal: Boolean
-            get() = IS_EXTERNAL(flags)
+            get() = attributes.isExternal
         override val isInfix: Boolean
-            get() = IS_INFIX(flags)
+            get() = false
         override val isInline: Boolean
-            get() = IS_INLINE(flags)
+            get() = attributes.isInline
         override val isOperator: Boolean
-            get() = IS_OPERATOR(flags)
+            get() = false
         override val isSuspend: Boolean
-            get() = IS_SUSPEND(flags)
+            get() = false
 
         override val annotations: List<Annotation>
             get() = TODO("KotlinMutableProperty2.Setter.annotations: Not yet implemented")
@@ -159,7 +158,7 @@ class KotlinMutableProperty2<D, E, V> private constructor(
         override val typeParameters: List<KTypeParameter>
             get() = TODO("KotlinMutableProperty2.Setter.typeParameters: Not yet implemented")
         override val visibility: KVisibility?
-            get() = getVisibility(flags)
+            get() = getVisibility(attributes.visibility)
 
         override val javaMethod: Method?
             get() = javaSetter
@@ -170,7 +169,7 @@ class KotlinMutableProperty2<D, E, V> private constructor(
             } else {
                 KotlinTransientFunction(
                     name = javaSetter.name,
-                    flags = flags,
+                    attributes = attributes,
                     returnType = returnType,
                     javaMethod = javaSetter,
                     instanceClass = property.instanceClass,

@@ -1,5 +1,7 @@
 package net.corda.entityprocessor.impl.tests
 
+import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.cpk.read.CpkReadService
 import net.corda.data.ExceptionEnvelope
@@ -10,18 +12,16 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.data.persistence.EntityRequest
-import net.corda.data.persistence.MergeEntities
+import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.PersistEntities
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.messagebus.testkit.DBSetup
-import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.persistence.testkit.fake.FakeDbConnectionManager
 import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.createDog
-import net.corda.db.persistence.testkit.helpers.SandboxHelper.createVersionedDog
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getDogClass
-import net.corda.db.persistence.testkit.helpers.SandboxHelper.getVersionedDogClass
+import net.corda.db.schema.DbSchema
 import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
@@ -32,10 +32,13 @@ import net.corda.persistence.common.EntitySandboxServiceFactory
 import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
+import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.test.util.dsl.entities.cpx.getCpkFileHashes
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.testing.sandboxes.SandboxSetup
+import net.corda.testing.sandboxes.VirtualNodeLoader
 import net.corda.testing.sandboxes.fetchService
-import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
+import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
@@ -46,10 +49,9 @@ import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
@@ -80,14 +82,18 @@ class PersistenceExceptionTests {
 
         const val DOGS_TABLE = "migration/db.changelog-master.xml"
         const val DOGS_TABLE_WITHOUT_PK = "dogs-without-pk.xml"
-        const val VERSIONED_DOGS_TABLE = "versioned-dogs.xml"
+
+        private const val X500_NAME = "CN=Testing, OU=Application, O=R3, L=London, C=GB"
+        fun generateHoldingIdentity() = createTestHoldingIdentity(X500_NAME, UUID.randomUUID().toString())
     }
 
-    @Suppress("JUnitMalformedDeclaration")
     @RegisterExtension
-    private val sandboxLifecycle = AllTestsLifecycle()
+    private val beforeEachLifecycle = EachTestLifecycle()
 
-    private lateinit var virtualNode: VirtualNodeService
+    private lateinit var virtualNodeLoader: VirtualNodeLoader
+
+    private lateinit var sandboxGroupContextComponent: SandboxGroupContextComponent
+
     private lateinit var cpiInfoReadService: CpiInfoReadService
     private lateinit var cpkReadService: CpkReadService
     private lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
@@ -97,6 +103,7 @@ class PersistenceExceptionTests {
     lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
 
     private lateinit var dbConnectionManager: FakeDbConnectionManager
+
     private lateinit var entitySandboxService: EntitySandboxService
     private lateinit var processor: EntityMessageProcessor
 
@@ -105,6 +112,11 @@ class PersistenceExceptionTests {
 
     @InjectService
     lateinit var lbm: LiquibaseSchemaMigrator
+
+    private lateinit var deserializerFactory: CordaAvroSerializationFactory
+    private lateinit var deserializer: CordaAvroDeserializer<EntityResponse>
+
+    private var dbCounter = 0
 
     @BeforeAll
     fun setup(
@@ -117,37 +129,44 @@ class PersistenceExceptionTests {
     ) {
         logger.info("Setup test (test Directory: $testDirectory)")
         sandboxSetup.configure(bundleContext, testDirectory)
-        sandboxLifecycle.accept(sandboxSetup) {
-            virtualNode = sandboxSetup.fetchService(timeout = 5000)
+        // the below code block runs before every test
+        beforeEachLifecycle.accept(sandboxSetup) {
+            virtualNodeLoader = sandboxSetup.fetchService(timeout = 5000)
             cpiInfoReadService = sandboxSetup.fetchService(timeout = 5000)
             cpkReadService = sandboxSetup.fetchService(timeout = 5000)
             virtualNodeInfoReadService = sandboxSetup.fetchService(timeout = 5000)
             responseFactory = sandboxSetup.fetchService(timeout = 5000)
+            sandboxGroupContextComponent =
+                sandboxSetup.fetchService<SandboxGroupContextComponent>(timeout = 5000)
+                    .also {
+                        it.resizeCaches(2)
+                    }
+
+            virtualNodeInfo = virtualNodeLoader.loadVirtualNode(Resources.EXTENDABLE_CPB, generateHoldingIdentity())
+            cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
+
+            dbConnectionManager = FakeDbConnectionManager(
+                listOf(Pair(virtualNodeInfo.vaultDmlConnectionId, "animals-node")),
+                "PersistenceExceptionTests${dbCounter++}"
+            )
+
+            entitySandboxService =
+                EntitySandboxServiceFactory().create(
+                    sandboxGroupContextComponent,
+                    cpkReadService,
+                    virtualNodeInfoReadService,
+                    dbConnectionManager
+                )
+            processor = EntityMessageProcessor(
+                currentSandboxGroupContext,
+                entitySandboxService,
+                responseFactory,
+                this::noOpPayloadCheck
+            )
         }
 
-        virtualNodeInfo = virtualNode.load(Resources.EXTENDABLE_CPB)
-        cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
-    }
-
-    @BeforeEach
-    fun setUpBeforeEach() {
-        dbConnectionManager = FakeDbConnectionManager(
-            listOf(Pair(virtualNodeInfo.vaultDmlConnectionId, "animals-node")),
-            "PersistenceExceptionTests"
-        )
-        entitySandboxService =
-            EntitySandboxServiceFactory().create(
-                virtualNode.sandboxGroupContextComponent,
-                cpkReadService,
-                virtualNodeInfoReadService,
-                dbConnectionManager
-            )
-        processor = EntityMessageProcessor(
-            currentSandboxGroupContext,
-            entitySandboxService,
-            responseFactory,
-            this::noOpPayloadCheck
-        )
+        deserializerFactory = sandboxSetup.fetchService(timeout = 5000)
+        deserializer = deserializerFactory.createAvroDeserializer({}, EntityResponse::class.java)
     }
 
     @AfterEach
@@ -192,7 +211,7 @@ class PersistenceExceptionTests {
 
         val brokenEntitySandboxService =
             EntitySandboxServiceFactory().create(
-                virtualNode.sandboxGroupContextComponent,
+                sandboxGroupContextComponent,
                 cpkReadService,
                 brokenVirtualNodeInfoReadService,
                 dbConnectionManager
@@ -248,98 +267,62 @@ class PersistenceExceptionTests {
         assertThat(response.error.exception.errorType).isEqualTo(CordaRuntimeException::class.java.name)
     }
 
-    @Disabled("This test is disabled for now because currently we do execute duplicate persistence requests." +
-            "It should be re-enabled after deduplication work is done in epic CORE-5909")
     @Test
     fun `on duplicate persistence request don't execute it - with PK constraint does not throw PK violation`() {
         createDogDb()
         val persistEntitiesRequest = createDogPersistRequest()
 
         val record1 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
-        assertNull(((record1.single().value as FlowEvent).payload as ExternalEventResponse).error)
+        assertEventResponseWithoutError(record1.single())
         // duplicate request
         val record2 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
         // The below should not contain a PK violation error as it should be identified it is the same persistence request
         // and therefore not executed
-        assertNull(((record2.single().value as FlowEvent).payload as ExternalEventResponse).error)
+        assertEventResponseWithoutError(record2.single())
     }
 
-    @Disabled("This test is disabled for now because currently we do execute duplicate persistence requests." +
-            "It should be re-enabled after deduplication work is done in epic CORE-5909")
     @Test
     fun `on duplicate persistence request don't execute it - without PK constraint does not add duplicate DB entry`() {
         createDogDb(DOGS_TABLE_WITHOUT_PK)
         val persistEntitiesRequest = createDogPersistRequest()
 
         val record1 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
-        assertNull(((record1.single().value as FlowEvent).payload as ExternalEventResponse).error)
+        assertEventResponseWithoutError(record1.single())
         // duplicate request
         val record2 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
-        assertNull(((record2.single().value as FlowEvent).payload as ExternalEventResponse).error)
+        assertEventResponseWithoutError(record2.single())
 
         val dogDbCount = getDogDbCount(virtualNodeInfo.vaultDmlConnectionId)
         // There shouldn't be a dog duplicate entry in the DB, i.e. dogs count in the DB should still be 1
         assertEquals(1, dogDbCount)
     }
 
-    @Disabled("This test is disabled for now because currently we do execute duplicate persistence requests." +
-            "It should be re-enabled after deduplication work is done in epic CORE-5909")
     @Test
-    fun `on duplicate persistence request don't execute it - statically updated field isn't getting updated in DB`() {
-        createVersionedDogDb()
-        val persistEntitiesRequest = createVersionedDogPersistRequest()
+    fun `should distinguish duplicate persistence request from actual error in persistence request`() {
+        createDogDb()
+        val dogId = UUID.randomUUID()
+        val persistEntitiesRequest = createDogPersistRequest(dogId)
 
-        // persist request
-        processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
+        val record1 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
+        assertEventResponseWithoutError(record1.single())
+        // duplicate request
+        val record2 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
+        // The below should not contain a PK violation error as it should be identified it is the same persistence request
+        // and therefore not executed
+        assertEventResponseWithoutError(record2.single())
 
-        val serialisedDog = (persistEntitiesRequest.request as PersistEntities).entities
-
-        val requestId = UUID.randomUUID().toString()
-        val mergeEntityRequest =
-            EntityRequest(
-                virtualNodeInfo.holdingIdentity.toAvro(),
-                MergeEntities(serialisedDog),
-                ExternalEventContext(
-                    requestId,
-                    "flow id",
-                    KeyValuePairList(
-                        cpkFileHashes.map { KeyValuePair(CPK_FILE_CHECKSUM, it.toString()) }
-                    )
-                )
-            )
-
-        // first update request
-        processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), mergeEntityRequest)))
-        // check we update same dog
-        val dogDbCount = getDogDbCount(virtualNodeInfo.vaultDmlConnectionId, dogDBTable = "versionedDog")
-        assertEquals(1, dogDbCount)
-        // check timestamp 1
-        val dogVersion1 = getDogDbVersion(virtualNodeInfo.vaultDmlConnectionId)
-
-        // duplicate update request
-        processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), mergeEntityRequest)))
-        // check we update same dog
-        val dogDbCount2 = getDogDbCount(virtualNodeInfo.vaultDmlConnectionId, dogDBTable = "versionedDog")
-        assertEquals(1, dogDbCount2)
-        // check timestamp 2
-        val dogVersion2 = getDogDbVersion(virtualNodeInfo.vaultDmlConnectionId)
-        assertEquals(dogVersion1, dogVersion2)
+        val userDuplicatePersistEntitiesRequest = createDogPersistRequest(dogId)
+        // the following should now throw as it is different request that violates PK
+        val record3 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), userDuplicatePersistEntitiesRequest)))
+        assertEventResponseWithError(record3.single())
     }
 
     private fun noOpPayloadCheck(bytes: ByteBuffer) = bytes
 
-    private fun createVersionedDogPersistRequest(): EntityRequest {
+    private fun createDogPersistRequest(dogId :UUID = UUID.randomUUID()): EntityRequest {
         val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
         // create dog using dog-aware sandbox
-        val dog = sandbox.createVersionedDog("Stray", owner = "Not Known")
-        val serialisedDog = sandbox.getSerializationService().serialize(dog).bytes
-        return createPersistEntitiesRequest(listOf(ByteBuffer.wrap(serialisedDog)))
-    }
-
-    private fun createDogPersistRequest(): EntityRequest {
-        val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
-        // create dog using dog-aware sandbox
-        val dog = sandbox.createDog("Stray", owner = "Not Known").instance
+        val dog = sandbox.createDog("Stray", id = dogId, owner = "Not Known").instance
         val serialisedDog = sandbox.getSerializationService().serialize(dog).bytes
         return createPersistEntitiesRequest(listOf(ByteBuffer.wrap(serialisedDog)))
     }
@@ -366,22 +349,21 @@ class PersistenceExceptionTests {
         createDb(liquibaseScript, dogClass)
     }
 
-    private fun createVersionedDogDb() {
-        val sandboxGroupContext = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
-        val versionedDog = sandboxGroupContext.sandboxGroup.getVersionedDogClass()
-        createDb(VERSIONED_DOGS_TABLE, versionedDog)
-    }
-
     private fun createDb(liquibaseScript: String, entityClass: Class<*>) {
-        val cl = ClassloaderChangeLog(
-            linkedSetOf(
-                ClassloaderChangeLog.ChangeLogResourceFiles(
-                    entityClass.packageName,
-                    listOf(liquibaseScript),
-                    entityClass.classLoader
-                )
-            )
+        val vnodeVaultSchema = ClassloaderChangeLog.ChangeLogResourceFiles(
+            DbSchema::class.java.packageName,
+            listOf("net/corda/db/schema/vnode-vault/db.changelog-master.xml"),
+            DbSchema::class.java.classLoader
         )
+
+        val sandboxedSchema =
+            ClassloaderChangeLog.ChangeLogResourceFiles(
+                entityClass.packageName,
+                listOf(liquibaseScript),
+                entityClass.classLoader
+            )
+
+        val cl = ClassloaderChangeLog(linkedSetOf(vnodeVaultSchema, sandboxedSchema))
         val ds = dbConnectionManager.getDataSource(virtualNodeInfo.vaultDmlConnectionId)
         ds.connection.use {
             lbm.updateDb(it, cl)
@@ -390,7 +372,7 @@ class PersistenceExceptionTests {
 
     private fun getDogDbCount(connectionId: UUID, dogDBTable: String = "dog"): Int =
         dbConnectionManager
-            .getDataSource(connectionId).connection.use { connection ->
+                .getDataSource(connectionId).connection.use { connection ->
                 connection.prepareStatement("SELECT count(*) FROM $dogDBTable").use {
                     it.executeQuery().use { rs ->
                         if (!rs.next()) {
@@ -400,22 +382,12 @@ class PersistenceExceptionTests {
                     }
                 }
             }
+}
 
-    private fun getDogDbVersion(connectionId: UUID): Int =
-        dbConnectionManager
-            .getDataSource(connectionId).connection.use { connection ->
-                connection.prepareStatement("SELECT version FROM versionedDog").use {
-                    it.executeQuery().use { rs ->
-                        if (!rs.next()) {
-                            throw IllegalStateException("Should be able to find at least 1 dog entry")
-                        }
-                        rs.getInt(1)
-                            .also {
-                                if (rs.next()) {
-                                    throw IllegalStateException("There should be at most 1 dog entry")
-                                }
-                            }
-                    }
-                }
-            }
+private fun assertEventResponseWithoutError(record: Record<*, *>) {
+    assertNull(((record.value as FlowEvent).payload as ExternalEventResponse).error)
+}
+
+private fun assertEventResponseWithError(record: Record<*, *>) {
+    assertNotNull(((record.value as FlowEvent).payload as ExternalEventResponse).error)
 }

@@ -390,19 +390,22 @@ class StateManagerIntegrationTest {
     @DisplayName(value = "can filter states by last update time")
     fun canFilterStatesByLastUpdatedTime() {
         val count = 10
-        val startTime = Instant.now()
+        val keyIndexRange = 1..count
         persistStateEntities(
-            (1..count),
+            keyIndexRange,
             { _, _ -> State.VERSION_INITIAL_VALUE },
             { i, _ -> "state_$i" },
             { _, _ -> "{}" }
         )
-        val finishTime = Instant.now()
+        val (startTime, finishTime) = getIntervalBetweenEntities(
+            buildStateKey(keyIndexRange.first),
+            buildStateKey(keyIndexRange.last)
+        )
 
         val filteredStates = stateManager.getUpdatedBetween(startTime, finishTime)
         assertThat(filteredStates).hasSize(count)
 
-        for (i in 1..count) {
+        for (i in keyIndexRange) {
             val key = buildStateKey(i)
             val loadedState = filteredStates[key]
             assertThat(loadedState).isNotNull
@@ -415,6 +418,15 @@ class StateManagerIntegrationTest {
                 it.assertThat(loadedState.version).isEqualTo(State.VERSION_INITIAL_VALUE)
                 it.assertThat(loadedState.metadata).containsExactlyInAnyOrderEntriesOf(emptyMap())
             }
+        }
+    }
+
+    private fun getIntervalBetweenEntities(startEntityKey: String, finishEntityKey: String): Pair<Instant, Instant> {
+        return entityManagerFactoryFactory.createEntityManager().transaction { em ->
+            Pair(
+                em.find(StateEntity::class.java, startEntityKey).modifiedTime,
+                em.find(StateEntity::class.java, finishEntityKey).modifiedTime
+            )
         }
     }
 
