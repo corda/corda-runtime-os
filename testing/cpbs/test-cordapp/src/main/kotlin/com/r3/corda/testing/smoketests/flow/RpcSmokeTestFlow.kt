@@ -285,19 +285,17 @@ class RpcSmokeTestFlow : ClientStartableFlow {
         checkNotNull(member) { "Member $x500Name could not be looked up" }
         val publicKey = member.ledgerKeys[0]
         val bytesToSign = byteArrayOf(1, 2, 3, 4, 5)
-        log.info("Crypto - Signing bytes $bytesToSign with public key '$publicKey'")
         val signatureSpec =
             signatureSpecService.defaultSignatureSpec(publicKey)
                 ?: throw IllegalStateException("Default signature spec not found for key")
         val signedBytes = signingService.sign(bytesToSign, publicKey, signatureSpec, context)
-        log.info("Crypto - Signature $signedBytes received")
+        log.info("Crypto - Signed data with key and specified category")
         digitalSignatureVerificationService.verify(
             bytesToSign,
             signedBytes.bytes,
             publicKey,
             signatureSpec
         )
-        log.info("Crypto - Verified $signedBytes as the signature of $bytesToSign")
         return true.toString()
     }
 

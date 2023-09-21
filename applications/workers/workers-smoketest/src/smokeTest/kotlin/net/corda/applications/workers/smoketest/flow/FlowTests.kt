@@ -581,6 +581,7 @@ class FlowTests {
         assertThat(flowResult.json).isNotNull()
         assertThat(flowResult.flowError).isNull()
         assertThat(flowResult.json.command).isEqualTo("crypto_sign_with_key_category")
+        assertThat(flowResult.json.result).isEqualTo("true")
     }
 
     @Test
