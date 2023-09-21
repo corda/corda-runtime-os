@@ -29,9 +29,7 @@ class SessionDataProcessorReceive(
     private val key: Any,
     private val sessionState: SessionState?,
     private val sessionEvent: SessionEvent,
-    private val payload: SessionData,
-    private val instant: Instant,
-    private val sessionInitProcessorReceive: SessionInitProcessorReceive
+    private val instant: Instant
 ) : SessionEventProcessor {
 
     private companion object {
@@ -40,12 +38,8 @@ class SessionDataProcessorReceive(
 
     override fun execute(): SessionState {
         val sessionId = sessionEvent.sessionId
-        val sessionInit = payload.sessionInit
         return if (sessionState != null) {
             getInboundDataEventResult(sessionState, sessionId)
-        } else if (sessionInit != null) {
-            val newSessionState = sessionInitProcessorReceive.execute()
-            getInboundDataEventResult(newSessionState, sessionId)
         } else {
             val errorMessage = "Received SessionData on key $key for session which was null"
             logger.debug { errorMessage }

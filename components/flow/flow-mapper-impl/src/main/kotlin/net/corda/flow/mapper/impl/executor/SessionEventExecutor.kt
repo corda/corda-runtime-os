@@ -2,9 +2,9 @@ package net.corda.flow.mapper.impl.executor
 
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRequest
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
-import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.flow.mapper.FlowMapperResult
@@ -12,7 +12,6 @@ import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.flow.mapper.factory.RecordFactory
 import net.corda.libs.configuration.SmartConfig
 import org.slf4j.LoggerFactory
-import java.lang.IllegalArgumentException
 import java.time.Instant
 
 @Suppress("LongParameterList")
@@ -39,7 +38,7 @@ class SessionEventExecutor(
     }
 
     private fun getInitPayload(payload: Any) = when (payload) {
-        is SessionInit -> payload
+        is SessionCounterpartyInfoRequest -> payload.sessionInit
         is SessionData -> payload.sessionInit
         else -> null
     }

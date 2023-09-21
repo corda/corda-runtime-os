@@ -110,7 +110,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2)
+            sessionCounterpartyInfoRequestReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(INITIATED_SESSION_ID_1)))
                 .suspendsWith(
                     FlowIORequest.SubFlowFinished(listOf(INITIATED_SESSION_ID_1))
@@ -134,7 +134,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2, requireClose = false)
+            sessionCounterpartyInfoRequestReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2, requireClose = false)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(INITIATED_SESSION_ID_1)))
                 .suspendsWith(
                     FlowIORequest.SubFlowFinished(listOf(INITIATED_SESSION_ID_1))
@@ -156,7 +156,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
             membershipGroupFor(BOB_HOLDING_IDENTITY)
             initiatingToInitiatedFlow(PROTOCOL_2, FLOW_NAME, FLOW_NAME_2)
 
-            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2)
+            sessionCounterpartyInfoRequestReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2)
                 .suspendsWith(FlowIORequest.Receive(setOf(SessionInfo(INITIATED_SESSION_ID_1, initiatingIdentityMemberName))))
         }
 
