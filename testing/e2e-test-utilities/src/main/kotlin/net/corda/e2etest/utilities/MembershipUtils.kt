@@ -2,14 +2,18 @@ package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.e2etest.utilities.types.NetworkOnboardingMetadata
+import net.corda.e2etest.utilities.types.jsonToMemberList
 import net.corda.rest.ResponseCode
+import net.corda.test.util.eventually
 import net.corda.utilities.minutes
 import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
+import org.assertj.core.api.Assertions
 import java.io.File
 
 private val mapper = ObjectMapper()
 
+const val MEMBER_STATUS_ACTIVE = "ACTIVE"
 const val REGISTRATION_KEY_PRE_AUTH = "corda.auth.token"
 const val REGISTRATION_DECLINED = "DECLINED"
 const val REGISTRATION_INVALID = "INVALID"
@@ -355,4 +359,16 @@ fun ClusterInfo.lookupGroupParameters(
         }
         condition { it.code == ResponseCode.OK.statusCode }
     }
+}
+
+fun ClusterInfo.containsExactlyInAnyOrderActiveMembers(
+    holdingId: String,
+    memberNames: List<String>,
+) = eventually(
+    duration = 90.seconds,
+    waitBetween = 2.seconds
+) {
+    Assertions.assertThat(
+        lookup(holdingId, listOf(MEMBER_STATUS_ACTIVE)).jsonToMemberList().map { it.name }
+    ).containsExactlyInAnyOrderElementsOf(memberNames)
 }
