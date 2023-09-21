@@ -70,7 +70,7 @@ class TokenCacheEventProcessorFactoryImpl @Activate constructor(
             createHandler(TokenLedgerChangeEventHandler()),
             createHandler(TokenBalanceQueryEventHandler(recordFactory, availableTokenService)),
         )
-        return TokenCacheEventProcessor(eventConverter, entityConverter, tokenPoolCache, eventHandlerMap)
+        return TokenCacheEventProcessor(eventConverter, entityConverter, tokenPoolCache, eventHandlerMap, externalEventResponseFactory)
     }
 
     private inline fun <reified T : TokenEvent> createHandler(
