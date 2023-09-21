@@ -14,7 +14,7 @@ import java.time.Instant
  * Process a session counterparty info response.
  *
  * This should only be sent if a session counterparty info request was sent to the counterparty, so for the session
- * receiving this event the session should exist. It not existing is an error.
+ * receiving this event the session should exist.
  */
 class SessionCounterpartyInfoResponseProcessorReceive(
     private val key: Any,
@@ -29,7 +29,8 @@ class SessionCounterpartyInfoResponseProcessorReceive(
 
     override fun execute(): SessionState {
         return if (sessionState == null) {
-            val errorMessage = "Received SessionConfirm on key $key for sessionId ${sessionEvent.sessionId} which had null state"
+            val errorMessage = "Received SessionCounterpartyInfoResponse on key $key for " +
+                    "sessionId ${sessionEvent.sessionId} which had null state"
             logger.debug { errorMessage }
             generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, "SessionConfirm-NullState", instant)
         } else {

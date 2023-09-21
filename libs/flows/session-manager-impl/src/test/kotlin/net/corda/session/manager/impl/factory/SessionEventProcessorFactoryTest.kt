@@ -138,8 +138,11 @@ class SessionEventProcessorFactoryTest {
         val processor = sessionEventProcessorFactory.createEventReceivedProcessor(
             "key",
             buildSessionEvent(
-                MessageDirection.INBOUND, "sessionId", 1, SessionCounterpartyInfoResponse(), contextSessionProps =
-                emptyKeyValuePairList()
+                MessageDirection.INBOUND,
+                "sessionId",
+                1,
+                SessionCounterpartyInfoResponse(),
+                contextSessionProps = emptyKeyValuePairList()
             ),
             null,
             Instant.now()

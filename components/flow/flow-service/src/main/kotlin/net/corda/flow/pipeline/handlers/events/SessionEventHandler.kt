@@ -63,7 +63,7 @@ class SessionEventHandler @Activate constructor(
 
         createCheckpointIfDoesNotExist(checkpoint, sessionEvent, context)
         processSessionEvent(sessionEvent, checkpoint)
-        //do this last because the Holding Identity won't be available until after the checkpoint has been initiated
+        // Metrics require the holding identity to be set before use, as they are tagged by holding ID.
         context.flowMetrics.flowSessionMessageReceived(sessionEvent.payload::class.java.name)
 
         return context
@@ -143,23 +143,21 @@ class SessionEventHandler @Activate constructor(
         context.flowMetrics.flowStarted()
 
         initiatedFlowNameAndProtocolResult.let { result ->
-            when {
-                result.isSuccess -> {
-                    context.checkpoint.putSessionState(sessionManager.generateSessionState(
-                        sessionId,
-                        getContextSessionProperties(sessionEvent.contextSessionProperties, result.getOrThrow()),
-                        sessionEvent.initiatingIdentity,
-                        Instant.now(),
-                        SessionStateType.CONFIRMED
-                    ))
-                }
-                result.isFailure -> sendErrorMessage(
+            if (result.isSuccess) {
+                context.checkpoint.putSessionState(sessionManager.generateSessionState(
+                    sessionId,
+                    getContextSessionProperties(sessionEvent.contextSessionProperties, result.getOrThrow()),
+                    sessionEvent.initiatingIdentity,
+                    Instant.now(),
+                    SessionStateType.CONFIRMED
+                ))
+            } else {
+                sendErrorMessage(
                     context,
                     sessionId,
                     initiatedFlowNameAndProtocolResult.exceptionOrNull() ?:
                     FlowFatalException("Failed to create initiated checkpoint for session: $sessionId.")
                 )
-                else -> { log.warn("initiatedFlowNameAndProtocolResult did not return as success or failure!")}
             }
         }
     }
