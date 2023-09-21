@@ -16,7 +16,7 @@ the following properties:
 - `databaseType`: Setting this will run the tests against the configured database type instance,
    instead of using HSQLDB (the default). Currently supported options are POSTGRES and HSQL.
    It is strongly recommended that you use Postgres DB, as HSQLDB is not a 
-   production grade database, and is unlikely to provide realistic results. Additional Postgres
+   production grade database, and is unlikely to provide realistic results. Additional
    properties, such as user, password etc. can also be specified. These are the same set of
    properties as used by other database based tests in this repo.
 - `bsBenchNumIterations`: This controls how many times each test case is run. This should not affect 
