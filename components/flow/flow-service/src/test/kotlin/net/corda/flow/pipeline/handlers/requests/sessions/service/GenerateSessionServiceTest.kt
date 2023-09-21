@@ -76,14 +76,14 @@ class GenerateSessionServiceTest {
     }
 
     @Test
-    fun `Session counterpartyInfoRQ event sent to session manager and checkpoint updated with session state`() {
+    fun `Session counterpartyInfoRequest event sent to session manager and checkpoint updated with session state`() {
         generateSessionService.generateSessions(testContext.flowEventContext, sessionInfo, true)
         verify(testContext.flowCheckpoint, times(2)).putSessionState(any())
         verify(testContext.flowSessionManager).generateSessionState(any(), any(), any(), any(), any())
     }
 
     @Test
-    fun `No counterpartyInfoRQ event sent to session manager and checkpoint updated with session state`() {
+    fun `No counterpartyInfoRequest event sent to session manager and checkpoint updated with session state`() {
         generateSessionService.generateSessions(testContext.flowEventContext, sessionInfo, false)
         verify(testContext.flowCheckpoint, times(1)).putSessionState(any())
         verify(testContext.flowSessionManager).generateSessionState(any(), any(), any(), any(), any())

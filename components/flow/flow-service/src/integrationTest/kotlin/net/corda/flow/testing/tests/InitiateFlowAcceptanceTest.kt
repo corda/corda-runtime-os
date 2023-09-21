@@ -33,7 +33,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Requesting counterparty info flow sends a CounterpartyInfoRQ event`() {
+    fun `Requesting counterparty info flow sends a CounterpartyInfoRequest event`() {
         `when` {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.CounterPartyFlowInfo(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName)))
@@ -47,7 +47,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Requesting counterparty info from the flow engine that has already sent a CounterpartyInfoRQ event does not send another SessionInit`() {
+    fun `Requesting counterparty info from the flow engine that has already sent a CounterpartyInfoRequest event does not send another SessionInit`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(FlowIORequest.CounterPartyFlowInfo(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName)))
@@ -66,7 +66,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Receiving a CounterpartyInfoRQ event starts an initiated flow and sends a session confirm`() {
+    fun `Receiving a CounterpartyInfoRequest event starts an initiated flow and sends a session confirm`() {
         given {
             virtualNode(CPI1, BOB_HOLDING_IDENTITY)
             membershipGroupFor(BOB_HOLDING_IDENTITY)

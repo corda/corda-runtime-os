@@ -122,8 +122,8 @@ class SessionEventHandlerTest {
     }
 
     @Test
-    fun `Receiving a counteparty message creates a checkpoint if one does not exist for the initiated flow and adds the new session to it`() {
-        val sessionEvent = createCounterpartyRQ()
+    fun `Receiving a counterparty message creates a checkpoint if one does not exist for the initiated flow and adds the new session to it`() {
+        val sessionEvent = createCounterpartyRequest()
         val inputContext = buildFlowEventContext(checkpoint = expectedCheckpoint, inputEventPayload = sessionEvent)
 
         whenever(sessionManager.getNextReceivedEvent(updatedSessionState)).thenReturn(sessionEvent)
@@ -148,7 +148,7 @@ class SessionEventHandlerTest {
 
     @Test
     fun `Receiving a counterparty request payload sends an error message if there is no matching initiated flow`() {
-        val sessionEvent = createCounterpartyRQ()
+        val sessionEvent = createCounterpartyRequest()
         val inputContext = buildFlowEventContext(checkpoint = expectedCheckpoint, inputEventPayload = sessionEvent)
 
         whenever(sandboxGroupContext.protocolStore)
@@ -175,7 +175,7 @@ class SessionEventHandlerTest {
         }
     }
 
-    private fun createCounterpartyRQ(): SessionEvent {
+    private fun createCounterpartyRequest(): SessionEvent {
         val payload = SessionInit.newBuilder()
             .setFlowId(FLOW_ID)
             .setCpiId(CPI_ID)

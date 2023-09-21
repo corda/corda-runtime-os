@@ -184,7 +184,7 @@ class FlowSessionManagerImplTest {
     }
 
     @Test
-    fun `send counterpartyRQ creates a SessionCounterpartyInfoRequest message and processes it`() {
+    fun `send counterpartyRequest creates a SessionCounterpartyInfoRequest message and processes it`() {
         whenever(sessionManager.processMessageToSend(any(), any(), any(), any(), any())).then {
             SessionState().apply {
                 sendEventsState = SessionProcessState(

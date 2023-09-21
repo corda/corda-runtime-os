@@ -11,9 +11,10 @@ import org.slf4j.LoggerFactory
 import java.time.Instant
 
 /**
- * Process a [SessionConfirm] received from the initiated counterparty in response to a SessionInit which was sent to trigger the session.
- * If state is null return a new error state with queued to the counterparty. This shouldn't happen without developer error.
- * Save any session context properties received from the counterparty into the session state.
+ * Process a session counterparty info response.
+ *
+ * This should only be sent if a session counterparty info request was sent to the counterparty, so for the session
+ * receiving this event the session should exist. It not existing is an error.
  */
 class SessionCounterpartyInfoResponseProcessorReceive(
     private val key: Any,
