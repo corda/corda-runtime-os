@@ -37,25 +37,29 @@ class DeduplicationTableCleanUpProcessor(
                 val taskName = it.key
                 taskName == DEDUPLICATION_TABLE_CLEAN_UP_TASK
             }.forEach { _ ->
-                log.info("Cleaning up deduplication table for all vnodes")
+                log.debug { "Cleaning up deduplication table for all vnodes" }
                 val startTime = System.nanoTime()
                 virtualNodeInfoReadService.getAll()
                     .forEach {
                         log.debug { "Cleaning up deduplication table for vnode: ${it.holdingIdentity.shortHash}" }
-                        dbConnectionManager.createEntityManagerFactory(
-                            it.vaultDmlConnectionId,
-                            // We don't really want to make use of any entities here.
-                            object : JpaEntitiesSet {
-                                override val persistenceUnitName: String
-                                    get() = ""
-                                override val classes: Set<Class<*>>
-                                    get() = emptySet()
+                        try {
+                            dbConnectionManager.createEntityManagerFactory(
+                                it.vaultDmlConnectionId,
+                                // We don't really want to make use of any entities here.
+                                object : JpaEntitiesSet {
+                                    override val persistenceUnitName: String
+                                        get() = ""
+                                    override val classes: Set<Class<*>>
+                                        get() = emptySet()
+                                }
+                            ).use { emf ->
+                                emf.createEntityManager().transaction { em ->
+                                    // TODO The below interval needs to be made configurable
+                                    requestsIdsRepository.deleteRequestsOlderThan(120, em)
+                                }
                             }
-                        ).use { emf ->
-                            emf.createEntityManager().transaction { em ->
-                                // TODO The below interval needs to be made configurable
-                                requestsIdsRepository.deleteRequestsOlderThan(120, em)
-                            }
+                        } catch (e: Exception) {
+                            log.info("Cleaning up deduplication table for vnode: ${it.holdingIdentity.shortHash} FAILED", e)
                         }
                     }
                 val cleanUpTime = Duration.ofNanos(System.nanoTime() - startTime)
