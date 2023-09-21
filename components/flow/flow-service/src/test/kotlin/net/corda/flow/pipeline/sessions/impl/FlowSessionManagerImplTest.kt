@@ -232,7 +232,7 @@ class FlowSessionManagerImplTest {
             null
         )
 
-        val sessionState = flowSessionManager.sendCounterpartyInfoRQ(
+        val sessionState = flowSessionManager.sendCounterpartyInfoRequest(
             checkpoint,
             SESSION_ID,
             userContext.avro,
@@ -1004,7 +1004,7 @@ class FlowSessionManagerImplTest {
 
         whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(confirmedSessionState)
 
-        flowSessionManager.sendSessionCounterpartyInfoResponse(checkpoint, SESSION_ID, emptyKeyValuePairList(), Instant.now())
+        flowSessionManager.sendCounterpartyInfoResponse(checkpoint, SESSION_ID, emptyKeyValuePairList(), Instant.now())
         verify(sessionManager, times(1)).processMessageToSend(any(), any(), any(), any(), any())
     }
 

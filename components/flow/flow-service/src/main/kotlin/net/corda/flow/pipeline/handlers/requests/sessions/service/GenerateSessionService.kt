@@ -107,7 +107,7 @@ class GenerateSessionService @Activate constructor(
             ).also { checkpoint.putSessionState(it) }
 
             if (sendCounterpartyRequest) {
-                checkpoint.putSessionState(flowSessionManager.sendCounterpartyInfoRQ(
+                checkpoint.putSessionState(flowSessionManager.sendCounterpartyInfoRequest(
                     context.checkpoint,
                     sessionInfo.sessionId,
                     keyValuePairListOf(sessionInfo.contextUserProperties),

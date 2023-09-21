@@ -143,7 +143,7 @@ class SessionEventHandlerTest {
         sessionEventHandler.preProcess(inputContext)
 
         verify(sessionManager, times(1)).generateSessionState(any(), any(), any(), any(), any())
-        verify(flowSessionManager, times(0)).sendSessionCounterpartyInfoResponse(any(), any(), anyOrNull(), any())
+        verify(flowSessionManager, times(0)).sendCounterpartyInfoResponse(any(), any(), anyOrNull(), any())
     }
 
     @Test

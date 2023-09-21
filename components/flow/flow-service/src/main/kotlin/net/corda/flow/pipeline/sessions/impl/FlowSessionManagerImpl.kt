@@ -58,7 +58,7 @@ class FlowSessionManagerImpl @Activate constructor(
             .map { event -> flowRecordFactory.createFlowMapperEventRecord(event.sessionId, event) }
     }
 
-    override fun sendCounterpartyInfoRQ(
+    override fun sendCounterpartyInfoRequest(
         checkpoint: FlowCheckpoint,
         sessionId: String,
         contextUserProperties: KeyValuePairList,
@@ -108,7 +108,7 @@ class FlowSessionManagerImpl @Activate constructor(
         )
     }
 
-    override fun sendSessionCounterpartyInfoResponse(
+    override fun sendCounterpartyInfoResponse(
         checkpoint: FlowCheckpoint,
         sessionId: String,
         contextSessionProperties: KeyValuePairList,

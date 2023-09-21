@@ -47,7 +47,7 @@ class GenerateSessionServiceTest {
         whenever(testContext.flowSandboxService.get(any(), any())).thenReturn(sandboxGroupContext)
         whenever(sandboxGroupContext.protocolStore).thenReturn(protocolStore)
         whenever(protocolStore.protocolsForInitiator(any(), any())).thenReturn(Pair("protocol", listOf(1)))
-        whenever(testContext.flowSessionManager.sendCounterpartyInfoRQ(any(), any(), any(), any(), any(), any())).thenReturn(sessionState1)
+        whenever(testContext.flowSessionManager.sendCounterpartyInfoRequest(any(), any(), any(), any(), any(), any())).thenReturn(sessionState1)
         whenever(testContext.flowCheckpoint.getSessionState(sessionId1)).thenReturn(null)
         whenever(testContext.flowCheckpoint.getSessionState(sessionId1)).thenReturn(null)
         whenever(testContext.flowStack.nearestFirst(any())).thenReturn(
