@@ -75,8 +75,9 @@ Sealed: true
 def testingBundle = tasks.register('testingBundle', Bundle) {
     archiveClassifier = 'tests'
     from sourceSets.integrationTest.output
-    sourceSet = sourceSets.integrationTest
     bundle {
+        sourceSet = sourceSets.integrationTest
+        classpath = sourceSets.integrationTest.compileClasspath
         bnd '''\
 Test-Cases: \${classes;HIERARCHY_INDIRECTLY_ANNOTATED;org.junit.platform.commons.annotation.Testable;CONCRETE}
 Sealed: true

@@ -118,12 +118,30 @@ class ClusterBuilder {
             alias
         )
 
+    /**
+     * If [holdingIdentity] is not specified, it will be uploaded as a cluster-level certificate.
+     * If [holdingIdentity] is specified, it will be uploaded as a vnode-level certificate under the specified vnode.
+     */
+    fun importCertificate(file: File, usage: String, alias: String, holdingIdentityId: String?): SimpleResponse {
+        return if (holdingIdentityId == null) {
+            importClusterCertificate(file, usage, alias)
+        } else {
+            importVnodeCertificate(file, usage, alias, holdingIdentityId)
+        }
+    }
 
-    fun importCertificate(file: File, usage: String, alias: String) =
+    private fun importClusterCertificate(file: File, usage: String, alias: String) =
         uploadCertificateFile(
             "/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.certificatePath()}/cluster/$usage",
             file,
             alias,
+        )
+
+    private fun importVnodeCertificate(file: File, usage: String, alias: String, holdingIdentityId: String) =
+        uploadCertificateFile(
+            "/api/$REST_API_VERSION_PATH/${REST_API_VERSION_PATH.certificatePath()}/vnode/$holdingIdentityId/$usage",
+            file,
+            alias
         )
 
     fun getCertificateChain(usage: String, alias: String) =
@@ -595,21 +613,39 @@ class ClusterBuilder {
 
     fun configureNetworkParticipant(
         holdingIdentityShortHash: String,
-        sessionKeyId: String
-    ) =
-        put(
-            "/api/$REST_API_VERSION_PATH/network/setup/$holdingIdentityShortHash",
-            body = """
-                {
-                    "p2pTlsCertificateChainAlias": "$CERT_ALIAS_P2P",
-                    "useClusterLevelTlsCertificateAndKey": true,
+        sessionKeyId: String,
+        sessionCertAlias: String? = null
+    ): SimpleResponse {
+        val sessionKeysSection = if (sessionCertAlias == null) {
+            """
                     "sessionKeysAndCertificates": [{
                       "preferred": true,
                       "sessionKeyId": "$sessionKeyId"
                     }]
+            """.trim()
+        } else {
+            """
+                    "sessionKeysAndCertificates": [{
+                      "preferred": true,
+                      "sessionKeyId": "$sessionKeyId",
+                      "sessionCertificateChainAlias": "$sessionCertAlias"
+                    }]
+            """.trim()
+        }
+        val body =
+            """
+                {
+                    "p2pTlsCertificateChainAlias": "$CERT_ALIAS_P2P",
+                    "useClusterLevelTlsCertificateAndKey": true,
+                    $sessionKeysSection
                 }
             """.trimIndent()
+        return put(
+            "/api/$REST_API_VERSION_PATH/network/setup/$holdingIdentityShortHash",
+            body = body
         )
+    }
+
 }
 
 fun <T> cluster(

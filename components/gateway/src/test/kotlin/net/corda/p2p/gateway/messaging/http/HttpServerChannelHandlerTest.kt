@@ -40,7 +40,7 @@ class HttpServerChannelHandlerTest {
 
         val mockServerListener = mock<HttpServerListener>()
         val mockLogger = mock<Logger>()
-        val httpServerChannelHandler = HttpServerChannelHandler(mockServerListener, MAX_REQUEST_SIZE, URL_PATH, mockLogger)
+        val httpServerChannelHandler = HttpServerChannelHandler(mockServerListener, MAX_REQUEST_SIZE, listOf(URL_PATH), mockLogger)
 
         val socketAddress = InetSocketAddress("www.alice.net", 91)
         val mockCtxChannel = mock<Channel> {
@@ -85,7 +85,7 @@ class HttpServerChannelHandlerTest {
     fun `when request is valid, data are sent to the http server listener for processing`() {
         val mockServerListener = mock<HttpServerListener>()
         val mockLogger = mock<Logger>()
-        val httpServerChannelHandler = HttpServerChannelHandler(mockServerListener, MAX_REQUEST_SIZE, URL_PATH, mockLogger)
+        val httpServerChannelHandler = HttpServerChannelHandler(mockServerListener, MAX_REQUEST_SIZE, listOf(URL_PATH), mockLogger)
 
         val uri = "https://www.alice.net:8080$URL_PATH"
         val payload = mock<ByteBuf> {
@@ -126,7 +126,7 @@ class HttpServerChannelHandlerTest {
         var waitOnClose = false
         val mockServerListener = mock<HttpServerListener>()
         val mockLogger = mock<Logger>()
-        val httpServerChannelHandler = HttpServerChannelHandler(mockServerListener, MAX_REQUEST_SIZE, URL_PATH, mockLogger)
+        val httpServerChannelHandler = HttpServerChannelHandler(mockServerListener, MAX_REQUEST_SIZE, listOf(URL_PATH), mockLogger)
 
         val uri = "https://www.alice.net:8080$URL_PATH"
         val payload = mock<ByteBuf> {

@@ -29,6 +29,7 @@ dependencies {
     implementation project(':libs:tracing')
     implementation project(":libs:uniqueness:common")
     implementation project(":libs:utilities")
+    implementation project(":libs:web:web")
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
