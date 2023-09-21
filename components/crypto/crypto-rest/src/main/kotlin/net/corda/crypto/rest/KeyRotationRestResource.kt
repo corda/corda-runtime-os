@@ -1,6 +1,7 @@
 package net.corda.crypto.rest
 
 import net.corda.crypto.rest.response.KeyRotationResponse
+import net.corda.libs.configuration.SmartConfig
 import net.corda.rest.RestResource
 import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.rest.annotations.HttpGET
@@ -16,10 +17,16 @@ import net.corda.rest.response.ResponseEntity
 @HttpRestResource(
     name = "Key Rotation API",
     description = "Contains operations related to rotation of the wrapping keys.",
-    path = "wrappingkeys",
+    path = "wrappingkey",
     minVersion = RestApiVersion.C5_1
 )
 interface KeyRotationRestResource : RestResource {
+    /**
+     * Initialises the API implementation. This method may be called multiple times throughout the life
+     * of the API.
+     * @param config A config
+     */
+    fun initialise(config: SmartConfig)
 
     /**
      * The [getKeyRotationStatus] gets a list of unmanaged wrapping keys [{alias, [requestIds]}] where requestIds is
@@ -56,7 +63,7 @@ interface KeyRotationRestResource : RestResource {
         description = "This method enables to rotate a current wrapping key with a new wrapping key.",
         responseDescription = "Key rotation response",
     )
-    fun rotateWrappingKey(
+    fun startKeyRotation(
         @RestPathParameter(
             description = "The alias of the current wrapping key to be rotated."
         )
