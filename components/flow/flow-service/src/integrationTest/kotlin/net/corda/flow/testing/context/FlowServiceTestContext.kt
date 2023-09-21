@@ -270,7 +270,7 @@ class FlowServiceTestContext @Activate constructor(
         return addTestRun(createFlowEventRecord(flowId, StartFlow(flowStart, "{}")))
     }
 
-    override fun SessionCounterpartyInfoRequestReceived(
+    override fun sessionCounterpartyInfoRequestReceived(
         flowId: String,
         sessionId: String,
         cpiId: String,
@@ -322,7 +322,7 @@ class FlowServiceTestContext @Activate constructor(
         )
     }
 
-    override fun SessionCounterpartyInfoResponseReceived(
+    override fun sessionCounterpartyInfoResponseReceived(
         flowId: String,
         sessionId: String,
     ): FlowIoRequestSetup {

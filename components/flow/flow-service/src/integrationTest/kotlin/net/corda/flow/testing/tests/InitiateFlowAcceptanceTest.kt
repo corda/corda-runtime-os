@@ -54,7 +54,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            SessionCounterpartyInfoResponseReceived(FLOW_ID1, SESSION_ID_1)
+            sessionCounterpartyInfoResponseReceived(FLOW_ID1, SESSION_ID_1)
                 .suspendsWith(FlowIORequest.CounterPartyFlowInfo(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName)))
         }
 
@@ -74,7 +74,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            SessionCounterpartyInfoRequestReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL, ALICE_HOLDING_IDENTITY, BOB_HOLDING_IDENTITY, true)
+            sessionCounterpartyInfoRequestReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL, ALICE_HOLDING_IDENTITY, BOB_HOLDING_IDENTITY, true)
                 .suspendsWith(FlowIORequest.InitialCheckpoint)
                 .suspendsWith(
                     FlowIORequest.Receive(
