@@ -63,6 +63,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.SubscriptionBase
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -116,6 +117,8 @@ class CryptoProcessorImpl @Activate constructor(
     private val digestService: PlatformDigestService,
     @Reference(service = CipherSchemeMetadata::class)
     private val schemeMetadata: CipherSchemeMetadata,
+    @Reference(service = PublisherFactory::class)
+    private val publisherFactory: PublisherFactory,
 ) : CryptoProcessor {
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -147,7 +150,7 @@ class CryptoProcessorImpl @Activate constructor(
 
     // We are making the below coordinator visible to be able to test the processor as if it were a `Lifecycle`
     // using `LifecycleTest` API
-    // TODO - can we remove VisibleForTesting here? and go back to lifecycleCorodinator being private
+    // TODO - can we remove VisibleForTesting here? and go back to lifecycleCoordinator being private
     @get:VisibleForTesting
     internal val lifecycleCoordinator = coordinatorFactory.createCoordinator<CryptoProcessor>(dependentComponents, ::eventHandler)
 
@@ -315,6 +318,18 @@ class CryptoProcessorImpl @Activate constructor(
     private fun startProcessors(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val cryptoConfig = event.config.getConfig(CRYPTO_CONFIG)
 
+        val wrappingRepositoryFactory = { tenantId: String ->
+            WrappingRepositoryImpl(
+                entityManagerFactory = getEntityManagerFactory(
+                    tenantId = tenantId,
+                    dbConnectionManager = dbConnectionManager,
+                    virtualNodeInfoReadService = virtualNodeInfoReadService,
+                    jpaEntitiesRegistry = jpaEntitiesRegistry
+                ),
+                tenantId = tenantId
+            )
+        }
+
         // create processors
         val retryingConfig = cryptoConfig.retrying()
         val flowOpsProcessor = CryptoFlowOpsRpcProcessor(
@@ -327,7 +342,9 @@ class CryptoProcessorImpl @Activate constructor(
         val rpcOpsProcessor = CryptoOpsBusProcessor(cryptoService, retryingConfig, keyEncodingService)
         val hsmRegistrationProcessor = HSMRegistrationBusProcessor(tenantInfoService, cryptoService, retryingConfig)
         val rewrapProcessor = CryptoRewrapBusProcessor(cryptoService)
-        val rekeyProcessor = CryptoRekeyBusProcessor(cryptoService)
+        val rekeyProcessor = CryptoRekeyBusProcessor(cryptoService, virtualNodeInfoReadService,
+            wrappingRepositoryFactory, publisherFactory, cryptoConfig)
+
         // create and start subscriptions
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         val flowGroupName = "crypto.ops.flow"
