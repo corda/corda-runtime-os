@@ -33,7 +33,7 @@ import net.corda.data.p2p.app.OutboundUnauthenticatedMessage
 import net.corda.data.p2p.app.OutboundUnauthenticatedMessageHeader
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.platform.PlatformInfoProvider
-import net.corda.libs.platform.PlatformVersion
+import net.corda.libs.platform.PlatformVersion.CORDA_5_1
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -460,8 +460,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 }.apply {
                     if (isNotEmpty()) {
                         throw InvalidMembershipRegistrationException(
-                            "Fields ${joinToString(prefix = "[", postfix = "]") { it.key }} cannot be added, removed or " +
-                                    "updated during re-registration."
+                            "Fields ${this.map { it.key }} cannot be added, removed or updated during re-registration."
                         )
                     }
                 }
@@ -481,13 +480,9 @@ class DynamicMemberRegistrationService @Activate constructor(
             currentSerial: Long?,
             mgmPlatformVersion: Int,
         ) {
-            if (
-                (submittedSerial > 0 || (currentSerial != null && currentSerial > 0))
-                && mgmPlatformVersion < PlatformVersion.CORDA_5_1.value
-            ) {
-                throw InvalidMembershipRegistrationException(
-                    "MGM is on a lower version where re-registration is not supported."
-                )
+            if ((submittedSerial > 0 || (currentSerial != null && currentSerial > 0)) && mgmPlatformVersion < CORDA_5_1.value) {
+                throw InvalidMembershipRegistrationException("MGM is on a lower version where re-registration " +
+                        "is not supported.")
             }
         }
 
