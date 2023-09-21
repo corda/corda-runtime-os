@@ -6,6 +6,11 @@ import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.membership.MemberContext
 
 /**
+ * List of allowed key algorithms for session keys which are validated during network registration.
+ */
+val allowedSessionKeyAlgorithms = listOf("RSA", "EC", "ECDSA")
+
+/**
  * Transforms [KeyValuePairList] into map.
  */
 fun KeyValuePairList.toMap() = items.associate { it.key to it.value }

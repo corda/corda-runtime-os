@@ -77,6 +77,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.ecdhKey
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.allowedSessionKeyAlgorithms
 import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
@@ -223,6 +224,7 @@ class DynamicMemberRegistrationServiceTest {
     }
     private val testKey: PublicKey = mock {
         on { encoded } doReturn TEST_KEY.toByteArray()
+        on { algorithm } doReturn "EC"
     }
     private val keyEncodingService: KeyEncodingService = mock {
         on { decodePublicKey(SESSION_KEY.toByteArray()) } doReturn sessionKey
@@ -791,6 +793,18 @@ class DynamicMemberRegistrationServiceTest {
                 registrationService.register(registrationResultId, member, newContext.toMap())
             }
         }
+
+        @ParameterizedTest
+        @ValueSource(strings = ["EC", "ECDSA", "RSA"])
+        fun `registration request succeeds when the session key algorithm is EC, ECDSA, or RSA`(algorithm: String) {
+            postConfigChangedEvent()
+            registrationService.start()
+            whenever(sessionKey.algorithm).doReturn(algorithm)
+
+            assertDoesNotThrow {
+                registrationService.register(registrationResultId, member, context)
+            }
+        }
     }
 
     @Nested
@@ -885,6 +899,27 @@ class DynamicMemberRegistrationServiceTest {
 
             assertThat(exception).hasMessageContaining("Invalid value for key ID $SESSION_KEY_ID_KEY.")
             assertThat(exception).hasMessageContaining("Hex string has length of 1 but should be 12 characters")
+        }
+
+        @Test
+        fun `registration request fails when the session key algorithm is not EC, ECDSA, or RSA`() {
+            postConfigChangedEvent()
+            registrationService.start()
+
+            val invalidKeyAlgorithm = "EdDSA"
+            assertThat(allowedSessionKeyAlgorithms)
+                .doesNotContain(invalidKeyAlgorithm)
+                .withFailMessage { "Test should check invalid value but is actually checking a valid value." }
+
+            whenever(sessionKey.algorithm).doReturn(invalidKeyAlgorithm)
+
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, context)
+            }
+
+            assertThat(exception).hasMessageContaining("Registration failed.")
+            assertThat(exception).hasMessageContaining("The registration context is invalid.")
+            assertThat(exception).hasMessageContaining("Session key algorithm is EdDSA but it should be one of [RSA, EC, ECDSA].")
         }
 
         @Test

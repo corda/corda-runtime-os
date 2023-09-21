@@ -76,6 +76,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.TLS_CERTIFICATE_SU
 import net.corda.membership.lib.MemberInfoExtension.Companion.ecdhKey
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.allowedSessionKeyAlgorithms
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
 import net.corda.membership.lib.registration.RegistrationRequest
@@ -648,6 +649,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 }
             }.flatMap { (index, sessionKey) ->
                 val sessionPublicKey = keyEncodingService.decodePublicKey(sessionKey.publicKey.array())
+                validateSessionKeyAlgorithm(sessionPublicKey)
                 val specKey = String.format(SESSION_KEYS_SIGNATURE_SPEC, index)
                 val spec = context[specKey]
                 listOf(
@@ -660,6 +662,15 @@ class DynamicMemberRegistrationService @Activate constructor(
                     ).signatureName,
                 )
             }.toMap()
+        }
+
+        private fun validateSessionKeyAlgorithm(sessionPublicKey: PublicKey) {
+            if(!allowedSessionKeyAlgorithms.contains(sessionPublicKey.algorithm)) {
+                throw InvalidMembershipRegistrationException(
+                    "Registration failed. The registration context is invalid. Session key algorithm is " +
+                            "${sessionPublicKey.algorithm} but it should be one of $allowedSessionKeyAlgorithms."
+                )
+            }
         }
 
         private fun generateNotaryKeys(context: Map<String, String>, tenantId: String): List<KeyDetails> {

@@ -40,6 +40,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
@@ -47,6 +48,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.VersionedMessageBuilder
+import net.corda.membership.lib.allowedSessionKeyAlgorithms
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
 import net.corda.membership.lib.toMap
@@ -74,6 +76,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -86,6 +90,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
 
@@ -146,10 +151,14 @@ class StartRegistrationHandlerTest {
         URL_KEY.format(0) to "https://localhost:1080",
         PROTOCOL_VERSION.format(0) to "1",
     )
+    private val sessionKey: PublicKey = mock {
+        on { algorithm } doReturn "EC"
+    }
     private val memberMemberContext: MemberContext = mock {
         on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
         on { parseList(eq(ENDPOINTS), eq(EndpointInfo::class.java)) } doReturn listOf(mock())
         on { entries } doReturn memberContextEntries.entries
+        on { parseList(SESSION_KEYS, PublicKey::class.java) } doReturn listOf(sessionKey)
     }
     private val memberMgmContext: MGMContext = mock {
         on { parse(eq(MODIFIED_TIME), eq(Instant::class.java)) } doReturn clock.instant()
@@ -364,6 +373,29 @@ class StartRegistrationHandlerTest {
         assertThrows<MissingRegistrationStateException> {
             handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["EC", "ECDSA", "RSA"])
+    fun `Start registration is successful for valid session key algorithms`(keyAlgorithm: String) {
+        whenever(sessionKey.algorithm).doReturn(keyAlgorithm)
+        handler
+            .invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
+            .assertRegistrationStarted()
+    }
+
+    @Test
+    fun `Start registration is unsuccessful for invalid session key algorithm`() {
+        val invalidKeyAlgorithm = "EdDSA"
+
+        assertThat(allowedSessionKeyAlgorithms)
+            .doesNotContain(invalidKeyAlgorithm)
+            .withFailMessage { "Test should check invalid value but is actually checking a valid value." }
+
+        whenever(sessionKey.algorithm).doReturn(invalidKeyAlgorithm)
+        handler
+            .invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
+            .assertDeclinedRegistration()
     }
 
     @Test
