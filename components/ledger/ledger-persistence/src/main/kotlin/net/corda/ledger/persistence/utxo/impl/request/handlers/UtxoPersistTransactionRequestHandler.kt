@@ -82,7 +82,7 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
                 return@flatMap onCommit(observer, stateAndRef) { obs, context ->
                     obs.onCommit(
                         context.stateAndRef.state.contractState,
-                        digestService
+                        context.digestService
                     )
                 }
             }
