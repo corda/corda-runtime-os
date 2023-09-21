@@ -201,6 +201,7 @@ class TransactionBackchainReceiverFlowV1(
         }
     }
 
+    @Suppress("NestedBlockDepth")
     private fun handleExistingTransactionsAndTheirDependencies(
         existingTransactionIdsInDb: MutableMap<SecureHash, TransactionStatus>,
         transactionsToRetrieve: LinkedHashSet<SecureHash>

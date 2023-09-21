@@ -26,7 +26,8 @@ class UtxoFindTransactionIdsAndStatusesRequestHandler(
                 externalEventContext,
                 EntityResponse(
                     existingTransactions.map { ByteBuffer.wrap(serializationService.serialize(it).bytes) },
-                    KeyValuePairList(emptyList())
+                    KeyValuePairList(emptyList()),
+                    null
                 )
             )
         )
