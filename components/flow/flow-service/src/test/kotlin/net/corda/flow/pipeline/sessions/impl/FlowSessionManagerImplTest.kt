@@ -7,7 +7,7 @@ import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionClose
-import net.corda.data.flow.event.session.SessionCounterpartyInfoRQ
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRequest
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
@@ -184,7 +184,7 @@ class FlowSessionManagerImplTest {
     }
 
     @Test
-    fun `send counterpartyRQ creates a SessionCounterpartyInfoRQ message and processes it`() {
+    fun `send counterpartyRQ creates a SessionCounterpartyInfoRequest message and processes it`() {
         whenever(sessionManager.processMessageToSend(any(), any(), any(), any(), any())).then {
             SessionState().apply {
                 sendEventsState = SessionProcessState(
@@ -225,7 +225,7 @@ class FlowSessionManagerImplTest {
             MessageDirection.OUTBOUND,
             SESSION_ID,
             sequenceNum = null,
-            payload = SessionCounterpartyInfoRQ(expectedSessionInit),
+            payload = SessionCounterpartyInfoRequest(expectedSessionInit),
             timestamp = instant,
             initiatingIdentity = HOLDING_IDENTITY,
             initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY,
@@ -1004,7 +1004,7 @@ class FlowSessionManagerImplTest {
 
         whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(confirmedSessionState)
 
-        flowSessionManager.sendSessionCounterpartyInfoRS(checkpoint, SESSION_ID, emptyKeyValuePairList(), Instant.now())
+        flowSessionManager.sendSessionCounterpartyInfoResponse(checkpoint, SESSION_ID, emptyKeyValuePairList(), Instant.now())
         verify(sessionManager, times(1)).processMessageToSend(any(), any(), any(), any(), any())
     }
 

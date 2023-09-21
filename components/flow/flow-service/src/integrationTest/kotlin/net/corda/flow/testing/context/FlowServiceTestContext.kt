@@ -19,8 +19,8 @@ import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.external.ExternalEventResponseError
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.data.flow.event.session.SessionClose
-import net.corda.data.flow.event.session.SessionCounterpartyInfoRQ
-import net.corda.data.flow.event.session.SessionCounterpartyInfoRS
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRequest
+import net.corda.data.flow.event.session.SessionCounterpartyInfoResponse
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
@@ -270,7 +270,7 @@ class FlowServiceTestContext @Activate constructor(
         return addTestRun(createFlowEventRecord(flowId, StartFlow(flowStart, "{}")))
     }
 
-    override fun sessionCounterpartyInfoRQReceived(
+    override fun SessionCounterpartyInfoRequestReceived(
         flowId: String,
         sessionId: String,
         cpiId: String,
@@ -284,7 +284,7 @@ class FlowServiceTestContext @Activate constructor(
             sessionId,
             initiatingIdentity,
             initiatedIdentity,
-            SessionCounterpartyInfoRQ(SessionInit.newBuilder()
+            SessionCounterpartyInfoRequest(SessionInit.newBuilder()
                 .setFlowId(flowId)
                 .setCpiId(cpiId)
                 .setContextPlatformProperties(emptyKeyValuePairList())
@@ -322,7 +322,7 @@ class FlowServiceTestContext @Activate constructor(
         )
     }
 
-    override fun sessionCounterpartyInfoRSReceived(
+    override fun SessionCounterpartyInfoResponseReceived(
         flowId: String,
         sessionId: String,
     ): FlowIoRequestSetup {
@@ -331,7 +331,7 @@ class FlowServiceTestContext @Activate constructor(
             sessionId,
             null,
             null,
-            SessionCounterpartyInfoRS(),
+            SessionCounterpartyInfoResponse(),
             null,
             emptyKeyValuePairList()
         )

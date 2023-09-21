@@ -2,7 +2,7 @@ package net.corda.flow.mapper.impl.executor
 
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.session.SessionCounterpartyInfoRQ
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRequest
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.mapper.FlowMapperState
@@ -38,7 +38,7 @@ class SessionEventExecutor(
     }
 
     private fun getInitPayload(payload: Any) = when (payload) {
-        is SessionCounterpartyInfoRQ -> payload.sessionInit
+        is SessionCounterpartyInfoRequest -> payload.sessionInit
         is SessionData -> payload.sessionInit
         else -> null
     }

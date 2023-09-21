@@ -81,7 +81,7 @@ interface FlowSessionManager {
      * @throws FlowSessionStateException If a session does not exist within the flow's [FlowCheckpoint], or is not in
      * the CONFIRMED state.
      */
-    fun sendSessionCounterpartyInfoRS(
+    fun sendSessionCounterpartyInfoResponse(
         checkpoint: FlowCheckpoint,
         sessionId: String,
         contextSessionProperties: KeyValuePairList,

@@ -7,7 +7,7 @@ import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
-import net.corda.data.flow.event.session.SessionCounterpartyInfoRQ
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRequest
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
@@ -143,7 +143,7 @@ class SessionEventHandlerTest {
         sessionEventHandler.preProcess(inputContext)
 
         verify(sessionManager, times(1)).generateSessionState(any(), any(), any(), any(), any())
-        verify(flowSessionManager, times(0)).sendSessionCounterpartyInfoRS(any(), any(), anyOrNull(), any())
+        verify(flowSessionManager, times(0)).sendSessionCounterpartyInfoResponse(any(), any(), anyOrNull(), any())
     }
 
     @Test
@@ -183,7 +183,7 @@ class SessionEventHandlerTest {
             .setContextUserProperties(emptyKeyValuePairList())
             .build()
 
-        return createSessionEvent(SessionCounterpartyInfoRQ(payload))
+        return createSessionEvent(SessionCounterpartyInfoRequest(payload))
     }
 
     private fun createSessionDataWithInit(): SessionEvent {

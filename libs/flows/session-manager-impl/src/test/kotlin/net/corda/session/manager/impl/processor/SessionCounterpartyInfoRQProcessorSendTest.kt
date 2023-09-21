@@ -1,7 +1,7 @@
 package net.corda.session.manager.impl.processor
 
 import net.corda.data.flow.event.MessageDirection
-import net.corda.data.flow.event.session.SessionCounterpartyInfoRQ
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRequest
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.utils.emptyKeyValuePairList
@@ -10,14 +10,14 @@ import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.time.Instant
-class SessionCounterpartyInfoRQProcessorSendTest {
+class SessionCounterpartyInfoRequestProcessorSendTest {
 
     private fun createCounterpartyInfoRQ() =
-        SessionCounterpartyInfoRQ(SessionInit("flow", "flowId1", emptyKeyValuePairList(),  emptyKeyValuePairList()))
+        SessionCounterpartyInfoRequest(SessionInit("flow", "flowId1", emptyKeyValuePairList(),  emptyKeyValuePairList()))
 
     @Test
     fun `Send session CounterpartyInfoRQ`() {
-        val sessionCounterpartyInfoRQ = buildSessionEvent(
+        val SessionCounterpartyInfoRequest = buildSessionEvent(
             MessageDirection.OUTBOUND,
             "sessionId",
             1,
@@ -26,7 +26,7 @@ class SessionCounterpartyInfoRQProcessorSendTest {
         )
 
         val sessionState = buildSessionState(SessionStateType.CREATED, 0, emptyList(), 0 , emptyList())
-        val sessionInitProcessor = SessionCounterpartyInfoRQProcessorSend(sessionState, sessionCounterpartyInfoRQ, Instant.now())
+        val sessionInitProcessor = SessionCounterpartyInfoRequestProcessorSend(sessionState, SessionCounterpartyInfoRequest, Instant.now())
 
         val updatedSessionState = sessionInitProcessor.execute()
 
@@ -35,6 +35,6 @@ class SessionCounterpartyInfoRQProcessorSendTest {
 
         val sendEvents = updatedSessionState.sendEventsState
         assertThat(sendEvents.undeliveredMessages.size).isEqualTo(1)
-        assertThat(sendEvents.undeliveredMessages.first()).isEqualTo(sessionCounterpartyInfoRQ)
+        assertThat(sendEvents.undeliveredMessages.first()).isEqualTo(SessionCounterpartyInfoRequest)
     }
 }

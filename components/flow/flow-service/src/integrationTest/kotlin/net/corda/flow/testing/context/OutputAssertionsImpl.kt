@@ -8,8 +8,8 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.event.session.SessionClose
-import net.corda.data.flow.event.session.SessionCounterpartyInfoRQ
-import net.corda.data.flow.event.session.SessionCounterpartyInfoRS
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRequest
+import net.corda.data.flow.event.session.SessionCounterpartyInfoResponse
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.output.FlowStates
@@ -53,19 +53,19 @@ class OutputAssertionsImpl(
 
     }
 
-    override fun sessionCounterpartyInfoRS(
+    override fun SessionCounterpartyInfoResponse(
         vararg sessionIds: String,
         initiatingIdentity: HoldingIdentity?,
         initiatedIdentity: HoldingIdentity?,
     ) {
         asserts.add { testRun ->
-            findAndAssertSessionEvents<SessionCounterpartyInfoRS>(testRun, sessionIds.toSet(), initiatingIdentity, initiatedIdentity)
+            findAndAssertSessionEvents<SessionCounterpartyInfoResponse>(testRun, sessionIds.toSet(), initiatingIdentity, initiatedIdentity)
         }
     }
 
-    override fun sessionCounterpartyInfoRQEvents(vararg sessionIds: String, initiatingIdentity: HoldingIdentity?, initiatedIdentity: HoldingIdentity?) {
+    override fun SessionCounterpartyInfoRequestEvents(vararg sessionIds: String, initiatingIdentity: HoldingIdentity?, initiatedIdentity: HoldingIdentity?) {
         asserts.add { testRun ->
-            findAndAssertSessionEvents<SessionCounterpartyInfoRQ>(testRun, sessionIds.toSet(), initiatingIdentity, initiatedIdentity)
+            findAndAssertSessionEvents<SessionCounterpartyInfoRequest>(testRun, sessionIds.toSet(), initiatingIdentity, initiatedIdentity)
         }
     }
 

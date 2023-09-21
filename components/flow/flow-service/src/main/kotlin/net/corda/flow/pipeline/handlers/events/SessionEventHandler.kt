@@ -5,7 +5,7 @@ import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.session.SessionCounterpartyInfoRQ
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRequest
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionStateType
@@ -104,7 +104,7 @@ class SessionEventHandler @Activate constructor(
      */
     private fun getSessionInitIfPresent(sessionEvent: SessionEvent): SessionInit? {
         return when (val payload = sessionEvent.payload) {
-            is SessionCounterpartyInfoRQ -> payload.sessionInit
+            is SessionCounterpartyInfoRequest -> payload.sessionInit
             is SessionData -> payload.sessionInit
             else -> null
         }

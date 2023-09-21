@@ -1,8 +1,8 @@
 package net.corda.session.manager.impl.processor
 
 import net.corda.data.flow.event.MessageDirection
-import net.corda.data.flow.event.session.SessionCounterpartyInfoRQ
-import net.corda.data.flow.event.session.SessionCounterpartyInfoRS
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRequest
+import net.corda.data.flow.event.session.SessionCounterpartyInfoResponse
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionStateType
@@ -16,7 +16,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.time.Instant
-class SessionCounterpartyInfoRQProcessorReceiveTest {
+class SessionCounterpartyInfoRequestProcessorReceiveTest {
 
     private val sessionProps = KeyValueStore().apply {
         put(FLOW_PROTOCOL, "protocol")
@@ -24,7 +24,7 @@ class SessionCounterpartyInfoRQProcessorReceiveTest {
     }.avro
 
     @Test
-    fun `receiving a SessionCounterpartyInfoRQ message responds with a SessionCounterpartyInfoRS`() {
+    fun `receiving a SessionCounterpartyInfoRequest message responds with a SessionCounterpartyInfoResponse`() {
         val inputState = buildSessionState(
             SessionStateType.CONFIRMED, 0, mutableListOf(), 1, mutableListOf(), sessionProperties = sessionProps
         )
@@ -33,18 +33,18 @@ class SessionCounterpartyInfoRQProcessorReceiveTest {
             MessageDirection.INBOUND,
             "sessionId",
             1,
-            SessionCounterpartyInfoRQ(SessionInit()),
+            SessionCounterpartyInfoRequest(SessionInit()),
             contextSessionProps = emptyKeyValuePairList()
         )
-        val sessionCounterpartyInfoRQProcessorReceived =
-            SessionCounterpartyInfoRQProcessorReceive("key", inputState, event, Instant.now())
-        val sessionState = sessionCounterpartyInfoRQProcessorReceived.execute()
+        val SessionCounterpartyInfoRequestProcessorReceived =
+            SessionCounterpartyInfoRequestProcessorReceive("key", inputState, event, Instant.now())
+        val sessionState = SessionCounterpartyInfoRequestProcessorReceived.execute()
 
         val messagesToSend = sessionState.sendEventsState.undeliveredMessages
         assertThat(messagesToSend).size().isEqualTo(1)
         val message = messagesToSend.first()
         assertTrue(message.sequenceNum == null)
-        assertThat(message.payload::class.java).isEqualTo(SessionCounterpartyInfoRS::class.java)
+        assertThat(message.payload::class.java).isEqualTo(SessionCounterpartyInfoResponse::class.java)
         assertThat(sessionState.sessionProperties).isEqualTo(sessionProps)
     }
 
@@ -54,11 +54,11 @@ class SessionCounterpartyInfoRQProcessorReceiveTest {
             MessageDirection.OUTBOUND,
             "sessionId",
             1,
-            SessionCounterpartyInfoRQ(SessionInit()),
+            SessionCounterpartyInfoRequest(SessionInit()),
             contextSessionProps = emptyKeyValuePairList()
         )
-        val sessionCounterpartyInfoRQProcessorReceive = SessionCounterpartyInfoRQProcessorReceive("key", null, event,  Instant.now())
-        val sessionState = sessionCounterpartyInfoRQProcessorReceive.execute()
+        val SessionCounterpartyInfoRequestProcessorReceive = SessionCounterpartyInfoRequestProcessorReceive("key", null, event,  Instant.now())
+        val sessionState = SessionCounterpartyInfoRequestProcessorReceive.execute()
 
         val messagesToSend = sessionState.sendEventsState.undeliveredMessages
         assertThat(sessionState.status).isEqualTo(SessionStateType.ERROR)

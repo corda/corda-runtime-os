@@ -6,7 +6,7 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
-import net.corda.data.flow.event.session.SessionCounterpartyInfoRQ
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRequest
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.checkpoint.FlowStackItem
@@ -203,7 +203,7 @@ class FlowRunnerImplTest {
             contextUserProperties = userContext.avro
         }
 
-        runInitiatedTest(SessionCounterpartyInfoRQ(sessionInit))
+        runInitiatedTest(SessionCounterpartyInfoRequest(sessionInit))
     }
 
     @Test

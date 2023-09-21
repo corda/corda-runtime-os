@@ -6,8 +6,8 @@ import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionClose
-import net.corda.data.flow.event.session.SessionCounterpartyInfoRQ
-import net.corda.data.flow.event.session.SessionCounterpartyInfoRS
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRequest
+import net.corda.data.flow.event.session.SessionCounterpartyInfoResponse
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
@@ -80,7 +80,7 @@ class FlowSessionManagerImpl @Activate constructor(
             .setSequenceNum(null)
             .setInitiatingIdentity(checkpoint.holdingIdentity.toAvro())
             .setInitiatedIdentity(HoldingIdentity(x500Name.toString(), checkpoint.holdingIdentity.groupId))
-            .setPayload(SessionCounterpartyInfoRQ(sessionInit))
+            .setPayload(SessionCounterpartyInfoRequest(sessionInit))
             .setContextSessionProperties(sessionState.sessionProperties)
             .build()
 
@@ -108,7 +108,7 @@ class FlowSessionManagerImpl @Activate constructor(
         )
     }
 
-    override fun sendSessionCounterpartyInfoRS(
+    override fun sendSessionCounterpartyInfoResponse(
         checkpoint: FlowCheckpoint,
         sessionId: String,
         contextSessionProperties: KeyValuePairList,
@@ -117,7 +117,7 @@ class FlowSessionManagerImpl @Activate constructor(
         return sendSessionMessageToExistingSession(
             checkpoint,
             sessionId,
-            payload = SessionCounterpartyInfoRS(),
+            payload = SessionCounterpartyInfoResponse(),
             instant,
             contextSessionProperties
         )

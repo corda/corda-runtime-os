@@ -8,7 +8,7 @@ import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.session.SessionCounterpartyInfoRQ
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRequest
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.p2p.app.AppMessage
@@ -105,7 +105,7 @@ class FlowFilterServiceIntegrationTest {
             identity, identity, Instant.ofEpochMilli(1), "", "", "flowSession", MembershipStatusFilter.ACTIVE
         )
         val sessionEvent = SessionEvent(
-            MessageDirection.OUTBOUND, Instant.now(), testId, 1, identity, identity, SessionCounterpartyInfoRQ(SessionInit(
+            MessageDirection.OUTBOUND, Instant.now(), testId, 1, identity, identity, SessionCounterpartyInfoRequest(SessionInit(
                 testId,
                 null,
                 emptyKeyValuePairList(),

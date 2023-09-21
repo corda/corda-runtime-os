@@ -15,7 +15,7 @@ import java.time.Instant
  * If state is null return a new error state with queued to the counterparty. This shouldn't happen without developer error.
  * Save any session context properties received from the counterparty into the session state.
  */
-class SessionCounterpartyInfoRSProcessorReceive(
+class SessionCounterpartyInfoResponseProcessorReceive(
     private val key: Any,
     private val sessionState: SessionState?,
     private val sessionEvent: SessionEvent,
@@ -41,7 +41,7 @@ class SessionCounterpartyInfoRSProcessorReceive(
             }
 
             logger.trace {
-                "Received SessionCounterpartyInfoRS on key $key for session state: $sessionState"
+                "Received SessionCounterpartyInfoResponse on key $key for session state: $sessionState"
             }
 
             return sessionState

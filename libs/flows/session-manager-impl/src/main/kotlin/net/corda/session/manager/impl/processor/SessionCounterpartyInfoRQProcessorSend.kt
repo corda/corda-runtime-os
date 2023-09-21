@@ -11,7 +11,7 @@ import java.time.Instant
  * Process a message to request session properties from a counterparty.
  * Message will have no sequence number
  */
-class SessionCounterpartyInfoRQProcessorSend(
+class SessionCounterpartyInfoRequestProcessorSend(
     private val sessionState: SessionState,
     private val sessionEvent: SessionEvent,
     private val instant: Instant

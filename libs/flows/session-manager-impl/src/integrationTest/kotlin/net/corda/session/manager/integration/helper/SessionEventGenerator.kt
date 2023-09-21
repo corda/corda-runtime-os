@@ -4,8 +4,8 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
-import net.corda.data.flow.event.session.SessionCounterpartyInfoRQ
-import net.corda.data.flow.event.session.SessionCounterpartyInfoRS
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRequest
+import net.corda.data.flow.event.session.SessionCounterpartyInfoResponse
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
@@ -40,7 +40,7 @@ fun generateCounterpartyInfoRQ(instant: Instant, messageDirection: MessageDirect
         .setContextPlatformProperties(emptyKeyValuePairList())
         .setContextUserProperties(emptyKeyValuePairList())
         .build()
-    return generateSessionEvent(SessionCounterpartyInfoRQ(sessionInit), instant, messageDirection, sessionId)
+    return generateSessionEvent(SessionCounterpartyInfoRequest(sessionInit), instant, messageDirection, sessionId)
 }
 
 fun generateData(instant: Instant, messageDirection: MessageDirection, sessionId: String): SessionEvent {
@@ -48,7 +48,7 @@ fun generateData(instant: Instant, messageDirection: MessageDirection, sessionId
 }
 
 fun generateConfirm(instant: Instant, messageDirection: MessageDirection, sessionId: String): SessionEvent {
-    return generateSessionEvent(SessionCounterpartyInfoRS(), instant, messageDirection, sessionId)
+    return generateSessionEvent(SessionCounterpartyInfoResponse(), instant, messageDirection, sessionId)
 }
 
 fun generateError(instant: Instant, messageDirection: MessageDirection, sessionId: String): SessionEvent {

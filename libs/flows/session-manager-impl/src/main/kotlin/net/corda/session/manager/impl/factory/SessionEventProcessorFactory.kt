@@ -3,8 +3,8 @@ package net.corda.session.manager.impl.factory
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
-import net.corda.data.flow.event.session.SessionCounterpartyInfoRQ
-import net.corda.data.flow.event.session.SessionCounterpartyInfoRS
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRequest
+import net.corda.data.flow.event.session.SessionCounterpartyInfoResponse
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.session.SessionState
@@ -13,9 +13,9 @@ import net.corda.session.manager.SessionManagerException
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.SessionCloseProcessorReceive
 import net.corda.session.manager.impl.processor.SessionCloseProcessorSend
-import net.corda.session.manager.impl.processor.SessionCounterpartyInfoRQProcessorReceive
-import net.corda.session.manager.impl.processor.SessionCounterpartyInfoRQProcessorSend
-import net.corda.session.manager.impl.processor.SessionCounterpartyInfoRSProcessorReceive
+import net.corda.session.manager.impl.processor.SessionCounterpartyInfoRequestProcessorReceive
+import net.corda.session.manager.impl.processor.SessionCounterpartyInfoRequestProcessorSend
+import net.corda.session.manager.impl.processor.SessionCounterpartyInfoResponseProcessorReceive
 import net.corda.session.manager.impl.processor.SessionDataProcessorReceive
 import net.corda.session.manager.impl.processor.SessionDataProcessorSend
 import net.corda.session.manager.impl.processor.SessionErrorProcessorReceive
@@ -52,8 +52,8 @@ class SessionEventProcessorFactory @Activate constructor(
             is SessionData -> SessionDataProcessorReceive(key, sessionState, sessionEvent, instant)
             is SessionClose -> SessionCloseProcessorReceive(key, sessionState, sessionEvent, instant)
             is SessionError -> SessionErrorProcessorReceive(key, sessionState, sessionEvent, payload.errorMessage, instant)
-            is SessionCounterpartyInfoRQ -> SessionCounterpartyInfoRQProcessorReceive(key, sessionState, sessionEvent, instant)
-            is SessionCounterpartyInfoRS -> SessionCounterpartyInfoRSProcessorReceive(key, sessionState, sessionEvent, instant)
+            is SessionCounterpartyInfoRequest -> SessionCounterpartyInfoRequestProcessorReceive(key, sessionState, sessionEvent, instant)
+            is SessionCounterpartyInfoResponse -> SessionCounterpartyInfoResponseProcessorReceive(key, sessionState, sessionEvent, instant)
             else -> throw NotImplementedError(
                 "The session event type '${payload.javaClass.name}' is not supported."
             )
@@ -87,7 +87,7 @@ class SessionEventProcessorFactory @Activate constructor(
             }
             is SessionClose -> SessionCloseProcessorSend(key, sessionState, sessionEvent, instant)
             is SessionError -> SessionErrorProcessorSend(key, sessionState, sessionEvent, payload.errorMessage, instant)
-            is SessionCounterpartyInfoRQ -> SessionCounterpartyInfoRQProcessorSend(sessionState, sessionEvent, instant)
+            is SessionCounterpartyInfoRequest -> SessionCounterpartyInfoRequestProcessorSend(sessionState, sessionEvent, instant)
             else -> throw NotImplementedError(
                 "The session event type '${payload.javaClass.name}' is not supported."
             )

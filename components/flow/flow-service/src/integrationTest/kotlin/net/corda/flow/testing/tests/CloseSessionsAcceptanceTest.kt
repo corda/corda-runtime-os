@@ -148,7 +148,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionCounterpartyInfoRQReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2)
+            SessionCounterpartyInfoRequestReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(INITIATED_SESSION_ID_1)))
                 .completedSuccessfullyWith("hello")
         }
@@ -169,7 +169,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionCounterpartyInfoRQReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2, requireClose = false)
+            SessionCounterpartyInfoRequestReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2, requireClose = false)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(INITIATED_SESSION_ID_1)))
                 .completedSuccessfullyWith("hello")
         }

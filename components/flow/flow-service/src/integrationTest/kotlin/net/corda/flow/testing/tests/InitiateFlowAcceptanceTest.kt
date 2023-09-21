@@ -41,7 +41,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                sessionCounterpartyInfoRQEvents(SESSION_ID_1)
+                SessionCounterpartyInfoRequestEvents(SESSION_ID_1)
             }
         }
     }
@@ -54,7 +54,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionCounterpartyInfoRSReceived(FLOW_ID1, SESSION_ID_1)
+            SessionCounterpartyInfoResponseReceived(FLOW_ID1, SESSION_ID_1)
                 .suspendsWith(FlowIORequest.CounterPartyFlowInfo(SessionInfo(SESSION_ID_1, initiatedIdentityMemberName)))
         }
 
@@ -74,7 +74,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionCounterpartyInfoRQReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL, ALICE_HOLDING_IDENTITY, BOB_HOLDING_IDENTITY, true)
+            SessionCounterpartyInfoRequestReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL, ALICE_HOLDING_IDENTITY, BOB_HOLDING_IDENTITY, true)
                 .suspendsWith(FlowIORequest.InitialCheckpoint)
                 .suspendsWith(
                     FlowIORequest.Receive(
@@ -88,7 +88,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 flowStatus(FlowStates.RUNNING)
-                sessionCounterpartyInfoRS(INITIATED_SESSION_ID_1)
+                SessionCounterpartyInfoResponse(INITIATED_SESSION_ID_1)
                 flowFiberCacheContainsKey(BOB_HOLDING_IDENTITY, INITIATED_SESSION_ID_1)
                 flowResumedWith(Unit)
             }
