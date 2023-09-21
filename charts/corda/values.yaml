@@ -384,7 +384,7 @@ bootstrap:
         validationTimeoutSeconds: 5
       # the username configuration
       username:
-        # -- the username, defaults to a value randomly-generated on install
+        # -- the username, defaults to this value
         value: "state_manager_user"
         # the username secret configuration; used in preference to value if name is set
         valueFrom:
