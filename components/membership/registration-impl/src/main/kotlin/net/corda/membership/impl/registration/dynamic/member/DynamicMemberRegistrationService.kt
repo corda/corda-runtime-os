@@ -254,6 +254,7 @@ class DynamicMemberRegistrationService @Activate constructor(
         override fun close() = Unit
     }
 
+    @SuppressWarnings("TooManyFunctions")
     private inner class ActiveImpl : InnerRegistrationService {
         @Suppress("LongMethod")
         override fun register(
