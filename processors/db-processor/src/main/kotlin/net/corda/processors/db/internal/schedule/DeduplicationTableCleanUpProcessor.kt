@@ -68,7 +68,7 @@ class DeduplicationTableCleanUpProcessor(
                 }
             }
         } catch (e: Exception) {
-            log.info("Cleaning up deduplication table for vnode: ${virtualNodeInfo.holdingIdentity.shortHash} FAILED", e)
+            log.warn("Cleaning up deduplication table for vnode: ${virtualNodeInfo.holdingIdentity.shortHash} FAILED", e)
         }
     }
 }
