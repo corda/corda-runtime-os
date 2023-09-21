@@ -9,6 +9,7 @@ import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.SyncRPCConfig
 import net.corda.rest.ResponseCode
+import net.corda.tracing.trace
 import net.corda.web.api.Endpoint
 import net.corda.web.api.HTTPMethod
 import net.corda.web.api.WebHandler
@@ -40,7 +41,7 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val webServer: WebServer,
     private val cordaAvroSerializer: CordaAvroSerializer<RESPONSE>,
-    private val cordaAvroDeserializer: CordaAvroDeserializer<REQUEST>
+    private val cordaAvroDeserializer: CordaAvroDeserializer<REQUEST>,
 ) : RPCSubscription<REQUEST, RESPONSE> {
 
     private lateinit var endpoint: Endpoint
@@ -53,7 +54,7 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val coordinator = lifecycleCoordinatorFactory.createCoordinator(subscriptionName) { _, _ -> }
 
     override fun start() {
-        registerEndpoint(rpcConfig.endpoint, processor)
+        registerEndpoint(rpcConfig.name, rpcConfig.endpoint, processor)
         coordinator.start()
         coordinator.updateStatus(LifecycleStatus.UP)
     }
@@ -69,34 +70,49 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     }
 
     private fun registerEndpoint(
+        name: String,
         rpcEndpoint: String,
-        processor: SyncRPCProcessor<REQUEST, RESPONSE>
+        processor: SyncRPCProcessor<REQUEST, RESPONSE>,
     ) {
         val server = webServer
+        val operationName = "$name Request"
 
         val webHandler = WebHandler { context ->
-            val payload = cordaAvroDeserializer.deserialize(context.bodyAsBytes())
+            trace(operationName) {
+                val payload = cordaAvroDeserializer.deserialize(context.bodyAsBytes())
 
-            if (payload != null) {
-                val serializedResponse = cordaAvroSerializer.serialize(processor.process(payload))
-                return@WebHandler if (serializedResponse != null) {
-                    context.result(serializedResponse)
-                    context
-                } else {
-                    log.warn("Response Payload was Null")
-                    context.result("Response Payload was Null")
+                if (payload == null) {
+                    log.warn("Request Payload was invalid")
+                    context.result("Request Payload was invalid")
                     context.status(ResponseCode.BAD_REQUEST)
-                    context
+                    return@trace context
                 }
-            } else {
-                log.warn("Request Payload was Null")
-                context.result("Request Payload was Null")
-                context.status(ResponseCode.INTERNAL_SERVER_ERROR)
-                return@WebHandler context
+
+
+                val response = try {
+                    processor.process(payload)
+                } catch (ex: Exception) {
+                    val errorMsg = "Failed to process RPC request for $rpcEndpoint"
+                    log.warn(errorMsg, ex)
+                    context.result(errorMsg)
+                    context.status(ResponseCode.INTERNAL_SERVER_ERROR)
+                    return@trace context
+                }
+
+                val serializedResponse = cordaAvroSerializer.serialize(response)
+                if (serializedResponse != null) {
+                    context.result(serializedResponse)
+                } else {
+                    val errorMsg = "Response Payload cannot be serialised: ${response.javaClass.name}"
+                    log.warn(errorMsg)
+                    context.result(errorMsg)
+                    context.status(ResponseCode.INTERNAL_SERVER_ERROR)
+                }
+                context
             }
         }
 
-        val addedEndpoint = Endpoint(HTTPMethod.POST, rpcEndpoint, webHandler)
+        val addedEndpoint = Endpoint(HTTPMethod.POST, rpcEndpoint, webHandler, true)
         server.registerEndpoint(addedEndpoint)
         endpoint = addedEndpoint
     }

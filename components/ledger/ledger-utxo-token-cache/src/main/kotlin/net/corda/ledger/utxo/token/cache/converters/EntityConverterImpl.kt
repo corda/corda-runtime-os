@@ -65,7 +65,8 @@ class EntityConverterImpl : EntityConverter {
             toTokenPoolKey(avroPoolKey),
             // HACK: Added for testing will be removed by CORE-5722 (ledger integration)
             null,
-            null,
+            "",
+            "",
             tokenLedgerChange.consumedTokens.map { toCachedToken(it) },
             tokenLedgerChange.producedTokens.map { toCachedToken(it) }
         )

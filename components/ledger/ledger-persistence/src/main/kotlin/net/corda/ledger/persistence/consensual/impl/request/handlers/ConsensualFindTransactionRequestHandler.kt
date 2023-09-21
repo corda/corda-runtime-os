@@ -30,7 +30,8 @@ class ConsensualFindTransactionRequestHandler(
                 EntityResponse(
                     listOfNotNull(transactionContainer)
                         .map { ByteBuffer.wrap(serializationService.serialize(it).bytes) },
-                    KeyValuePairList(emptyList())
+                    KeyValuePairList(emptyList()),
+                    null
                 )
             )
         )

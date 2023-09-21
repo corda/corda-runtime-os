@@ -7,6 +7,7 @@ import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
+import net.corda.p2p.gateway.messaging.GatewayServerConfiguration
 import net.corda.p2p.gateway.messaging.http.DynamicX509ExtendedTrustManager.Companion.createTrustManagerIfNeeded
 import net.corda.p2p.gateway.messaging.internal.CommonComponents
 import net.corda.p2p.gateway.messaging.internal.RequestListener
@@ -64,22 +65,22 @@ internal class ReconfigurableHttpServer(
             }
             @Suppress("TooGenericExceptionCaught")
             try {
-                val newServersConfiguration = newConfiguration.serversConfiguration.groupBy {
+                val newServersConfiguration = newConfiguration.serversConfiguration.groupingBy {
                     ServerKey(it.hostAddress, it.hostPort)
-                }.mapValues { (_, configurations) ->
-                    val first = configurations.first()
-                    val others = configurations.drop(1)
-                        .map { config ->
-                            config.urlPath
-                        }
-                    if (others.isNotEmpty()) {
-                        logger.warn(
-                            "Can not define two servers on ${first.hostAddress}:${first.hostPort}." +
-                                " Will ignore $others and use only ${first.urlPath}",
+                }.fold(
+                    initialValueSelector = { key, _ ->
+                        GatewayServerConfiguration(
+                            hostAddress = key.hostAddress,
+                            hostPort = key.hostPort,
+                            urlPaths = emptySet()
+                        )
+                    },
+                    operation = { _, soFar, config ->
+                        config.copy(
+                            urlPaths = soFar.urlPaths + config.urlPaths
                         )
                     }
-                    first
-                }
+                )
                 if (newServersConfiguration.isEmpty()) {
                     throw IllegalArgumentException("No servers defined!")
                 }
@@ -96,10 +97,12 @@ internal class ReconfigurableHttpServer(
                     newServersConfiguration.forEach { (key, serverConfiguration) ->
                         httpServers.compute(key) { _, oldServer ->
                             oldServer?.close()
-                            logger.info(
-                                "New server configuration, ${dominoTile.coordinatorName} will be connected to " +
-                                    "${serverConfiguration.hostAddress}:${serverConfiguration.hostPort}${serverConfiguration.urlPath}",
-                            )
+                            serverConfiguration.urlPaths.forEach { urlPath ->
+                                logger.info(
+                                    "New server configuration, ${dominoTile.coordinatorName} will be connected to " +
+                                            "${serverConfiguration.hostAddress}:${serverConfiguration.hostPort}$urlPath",
+                                )
+                            }
                             HttpServer(
                                 listener,
                                 newConfiguration.maxRequestSize,
