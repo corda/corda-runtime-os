@@ -53,7 +53,7 @@ class OutputAssertionsImpl(
 
     }
 
-    override fun SessionCounterpartyInfoResponse(
+    override fun sessionCounterpartyInfoResponse(
         vararg sessionIds: String,
         initiatingIdentity: HoldingIdentity?,
         initiatedIdentity: HoldingIdentity?,

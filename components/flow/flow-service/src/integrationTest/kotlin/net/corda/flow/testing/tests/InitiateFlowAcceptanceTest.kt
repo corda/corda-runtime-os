@@ -88,7 +88,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 flowStatus(FlowStates.RUNNING)
-                SessionCounterpartyInfoResponse(INITIATED_SESSION_ID_1)
+                sessionCounterpartyInfoResponse(INITIATED_SESSION_ID_1)
                 flowFiberCacheContainsKey(BOB_HOLDING_IDENTITY, INITIATED_SESSION_ID_1)
                 flowResumedWith(Unit)
             }
