@@ -13,9 +13,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 class HSQLHelper : DbUtilsHelper {
-    override fun isInMemory(): Boolean = true
-
-    override fun getDatabase(): String = ""
+      override fun getDatabase(): String = ""
 
     override fun getAdminUser() = "sa"
 

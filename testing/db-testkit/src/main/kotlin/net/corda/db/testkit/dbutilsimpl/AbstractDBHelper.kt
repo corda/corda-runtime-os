@@ -1,5 +1,6 @@
 package net.corda.db.testkit.dbutilsimpl
 
+import net.corda.db.testkit.dbutilsimpl.DbUtilsHelperFunctions.getPropertyNonBlank
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.DdlManage
 import net.corda.orm.EntityManagerConfiguration
@@ -28,13 +29,6 @@ abstract class AbstractDBHelper : DbUtilsHelper {
         const val DB_ADMIN_USER_PROPERTY = "databaseAdminUser"
         const val DB_ADMIN_PASSWORD_PROPERTY = "databaseAdminPassword"
     }
-    abstract override fun isInMemory(): Boolean
-
-    abstract override fun getDatabase(): String
-
-    abstract override fun getAdminUser(): String
-
-    abstract override fun getAdminPassword(): String
 
     abstract val port: String
 

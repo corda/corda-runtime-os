@@ -26,7 +26,7 @@ object DbUtils {
         DatabaseType.HSQL -> HSQLHelper()
     }
 
-    val isInMemory = utilsHelper.isInMemory()
+    val isInMemory = databaseType == DatabaseType.HSQL
 
     fun getDatabase() = utilsHelper.getDatabase()
 

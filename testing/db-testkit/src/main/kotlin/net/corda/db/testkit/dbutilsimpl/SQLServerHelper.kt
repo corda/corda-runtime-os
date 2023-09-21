@@ -4,6 +4,7 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.db.core.CloseableDataSource
+import net.corda.db.testkit.dbutilsimpl.DbUtilsHelperFunctions.getPropertyNonBlank
 import net.corda.schema.configuration.DatabaseConfig
 import net.corda.test.util.LoggingUtils.emphasise
 import org.slf4j.Logger
@@ -14,9 +15,7 @@ import java.sql.Connection
 class SQLServerHelper : AbstractDBHelper() {
     private val logger: Logger = LoggerFactory.getLogger(this::class.java)
 
-    override fun isInMemory() = false
-
-    override fun getDatabase() = getPropertyNonBlank(DBNAME_PROPERTY, "master")
+      override fun getDatabase() = getPropertyNonBlank(DBNAME_PROPERTY, "master")
 
     override fun getAdminUser() = getPropertyNonBlank(DB_ADMIN_USER_PROPERTY, "sa")
 
