@@ -42,14 +42,13 @@ val DATA_MESSAGE_1 = byteArrayOf(1)
 val DATA_MESSAGE_2 = byteArrayOf(2)
 val CPK1_CHECKSUM = SecureHashImpl("ALG", byteArrayOf(0, 0, 0, 0))
 
-
 val SESSION_PROPERTIES = KeyValueStore().apply {
     put(Constants.FLOW_PROTOCOL, PROTOCOL)
     put(Constants.FLOW_PROTOCOL_VERSIONS_SUPPORTED, "1")
     put(Constants.FLOW_SESSION_REQUIRE_CLOSE, "true")
 }.avro
 
-val SESSION_INIT = SessionInit.newBuilder()
+val SESSION_INIT: SessionInit = SessionInit.newBuilder()
     .setFlowId(null)
     .setCpiId(CPI1)
     .setContextPlatformProperties(emptyKeyValuePairList())
