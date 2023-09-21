@@ -33,9 +33,9 @@ class SessionCounterpartyInfoResponseProcessorReceiveTest {
             SessionCounterpartyInfoResponse(),
             contextSessionProps = sessionProps
         )
-        val SessionCounterpartyInfoResponseProcessorReceived =
+        val sessionCounterpartyInfoResponseProcessorReceived =
             SessionCounterpartyInfoResponseProcessorReceive("key", inputState, event, Instant.now())
-        val sessionState = SessionCounterpartyInfoResponseProcessorReceived.execute()
+        val sessionState = sessionCounterpartyInfoResponseProcessorReceived.execute()
 
         val messagesToSend = sessionState.receivedEventsState.undeliveredMessages
         assertThat(messagesToSend).isEmpty()
@@ -51,8 +51,13 @@ class SessionCounterpartyInfoResponseProcessorReceiveTest {
             SessionCounterpartyInfoResponse(),
             contextSessionProps = emptyKeyValuePairList()
         )
-        val SessionCounterpartyInfoResponseProcessorReceived = SessionCounterpartyInfoResponseProcessorReceive("key", null, event,  Instant.now())
-        val sessionState = SessionCounterpartyInfoResponseProcessorReceived.execute()
+        val sessionCounterpartyInfoResponseProcessorReceived = SessionCounterpartyInfoResponseProcessorReceive(
+            "key",
+            null,
+            event,
+            Instant.now()
+        )
+        val sessionState = sessionCounterpartyInfoResponseProcessorReceived.execute()
 
         val messagesToSend = sessionState.sendEventsState.undeliveredMessages
         assertThat(sessionState.status).isEqualTo(SessionStateType.ERROR)

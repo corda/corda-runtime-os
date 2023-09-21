@@ -29,9 +29,15 @@ class SessionCounterpartyInfoRequestProcessorReceive(
 
     override fun execute(): SessionState {
         return if (sessionState == null) {
-            val errorMessage = "Received SessionCounterpartyInfoRequest on key $key for sessionId ${sessionEvent.sessionId} which had null state"
+            val errorMessage = "Received SessionCounterpartyInfoRequest on key $key for " +
+                    "sessionId ${sessionEvent.sessionId} which had null state"
             logger.debug { errorMessage }
-            generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, "SessionCounterpartyInfoRequest-NullState", instant)
+            generateErrorSessionStateFromSessionEvent(
+                errorMessage,
+                sessionEvent,
+                "SessionCounterpartyInfoRequest-NullState",
+                instant
+            )
         } else {
             logger.trace {
                 "Received SessionCounterpartyInfoRequest on key $key for session state: $sessionState"

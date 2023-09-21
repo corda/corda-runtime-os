@@ -17,7 +17,7 @@ class SessionCounterpartyInfoRequestProcessorSendTest {
 
     @Test
     fun `Send session CounterpartyInfoRQ`() {
-        val SessionCounterpartyInfoRequest = buildSessionEvent(
+        val sessionCounterpartyInfoRequest = buildSessionEvent(
             MessageDirection.OUTBOUND,
             "sessionId",
             1,
@@ -26,7 +26,7 @@ class SessionCounterpartyInfoRequestProcessorSendTest {
         )
 
         val sessionState = buildSessionState(SessionStateType.CREATED, 0, emptyList(), 0 , emptyList())
-        val sessionInitProcessor = SessionCounterpartyInfoRequestProcessorSend(sessionState, SessionCounterpartyInfoRequest, Instant.now())
+        val sessionInitProcessor = SessionCounterpartyInfoRequestProcessorSend(sessionState, sessionCounterpartyInfoRequest, Instant.now())
 
         val updatedSessionState = sessionInitProcessor.execute()
 
@@ -35,6 +35,6 @@ class SessionCounterpartyInfoRequestProcessorSendTest {
 
         val sendEvents = updatedSessionState.sendEventsState
         assertThat(sendEvents.undeliveredMessages.size).isEqualTo(1)
-        assertThat(sendEvents.undeliveredMessages.first()).isEqualTo(SessionCounterpartyInfoRequest)
+        assertThat(sendEvents.undeliveredMessages.first()).isEqualTo(sessionCounterpartyInfoRequest)
     }
 }
