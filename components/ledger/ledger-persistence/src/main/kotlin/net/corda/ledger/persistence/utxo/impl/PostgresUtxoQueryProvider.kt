@@ -61,6 +61,7 @@ class PostgresUtxoQueryProvider @Activate constructor(
                 :leafIndex, 
                 CAST(:custom_representation as JSONB), 
                 :createdAt, 
+                
                 ${if (consumed) ":consumedAt" else "null"}
             ) ON CONFLICT DO NOTHING"""
             .trimIndent()
