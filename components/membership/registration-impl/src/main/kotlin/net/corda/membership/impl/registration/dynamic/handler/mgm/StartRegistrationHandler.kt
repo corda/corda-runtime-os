@@ -24,6 +24,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTI
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS
@@ -191,7 +192,7 @@ internal class StartRegistrationHandler(
                         it.key.startsWith(SESSION_KEYS) ||
                         it.key.startsWith(LEDGER_KEYS) ||
                         it.key.startsWith(ROLES_PREFIX) ||
-                        it.key.startsWith("corda.notary")
+                        it.key.startsWith(NOTARY_SERVICE_PREFIX)
                     }
                 validateRegistrationRequest(
                     diff.isEmpty()

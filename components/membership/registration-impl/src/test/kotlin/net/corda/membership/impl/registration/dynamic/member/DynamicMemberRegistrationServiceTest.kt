@@ -56,10 +56,12 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_SIGNATU
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEYS_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_ID
@@ -148,6 +150,8 @@ class DynamicMemberRegistrationServiceTest {
         const val LEDGER_KEY_ID = "BBC123456789"
         const val NOTARY_KEY = "2020"
         const val NOTARY_KEY_ID = "CBC123456789"
+        const val NOTARY_REREG_KEY = "3030"
+        const val NOTARY_REREG_KEY_ID = "DBC123456789"
         const val TEST_KEY = "9999"
         const val TEST_KEY_ID = "DDD123456789"
         const val PUBLISHER_CLIENT_ID = "dynamic-member-registration-service"
@@ -158,7 +162,7 @@ class DynamicMemberRegistrationServiceTest {
         val UNAUTH_REQUEST_BYTES = "4444".toByteArray()
         const val SESSION_KEY_ID_KEY = "corda.session.keys.0.id"
         const val LEDGER_KEY_ID_KEY = "corda.ledger.keys.0.id"
-        const val NOTARY_KEY_ID_KEY = "corda.notary.keys.0.id"
+        val NOTARY_KEY_ID_KEY = NOTARY_KEYS_ID.format(0)
     }
 
     private val ecdhKey: PublicKey = mock()
@@ -208,9 +212,18 @@ class DynamicMemberRegistrationServiceTest {
     private val notaryKey: PublicKey = mock {
         on { encoded } doReturn NOTARY_KEY.toByteArray()
     }
+    private val notaryReRegKey: PublicKey = mock {
+        on { encoded } doReturn NOTARY_REREG_KEY.toByteArray()
+    }
     private val notaryCryptoSigningKey: CryptoSigningKey = mock {
         on { publicKey } doReturn ByteBuffer.wrap(NOTARY_KEY.toByteArray())
         on { id } doReturn NOTARY_KEY_ID
+        on { schemeCodeName } doReturn ECDSA_SECP256R1_CODE_NAME
+        on { category } doReturn NOTARY
+    }
+    private val notaryReregCryptoSigningKey: CryptoSigningKey = mock {
+        on { publicKey } doReturn ByteBuffer.wrap(NOTARY_REREG_KEY.toByteArray())
+        on { id } doReturn NOTARY_REREG_KEY_ID
         on { schemeCodeName } doReturn ECDSA_SECP256R1_CODE_NAME
         on { category } doReturn NOTARY
     }
@@ -229,6 +242,7 @@ class DynamicMemberRegistrationServiceTest {
         on { decodePublicKey(SESSION_KEY) } doReturn sessionKey
         on { decodePublicKey(LEDGER_KEY.toByteArray()) } doReturn ledgerKey
         on { decodePublicKey(NOTARY_KEY.toByteArray()) } doReturn notaryKey
+        on { decodePublicKey(NOTARY_REREG_KEY.toByteArray()) } doReturn notaryReRegKey
         on { decodePublicKey(TEST_KEY.toByteArray()) } doReturn testKey
 
         on { encodeAsString(any()) } doReturn SESSION_KEY
@@ -245,6 +259,13 @@ class DynamicMemberRegistrationServiceTest {
         on { lookupKeysByIds(memberId.value, listOf(ShortHash.of(SESSION_KEY_ID))) } doReturn listOf(sessionCryptoSigningKey)
         on { lookupKeysByIds(memberId.value, listOf(ShortHash.of(LEDGER_KEY_ID))) } doReturn listOf(ledgerCryptoSigningKey)
         on { lookupKeysByIds(memberId.value, listOf(ShortHash.of(NOTARY_KEY_ID))) } doReturn listOf(notaryCryptoSigningKey)
+        on { lookupKeysByIds(memberId.value, listOf(ShortHash.of(NOTARY_REREG_KEY_ID))) } doReturn listOf(notaryReregCryptoSigningKey)
+        on {
+            lookupKeysByIds(
+                memberId.value,
+                listOf(ShortHash.of(NOTARY_KEY_ID), ShortHash.of(NOTARY_REREG_KEY_ID))
+            )
+        } doReturn listOf(notaryCryptoSigningKey, notaryReregCryptoSigningKey)
         on {
             sign(
                 any(),
@@ -1096,7 +1117,7 @@ class DynamicMemberRegistrationServiceTest {
                 on { entries } doReturn previousRegistrationContext.entries + mapOf(
                     String.format(ROLES_PREFIX, 0) to "notary",
                     NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
-                    NOTARY_KEY_ID_KEY to NOTARY_KEY_ID,
+                    NOTARY_KEY_PEM.format(0) to NOTARY_KEY,
                 ).entries
             }
             val newContext = mock<MemberContext> {
@@ -1591,6 +1612,143 @@ class DynamicMemberRegistrationServiceTest {
             assertDoesNotThrow {
                 registrationService.register(registrationResultId, member, testProperties)
             }
+        }
+
+        @Test
+        fun `notary key can be rotated during reregistration`() {
+            val previousMemberContext = previousRegistrationContext.entries + mapOf(
+                "$ROLES_PREFIX.0" to "notary",
+                NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
+                NOTARY_SERVICE_PROTOCOL to "NotaryProtocol",
+                NOTARY_KEY_PEM.format(0) to NOTARY_KEY,
+                NOTARY_KEY_HASH.format(0) to notaryKey.fullIdHash().toString(),
+                NOTARY_KEY_SPEC.format(0) to SignatureSpecs.ECDSA_SHA512.signatureName,
+            ).entries
+            val previous = mock<MemberContext> {
+                on { entries } doReturn previousMemberContext
+            }
+
+            whenever(memberInfo.memberProvidedContext).doReturn(previous)
+            whenever(groupReader.lookup(eq(memberName), any())).doReturn(memberInfo)
+
+            postConfigChangedEvent()
+            registrationService.start()
+
+            val newContext = context + mapOf(
+                NOTARY_KEY_ID_KEY to NOTARY_REREG_KEY_ID,
+                NOTARY_KEY_SPEC.format(0) to SignatureSpecs.ECDSA_SHA512.signatureName,
+                "$ROLES_PREFIX.0" to "notary",
+                NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
+                NOTARY_SERVICE_PROTOCOL to "NotaryProtocol"
+            )
+            assertDoesNotThrow {
+                registrationService.register(registrationResultId, member, newContext)
+            }
+        }
+
+        @Test
+        fun `notary key can be added during reregistration`() {
+            val previousMemberContext = previousRegistrationContext.entries + mapOf(
+                "$ROLES_PREFIX.0" to "notary",
+                NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
+                NOTARY_SERVICE_PROTOCOL to "NotaryProtocol",
+                NOTARY_KEY_PEM.format(0) to NOTARY_KEY,
+                NOTARY_KEY_HASH.format(0) to notaryKey.fullIdHash().toString(),
+                NOTARY_KEY_SPEC.format(0) to SignatureSpecs.ECDSA_SHA512.signatureName,
+            ).entries
+            val previous = mock<MemberContext> {
+                on { entries } doReturn previousMemberContext
+            }
+
+            whenever(memberInfo.memberProvidedContext).doReturn(previous)
+            whenever(groupReader.lookup(eq(memberName), any())).doReturn(memberInfo)
+
+            postConfigChangedEvent()
+            registrationService.start()
+
+            val newContext = context + mapOf(
+                NOTARY_KEYS_ID.format(0) to NOTARY_KEY_ID,
+                NOTARY_KEY_SPEC.format(0) to SignatureSpecs.ECDSA_SHA512.signatureName,
+                NOTARY_KEYS_ID.format(1) to NOTARY_REREG_KEY_ID,
+                NOTARY_KEY_SPEC.format(1) to SignatureSpecs.ECDSA_SHA512.signatureName,
+                "$ROLES_PREFIX.0" to "notary",
+                NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
+                NOTARY_SERVICE_PROTOCOL to "NotaryProtocol"
+            )
+            assertDoesNotThrow {
+                registrationService.register(registrationResultId, member, newContext)
+            }
+        }
+
+        @Test
+        fun `notary key can be removed during reregistration`() {
+            val previousMemberContext = previousRegistrationContext.entries + mapOf(
+                "$ROLES_PREFIX.0" to "notary",
+                NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
+                NOTARY_SERVICE_PROTOCOL to "NotaryProtocol",
+                NOTARY_KEY_PEM.format(0) to NOTARY_KEY,
+                NOTARY_KEY_HASH.format(0) to notaryKey.fullIdHash().toString(),
+                NOTARY_KEY_SPEC.format(0) to SignatureSpecs.ECDSA_SHA512.signatureName,
+                NOTARY_KEY_PEM.format(1) to NOTARY_REREG_KEY,
+                NOTARY_KEY_HASH.format(1) to notaryReRegKey.fullIdHash().toString(),
+                NOTARY_KEY_SPEC.format(1) to SignatureSpecs.ECDSA_SHA512.signatureName,
+            ).entries
+            val previous = mock<MemberContext> {
+                on { entries } doReturn previousMemberContext
+            }
+
+            whenever(memberInfo.memberProvidedContext).doReturn(previous)
+            whenever(groupReader.lookup(eq(memberName), any())).doReturn(memberInfo)
+
+            postConfigChangedEvent()
+            registrationService.start()
+
+            val newContext = context + mapOf(
+                NOTARY_KEYS_ID.format(0) to NOTARY_REREG_KEY_ID,
+                NOTARY_KEY_SPEC.format(0) to SignatureSpecs.ECDSA_SHA512.signatureName,
+                "$ROLES_PREFIX.0" to "notary",
+                NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
+                NOTARY_SERVICE_PROTOCOL to "NotaryProtocol"
+            )
+            assertDoesNotThrow {
+                registrationService.register(registrationResultId, member, newContext)
+            }
+        }
+
+        @Test
+        fun `notary service info cannot be rotated during reregistration`() {
+            val previousMemberContext = previousRegistrationContext.entries + mapOf(
+                "$ROLES_PREFIX.0" to "notary",
+                NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
+                NOTARY_SERVICE_PROTOCOL to "NotaryProtocol",
+                NOTARY_KEY_PEM.format(0) to NOTARY_KEY,
+                NOTARY_KEY_HASH.format(0) to notaryKey.fullIdHash().toString(),
+                NOTARY_KEY_SPEC.format(0) to SignatureSpecs.ECDSA_SHA512.signatureName,
+            ).entries
+            val previous = mock<MemberContext> {
+                on { entries } doReturn previousMemberContext
+            }
+
+            whenever(memberInfo.memberProvidedContext).doReturn(previous)
+            whenever(groupReader.lookup(eq(memberName), any())).doReturn(memberInfo)
+
+            postConfigChangedEvent()
+            registrationService.start()
+
+            val newContext = context + mapOf(
+                NOTARY_KEY_ID_KEY to NOTARY_KEY_ID,
+                NOTARY_KEY_SPEC.format(0) to SignatureSpecs.ECDSA_SHA512.signatureName,
+                "$ROLES_PREFIX.0" to "notary",
+                NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB, OU=Different",
+                NOTARY_SERVICE_PROTOCOL to "DifferentNotaryProtocol"
+            )
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, newContext)
+            }
+            assertThat(exception.message)
+                .contains(NOTARY_SERVICE_NAME)
+                .contains(NOTARY_SERVICE_PROTOCOL)
+                .contains("cannot be added, removed or updated during re-registration")
         }
     }
 

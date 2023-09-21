@@ -139,14 +139,15 @@ class MemberInfoExtension {
         /**
          * Notary role properties
          */
-        const val NOTARY_KEYS = "corda.notary.keys"
-        const val NOTARY_SERVICE_NAME = "corda.notary.service.name"
-        const val NOTARY_SERVICE_PROTOCOL = "corda.notary.service.flow.protocol.name"
-        const val NOTARY_SERVICE_PROTOCOL_VERSIONS = "corda.notary.service.flow.protocol.version.%s"
-        const val NOTARY_KEYS_ID = "corda.notary.keys.%s.id"
-        const val NOTARY_KEY_PEM = "corda.notary.keys.%s.pem"
-        const val NOTARY_KEY_HASH = "corda.notary.keys.%s.hash"
-        const val NOTARY_KEY_SPEC = "corda.notary.keys.%s.signature.spec"
+        const val NOTARY_KEYS_PREFIX = "corda.notary.keys"
+        const val NOTARY_SERVICE_PREFIX = "corda.notary.service"
+        const val NOTARY_SERVICE_NAME = "$NOTARY_SERVICE_PREFIX.name"
+        const val NOTARY_SERVICE_PROTOCOL = "$NOTARY_SERVICE_PREFIX.flow.protocol.name"
+        const val NOTARY_SERVICE_PROTOCOL_VERSIONS = "$NOTARY_SERVICE_PREFIX.flow.protocol.version.%s"
+        const val NOTARY_KEYS_ID = "$NOTARY_KEYS_PREFIX.%s.id"
+        const val NOTARY_KEY_PEM = "$NOTARY_KEYS_PREFIX.%s.pem"
+        const val NOTARY_KEY_HASH = "$NOTARY_KEYS_PREFIX.%s.hash"
+        const val NOTARY_KEY_SPEC = "$NOTARY_KEYS_PREFIX.%s.signature.spec"
 
         /** Key name for TLS certificate subject. */
         const val TLS_CERTIFICATE_SUBJECT = "corda.tls.certificate.subject"
@@ -294,7 +295,7 @@ class MemberInfoExtension {
          * added notary key. Might be an empty list if the member is not a notary VNode.
          */
         @JvmStatic
-        val MemberInfo.notaryKeys: List<PublicKey> get() = memberProvidedContext.parseList(NOTARY_KEYS)
+        val MemberInfo.notaryKeys: List<PublicKey> get() = memberProvidedContext.parseList(NOTARY_KEYS_PREFIX)
 
         private fun MemberInfo.getOrCalculateKeyHashes(
             key: String,

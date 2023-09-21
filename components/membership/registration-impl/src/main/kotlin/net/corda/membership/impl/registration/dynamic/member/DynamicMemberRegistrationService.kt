@@ -2,9 +2,6 @@ package net.corda.membership.impl.registration.dynamic.member
 
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
-import java.nio.ByteBuffer
-import java.security.PublicKey
-import java.util.UUID
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
@@ -36,6 +33,7 @@ import net.corda.data.p2p.app.OutboundUnauthenticatedMessage
 import net.corda.data.p2p.app.OutboundUnauthenticatedMessageHeader
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.platform.PlatformInfoProvider
+import net.corda.libs.platform.PlatformVersion.CORDA_5_1
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -60,6 +58,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
@@ -116,6 +115,9 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
+import java.security.PublicKey
+import java.util.UUID
 
 @Suppress("LongParameterList")
 @Component(service = [MemberRegistrationService::class])
@@ -454,9 +456,9 @@ class DynamicMemberRegistrationService @Activate constructor(
                     it.key.startsWith(SESSION_KEYS) ||
                     it.key.startsWith(LEDGER_KEYS) ||
                     it.key.startsWith(ROLES_PREFIX) ||
-                    it.key.startsWith("corda.notary")
+                    it.key.startsWith(NOTARY_SERVICE_PREFIX)
                 }.apply {
-                    require(isEmpty()) {
+                    if (isNotEmpty()) {
                         throw InvalidMembershipRegistrationException(
                             "Fields ${this.map { it.key }} cannot be added, removed or updated during re-registration."
                         )
@@ -478,7 +480,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             currentSerial: Long?,
             mgmPlatformVersion: Int,
         ) {
-            if ((submittedSerial > 0 || (currentSerial != null && currentSerial > 0)) && mgmPlatformVersion < 50100) {
+            if ((submittedSerial > 0 || (currentSerial != null && currentSerial > 0)) && mgmPlatformVersion < CORDA_5_1.value) {
                 throw InvalidMembershipRegistrationException("MGM is on a lower version where re-registration " +
                         "is not supported.")
             }
