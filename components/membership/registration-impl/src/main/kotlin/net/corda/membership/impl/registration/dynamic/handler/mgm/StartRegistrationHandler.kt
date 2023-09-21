@@ -173,8 +173,8 @@ internal class StartRegistrationHandler(
                 }
                 validateRegistrationRequest(activeOrSuspendedInfo!!.serial <= registrationRequest.serial!!) {
                     "Registration request was submitted for an older version of member info. " +
-                            "The submitted serial was ${registrationRequest.serial}, but the latest serial is ${activeOrSuspendedInfo.serial}. " +
-                            "Please submit a new request with an up-to-date serial number."
+                    "The submitted serial was ${registrationRequest.serial}, but the latest serial is ${activeOrSuspendedInfo.serial}. " +
+                    "Please submit a new request with an up-to-date serial number."
                 }
             } else if (registrationRequest.serial!! == 0L) { // initial registration
                 validateRegistrationRequest(activeOrSuspendedInfo == null) {
