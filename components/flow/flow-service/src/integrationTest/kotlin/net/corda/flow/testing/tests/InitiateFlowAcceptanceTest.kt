@@ -41,7 +41,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                SessionCounterpartyInfoRequestEvents(SESSION_ID_1)
+                sessionCounterpartyInfoRequestEvents(SESSION_ID_1)
             }
         }
     }
