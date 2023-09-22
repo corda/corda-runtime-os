@@ -57,18 +57,18 @@ class MessageBusConsumerTest {
 
     @Test
     fun testCommitAsyncOffsets() {
-        mediatorConsumer.commitAsyncOffsets()
+        mediatorConsumer.asyncCommitOffsets()
 
-        verify(cordaConsumer).commitAsyncOffsets(any())
+        verify(cordaConsumer).asyncCommitOffsets(any())
     }
 
     @Test
     fun testCommitAsyncOffsetsWithError() {
-        doThrow(CordaRuntimeException("")).whenever(cordaConsumer).commitAsyncOffsets(any())
+        doThrow(CordaRuntimeException("")).whenever(cordaConsumer).asyncCommitOffsets(any())
 
         assertThrows<CordaRuntimeException> {
             runBlocking {
-                mediatorConsumer.commitAsyncOffsets().await()
+                mediatorConsumer.asyncCommitOffsets().await()
             }
         }
     }

@@ -180,19 +180,19 @@ class CordaKafkaConsumerImplTest {
     }
 
     @Test
-    fun testCommitAsyncOffsets() {
+    fun testAsyncCommitOffsets() {
         val callback = mock<CordaConsumer.Callback>()
         assertThat(consumer.committed(setOf(partition))).isEmpty()
 
         cordaKafkaConsumer.poll(Duration.ZERO)
-        cordaKafkaConsumer.commitAsyncOffsets(callback)
+        cordaKafkaConsumer.asyncCommitOffsets(callback)
 
         val committedPositionAfterPoll = consumer.committed(setOf(partition))
         assertThat(committedPositionAfterPoll.values.first().offset()).isEqualTo(numberOfRecords)
     }
 
     @Test
-    fun testCommitAsyncOffsetsException() {
+    fun testAsyncCommitOffsetsException() {
         consumer = mock()
         cordaKafkaConsumer = createConsumer(consumer)
         val exception = CommitFailedException()
@@ -203,7 +203,7 @@ class CordaKafkaConsumerImplTest {
         }.whenever(consumer).commitAsync(any())
         val callback = mock<CordaConsumer.Callback>()
 
-        cordaKafkaConsumer.commitAsyncOffsets(callback)
+        cordaKafkaConsumer.asyncCommitOffsets(callback)
 
         verify(consumer, times(1)).commitAsync(any())
         verify(callback, times(1)).onCompletion(any(), eq(exception))
@@ -214,7 +214,7 @@ class CordaKafkaConsumerImplTest {
         val consumerRecord = CordaConsumerRecord(eventTopic, 1, 5L, "", "value", 0)
         assertThat(consumer.committed(setOf(partition))).isEmpty()
 
-        cordaKafkaConsumer.commitSyncOffsets(consumerRecord, "meta data")
+        cordaKafkaConsumer.syncCommitOffsets(consumerRecord, "meta data")
 
         val committedPositionAfterCommit = consumer.committed(setOf(partition))
         assertThat(committedPositionAfterCommit.values.first().offset()).isEqualTo(6)
@@ -228,7 +228,7 @@ class CordaKafkaConsumerImplTest {
         val consumerRecord = CordaConsumerRecord(eventTopic, 1, 5L, "", "value", 0)
         doThrow(CommitFailedException()).whenever(consumer).commitSync(anyMap())
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
-            cordaKafkaConsumer.commitSyncOffsets(consumerRecord, "meta data")
+            cordaKafkaConsumer.syncCommitOffsets(consumerRecord, "meta data")
         }
         verify(consumer, times(1)).commitSync(anyMap())
     }
