@@ -1,7 +1,7 @@
 package net.corda.session.manager.impl.processor
 
 import net.corda.data.flow.event.MessageDirection
-import net.corda.data.flow.event.session.SessionConfirm
+import net.corda.data.flow.event.session.SessionCounterpartyInfoResponse
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.utils.KeyValueStore
@@ -13,7 +13,7 @@ import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.time.Instant
-class SessionConfirmProcessorReceiveTest {
+class SessionCounterpartyInfoResponseProcessorReceiveTest {
 
     private val sessionProps = KeyValueStore().apply {
         put(FLOW_PROTOCOL, "protocol")
@@ -21,7 +21,7 @@ class SessionConfirmProcessorReceiveTest {
     }.avro
 
     @Test
-    fun `receiving a confirm message with properties stores them in the session state`() {
+    fun `receiving a SessionCounterpartyInfoResponse message with properties stores them in the session state`() {
         val inputState = buildSessionState(
             SessionStateType.CONFIRMED, 0, mutableListOf(), 1, mutableListOf()
         )
@@ -30,12 +30,12 @@ class SessionConfirmProcessorReceiveTest {
             MessageDirection.INBOUND,
             "sessionId",
             1,
-            SessionConfirm(),
+            SessionCounterpartyInfoResponse(),
             contextSessionProps = sessionProps
         )
-        val sessionConfirmProcessorReceived =
-            SessionConfirmProcessorReceive("key", inputState, event, Instant.now())
-        val sessionState = sessionConfirmProcessorReceived.execute()
+        val sessionCounterpartyInfoResponseProcessorReceived =
+            SessionCounterpartyInfoResponseProcessorReceive("key", inputState, event, Instant.now())
+        val sessionState = sessionCounterpartyInfoResponseProcessorReceived.execute()
 
         val messagesToSend = sessionState.receivedEventsState.undeliveredMessages
         assertThat(messagesToSend).isEmpty()
@@ -48,11 +48,16 @@ class SessionConfirmProcessorReceiveTest {
             MessageDirection.OUTBOUND,
             "sessionId",
             1,
-            SessionConfirm(),
+            SessionCounterpartyInfoResponse(),
             contextSessionProps = emptyKeyValuePairList()
         )
-        val sessionConfirmProcessorReceived = SessionConfirmProcessorReceive("key", null, event,  Instant.now())
-        val sessionState = sessionConfirmProcessorReceived.execute()
+        val sessionCounterpartyInfoResponseProcessorReceived = SessionCounterpartyInfoResponseProcessorReceive(
+            "key",
+            null,
+            event,
+            Instant.now()
+        )
+        val sessionState = sessionCounterpartyInfoResponseProcessorReceived.execute()
 
         val messagesToSend = sessionState.sendEventsState.undeliveredMessages
         assertThat(sessionState.status).isEqualTo(SessionStateType.ERROR)

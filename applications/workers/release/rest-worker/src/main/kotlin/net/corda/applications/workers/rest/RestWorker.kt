@@ -3,7 +3,7 @@ package net.corda.applications.workers.rest
 import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.JavaSerialisationFilter
-import net.corda.applications.workers.workercommon.PathAndConfig
+import net.corda.applications.workers.workercommon.WorkerHelpers
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
@@ -18,6 +18,7 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.rest.RestProcessor
 import net.corda.schema.configuration.BootConfig
+import net.corda.schema.configuration.BootConfig.BOOT_REST
 import net.corda.schema.configuration.BootConfig.BOOT_REST_TLS_CRT_PATH
 import net.corda.schema.configuration.BootConfig.BOOT_REST_TLS_KEYSTORE_FILE_PATH
 import net.corda.tracing.configureTracing
@@ -73,12 +74,12 @@ class RestWorker @Activate constructor(
 
         configureTracing("REST Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
 
-        val restConfig = PathAndConfig(BootConfig.BOOT_REST, params.restParams)
         val config = getBootstrapConfig(
                 secretsServiceFactoryResolver,
                 params.defaultParams,
                 configurationValidatorFactory.createConfigValidator(),
-                listOf(restConfig))
+                listOf(WorkerHelpers.createConfigFromParams(BOOT_REST, params.restParams))
+        )
 
         processor.start(config)
     }

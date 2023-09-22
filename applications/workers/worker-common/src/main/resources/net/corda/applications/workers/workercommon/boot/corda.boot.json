@@ -32,44 +32,28 @@
     "db": {
       "description": "Configuration options related to database.",
       "properties": {
-        "database" : {
-              "description": "Database params",
+        "database": {
+          "description": "Database params",
+          "properties": {
+            "jdbc": {
+              "description": "The JDBC database info",
               "properties": {
-                "jdbc": {
-                  "description": "The JDBC database info",
-                  "properties": {
-                    "url": {
-                      "description": "The JDBC URL used by the db worker",
-                      "type": [
-                        "string",
-                        "null"
-                      ]
-                    },
-                    "url_messagebus": {
-                      "description": "The JDBC URL for the message bus if the bus is backed by a DB",
-                      "type": [
-                        "string",
-                        "null"
-                      ]
-                    },
-                    "directory" : {
-                      "description": "The JDBC directory",
-                      "type": [
-                        "string",
-                        "null"
-                      ]
-                    }
-                  }
-                },
-                "user": {
-                  "description": "Cluster admin username to connect to the database with.",
+                "url": {
+                  "description": "The JDBC URL used by the db worker",
                   "type": [
                     "string",
                     "null"
                   ]
                 },
-                "pass": {
-                  "description": "Cluster admin password to connect to the database with.",
+                "url_messagebus": {
+                  "description": "The JDBC URL for the message bus if the bus is backed by a DB",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "directory": {
+                  "description": "The JDBC directory",
                   "type": [
                     "string",
                     "null"
@@ -77,10 +61,26 @@
                 }
               }
             },
+            "user": {
+              "description": "Cluster admin username to connect to the database with.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "pass": {
+              "description": "Cluster admin password to connect to the database with.",
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
         "bus": {
           "description": "Details about the bus type if it is backed by a DB",
           "properties": {
-            "busType" : {
+            "busType": {
               "description": "The type of DB message bus. e.g INMEMORY or DATABASE",
               "type": [
                 "string",
@@ -126,7 +126,7 @@
     "rest": {
       "description": "Configuration options related to REST worker.",
       "properties": {
-        "tls" : {
+        "tls": {
           "description": "Transport Layer Security (TLS) params",
           "properties": {
             "keystore": {
@@ -192,7 +192,132 @@
         }
       }
     },
-    "additionalProperties": false
+    "stateManager": {
+      "description": "Configuration options for the state manager.",
+      "properties": {
+        "type": {
+          "description": "The type of state manager.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "database": {
+          "description": "Connection parameters when using database as the persistent storage",
+          "properties": {
+            "jdbc": {
+              "description": "The JDBC database info",
+              "properties": {
+                "url": {
+                  "description": "The JDBC URL to use by the state manager when using database as the persistent storage",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "directory": {
+                  "description": "The JDBC directory to use by the state manager when using database as the persistent storage",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "driver": {
+                  "description": "The JDBC driver to use by the state manager when using database as the persistent storage",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "persistenceUnitName": {
+                  "description": "The persistence unit name to use by the state manager when using database as the persistent storage",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "additionalProperties": false
+              },
+              "additionalProperties": false
+            },
+            "user": {
+              "description": "Admin username to use by the state manager when connecting to the database used as the persistent storage",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "pass": {
+              "description": "Admin password to use by the state manager when connecting to the database used as the persistent storage",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "pool": {
+              "description": "State Manager database pool connection properties",
+              "properties": {
+                "maxSize": {
+                  "description": "Maximum connection pool size for State Manager DB",
+                  "default": 5,
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "minSize": {
+                  "description": "Minimum connection pool size for State Manager DB",
+                  "default": 0,
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "idleTimeoutSeconds": {
+                  "description": "Maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool",
+                  "default": 120,
+                  "minimum": 0,
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "maxLifetimeSeconds": {
+                  "description": "Maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached \"maxLifetime\" timeout, it will be removed from the pool only when it becomes idle",
+                  "default": 1800,
+                  "minimum": 1,
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "keepAliveTimeSeconds": {
+                  "description": "Interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled",
+                  "default": 0,
+                  "minimum": 0,
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "validationTimeoutSeconds": {
+                  "description": "Maximum time (in seconds) that the pool will wait for a connection to be validated as alive",
+                  "minimum": 1,
+                  "default": 5,
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": true
+    }
   },
   "additionalProperties": false
 }

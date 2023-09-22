@@ -31,7 +31,7 @@ class SessionStateClosingTransitionTest {
     fun `Send duplicate session init when in state closing`() {
         val sessionState = buildClosingState(true)
 
-        val sessionEvent = generateMessage(SessionMessageType.INIT, instant)
+        val sessionEvent = generateMessage(SessionMessageType.COUNTERPARTY_INFO, instant)
         val outputState = sessionManager.processMessageToSend(sessionState, sessionState, sessionEvent, instant, maxMsgSize)
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CLOSING)
     }
@@ -75,7 +75,7 @@ class SessionStateClosingTransitionTest {
     fun `Receive duplicate init wnhen in state closing`() {
         val sessionState = buildClosingState(true)
 
-        val sessionEvent = generateMessage(SessionMessageType.INIT, instant, MessageDirection.INBOUND)
+        val sessionEvent = generateMessage(SessionMessageType.COUNTERPARTY_INFO, instant, MessageDirection.INBOUND)
         sessionEvent.sequenceNum = 1
         val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CLOSING)

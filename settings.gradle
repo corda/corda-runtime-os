@@ -540,3 +540,6 @@ gradleEnterprise {
         }
     }
 }
+include 'libs:kotlin-coroutines'
+findProject(':libs:kotlin-coroutines')?.name = 'kotlin-coroutines'
+

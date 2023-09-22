@@ -12,7 +12,6 @@ import net.corda.utilities.time.Clock
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.query.VaultNamedParameterizedQuery
-import java.lang.UnsupportedOperationException
 import java.time.Instant
 
 // TODO CORE-12032 use delegation to create this class
@@ -40,7 +39,9 @@ class VaultNamedParameterizedQueryImpl<T>(
     }
 
     override fun setOffset(offset: Int): VaultNamedParameterizedQuery<T> {
-        throw UnsupportedOperationException("This query does not support offset functionality.")
+        require (offset >= 0) { "Offset cannot be negative" }
+        this.offset = offset
+        return this
     }
 
     override fun setParameter(name: String, value: Any): VaultNamedParameterizedQuery<T> {
@@ -68,17 +69,14 @@ class VaultNamedParameterizedQueryImpl<T>(
         val resultSet = resultSetFactory.create(
             parameters,
             limit,
+            offset,
             resultClass
-        ) @Suspendable { serializedParameters, resumePoint ->
+        ) @Suspendable { serializedParameters, offset ->
             recordSuspendable(::ledgerPersistenceFlowTimer) @Suspendable {
                 wrapWithPersistenceException {
                     externalEventExecutor.execute(
                         VaultNamedQueryExternalEventFactory::class.java,
-                        VaultNamedQueryEventParams(
-                            queryName,
-                            serializedParameters,
-                            limit,
-                            resumePoint)
+                        VaultNamedQueryEventParams(queryName, serializedParameters, offset, limit)
                     )
                 }
             }

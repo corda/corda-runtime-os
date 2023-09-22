@@ -4,8 +4,11 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messagebus.api.configuration.BusConfigMerger
+import net.corda.messagebus.api.configuration.getConfigOrEmpty
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.BootConfig.BOOT_KAFKA_COMMON
+import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER
+import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PROPERTIES_COMMON
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
@@ -17,7 +20,7 @@ import org.slf4j.LoggerFactory
 class KafkaConfigMergerImpl : BusConfigMerger {
 
     private companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun getMessagingConfig(bootConfig: SmartConfig, messagingConfig: SmartConfig?): SmartConfig {
@@ -34,6 +37,16 @@ class KafkaConfigMergerImpl : BusConfigMerger {
             updatedMessagingConfig = updatedMessagingConfig.withValue(
                 "$KAFKA_PROPERTIES_COMMON.${entry.key}",
                 ConfigValueFactory.fromAnyRef(bootConfig.getString("$BOOT_KAFKA_COMMON.${entry.key}"))
+            )
+        }
+
+        logger.debug { "Looping through State Manager Boot Configuration" }
+        val stateManagerBootConfig = bootConfig.getConfigOrEmpty(BOOT_STATE_MANAGER).entrySet()
+        stateManagerBootConfig.forEach { entry ->
+            logger.debug { "Entry key: ${entry.key}" }
+            updatedMessagingConfig = updatedMessagingConfig.withValue(
+                "${MessagingConfig.StateManager.STATE_MANAGER}.${entry.key}",
+                ConfigValueFactory.fromAnyRef(bootConfig.getString("$BOOT_STATE_MANAGER.${entry.key}"))
             )
         }
 
