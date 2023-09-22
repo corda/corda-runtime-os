@@ -3,11 +3,11 @@ package net.corda.messaging.api.mediator
 import kotlinx.coroutines.Deferred
 
 /**
- * Multi-source event mediator message producer.
+ * Multi-source event mediator messaging client.
  */
-interface MediatorProducer : AutoCloseable {
+interface MessagingClient : AutoCloseable {
     /**
-     * Producer's unique ID.
+     * Messaging client's unique ID.
      */
     val id: String
 

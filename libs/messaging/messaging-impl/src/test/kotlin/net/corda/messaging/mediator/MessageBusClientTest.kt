@@ -16,9 +16,9 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
-class MessageBusProducerTest {
+class MessageBusClientTest {
     private lateinit var cordaProducer: CordaProducer
-    private lateinit var mediatorProducer: MessageBusProducer
+    private lateinit var messageBusClient: MessageBusClient
 
     private val defaultHeaders: List<Pair<String, String>> = emptyList()
     private val messageProps: MutableMap<String, Any> = mutableMapOf(
@@ -32,12 +32,12 @@ class MessageBusProducerTest {
     @BeforeEach
     fun setup() {
         cordaProducer = mock()
-        mediatorProducer = MessageBusProducer("client-id", cordaProducer)
+        messageBusClient = MessageBusClient("client-id", cordaProducer)
     }
 
     @Test
     fun testSend() {
-        mediatorProducer.send(message)
+        messageBusClient.send(message)
 
         val expected = CordaProducerRecord(
             message.getProperty<String>("topic"),
@@ -59,14 +59,14 @@ class MessageBusProducerTest {
         doThrow(CordaRuntimeException("")).whenever(cordaProducer).send(eq(record), any())
         assertThrows<CordaRuntimeException> {
             runBlocking {
-                mediatorProducer.send(message).await()
+                messageBusClient.send(message).await()
             }
         }
     }
 
     @Test
     fun testClose() {
-        mediatorProducer.close()
+        messageBusClient.close()
         verify(cordaProducer, times(1)).close()
     }
 }

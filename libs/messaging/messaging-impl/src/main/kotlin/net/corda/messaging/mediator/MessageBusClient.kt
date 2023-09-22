@@ -5,14 +5,14 @@ import kotlinx.coroutines.Deferred
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.mediator.MediatorMessage
-import net.corda.messaging.api.mediator.MediatorProducer
+import net.corda.messaging.api.mediator.MessagingClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-class MessageBusProducer(
+class MessageBusClient(
     override val id: String,
     private val producer: CordaProducer,
-) : MediatorProducer {
+) : MessagingClient {
 
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -34,7 +34,7 @@ class MessageBusProducer(
             producer.close()
         } catch (ex: Exception) {
             log.info(
-                "Failed to close producer [$id] safely.", ex
+                "Failed to close message bus messaging client [$id] safely.", ex
             )
         }
     }
