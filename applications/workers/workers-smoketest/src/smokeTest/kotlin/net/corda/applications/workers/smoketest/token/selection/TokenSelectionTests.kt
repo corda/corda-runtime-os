@@ -154,7 +154,7 @@ class TokenSelectionTests {
 
     @Test
     @Order(3)
-    fun `create a token then select it but don't release the flow finishing it should release it`(){
+    fun `Claim a token in a flow and let the flow finish to validate the token claim is automatically released`(){
         // Create a simple UTXO transaction
         val input = "token test input"
         val utxoFlowRequestId = startRpcFlow(
