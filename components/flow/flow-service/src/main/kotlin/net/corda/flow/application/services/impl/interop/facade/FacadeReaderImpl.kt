@@ -2,14 +2,15 @@ package net.corda.flow.application.services.impl.interop.facade
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import net.corda.flow.application.services.impl.interop.ProofOfActionSerialisationModule
 import net.corda.flow.application.services.impl.interop.parameters.TypeParameters
 import net.corda.flow.application.services.impl.interop.parameters.TypedParameterImpl
 import net.corda.v5.application.interop.facade.Facade
 import net.corda.v5.application.interop.facade.FacadeId
 import net.corda.v5.application.interop.facade.FacadeMethod
 import net.corda.v5.application.interop.facade.FacadeReader
-import java.io.Reader
 import net.corda.v5.application.interop.parameters.ParameterType
+import java.io.Reader
 
 /**
  * Provides [FacadeReader]s from various formats. (This is a lie: it only does JSON).
@@ -22,7 +23,7 @@ object FacadeReaders {
     @JvmStatic
     val JSON: FacadeReader
         get() = JacksonFacadeReader {
-            ObjectMapper().registerKotlinModule().readValue(it, FacadeDefinition::class.java)
+            ObjectMapper().registerKotlinModule().registerModule(ProofOfActionSerialisationModule.module).readValue(it, FacadeDefinition::class.java)
         }
 
 }

@@ -41,6 +41,11 @@ class FinalizeFlow(private val signedTransaction: UtxoSignedTransaction, private
                 signedTransaction,
                 sessions
             )
+
+            finalizedSignedTransaction.transaction.signatures.forEach {
+                it.signature.by
+            }
+
             finalizedSignedTransaction.transaction.id.toString().also {
                 log.info("Success! Response: $it")
             }

@@ -6,6 +6,7 @@ import net.corda.flow.application.services.impl.interop.binding.FacadeInParamete
 import net.corda.flow.application.services.impl.interop.binding.FacadeInterfaceBinding
 import net.corda.flow.application.services.impl.interop.binding.FacadeMethodBinding
 import net.corda.flow.application.services.impl.interop.binding.FacadeOutParameterBindings
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.interop.binding.BindsFacade
 import net.corda.v5.application.interop.binding.BindsFacadeMethod
 import net.corda.v5.application.interop.binding.BindsFacadeParameter
@@ -484,6 +485,8 @@ private fun validateTypeAgreement(
             ParameterTypeLabel.UUID -> parameterType == UUID::class.java
             ParameterTypeLabel.BYTES -> parameterType == ByteArray::class.javaPrimitiveType ||
                     parameterType == ByteBuffer::class.java
+
+            ParameterTypeLabel.SIGNED_TX -> parameterType == DigitalSignatureAndMetadata::class.java
 
             ParameterTypeLabel.JSON -> true
         }

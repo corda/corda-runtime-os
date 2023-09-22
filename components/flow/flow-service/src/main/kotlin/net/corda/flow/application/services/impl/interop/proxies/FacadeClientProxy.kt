@@ -2,6 +2,7 @@ package net.corda.flow.application.services.impl.interop.proxies
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import net.corda.flow.application.services.impl.interop.ProofOfActionSerialisationModule
 import net.corda.flow.application.services.impl.interop.binding.FacadeInterfaceBinding
 import net.corda.flow.application.services.impl.interop.binding.FacadeMethodBinding
 import net.corda.flow.application.services.impl.interop.binding.FacadeOutParameterBindings
@@ -53,7 +54,10 @@ object FacadeProxies {
  */
 inline fun <reified T : Any> Facade.getClientProxy(noinline requestProcessor: (FacadeRequest) -> FacadeResponse) =
     getClientProxy<T>(
-        JacksonJsonMarshaller(ObjectMapper().registerKotlinModule()),
+        JacksonJsonMarshaller(
+            ObjectMapper()
+                .registerKotlinModule()
+                .registerModule(ProofOfActionSerialisationModule.module)),
         requestProcessor)
 
 /**
@@ -81,7 +85,6 @@ fun <T> Facade.getClientProxy(
  */
 class FacadeMethodDispatchException(message: String) : RuntimeException(message)
 
-// Here be dragons.
 private class FacadeClientProxy(
     val binding: FacadeInterfaceBinding,
     val typeConverter: TypeConverter,

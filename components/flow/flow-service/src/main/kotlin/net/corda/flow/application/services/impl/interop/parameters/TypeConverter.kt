@@ -40,6 +40,7 @@ class TypeConverter(private val jsonMarshaller: JsonMarshaller) {
             }
         }
         ParameterTypeLabel.JSON -> jsonMarshaller.deserialize(parameterValue as String, jvmType)
+        ParameterTypeLabel.SIGNED_TX ->jsonMarshaller.deserialize(parameterValue as String, jvmType)
         else -> parameterValue
     }
 
@@ -63,6 +64,7 @@ class TypeConverter(private val jsonMarshaller: JsonMarshaller) {
             else -> value
         }
         ParameterTypeLabel.JSON -> jsonMarshaller.serialize(value)
+        ParameterTypeLabel.SIGNED_TX -> jsonMarshaller.serialize(value)
         else -> value
     }
 }

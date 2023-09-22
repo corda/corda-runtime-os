@@ -2,6 +2,7 @@ package net.corda.flow.application.services.impl.interop.dispatch
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import net.corda.flow.application.services.impl.interop.ProofOfActionSerialisationModule
 import net.corda.flow.application.services.impl.interop.binding.FacadeInterfaceBinding
 import net.corda.flow.application.services.impl.interop.binding.FacadeMethodBinding
 import net.corda.flow.application.services.impl.interop.binding.FacadeOutParameterBindings
@@ -46,7 +47,10 @@ fun Any.buildDispatcher(facade: Facade, typeConverter: TypeConverter): FacadeSer
 }
 
 fun Any.buildDispatcher(facade: Facade): FacadeServerDispatcher =
-    buildDispatcher(facade, TypeConverter(JacksonJsonMarshaller(ObjectMapper().registerKotlinModule())))
+    buildDispatcher(facade, TypeConverter(
+        JacksonJsonMarshaller(
+        ObjectMapper().registerKotlinModule().registerModule(ProofOfActionSerialisationModule.module))
+    ))
 
 fun Any.buildDispatcher(facade: Facade, marshaller: JsonMarshaller): FacadeServerDispatcher =
     buildDispatcher(facade, TypeConverter(marshaller))
