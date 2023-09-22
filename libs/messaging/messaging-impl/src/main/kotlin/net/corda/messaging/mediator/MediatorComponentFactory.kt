@@ -1,13 +1,13 @@
 package net.corda.messaging.mediator
 
 import net.corda.messaging.api.mediator.MediatorConsumer
-import net.corda.messaging.api.mediator.MediatorProducer
 import net.corda.messaging.api.mediator.MessageRouter
+import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.config.MediatorConsumerConfig
-import net.corda.messaging.api.mediator.config.MediatorProducerConfig
+import net.corda.messaging.api.mediator.config.MessagingClientConfig
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
-import net.corda.messaging.api.mediator.factory.MediatorProducerFactory
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
+import net.corda.messaging.api.mediator.factory.MessagingClientFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 
 /**
@@ -16,7 +16,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 internal class MediatorComponentFactory<K : Any, S : Any, E : Any>(
     private val messageProcessor: StateAndEventProcessor<K, S, E>,
     private val consumerFactories: Collection<MediatorConsumerFactory>,
-    private val producerFactories: Collection<MediatorProducerFactory>,
+    private val clientFactories: Collection<MessagingClientFactory>,
     private val messageRouterFactory: MessageRouterFactory,
     ) {
 
@@ -44,20 +44,20 @@ internal class MediatorComponentFactory<K : Any, S : Any, E : Any>(
     }
 
     /**
-     * Creates message producers.
+     * Creates messaging clients.
      *
      * @param onSerializationError Function for handling serialization errors.
-     * @return List of created [MediatorProducer]s.
+     * @return List of created [MessagingClient]s.
      */
-    fun createProducers(
+    fun createClients(
         onSerializationError: (ByteArray) -> Unit
-    ): List<MediatorProducer> {
-        check (producerFactories.isNotEmpty()) {
-            "None producer factory set in configuration"
+    ): List<MessagingClient> {
+        check (clientFactories.isNotEmpty()) {
+            "None client factory set in configuration"
         }
-        return producerFactories.map { producerFactory ->
-            producerFactory.create(
-                MediatorProducerConfig(onSerializationError)
+        return clientFactories.map { clientFactory ->
+            clientFactory.create(
+                MessagingClientConfig(onSerializationError)
             )
         }
     }
@@ -65,16 +65,16 @@ internal class MediatorComponentFactory<K : Any, S : Any, E : Any>(
     /**
      * Creates message router.
      *
-     * @param producers Collection of [MediatorProducer]s.
+     * @param clients Collection of [MessagingClient]s.
      * @return Message router.
      */
     fun createRouter(
-        producers: Collection<MediatorProducer>
+        clients: Collection<MessagingClient>
     ): MessageRouter {
-        val producersById = producers.associateBy { it.id }
+        val clientsById = clients.associateBy { it.id }
         return messageRouterFactory.create { id ->
-            producersById[id]
-                ?: throw IllegalStateException("Producer with ID \"$id\" not found")
+            clientsById[id]
+                ?: throw IllegalStateException("Messaging client with ID \"$id\" not found")
         }
     }
 }

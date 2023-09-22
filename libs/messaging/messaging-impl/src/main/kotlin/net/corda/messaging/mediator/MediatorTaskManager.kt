@@ -46,21 +46,21 @@ internal class MediatorTaskManager<K : Any, S : Any, E : Any>(
     }
 
     /**
-     * Creates [ProcessorTask]s from [ProducerTask.Result]s that have reply message set. Reply messages are
+     * Creates [ProcessorTask]s from [ClientTask.Result]s that have reply message set. Reply messages are
      * grouped by message keys. The latest updated state from related [ProcessorTask] is used as the input state to
      * state and event processor.
      *
-     * @param producerResults List of results of [ProducerTask]s.
+     * @param clientResults List of results of [ClientTask]s.
      * @return Created [ProcessorTask]s.
      */
     fun createMsgProcessorTasks(
-        producerResults: List<ProducerTask.Result<K, S, E>>,
+        clientResults: List<ClientTask.Result<K, S, E>>,
     ): List<ProcessorTask<K, S, E>> {
-        return producerResults.filter { it.hasReply() }
-            .groupBy { it.producerTask.processorTask.persistedState!!.key }
-            .map { (_, producerTaskResults) ->
-                val messageGroup = producerTaskResults.map { it.toCordaConsumerRecord() }
-                producerTaskResults.first().producerTask.processorTask.copy(events = messageGroup)
+        return clientResults.filter { it.hasReply() }
+            .groupBy { it.clientTask.processorTask.persistedState!!.key }
+            .map { (_, clientTaskResults) ->
+                val messageGroup = clientTaskResults.map { it.toCordaConsumerRecord() }
+                clientTaskResults.first().clientTask.processorTask.copy(events = messageGroup)
             }
     }
 
@@ -99,21 +99,21 @@ internal class MediatorTaskManager<K : Any, S : Any, E : Any>(
     }
 
     /**
-     * Creates [ProducerTask]s for given results of [ProcessorTask]s. Given [MessageRouter] is used to select producer
-     * for specific message.
+     * Creates [ClientTask]s for given results of [ProcessorTask]s. Given [MessageRouter] is used to select messaging
+     * client for specific message.
      *
-     * @param processorTaskResults Results of [ProducerTask]s.
+     * @param processorTaskResults Results of [ClientTask]s.
      * @param messageRouter Message router.
-     * @return Created [ProducerTask]s.
+     * @return Created [ClientTask]s.
      */
     fun createProducerTasks(
         processorTaskResults: List<ProcessorTask.Result<K, S, E>>,
         messageRouter: MessageRouter,
-    ): List<ProducerTask<K, S, E>> {
+    ): List<ClientTask<K, S, E>> {
         return processorTaskResults.map { result ->
             result.outputEvents.map { event ->
                 val message = MediatorMessage(event.value!!)
-                ProducerTask(
+                ClientTask(
                     message,
                     messageRouter,
                     result.processorTask
@@ -123,33 +123,33 @@ internal class MediatorTaskManager<K : Any, S : Any, E : Any>(
     }
 
     /**
-     * Executes given [ProducerTask]s using [TaskManager] and waits for all to finish.
+     * Executes given [ClientTask]s using [TaskManager] and waits for all to finish.
      *
-     * @param producerTasks Tasks to execute.
+     * @param clientTasks Tasks to execute.
      * @return Result of task executions.
      */
     fun executeProducerTasks(
-        producerTasks: Collection<ProducerTask<K, S, E>>
-    ): List<ProducerTask.Result<K, S, E>> {
+        clientTasks: Collection<ClientTask<K, S, E>>
+    ): List<ClientTask.Result<K, S, E>> {
 //        return producerTasks.map { producerTask ->
 //            taskManager.execute(TaskType.SHORT_RUNNING, producerTask::call)
 //        }.map {
 //            it.join()
 //        }
         return runBlocking {
-            producerTasks.map { it.call() }
+            clientTasks.map { it.call() }
         }
     }
 
     /**
-     * Converts [ProducerTask.Result] to [CordaConsumerRecord].
+     * Converts [ClientTask.Result] to [CordaConsumerRecord].
      */
-    private fun ProducerTask.Result<K, S, E>.toCordaConsumerRecord() =
+    private fun ClientTask.Result<K, S, E>.toCordaConsumerRecord() =
         (CordaConsumerRecord(
         "",
         -1,
         -1,
-        producerTask.processorTask.events.first().key,
+        clientTask.processorTask.events.first().key,
         replyMessage!!.payload,
         Instant.now().toEpochMilli()
     ))

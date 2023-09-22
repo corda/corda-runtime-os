@@ -19,8 +19,8 @@ import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.messaging.api.mediator.RoutingDestination.Companion.routeTo
 import net.corda.messaging.api.mediator.config.EventMediatorConfigBuilder
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactoryFactory
-import net.corda.messaging.api.mediator.factory.MediatorProducerFactoryFactory
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
+import net.corda.messaging.api.mediator.factory.MessagingClientFactoryFactory
 import net.corda.messaging.api.mediator.factory.MultiSourceEventMediatorFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
@@ -43,7 +43,7 @@ class FlowExecutorMediatorImpl (
     private val flowEventProcessorFactory: FlowEventProcessorFactory,
     private val eventMediatorFactory: MultiSourceEventMediatorFactory,
     private val mediatorConsumerFactoryFactory: MediatorConsumerFactoryFactory,
-    private val mediatorProducerFactoryFactory: MediatorProducerFactoryFactory,
+    private val messagingClientFactoryFactory: MessagingClientFactoryFactory,
     private val toMessagingConfig: (Map<String, SmartConfig>) -> SmartConfig
 ) : FlowExecutor {
 
@@ -57,21 +57,21 @@ class FlowExecutorMediatorImpl (
         eventMediatorFactory: MultiSourceEventMediatorFactory,
         @Reference(service = MediatorConsumerFactoryFactory::class)
         mediatorConsumerFactoryFactory: MediatorConsumerFactoryFactory,
-        @Reference(service = MediatorProducerFactoryFactory::class)
-        mediatorProducerFactoryFactory: MediatorProducerFactoryFactory,
+        @Reference(service = MessagingClientFactoryFactory::class)
+        messagingClientFactoryFactory: MessagingClientFactoryFactory,
     ) : this(
         coordinatorFactory,
         flowEventProcessorFactory,
         eventMediatorFactory,
         mediatorConsumerFactoryFactory,
-        mediatorProducerFactoryFactory,
+        messagingClientFactoryFactory,
         { cfg -> cfg.getConfig(MESSAGING_CONFIG) }
     )
 
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val CONSUMER_GROUP = "FlowEventConsumer"
-        private const val MESSAGE_BUS_PRODUCER = "MessageBusProducer"
+        private const val MESSAGE_BUS_CLIENT = "MessageBusClient"
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<FlowExecutor> { event, _ -> eventHandler(event) }
@@ -160,22 +160,22 @@ class FlowExecutorMediatorImpl (
                     FLOW_EVENT_TOPIC, CONSUMER_GROUP, messagingConfig
                 ),
             )
-            .producerFactories(
-                mediatorProducerFactoryFactory.createMessageBusProducerFactory(
-                    MESSAGE_BUS_PRODUCER, messagingConfig
+            .clientFactories(
+                messagingClientFactoryFactory.createMessageBusClientFactory(
+                    MESSAGE_BUS_CLIENT, messagingConfig
                 ),
-                //RpcProducerFactory(CRYPTO_RPC_PRODUCER, messagingConfig, cordaRpcBuilder),
+                //RpcClientFactory(CRYPTO_RPC_CLIENT, messagingConfig, cordaRpcBuilder),
             )
             .messageProcessor(messageProcessor)
             .messageRouterFactory(createMessageRouterFactory())
             .build()
 
-    private fun createMessageRouterFactory() = MessageRouterFactory { producerFinder ->
-        val messageBusProducer = producerFinder.find(MESSAGE_BUS_PRODUCER)
+    private fun createMessageRouterFactory() = MessageRouterFactory { clientFinder ->
+        val messageBusClient = clientFinder.find(MESSAGE_BUS_CLIENT)
 
         MessageRouter { message ->
             when (message.payload) {
-                is FlowMapperEvent -> routeTo(messageBusProducer, FLOW_MAPPER_EVENT_TOPIC)
+                is FlowMapperEvent -> routeTo(messageBusClient, FLOW_MAPPER_EVENT_TOPIC)
                 else -> throw IllegalStateException("No route defined for message $message")
             }
         }

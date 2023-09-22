@@ -5,27 +5,27 @@ import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.constants.ProducerRoles
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
-import net.corda.messaging.api.mediator.MediatorProducer
-import net.corda.messaging.api.mediator.config.MediatorProducerConfig
-import net.corda.messaging.api.mediator.factory.MediatorProducerFactory
-import net.corda.messaging.mediator.MessageBusProducer
+import net.corda.messaging.api.mediator.MessagingClient
+import net.corda.messaging.api.mediator.config.MessagingClientConfig
+import net.corda.messaging.api.mediator.factory.MessagingClientFactory
+import net.corda.messaging.mediator.MessageBusClient
 import net.corda.schema.configuration.BootConfig
 import java.util.UUID
 
 /**
- * Factory for creating multi-source event mediator message bus producers.
+ * Factory for creating multi-source event mediator message bus messaging clients.
  *
- * @param id Producer's unique ID.
+ * @param id Messaging client's unique ID.
  * @param messageBusConfig Message bus related configuration.
  * @param cordaProducerBuilder [CordaProducer] builder.
  */
-class MessageBusProducerFactory(
+class MessageBusClientFactory(
     private val id: String,
     private val messageBusConfig: SmartConfig,
     private val cordaProducerBuilder: CordaProducerBuilder,
-): MediatorProducerFactory {
+): MessagingClientFactory {
 
-    override fun create(config: MediatorProducerConfig): MediatorProducer {
+    override fun create(config: MessagingClientConfig): MessagingClient {
         val uniqueId = UUID.randomUUID().toString()
         val clientId = "$id--$uniqueId"
 
@@ -43,7 +43,7 @@ class MessageBusProducerFactory(
             config.onSerializationError
         )
 
-        return MessageBusProducer(
+        return MessageBusClient(
             id,
             eventProducer,
         )

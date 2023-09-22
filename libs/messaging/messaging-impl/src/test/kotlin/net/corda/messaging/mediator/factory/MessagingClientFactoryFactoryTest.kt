@@ -7,25 +7,25 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 
-class MediatorProducerFactoryFactoryTest {
-    private lateinit var mediatorProducerFactoryFactory: MediatorProducerFactoryFactoryImpl
+class MessagingClientFactoryFactoryTest {
+    private lateinit var messagingClientFactoryFactory: MessagingClientFactoryFactoryImpl
     private val cordaProducerBuilder = mock<CordaProducerBuilder>()
     private val messageBusConfig = mock<SmartConfig>()
 
     @BeforeEach
     fun beforeEach() {
-        mediatorProducerFactoryFactory = MediatorProducerFactoryFactoryImpl(
+        messagingClientFactoryFactory = MessagingClientFactoryFactoryImpl(
             cordaProducerBuilder,
         )
     }
 
     @Test
-    fun testCreateMessageBusProducerFactory() {
-        val messageBusProducerFactory = mediatorProducerFactoryFactory.createMessageBusProducerFactory(
-            "MessageBusProducer1",
+    fun testCreateMessageBusClientFactory() {
+        val messageBusClientFactory = messagingClientFactoryFactory.createMessageBusClientFactory(
+            "MessageBusClient1",
             messageBusConfig,
         )
 
-        Assertions.assertNotNull(messageBusProducerFactory)
+        Assertions.assertNotNull(messageBusClientFactory)
     }
 }

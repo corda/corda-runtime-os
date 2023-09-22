@@ -36,7 +36,7 @@ class MultiSourceEventMediatorFactoryTest {
     }
 
     @Test
-    fun testMultiSourceEventMediator() {
+    fun testCreateMultiSourceEventMediator() {
         val messageProcessor = mock<StateAndEventProcessor<Any, Any, Any>>()
         doReturn(Any::class.java).`when`(messageProcessor).stateValueClass
         val messageRouterFactory = mock<MessageRouterFactory>()
@@ -44,8 +44,8 @@ class MultiSourceEventMediatorFactoryTest {
         doReturn(messageProcessor).`when`(config).messageProcessor
         doReturn(messageRouterFactory).`when`(config).messageRouterFactory
 
-        val messageBusProducer = multiSourceEventMediatorFactory.create(config)
+        val mediator = multiSourceEventMediatorFactory.create(config)
 
-        Assertions.assertNotNull(messageBusProducer)
+        Assertions.assertNotNull(mediator)
     }
 }

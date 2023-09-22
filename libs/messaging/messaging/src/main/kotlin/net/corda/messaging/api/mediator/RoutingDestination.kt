@@ -1,14 +1,14 @@
 package net.corda.messaging.api.mediator
 
 /**
- * Routing destination encapsulate [MediatorProducer] and related data needed to send a [MediatorMessage].
+ * Routing destination encapsulate [MessagingClient] and related data needed to send a [MediatorMessage].
  */
 data class RoutingDestination(
-    val producer: MediatorProducer,
+    val client: MessagingClient,
     val endpoint: String,
 ) {
     companion object {
-        fun routeTo(producer: MediatorProducer, endpoint: String) =
-            RoutingDestination(producer, endpoint)
+        fun routeTo(client: MessagingClient, endpoint: String) =
+            RoutingDestination(client, endpoint)
     }
 }

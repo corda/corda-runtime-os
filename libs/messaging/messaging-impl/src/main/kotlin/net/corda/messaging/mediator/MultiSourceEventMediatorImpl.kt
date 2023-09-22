@@ -10,8 +10,8 @@ import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorConsumer
-import net.corda.messaging.api.mediator.MediatorProducer
 import net.corda.messaging.api.mediator.MessageRouter
+import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.mediator.statemanager.StateManager
@@ -35,10 +35,10 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.name}")
 
     private var consumers = listOf<MediatorConsumer<K, E>>()
-    private var producers = listOf<MediatorProducer>()
+    private var clients = listOf<MessagingClient>()
     private lateinit var messageRouter: MessageRouter
     private val mediatorComponentFactory = MediatorComponentFactory(
-        config.messageProcessor, config.consumerFactories, config.producerFactories, config.messageRouterFactory
+        config.messageProcessor, config.consumerFactories, config.clientFactories, config.messageRouterFactory
     )
     private val mediatorStateManager = MediatorStateManager<K, S, E>(
         stateManager, serializer, stateDeserializer
@@ -81,8 +81,8 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
             attempts++
             try {
                 consumers = mediatorComponentFactory.createConsumers(::onSerializationError)
-                producers = mediatorComponentFactory.createProducers(::onSerializationError)
-                messageRouter = mediatorComponentFactory.createRouter(producers)
+                clients = mediatorComponentFactory.createClients(::onSerializationError)
+                messageRouter = mediatorComponentFactory.createRouter(clients)
 
                 consumers.forEach{ it.subscribe() }
                 lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
@@ -98,7 +98,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                     }
                     is CordaMessageAPIIntermittentException -> {
                         log.warn(
-                            "${ex.message} Attempts: $attempts. Recreating consumers/producers and Retrying.", ex
+                            "${ex.message} Attempts: $attempts. Recreating consumers/clients and Retrying.", ex
                         )
                     }
                     else -> {
@@ -123,7 +123,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 
     private fun closeConsumersAndProducers() {
         consumers.forEach { it.close() }
-        producers.forEach { it.close() }
+        clients.forEach { it.close() }
     }
 
     private fun processEventsWithRetries() {
@@ -166,10 +166,10 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                 val (validResults, invalidResults) = processingResults.partition {
                     !conflictingStates.contains(it.key)
                 }
-                val producerTasks = mediatorTaskManager.createProducerTasks(validResults, messageRouter)
-                val producerResults = mediatorTaskManager.executeProducerTasks(producerTasks)
+                val clientTasks = mediatorTaskManager.createProducerTasks(validResults, messageRouter)
+                val clientResults = mediatorTaskManager.executeProducerTasks(clientTasks)
                 msgProcessorTasks =
-                    mediatorTaskManager.createMsgProcessorTasks(producerResults) + mediatorTaskManager.createMsgProcessorTasks(
+                    mediatorTaskManager.createMsgProcessorTasks(clientResults) + mediatorTaskManager.createMsgProcessorTasks(
                         invalidResults,
                         conflictingStates
                     )

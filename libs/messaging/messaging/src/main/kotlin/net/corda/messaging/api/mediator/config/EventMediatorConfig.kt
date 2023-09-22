@@ -3,8 +3,8 @@ package net.corda.messaging.api.mediator.config
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
-import net.corda.messaging.api.mediator.factory.MediatorProducerFactory
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
+import net.corda.messaging.api.mediator.factory.MessagingClientFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.schema.configuration.MessagingConfig
 import java.time.Duration
@@ -15,7 +15,7 @@ import java.time.Duration
  * @property name The unique name for a multi-source event mediator.
  * @property messagingConfig Messaging related configuration.
  * @property consumerFactories Factories for creating message consumers.
- * @property producerFactories Factories for creating message producers.
+ * @property clientFactories Factories for creating messaging clients.
  * @property messageProcessor State and event processor.
  * @property messageRouterFactory Message router factory.
  */
@@ -23,7 +23,7 @@ data class EventMediatorConfig<K: Any, S: Any, E: Any>(
     val name: String,
     val messagingConfig : SmartConfig,
     val consumerFactories: Collection<MediatorConsumerFactory>,
-    val producerFactories: Collection<MediatorProducerFactory>,
+    val clientFactories: Collection<MessagingClientFactory>,
     val messageProcessor : StateAndEventProcessor<K, S, E>,
     val messageRouterFactory: MessageRouterFactory,
 ) {

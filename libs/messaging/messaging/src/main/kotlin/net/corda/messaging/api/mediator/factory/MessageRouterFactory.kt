@@ -1,7 +1,7 @@
 package net.corda.messaging.api.mediator.factory
 
-import net.corda.messaging.api.mediator.MediatorProducer
 import net.corda.messaging.api.mediator.MessageRouter
+import net.corda.messaging.api.mediator.MessagingClient
 
 /**
  * Factory for creating [MessageRouter]s.
@@ -9,24 +9,24 @@ import net.corda.messaging.api.mediator.MessageRouter
 fun interface MessageRouterFactory {
 
     /**
-     * Creates a new instance of [MessageRouter]. Provided [MediatorProducerFinder] is used to find [MediatorProducer]s
+     * Creates a new instance of [MessageRouter]. Provided [MessagingClientFinder] is used to find [MessagingClient]s
      * by their IDs. Example:
      *
      * ```
-     * MessageRouterFactory { producerFinder ->
-     *     val messageBusProducer = producerFinder.find("MessageBusProducer")
+     * MessageRouterFactory { clientFinder ->
+     *     val messageBusClient = clientFinder.find("MessageBusClient")
      *
      *     MessageRouter { message ->
      *         when (message.payload) {
-     *             is FlowEvent -> RoutingDestination(messageBusProducer, "flow.event.topic")
+     *             is FlowEvent -> RoutingDestination(messageBusClient, "flow.event.topic")
      *             else -> throw IllegalStateException("No route defined for message $message")
      *         }
      *     }
      * }
      * ```
      *
-     * @param producerFinder Producer finder
+     * @param clientFinder Messaging client finder
      * @return created message router.
      */
-    fun create(producerFinder: MediatorProducerFinder): MessageRouter
+    fun create(clientFinder: MessagingClientFinder): MessageRouter
 }

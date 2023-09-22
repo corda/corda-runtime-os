@@ -3,7 +3,7 @@ package net.corda.messaging.mediator.factory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
-import net.corda.messaging.api.mediator.config.MediatorProducerConfig
+import net.corda.messaging.api.mediator.config.MessagingClientConfig
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -12,8 +12,8 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 
-class MessageBusProducerFactoryTest {
-    private lateinit var messageBusProducerFactory: MessageBusProducerFactory
+class MessageBusClientFactoryTest {
+    private lateinit var messageBusClientFactory: MessageBusClientFactory
     private val cordaProducerBuilder = mock<CordaProducerBuilder>()
     private val cordaProducer = mock<CordaProducer>()
     private val messageBusConfig = mock<SmartConfig>()
@@ -23,8 +23,8 @@ class MessageBusProducerFactoryTest {
         doReturn(cordaProducer).`when`(cordaProducerBuilder).createProducer(
             any(), any(), anyOrNull()
         )
-        messageBusProducerFactory = MessageBusProducerFactory(
-            "MessageBusProducer1",
+        messageBusClientFactory = MessageBusClientFactory(
+            "MessageBusClient1",
             messageBusConfig,
             cordaProducerBuilder,
         )
@@ -32,8 +32,8 @@ class MessageBusProducerFactoryTest {
 
     @Test
     fun testCreateMessageBusProducer() {
-        val config = MediatorProducerConfig {}
-        val messageBusProducer = messageBusProducerFactory.create(config)
+        val config = MessagingClientConfig {}
+        val messageBusProducer = messageBusClientFactory.create(config)
         Assertions.assertNotNull(messageBusProducer)
     }
 }
