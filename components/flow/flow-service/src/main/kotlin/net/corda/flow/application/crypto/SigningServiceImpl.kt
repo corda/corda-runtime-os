@@ -14,6 +14,7 @@ import net.corda.metrics.CordaMetrics
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.application.crypto.SigningService
+import net.corda.v5.application.crypto.SigningServiceSignContext
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
@@ -50,19 +51,19 @@ class SigningServiceImpl @Activate constructor(
                       publicKey: PublicKey,
                       signatureSpec: SignatureSpec
     ): DigitalSignature.WithKeyId {
-        return sign(bytes, publicKey, signatureSpec, emptyMap())
+        return sign(bytes, publicKey, signatureSpec, SigningServiceSignContext(null))
     }
 
     @Suspendable
     override fun sign(bytes: ByteArray,
                       publicKey: PublicKey,
                       signatureSpec: SignatureSpec,
-                      context: Map<String, String>
+                      context: SigningServiceSignContext
     ): DigitalSignature.WithKeyId {
         return recordSuspendable({ cryptoFlowTimer("sign") }) @Suspendable {
             val digitalSignatureWithKey = externalEventExecutor.execute(
                 CreateSignatureExternalEventFactory::class.java,
-                SignParameters(bytes, keyEncodingService.encodeAsByteArray(publicKey), signatureSpec, context)
+                SignParameters(bytes, keyEncodingService.encodeAsByteArray(publicKey), signatureSpec, mapOf("category" to context.keyCategory))
             )
 
             DigitalSignatureWithKeyId(

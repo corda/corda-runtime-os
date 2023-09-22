@@ -13,6 +13,7 @@ import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
+import net.corda.v5.application.crypto.SigningServiceSignContext
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
@@ -280,7 +281,7 @@ class RpcSmokeTestFlow : ClientStartableFlow {
     private fun signWithKeyCategory(input: RpcSmokeTestInput): String {
         val x500Name = input.getValue("memberX500")
         val keyCategory = input.getValue("keyCategory")
-        val context = mapOf("category" to keyCategory)
+        val context = SigningServiceSignContext(keyCategory)
         val member = memberLookup.lookup(MemberX500Name.parse(x500Name))
         checkNotNull(member) { "Member $x500Name could not be looked up" }
         val publicKey = member.ledgerKeys[0]
