@@ -11,8 +11,26 @@ plugins {
 
 description "Bare bones Kotlin reflection within an OSGi framework."
 
+pluginManager.withPlugin('maven-publish') {
+    publishing {
+        publications.configureEach {
+            pom {
+                // Include attribution for kotlinx-metadata-jvm library.
+                developers {
+                    developer {
+                        name = 'Kotlin Team'
+                        organization = 'JetBrains'
+                        organizationUrl = 'https://www.jetbrains.com'
+                    }
+                }
+            }
+        }
+    }
+}
+
 configurations {
     bundle {
+        canBeDeclared = false
         canBeResolved = false
     }
     bundle.extendsFrom runtimeClasspath
@@ -57,8 +75,9 @@ Sealed: true
 def testingBundle = tasks.register('testingBundle', Bundle) {
     archiveClassifier = 'tests'
     from sourceSets.integrationTest.output
-    sourceSet = sourceSets.integrationTest
     bundle {
+        sourceSet = sourceSets.integrationTest
+        classpath = sourceSets.integrationTest.compileClasspath
         bnd '''\
 Test-Cases: \${classes;HIERARCHY_INDIRECTLY_ANNOTATED;org.junit.platform.commons.annotation.Testable;CONCRETE}
 Sealed: true
@@ -81,14 +100,6 @@ def resolve = tasks.register('resolve', Resolve) {
     }
 }
 
-// Gradle enterprise does not pick up OSGI tests by default as they they are of type TestOSGi rather than standard
-def importOSGiJunitXml = tasks.register('importOSGiJUnitXml', ImportJUnitXmlReports) {
-    dialect = GENERIC
-    reports.from(fileTree("$testResultsDir/integrationTest").matching {
-        include '**/TEST-*.xml'
-    })
-}
-
 def testOSGi = tasks.register('testOSGi', TestOSGi) {
     resultsDirectory = file("$testResultsDir/integrationTest")
     bundles = files(
@@ -97,6 +108,15 @@ def testOSGi = tasks.register('testOSGi', TestOSGi) {
         testingBundle
     )
     bndrun = resolve.flatMap { it.outputBndrun }
+}
+
+// Gradle enterprise does not pick up OSGI tests by default as they they are of type TestOSGi rather than standard
+tasks.register('importOSGiJUnitXml', ImportJUnitXmlReports) {
+    dependsOn testOSGi
+    dialect = GENERIC
+    reports.from(fileTree("$testResultsDir/integrationTest").matching {
+        include '**/TEST-*.xml'
+    })
 }
 
 tasks.named('integrationTest') {

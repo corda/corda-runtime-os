@@ -2440,54 +2440,6 @@
         }
       }
     },
-    "/mgm/{holdingidentityshorthash}/group-parameters" : {
-      "post" : {
-        "tags" : [ "MGM API" ],
-        "description" : "This API allows you to make changes to the group parameters by submitting an updated version of the group parameters.",
-        "operationId" : "post_mgm__holdingidentityshorthash__group_parameters",
-        "parameters" : [ {
-          "name" : "holdingidentityshorthash",
-          "in" : "path",
-          "description" : "The holding identity ID of the MGM",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "The holding identity ID of the MGM",
-            "nullable" : false,
-            "example" : "string"
-          }
-        } ],
-        "requestBody" : {
-          "description" : "requestBody",
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/RestGroupParameters"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "The newly updated group parameters",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/RestGroupParameters"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
     "/mgm/{holdingidentityshorthash}/info" : {
       "get" : {
         "tags" : [ "MGM API" ],
@@ -2954,47 +2906,6 @@
                 }
               }
             }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
-    "/mgmadmin/{holdingidentityshorthash}/force-decline/{requestid}" : {
-      "post" : {
-        "tags" : [ "MGM Admin API" ],
-        "description" : "This method enables you to force decline an in-progress registration request that may be stuck or displaying some other unexpected behaviour.",
-        "operationId" : "post_mgmadmin__holdingidentityshorthash__force_decline__requestid_",
-        "parameters" : [ {
-          "name" : "holdingidentityshorthash",
-          "in" : "path",
-          "description" : "The holding identity ID of the MGM of the membership group",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "The holding identity ID of the MGM of the membership group",
-            "nullable" : false,
-            "example" : "string"
-          }
-        }, {
-          "name" : "requestid",
-          "in" : "path",
-          "description" : "ID of the registration request",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "ID of the registration request",
-            "nullable" : false,
-            "example" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Success"
           },
           "401" : {
             "description" : "Unauthorized"
@@ -5631,3 +5542,4 @@
     }
   }
 }
+

@@ -2,6 +2,8 @@ package net.corda.uniqueness.checker.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.flow.event.FlowEvent
+import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
@@ -15,6 +17,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.config.SyncRPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
@@ -47,9 +50,11 @@ class BatchedUniquenessCheckerLifecycleImpl @Activate constructor(
 ) : UniquenessCheckerLifecycle, UniquenessChecker by uniquenessChecker {
     private companion object {
         const val GROUP_NAME = "uniqueness.checker"
-
         const val CONFIG_HANDLE = "CONFIG_HANDLE"
+        const val SUBSCRIPTION_NAME = "Uniqueness Check"
+        const val UNIQUENESS_CHECKER_PATH = "/uniqueness-checker"
         const val SUBSCRIPTION = "SUBSCRIPTION"
+        const val RPC_SUBSCRIPTION = "RPC_SUBSCRIPTION"
 
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -88,6 +93,8 @@ class BatchedUniquenessCheckerLifecycleImpl @Activate constructor(
                 log.info("Uniqueness checker is ${event.status}")
 
                 if (event.status == LifecycleStatus.UP) {
+                    initialiseRpcSubscription()
+
                     coordinator.createManagedResource(CONFIG_HANDLE) {
                         configurationReadService.registerComponentForUpdates(
                             coordinator,
@@ -97,12 +104,12 @@ class BatchedUniquenessCheckerLifecycleImpl @Activate constructor(
                 } else {
                     coordinator.closeManagedResources(setOf(CONFIG_HANDLE))
                 }
-
                 coordinator.updateStatus(event.status)
             }
             is ConfigChangedEvent -> {
                 log.info("Received configuration change event, (re)initialising subscription")
                 initialiseSubscription(event.config.getConfig(MESSAGING_CONFIG))
+                // RPC Subscription doesn't need to be re-created because it doesn't take config.
             }
             else -> {
                 log.warn("Unexpected event ${event}, ignoring")
@@ -121,6 +128,21 @@ class BatchedUniquenessCheckerLifecycleImpl @Activate constructor(
                 config,
                 null
             ).also {
+                it.start()
+            }
+        }
+    }
+
+    private fun initialiseRpcSubscription() {
+        val processor = UniquenessCheckRpcMessageProcessor(
+            this,
+            externalEventResponseFactory,
+            UniquenessCheckRequestAvro::class.java,
+            FlowEvent::class.java
+        )
+        lifecycleCoordinator.createManagedResource(RPC_SUBSCRIPTION) {
+            val rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, UNIQUENESS_CHECKER_PATH)
+            subscriptionFactory.createHttpRPCSubscription(rpcConfig, processor).also {
                 it.start()
             }
         }

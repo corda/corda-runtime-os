@@ -23,7 +23,7 @@ class ConfigMergerImpl @Activate constructor(
     override fun getDbConfig(bootConfig: SmartConfig, dbConfig: SmartConfig?): SmartConfig {
         //TODO - Boot params for db connection details currently passed in via BOOT_DB.*. Db config logic needs to be
         // migrated to use the defined boot schema values. When that this done they can be merged properly from boot db config here.
-        val updatedDbConfig = dbConfig?: SmartConfigImpl.empty()
+        val updatedDbConfig = dbConfig ?: SmartConfigImpl.empty()
         val bootDBParamsConfig = bootConfig.getConfigOrEmpty(BOOT_DB)
         return bootDBParamsConfig.withFallback(updatedDbConfig)
     }

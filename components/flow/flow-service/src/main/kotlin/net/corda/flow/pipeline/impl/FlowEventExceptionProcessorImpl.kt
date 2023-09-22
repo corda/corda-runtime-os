@@ -30,7 +30,6 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig
 import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_WINDOW_DURATION
-import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -93,9 +92,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
                 )
             }
 
-            log.debug {
-                "A transient exception was thrown the event that failed will be retried. event='${context.inputEvent}',  $exception"
-            }
+            log.info("Flow ${context.checkpoint.flowId} encountered a transient problem and is retrying: ${exception.message}")
 
             val payload = context.inputEventPayload ?: return@withEscalation process(
                 FlowFatalException(
