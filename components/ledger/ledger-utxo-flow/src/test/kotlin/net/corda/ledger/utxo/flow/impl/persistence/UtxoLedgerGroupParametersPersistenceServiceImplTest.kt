@@ -97,7 +97,7 @@ class UtxoLedgerGroupParametersPersistenceServiceImplTest {
         whenever(groupParametersCache.get(any())).thenReturn(signedGroupParameters)
         assertThat(utxoLedgerGroupParametersPersistenceService.find(mock())).isEqualTo(signedGroupParameters)
         verify(externalEventExecutor, never()).execute(
-            requestId = eq(UUID.randomUUID()),
+            requestId = any(),
             any<Class<FindSignedGroupParametersExternalEventFactory>>(),
             any()
         )
@@ -149,7 +149,7 @@ class UtxoLedgerGroupParametersPersistenceServiceImplTest {
         whenever(groupParametersCache.get(any())).thenReturn(signedGroupParameters)
         utxoLedgerGroupParametersPersistenceService.persistIfDoesNotExist(signedGroupParameters)
         verify(externalEventExecutor, never()).execute(
-            requestId = eq(UUID.randomUUID()),
+            requestId = any(),
             any<Class<PersistSignedGroupParametersIfDoNotExistExternalEventFactory>>(),
             any()
         )
