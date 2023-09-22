@@ -215,7 +215,7 @@ class VirtualNodeDbFactoryImplTest {
     }
 
     @Test
-    fun `createVNodeDbs sets connectionStringsProvided to true when provided with DDL no DML connection - uses cluster DB - DDL ignored`() {
+    fun `createVNodeDbs sets connectionStringsProvided to false when provided with DDL no DML connection - uses cluster DB - DDL ignored`() {
         val request = VirtualNodeCreateRequest(
             /* holdingId = */ mock(),
             /* cpiFileChecksum = */ "",
@@ -230,7 +230,7 @@ class VirtualNodeDbFactoryImplTest {
 
         val dbs = impl.createVNodeDbs(ShortHash.of("1234123412341234"), request)
 
-        assertAll(dbs.map { (dbType, db) -> { assertTrue(db.connectionProvided, dbType.name) } })
+        assertAll(dbs.map { (dbType, db) -> { assertFalse(db.connectionProvided, dbType.name) } })
     }
 
 
