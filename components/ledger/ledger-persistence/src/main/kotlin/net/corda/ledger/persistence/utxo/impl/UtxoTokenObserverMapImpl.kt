@@ -1,3 +1,4 @@
+@file:Suppress("DEPRECATION")
 package net.corda.ledger.persistence.utxo.impl
 
 import net.corda.ledger.persistence.utxo.UtxoTokenObserverMap

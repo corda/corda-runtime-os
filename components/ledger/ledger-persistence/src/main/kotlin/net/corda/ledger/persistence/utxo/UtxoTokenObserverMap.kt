@@ -1,3 +1,4 @@
+@file:Suppress("DEPRECATION")
 package net.corda.ledger.persistence.utxo
 
 import net.corda.v5.ledger.utxo.ContractState

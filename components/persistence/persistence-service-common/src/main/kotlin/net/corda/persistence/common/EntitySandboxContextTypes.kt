@@ -1,3 +1,4 @@
+@file:Suppress("DEPRECATION")
 package net.corda.persistence.common
 
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP
@@ -15,6 +16,7 @@ import javax.persistence.EntityManagerFactory
 object EntitySandboxContextTypes {
     const val SANDBOX_EMF = "ENTITY_MANAGER_FACTORY"
     const val SANDBOX_TOKEN_STATE_OBSERVERS = "SANDBOX_TOKEN_STATE_OBSERVERS"
+    const val SANDBOX_TOKEN_STATE_OBSERVERS_V2 = "SANDBOX_TOKEN_STATE_OBSERVERS_V2"
 }
 
 fun SandboxGroupContext.getSerializationService(): SerializationService =

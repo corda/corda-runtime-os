@@ -1,3 +1,4 @@
+@file:Suppress("DEPRECATION")
 package net.corda.ledger.persistence.utxo.impl.request.handlers
 
 import net.corda.data.flow.event.external.ExternalEventContext
@@ -34,12 +35,14 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
     override fun execute(): List<Record<*, *>> {
         val isTransactionVerified = transaction.status == TransactionStatus.VERIFIED
 
+        //
         val listOfPairsStateAndUtxoToken = transaction.getVisibleStates().values.toList().toTokens(tokenObservers)
         val outputTokenRecords = if (isTransactionVerified) {
             utxoOutputRecordFactory.getTokenCacheChangeEventRecords(
                 holdingIdentity,
                 listOfPairsStateAndUtxoToken,
                 transaction.getConsumedStates(persistenceService).toTokens(tokenObservers)
+                //
             )
         } else {
             listOf()
