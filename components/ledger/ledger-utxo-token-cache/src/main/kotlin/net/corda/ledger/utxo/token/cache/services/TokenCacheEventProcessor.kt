@@ -52,6 +52,8 @@ class TokenCacheEventProcessor constructor(
                 this.tokenClaims = listOf()
             }
 
+
+
             // Temporary logic that covers the upgrade from release/5.0 to release/5.1
             // The field claimedTokens has been added to the TokenCaim avro object, and it will replace claimedTokenStateRefs.
             // In order to avoid breaking compatibility, the claimedTokenStateRefs has been deprecated, and it will eventually
@@ -68,6 +70,8 @@ class TokenCacheEventProcessor constructor(
             val poolKey = entityConverter.toTokenPoolKey(event.key)
             val poolCacheState = entityConverter.toPoolCacheState(nonNullableState)
             val tokenCache = tokenPoolCache.get(poolKey)
+
+            poolCacheState.removeExpiredClaims()
 
             val handler = checkNotNull(tokenCacheEventHandlerMap[tokenEvent.javaClass]) {
                 "Received an event with and unrecognized payload '${tokenEvent.javaClass}'"
