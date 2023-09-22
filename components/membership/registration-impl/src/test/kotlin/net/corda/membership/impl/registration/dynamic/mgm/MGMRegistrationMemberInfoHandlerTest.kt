@@ -80,6 +80,10 @@ class MGMRegistrationMemberInfoHandlerTest {
         const val GROUP_POLICY_PROPERTY_KEY = GROUP_POLICY_PREFIX_WITH_DOT + "test"
     }
 
+    private val ecdhKeyId = "ABC123456789"
+    private val sessionKeyId = "BBC123456789"
+    private val sessionKeySchema = KeySchemeCodes.RSA_CODE_NAME
+
     private val holdingIdentity = HoldingIdentity(
         MemberX500Name.parse("O=Alice, L=London, C=GB"),
         UUID(0, 1).toString()
@@ -110,10 +114,6 @@ class MGMRegistrationMemberInfoHandlerTest {
         get() = assertDoesNotThrow { contextCaptor.secondValue.items.toMap() }
 
     private val clock: Clock = TestClock(Instant.ofEpochSecond(0))
-
-    private val ecdhKeyId = "ABC123456789"
-    private val sessionKeyId = "BBC123456789"
-    private val sessionKeySchema = KeySchemeCodes.RSA_CODE_NAME
 
     private val cryptoOpsClient: CryptoOpsClient = mock {
         on {
