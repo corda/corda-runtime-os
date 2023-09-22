@@ -149,7 +149,6 @@ spec:
           args:
             - |
               #!/bin/sh
-
               set -ev
 
               JDBC_URL="jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}"
@@ -172,7 +171,6 @@ spec:
               {{- with .Values.bootstrap.db.rbac.dbConnectionPool.minSize }}
                 --jdbc-pool-min-size {{ . | quote }}
               {{- end }}
-                ${DB_RBAC_MIN_POOL_SIZE_ARGS} \
                 --idle-timeout {{ .Values.bootstrap.db.rbac.dbConnectionPool.idleTimeoutSeconds | quote }} \
                 --max-lifetime {{ .Values.bootstrap.db.rbac.dbConnectionPool.maxLifetimeSeconds | quote }} \
                 --keepalive-time {{ .Values.bootstrap.db.rbac.dbConnectionPool.keepaliveTimeSeconds | quote }} \
@@ -194,7 +192,6 @@ spec:
               {{- with .Values.bootstrap.db.rbac.dbConnectionPool.minSize }}
                 --jdbc-pool-min-size {{ . | quote }}
               {{- end }}
-                ${DB_RBAC_MIN_POOL_SIZE_ARGS} \
                 --idle-timeout {{ .Values.bootstrap.db.rbac.dbConnectionPool.idleTimeoutSeconds | quote }} \
                 --max-lifetime {{ .Values.bootstrap.db.rbac.dbConnectionPool.maxLifetimeSeconds | quote }} \
                 --keepalive-time {{ .Values.bootstrap.db.rbac.dbConnectionPool.keepaliveTimeSeconds | quote }} \
@@ -216,7 +213,6 @@ spec:
               {{- with .Values.bootstrap.db.crypto.dbConnectionPool.minSize }}
                 --jdbc-pool-min-size {{ . | quote }}
               {{- end }}
-                ${DB_RBAC_MIN_POOL_SIZE_ARGS} \
                 --idle-timeout {{ .Values.bootstrap.db.crypto.dbConnectionPool.idleTimeoutSeconds | quote }} \
                 --max-lifetime {{ .Values.bootstrap.db.crypto.dbConnectionPool.maxLifetimeSeconds | quote }} \
                 --keepalive-time {{ .Values.bootstrap.db.crypto.dbConnectionPool.keepaliveTimeSeconds | quote }} \
@@ -226,7 +222,6 @@ spec:
               {{- else }}
                 --salt "${SALT}" --passphrase "${PASSPHRASE}" \
               {{- end }}
-                $CRYPTO_ENCRYPTION_ARGS \
                 -l /tmp/crypto
 
               echo 'Generating REST API user initial configuration'
@@ -272,24 +267,15 @@ spec:
           args:
             - |
               #!/bin/sh
-
               set -ev
 
               echo 'Applying DB specification'
-              for f in /tmp/db/*.sql; do
-                psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -f "$f" --dbname "${DB_CLUSTER_NAME}"
-              done
+              find /tmp/db -iname "*.sql" | xargs printf -- ' -f %s' | xargs psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" --dbname "${DB_CLUSTER_NAME}"
 
-              echo 'Applying RBAC initial DB configuration'
-              psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -f /tmp/rbac/db-config.sql --dbname "dbname=${DB_CLUSTER_NAME} options=--search_path=${DB_CLUSTER_SCHEMA}"
+              echo 'Applying initial configurations'
+              psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -f /tmp/rbac/db-config.sql -f /tmp/vnodes/db-config.sql -f /tmp/crypto/db-config.sql -f /tmp/crypto-config.sql --dbname "dbname=${DB_CLUSTER_NAME} options=--search_path=${DB_CLUSTER_SCHEMA}"
 
-              echo 'Applying virtual nodes initial DB configuration'
-              psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -f /tmp/vnodes/db-config.sql --dbname "dbname=${DB_CLUSTER_NAME} options=--search_path=${DB_CLUSTER_SCHEMA}"
-
-              echo 'Applying crypto initial DB configuration'
-              psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -f /tmp/crypto/db-config.sql --dbname "dbname=${DB_CLUSTER_NAME} options=--search_path=${DB_CLUSTER_SCHEMA}"
-
-              echo 'Applying REST API user initial configuration'
+              echo 'Applying initial RBAC configuration'
               psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -f /tmp/rbac-config.sql --dbname "dbname=${DB_CLUSTER_NAME} options=--search_path=${DB_RBAC_SCHEMA}"
 
               echo 'Creating users and granting permissions'
@@ -304,9 +290,6 @@ spec:
                 GRANT USAGE ON SCHEMA ${DB_CRYPTO_SCHEMA} TO "${CRYPTO_DB_USER_USERNAME}";
                 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${DB_CRYPTO_SCHEMA} TO "${CRYPTO_DB_USER_USERNAME}";
               SQL
-
-              echo 'Applying crypto initial configuration'
-              psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -f /tmp/crypto-config.sql --dbname "dbname=${DB_CLUSTER_NAME} options=--search_path=${DB_CLUSTER_SCHEMA}"
 
               echo 'DB Bootstrapped'
           volumeMounts:
