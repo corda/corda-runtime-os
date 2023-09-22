@@ -10,6 +10,7 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.UUID
 
 @Component(service = [ExternalEventExecutor::class, SingletonSerializeAsToken::class])
 class ExternalEventExecutorImpl @Activate constructor(
@@ -19,7 +20,7 @@ class ExternalEventExecutorImpl @Activate constructor(
 
     @Suspendable
     override fun <PARAMETERS : Any, RESPONSE : Any, RESUME> execute(
-        requestId: String,
+        requestId: UUID,
         factoryClass: Class<out ExternalEventFactory<PARAMETERS, RESPONSE, RESUME>>,
         parameters: PARAMETERS
     ): RESUME {
@@ -27,7 +28,7 @@ class ExternalEventExecutorImpl @Activate constructor(
         return with(flowFiberService.getExecutingFiber()) {
             suspend(
                 FlowIORequest.ExternalEvent(
-                    requestId,
+                    requestId.toString(),
                     factoryClass,
                     parameters,
                     externalContext(this)

@@ -30,7 +30,7 @@ interface ExternalEventExecutor {
      */
     @Suspendable
     fun <PARAMETERS : Any, RESPONSE : Any, RESUME> execute(
-        requestId: String,
+        requestId: UUID,
         factoryClass: Class<out ExternalEventFactory<PARAMETERS, RESPONSE, RESUME>>,
         parameters: PARAMETERS
     ): RESUME
@@ -42,5 +42,5 @@ interface ExternalEventExecutor {
     fun <PARAMETERS : Any, RESPONSE : Any, RESUME> execute(
         factoryClass: Class<out ExternalEventFactory<PARAMETERS, RESPONSE, RESUME>>,
         parameters: PARAMETERS
-    ): RESUME = execute(UUID.randomUUID().toString(), factoryClass, parameters)
+    ): RESUME = execute(UUID.randomUUID(), factoryClass, parameters)
 }
