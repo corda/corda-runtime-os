@@ -76,7 +76,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.TLS_CERTIFICATE_SU
 import net.corda.membership.lib.MemberInfoExtension.Companion.ecdhKey
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
-import net.corda.membership.lib.allowedSessionKeyAlgorithms
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.TlsType
 import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
 import net.corda.membership.lib.registration.RegistrationRequest
@@ -87,7 +86,7 @@ import net.corda.membership.lib.toWire
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.p2p.helpers.KeySpecExtractor
 import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.spec
-import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.validateSpecName
+import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.validateSchemeAndSignatureSpec
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -254,7 +253,6 @@ class DynamicMemberRegistrationService @Activate constructor(
         override fun close() = Unit
     }
 
-    @SuppressWarnings("TooManyFunctions")
     private inner class ActiveImpl : InnerRegistrationService {
         @Suppress("LongMethod")
         override fun register(
@@ -584,7 +582,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             specType: KeySpecExtractor.KeySpecType = KeySpecExtractor.KeySpecType.OTHER
         ): SignatureSpec {
             if (specFromContext != null) {
-                key.validateSpecName(specFromContext, specType)
+                key.validateSchemeAndSignatureSpec(specFromContext, specType)
                 return SignatureSpecImpl(specFromContext)
             }
             logger.info(
@@ -650,7 +648,6 @@ class DynamicMemberRegistrationService @Activate constructor(
                 }
             }.flatMap { (index, sessionKey) ->
                 val sessionPublicKey = keyEncodingService.decodePublicKey(sessionKey.publicKey.array())
-                validateSessionKeyAlgorithm(sessionPublicKey)
                 val specKey = String.format(SESSION_KEYS_SIGNATURE_SPEC, index)
                 val spec = context[specKey]
                 listOf(
@@ -663,15 +660,6 @@ class DynamicMemberRegistrationService @Activate constructor(
                     ).signatureName,
                 )
             }.toMap()
-        }
-
-        private fun validateSessionKeyAlgorithm(sessionPublicKey: PublicKey) {
-            if(!allowedSessionKeyAlgorithms.contains(sessionPublicKey.algorithm)) {
-                throw InvalidMembershipRegistrationException(
-                    "Registration failed. The registration context is invalid. Session key algorithm is " +
-                            "${sessionPublicKey.algorithm} but it should be one of $allowedSessionKeyAlgorithms."
-                )
-            }
         }
 
         private fun generateNotaryKeys(context: Map<String, String>, tenantId: String): List<KeyDetails> {

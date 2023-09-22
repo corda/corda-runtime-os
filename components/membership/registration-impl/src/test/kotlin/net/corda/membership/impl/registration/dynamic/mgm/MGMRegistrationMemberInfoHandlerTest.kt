@@ -44,6 +44,7 @@ import net.corda.test.util.TestRandom
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.KeySchemeCodes
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -145,7 +146,7 @@ class MGMRegistrationMemberInfoHandlerTest {
                 EMPTY_STRING,
                 EMPTY_STRING,
                 ByteBuffer.wrap(EMPTY_STRING.toByteArray()),
-                EMPTY_STRING,
+                KeySchemeCodes.RSA_CODE_NAME,
                 EMPTY_STRING,
                 0,
                 EMPTY_STRING,
@@ -506,6 +507,42 @@ class MGMRegistrationMemberInfoHandlerTest {
             )
         }
     }
+
+    @Test
+    fun `session key with unsupported key scheme will cause an exception`() {
+        whenever(
+            cryptoOpsClient.lookupKeysByIds(
+                holdingIdentity.shortHash.value,
+                listOf(
+                    ShortHash.of(sessionKeyId)
+                )
+            )
+        ).doReturn(
+            listOf(
+                CryptoSigningKey(
+                    EMPTY_STRING,
+                    EMPTY_STRING,
+                    SESSION_INIT,
+                    EMPTY_STRING,
+                    EMPTY_STRING,
+                    ByteBuffer.wrap(EMPTY_STRING.toByteArray()),
+                    KeySchemeCodes.EDDSA_ED25519_CODE_NAME,
+                    EMPTY_STRING,
+                    0,
+                    EMPTY_STRING,
+                    Instant.ofEpochSecond(0)
+                )
+            )
+        )
+
+        assertThrows<MGMRegistrationContextValidationException> {
+            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
+                holdingIdentity,
+                validTestContext
+            )
+        }
+    }
+
     private class Operation(
         private val value: MembershipPersistenceResult<Unit>
     ) : MembershipPersistenceOperation<Unit> {

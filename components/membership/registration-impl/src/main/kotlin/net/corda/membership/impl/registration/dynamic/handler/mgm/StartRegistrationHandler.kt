@@ -32,11 +32,9 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
-import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SelfSignedMemberInfo
-import net.corda.membership.lib.allowedSessionKeyAlgorithms
 import net.corda.membership.lib.deserializeContext
 import net.corda.membership.lib.registration.RegistrationRequestHelpers.getPreAuthToken
 import net.corda.membership.lib.toMap
@@ -45,7 +43,6 @@ import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.membership.registration.InvalidMembershipRegistrationException
 import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
@@ -59,7 +56,6 @@ import net.corda.virtualnode.toCorda
 import org.apache.avro.specific.SpecificRecordBase
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.security.PublicKey
 import java.util.SortedMap
 
 @Suppress("LongParameterList")
@@ -187,7 +183,6 @@ internal class StartRegistrationHandler(
             }
 
             validatePreAuthTokenUsage(mgmHoldingId, pendingMemberInfo, registrationRequest)
-            pendingMemberInfo.sessionInitiationKeys.forEach(::validateSessionKeyAlgorithm)
 
             activeOrSuspendedInfo?.let { previous ->
                 val previousContext = previous.memberProvidedContext.toMap()
@@ -232,15 +227,6 @@ internal class StartRegistrationHandler(
             state,
             outputRecords
         )
-    }
-
-    private fun validateSessionKeyAlgorithm(sessionPublicKey: PublicKey) {
-        if(!allowedSessionKeyAlgorithms.contains(sessionPublicKey.algorithm)) {
-            throw InvalidMembershipRegistrationException(
-                "Registration failed. The registration context is invalid. Session key algorithm is " +
-                        "${sessionPublicKey.algorithm} but it should be one of $allowedSessionKeyAlgorithms."
-            )
-        }
     }
 
     override fun getOwnerHoldingId(
