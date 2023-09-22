@@ -37,7 +37,7 @@ class UtxoTransactionReaderImpl(
     constructor(
         sandbox: SandboxGroupContext,
         externalEventContext: ExternalEventContext,
-        transaction: PersistTransaction,
+        transaction: PersistTransaction
     ) : this(
         sandbox,
         externalEventContext,
@@ -49,7 +49,7 @@ class UtxoTransactionReaderImpl(
     constructor(
         sandbox: SandboxGroupContext,
         externalEventContext: ExternalEventContext,
-        transaction: PersistTransactionIfDoesNotExist,
+        transaction: PersistTransactionIfDoesNotExist
     ) : this(
         sandbox,
         externalEventContext,
