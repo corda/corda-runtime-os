@@ -177,7 +177,7 @@ class VirtualNodeDbFactoryImplTest {
     }
 
     @Test
-    fun `createVNodeDbs sets isPlatformManagedDb to true when provided with DML and DDL connection`() {
+    fun `createVNodeDbs sets connectionStringsProvided to true when provided with DML and DDL connection`() {
         val request = VirtualNodeCreateRequest(
             /* holdingId = */ mock(),
             /* cpiFileChecksum = */ "",
@@ -192,11 +192,11 @@ class VirtualNodeDbFactoryImplTest {
 
         val dbs = impl.createVNodeDbs(ShortHash.of("1234123412341234"), request)
 
-        assertAll(dbs.map { (dbType, db) -> { assertTrue(db.isPlatformManagedDb, dbType.name) } })
+        assertAll(dbs.map { (dbType, db) -> { assertTrue(db.connectionProvided, dbType.name) } })
     }
 
     @Test
-    fun `createVNodeDbs sets isPlatformManagedDb to false when provided with DML connection but no DDL connection`() {
+    fun `createVNodeDbs sets connectionStringsProvided to false when provided with DML connection but no DDL connection`() {
         val request = VirtualNodeCreateRequest(
             /* holdingId = */ mock(),
             /* cpiFileChecksum = */ "",
@@ -211,11 +211,11 @@ class VirtualNodeDbFactoryImplTest {
 
         val dbs = impl.createVNodeDbs(ShortHash.of("1234123412341234"), request)
 
-        assertAll(dbs.map { (dbType, db) -> { assertFalse(db.isPlatformManagedDb, dbType.name) } })
+        assertAll(dbs.map { (dbType, db) -> { assertFalse(db.connectionProvided, dbType.name) } })
     }
 
     @Test
-    fun `createVNodeDbs sets isPlatformManagedDb to true when provided with DDL no DML connection - uses cluster DB - DDL ignored`() {
+    fun `createVNodeDbs sets connectionStringsProvided to true when provided with DDL no DML connection - uses cluster DB - DDL ignored`() {
         val request = VirtualNodeCreateRequest(
             /* holdingId = */ mock(),
             /* cpiFileChecksum = */ "",
@@ -230,12 +230,12 @@ class VirtualNodeDbFactoryImplTest {
 
         val dbs = impl.createVNodeDbs(ShortHash.of("1234123412341234"), request)
 
-        assertAll(dbs.map { (dbType, db) -> { assertTrue(db.isPlatformManagedDb, dbType.name) } })
+        assertAll(dbs.map { (dbType, db) -> { assertTrue(db.connectionProvided, dbType.name) } })
     }
 
 
     @Test
-    fun `createVNodeDbs sets isPlatformManagedDb to false when uniqueness is none`() {
+    fun `createVNodeDbs sets connectionStringsProvided to false when uniqueness is none`() {
         val request = VirtualNodeCreateRequest(
             /* holdingId = */ mock(),
             /* cpiFileChecksum = */ "",
@@ -252,10 +252,10 @@ class VirtualNodeDbFactoryImplTest {
 
         // Uniqueness is set to false
         assertAll(dbs.filter { (dbType, _) -> dbType == VirtualNodeDbType.UNIQUENESS }
-            .map { (dbType, db) -> { assertFalse(db.isPlatformManagedDb, dbType.name) } })
+            .map { (dbType, db) -> { assertFalse(db.connectionProvided, dbType.name) } })
         // Other types are set to true
         assertAll(dbs.filter { (dbType, _) -> dbType != VirtualNodeDbType.UNIQUENESS }
-            .map { (dbType, db) -> { assertTrue(db.isPlatformManagedDb, dbType.name) } })
+            .map { (dbType, db) -> { assertTrue(db.connectionProvided, dbType.name) } })
     }
 
 }

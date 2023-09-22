@@ -13,7 +13,7 @@ import net.corda.db.core.DbPrivilege
  */
 internal interface VirtualNodeDb {
     val isPlatformManagedDb: Boolean
-    val ddlConnectionProvided: Boolean
+    val connectionProvided: Boolean
     val dbConnections: Map<DbPrivilege, DbConnection?>
     val dbType: VirtualNodeDbType
 
