@@ -25,7 +25,6 @@ import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 
-@Suppress("LongParameterList")
 class UtxoTransactionReaderImpl(
     sandbox: SandboxGroupContext,
     private val externalEventContext: ExternalEventContext,
