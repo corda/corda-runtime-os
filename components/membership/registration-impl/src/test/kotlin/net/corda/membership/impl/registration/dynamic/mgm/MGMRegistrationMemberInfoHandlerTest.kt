@@ -148,7 +148,7 @@ class MGMRegistrationMemberInfoHandlerTest {
                 EMPTY_STRING,
                 EMPTY_STRING,
                 ByteBuffer.wrap(EMPTY_STRING.toByteArray()),
-                KeySchemeCodes.RSA_CODE_NAME,
+                sessionKeySchema,
                 EMPTY_STRING,
                 0,
                 EMPTY_STRING,
@@ -207,6 +207,7 @@ class MGMRegistrationMemberInfoHandlerTest {
 
     private val ecdhKeyId = "ABC123456789"
     private val sessionKeyId = "BBC123456789"
+    private val sessionKeySchema = KeySchemeCodes.RSA_CODE_NAME
 
     private val validTestContext
         get() = mapOf(
@@ -546,6 +547,9 @@ class MGMRegistrationMemberInfoHandlerTest {
     }
     @Test
     fun `session key with unsupported key scheme and signature spec combination will cause an exception`() {
+        // this test relies on the session key scheme being mocked to be incompatible with the signature spec so this assertion verifies
+        // the value isn't changed
+        assertThat(sessionKeySchema).isEqualTo(KeySchemeCodes.RSA_CODE_NAME)
         assertThrows<MGMRegistrationContextValidationException> {
             mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
                 holdingIdentity,
