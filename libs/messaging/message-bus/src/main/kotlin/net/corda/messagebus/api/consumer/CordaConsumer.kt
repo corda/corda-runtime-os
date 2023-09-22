@@ -149,14 +149,14 @@ interface CordaConsumer<K : Any, V : Any> : AutoCloseable {
      * Asynchronously commit the consumer offsets.
      * @throws CordaMessageAPIFatalException fatal error occurred attempting to commit offsets.
      */
-    fun commitAsyncOffsets(callback: Callback?)
+    fun asyncCommitOffsets(callback: Callback?)
 
     /**
      * Synchronously commit the consumer offset for this [event] back to the topic partition.
      * Record [metaData] about this commit back on the [event] topic.
      * @throws CordaMessageAPIFatalException fatal error occurred attempting to commit offsets.
      */
-    fun commitSyncOffsets(event: CordaConsumerRecord<K, V>, metaData: String? = null)
+    fun syncCommitOffsets(event: CordaConsumerRecord<K, V>, metaData: String? = null)
 
     /**
      * Get metadata about the partitions for a given topic.

@@ -71,13 +71,13 @@ class NonInjectableSingletonTest {
         }
     }
 
-    private fun getMessageFor(filter: String): String {
+    private fun getMessageFor(filter: String?, expectedUUIDProviders: Int): String {
         return virtualNode.withSandbox(MESSENGER_CPB, FLOW, filter) { vns, ctx ->
             assertThat(ctx.getSandboxSingletonServices<UUIDProvider>())
-                .withFailMessage { "Wrong number of UUIDProvider singletons" }
-                .hasSize(1)
+                .describedAs("Number of UUIDProvider singletons")
+                .hasSize(expectedUUIDProviders)
             assertThat(ctx.getSandboxSingletonServices<InternalService>())
-                .withFailMessage { "Wrong number of InternalService singletons" }
+                .describedAs("Number of InternalService singletons")
                 .hasSize(1)
 
             val messengerClass = vns.getFlowClass(MESSENGER_FLOW, ctx)
@@ -86,12 +86,12 @@ class NonInjectableSingletonTest {
 
             val internalServices = bundleContext.getServiceReferences(InternalService::class.java.name, null)
             assertThat(internalServices)
-                .withFailMessage { "NonInjectable InternalService services $internalServices registered inside sandbox" }
+                .withFailMessage("NonInjectable InternalService services %s registered inside sandbox", internalServices)
                 .isNullOrEmpty()
 
             val uuidProviders = bundleContext.getServiceReferences(UUIDProvider::class.java.name, null)
             assertThat(uuidProviders)
-                .withFailMessage { "NonInjectable UUIDProvider services $uuidProviders registered inside sandbox" }
+                .withFailMessage("NonInjectable UUIDProvider services %s registered inside sandbox", uuidProviders)
                 .isNullOrEmpty()
 
             vns.runFlow(messengerClass)
@@ -101,16 +101,17 @@ class NonInjectableSingletonTest {
     private class UUIDArgumentProvider : ArgumentsProvider {
         override fun provideArguments(context: ExtensionContext): Stream<out Arguments> {
             return Stream.of(
-                Arguments.of("(test.value=0)", ZERO_UUID.toString()),
-                Arguments.of("(test.value=1)", ONE_UUID.toString())
+                Arguments.of("(test.value=0)", 1, ZERO_UUID.toString()),
+                Arguments.of("(test.value=1)", 1, ONE_UUID.toString()),
+                Arguments.of("(test.value=*)", 2, "$ONE_UUID,$ZERO_UUID")
             )
         }
     }
 
     @ParameterizedTest
     @ArgumentsSource(UUIDArgumentProvider::class)
-    fun testFilteringForUUIDProvider(filter: String, expectedMessage: String) {
-        assertEquals(expectedMessage, getMessageFor(filter))
+    fun testFilteringForUUIDProvider(filter: String?, expectedUUIDProviders: Int, expectedMessage: String) {
+        assertEquals(expectedMessage, getMessageFor(filter, expectedUUIDProviders))
     }
 
     @Suppress("unused")
@@ -142,10 +143,13 @@ class NonInjectableSingletonTest {
     @ServiceRanking(Int.MIN_VALUE / 2)
     class UUIDInternalServiceImpl @Activate constructor(
         @Reference
-        private val uuidProvider: UUIDProvider
+        private val uuidProviders: List<UUIDProvider>
     ) : InternalService, UsedByFlow {
         override fun getMessage(): String {
-            return uuidProvider.uuid.toString()
+            // These services are in decreasing service ranking order.
+            // This is a consequence of how ServiceDefinition is implemented
+            // rather than being an OSGi requirement.
+            return uuidProviders.map(UUIDProvider::getUUID).joinToString(",")
         }
     }
 

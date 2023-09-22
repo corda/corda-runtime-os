@@ -23,14 +23,14 @@ interface MediatorConsumer<K : Any, V : Any> : AutoCloseable {
     fun poll(timeout: Duration): List<CordaConsumerRecord<K, V>>
 
     /**
-     * Asynchronously commit the consumer offsets.
+     * Asynchronously commit the consumer offsets. This function should be called only after `poll` was called.
      *
-     * @return [CompletableFuture] with committed offsets.
+     * @return [Deferred] with committed offsets.
      */
-    fun commitAsyncOffsets(): Deferred<Map<CordaTopicPartition, Long>>
+    fun asyncCommitOffsets(): Deferred<Map<CordaTopicPartition, Long>>
 
     /**
-     * Resets consumer's offsets to the last committed positions.
+     * Resets consumer's offsets to the last committed positions. Next poll will read from the last committed positions.
      */
     fun resetEventOffsetPosition()
 }

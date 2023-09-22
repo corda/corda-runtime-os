@@ -57,6 +57,11 @@ interface PoolCacheState {
     fun claimedTokens(): Collection<CachedToken>
 
     /**
+     * Ensures any claims that have breached their expiry are removed from the state.
+     */
+    fun removeExpiredClaims()
+
+    /**
      * Creates an Avro representation of the [PoolCacheState].
      *
      * @return The Avro representation of the [PoolCacheState].

@@ -3,6 +3,7 @@ package net.corda.membership.impl.registration.dynamic.mgm
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.SignatureSpecs.ECDSA_SHA256
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
@@ -31,6 +32,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_HASH
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_SIGNATURE_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
@@ -44,6 +46,7 @@ import net.corda.test.util.TestRandom
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.KeySchemeCodes
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -77,6 +80,10 @@ class MGMRegistrationMemberInfoHandlerTest {
         const val GROUP_POLICY_PROPERTY_KEY = GROUP_POLICY_PREFIX_WITH_DOT + "test"
     }
 
+    private val ecdhKeyId = "ABC123456789"
+    private val sessionKeyId = "BBC123456789"
+    private val sessionKeySchema = KeySchemeCodes.RSA_CODE_NAME
+
     private val holdingIdentity = HoldingIdentity(
         MemberX500Name.parse("O=Alice, L=London, C=GB"),
         UUID(0, 1).toString()
@@ -107,6 +114,7 @@ class MGMRegistrationMemberInfoHandlerTest {
         get() = assertDoesNotThrow { contextCaptor.secondValue.items.toMap() }
 
     private val clock: Clock = TestClock(Instant.ofEpochSecond(0))
+
     private val cryptoOpsClient: CryptoOpsClient = mock {
         on {
             lookupKeysByIds(
@@ -145,7 +153,7 @@ class MGMRegistrationMemberInfoHandlerTest {
                 EMPTY_STRING,
                 EMPTY_STRING,
                 ByteBuffer.wrap(EMPTY_STRING.toByteArray()),
-                EMPTY_STRING,
+                sessionKeySchema,
                 EMPTY_STRING,
                 0,
                 EMPTY_STRING,
@@ -201,9 +209,6 @@ class MGMRegistrationMemberInfoHandlerTest {
         virtualNodeInfoReadService,
         cordaAvroSerializationFactory,
     )
-
-    private val ecdhKeyId = "ABC123456789"
-    private val sessionKeyId = "BBC123456789"
 
     private val validTestContext
         get() = mapOf(
@@ -506,6 +511,54 @@ class MGMRegistrationMemberInfoHandlerTest {
             )
         }
     }
+
+    @Test
+    fun `session key with unsupported key scheme will cause an exception`() {
+        whenever(
+            cryptoOpsClient.lookupKeysByIds(
+                holdingIdentity.shortHash.value,
+                listOf(
+                    ShortHash.of(sessionKeyId)
+                )
+            )
+        ).doReturn(
+            listOf(
+                CryptoSigningKey(
+                    EMPTY_STRING,
+                    EMPTY_STRING,
+                    SESSION_INIT,
+                    EMPTY_STRING,
+                    EMPTY_STRING,
+                    ByteBuffer.wrap(EMPTY_STRING.toByteArray()),
+                    KeySchemeCodes.EDDSA_ED25519_CODE_NAME,
+                    EMPTY_STRING,
+                    0,
+                    EMPTY_STRING,
+                    Instant.ofEpochSecond(0)
+                )
+            )
+        )
+
+        assertThrows<MGMRegistrationContextValidationException> {
+            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
+                holdingIdentity,
+                validTestContext
+            )
+        }
+    }
+    @Test
+    fun `session key with unsupported key scheme and signature spec combination will cause an exception`() {
+        // this test relies on the session key scheme being mocked to be incompatible with the signature spec so this assertion verifies
+        // the value isn't changed
+        assertThat(sessionKeySchema).isEqualTo(KeySchemeCodes.RSA_CODE_NAME)
+        assertThrows<MGMRegistrationContextValidationException> {
+            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
+                holdingIdentity,
+                validTestContext + mapOf(SESSION_KEYS_SIGNATURE_SPEC.format(0) to ECDSA_SHA256.signatureName)
+            )
+        }
+    }
+
     private class Operation(
         private val value: MembershipPersistenceResult<Unit>
     ) : MembershipPersistenceOperation<Unit> {

@@ -7,9 +7,10 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.Mockito.doReturn
+import org.mockito.Mockito.doThrow
 import org.mockito.Mockito.times
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -43,7 +44,7 @@ class MessageBusConsumerTest {
     fun testSubscribe() {
         mediatorConsumer.subscribe()
 
-        verify(cordaConsumer).subscribe(eq(TOPIC))
+        verify(cordaConsumer).subscribe(eq(TOPIC), anyOrNull())
     }
 
     @Test
@@ -56,18 +57,18 @@ class MessageBusConsumerTest {
 
     @Test
     fun testCommitAsyncOffsets() {
-        mediatorConsumer.commitAsyncOffsets()
+        mediatorConsumer.asyncCommitOffsets()
 
-        verify(cordaConsumer).commitAsyncOffsets(any())
+        verify(cordaConsumer).asyncCommitOffsets(any())
     }
 
     @Test
     fun testCommitAsyncOffsetsWithError() {
-        doReturn(CordaRuntimeException("")).whenever(cordaConsumer).commitAsyncOffsets(any())
+        doThrow(CordaRuntimeException("")).whenever(cordaConsumer).asyncCommitOffsets(any())
 
         assertThrows<CordaRuntimeException> {
             runBlocking {
-                mediatorConsumer.commitAsyncOffsets().await()
+                mediatorConsumer.asyncCommitOffsets().await()
             }
         }
     }
