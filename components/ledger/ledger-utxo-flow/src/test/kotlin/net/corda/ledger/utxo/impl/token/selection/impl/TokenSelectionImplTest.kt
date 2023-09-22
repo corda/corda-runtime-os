@@ -9,6 +9,7 @@ import net.corda.v5.ledger.utxo.token.selection.TokenClaimCriteria
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.math.BigDecimal
@@ -32,8 +33,8 @@ class TokenSelectionImplTest {
         whenever(
             externalEventExecutor.execute(
                 requestId = any(),
-                TokenClaimQueryExternalEventFactory::class.java,
-                criteria
+                eq(TokenClaimQueryExternalEventFactory::class.java),
+                eq(criteria)
             )
         ).thenReturn(tokenClaim)
 
