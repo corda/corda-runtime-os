@@ -4,6 +4,7 @@ import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.ledger.utxo.impl.token.selection.factories.ClaimReleaseExternalEventFactory
 import net.corda.v5.ledger.utxo.StateRef
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -23,7 +24,7 @@ class TokenClaimImplTest {
         TokenClaimImpl("c1", key, listOf(), externalEventExecutor).useAndRelease(stateRefs)
 
         verify(externalEventExecutor).execute(
-            requestId = UUID.randomUUID(),
+            requestId = any(),
             eq(ClaimReleaseExternalEventFactory::class.java),
             argThat { this.usedTokens == stateRefs && this.poolKey == key && this.claimId=="c1" }
         )

@@ -17,6 +17,7 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -50,7 +51,7 @@ class UtxoLedgerGroupParametersPersistenceServiceImplTest {
         whenever(groupParametersCache.get(any())).thenReturn(null)
         whenever(
             externalEventExecutor.execute(
-                requestId = UUID.randomUUID(),
+                requestId = any(),
                 any<Class<FindSignedGroupParametersExternalEventFactory>>(),
                 any()
             )
@@ -65,7 +66,7 @@ class UtxoLedgerGroupParametersPersistenceServiceImplTest {
         whenever(groupParametersCache.get(any())).thenReturn(null)
         whenever(
             externalEventExecutor.execute(
-                requestId = UUID.randomUUID(),
+                requestId = any(),
                 any<Class<FindSignedGroupParametersExternalEventFactory>>(),
                 any()
             )
@@ -79,7 +80,7 @@ class UtxoLedgerGroupParametersPersistenceServiceImplTest {
         whenever(groupParametersCache.get(any())).thenReturn(null)
         whenever(
             externalEventExecutor.execute(
-                requestId = UUID.randomUUID(),
+                requestId = any(),
                 any<Class<FindSignedGroupParametersExternalEventFactory>>(),
                 any()
             )
@@ -96,7 +97,7 @@ class UtxoLedgerGroupParametersPersistenceServiceImplTest {
         whenever(groupParametersCache.get(any())).thenReturn(signedGroupParameters)
         assertThat(utxoLedgerGroupParametersPersistenceService.find(mock())).isEqualTo(signedGroupParameters)
         verify(externalEventExecutor, never()).execute(
-            requestId = UUID.randomUUID(),
+            requestId = eq(UUID.randomUUID()),
             any<Class<FindSignedGroupParametersExternalEventFactory>>(),
             any()
         )
@@ -113,7 +114,7 @@ class UtxoLedgerGroupParametersPersistenceServiceImplTest {
         whenever(groupParametersCache.get(any())).thenReturn(null)
         utxoLedgerGroupParametersPersistenceService.persistIfDoesNotExist(signedGroupParameters)
         verify(externalEventExecutor).execute(
-            requestId = UUID.randomUUID(),
+            requestId = any(),
             any<Class<PersistSignedGroupParametersIfDoNotExistExternalEventFactory>>(),
             any()
         )
@@ -130,7 +131,7 @@ class UtxoLedgerGroupParametersPersistenceServiceImplTest {
         whenever(groupParametersCache.get(any())).thenReturn(null)
         whenever(
             externalEventExecutor.execute(
-                requestId = UUID.randomUUID(),
+                requestId = any(),
                 any<Class<PersistSignedGroupParametersIfDoNotExistExternalEventFactory>>(),
                 any()
             )
@@ -148,7 +149,7 @@ class UtxoLedgerGroupParametersPersistenceServiceImplTest {
         whenever(groupParametersCache.get(any())).thenReturn(signedGroupParameters)
         utxoLedgerGroupParametersPersistenceService.persistIfDoesNotExist(signedGroupParameters)
         verify(externalEventExecutor, never()).execute(
-            requestId = UUID.randomUUID(),
+            requestId = eq(UUID.randomUUID()),
             any<Class<PersistSignedGroupParametersIfDoNotExistExternalEventFactory>>(),
             any()
         )

@@ -79,8 +79,8 @@ class SigningServiceImplTest {
         whenever(
             externalEventExecutor.execute(
                 requestId = any(),
-                FilterMyKeysExternalEventFactory::class.java,
-                setOf(key1, key2)
+                eq(FilterMyKeysExternalEventFactory::class.java),
+                eq(setOf(key1, key2))
             )
         ).thenReturn(listOf(key1))
 
@@ -99,8 +99,8 @@ class SigningServiceImplTest {
         whenever(
             externalEventExecutor.execute(
                 requestId = any(),
-                FilterMyKeysExternalEventFactory::class.java,
-                setOf(plainKey, compositeKeyLeaf1, compositeKeyLeaf2)
+                eq(FilterMyKeysExternalEventFactory::class.java),
+                eq(setOf(plainKey, compositeKeyLeaf1, compositeKeyLeaf2))
             )
         ).thenReturn(listOf(plainKey, compositeKeyLeaf1))
 
@@ -122,8 +122,8 @@ class SigningServiceImplTest {
         whenever(
             externalEventExecutor.execute(
                 requestId = any(),
-                FilterMyKeysExternalEventFactory::class.java,
-                setOf(compositeKeyLeaf1, compositeKeyLeaf2)
+                eq(FilterMyKeysExternalEventFactory::class.java),
+                eq(setOf(compositeKeyLeaf1, compositeKeyLeaf2))
             )
         ).thenReturn(listOf(compositeKeyLeaf1, compositeKeyLeaf2))
 
@@ -157,8 +157,8 @@ class SigningServiceImplTest {
         whenever(
             externalEventExecutor.execute(
                 requestId = any(),
-                FilterMyKeysExternalEventFactory::class.java,
-                setOf(key2, key3)
+                eq(FilterMyKeysExternalEventFactory::class.java),
+                eq(setOf(key2, key3))
             )
         ).thenReturn(listOf(key2))
         assertEquals(mapOf(key1 to key1, key2 to key2, key3 to null), signingService.findMySigningKeys(setOf(key1, key2, key3)))
