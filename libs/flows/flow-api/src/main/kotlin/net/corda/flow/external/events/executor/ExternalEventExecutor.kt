@@ -2,6 +2,7 @@ package net.corda.flow.external.events.executor
 
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.v5.base.annotations.Suspendable
+import java.util.UUID
 
 /**
  * [ExternalEventExecutor] sends events to processors external to the flow pipeline and receives responses from them.
@@ -32,9 +33,12 @@ interface ExternalEventExecutor {
         parameters: PARAMETERS
     ): RESUME
 
+    /**
+     * Calling the previous overload with a random [UUID] for the request id.
+     */
     @Suspendable
     fun <PARAMETERS : Any, RESPONSE : Any, RESUME> execute(
         factoryClass: Class<out ExternalEventFactory<PARAMETERS, RESPONSE, RESUME>>,
         parameters: PARAMETERS
-    ): RESUME
+    ): RESUME = execute(UUID.randomUUID().toString(), factoryClass, parameters)
 }

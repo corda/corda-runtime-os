@@ -1,6 +1,5 @@
 package net.corda.flow.external.events.impl.executor
 
-import java.util.UUID
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.fiber.FlowFiber
@@ -44,12 +43,4 @@ class ExternalEventExecutorImpl @Activate constructor(
                 platformContextProperties = this.flattenPlatformProperties()
             )
         }
-
-    @Suspendable
-    override fun <PARAMETERS : Any, RESPONSE : Any, RESUME> execute(
-        factoryClass: Class<out ExternalEventFactory<PARAMETERS, RESPONSE, RESUME>>,
-        parameters: PARAMETERS
-    ): RESUME {
-        return execute(UUID.randomUUID().toString(), factoryClass, parameters)
-    }
 }
