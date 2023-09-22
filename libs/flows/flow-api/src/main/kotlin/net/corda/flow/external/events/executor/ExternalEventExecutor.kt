@@ -34,7 +34,7 @@ interface ExternalEventExecutor {
     ): RESUME
 
     /**
-     * Calling the other [execute] overload with a random [UUID] for the request id.
+     * Calling the other [execute] overload with a random [UUID] as the request id.
      */
     @Suspendable
     fun <PARAMETERS : Any, RESPONSE : Any, RESUME> execute(
