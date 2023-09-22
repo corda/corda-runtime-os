@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory
 @Suppress("LongParameterList")
 internal class VirtualNodeDbImpl(
     override val isPlatformManagedDb: Boolean,
+    override val ddlConnectionProvided: Boolean,
     override val dbConnections: Map<DbPrivilege, DbConnection?>,
     override val dbType: VirtualNodeDbType,
     private val holdingIdentityShortHash: ShortHash,
@@ -40,17 +41,17 @@ internal class VirtualNodeDbImpl(
      */
     @Suppress("NestedBlockDepth")
     override fun createSchemasAndUsers() {
-        if (isPlatformManagedDb) {
-            // Order is important because DB schema should be deleted first if DDL user already exists
-            for (privilege in listOf(DDL, DML)) {
-                dbConnections[privilege]!!.let { connection ->
-                    val user = connection.getUser()
-                        ?: throw DBConfigurationException("DB user not known for connection ${connection.description}")
-                    val password = connection.getPassword()
-                        ?: throw DBConfigurationException("DB password not known for connection ${connection.description}")
-                    val dbSchema = dbType.getSchemaName(holdingIdentityShortHash)
-                    // This covers scenario when previous virtual node on-boarding request failed after user was created
-                    // Since connections are persisted at later point, user's password is lost, so user is re-created
+        // Order is important because DB schema should be deleted first if DDL user already exists
+        for (privilege in listOf(DDL, DML)) {
+            dbConnections[privilege]!!.let { connection ->
+                val user = connection.getUser()
+                    ?: throw DBConfigurationException("DB user not known for connection ${connection.description}")
+                val password = connection.getPassword()
+                    ?: throw DBConfigurationException("DB password not known for connection ${connection.description}")
+                val dbSchema = dbType.getSchemaName(holdingIdentityShortHash)
+                // This covers scenario when previous virtual node on-boarding request failed after user was created
+                // Since connections are persisted at later point, user's password is lost, so user is re-created
+                if (isPlatformManagedDb) {
                     if (virtualNodesDbAdmin.userExists(user)) {
                         if (privilege == DDL) {
                             log.info("User for connection ${connection.description} already exists in DB, schema will be deleted")
@@ -59,11 +60,11 @@ internal class VirtualNodeDbImpl(
                         log.info("User for connection ${connection.description} already exists in DB, it will be re-created")
                         virtualNodesDbAdmin.deleteUser(user)
                     }
-                    // When DML user is created, it is granted with privileges related to DB objects created by DDL user
-                    // (therefore DDL user has to be provided as grantee)
-                    val grantee = if (privilege == DML) dbConnections[DDL]!!.getUser() else null
-                    virtualNodesDbAdmin.createDbAndUser(dbSchema, user, password, privilege, grantee)
                 }
+                // When DML user is created, it is granted with privileges related to DB objects created by DDL user
+                // (therefore DDL user has to be provided as grantee)
+                val grantee = if (privilege == DML) dbConnections[DDL]!!.getUser() else null
+                virtualNodesDbAdmin.createDbAndUser(dbSchema, user, password, privilege, grantee)
             }
         }
     }
