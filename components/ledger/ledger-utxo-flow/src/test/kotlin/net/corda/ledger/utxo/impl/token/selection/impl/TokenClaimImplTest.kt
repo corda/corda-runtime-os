@@ -9,7 +9,6 @@ import org.mockito.kotlin.argThat
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
-import java.util.UUID
 
 
 class TokenClaimImplTest {
