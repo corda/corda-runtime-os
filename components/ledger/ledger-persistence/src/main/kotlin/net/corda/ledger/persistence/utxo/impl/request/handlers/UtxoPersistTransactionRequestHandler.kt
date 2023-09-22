@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory
 
 class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constructor(
     private val holdingIdentity: HoldingIdentity,
-    private val transactionReader: UtxoTransactionReader,
+    private val transaction: UtxoTransactionReader,
     private val tokenObservers: UtxoTokenObserverMap,
     private val externalEventContext: ExternalEventContext,
     private val persistenceService: UtxoPersistenceService,
@@ -37,12 +37,12 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
     override fun execute(): List<Record<*, *>> {
 
         val listOfPairsStateAndUtxoToken =
-            getTokens(transactionReader.getVisibleStates().values.toList(), tokenObservers)
+            getTokens(transaction.getVisibleStates().values.toList(), tokenObservers)
         val outputTokenRecords = getOutputTokenRecords(listOfPairsStateAndUtxoToken)
         val utxoTokenMap = listOfPairsStateAndUtxoToken.associate { it.first.ref to it.second }
 
         // persist the transaction
-        persistenceService.persistTransaction(transactionReader, utxoTokenMap)
+        persistenceService.persistTransaction(transaction, utxoTokenMap)
 
         // return output records
         return outputTokenRecords + utxoOutputRecordFactory.getPersistTransactionSuccessRecord(externalEventContext)
@@ -51,7 +51,7 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
     private fun getOutputTokenRecords(
         listOfPairsStateAndUtxoToken: List<Pair<StateAndRef<*>, UtxoToken>>
     ): List<Record<TokenPoolCacheKey, TokenPoolCacheEvent>> {
-        val isTransactionVerified = transactionReader.status == TransactionStatus.VERIFIED
+        val isTransactionVerified = transaction.status == TransactionStatus.VERIFIED
         if (!isTransactionVerified) {
             return listOf()
         }
@@ -59,7 +59,7 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
         return utxoOutputRecordFactory.getTokenCacheChangeEventRecords(
             holdingIdentity,
             listOfPairsStateAndUtxoToken,
-            getTokens(transactionReader.getConsumedStates(persistenceService), tokenObservers)
+            getTokens(transaction.getConsumedStates(persistenceService), tokenObservers)
         )
     }
 
