@@ -33,6 +33,4 @@ interface UtxoTransactionReader {
     fun getConsumedStates(persistenceService: UtxoPersistenceService): List<StateAndRef<ContractState>>
 
     fun getConsumedStateRefs(): List<StateRef>
-
-    fun getUtxoTransaction(persistenceService: UtxoPersistenceService): UtxoLedgerTransaction
 }

@@ -763,10 +763,6 @@ class UtxoPersistenceServiceImplTest {
                 StateRef(transactionId, index)
             )
         }
-
-        override fun getUtxoTransaction(persistenceService: UtxoPersistenceService): UtxoLedgerTransaction {
-            TODO("Not yet implemented")
-        }
     }
 
     class TestContract : Contract {
