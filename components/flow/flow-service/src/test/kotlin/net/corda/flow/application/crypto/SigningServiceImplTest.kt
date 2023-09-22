@@ -139,7 +139,11 @@ class SigningServiceImplTest {
         val key1 = mock<PublicKey>()
         val key2 = mock<PublicKey>()
         whenever(mySigningKeysCache.get(setOf(key1, key2))).thenReturn(mapOf(key1 to key1, key2 to null))
-        verify(externalEventExecutor, never()).execute(any(), eq(FilterMyKeysExternalEventFactory::class.java), any())
+        verify(externalEventExecutor, never()).execute(
+            requestId = any(),
+            eq(FilterMyKeysExternalEventFactory::class.java),
+            any()
+        )
         assertEquals(mapOf(key1 to key1, key2 to null), signingService.findMySigningKeys(setOf(key1, key2)))
         verify(mySigningKeysCache, never()).putAll(any())
     }
