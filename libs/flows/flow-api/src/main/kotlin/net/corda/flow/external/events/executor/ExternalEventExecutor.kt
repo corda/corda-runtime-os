@@ -16,7 +16,9 @@ interface ExternalEventExecutor {
      * - Response of type [RESUME].
      * - An exception.
      *
-     * @param requestId The unique request id of the event.
+     * @param requestId The unique request id of the event. Please note the request id is used to deduplicate events processing,
+     * and like so to achieve idempotency. This means that retrying a certain event should retain the same [requestId] across
+     * retries, otherwise it is deemed a different event.
      * @param factoryClass The [ExternalEventFactory] that is called to create the event to send and convert the
      * received response into an acceptable object to resume with.
      * @param parameters The [PARAMETERS] object.
