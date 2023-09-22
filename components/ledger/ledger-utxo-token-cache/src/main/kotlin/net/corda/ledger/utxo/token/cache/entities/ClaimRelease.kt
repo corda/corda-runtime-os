@@ -8,7 +8,3 @@ data class ClaimRelease(
     override val poolKey: TokenPoolKey
 ) : TokenEvent
 
-data class ForceClaimRelease(
-    val claimId: String,
-    override val poolKey: TokenPoolKey
-) : TokenEvent
