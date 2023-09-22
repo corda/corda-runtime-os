@@ -82,7 +82,7 @@ class UtxoLedgerTransactionVerificationServiceImplTest {
         )
         whenever(
             externalEventExecutor.execute(
-                requestId = UUID.randomUUID(),
+                requestId = any(),
                 argumentCaptor.capture(),
                 any()
             )
@@ -117,7 +117,7 @@ class UtxoLedgerTransactionVerificationServiceImplTest {
         )
         whenever(
             externalEventExecutor.execute(
-                requestId = UUID.randomUUID(),
+                requestId = any(),
                 argumentCaptor.capture(),
                 any()
             )

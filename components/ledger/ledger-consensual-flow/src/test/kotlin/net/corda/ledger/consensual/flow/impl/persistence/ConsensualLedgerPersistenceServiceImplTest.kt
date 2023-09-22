@@ -52,7 +52,7 @@ class ConsensualLedgerPersistenceServiceImplTest {
         whenever(serializationService.serialize(any<Any>())).thenReturn(serializedBytes)
         whenever(
             externalEventExecutor.execute(
-                requestId = UUID.randomUUID(),
+                requestId = any(),
                 argumentCaptor.capture(),
                 any()
             )

@@ -74,7 +74,7 @@ class LedgerUniquenessCheckerClientServiceImplTest {
         uniquenessCheckResult: UniquenessCheckResult? = UniquenessCheckResultSuccessImpl(Instant.now())
     ): LedgerUniquenessCheckerClientService {
         val mockExternalEventExecutor = mock<ExternalEventExecutor>()
-        whenever(mockExternalEventExecutor.execute(requestId = UUID.randomUUID(), argumentCaptor.capture(), any()))
+        whenever(mockExternalEventExecutor.execute(requestId = any(), argumentCaptor.capture(), any()))
             .thenReturn(uniquenessCheckResult)
 
         return LedgerUniquenessCheckerClientServiceImpl(
