@@ -67,12 +67,12 @@ spec:
       labels:
         {{- include "corda.selectorLabels" . | nindent 8 }}
     spec:
-      {{- include "corda.imagePullSecrets" . | nindent 6 }}
+      {{- include "corda.imagePullSecrets" . | indent 6 }}
       {{- include "corda.tolerations" . | nindent 6 }}
       serviceAccountName: {{ include "corda.bootstrapPreinstallServiceAccountName" . }}
       {{- with .Values.podSecurityContext }}
       securityContext:
-        {{ . | toYaml | nindent 8 }}
+        {{- . | toYaml | nindent 8 }}
       {{- end }}
       containers:
         - name: preinstall-checks
@@ -132,12 +132,12 @@ spec:
       labels:
         {{- include "corda.selectorLabels" . | nindent 8 }}
     spec:
-      {{- include "corda.imagePullSecrets" . | nindent 6 }}
-      {{- include "corda.tolerations" $ | nindent 6 }}
-      {{- include "corda.bootstrapServiceAccount" . | nindent 6 }}
+      {{- include "corda.imagePullSecrets" . | indent 6 }}
+      {{- include "corda.tolerations" $ | indent 6 }}
+      {{- include "corda.bootstrapServiceAccount" . | indent 6 }}
       {{- with .Values.podSecurityContext }}
       securityContext:
-        {{ . | toYaml | nindent 8 }}
+        {{- . | toYaml | nindent 8 }}
       {{- end }}
       containers:
         - name: fin
@@ -184,8 +184,8 @@ spec:
               name: temp
           env:
           {{- include "corda.bootstrapClusterDbEnv" . | nindent 12 }}
-          {{ include "corda.rbacDbUserEnv" . | nindent 12 }}
-          {{ include "corda.cryptoDbUserEnv" . | nindent 12 }}
+          {{- include "corda.rbacDbUserEnv" . | nindent 12 }}
+          {{- include "corda.cryptoDbUserEnv" . | nindent 12 }}
           {{- include "corda.clusterDbEnv" . | nindent 12 }}
         {{- include "corda.generateAndExecuteSql" ( dict "name" "crypto-config" "subCommand" "create-crypto-config" "Values" .Values "Chart" .Chart "Release" .Release "schema" "CRYPTO" "namePostfix" "worker-config" "sqlFile" "crypto-config.sql" "sequenceNumber" 12) | nindent 8 }}
       volumes:
@@ -220,12 +220,12 @@ spec:
       labels:
         {{- include "corda.selectorLabels" . | nindent 8 }}
     spec:
-      {{- include "corda.imagePullSecrets" . | nindent 6 }}
-      {{- include "corda.tolerations" . | nindent 6 }}
-      {{- include "corda.bootstrapServiceAccount" . | nindent 6 }}
+      {{- include "corda.imagePullSecrets" . | indent 6 }}
+      {{- include "corda.tolerations" . | indent 6 }}
+      {{- include "corda.bootstrapServiceAccount" . | indent 6 }}
       {{- with .Values.podSecurityContext }}
       securityContext:
-        {{ . | toYaml | nindent 8 }}
+        {{- . | toYaml | nindent 8 }}
       {{- end }}
       containers:
         - name: create-topics
@@ -261,9 +261,9 @@ spec:
               name: certs
               readOnly: true
             {{- end }}
-            {{ include "corda.log4jVolumeMount" . | nindent 12 }}
+            {{- include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
-            {{ include "corda.bootstrapCliEnv" . | nindent 12 }}
+            {{- include "corda.bootstrapCliEnv" . | nindent 12 }}
             {{- if .Values.kafka.sasl.enabled }}
               {{- range $k, $v := .Values.workers }}
             - name: {{ ( printf "KAFKA_SASL_USERNAME_%s" ( include "corda.workerTypeUpperSnakeCase" $k )) | quote }}
@@ -291,8 +291,8 @@ spec:
           {{- include "corda.bootstrapResources" . | nindent 10 }}
           {{- include "corda.containerSecurityContext" . | nindent 10 }}
           env:
-          {{- include "corda.bootstrapKafkaSaslUsernameAndPasswordEnv" . | nindent 12 }}
-          {{- include "corda.kafkaTlsPassword" . | nindent 12 }}
+          {{- include "corda.bootstrapKafkaSaslUsernameAndPasswordEnv" . | indent 12 }}
+          {{- include "corda.kafkaTlsPassword" . | indent 12 }}
           command:
             - /bin/bash
             - -c
@@ -339,9 +339,9 @@ spec:
               - key: {{ .Values.kafka.tls.truststore.valueFrom.secretKeyRef.key | quote }}
                 path: ca.crt
         {{- end }}
-        {{ include "corda.log4jVolume" . | nindent 8 }}
+        {{- include "corda.log4jVolume" . | nindent 8 }}
       restartPolicy: Never
-      {{- include "corda.bootstrapNodeSelector" . | nindent 6 }}
+      {{- include "corda.bootstrapNodeSelector" . | indent 6 }}
   backoffLimit: 0
 {{- end }}
 {{- end }}
@@ -366,12 +366,12 @@ spec:
       labels:
         {{- include "corda.selectorLabels" . | nindent 8 }}
     spec:
-      {{- include "corda.imagePullSecrets" . | nindent 6 }}
-      {{- include "corda.tolerations" . | nindent 6 }}
-      {{- include "corda.bootstrapServiceAccount" . | nindent 6 }}
+      {{- include "corda.imagePullSecrets" . | indent 6 }}
+      {{- include "corda.tolerations" . | indent 6 }}
+      {{- include "corda.bootstrapServiceAccount" . | indent 6 }}
       {{- with .Values.podSecurityContext }}
       securityContext:
-        {{ . | toYaml | nindent 8 }}
+        {{- . | toYaml | nindent 8 }}
       {{- end }}
       containers:
         - name: create-rbac-role-user-admin
@@ -385,10 +385,10 @@ spec:
           volumeMounts:
             - mountPath: /tmp
               name: temp
-            {{ include "corda.log4jVolumeMount" . | nindent 12 }}
+            {{- include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
-            {{ include "corda.restApiAdminSecretEnv" . | nindent 12 }}
-            {{ include "corda.bootstrapCliEnv" . | nindent 12 }}
+            {{- include "corda.restApiAdminSecretEnv" . | nindent 12 }}
+            {{- include "corda.bootstrapCliEnv" . | nindent 12 }}
         - name: create-rbac-role-vnode-creator
           image: {{ include "corda.bootstrapCliImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -400,10 +400,10 @@ spec:
           volumeMounts:
             - mountPath: /tmp
               name: temp
-            {{ include "corda.log4jVolumeMount" . | nindent 12 }}
+            {{- include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
-            {{ include "corda.restApiAdminSecretEnv" . | nindent 12 }}
-            {{ include "corda.bootstrapCliEnv" . | nindent 12 }}
+            {{- include "corda.restApiAdminSecretEnv" . | nindent 12 }}
+            {{- include "corda.bootstrapCliEnv" . | nindent 12 }}
         - name: create-rbac-role-corda-dev
           image: {{ include "corda.bootstrapCliImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -415,15 +415,15 @@ spec:
           volumeMounts:
             - mountPath: /tmp
               name: temp
-            {{ include "corda.log4jVolumeMount" . | nindent 12 }}
+            {{- include "corda.log4jVolumeMount" . | nindent 12 }}
           env:
-            {{ include "corda.restApiAdminSecretEnv" . | nindent 12 }}
-            {{ include "corda.bootstrapCliEnv" . | nindent 12 }}
-      {{- include "corda.bootstrapNodeSelector" . | nindent 6 }}
+            {{- include "corda.restApiAdminSecretEnv" . | nindent 12 }}
+            {{- include "corda.bootstrapCliEnv" . | nindent 12 }}
+      {{- include "corda.bootstrapNodeSelector" . | indent 6 }}
       volumes:
         - name: temp
           emptyDir: {}
-        {{ include "corda.log4jVolume" . | nindent 8 }}
+        {{- include "corda.log4jVolume" . | nindent 8 }}
       restartPolicy: Never
   backoffLimit: 0
 {{- end }}
@@ -446,7 +446,7 @@ Bootstrap DB client image
 {{/*
 Bootstrap resources
 */}}
-{{- define "corda.bootstrapResources" }}
+{{- define "corda.bootstrapResources" -}}
 resources:
   requests:
   {{- with .Values.bootstrap.resources.requests.cpu }}
@@ -467,7 +467,7 @@ resources:
 {{/*
 Bootstrap node selector
 */}}
-{{- define "corda.bootstrapNodeSelector" }}
+{{- define "corda.bootstrapNodeSelector" -}}
 {{- with .Values.bootstrap.nodeSelector | default .Values.nodeSelector }}
 nodeSelector:
   {{- toYaml . | nindent 2 }}
@@ -477,7 +477,7 @@ nodeSelector:
 {{/*
 Bootstrap service account
 */}}
-{{- define "corda.bootstrapServiceAccount" }}
+{{- define "corda.bootstrapServiceAccount" -}}
 {{- with .Values.bootstrap.serviceAccount.name | default .Values.serviceAccount.name }}
 serviceAccountName: {{ . }}
 {{- end }}
@@ -559,29 +559,20 @@ a second init container to execute the output SQL to the relevant database
   volumeMounts:
     - mountPath: /tmp
       name: temp
-    {{ include "corda.log4jVolumeMount" . | nindent 4 }}
+    {{- include "corda.log4jVolumeMount" . | nindent 4 }}
   env:
     {{- if eq .name "db" -}}
       {{- include "corda.bootstrapClusterDbEnv" . | nindent 4 }}
     {{- end -}}
-    {{- if or (eq .name "rest") (eq .name "rbac") (eq .name "vnodes") (eq .name "crypto") -}}
-       {{- "\n    " -}} {{- /* legacy whitespace compliance */ -}}
-    {{- end -}}
     {{- if and (not (eq .name "rest")) (not (eq .name "db")) -}}
-      {{ include "corda.configSaltAndPassphraseEnv" . | nindent 4 -}}
+      {{- include "corda.configSaltAndPassphraseEnv" . | nindent 4 -}}
     {{- end -}}
-    {{- if or (eq .name "rbac") (eq .name "crypto") (eq .name "vnodes") (eq .name "db") -}}
-       {{- "\n    " -}} {{- /* legacy whitespace compliance */ -}}
-    {{- end -}}
-
     {{- include "corda.bootstrapCliEnv" . | nindent 4 -}}{{- /* set JAVA_TOOL_OPTIONS, CONSOLE_LOG*, CORDA_CLI_HOME_DIR */ -}}
-
     {{- if or (eq .name "rbac") (eq .name "vnodes") }}
-    {{ include "corda.rbacDbUserEnv" . | nindent 4 }}
+    {{- include "corda.rbacDbUserEnv" . | nindent 4 }}
     {{- end -}}
-
     {{- if eq .name "vnodes" -}}
-      {{ include "corda.clusterDbEnv" . | nindent 4 -}}
+      {{- include "corda.clusterDbEnv" . | nindent 4 -}}
     {{- end -}}
     {{- if eq .name "rest" -}}
       {{- include "corda.restApiAdminSecretEnv" . | nindent 4 }}

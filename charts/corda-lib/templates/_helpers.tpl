@@ -71,10 +71,10 @@ imagePullSecrets:
 Container security context
 */}}
 {{- define "corda.containerSecurityContext" -}}
-{{- if not .Values.dumpHostPath }}
-{{- with .Values.containerSecurityContext }}
+{{- if not .Values.dumpHostPath -}}
+{{- with .Values.containerSecurityContext -}}
 securityContext:
-  {{ . | toYaml | nindent 2}}
+  {{- . | toYaml | nindent 2}}
 {{- end }}
 {{- end }}
 {{- end }}
@@ -93,9 +93,9 @@ topologySpreadConstraints:
 tolerations for node taints
 */}}
 {{- define "corda.tolerations" -}}
-{{- if .Values.tolerations }}
+{{- with .Values.tolerations }}
 tolerations:
-{{- range .Values.tolerations }}
+{{- range . }}
 - key: {{ required "Must specify key for toleration" .key }}
   {{- with .operator }}
   operator: {{ . }}

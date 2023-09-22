@@ -59,9 +59,11 @@ metadata:
   {{- range $key, $value := . }}
     {{ $key }}: {{ $value | quote }}
   {{- end }}
-  {{- end}}
+  {{- end }}
 spec:
-  type: {{ .type }}
+  {{- with .type }}
+  type: {{ . }}
+  {{- end }}
   {{- if .externalTrafficPolicy }}
   externalTrafficPolicy: {{ .externalTrafficPolicy }}
   {{- else if .loadBalancerSourceRanges }}
@@ -106,16 +108,16 @@ spec:
       {{- if and ( not $.Values.dumpHostPath ) ( not .profiling.enabled ) }}
       {{- with $.Values.podSecurityContext }}
       securityContext:
-        {{ . | toYaml | nindent 8 }}
+        {{- . | toYaml | nindent 8 }}
       {{- end }}
       {{- end }}
-      {{- include "corda.imagePullSecrets" $ | nindent 6 }}
-      {{- include "corda.tolerations" $ | nindent 6 }}
+      {{- include "corda.imagePullSecrets" $ | indent 6 }}
+      {{- include "corda.tolerations" $ | indent 6 }}
       {{- with $.Values.serviceAccount.name  }}
       serviceAccountName: {{ . }}
       {{- end }}
       {{- include "corda.topologySpreadConstraints" $ | indent 6 }}
-      {{- include "corda.affinity" (list $ . $worker ) | nindent 6 }}
+      {{- include "corda.affinity" (list $ . $worker ) | indent 6 }}
       containers:
       - name: {{ $workerName | quote }}
         image: {{ include "corda.workerImage" ( list $ . ) }}
@@ -432,8 +434,8 @@ Worker type in upper snake case
 Worker common labels
 */}}
 {{- define "corda.workerLabels" -}}
-{{- $ := index . 0 }}
-{{- $worker := index . 1 }}
+{{- $ := index . 0 -}}
+{{- $worker := index . 1 -}}
 {{ include "corda.labels" $ }}
 {{ include "corda.workerComponentLabel" $worker }}
 {{- end }}
@@ -442,8 +444,8 @@ Worker common labels
 Worker selector labels
 */}}
 {{- define "corda.workerSelectorLabels" -}}
-{{- $ := index . 0 }}
-{{- $worker := index . 1 }}
+{{- $ := index . 0 -}}
+{{- $worker := index . 1 -}}
 {{ include "corda.selectorLabels" $ }}
 {{ include "corda.workerComponentLabel" $worker }}
 {{- end }}
