@@ -189,7 +189,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     private fun commitOffsets() {
         runBlocking {
             consumers.map { consumer ->
-                consumer.commitAsyncOffsets()
+                consumer.asyncCommitOffsets()
             }.map {
                 it.await()
             }
