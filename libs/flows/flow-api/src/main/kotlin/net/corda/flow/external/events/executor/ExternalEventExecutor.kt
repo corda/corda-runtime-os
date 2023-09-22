@@ -16,12 +16,12 @@ interface ExternalEventExecutor {
      * - Response of type [RESUME].
      * - An exception.
      *
-     * @param factoryClass The [ExternalEventFactory] that is called to create the event to send and convert the
-     * received response into an acceptable object to resume with.
-     * @param parameters The [PARAMETERS] object.
      * @param requestId The unique request id of the event. Please note the request id is used to deduplicate events processing,
      * and like so to achieve idempotency. This means that retrying a certain event should retain the same [requestId] across
      * retries, otherwise it is deemed a different event.
+     * @param factoryClass The [ExternalEventFactory] that is called to create the event to send and convert the
+     * received response into an acceptable object to resume with.
+     * @param parameters The [PARAMETERS] object.
      *
      * @param PARAMETERS The type to pass to the factory just after suspending/creating the event.
      * @param RESPONSE The type received as a response from the external processor.
@@ -30,8 +30,17 @@ interface ExternalEventExecutor {
      */
     @Suspendable
     fun <PARAMETERS : Any, RESPONSE : Any, RESUME> execute(
+        requestId: UUID,
         factoryClass: Class<out ExternalEventFactory<PARAMETERS, RESPONSE, RESUME>>,
-        parameters: PARAMETERS,
-        requestId: UUID = UUID.randomUUID(),
+        parameters: PARAMETERS
     ): RESUME
+
+    /**
+     * Calling the other [execute] overload with a random [UUID] as the request id.
+     */
+    @Suspendable
+    fun <PARAMETERS : Any, RESPONSE : Any, RESUME> execute(
+        factoryClass: Class<out ExternalEventFactory<PARAMETERS, RESPONSE, RESUME>>,
+        parameters: PARAMETERS
+    ): RESUME = execute(UUID.randomUUID(), factoryClass, parameters)
 }

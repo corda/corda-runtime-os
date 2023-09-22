@@ -20,9 +20,9 @@ class ExternalEventExecutorImpl @Activate constructor(
 
     @Suspendable
     override fun <PARAMETERS : Any, RESPONSE : Any, RESUME> execute(
-        factoryClass: Class<out ExternalEventFactory<PARAMETERS, RESPONSE, RESUME>>,
-        parameters: PARAMETERS,
         requestId: UUID,
+        factoryClass: Class<out ExternalEventFactory<PARAMETERS, RESPONSE, RESUME>>,
+        parameters: PARAMETERS
     ): RESUME {
         @Suppress("unchecked_cast")
         return with(flowFiberService.getExecutingFiber()) {
