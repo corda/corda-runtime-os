@@ -44,7 +44,7 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
     @Reference(service = ExternalEventResponseFactory::class)
     private val externalEventResponseFactory: ExternalEventResponseFactory,
     @Reference(service = ResponseFactory::class)
-    private val responseFactory: ResponseFactory,
+    private val responseFactory: ResponseFactory
 ): UtxoRequestHandlerSelector {
 
     override fun selectHandler(sandbox: SandboxGroupContext, request: LedgerPersistenceRequest): RequestHandler {
