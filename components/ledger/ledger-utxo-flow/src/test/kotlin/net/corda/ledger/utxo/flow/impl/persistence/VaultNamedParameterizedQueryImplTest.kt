@@ -25,6 +25,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
+import java.util.UUID
 
 class VaultNamedParameterizedQueryImplTest {
 
@@ -181,7 +182,13 @@ class VaultNamedParameterizedQueryImplTest {
 
     @Test
     fun `rethrows CordaRuntimeExceptions as CordaPersistenceExceptions`() {
-        whenever(externalEventExecutor.execute(any<Class<VaultNamedQueryExternalEventFactory>>(), any()))
+        whenever(
+            externalEventExecutor.execute(
+                requestId = UUID.randomUUID(),
+                any<Class<VaultNamedQueryExternalEventFactory>>(),
+                any()
+            )
+        )
             .thenThrow(CordaRuntimeException("boom"))
 
         query.execute()
@@ -192,7 +199,13 @@ class VaultNamedParameterizedQueryImplTest {
 
     @Test
     fun `does not rethrow general exceptions as CordaPersistenceExceptions`() {
-        whenever(externalEventExecutor.execute(any<Class<VaultNamedQueryExternalEventFactory>>(), any()))
+        whenever(
+            externalEventExecutor.execute(
+                requestId = UUID.randomUUID(),
+                any<Class<VaultNamedQueryExternalEventFactory>>(),
+                any()
+            )
+        )
             .thenThrow(IllegalStateException("boom"))
 
         query.execute()

@@ -44,6 +44,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.nio.ByteBuffer
+import java.util.UUID
 
 @Suppress("LongParameterList")
 @Component(
@@ -71,6 +72,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         return recordSuspendable({ ledgerPersistenceFlowTimer(FindTransactionWithStatus) }) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
+                    requestId = UUID.randomUUID(),
                     FindTransactionExternalEventFactory::class.java,
                     FindTransactionParameters(id.toString(), transactionStatus)
                 )
@@ -96,6 +98,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         return recordSuspendable({ ledgerPersistenceFlowTimer(FindSignedLedgerTransactionWithStatus) }) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
+                    requestId = UUID.randomUUID(),
                     FindSignedLedgerTransactionExternalEventFactory::class.java,
                     FindSignedLedgerTransactionParameters(id.toString(), transactionStatus)
                 )
@@ -131,6 +134,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         return recordSuspendable({ ledgerPersistenceFlowTimer(PersistTransaction)}) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
+                    requestId = UUID.randomUUID(),
                     PersistTransactionExternalEventFactory::class.java,
                     PersistTransactionParameters(serialize(transaction.toContainer()), transactionStatus, visibleStatesIndexes)
                 )
@@ -143,6 +147,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         recordSuspendable({ ledgerPersistenceFlowTimer(UpdateTransactionStatus)}) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
+                    requestId = UUID.randomUUID(),
                     UpdateTransactionStatusExternalEventFactory::class.java,
                     UpdateTransactionStatusParameters(id.toString(), transactionStatus)
                 )
@@ -158,6 +163,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         return recordSuspendable({ ledgerPersistenceFlowTimer(PersistTransactionIfDoesNotExist)}) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
+                    requestId = UUID.randomUUID(),
                     PersistTransactionIfDoesNotExistExternalEventFactory::class.java,
                     PersistTransactionIfDoesNotExistParameters(serialize(transaction.toContainer()), transactionStatus)
                 )

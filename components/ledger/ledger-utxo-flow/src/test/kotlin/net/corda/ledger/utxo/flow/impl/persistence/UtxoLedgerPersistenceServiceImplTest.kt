@@ -46,6 +46,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import java.util.UUID
 
 class UtxoLedgerPersistenceServiceImplTest {
 
@@ -82,6 +83,7 @@ class UtxoLedgerPersistenceServiceImplTest {
         whenever(serializationService.serialize(any<Any>())).thenReturn(serializedBytes)
         whenever(
             externalEventExecutor.execute(
+                requestId = UUID.randomUUID(),
                 argumentCaptor.capture(),
                 any()
             )

@@ -7,6 +7,7 @@ import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.persistence.query.ResultSetFactory
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.base.annotations.Suspendable
+import java.util.UUID
 
 /**
  * Object used to execute paged find queries against a database.
@@ -41,6 +42,7 @@ class PagedFindQuery<R : Any>(
         ) @Suspendable { _, offset ->
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
+                    requestId = UUID.randomUUID(),
                     FindAllExternalEventFactory::class.java,
                     FindAllParameters(entityClass, offset, limit)
                 )

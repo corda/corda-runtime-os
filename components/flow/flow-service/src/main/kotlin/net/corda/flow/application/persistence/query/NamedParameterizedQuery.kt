@@ -8,6 +8,7 @@ import net.corda.flow.persistence.query.ResultSetFactory
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.application.persistence.ParameterizedQuery
 import net.corda.v5.base.annotations.Suspendable
+import java.util.UUID
 
 /**
  * [NamedParameterizedQuery] is used to set and execute named queries.
@@ -55,6 +56,7 @@ class NamedParameterizedQuery<R : Any>(
         ) @Suspendable { serializedParameters, offset ->
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
+                    requestId = UUID.randomUUID(),
                     NamedQueryExternalEventFactory::class.java,
                     NamedQueryParameters(queryName, serializedParameters, offset, limit)
                 )

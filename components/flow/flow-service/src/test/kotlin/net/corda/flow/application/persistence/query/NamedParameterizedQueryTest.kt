@@ -132,7 +132,7 @@ class NamedParameterizedQueryTest {
 
     @Test
     fun `rethrows CordaRuntimeExceptions as CordaPersistenceExceptions`() {
-        whenever(externalEventExecutor.execute(any<Class<NamedQueryExternalEventFactory>>(), any()))
+        whenever(externalEventExecutor.execute(requestId = any(), any<Class<NamedQueryExternalEventFactory>>(), any()))
             .thenThrow(CordaRuntimeException("boom"))
 
         query.execute()
@@ -143,7 +143,7 @@ class NamedParameterizedQueryTest {
 
     @Test
     fun `does not rethrow general exceptions as CordaPersistenceExceptions`() {
-        whenever(externalEventExecutor.execute(any<Class<NamedQueryExternalEventFactory>>(), any()))
+        whenever(externalEventExecutor.execute(requestId = any(), any<Class<NamedQueryExternalEventFactory>>(), any()))
             .thenThrow(IllegalStateException("boom"))
 
         query.execute()

@@ -87,7 +87,7 @@ class PagedFindQueryTest {
 
     @Test
     fun `rethrows CordaRuntimeExceptions as CordaPersistenceExceptions`() {
-        whenever(externalEventExecutor.execute(any<Class<FindAllExternalEventFactory>>(), any()))
+        whenever(externalEventExecutor.execute(requestId = any(), any<Class<FindAllExternalEventFactory>>(), any()))
             .thenThrow(CordaRuntimeException("boom"))
 
         query.execute()
@@ -98,7 +98,7 @@ class PagedFindQueryTest {
 
     @Test
     fun `does not rethrow general exceptions as CordaPersistenceExceptions`() {
-        whenever(externalEventExecutor.execute(any<Class<FindAllExternalEventFactory>>(), any()))
+        whenever(externalEventExecutor.execute(requestId = any(), any<Class<FindAllExternalEventFactory>>(), any()))
             .thenThrow(IllegalStateException("boom"))
 
         query.execute()

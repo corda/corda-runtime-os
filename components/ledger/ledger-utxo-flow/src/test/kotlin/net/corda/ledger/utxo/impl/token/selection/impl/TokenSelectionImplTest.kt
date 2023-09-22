@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.math.BigDecimal
+import java.util.UUID
 
 class TokenSelectionImplTest {
 
@@ -30,6 +31,7 @@ class TokenSelectionImplTest {
 
         whenever(
             externalEventExecutor.execute(
+                requestId = UUID.randomUUID(),
                 TokenClaimQueryExternalEventFactory::class.java,
                 criteria
             )

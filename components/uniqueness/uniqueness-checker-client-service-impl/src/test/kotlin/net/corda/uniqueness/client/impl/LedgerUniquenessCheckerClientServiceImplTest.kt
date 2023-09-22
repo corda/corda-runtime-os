@@ -18,6 +18,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
+import java.util.UUID
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class LedgerUniquenessCheckerClientServiceImplTest {
@@ -73,7 +74,7 @@ class LedgerUniquenessCheckerClientServiceImplTest {
         uniquenessCheckResult: UniquenessCheckResult? = UniquenessCheckResultSuccessImpl(Instant.now())
     ): LedgerUniquenessCheckerClientService {
         val mockExternalEventExecutor = mock<ExternalEventExecutor>()
-        whenever(mockExternalEventExecutor.execute(argumentCaptor.capture(), any()))
+        whenever(mockExternalEventExecutor.execute(requestId = UUID.randomUUID(), argumentCaptor.capture(), any()))
             .thenReturn(uniquenessCheckResult)
 
         return LedgerUniquenessCheckerClientServiceImpl(

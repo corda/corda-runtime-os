@@ -32,6 +32,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import java.util.UUID
 
 class UtxoLedgerTransactionVerificationServiceImplTest {
 
@@ -81,6 +82,7 @@ class UtxoLedgerTransactionVerificationServiceImplTest {
         )
         whenever(
             externalEventExecutor.execute(
+                requestId = UUID.randomUUID(),
                 argumentCaptor.capture(),
                 any()
             )
@@ -115,6 +117,7 @@ class UtxoLedgerTransactionVerificationServiceImplTest {
         )
         whenever(
             externalEventExecutor.execute(
+                requestId = UUID.randomUUID(),
                 argumentCaptor.capture(),
                 any()
             )

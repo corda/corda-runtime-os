@@ -8,6 +8,7 @@ import org.mockito.kotlin.argThat
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import java.util.UUID
 
 
 class TokenClaimImplTest {
@@ -22,6 +23,7 @@ class TokenClaimImplTest {
         TokenClaimImpl("c1", key, listOf(), externalEventExecutor).useAndRelease(stateRefs)
 
         verify(externalEventExecutor).execute(
+            requestId = UUID.randomUUID(),
             eq(ClaimReleaseExternalEventFactory::class.java),
             argThat { this.usedTokens == stateRefs && this.poolKey == key && this.claimId=="c1" }
         )

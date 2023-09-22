@@ -22,6 +22,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import java.util.UUID
 
 @Suppress("TooManyFunctions")
 @Component(service = [ PersistenceService::class, UsedByFlow::class ], scope = PROTOTYPE)
@@ -38,6 +39,7 @@ class PersistenceServiceImpl @Activate constructor(
     override fun <R : Any> find(entityClass: Class<R>, primaryKey: Any): R? {
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
+                requestId = UUID.randomUUID(),
                 FindExternalEventFactory::class.java,
                 FindParameters(entityClass, listOf(serialize(primaryKey)))
             )
@@ -48,6 +50,7 @@ class PersistenceServiceImpl @Activate constructor(
     override fun <R : Any> find(entityClass: Class<R>, primaryKeys: List<*>): List<R> {
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
+                requestId = UUID.randomUUID(),
                 FindExternalEventFactory::class.java,
                 FindParameters(entityClass, primaryKeys.filterNotNull().map(::serialize))
             )
@@ -63,6 +66,7 @@ class PersistenceServiceImpl @Activate constructor(
     override fun <R : Any> merge(entity: R): R? {
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
+                requestId = UUID.randomUUID(),
                 MergeExternalEventFactory::class.java,
                 MergeParameters(listOf(serialize(entity)))
             )
@@ -74,6 +78,7 @@ class PersistenceServiceImpl @Activate constructor(
         return if (entities.isNotEmpty()) {
             val mergedEntities = wrapWithPersistenceException {
                 externalEventExecutor.execute(
+                    requestId = UUID.randomUUID(),
                     MergeExternalEventFactory::class.java,
                     MergeParameters(entities.map { serialize(it) })
                 )
@@ -93,6 +98,7 @@ class PersistenceServiceImpl @Activate constructor(
     override fun persist(entity: Any) {
         wrapWithPersistenceException {
             externalEventExecutor.execute(
+                requestId = UUID.randomUUID(),
                 PersistExternalEventFactory::class.java,
                 PersistParameters(listOf(serialize(entity)))
             )
@@ -104,6 +110,7 @@ class PersistenceServiceImpl @Activate constructor(
         if (entities.isNotEmpty()) {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
+                    requestId = UUID.randomUUID(),
                     PersistExternalEventFactory::class.java,
                     PersistParameters(entities.filterNotNull().map(::serialize))
                 )
@@ -115,6 +122,7 @@ class PersistenceServiceImpl @Activate constructor(
     override fun remove(entity: Any) {
         wrapWithPersistenceException {
             externalEventExecutor.execute(
+                requestId = UUID.randomUUID(),
                 RemoveExternalEventFactory::class.java,
                 RemoveParameters(listOf(serialize(entity)))
             )
@@ -126,6 +134,7 @@ class PersistenceServiceImpl @Activate constructor(
         if (entities.isNotEmpty()) {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
+                    requestId = UUID.randomUUID(),
                     RemoveExternalEventFactory::class.java,
                     RemoveParameters(entities.filterNotNull().map(::serialize))
                 )

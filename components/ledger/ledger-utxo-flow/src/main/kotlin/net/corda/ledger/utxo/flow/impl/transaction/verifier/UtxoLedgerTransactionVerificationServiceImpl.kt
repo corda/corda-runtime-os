@@ -24,6 +24,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.nio.ByteBuffer
+import java.util.UUID
 
 @Component(
     service = [UtxoLedgerTransactionVerificationService::class, UsedByFlow::class],
@@ -51,6 +52,7 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
             verifyNotaryAllowed(transaction, signedGroupParameters)
 
             val verificationResult = externalEventExecutor.execute(
+                requestId = UUID.randomUUID(),
                 TransactionVerificationExternalEventFactory::class.java,
                 TransactionVerificationParameters(
                     serialize(transaction.toContainer()),

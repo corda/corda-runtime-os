@@ -21,6 +21,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import java.util.UUID
 
 @Component(
     service = [UtxoLedgerGroupParametersPersistenceService::class, UsedByFlow::class],
@@ -42,6 +43,7 @@ class UtxoLedgerGroupParametersPersistenceServiceImpl @Activate constructor(
         return recordSuspendable({ ledgerPersistenceFlowTimer(FindGroupParameters) }) @Suspendable {
             groupParametersCache.get(hash) ?: wrapWithPersistenceException {
                 externalEventExecutor.execute(
+                    requestId = UUID.randomUUID(),
                     FindSignedGroupParametersExternalEventFactory::class.java,
                     FindSignedGroupParametersParameters(hash.toString())
                 )
@@ -56,6 +58,7 @@ class UtxoLedgerGroupParametersPersistenceServiceImpl @Activate constructor(
         recordSuspendable({ ledgerPersistenceFlowTimer(PersistSignedGroupParametersIfDoNotExist) }) @Suspendable {
             groupParametersCache.get(signedGroupParameters.hash) ?: wrapWithPersistenceException {
                 externalEventExecutor.execute(
+                    requestId = UUID.randomUUID(),
                     PersistSignedGroupParametersIfDoNotExistExternalEventFactory::class.java,
                     with(signedGroupParameters) {
                         PersistSignedGroupParametersIfDoNotExistParameters(

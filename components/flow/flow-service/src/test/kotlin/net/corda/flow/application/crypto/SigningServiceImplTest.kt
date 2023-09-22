@@ -58,7 +58,13 @@ class SigningServiceImplTest {
         val publicKey = mock<PublicKey>()
         val encodedPublicKeyBytes = byteArrayOf(2)
         whenever(keyEncodingService.encodeAsByteArray(publicKey)).thenReturn(encodedPublicKeyBytes)
-        whenever(externalEventExecutor.execute(eq(CreateSignatureExternalEventFactory::class.java), captor.capture()))
+        whenever(
+            externalEventExecutor.execute(
+                requestId = any(),
+                eq(CreateSignatureExternalEventFactory::class.java),
+                captor.capture()
+            )
+        )
             .thenReturn(signature)
         val signatureWithKeyId = DigitalSignatureWithKeyId(signature.by.fullIdHash(), signature.bytes)
         assertEquals(signatureWithKeyId, signingService.sign(byteArrayOf(1), publicKey, mock()))
@@ -72,6 +78,7 @@ class SigningServiceImplTest {
         whenever(mySigningKeysCache.get(any())).thenReturn(emptyMap())
         whenever(
             externalEventExecutor.execute(
+                requestId = any(),
                 FilterMyKeysExternalEventFactory::class.java,
                 setOf(key1, key2)
             )
@@ -91,6 +98,7 @@ class SigningServiceImplTest {
         whenever(compositeKey.leafKeys).thenReturn(setOf(compositeKeyLeaf1, compositeKeyLeaf2))
         whenever(
             externalEventExecutor.execute(
+                requestId = any(),
                 FilterMyKeysExternalEventFactory::class.java,
                 setOf(plainKey, compositeKeyLeaf1, compositeKeyLeaf2)
             )
@@ -113,6 +121,7 @@ class SigningServiceImplTest {
         whenever(compositeKey.leafKeys).thenReturn(setOf(compositeKeyLeaf1, compositeKeyLeaf2))
         whenever(
             externalEventExecutor.execute(
+                requestId = any(),
                 FilterMyKeysExternalEventFactory::class.java,
                 setOf(compositeKeyLeaf1, compositeKeyLeaf2)
             )
@@ -130,7 +139,7 @@ class SigningServiceImplTest {
         val key1 = mock<PublicKey>()
         val key2 = mock<PublicKey>()
         whenever(mySigningKeysCache.get(setOf(key1, key2))).thenReturn(mapOf(key1 to key1, key2 to null))
-        verify(externalEventExecutor, never()).execute(eq(FilterMyKeysExternalEventFactory::class.java), any())
+        verify(externalEventExecutor, never()).execute(any(), eq(FilterMyKeysExternalEventFactory::class.java), any())
         assertEquals(mapOf(key1 to key1, key2 to null), signingService.findMySigningKeys(setOf(key1, key2)))
         verify(mySigningKeysCache, never()).putAll(any())
     }
@@ -143,6 +152,7 @@ class SigningServiceImplTest {
         whenever(mySigningKeysCache.get(setOf(key1, key2, key3))).thenReturn(mapOf(key1 to key1))
         whenever(
             externalEventExecutor.execute(
+                requestId = any(),
                 FilterMyKeysExternalEventFactory::class.java,
                 setOf(key2, key3)
             )
