@@ -7,13 +7,9 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.Mockito.doReturn
+import org.mockito.Mockito.doThrow
 import org.mockito.Mockito.times
-import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
+import org.mockito.kotlin.*
 import java.time.Duration
 
 class MessageBusConsumerTest {
@@ -43,7 +39,7 @@ class MessageBusConsumerTest {
     fun testSubscribe() {
         mediatorConsumer.subscribe()
 
-        verify(cordaConsumer).subscribe(eq(TOPIC))
+        verify(cordaConsumer).subscribe(eq(TOPIC), anyOrNull())
     }
 
     @Test
@@ -63,7 +59,7 @@ class MessageBusConsumerTest {
 
     @Test
     fun testCommitAsyncOffsetsWithError() {
-        doReturn(CordaRuntimeException("")).whenever(cordaConsumer).commitAsyncOffsets(any())
+        doThrow(CordaRuntimeException("")).whenever(cordaConsumer).commitAsyncOffsets(any())
 
         assertThrows<CordaRuntimeException> {
             runBlocking {
