@@ -31,7 +31,7 @@ class UtxoTransactionReaderImpl(
     private val externalEventContext: ExternalEventContext,
     transaction: ByteArray,
     override val status: TransactionStatus,
-    override val visibleStatesIndexes: List<Int>,
+    override val visibleStatesIndexes: List<Int>
 ) : UtxoTransactionReader {
 
     constructor(
@@ -43,7 +43,7 @@ class UtxoTransactionReaderImpl(
         externalEventContext,
         transaction.transaction.array(),
         transaction.status.toTransactionStatus(),
-        transaction.visibleStatesIndexes,
+        transaction.visibleStatesIndexes
     )
 
     constructor(
@@ -55,7 +55,7 @@ class UtxoTransactionReaderImpl(
         externalEventContext,
         transaction.transaction.array(),
         transaction.status.toTransactionStatus(),
-        emptyList(),
+        emptyList()
     )
 
     private companion object {
