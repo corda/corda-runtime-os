@@ -23,12 +23,11 @@ import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
 import net.corda.utilities.trace
 import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
-@Component(service = [FlowExecutor::class])
+// TODO @Component(service = [FlowExecutor::class])
 class FlowExecutorImpl constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val subscriptionFactory: SubscriptionFactory,

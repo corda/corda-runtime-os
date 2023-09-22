@@ -174,8 +174,8 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                         conflictingStates
                     )
             } while (msgProcessorTasks.isNotEmpty())
+            commitOffsets()
         }
-        commitOffsets()
     }
 
     private fun poll(pollTimeoutInNanos: Long):  List<CordaConsumerRecord<K, E>> {

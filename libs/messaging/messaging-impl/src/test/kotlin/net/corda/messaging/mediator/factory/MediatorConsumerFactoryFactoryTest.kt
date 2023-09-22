@@ -2,7 +2,6 @@ package net.corda.messaging.mediator.factory
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
-import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

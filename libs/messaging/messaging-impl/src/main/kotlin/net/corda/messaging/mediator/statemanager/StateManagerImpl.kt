@@ -9,16 +9,28 @@ import java.time.Instant
 
 @Component(service = [StateManager::class])
 class StateManagerImpl  @Activate constructor() : StateManager {
+    private val storage = mutableMapOf<String, State>()
+
     override fun create(states: Collection<State>): Map<String, Exception> {
-        TODO("Not yet implemented")
+        return states.mapNotNull {
+            storage.putIfAbsent(it.key, it)
+        }.associate { it.key to RuntimeException("State already exists [$it]") }
     }
 
     override fun get(keys: Collection<String>): Map<String, State> {
-        TODO("Not yet implemented")
+        return keys.mapNotNull { storage[it] }.associateBy { it.key }
     }
 
     override fun update(states: Collection<State>): Map<String, State> {
-        TODO("Not yet implemented")
+        return states.mapNotNull {
+            val existingState = storage[it.key]
+            if (existingState?.version == it.version) {
+                storage[it.key] = it
+                null
+            } else {
+                it
+            }
+        }.associateBy { it.key }
     }
 
     override fun delete(states: Collection<State>): Map<String, State> {
