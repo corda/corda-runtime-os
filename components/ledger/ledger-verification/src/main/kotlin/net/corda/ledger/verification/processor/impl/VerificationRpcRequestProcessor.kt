@@ -12,7 +12,6 @@ import net.corda.ledger.verification.sandbox.VerificationSandboxService
 import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.metrics.CordaMetrics
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
-import net.corda.tracing.traceEventProcessingSingleTransactionRequest
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
 import net.corda.utilities.translateFlowContextToMDC
@@ -43,8 +42,7 @@ class VerificationRpcRequestProcessor(
         val startTime = System.nanoTime()
         val clientRequestId = request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
         val holdingIdentity = request.holdingIdentity.toCorda()
-        val requestType = request.javaClass.simpleName
-        val result = traceEventProcessingSingleTransactionRequest(request, "Ledger Persistence - $requestType") {
+        val result = {
             withMDC(
                 mapOf(
                     MDC_CLIENT_ID to clientRequestId,
@@ -68,7 +66,7 @@ class VerificationRpcRequestProcessor(
                 }
             }
         }
-        return result.value as FlowEvent
+        return result as FlowEvent
         //future refactor TODO
         //key, topic not interested
         //could refactor handleRequest to return value as FlowEvent (wrapped for kafka somewhere)
