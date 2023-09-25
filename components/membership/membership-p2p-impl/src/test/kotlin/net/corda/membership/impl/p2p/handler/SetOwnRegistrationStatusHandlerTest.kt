@@ -27,7 +27,8 @@ class SetOwnRegistrationStatusHandlerTest {
     private val payloadV2 = ByteBuffer.wrap(byteArrayOf(4, 5, 6))
     private val statusV2 = SetOwnRegistrationStatusV2(
         "id",
-        RegistrationStatusV2.DECLINED
+        RegistrationStatusV2.DECLINED,
+        "reason"
     )
     private val avroSchemaRegistry: AvroSchemaRegistry = mock {
         on { getClassType(payloadV1) } doReturn SetOwnRegistrationStatus::class.java
