@@ -424,7 +424,7 @@ Default name for crypto DB secret
 {{/*
 Crypto worker environment variable
 */}}
-{{- define "corda.cryptoDbUserEnv" -}}
+{{- define "corda.cryptoDbUsernameEnv" -}}
 - name: CRYPTO_DB_USER_USERNAME
   valueFrom:
     secretKeyRef:
@@ -435,6 +435,8 @@ Crypto worker environment variable
       name: {{ include "corda.cryptoDbDefaultSecretName" . | quote }}
       key: "username"
       {{- end }}
+{{- end }}
+{{- define "corda.cryptoDbPasswordEnv" -}}
 - name: CRYPTO_DB_USER_PASSWORD
   valueFrom:
     secretKeyRef:

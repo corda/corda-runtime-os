@@ -230,7 +230,9 @@ spec:
             value: {{ required (printf "Must specify workers.%s.kafka.sasl.password.value, workers.%s.kafka.sasl.password.valueFrom.secretKeyRef.name, kafka.sasl.password.value, or kafka.sasl.password.valueFrom.secretKeyRef.name" $worker $worker) $.Values.kafka.sasl.password.value }}
             {{- end }}
           {{- end }}
+        {{- if not (($.Values).vault).url }}
         {{- include "corda.configSaltAndPassphraseEnv" $ | nindent 10 }}
+        {{- end }}
         {{- /* TODO-[CORE-16419]: isolate StateManager database from the Cluster database */ -}}
         {{- if or $optionalArgs.clusterDbAccess $optionalArgs.stateManagerDbAccess }}
         {{- include "corda.clusterDbEnv" $ | nindent 10 }}
