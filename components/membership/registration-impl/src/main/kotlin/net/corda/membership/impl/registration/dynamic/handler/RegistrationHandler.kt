@@ -7,9 +7,15 @@ import net.corda.membership.lib.metrics.TimerMetricTypes
 import net.corda.membership.lib.metrics.getTimerMetric
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import org.slf4j.LoggerFactory
 
 interface RegistrationHandler<T> {
+
+    private val logger get() = LoggerFactory.getLogger(commandType)
+
     fun invoke(state: RegistrationState?, event: Record<String, RegistrationCommand>): RegistrationHandlerResult {
+        logger.info("Invoking registration handler for ${commandType.simpleName}" +
+                "${state?.let { " for registration ID ${it.registrationId}, member ${it.registeringMember}, and MGM ${it.mgm}" } ?: ""}.")
         event.value?.command?.let { command ->
             if (commandType.isInstance(command)) {
                 @Suppress("unchecked_cast")
