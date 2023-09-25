@@ -96,6 +96,7 @@ class DeclineRegistrationHandlerTest {
                     SetOwnRegistrationStatus(
                         REGISTRATION_ID,
                         RegistrationStatus.DECLINED,
+                        null
                     )
                 ),
                 any(),

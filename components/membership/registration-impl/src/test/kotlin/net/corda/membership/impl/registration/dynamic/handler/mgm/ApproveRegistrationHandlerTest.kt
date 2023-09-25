@@ -171,7 +171,8 @@ class ApproveRegistrationHandlerTest {
                 eq(
                     SetOwnRegistrationStatus(
                         registrationId,
-                        RegistrationStatus.APPROVED
+                        RegistrationStatus.APPROVED,
+                        null
                     )
                 ),
                 anyOrNull(),
