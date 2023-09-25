@@ -63,7 +63,10 @@ class SigningServiceImpl @Activate constructor(
         return recordSuspendable({ cryptoFlowTimer("sign") }) @Suspendable {
             val digitalSignatureWithKey = externalEventExecutor.execute(
                 CreateSignatureExternalEventFactory::class.java,
-                SignParameters(bytes, keyEncodingService.encodeAsByteArray(publicKey), signatureSpec, mapOf("category" to context.keyCategory))
+                SignParameters(bytes,
+                    keyEncodingService.encodeAsByteArray(publicKey),
+                    signatureSpec,
+                    mapOf("category" to context.keyCategory))
             )
 
             DigitalSignatureWithKeyId(
