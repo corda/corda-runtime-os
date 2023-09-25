@@ -6,6 +6,7 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRequest
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.checkpoint.FlowStackItem
@@ -25,7 +26,6 @@ import net.corda.flow.fiber.factory.FlowFiberFactory
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
-import net.corda.flow.pipeline.handlers.waiting.WaitingForSessionInit
 import net.corda.flow.pipeline.handlers.waiting.WaitingForStartFlow
 import net.corda.flow.pipeline.runner.impl.FlowRunnerImpl
 import net.corda.flow.pipeline.runner.impl.remoteToLocalContextMapper
@@ -119,7 +119,7 @@ class FlowRunnerImplTest {
         whenever(cpiInfoReadService.get(any())).thenReturn(getMockCpiMetaData())
         whenever(flowCheckpoint.initialPlatformVersion).thenReturn(67890)
         whenever(platformInfoProvider.localWorkerSoftwareVersion).thenReturn("67890")
-        whenever(flowCheckpoint.waitingFor).thenReturn(WaitingFor(WaitingForSessionInit("foo")))
+        whenever(flowCheckpoint.waitingFor).thenReturn(WaitingFor(WaitingForStartFlow))
     }
 
     @BeforeEach
@@ -142,7 +142,6 @@ class FlowRunnerImplTest {
         }
         val clientRequestBody = mock<ClientRequestBody>()
         whenever(clientRequestBody.requestBody).thenReturn(startArgs)
-        whenever(flowCheckpoint.waitingFor).thenReturn(WaitingFor(WaitingForStartFlow))
         val logicAndArgs = ClientStartedFlow(clientFlow, clientRequestBody)
 
         val context = buildFlowEventContext<Any>(flowCheckpoint, flowStartEvent)
@@ -183,6 +182,8 @@ class FlowRunnerImplTest {
             startContext = flowStartContext
             flowStartArgs = startArgs
         }
+
+        whenever(flowCheckpoint.waitingFor).thenReturn(WaitingFor(ExternalEventResponse("foo")))
         val context = buildFlowEventContext<Any>(flowCheckpoint, flowStartEvent)
 
         whenever(flowFiberFactory.createAndResumeFlowFiber(flowFiberExecutionContext, flowContinuation)).thenReturn(
@@ -196,13 +197,13 @@ class FlowRunnerImplTest {
     }
 
     @Test
-    fun `initiate flow session event should create a new flow and execute it in a new fiber`() {
-        val eventPayload = SessionInit().apply {
+    fun `Counterparty request flow session event should create a new flow and execute it in a new fiber`() {
+        val sessionInit = SessionInit().apply {
             contextPlatformProperties = platformContext.avro
             contextUserProperties = userContext.avro
         }
 
-        runInitiatedTest(eventPayload)
+        runInitiatedTest(SessionCounterpartyInfoRequest(sessionInit))
     }
 
     @Test
@@ -323,6 +324,7 @@ class FlowRunnerImplTest {
 
     @Test
     fun `Second SessionData with Init Info should resume existing flow`() {
+        whenever(flowCheckpoint.waitingFor).thenReturn(WaitingFor(net.corda.data.flow.state.waiting.SessionData()))
         val sessionInitPayload = SessionInit().apply {
             contextPlatformProperties = platformContext.avro
             contextUserProperties = userContext.avro

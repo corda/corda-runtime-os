@@ -122,29 +122,35 @@ tasks.register('smokeTest', Test) {
     testClassesDirs = project.sourceSets["smokeTest"].output.classesDirs
     classpath = project.sourceSets["smokeTest"].runtimeClasspath
 
-    // TODO - switch default around so this can be run locally.
-    //  Also refactor property names to remove "health" now that they are more general purpose.
-    def combinedWorker = project.getProperties().getOrDefault("isCombinedWorker", false)
+    def combinedWorker = project.getProperties().getOrDefault("isCombinedWorker", true).toBoolean()
+    println "Running tests against ${ combinedWorker ? "combined worker" : "Kubernetes cluster" }"
 
     // Note these port values have to match what is setup as part of port forwarding at cluster bootstrap time.
     // E.g. during Jenkins pipeline setup.
-    def combinedWorkerAddress = "http://localhost:7004/"
-    systemProperty "cryptoWorkerHealthHttp",
-            project.getProperties().getOrDefault("cryptoWorkerHealthHttp", combinedWorker ? combinedWorkerAddress : "http://localhost:7001/")
-    systemProperty "restWorkerHealthHttp",
-            project.getProperties().getOrDefault("restWorkerHealthHttp", combinedWorker ? combinedWorkerAddress : "http://localhost:7002/")
-    systemProperty "flowWorkerHealthHttp",
-            project.getProperties().getOrDefault("flowWorkerHealthHttp", combinedWorker ? combinedWorkerAddress : "http://localhost:7003/")
-    systemProperty "flowMapperWorkerHealthHttp",
-            project.getProperties().getOrDefault("flowMapperWorkerHealthHttp", combinedWorker ? combinedWorkerAddress : "http://localhost:7004/")
-    systemProperty "verificationWorkerHealthHttp",
-            project.getProperties().getOrDefault("verificationWorkerHealthHttp", combinedWorker ? combinedWorkerAddress : "http://localhost:7005/")
-    systemProperty "dbWorkerHealthHttp",
-            project.getProperties().getOrDefault("dbWorkerHealthHttp", combinedWorker ? combinedWorkerAddress : "http://localhost:7006/")
-    systemProperty "persistenceWorkerHealthHttp",
-            project.getProperties().getOrDefault("persistenceWorkerHealthHttp", combinedWorker ? combinedWorkerAddress : "http://localhost:7007/")
-    systemProperty "uniquenessWorkerHealthHttp",
-            project.getProperties().getOrDefault("uniquenessWorkerHealthHttp", combinedWorker ? combinedWorkerAddress : "http://localhost:7008/")
+    def combinedWorkerUrl = "http://localhost:7004/"
+    def cryptoWorkerUrl = project.getProperties().getOrDefault("cryptoWorkerUrl", combinedWorker ? combinedWorkerUrl : "http://localhost:7001/")
+    systemProperty "cryptoWorkerUrl", cryptoWorkerUrl
+    println "Crypto worker url: $cryptoWorkerUrl"
+    def restWorkerUrl = project.getProperties().getOrDefault("restWorkerUrl", combinedWorker ? combinedWorkerUrl : "http://localhost:7002/")
+    systemProperty "restWorkerUrl", restWorkerUrl
+    println "REST worker url: $restWorkerUrl"
+    def flowWorkerUrl = project.getProperties().getOrDefault("flowWorkerUrl", combinedWorker ? combinedWorkerUrl : "http://localhost:7003/")
+    systemProperty "flowWorkerUrl",flowWorkerUrl
+    println "Flow worker url: $flowWorkerUrl"
+    def flowMapperWorkerUrl = project.getProperties().getOrDefault("flowMapperWorkerUrl", combinedWorker ? combinedWorkerUrl : "http://localhost:7004/")
+    systemProperty "flowMapperWorkerUrl", flowMapperWorkerUrl
+    println "Flow Mapper worker url: $flowMapperWorkerUrl"
+    def verificationWorkerUrl  = project.getProperties().getOrDefault("verificationWorkerUrl", combinedWorker ? combinedWorkerUrl : "http://localhost:7005/")
+    systemProperty "verificationWorkerUrl", verificationWorkerUrl
+    println "Verification worker url: $verificationWorkerUrl"
+    def dbWorkerUrl = project.getProperties().getOrDefault("dbWorkerUrl", combinedWorker ? combinedWorkerUrl : "http://localhost:7006/")
+    systemProperty "dbWorkerUrl", dbWorkerUrl
+    println "DB worker url: $dbWorkerUrl"
+    def persistenceWorkerUrl = project.getProperties().getOrDefault("persistenceWorkerUrl", combinedWorker ? combinedWorkerUrl : "http://localhost:7007/")
+    systemProperty "persistenceWorkerUrl", persistenceWorkerUrl
+    println "Persistence worker url: $persistenceWorkerUrl"
+    def uniquenessWorkerUrl = project.getProperties().getOrDefault("uniquenessWorkerUrl", combinedWorker ? combinedWorkerUrl : "http://localhost:7008/")
+    systemProperty "uniquenessWorkerUrl", uniquenessWorkerUrl
 
     jvmArgs '--add-opens', 'java.base/java.lang.reflect=ALL-UNNAMED'
 }

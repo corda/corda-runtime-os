@@ -52,6 +52,7 @@ class ConfigTests {
         val dbWorker = DBWorker(
             dbProcessor,
             mock(),
+            mock(),
             DummyShutdown(),
             DummyWorkerMonitor(),
             DummyWebServer(),
@@ -96,6 +97,7 @@ class ConfigTests {
         val dbWorker = DBWorker(
             dbProcessor,
             mock(),
+            mock(),
             DummyShutdown(),
             DummyWorkerMonitor(),
             DummyWebServer(),
@@ -130,6 +132,7 @@ class ConfigTests {
         val dbWorker = DBWorker(
             dbProcessor,
             mock(),
+            mock(),
             DummyShutdown(),
             DummyWorkerMonitor(),
             DummyWebServer(),
@@ -162,6 +165,7 @@ class ConfigTests {
         val dbWorker = DBWorker(
             dbProcessor,
             mock(),
+            mock(),
             DummyShutdown(),
             DummyWorkerMonitor(),
             DummyWebServer(),
@@ -187,6 +191,7 @@ class ConfigTests {
         val dbProcessor = DummyDBProcessor()
         val dbWorker = DBWorker(
             dbProcessor,
+            mock(),
             mock(),
             DummyShutdown(),
             DummyWorkerMonitor(),

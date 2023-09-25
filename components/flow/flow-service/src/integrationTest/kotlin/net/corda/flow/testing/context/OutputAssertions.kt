@@ -11,13 +11,13 @@ interface OutputAssertions {
         initiatedIdentity: HoldingIdentity? = null
     )
 
-    fun sessionConfirmEvents(
+    fun sessionCounterpartyInfoResponse(
         vararg sessionIds: String,
         initiatingIdentity: HoldingIdentity? = null,
         initiatedIdentity: HoldingIdentity? = null
     )
 
-    fun sessionInitEvents(
+    fun sessionCounterpartyInfoRequestEvents(
         vararg sessionIds: String,
         initiatingIdentity: HoldingIdentity? = null,
         initiatedIdentity: HoldingIdentity? = null

@@ -104,7 +104,7 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `An initiated flow finishing removes the flow's checkpoint publishes a completed flow status`() {
         `when` {
-            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL)
+            sessionCounterpartyInfoRequestReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL)
                 .completedSuccessfullyWith(DONE)
         }
 

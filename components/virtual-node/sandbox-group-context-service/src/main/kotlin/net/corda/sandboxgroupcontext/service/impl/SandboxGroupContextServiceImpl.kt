@@ -483,7 +483,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
         private val serviceFilter: String?,
         private val sourceContext: BundleContext,
         private val serviceComponentRuntime: ServiceComponentRuntime,
-        private val serviceIndex: Map<String, MutableSet<ServiceReference<*>>>,
+        private val serviceIndex: Map<String, Set<ServiceReference<*>>>,
         private val injectables: MutableMap<ServiceReference<*>, ServiceDefinition>
     ) {
         private val nonInjectables = mutableMapOf<ServiceReference<*>, ServiceDefinition>()
