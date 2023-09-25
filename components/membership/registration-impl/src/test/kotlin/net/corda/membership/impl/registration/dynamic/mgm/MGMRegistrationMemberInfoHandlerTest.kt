@@ -573,7 +573,7 @@ class MGMRegistrationMemberInfoHandlerTest {
         )
 
         assertThrows<MGMRegistrationContextValidationException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
+            mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
                 holdingIdentity,
                 validTestContext
             )
@@ -585,7 +585,7 @@ class MGMRegistrationMemberInfoHandlerTest {
         // the value isn't changed
         assertThat(sessionKeySchema).isEqualTo(KeySchemeCodes.RSA_CODE_NAME)
         assertThrows<MGMRegistrationContextValidationException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
+            mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
                 holdingIdentity,
                 validTestContext + mapOf(SESSION_KEYS_SIGNATURE_SPEC.format(0) to ECDSA_SHA256.signatureName)
             )
