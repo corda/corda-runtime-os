@@ -1,7 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.persistence
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.flow.persistence.query.ResultSetExecutor
+import net.corda.flow.persistence.query.OffsetResultSetExecutor
 import net.corda.flow.persistence.query.ResultSetFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.ALICE_X500_HOLDING_IDENTITY
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.VaultNamedQueryExternalEventFactory
@@ -42,7 +42,7 @@ class VaultNamedParameterizedQueryImplTest {
     private val resultSetFactory = mock<ResultSetFactory>()
     private val resultSet = mock<ResultSet<Any>>()
     private val clock = mock<Clock>()
-    private val resultSetExecutorCaptor = argumentCaptor<ResultSetExecutor<Any>>()
+    private val resultSetExecutorCaptor = argumentCaptor<OffsetResultSetExecutor<Any>>()
     private val mapCaptor = argumentCaptor<Map<String, Any>>()
 
     private val query = VaultNamedParameterizedQueryImpl(

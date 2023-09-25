@@ -50,8 +50,6 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":components:uniqueness:backing-store")
     implementation project(":components:db:db-connection-manager")
-    implementation project(':libs:db:db-admin')
-    implementation project(':libs:db:db-admin-impl')
     implementation project(":libs:metrics")
     implementation project(":libs:uniqueness:common")
     implementation project(":libs:utilities")
@@ -87,9 +85,11 @@ dependencies {
 }
 
 tasks.named('jar', Jar) {
-    bnd '''\
-    DynamicImport-Package: org.hibernate.proxy
-    '''
+    bundle {
+        bnd '''\
+DynamicImport-Package: org.hibernate.proxy
+'''
+    }
 }
 
 tasks.register('backingStoreBenchmark', Test) {
@@ -107,9 +107,7 @@ tasks.register('backingStoreBenchmark', Test) {
     systemProperty "postgresPassword", project.getProperty("postgresPassword")
     systemProperty "postgresPort", project.getProperty("postgresPort")
     systemProperty "postgresUser", project.getProperty("postgresUser")
-}
 
-backingStoreBenchmark {
     // Ensures benchmark is always re-run if executed from the console
     outputs.upToDateWhen { false }
 }

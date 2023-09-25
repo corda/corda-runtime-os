@@ -14,9 +14,12 @@ import net.corda.flow.pipeline.handlers.events.FlowEventHandler
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.flow.pipeline.impl.FlowEventPipelineImpl
+import net.corda.flow.pipeline.impl.FlowExecutionPipelineStage
 import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.flow.state.impl.FlowCheckpointFactory
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.helper.getConfig
+import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.tracing.TraceContext
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
@@ -96,12 +99,16 @@ class FlowEventPipelineFactoryImpl(
     override fun create(
         checkpoint: Checkpoint?,
         event: FlowEvent,
-        config: SmartConfig,
+        configs: Map<String, SmartConfig>,
         mdcProperties: Map<String, String>,
         traceContext:TraceContext,
         eventRecordTimestamp: Long
     ): FlowEventPipeline {
-        val flowCheckpoint = flowCheckpointFactory.create(event.flowId, checkpoint, config)
+        val flowCheckpoint = flowCheckpointFactory.create(
+            event.flowId,
+            checkpoint,
+            configs.getConfig(FLOW_CONFIG)
+        )
 
         val metrics = flowMetricsFactory.create(eventRecordTimestamp, flowCheckpoint)
 
@@ -109,23 +116,28 @@ class FlowEventPipelineFactoryImpl(
             checkpoint = flowCheckpoint,
             inputEvent = event,
             inputEventPayload = event.payload,
-            config = config,
+            configs = configs,
+            flowConfig = configs.getConfig(FLOW_CONFIG),
             outputRecords = emptyList(),
             mdcProperties = mdcProperties,
             flowMetrics = metrics,
             flowTraceContext = traceContext
         )
 
-        return FlowEventPipelineImpl(
-            flowEventHandlerMap,
+        val flowExecutionPipelineStage = FlowExecutionPipelineStage(
             flowWaitingForHandlerMap,
             flowRequestHandlerMap,
             flowRunner,
-            flowGlobalPostProcessor,
-            context,
-            virtualNodeInfoReadService,
             flowFiberCache,
             flowIORequestTypeConverter
+        )
+
+        return FlowEventPipelineImpl(
+            flowEventHandlerMap,
+            flowExecutionPipelineStage,
+            flowGlobalPostProcessor,
+            context,
+            virtualNodeInfoReadService
         )
     }
 }

@@ -1,6 +1,7 @@
 package net.corda.flow.testing.context
 
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
+import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
@@ -10,6 +11,9 @@ import net.corda.virtualnode.VirtualNodeInfo
 interface StepSetup {
 
     val initiatedIdentityMemberName: MemberX500Name
+
+    val initiatingIdentityMemberName: MemberX500Name
+
 
     fun virtualNode(
         cpiId: String,
@@ -43,20 +47,14 @@ interface StepSetup {
         platformContext: Map<String, String> = emptyMap()
     ): FlowIoRequestSetup
 
-    fun sessionInitEventReceived(
+    fun sessionCounterpartyInfoRequestReceived(
         flowId: String,
         sessionId: String,
         cpiId: String,
         protocol: String,
         initiatingIdentity: HoldingIdentity? = null,
-        initiatedIdentity: HoldingIdentity? = null
-    ): FlowIoRequestSetup
-
-    fun sessionAckEventReceived(
-        flowId: String,
-        sessionId: String,
-        receivedSequenceNum: Int,
-        outOfOrderSeqNums: List<Int> = emptyList()
+        initiatedIdentity: HoldingIdentity? = null,
+        requireClose: Boolean = true
     ): FlowIoRequestSetup
 
     fun sessionDataEventReceived(
@@ -64,15 +62,18 @@ interface StepSetup {
         sessionId: String,
         data: ByteArray,
         sequenceNum: Int,
-        receivedSequenceNum: Int,
-        outOfOrderSeqNums: List<Int> = emptyList()
+        sessionInit: SessionInit? = null
+    ): FlowIoRequestSetup
+
+    fun sessionCounterpartyInfoResponseReceived(
+        flowId: String,
+        sessionId: String,
     ): FlowIoRequestSetup
 
     fun sessionCloseEventReceived(
         flowId: String,
         sessionId: String,
         sequenceNum: Int,
-        receivedSequenceNum: Int,
         initiatingIdentity: HoldingIdentity? = null,
         initiatedIdentity: HoldingIdentity? = null
     ): FlowIoRequestSetup
@@ -80,12 +81,9 @@ interface StepSetup {
     fun sessionErrorEventReceived(
         flowId: String,
         sessionId: String,
-        receivedSequenceNum: Int,
         initiatingIdentity: HoldingIdentity? = null,
         initiatedIdentity: HoldingIdentity? = null
     ): FlowIoRequestSetup
-
-    fun wakeupEventReceived(flowId: String): FlowIoRequestSetup
 
     fun externalEventReceived(flowId: String, requestId: String, payload: Any): FlowIoRequestSetup
 

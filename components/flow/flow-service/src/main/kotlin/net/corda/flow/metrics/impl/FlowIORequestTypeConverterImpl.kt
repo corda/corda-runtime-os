@@ -23,7 +23,6 @@ class FlowIORequestTypeConverterImpl : FlowIORequestTypeConverter {
             is FlowIORequest.SubFlowFailed -> "Sub Flow Failed"
             is FlowIORequest.SubFlowFinished -> "Sub Flow Finished"
             is FlowIORequest.CloseSessions -> "End Peer Session"
-            is FlowIORequest.WaitForSessionConfirmations -> "Wait For Peer Session Ack"
             else -> ioRequest.javaClass.name
         }
     }

@@ -9,8 +9,8 @@ import net.corda.cli.plugins.network.output.ConsoleOutput
 import net.corda.cli.plugins.network.output.Output
 import net.corda.cli.plugins.network.utils.HoldingIdentityUtils.getHoldingIdentity
 import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
-import net.corda.cli.plugins.network.utils.PrintUtils.Companion.printJsonOutput
-import net.corda.cli.plugins.network.utils.PrintUtils.Companion.verifyAndPrintError
+import net.corda.cli.plugins.network.utils.PrintUtils.printJsonOutput
+import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.exception.ServiceUnavailableException
 
@@ -86,8 +86,7 @@ class GetRegistrations(private val output: Output = ConsoleOutput()) : RestComma
 
     override fun run() {
         verifyAndPrintError {
-            val result = getRegistrations()
-            printJsonOutput(result, output)
+            printJsonOutput(getRegistrations(), output)
         }
     }
 }

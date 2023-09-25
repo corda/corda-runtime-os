@@ -1,6 +1,11 @@
 package net.corda.messaging.publisher
 
 import com.typesafe.config.ConfigFactory
+import java.nio.ByteBuffer
+import java.time.Duration
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CyclicBarrier
+import java.util.concurrent.ExecutionException
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.constants.ProducerRoles
@@ -21,6 +26,7 @@ import org.junit.jupiter.api.function.Executable
 import org.mockito.ArgumentCaptor
 import org.mockito.Captor
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.atMost
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doThrow
@@ -30,12 +36,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.nio.ByteBuffer
-import java.time.Duration
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CyclicBarrier
-import java.util.concurrent.ExecutionException
-import org.mockito.kotlin.anyOrNull
 
 class CordaPublisherImplTest {
     private lateinit var publisherConfig: ResolvedPublisherConfig
@@ -256,7 +256,7 @@ class CordaPublisherImplTest {
     fun testBatchPublishWithMultipleThreads() {
         val publisher = createPublisher(true)
         val numThreads = 100
-        val futures = (0..numThreads).map { CompletableFuture<Unit>() }
+        val futures = List(numThreads) { CompletableFuture<Unit>() }
         val threads = futures.map {
             Thread {
                 publisher.batchPublish(listOf(record, record, record)).whenComplete { _, throwable ->
@@ -282,7 +282,7 @@ class CordaPublisherImplTest {
         val publisher = createPublisher(true)
         whenever(producer.sendRecords(any())).thenThrow(CordaMessageAPIFatalException(""))
         val numThreads = 100
-        val futures = (0..numThreads).map { CompletableFuture<Unit>() }
+        val futures = List(numThreads) { CompletableFuture<Unit>() }
         val threads = futures.map {
             Thread {
                 publisher.batchPublish(listOf(record, record, record)).whenComplete { _, throwable ->

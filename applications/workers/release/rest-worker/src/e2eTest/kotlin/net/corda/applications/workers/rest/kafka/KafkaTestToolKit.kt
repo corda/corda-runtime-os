@@ -2,8 +2,6 @@ package net.corda.applications.workers.rest.kafka
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import java.util.concurrent.TimeUnit
-import kotlin.random.Random
 import net.corda.applications.workers.rest.http.TestToolkit
 import net.corda.chunking.impl.ChunkBuilderServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
@@ -29,6 +27,10 @@ import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PROPERTIES_COMMON
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
+import net.corda.web.api.Endpoint
+import net.corda.web.api.WebServer
+import java.util.concurrent.TimeUnit
+import kotlin.random.Random
 
 class KafkaTestToolKit(
     private val toolkit: TestToolkit,
@@ -107,7 +109,17 @@ class KafkaTestToolKit(
             producerBuilder,
             consumerBuilder,
             stateAndEventBuilder,
-            messagingChunkFactory
+            messagingChunkFactory,
+            object : WebServer {
+                override val port: Int? = 9999
+                override val endpoints: Set<Endpoint>
+                    get() = emptySet()
+
+                override fun start(port: Int) = Unit
+                override fun stop() = Unit
+                override fun registerEndpoint(endpoint: Endpoint) = Unit
+                override fun removeEndpoint(endpoint: Endpoint) = Unit
+            }
         )
     }
 

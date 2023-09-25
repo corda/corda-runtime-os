@@ -1,5 +1,7 @@
 package net.corda.membership.impl.registration.dynamic.mgm
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
@@ -7,9 +9,11 @@ import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.ShortHashException
 import net.corda.crypto.core.fullId
+import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.libs.platform.PlatformInfoProvider
+import net.corda.membership.impl.registration.RegistrationProxyImpl
 import net.corda.membership.impl.registration.dynamic.mgm.ContextUtils.sessionKeyRegex
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
@@ -26,15 +30,18 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_HASH
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_SIGNATURE_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.SignedMemberInfo
+import net.corda.membership.lib.SelfSignedMemberInfo
+import net.corda.membership.lib.toWire
+import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.validateSchemeAndSignatureSpec
+import net.corda.membership.p2p.helpers.KeySpecExtractor.KeySpecType
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.LoggerFactory
@@ -49,7 +56,8 @@ internal class MGMRegistrationMemberInfoHandler(
     private val memberInfoFactory: MemberInfoFactory,
     private val membershipPersistenceClient: MembershipPersistenceClient,
     private val platformInfoProvider: PlatformInfoProvider,
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ) {
 
     private companion object {
@@ -58,26 +66,35 @@ internal class MGMRegistrationMemberInfoHandler(
         val keyIdList = listOf(SESSION_KEYS, ECDH_KEY_ID)
     }
 
+    private val serializer: CordaAvroSerializer<KeyValuePairList> =
+        cordaAvroSerializationFactory.createAvroSerializer {
+            RegistrationProxyImpl.logger.error("Failed to serialize key value pair list.")
+        }
+
+    private fun serialize(context: KeyValuePairList): ByteArray {
+        return serializer.serialize(context) ?: throw CordaRuntimeException(
+            "Failed to serialize key value pair list."
+        )
+    }
+
     @Throws(MGMRegistrationMemberInfoHandlingException::class)
     fun buildAndPersistMgmMemberInfo(
         holdingIdentity: HoldingIdentity,
         context: Map<String, String>
-    ): SignedMemberInfo {
+    ): SelfSignedMemberInfo {
         logger.info("Started building mgm member info.")
-        return SignedMemberInfo(
-            buildMgmInfo(holdingIdentity, context),
-            CryptoSignatureWithKey(
-                ByteBuffer.wrap(byteArrayOf()),
-                ByteBuffer.wrap(byteArrayOf())
-            ),
-            CryptoSignatureSpec("", null, null)
-        ).also {
+        return buildMgmInfo(holdingIdentity, context).also {
             persistMemberInfo(holdingIdentity, it)
         }
     }
 
     @Suppress("ThrowsCount")
-    private fun getKeyFromId(keyId: String, tenantId: String, expectedCategory: String): PublicKey {
+    private fun getKeyFromId(
+        keyId: String,
+        tenantId: String,
+        expectedCategory: String,
+        signatureSpec: String? = null
+    ): PublicKey {
         val parsedKeyId =
             try {
                 ShortHash.parse(keyId)
@@ -94,6 +111,16 @@ internal class MGMRegistrationMemberInfoHandler(
                     null
                 )
             }
+            if(expectedCategory == SESSION_INIT) {
+                try {
+                    it.validateSchemeAndSignatureSpec(signatureSpec, KeySpecType.SESSION)
+                } catch(ex: IllegalArgumentException) {
+                    throw MGMRegistrationContextValidationException(
+                        "Key scheme and/or signature spec are not valid for category $SESSION_INIT.",
+                        ex
+                    )
+                }
+            }
             try {
                 keyEncodingService.decodePublicKey(it.publicKey.array())
             } catch (ex: RuntimeException) {
@@ -109,7 +136,7 @@ internal class MGMRegistrationMemberInfoHandler(
 
     private fun PublicKey.toPem(): String = keyEncodingService.encodeAsString(this)
 
-    private fun persistMemberInfo(holdingIdentity: HoldingIdentity, mgmInfo: SignedMemberInfo) {
+    private fun persistMemberInfo(holdingIdentity: HoldingIdentity, mgmInfo: SelfSignedMemberInfo) {
         val persistenceResult = membershipPersistenceClient.persistMemberInfo(holdingIdentity, listOf(mgmInfo))
             .execute()
         if (persistenceResult is MembershipPersistenceResult.Failure) {
@@ -122,7 +149,7 @@ internal class MGMRegistrationMemberInfoHandler(
     private fun buildMgmInfo(
         holdingIdentity: HoldingIdentity,
         context: Map<String, String>
-    ): MemberInfo {
+    ): SelfSignedMemberInfo {
         val cpi = virtualNodeInfoReadService.get(holdingIdentity)?.cpiIdentifier
             ?: throw MGMRegistrationMemberInfoHandlingException(
                 "Could not find virtual node info for member ${holdingIdentity.shortHash}"
@@ -135,9 +162,10 @@ internal class MGMRegistrationMemberInfoHandler(
         val optionalContext = mapOf(MEMBER_CPI_SIGNER_HASH to cpi.signerSummaryHash.toString())
         val sessionKeys = context.filterKeys { key ->
             sessionKeyRegex.matches(key)
-        }.values
-            .map {
-                getKeyFromId(it, holdingIdentity.shortHash.value, SESSION_INIT)
+        }.map {
+                val keyIndex = it.key.substringAfter("$SESSION_KEYS.").substringBefore('.')
+                val signatureSpec = context[SESSION_KEYS_SIGNATURE_SPEC.format(keyIndex)]
+                getKeyFromId(it.value, holdingIdentity.shortHash.value, SESSION_INIT, signatureSpec)
             }.flatMapIndexed { index, sessionKey ->
                 listOf(
                     String.format(PARTY_SESSION_KEYS_PEM, index) to sessionKey.toPem(),
@@ -159,15 +187,22 @@ internal class MGMRegistrationMemberInfoHandler(
             MEMBER_CPI_NAME to cpi.name,
             MEMBER_CPI_VERSION to cpi.version,
         ) + optionalContext + sessionKeys
-        return memberInfoFactory.create(
-            memberContext = memberContext.toSortedMap(),
-            mgmContext = sortedMapOf(
-                CREATION_TIME to now,
-                MODIFIED_TIME to now,
-                STATUS to MEMBER_STATUS_ACTIVE,
-                IS_MGM to "true",
-                SERIAL to SERIAL_CONST,
-            )
+        return memberInfoFactory.createSelfSignedMemberInfo(
+            serialize(memberContext.toSortedMap().toWire()),
+            serialize(
+                sortedMapOf(
+                    CREATION_TIME to now,
+                    MODIFIED_TIME to now,
+                    STATUS to MEMBER_STATUS_ACTIVE,
+                    IS_MGM to "true",
+                    SERIAL to SERIAL_CONST,
+                ).toWire()
+            ),
+            CryptoSignatureWithKey(
+                ByteBuffer.wrap(byteArrayOf()),
+                ByteBuffer.wrap(byteArrayOf())
+            ),
+            CryptoSignatureSpec("", null, null),
         )
     }
 }

@@ -1,7 +1,5 @@
 package net.corda.membership.impl.registration.dummy
 
-import net.corda.data.crypto.wire.CryptoSignatureSpec
-import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.StaticNetworkInfo
 import net.corda.data.membership.common.ApprovalRuleDetails
 import net.corda.data.membership.common.ApprovalRuleType
@@ -12,11 +10,11 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -38,14 +36,19 @@ class TestMembershipQueryClient @Activate constructor(
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
         }
-    override fun queryMemberInfo(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<Collection<MemberInfo>> {
+
+    override fun queryMemberInfo(
+        viewOwningIdentity: HoldingIdentity,
+        statusFilter: List<String>
+    ): MembershipQueryResult<Collection<SelfSignedMemberInfo>> {
         return MembershipQueryResult.Failure("oops")
     }
 
     override fun queryMemberInfo(
         viewOwningIdentity: HoldingIdentity,
-        queryFilter: Collection<HoldingIdentity>,
-    ): MembershipQueryResult<Collection<MemberInfo>> {
+        holdingIdentityFilter: Collection<HoldingIdentity>,
+        statusFilter: List<String>
+    ): MembershipQueryResult<Collection<SelfSignedMemberInfo>> {
         return MembershipQueryResult.Failure("oops")
     }
 
@@ -62,13 +65,6 @@ class TestMembershipQueryClient @Activate constructor(
         statuses: List<RegistrationStatus>,
         limit: Int?,
     ): MembershipQueryResult<List<RegistrationRequestDetails>> {
-        return MembershipQueryResult.Failure("oops")
-    }
-
-    override fun queryMembersSignatures(
-        viewOwningIdentity: HoldingIdentity,
-        holdingsIdentities: Collection<HoldingIdentity>,
-    ): MembershipQueryResult<Map<HoldingIdentity, Pair<CryptoSignatureWithKey, CryptoSignatureSpec>>> {
         return MembershipQueryResult.Failure("oops")
     }
 

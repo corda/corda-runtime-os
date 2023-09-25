@@ -1,9 +1,9 @@
 package net.corda.session.manager.integration
 
 enum class SessionMessageType {
-    INIT,
+    COUNTERPARTY_INFO,
+    CONFIRM,
     DATA,
-    ACK,
     ERROR,
     CLOSE
 }

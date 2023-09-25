@@ -1,6 +1,5 @@
 package net.corda.messaging.subscription.factory
 
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -14,12 +13,14 @@ import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.config.SyncRPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
@@ -32,13 +33,16 @@ import net.corda.messaging.subscription.EventLogSubscriptionImpl
 import net.corda.messaging.subscription.PubSubSubscriptionImpl
 import net.corda.messaging.subscription.RPCSubscriptionImpl
 import net.corda.messaging.subscription.StateAndEventSubscriptionImpl
+import net.corda.messaging.subscription.SyncRPCSubscriptionImpl
 import net.corda.messaging.subscription.consumer.builder.StateAndEventBuilder
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
+import net.corda.web.api.WebServer
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Kafka implementation of the Subscription Factory.
@@ -59,6 +63,8 @@ class CordaSubscriptionFactory @Activate constructor(
     private val stateAndEventBuilder: StateAndEventBuilder,
     @Reference(service = MessagingChunkFactory::class)
     private val messagingChunkFactory: MessagingChunkFactory,
+    @Reference(service = WebServer::class)
+    private val webServer: WebServer
 ) : SubscriptionFactory {
 
     override fun <K : Any, V : Any> createPubSubSubscription(
@@ -135,6 +141,7 @@ class CordaSubscriptionFactory @Activate constructor(
             lifecycleCoordinatorFactory,
             messagingChunkFactory.createChunkSerializerService(messagingConfig.getLong(MAX_ALLOWED_MSG_SIZE)),
             stateAndEventListener,
+            cordaAvroSerializationFactory
         )
     }
 
@@ -179,6 +186,19 @@ class CordaSubscriptionFactory @Activate constructor(
             lifecycleCoordinatorFactory
         )
     }
+
+    override fun <REQUEST : Any, RESPONSE : Any> createHttpRPCSubscription(
+        rpcConfig: SyncRPCConfig,
+        processor: SyncRPCProcessor<REQUEST, RESPONSE>
+    ): RPCSubscription<REQUEST, RESPONSE> {
+
+        val cordaAvroSerializer = cordaAvroSerializationFactory.createAvroSerializer<RESPONSE> { }
+        val cordaAvroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({ }, processor.requestClass)
+
+        return SyncRPCSubscriptionImpl(rpcConfig, processor,
+            lifecycleCoordinatorFactory, webServer, cordaAvroSerializer, cordaAvroDeserializer)
+    }
+
 
     private fun getConfig(
         subscriptionType: SubscriptionType,

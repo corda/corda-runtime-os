@@ -1,6 +1,10 @@
 package net.corda.flow.testing.tests
 
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.data.flow.event.session.SessionInit
+import net.corda.flow.utils.KeyValueStore
+import net.corda.flow.utils.emptyKeyValuePairList
+import net.corda.session.manager.Constants
 import net.corda.v5.base.types.MemberX500Name
 
 // HACK: needed to use this group id as it is hard
@@ -37,3 +41,17 @@ val DATA_MESSAGE_0 = byteArrayOf(0)
 val DATA_MESSAGE_1 = byteArrayOf(1)
 val DATA_MESSAGE_2 = byteArrayOf(2)
 val CPK1_CHECKSUM = SecureHashImpl("ALG", byteArrayOf(0, 0, 0, 0))
+
+val SESSION_PROPERTIES = KeyValueStore().apply {
+    put(Constants.FLOW_PROTOCOL, PROTOCOL)
+    put(Constants.FLOW_PROTOCOL_VERSIONS_SUPPORTED, "1")
+    put(Constants.FLOW_SESSION_REQUIRE_CLOSE, "true")
+}.avro
+
+val SESSION_INIT: SessionInit = SessionInit.newBuilder()
+    .setFlowId(null)
+    .setCpiId(CPI1)
+    .setContextPlatformProperties(emptyKeyValuePairList())
+    .setContextUserProperties(emptyKeyValuePairList())
+    .build()
+

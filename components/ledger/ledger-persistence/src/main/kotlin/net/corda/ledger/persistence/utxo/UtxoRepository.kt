@@ -93,6 +93,7 @@ interface UtxoRepository {
         type: String,
         tokenType: String? = null,
         tokenIssuerHash: String? = null,
+        tokenNotaryX500Name: String? = null,
         tokenSymbol: String? = null,
         tokenTag: String? = null,
         tokenOwnerHash: String? = null,

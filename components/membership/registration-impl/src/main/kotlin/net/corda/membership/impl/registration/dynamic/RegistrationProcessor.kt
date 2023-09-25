@@ -1,6 +1,8 @@
 package net.corda.membership.impl.registration.dynamic
 
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.SignatureVerificationService
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.member.PersistMemberRegistrationState
 import net.corda.data.membership.command.registration.member.ProcessMemberVerificationRequest
@@ -46,6 +48,8 @@ class RegistrationProcessor(
     membershipQueryClient: MembershipQueryClient,
     membershipConfig: SmartConfig,
     groupParametersWriterService: GroupParametersWriterService,
+    signatureVerificationService: SignatureVerificationService,
+    keyEncodingService: KeyEncodingService,
 ) : StateAndEventProcessor<String, RegistrationState, RegistrationCommand> {
 
     override val keyClass = String::class.java
@@ -63,11 +67,14 @@ class RegistrationProcessor(
             clock,
             membershipPersistenceClient,
             cordaAvroSerializationFactory,
+            signatureVerificationService,
+            keyEncodingService,
         ),
         CheckForPendingRegistration::class.java to CheckForPendingRegistrationHandler(
             membershipQueryClient,
         ),
         StartRegistration::class.java to StartRegistrationHandler(
+            cordaAvroSerializationFactory,
             clock,
             memberInfoFactory,
             memberTypeChecker,
@@ -82,6 +89,7 @@ class RegistrationProcessor(
             memberTypeChecker,
             membershipGroupReaderProvider,
             groupParametersWriterService,
+            memberInfoFactory,
         ),
         DeclineRegistration::class.java to DeclineRegistrationHandler(
             membershipPersistenceClient,

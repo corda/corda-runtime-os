@@ -1,10 +1,15 @@
 package net.corda.membership.impl.registration.dynamic.mgm
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.crypto.cipher.suite.KeyEncodingService
+import net.corda.crypto.cipher.suite.SignatureSpecs.ECDSA_SHA256
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.impl.toMap
+import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
@@ -27,11 +32,12 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_HASH
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_SIGNATURE_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.SignedMemberInfo
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -40,8 +46,7 @@ import net.corda.test.util.TestRandom
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.membership.MemberContext
-import net.corda.v5.membership.MemberInfo
+import net.corda.v5.crypto.KeySchemeCodes
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -64,7 +69,6 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
-import java.util.SortedMap
 import java.util.UUID
 
 class MGMRegistrationMemberInfoHandlerTest {
@@ -75,6 +79,10 @@ class MGMRegistrationMemberInfoHandlerTest {
         const val TEST_SOFTWARE_VERSION = "5.0.0.0-test"
         const val GROUP_POLICY_PROPERTY_KEY = GROUP_POLICY_PREFIX_WITH_DOT + "test"
     }
+
+    private val ecdhKeyId = "ABC123456789"
+    private val sessionKeyId = "BBC123456789"
+    private val sessionKeySchema = KeySchemeCodes.RSA_CODE_NAME
 
     private val holdingIdentity = HoldingIdentity(
         MemberX500Name.parse("O=Alice, L=London, C=GB"),
@@ -93,21 +101,20 @@ class MGMRegistrationMemberInfoHandlerTest {
         on { encoded } doReturn EMPTY_STRING.toByteArray()
         on { algorithm } doReturn "EC"
     }
-    private val mockMemberContext: MemberContext = mock()
-    private val memberInfo: MemberInfo = mock {
-        on { memberProvidedContext } doReturn mockMemberContext
-    }
     private val signature = CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf()))
     private val signatureSpec = CryptoSignatureSpec("", null, null)
-    private val signedMemberInfo: SignedMemberInfo = SignedMemberInfo(memberInfo, signature, signatureSpec)
-    private val memberContextCaptor = argumentCaptor<SortedMap<String, String?>>()
+    private val signedMemberInfo = mock<SelfSignedMemberInfo> {
+        on { memberSignature } doReturn signature
+        on { memberSignatureSpec } doReturn signatureSpec
+    }
+    private val contextCaptor = argumentCaptor<KeyValuePairList>()
     private val memberContext
-        get() = assertDoesNotThrow { memberContextCaptor.firstValue }
-    private val mgmContextCaptor = argumentCaptor<SortedMap<String, String?>>()
+        get() = assertDoesNotThrow { contextCaptor.firstValue.items.toMap() }
     private val mgmContext
-        get() = assertDoesNotThrow { mgmContextCaptor.firstValue }
+        get() = assertDoesNotThrow { contextCaptor.secondValue.items.toMap() }
 
     private val clock: Clock = TestClock(Instant.ofEpochSecond(0))
+
     private val cryptoOpsClient: CryptoOpsClient = mock {
         on {
             lookupKeysByIds(
@@ -146,7 +153,7 @@ class MGMRegistrationMemberInfoHandlerTest {
                 EMPTY_STRING,
                 EMPTY_STRING,
                 ByteBuffer.wrap(EMPTY_STRING.toByteArray()),
-                EMPTY_STRING,
+                sessionKeySchema,
                 EMPTY_STRING,
                 0,
                 EMPTY_STRING,
@@ -158,8 +165,18 @@ class MGMRegistrationMemberInfoHandlerTest {
         on { decodePublicKey(any<ByteArray>()) } doReturn publicKey
         on { encodeAsString(any()) } doReturn EMPTY_STRING
     }
+    private val memberContextBytes = byteArrayOf(0)
+    private val mgmContextBytes = byteArrayOf(1)
+    private val serializer= mock<CordaAvroSerializer<KeyValuePairList>> {
+        on {
+            serialize(contextCaptor.capture())
+        } doReturn memberContextBytes doReturn mgmContextBytes
+    }
+    private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
+        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn serializer
+    }
     private val memberInfoFactory: MemberInfoFactory = mock {
-        on { create(memberContextCaptor.capture(), mgmContextCaptor.capture()) } doReturn memberInfo
+        on { createSelfSignedMemberInfo(memberContextBytes, mgmContextBytes, signature, signatureSpec) } doReturn signedMemberInfo
     }
     private val operation = mock<MembershipPersistenceOperation<Unit>> {
         on { execute() } doReturn MembershipPersistenceResult.success()
@@ -189,11 +206,9 @@ class MGMRegistrationMemberInfoHandlerTest {
         memberInfoFactory,
         membershipPersistenceClient,
         platformInfoProvider,
-        virtualNodeInfoReadService
+        virtualNodeInfoReadService,
+        cordaAvroSerializationFactory,
     )
-
-    private val ecdhKeyId = "ABC123456789"
-    private val sessionKeyId = "BBC123456789"
 
     private val validTestContext
         get() = mapOf(
@@ -234,7 +249,7 @@ class MGMRegistrationMemberInfoHandlerTest {
         }
 
         verify(membershipPersistenceClient).persistMemberInfo(any(), any())
-        verify(memberInfoFactory).create(any(), any<SortedMap<String, String?>>())
+        verify(memberInfoFactory).createSelfSignedMemberInfo(memberContextBytes, mgmContextBytes, signature, signatureSpec)
         verify(platformInfoProvider).activePlatformVersion
         verify(platformInfoProvider).localWorkerSoftwareVersion
         verify(keyEncodingService, times(2)).encodeAsString(any())
@@ -305,10 +320,8 @@ class MGMRegistrationMemberInfoHandlerTest {
         }
 
         SoftAssertions.assertSoftly {
-            it.assertThat(result.memberSignature)
-                .isEqualTo(CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf())))
-            it.assertThat(result.memberSignatureSpec)
-                .isEqualTo(CryptoSignatureSpec("", null, null))
+            it.assertThat(result.memberSignature).isEqualTo(signature)
+            it.assertThat(result.memberSignatureSpec).isEqualTo(signatureSpec)
         }
     }
 
@@ -498,6 +511,54 @@ class MGMRegistrationMemberInfoHandlerTest {
             )
         }
     }
+
+    @Test
+    fun `session key with unsupported key scheme will cause an exception`() {
+        whenever(
+            cryptoOpsClient.lookupKeysByIds(
+                holdingIdentity.shortHash.value,
+                listOf(
+                    ShortHash.of(sessionKeyId)
+                )
+            )
+        ).doReturn(
+            listOf(
+                CryptoSigningKey(
+                    EMPTY_STRING,
+                    EMPTY_STRING,
+                    SESSION_INIT,
+                    EMPTY_STRING,
+                    EMPTY_STRING,
+                    ByteBuffer.wrap(EMPTY_STRING.toByteArray()),
+                    KeySchemeCodes.EDDSA_ED25519_CODE_NAME,
+                    EMPTY_STRING,
+                    0,
+                    EMPTY_STRING,
+                    Instant.ofEpochSecond(0)
+                )
+            )
+        )
+
+        assertThrows<MGMRegistrationContextValidationException> {
+            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
+                holdingIdentity,
+                validTestContext
+            )
+        }
+    }
+    @Test
+    fun `session key with unsupported key scheme and signature spec combination will cause an exception`() {
+        // this test relies on the session key scheme being mocked to be incompatible with the signature spec so this assertion verifies
+        // the value isn't changed
+        assertThat(sessionKeySchema).isEqualTo(KeySchemeCodes.RSA_CODE_NAME)
+        assertThrows<MGMRegistrationContextValidationException> {
+            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
+                holdingIdentity,
+                validTestContext + mapOf(SESSION_KEYS_SIGNATURE_SPEC.format(0) to ECDSA_SHA256.signatureName)
+            )
+        }
+    }
+
     private class Operation(
         private val value: MembershipPersistenceResult<Unit>
     ) : MembershipPersistenceOperation<Unit> {

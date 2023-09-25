@@ -1,6 +1,5 @@
 package net.corda.flow.pipeline.sessions
 
-import java.time.Instant
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
@@ -10,15 +9,18 @@ import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
+import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.types.MemberX500Name
+import java.time.Instant
 
 /**
  * [FlowSessionManager] encapsulates the logic of [SessionManager] with a specific focus on its usage within the flow event pipeline.
  */
+@Suppress("TooManyFunctions")
 interface FlowSessionManager {
 
     /**
@@ -31,43 +33,56 @@ interface FlowSessionManager {
     fun getSessionErrorEventRecords(checkpoint: FlowCheckpoint, flowConfig: SmartConfig, instant: Instant): List<Record<*, FlowMapperEvent>>
 
     /**
-     * Create a new [SessionState] and queue a [SessionInit] message to send.
-     *
+     * Generate a new session state
      * @param checkpoint The flow's [FlowCheckpoint].
      * @param sessionId The session id of the new [SessionState].
      * @param x500Name The [MemberX500Name] that the [SessionInit] is addressed to.
-     * @param contextUserProperties The user context properties
-     * @param contextPlatformProperties The platform context properties
      * @param sessionProperties The session context properties
      * @param instant The [Instant] used within the created [SessionEvent].
-     *
-     * @return A new [SessionState] containing a [SessionInit] message to send.
      */
-    @Suppress("LongParameterList")
-    fun sendInitMessage(
+    fun generateSessionState(
         checkpoint: FlowCheckpoint,
         sessionId: String,
         x500Name: MemberX500Name,
-        contextUserProperties: KeyValuePairList,
-        contextPlatformProperties: KeyValuePairList,
         sessionProperties: KeyValuePairList,
         instant: Instant
     ): SessionState
 
     /**
-     * Queue [SessionConfirm] messages to send to the passed in sessions.
+     * Generate a new counterparty info request.
+     *
+     * @param checkpoint The flow's [FlowCheckpoint].
+     * @param sessionId The session id of the new [SessionState].
+     * @param contextUserProperties The user context properties
+     * @param contextPlatformProperties The platform context properties
+     * @param x500Name The [MemberX500Name] that the [SessionCounterpartyInfoRequest] is addressed to.
+     * @param instant The [Instant] used within the created [SessionEvent].
+     *
+     * @return The updated [SessionState] object with the [SessionCounterpartyInfoRequest] message queued.
+     */
+    @Suppress("LongParameterList")
+    fun sendCounterpartyInfoRequest(
+        checkpoint: FlowCheckpoint,
+        sessionId: String,
+        contextUserProperties: KeyValuePairList,
+        contextPlatformProperties: KeyValuePairList,
+        x500Name: MemberX500Name,
+        instant: Instant
+    ): SessionState
+
+    /**
+     * Queue [SessionCounterpartyInfoResponse] messages to send to the passed in sessions.
      *
      * @param checkpoint The flow's [FlowCheckpoint].
      * @param sessionId The session to confirm.
      * @param contextSessionProperties Session specific context such a protocol version to send back to the initiator
      * @param instant The [Instant] used within the created [SessionEvent].
      *
-     * @return Updated [SessionState] containing [SessionConfirm] message to send.
+     * @return Updated [SessionState] containing [SessionCounterpartyInfoResponse] message to send.
      *
-     * @throws FlowSessionStateException If a session does not exist within the flow's [FlowCheckpoint], or is not in
-     * the CONFIRMED state.
+     * @throws FlowSessionStateException If a session does not exist within the flow's [FlowCheckpoint].
      */
-    fun sendConfirmMessage(
+    fun sendCounterpartyInfoResponse(
         checkpoint: FlowCheckpoint,
         sessionId: String,
         contextSessionProperties: KeyValuePairList,
@@ -88,7 +103,7 @@ interface FlowSessionManager {
      */
     fun sendDataMessages(
         checkpoint: FlowCheckpoint,
-        sessionToPayload: Map<String, ByteArray>,
+        sessionToPayload: Map<SessionInfo, ByteArray>,
         instant: Instant
     ): List<SessionState>
 
@@ -237,4 +252,38 @@ interface FlowSessionManager {
         checkpoint: FlowCheckpoint,
         sessionIds: List<String>
     ): List<SessionState>
+
+    /**
+     * Get a list of requireClose = true and requireClose = false as a [Pair]
+     * @param checkpoint The checkpoint to check states within
+     * @param sessionIds The sessions to check
+     * @return a [Pair] of <requireClose, !requireClose> sessions
+     */
+    fun getRequireCloseTrueAndFalse(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>
+    ): Pair<List<String>, List<String>>
+
+    /**
+     * Update [status] for the sessions passed in.
+     * @param checkpoint The flow's [FlowCheckpoint].
+     * @param sessionIds The session ids to update the status of.
+     * @param status The acceptable status the sessions can have.
+     * @return A list of [SessionState]s that have been updated to the new [status].
+     *
+     */
+    fun updateStatus(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>,
+        status: SessionStateType
+    ): List<SessionState>
+
+    /**
+     * Get a list of initiating and initiated sessions as a [Pair]
+     * @param sessionIds The sessions to check
+     * @return a [Pair] of <initiating, initiated> sessions
+     */
+    fun getInitiatingAndInitiatedSessions(
+        sessionIds: List<String>
+    ): Pair<List<String>, List<String>>
 }

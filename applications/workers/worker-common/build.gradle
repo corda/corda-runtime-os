@@ -16,12 +16,16 @@ dependencies {
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-validation')
     implementation project(':libs:messaging:message-bus')
+    implementation project(':libs:messaging:messaging')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:lifecycle:registry')
     implementation project(':libs:metrics')
     implementation project(':libs:utilities')
     implementation project(':libs:platform-info')
     implementation project(':osgi-framework-api')
+    implementation project(':libs:serialization:serialization-avro')
+    implementation project(':libs:web:web')
+    implementation project(':libs:rest:rest')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-base'
@@ -44,12 +48,16 @@ dependencies {
         exclude group: 'org.latencyutils', module: 'LatencyUtils'
     }
     implementation "io.micrometer:micrometer-registry-prometheus:$micrometerVersion"
+    implementation "io.micrometer:micrometer-registry-cloudwatch2:$micrometerVersion"
+    implementation project(':libs:awssdk')
 
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
+    runtimeOnly project(':libs:web:web-impl')
     runtimeOnly "org.apache.commons:commons-lang3:$commonsLangVersion"
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation project(":libs:web:web-impl")
 
     testRuntimeOnly 'org.osgi:osgi.core'
 

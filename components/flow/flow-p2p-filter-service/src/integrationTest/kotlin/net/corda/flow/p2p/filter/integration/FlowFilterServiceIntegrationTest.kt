@@ -1,17 +1,14 @@
 package net.corda.flow.p2p.filter.integration
 
 import com.typesafe.config.ConfigValueFactory
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-import net.corda.configuration.read.ConfigurationReadService
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRequest
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.p2p.app.AppMessage
@@ -44,6 +41,10 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -104,14 +105,12 @@ class FlowFilterServiceIntegrationTest {
             identity, identity, Instant.ofEpochMilli(1), "", "", "flowSession", MembershipStatusFilter.ACTIVE
         )
         val sessionEvent = SessionEvent(
-            MessageDirection.OUTBOUND, Instant.now(), testId, 1, identity, identity, 0, listOf(), SessionInit(
+            MessageDirection.OUTBOUND, Instant.now(), testId, 1, identity, identity, SessionCounterpartyInfoRequest(SessionInit(
                 testId,
                 null,
                 emptyKeyValuePairList(),
                 emptyKeyValuePairList(),
-                emptyKeyValuePairList(),
-                ByteBuffer.wrap("".toByteArray())
-            )
+            )), emptyKeyValuePairList()
         )
 
         val sessionRecord = Record(

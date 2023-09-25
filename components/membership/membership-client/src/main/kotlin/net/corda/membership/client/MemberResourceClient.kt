@@ -4,6 +4,7 @@ import net.corda.crypto.core.ShortHash
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.client.dto.RegistrationRequestProgressDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
+import net.corda.membership.lib.ContextDeserializationException
 
 /**
  * The member ops client to perform group operations.
@@ -17,7 +18,7 @@ interface MemberResourceClient : Lifecycle {
      * @param registrationContext The member's or MGM's registration context required for on-boarding within a group,
      *   which will be later part of the member provided context of the [MemberInfo]. In case of MGM registration some
      *   parts of the context will be used for building the [GroupPolicy] as well.
-     * @throws CouldNotFindMemberException if the member in `holdingIdentityShortHash` can not be found.
+     * @throws CouldNotFindEntityException If there is no virtual node with [holdingIdentityShortHash].
      * @return [RegistrationRequestProgressDto] to indicate the status of the request at time of submission.
      */
     fun startRegistration(
@@ -49,6 +50,7 @@ interface MemberResourceClient : Lifecycle {
      *
      * @throws RegistrationProgressNotFoundException if there was no registration request for given request id. Could
      * happen when the registration request had NOT_SUBMITTED status or if [startRegistration] wasn't called at all.
+     * @throws ContextDeserializationException if the request context could not be deserialized
      *
      * @return [RegistrationRequestStatusDto] to indicate the last known status of the registration request based on
      * local member data.

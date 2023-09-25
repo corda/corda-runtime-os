@@ -4,6 +4,7 @@ package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.crypto.test.certificates.generation.toPem
+import net.corda.e2etest.utilities.ClusterBuilder.Companion.REST_API_VERSION_PATH
 import net.corda.e2etest.utilities.types.NetworkOnboardingMetadata
 import net.corda.rest.ResponseCode
 import net.corda.utilities.minutes
@@ -13,6 +14,9 @@ import java.net.URLEncoder.encode
 import java.nio.charset.Charset.defaultCharset
 import java.time.Duration
 import net.corda.rest.annotations.RestApiVersion
+import java.nio.charset.StandardCharsets
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
 
 /**
  * Calls the necessary endpoints to create a vnode, and onboard the MGM to that vnode.
@@ -30,6 +34,17 @@ fun ClusterInfo.onboardMgm(
     val sessionKeyId = createKeyFor(
         mgmHoldingId, "$mgmHoldingId$CAT_SESSION_INIT", CAT_SESSION_INIT, DEFAULT_KEY_SCHEME
     )
+    var mgmSessionCert: String? = null
+    val mgmSessionCertAlias = "$CERT_ALIAS_SESSION-$mgmHoldingId"
+    if (groupPolicyConfig.sessionPkiMode == "Standard") {
+        val mgmSessionCsr = generateCsr(mgmName, sessionKeyId, mgmHoldingId)
+        mgmSessionCert = getCa().generateCert(mgmSessionCsr)
+        val mgmSessionCertFile = File.createTempFile("${this.hashCode()}$CAT_SESSION_INIT", ".pem").also {
+            it.deleteOnExit()
+            it.writeBytes(mgmSessionCert.toByteArray())
+        }
+        importCertificate(mgmSessionCertFile, CERT_USAGE_SESSION, mgmSessionCertAlias, mgmHoldingId)
+    }
 
     addSoftHsmFor(mgmHoldingId, CAT_PRE_AUTH)
     val ecdhKeyId = createKeyFor(
@@ -44,7 +59,6 @@ fun ClusterInfo.onboardMgm(
     )
 
     if (!keyExists(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS)) {
-        disableCertificateRevocationChecks()
         val tlsKeyId = createKeyFor(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS, DEFAULT_KEY_SCHEME)
         val mgmTlsCsr = generateCsr(mgmName, tlsKeyId)
         val mgmTlsCert = File.createTempFile("${this.hashCode()}$CAT_TLS", ".pem").also {
@@ -54,7 +68,11 @@ fun ClusterInfo.onboardMgm(
         importCertificate(mgmTlsCert, CERT_USAGE_P2P, CERT_ALIAS_P2P)
     }
     val registrationId = register(mgmHoldingId, registrationContext, waitForApproval = true)
-    configureNetworkParticipant(mgmHoldingId, sessionKeyId)
+    if (mgmSessionCert != null) {
+        configureNetworkParticipant(mgmHoldingId, sessionKeyId, mgmSessionCertAlias)
+    } else {
+        configureNetworkParticipant(mgmHoldingId, sessionKeyId)
+    }
 
     return NetworkOnboardingMetadata(mgmHoldingId, mgmName, registrationId, registrationContext, this)
 }
@@ -68,7 +86,7 @@ fun ClusterInfo.exportGroupPolicy(
     assertWithRetryIgnoringExceptions {
         interval(2.seconds)
         timeout(30.seconds)
-        command { get("/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/info") }
+        command { get("/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/info") }
         condition { it.code == ResponseCode.OK.statusCode }
     }.body
 }
@@ -80,7 +98,7 @@ fun ClusterInfo.createApprovalRule(
     mgmHoldingId: String,
     regex: String,
     label: String
-) = createApprovalRuleCommon("/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/approval/rules", regex, label)
+) = createApprovalRuleCommon("/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/approval/rules", regex, label)
 
 /**
  * Attempt to create a pre-auth approval rule.
@@ -89,7 +107,7 @@ fun ClusterInfo.createPreAuthApprovalRule(
     mgmHoldingId: String,
     regex: String,
     label: String
-) = createApprovalRuleCommon("/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/approval/rules/preauth", regex, label)
+) = createApprovalRuleCommon("/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/approval/rules/preauth", regex, label)
 
 /**
  * Attempt to create an approval rule at a given resource URL.
@@ -117,7 +135,7 @@ private fun ClusterInfo.createApprovalRuleCommon(
 fun ClusterInfo.deleteApprovalRule(
     mgmHoldingId: String,
     ruleId: String
-) = delete("/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/approval/rules/$ruleId")
+) = delete("/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/approval/rules/$ruleId")
 
 /**
  * Attempt to delete a pre-auth approval rule.
@@ -125,7 +143,7 @@ fun ClusterInfo.deleteApprovalRule(
 fun ClusterInfo.deletePreAuthApprovalRule(
     mgmHoldingId: String,
     ruleId: String
-) = delete("/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/approval/rules/preauth/$ruleId")
+) = delete("/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/approval/rules/preauth/$ruleId")
 
 /**
  * Attempt to delete a resource at a given URL with retries.
@@ -160,7 +178,7 @@ fun ClusterInfo.createPreAuthToken(
         interval(1.seconds)
         command {
             post(
-                "/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/preauthtoken",
+                "/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/preauthtoken",
                 ObjectMapper().writeValueAsString(payload)
             )
         }
@@ -181,7 +199,7 @@ fun ClusterInfo.revokePreAuthToken(
             interval(1.seconds)
             command {
                 put(
-                "/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/preauthtoken/revoke/$tokenId",
+                "/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/preauthtoken/revoke/$tokenId",
                 "{\"remarks\": \"$remark\"}"
                 )
             }
@@ -208,7 +226,7 @@ fun ClusterInfo.getPreAuthTokens(
     val query = queries.joinToString(prefix = "?", separator = "&")
     assertWithRetryIgnoringExceptions {
         interval(1.seconds)
-        command { get("/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/preauthtoken$query") }
+        command { get("/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/preauthtoken$query") }
         condition { it.code == ResponseCode.OK.statusCode }
     }.toJson()
 }
@@ -229,7 +247,7 @@ fun ClusterInfo.waitForPendingRegistrationReviews(
         assertWithRetryIgnoringExceptions {
             timeout(2.minutes)
             interval(3.seconds)
-            command { get("/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/registrations$query") }
+            command { get("/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/registrations$query") }
             condition {
                 val json = it.toJson().firstOrNull()
                 it.code == ResponseCode.OK.statusCode
@@ -250,7 +268,7 @@ fun ClusterInfo.approveRegistration(
     cluster {
         assertWithRetry {
             interval(1.seconds)
-            command { post("/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/approve/$registrationId", "") }
+            command { post("/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/approve/$registrationId", "") }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
         }
     }
@@ -267,7 +285,7 @@ fun ClusterInfo.declineRegistration(
         assertWithRetry {
             interval(1.seconds)
             command { post(
-                "/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/decline/$registrationId",
+                "/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/decline/$registrationId",
                 "{\"reason\": \"Declined by automated test with runId $testRunUniqueId.\"}")
             }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
@@ -328,7 +346,7 @@ fun ClusterInfo.suspendMember(
         interval(1.seconds)
         command {
             post(
-                "/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/suspend",
+                "/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/suspend",
                 "{ \"x500Name\": \"$x500Name\", \"serialNumber\": $serialNumber }"
             )
         }
@@ -374,7 +392,7 @@ fun ClusterInfo.activateMember(
         interval(1.seconds)
         command {
             post(
-                "/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/activate",
+                "/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/activate",
                 "{ \"x500Name\": \"$x500Name\", \"serialNumber\": $serialNumber }"
             )
         }
@@ -421,10 +439,31 @@ fun ClusterInfo.updateGroupParameters(
         interval(1.seconds)
         command {
             post(
-                "/api/${ClusterBuilder.REST_API_VERSION_PATH}/mgm/$mgmHoldingId/group-parameters",
+                "/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/group-parameters",
                 ObjectMapper().writeValueAsString(payload)
             )
         }
         condition { it.code == ResponseCode.OK.statusCode }
     }.toJson()
+}
+
+fun ClusterInfo.allowClientCertificates(certificatePem: String, mgmHoldingId: String) {
+    val subject = CertificateFactory.getInstance("X.509")
+        .generateCertificates(certificatePem.byteInputStream())
+        .filterIsInstance<X509Certificate>()
+        .first()
+        .subjectX500Principal
+
+    val encodedSubject = encode(subject.toString(), StandardCharsets.UTF_8)
+    val endpoint = "/api/$REST_API_VERSION_PATH/mgm/$mgmHoldingId/mutual-tls/allowed-client-certificate-subjects/$encodedSubject"
+    cluster {
+        assertWithRetryIgnoringExceptions {
+            timeout(15.seconds)
+            interval(1.seconds)
+            command {
+                put(endpoint,"")
+            }
+            condition { it.code == ResponseCode.NO_CONTENT.statusCode }
+        }
+    }
 }

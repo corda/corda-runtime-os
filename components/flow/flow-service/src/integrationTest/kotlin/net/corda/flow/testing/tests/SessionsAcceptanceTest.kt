@@ -1,6 +1,5 @@
 package net.corda.flow.testing.tests
 
-import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
@@ -21,6 +20,7 @@ import java.util.stream.Stream
  */
 @ExtendWith(ServiceExtension::class)
 @Execution(ExecutionMode.SAME_THREAD)
+
 class SessionsAcceptanceTest : FlowServiceTestBase() {
 
     private companion object {
@@ -28,21 +28,17 @@ class SessionsAcceptanceTest : FlowServiceTestBase() {
         fun nonInitSessionEventTypes(): Stream<Arguments> {
             return Stream.of(
                 Arguments.of(
-                    SessionAck::class.simpleName,
-                    { dsl: StepSetup -> dsl.sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1) }
-                ),
-                Arguments.of(
                     SessionData::class.simpleName,
                     { dsl: StepSetup ->
-                        dsl.sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, byteArrayOf(1), sequenceNum = 1, receivedSequenceNum = 1)
+                        dsl.sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, byteArrayOf(1), sequenceNum = 1)
                     }),
                 Arguments.of(
                     SessionClose::class.simpleName,
-                    { dsl: StepSetup -> dsl.sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1) }
+                    { dsl: StepSetup -> dsl.sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1) }
                 ),
                 Arguments.of(
                     SessionError::class.simpleName,
-                    { dsl: StepSetup -> dsl.sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1) }
+                    { dsl: StepSetup -> dsl.sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1) }
                 ),
             )
         }
@@ -50,7 +46,7 @@ class SessionsAcceptanceTest : FlowServiceTestBase() {
 
     @ParameterizedTest(name = "Receiving a {0} event for a flow that does not exist discards the event")
     @MethodSource("nonInitSessionEventTypes")
-    fun `Receiving a non-session init event for a flow that does not exist discards the event`(
+    fun `Receiving a non-init event for a flow that does not exist discards the event`(
         @Suppress("UNUSED_PARAMETER") name: String,
         parameter: (StepSetup) -> Unit
     ) {

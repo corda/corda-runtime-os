@@ -1,7 +1,6 @@
 package net.corda.flow.pipeline.impl
 
 import net.corda.data.flow.event.StartFlow
-import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.output.FlowStates
@@ -10,9 +9,10 @@ import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.WaitingFor
-import net.corda.flow.pipeline.events.FlowEventContext
+import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
+import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
@@ -25,17 +25,17 @@ import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.getLongOrDefault
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig
-import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS
-import net.corda.utilities.debug
+import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_WINDOW_DURATION
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.time.Duration
 import java.time.Instant
-import net.corda.flow.fiber.cache.FlowFiberCache
 
 @Suppress("Unused" , "TooManyFunctions")
 @Component(service = [FlowEventExceptionProcessor::class])
@@ -53,13 +53,16 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 ) : FlowEventExceptionProcessor {
 
     private companion object {
-        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private const val DEFAULT_MAX_RETRY_WINDOW_DURATION_MS = 300000L // 5 minutes
     }
 
-    private var maxRetryAttempts = 0
+    private var maxRetryWindowDuration = Duration.ZERO
 
     override fun configure(config: SmartConfig) {
-        maxRetryAttempts = config.getInt(PROCESSING_MAX_RETRY_ATTEMPTS)
+        maxRetryWindowDuration = Duration.ofMillis(
+            config.getLongOrDefault(PROCESSING_MAX_RETRY_WINDOW_DURATION, DEFAULT_MAX_RETRY_WINDOW_DURATION_MS)
+        )
     }
 
     override fun process(throwable: Throwable): StateAndEventProcessor.Response<Checkpoint> {
@@ -78,25 +81,34 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         return withEscalation {
             val flowCheckpoint = context.checkpoint
 
-            /** If we have reached the maximum number of retries then we escalate this to a fatal
-             * exception and DLQ the flow
-             */
-            if (flowCheckpoint.currentRetryCount >= maxRetryAttempts) {
+            /** If the retry window has expired then we escalate this to a fatal exception and DLQ the flow */
+            if (retryWindowExpired(flowCheckpoint.firstFailureTimestamp)) {
                 return@withEscalation process(
                     FlowFatalException(
-                        "Execution failed with \"${exception.message}\" after $maxRetryAttempts retry attempts.",
+                        "Execution failed with \"${exception.message}\" after " +
+                                "${flowCheckpoint.currentRetryCount} retry attempts in a retry window of $maxRetryWindowDuration.",
                         exception
                     ), context
                 )
             }
 
-            log.debug {
-                "A transient exception was thrown the event that failed will be retried. event='${context.inputEvent}',  $exception"
-            }
+            log.info("Flow ${context.checkpoint.flowId} encountered a transient problem and is retrying: ${exception.message}")
 
+            val payload = context.inputEventPayload ?: return@withEscalation process(
+                FlowFatalException(
+                    "Could not process a retry as the input event has no payload.",
+                    exception
+                ), context
+            )
+
+            /**
+             * As we're still inside the retry window, republish the record that needs retrying here. If the system is
+             * under load, there may be some delay before it is retried. This is reasonable however, as the system may
+             * need to wait for the underlying transient problem to clear up.
+             */
             val records = createStatusRecord(context.checkpoint.flowId) {
                 flowMessageFactory.createFlowRetryingStatusMessage(context.checkpoint)
-            }
+            } + flowRecordFactory.createFlowEventRecord(context.checkpoint.flowId, payload)
 
             // Set up records before the rollback, just in case a transient exception happens after a flow is initialised
             // but before the first checkpoint has been recorded.
@@ -107,6 +119,11 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 
             flowEventContextConverter.convert(context.copy(outputRecords = context.outputRecords + records))
         }
+    }
+
+    private fun retryWindowExpired(firstFailureTimestamp: Instant?): Boolean {
+        return firstFailureTimestamp != null &&
+                Duration.between(firstFailureTimestamp, Instant.now()) >= maxRetryWindowDuration
     }
 
     override fun process(
@@ -136,7 +153,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             )
         }
 
-        val errorEvents = flowSessionManager.getSessionErrorEventRecords(checkpoint, context.config, exceptionHandlingStartTime)
+        val errorEvents = flowSessionManager.getSessionErrorEventRecords(checkpoint, context.flowConfig, exceptionHandlingStartTime)
         val cleanupEvents = createCleanupEventsForSessions(
             getScheduledCleanupExpiryTime(context, exceptionHandlingStartTime),
             checkpoint.sessions.filterNot { it.hasScheduledCleanup }
@@ -171,8 +188,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             // correctly. This shouldn't matter however - in this case we're treating the issue as the flow never
             // starting at all. We'll still log that the error was seen.
             log.warn(
-                "Could not create a flow status message for a failed flow with ID $id as " +
-                        "the flow start context was missing."
+                "Could not create a flow status message for a flow with ID $id as the flow start context was missing."
             )
             listOf()
         }
@@ -201,8 +217,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 
             removeCachedFlowFiber(checkpoint)
 
-            val record = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
-            flowEventContextConverter.convert(context.copy(outputRecords = context.outputRecords + record))
+            flowEventContextConverter.convert(context)
         }
     }
 
@@ -240,7 +255,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             }
             val errorEvents = flowSessionManager.getSessionErrorEventRecords(
                 context.checkpoint,
-                context.config,
+                context.flowConfig,
                 exceptionHandlingStartTime
             )
             val cleanupEvents = createCleanupEventsForSessions(
@@ -320,7 +335,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
     }
 
     private fun getScheduledCleanupExpiryTime(context: FlowEventContext<*>, now: Instant): Long {
-        val flowCleanupTime = context.config.getLong(FlowConfig.SESSION_FLOW_CLEANUP_TIME)
+        val flowCleanupTime = context.flowConfig.getLong(FlowConfig.SESSION_FLOW_CLEANUP_TIME)
         return now.plusMillis(flowCleanupTime).toEpochMilli()
     }
 

@@ -104,10 +104,10 @@ spec:
         {{- include "corda.workerSelectorLabels" ( list $ $worker ) | nindent 8 }}
     spec:
       {{- if and ( not $.Values.dumpHostPath ) ( not .profiling.enabled ) }}
+      {{- with $.Values.podSecurityContext }}
       securityContext:
-        runAsUser: 10001
-        runAsGroup: 10002
-        fsGroup: 1000
+        {{ . | toYaml | nindent 8 }}
+      {{- end }}
       {{- end }}
       {{- include "corda.imagePullSecrets" $ | nindent 6 }}
       {{- include "corda.tolerations" $ | nindent 6 }}
@@ -159,6 +159,13 @@ spec:
               fieldRef:
                 apiVersion: v1
                 fieldPath: metadata.namespace
+          - name: ENABLE_CLOUDWATCH
+            value:
+              {{- if eq $.Values.serviceAccount.name "cloudwatch-writer" }}
+                "true"
+              {{- else }}
+                "false"
+              {{- end }}
           - name: JAVA_TOOL_OPTIONS
             value:
               {{ .javaOptions }}
@@ -222,7 +229,8 @@ spec:
             {{- end }}
           {{- end }}
         {{- include "corda.configSaltAndPassphraseEnv" $ | nindent 10 }}
-        {{- if $optionalArgs.clusterDbAccess }}
+        {{- /* TODO-[CORE-16419]: isolate StateManager database from the Cluster database */ -}}
+        {{- if or $optionalArgs.clusterDbAccess $optionalArgs.stateManagerDbAccess }}
         {{- include "corda.clusterDbEnv" $ | nindent 10 }}
         {{- end }}
         args:
@@ -268,6 +276,33 @@ spec:
           - "-ddatabase.pool.maxLifetimeSeconds={{ .clusterDbConnectionPool.maxLifetimeSeconds }}"
           - "-ddatabase.pool.keepaliveTimeSeconds={{ .clusterDbConnectionPool.keepaliveTimeSeconds }}"
           - "-ddatabase.pool.validationTimeoutSeconds={{ .clusterDbConnectionPool.validationTimeoutSeconds }}"
+          {{- end }}
+          {{- /* TODO-[CORE-16419]: isolate StateManager database from the Cluster database */ -}}
+          {{- if $optionalArgs.stateManagerDbAccess }}
+          - "--stateManager"
+          - "type=DATABASE"
+          - "--stateManager"
+          - "database.user=$(DB_CLUSTER_USERNAME)"
+          - "--stateManager"
+          - "database.pass=$(DB_CLUSTER_PASSWORD)"
+          - "--stateManager"
+          - "database.jdbc.url=jdbc:postgresql://{{ required "Must specify db.cluster.host" $.Values.db.cluster.host }}:{{ $.Values.db.cluster.port }}/{{ $.Values.db.cluster.database }}?currentSchema={{ $.Values.bootstrap.db.stateManager.schema }}"
+          - "--stateManager"
+          - "database.jdbc.directory=/opt/jdbc-driver"
+          - "--stateManager"
+          - "database.pool.maxSize={{ .stateManagerDbConnectionPool.maxSize }}"
+          {{- if .stateManagerDbConnectionPool.minSize }}
+          - "--stateManager"
+          - "database.pool.minSize={{ .stateManagerDbConnectionPool.minSize }}"
+          {{- end }}
+          - "--stateManager"
+          - "database.pool.idleTimeoutSeconds={{ .stateManagerDbConnectionPool.idleTimeoutSeconds }}"
+          - "--stateManager"
+          - "database.pool.maxLifetimeSeconds={{ .stateManagerDbConnectionPool.maxLifetimeSeconds }}"
+          - "--stateManager"
+          - "database.pool.keepAliveTimeSeconds={{ .stateManagerDbConnectionPool.keepAliveTimeSeconds }}"
+          - "--stateManager"
+          - "database.pool.validationTimeoutSeconds={{ .stateManagerDbConnectionPool.validationTimeoutSeconds }}"
           {{- end }}
           {{- if $.Values.tracing.endpoint }}
           - "--send-trace-to={{ $.Values.tracing.endpoint }}"

@@ -1,0 +1,37 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.common-publishing'
+}
+
+description 'Scheduler Data Model'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation 'javax.persistence:javax.persistence-api'
+    implementation 'net.corda:corda-db-schema'
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    implementation project(':libs:db:db-core')
+
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    integrationTestImplementation project(':libs:db:db-admin')
+    integrationTestImplementation project(':libs:db:db-admin-impl')
+    integrationTestImplementation project(':libs:db:db-orm')
+    integrationTestImplementation project(':libs:db:db-orm-impl')
+    integrationTestImplementation project(':testing:db-testkit')
+    integrationTestImplementation project(':testing:test-utilities')
+
+    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+}
+
+tasks.named('jar', Jar) {
+    bundle {
+        bnd '''\
+DynamicImport-Package: org.hibernate.proxy
+'''
+    }
+}

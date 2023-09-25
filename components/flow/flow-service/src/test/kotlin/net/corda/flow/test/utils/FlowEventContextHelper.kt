@@ -10,6 +10,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.records.Record
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.FlowConfig
 import org.mockito.kotlin.mock
 
@@ -28,13 +29,13 @@ fun <T> buildFlowEventContext(
     val configWithRequired = config.withFallback(SmartConfigImpl.empty()
         .withValue(FlowConfig.SESSION_FLOW_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(10000))
         .withValue(FlowConfig.PROCESSING_FLOW_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(10000))
-        .withValue(FlowConfig.SESSION_MISSING_COUNTERPARTY_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(10000))
     )
 
     return FlowEventContext(
         checkpoint,
         FlowEvent(flowId, inputEventPayload),
         inputEventPayload,
+        mapOf(ConfigKeys.FLOW_CONFIG to configWithRequired),
         configWithRequired,
         isRetryEvent,
         outputRecords,
@@ -58,6 +59,7 @@ fun <T> buildFlowEventContext(
         mock(),
         FlowEvent(flowId, inputEventPayload),
         inputEventPayload,
+        emptyMap(),
         config,
         isRetryEvent,
         outputRecords,

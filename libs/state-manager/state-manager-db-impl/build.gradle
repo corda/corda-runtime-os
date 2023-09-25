@@ -1,0 +1,46 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.common-publishing'
+}
+
+description 'Database as Persisent Storage Implementation of the State Manager '
+
+// TODO-[CORE-17025]: remove Hibernate
+dependencies {
+    api project(":libs:state-manager:state-manager-api")
+
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+
+    implementation "net.corda:corda-base"
+    implementation "net.corda:corda-db-schema"
+    implementation "net.corda:corda-config-schema"
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    implementation "javax.persistence:javax.persistence-api"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation project(':libs:utilities')
+    implementation project(':libs:db:db-orm')
+    implementation project(':libs:db:db-core')
+    implementation project(":libs:configuration:configuration-core")
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    integrationTestImplementation project(':libs:db:db-admin')
+    integrationTestImplementation project(':testing:db-testkit')
+    integrationTestImplementation project(':libs:db:db-orm-impl')
+    integrationTestImplementation project(':libs:db:db-admin-impl')
+
+    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+}
+
+tasks.named('jar', Jar) {
+    bundle {
+        bnd '''\
+DynamicImport-Package: org.hibernate.proxy
+'''
+    }
+}

@@ -1,6 +1,5 @@
 package net.corda.session.manager.integration.transition
 
-import java.time.Instant
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.state.session.SessionState
@@ -16,6 +15,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.time.Instant
 
 class SessionStateClosingTransitionTest {
 
@@ -31,9 +31,9 @@ class SessionStateClosingTransitionTest {
     fun `Send duplicate session init when in state closing`() {
         val sessionState = buildClosingState(true)
 
-        val sessionEvent = generateMessage(SessionMessageType.INIT, instant)
+        val sessionEvent = generateMessage(SessionMessageType.COUNTERPARTY_INFO, instant)
         val outputState = sessionManager.processMessageToSend(sessionState, sessionState, sessionEvent, instant, maxMsgSize)
-        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.ERROR)
+        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CLOSING)
     }
 
     @Test
@@ -59,8 +59,7 @@ class SessionStateClosingTransitionTest {
         val sessionState = buildClosingState(false)
 
         val sessionEvent = generateMessage(SessionMessageType.CLOSE, instant)
-        val outputState = sessionManager.processMessageToSend(sessionState, sessionState, sessionEvent, instant, maxMsgSize)
-        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.WAIT_FOR_FINAL_ACK)
+        sessionManager.processMessageToSend(sessionState, sessionState, sessionEvent, instant, maxMsgSize)
     }
 
     @Test
@@ -76,7 +75,7 @@ class SessionStateClosingTransitionTest {
     fun `Receive duplicate init wnhen in state closing`() {
         val sessionState = buildClosingState(true)
 
-        val sessionEvent = generateMessage(SessionMessageType.INIT, instant, MessageDirection.INBOUND)
+        val sessionEvent = generateMessage(SessionMessageType.COUNTERPARTY_INFO, instant, MessageDirection.INBOUND)
         sessionEvent.sequenceNum = 1
         val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CLOSING)
@@ -98,21 +97,8 @@ class SessionStateClosingTransitionTest {
 
         val sessionEvent = generateMessage(SessionMessageType.CLOSE, instant, MessageDirection.INBOUND)
         sessionEvent.sequenceNum = 1
-        val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
-        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.WAIT_FOR_FINAL_ACK)
+        sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
     }
-
-    @Test
-    fun `Receive ack for close when initiated close`() {
-        val sessionState = buildClosingState(true)
-
-        val sessionEvent = generateMessage(SessionMessageType.ACK, instant, MessageDirection.INBOUND)
-        sessionEvent.receivedSequenceNum = 2
-
-        val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
-        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CLOSING)
-    }
-
 
     private fun buildClosingState(initiatedClose: Boolean): SessionState {
         val sentSeqNum: Int

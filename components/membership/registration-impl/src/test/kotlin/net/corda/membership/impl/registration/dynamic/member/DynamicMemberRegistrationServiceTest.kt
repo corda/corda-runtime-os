@@ -1,6 +1,8 @@
 package net.corda.membership.impl.registration.dynamic.member
 
 import com.typesafe.config.ConfigFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
@@ -13,11 +15,9 @@ import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.hes.EncryptedDataWithKey
 import net.corda.crypto.hes.EphemeralKeyPairEncryptor
-import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.avro.serialization.CordaAvroSerializer
-import net.corda.crypto.core.fullIdHash
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
@@ -44,8 +44,8 @@ import net.corda.membership.impl.registration.TEST_CPI_VERSION
 import net.corda.membership.impl.registration.TEST_PLATFORM_VERSION
 import net.corda.membership.impl.registration.TEST_SOFTWARE_VERSION
 import net.corda.membership.impl.registration.buildTestVirtualNodeInfo
-import net.corda.membership.impl.registration.verifiers.RegistrationContextCustomFieldsVerifier
 import net.corda.membership.impl.registration.testCpiSignerSummaryHash
+import net.corda.membership.impl.registration.verifiers.RegistrationContextCustomFieldsVerifier
 import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
@@ -100,6 +100,7 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.membership.MembershipSchema
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.KeySchemeCodes.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
@@ -1244,6 +1245,41 @@ class DynamicMemberRegistrationServiceTest {
                 registrationService.register(registrationResultId, member, newContext.toMap())
             }
             assertThat(exception).hasMessageContaining("cannot be added, removed or updated")
+        }
+
+        @Test
+        fun `registration fails when invalid key scheme is used for session key`() {
+            val sessionCryptoSigningKeyWithInvalidScheme: CryptoSigningKey = mock {
+                on { publicKey } doReturn ByteBuffer.wrap(SESSION_KEY.toByteArray())
+                on { id } doReturn SESSION_KEY_ID
+                on { schemeCodeName } doReturn EDDSA_ED25519_CODE_NAME
+                on { category } doReturn SESSION_INIT
+            }
+            whenever(cryptoOpsClient.lookupKeysByIds(memberId.value, listOf(ShortHash.of(SESSION_KEY_ID)))).doReturn(
+                listOf(sessionCryptoSigningKeyWithInvalidScheme)
+            )
+
+            postConfigChangedEvent()
+            registrationService.start()
+
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, context.toMap())
+            }
+            assertThat(exception).hasMessageContaining("Invalid key scheme")
+        }
+
+        @Test
+        fun `registration fails when invalid session key spec is used`() {
+            val context = context.filterNot { it.key == SESSION_KEYS_SIGNATURE_SPEC.format(0) } +
+                    mapOf(SESSION_KEYS_SIGNATURE_SPEC.format(0) to SignatureSpecs.EDDSA_ED25519.signatureName)
+
+            postConfigChangedEvent()
+            registrationService.start()
+
+            val exception = assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, context.toMap())
+            }
+            assertThat(exception).hasMessageContaining("Invalid key spec ${SignatureSpecs.EDDSA_ED25519.signatureName}.")
         }
 
         @Test

@@ -2,13 +2,13 @@ package net.corda.session.manager.integration
 
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
-import java.util.*
+import java.util.LinkedList
 
 class MessageBus : BusInteractions {
 
     private val inboundMessages: LinkedList<SessionEvent> = LinkedList<SessionEvent>()
 
-    override fun getNextInboundMessage() : SessionEvent? {
+    override fun getNextInboundMessage(isInitiating: Boolean) : SessionEvent? {
         return inboundMessages.poll()
     }
 

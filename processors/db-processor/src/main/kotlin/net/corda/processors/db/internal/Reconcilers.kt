@@ -13,6 +13,7 @@ import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.lib.GroupParametersFactory
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.membership.read.GroupParametersReaderService
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -58,7 +59,8 @@ class Reconcilers(
     serializationFactory: CordaAvroSerializationFactory,
     subscriptionFactory: SubscriptionFactory,
     publisherFactory: PublisherFactory,
-    configurationReadService: ConfigurationReadService
+    configurationReadService: ConfigurationReadService,
+    memberInfoFactory: MemberInfoFactory,
 ) {
     private val cpiReconciler = CpiReconciler(
         coordinatorFactory,
@@ -112,6 +114,7 @@ class Reconcilers(
         publisherFactory,
         subscriptionFactory,
         configurationReadService,
+        memberInfoFactory,
     )
 
     fun stop() {

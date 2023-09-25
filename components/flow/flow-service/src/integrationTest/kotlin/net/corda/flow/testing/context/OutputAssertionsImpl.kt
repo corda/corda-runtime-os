@@ -1,20 +1,17 @@
 package net.corda.flow.testing.context
 
-import java.nio.ByteBuffer
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.SessionEvent
-import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
-import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
-import net.corda.data.flow.event.session.SessionConfirm
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRequest
+import net.corda.data.flow.event.session.SessionCounterpartyInfoResponse
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
-import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.checkpoint.Checkpoint
@@ -33,6 +30,7 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
 
 class OutputAssertionsImpl(
     private val serializer: CordaAvroSerializer<Any>,
@@ -52,24 +50,22 @@ class OutputAssertionsImpl(
     val asserts = mutableListOf<(TestRun) -> Unit>()
 
     override fun sessionAckEvents(vararg sessionIds: String, initiatingIdentity: HoldingIdentity?, initiatedIdentity: HoldingIdentity?) {
-        asserts.add { testRun ->
-            findAndAssertSessionEvents<SessionAck>(testRun, sessionIds.toList(), initiatingIdentity, initiatedIdentity)
-        }
+
     }
 
-    override fun sessionConfirmEvents(
+    override fun sessionCounterpartyInfoResponse(
         vararg sessionIds: String,
         initiatingIdentity: HoldingIdentity?,
         initiatedIdentity: HoldingIdentity?,
     ) {
         asserts.add { testRun ->
-            findAndAssertSessionEvents<SessionConfirm>(testRun, sessionIds.toList(), initiatingIdentity, initiatedIdentity)
+            findAndAssertSessionEvents<SessionCounterpartyInfoResponse>(testRun, sessionIds.toSet(), initiatingIdentity, initiatedIdentity)
         }
     }
 
-    override fun sessionInitEvents(vararg sessionIds: String, initiatingIdentity: HoldingIdentity?, initiatedIdentity: HoldingIdentity?) {
+    override fun sessionCounterpartyInfoRequestEvents(vararg sessionIds: String, initiatingIdentity: HoldingIdentity?, initiatedIdentity: HoldingIdentity?) {
         asserts.add { testRun ->
-            findAndAssertSessionEvents<SessionInit>(testRun, sessionIds.toList(), initiatingIdentity, initiatedIdentity)
+            findAndAssertSessionEvents<SessionCounterpartyInfoRequest>(testRun, sessionIds.toSet(), initiatingIdentity, initiatedIdentity)
         }
     }
 
@@ -81,7 +77,7 @@ class OutputAssertionsImpl(
         asserts.add { testRun ->
             val foundSessionToPayload = findAndAssertSessionEvents<SessionData>(
                 testRun,
-                sessionToPayload.map { it.first },
+                sessionToPayload.map { it.first }.toSet(),
                 initiatingIdentity,
                 initiatedIdentity
             ).associate { it.sessionId to ((it.payload as SessionData).payload as ByteBuffer).array() }
@@ -95,15 +91,38 @@ class OutputAssertionsImpl(
         }
     }
 
+    override fun multipleSessionDataEvents(
+        sessionToPayload: Map<String, List<ByteArray>>,
+        initiatingIdentity: HoldingIdentity?,
+        initiatedIdentity: HoldingIdentity?,
+    ) {
+        asserts.add { testRun ->
+            val sessionIds = sessionToPayload.keys
+            val foundSessionToPayload = findAndAssertSessionEvents<SessionData>(
+                testRun,
+                sessionIds,
+                initiatingIdentity,
+                initiatedIdentity
+            ).groupBy ( {it.sessionId}, {((it.payload as SessionData).payload as ByteBuffer).array()} )
+
+            assertEquals(
+                sessionToPayload,
+                foundSessionToPayload,
+                "Expected sessions to send data events containing: $sessionToPayload but found $foundSessionToPayload instead"
+            )
+
+        }
+    }
+
     override fun sessionCloseEvents(vararg sessionIds: String, initiatingIdentity: HoldingIdentity?, initiatedIdentity: HoldingIdentity?) {
         asserts.add { testRun ->
-            findAndAssertSessionEvents<SessionClose>(testRun, sessionIds.toList(), initiatingIdentity, initiatedIdentity)
+            findAndAssertSessionEvents<SessionClose>(testRun, sessionIds.toSet(), initiatingIdentity, initiatedIdentity)
         }
     }
 
     override fun sessionErrorEvents(vararg sessionIds: String, initiatingIdentity: HoldingIdentity?, initiatedIdentity: HoldingIdentity?) {
         asserts.add { testRun ->
-            findAndAssertSessionEvents<SessionError>(testRun, sessionIds.toList(), initiatingIdentity, initiatedIdentity)
+            findAndAssertSessionEvents<SessionError>(testRun, sessionIds.toSet(), initiatingIdentity, initiatedIdentity)
         }
     }
 
@@ -217,27 +236,24 @@ class OutputAssertionsImpl(
         }
     }
 
-    override fun wakeUpEvent() {
+    override fun singleOutputEvent() {
         asserts.add { testRun ->
             assertNotNull(testRun.response, "Test run response")
 
             val eventRecords = getMatchedFlowEventRecords(flowId, testRun.response!!)
             assertTrue(eventRecords.any(), "Expected at least one event record")
 
-            val wakeupEvents = eventRecords.filter { it.payload is Wakeup }
-
-            assertEquals(1, wakeupEvents.size, "Expected one wakeup event")
+            assertEquals(1, eventRecords.size, "Expected one wakeup event")
         }
     }
 
-    override fun noWakeUpEvent() {
+    override fun noOutputEvent() {
         asserts.add { testRun ->
             assertNotNull(testRun.response, "Test run response")
 
             val eventRecords = getMatchedFlowEventRecords(flowId, testRun.response!!)
-            val wakeupEvents = eventRecords.filter { it.payload is Wakeup }
 
-            assertEquals(0, wakeupEvents.size, "Expected no wakeup event")
+            assertEquals(0, eventRecords.size, "Expected no wakeup event")
         }
     }
 
@@ -298,7 +314,7 @@ class OutputAssertionsImpl(
 
     private inline fun <reified T> findAndAssertSessionEvents(
         testRun: TestRun,
-        sessionIds: List<String>,
+        sessionIds: Set<String>,
         initiatingIdentity: HoldingIdentity?,
         initiatedIdentity: HoldingIdentity?,
     ): List<SessionEvent> {
@@ -317,7 +333,7 @@ class OutputAssertionsImpl(
 
         assertEquals(
             sessionIds,
-            filteredSessionIds,
+            filteredSessionIds.toSet(),
             "Expected session ids: $sessionIds but found $filteredSessionIds when expecting ${T::class.simpleName} events"
         )
 

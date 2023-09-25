@@ -3,6 +3,7 @@ package net.corda.membership.rest.v1
 import net.corda.rest.RestResource
 import net.corda.rest.annotations.HttpPOST
 import net.corda.rest.annotations.HttpRestResource
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.annotations.RestPathParameter
 
 /**
@@ -36,6 +37,7 @@ interface MGMAdminRestResource : RestResource {
      */
     @HttpPOST(
         path = "{holdingIdentityShortHash}/force-decline/{requestId}",
+        minVersion = RestApiVersion.C5_1,
         description = "This method enables you to force decline an in-progress registration request that may be stuck" +
                 " or displaying some other unexpected behaviour."
     )

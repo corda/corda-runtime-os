@@ -2,38 +2,8 @@ package net.corda.ledger.persistence.query.parsing
 
 interface Token
 
-class LeftParentheses : Token {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-        return true
-    }
+object LeftParenthesis : Token
 
-    override fun hashCode(): Int {
-        return javaClass.hashCode()
-    }
-}
+object RightParenthesis : Token
 
-class RightParentheses : Token {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-        return true
-    }
-
-    override fun hashCode(): Int {
-        return javaClass.hashCode()
-    }
-}
-
-class ParameterEnd : Token {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-        return true
-    }
-
-    override fun hashCode(): Int {
-        return javaClass.hashCode()
-    }
-}
+object ParameterEnd : Token

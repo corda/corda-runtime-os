@@ -8,8 +8,6 @@ import com.r3.corda.testing.smoketests.flow.messages.JsonSerializationInput
 import com.r3.corda.testing.smoketests.flow.messages.JsonSerializationOutput
 import com.r3.corda.testing.smoketests.flow.messages.RpcSmokeTestInput
 import com.r3.corda.testing.smoketests.flow.messages.RpcSmokeTestOutput
-import java.time.Instant
-import java.util.UUID
 import net.corda.v5.application.crypto.CompositeKeyGenerator
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
@@ -34,6 +32,8 @@ import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import org.slf4j.LoggerFactory
+import java.time.Instant
+import java.util.UUID
 
 @Suppress("unused", "TooManyFunctions")
 @InitiatingFlow(protocol = "smoke-test-protocol")
@@ -237,7 +237,10 @@ class RpcSmokeTestFlow : ClientStartableFlow {
             log.info("Creating session for '${x500}'...")
             val session = flowMessaging.initiateFlow(MemberX500Name.parse(x500))
 
-            log.info("Creating session '${session}' now sending and waiting for response ...")
+            val countpartyInfo = session.counterpartyFlowInfo
+
+            log.info("Creating session '${session}' with version ${countpartyInfo.protocolVersion()} now sending and waiting for response" +
+                    " ...")
             val response = session
                 .sendAndReceive(InitiatedSmokeTestMessage::class.java, InitiatedSmokeTestMessage(messages[idx]))
 

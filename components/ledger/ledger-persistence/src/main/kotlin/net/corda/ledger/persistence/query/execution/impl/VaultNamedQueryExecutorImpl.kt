@@ -31,6 +31,8 @@ class VaultNamedQueryExecutorImpl(
         const val UTXO_TX_COMPONENT_TABLE = "utxo_transaction_component"
         const val TIMESTAMP_LIMIT_PARAM_NAME = "Corda_TimestampLimit"
 
+        const val RESULT_SET_FILL_RETRY_LIMIT = 5
+
         val log = LoggerFactory.getLogger(VaultNamedQueryExecutorImpl::class.java)
     }
 
@@ -48,21 +50,20 @@ class VaultNamedQueryExecutorImpl(
             "Only WHERE queries are supported for now."
         }
 
-        // Fetch the state and refs for the given transaction IDs
-        val contractStateResults = fetchStateAndRefs(
-            request,
-            vaultNamedQuery.query.query
-        )
-
         // Deserialize the parameters into readable objects instead of bytes
         val deserializedParams = request.parameters.mapValues {
             serializationService.deserialize(it.value.array(), Any::class.java)
         }
 
-        // Apply filters and transforming functions (if there's any)
-        val filteredAndTransformedResults = contractStateResults.filter {
-            vaultNamedQuery.filter?.filter(it, deserializedParams) ?: true
-        }.mapNotNull { // This has no effect as of now, but we keep it for safety purposes
+        // Fetch and filter the results and try to fill up the page size then map the results
+        // mapNotNull has no effect as of now, but we keep it for safety purposes
+        val (fetchedRecords, numberOfRowsFromQuery) = filterResultsAndFillPageSize(
+            request,
+            vaultNamedQuery,
+            deserializedParams
+        )
+
+        val filteredAndTransformedResults = fetchedRecords.mapNotNull {
             vaultNamedQuery.mapper?.transform(it, deserializedParams) ?: it
         }
 
@@ -72,11 +73,87 @@ class VaultNamedQueryExecutorImpl(
             deserializedParams
         )?.results?.filterNotNull() ?: filteredAndTransformedResults
 
-        // Return the filtered/transformed/collected (if present) result to the caller
+        // Return the filtered/transformed/collected (if present) result and the offset to continue the paging from to the caller
         return EntityResponse.newBuilder()
             .setResults(collectedResults.map { ByteBuffer.wrap(serializationService.serialize(it).bytes) })
-            .setMetadata(KeyValuePairList(listOf(KeyValuePair("numberOfRowsFromQuery", contractStateResults.size.toString()))))
-            .build()
+            .setMetadata(KeyValuePairList(listOf(
+                KeyValuePair("numberOfRowsFromQuery", numberOfRowsFromQuery.toString())
+            ))).build()
+    }
+
+    /**
+     * This function will fetch a given number ("page size") of records from the database
+     * (amount defined by [request]'s limit field).
+     *
+     * After fetching those records the in-memory filter will be applied. If the filtering
+     * reduces the amount of records below the "page size", then another "page size" number
+     * of records will be fetched and filtered.
+     *
+     * This logic will be repeated until either:
+     * - The size of the filtered results reaches the "page size"
+     * - We run out of data to fetch from the database
+     * - We reach the number of retries ([RESULT_SET_FILL_RETRY_LIMIT])
+     *
+     * If any of these conditions happen, we just return the result set as-is without filling
+     * up the "page size".
+     *
+     * Will return a pair of the fetched and "filtered" results from the database and the offset
+     * that the paging can be continued from.
+     */
+    private fun filterResultsAndFillPageSize(
+        request: FindWithNamedQuery,
+        vaultNamedQuery: VaultNamedQuery,
+        deserializedParams: Map<String, Any>
+    ): FilterResult {
+        val filteredResults = mutableListOf<StateAndRef<ContractState>>()
+
+        var currentRetry = 0
+        var numberOfRowsFromQuery = 0
+
+        while (filteredResults.size < request.limit && currentRetry < RESULT_SET_FILL_RETRY_LIMIT) {
+            ++currentRetry
+
+            log.trace("Executing try: $currentRetry, fetched ${filteredResults.size} number of results so far.")
+
+            // Fetch the state and refs for the given transaction IDs
+            val contractStateResults = fetchStateAndRefs(
+                request,
+                vaultNamedQuery.query.query,
+                offset = request.offset + numberOfRowsFromQuery
+            )
+
+            // If we have no filter, there's no need to continue the loop
+            if (vaultNamedQuery.filter == null) {
+                return FilterResult(
+                    results = contractStateResults,
+                    numberOfRowsFromQuery = contractStateResults.size
+                )
+            }
+
+            // If we can't fetch more states we just return the result set as-is
+            if (contractStateResults.isEmpty()) {
+                break
+            }
+
+            contractStateResults.forEach { contractStateResult ->
+                ++numberOfRowsFromQuery
+                if (vaultNamedQuery.filter.filter(contractStateResult, deserializedParams)) {
+                    filteredResults.add(contractStateResult)
+                }
+
+                if (filteredResults.size >= request.limit) {
+                    return FilterResult(
+                        results = filteredResults,
+                        numberOfRowsFromQuery = numberOfRowsFromQuery
+                    )
+                }
+            }
+        }
+
+        return FilterResult(
+            results = filteredResults,
+            numberOfRowsFromQuery = numberOfRowsFromQuery
+        )
     }
 
     /**
@@ -85,7 +162,8 @@ class VaultNamedQueryExecutorImpl(
      */
     private fun fetchStateAndRefs(
         request: FindWithNamedQuery,
-        whereJson: String?
+        whereJson: String?,
+        offset: Int
     ): List<StateAndRef<ContractState>> {
 
         validateParameters(request)
@@ -108,7 +186,7 @@ class VaultNamedQueryExecutorImpl(
                              ON tc_output_info.transaction_id = tc_output.transaction_id
                              AND tc_output_info.leaf_idx = tc_output.leaf_idx
                              AND tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal}
-                        $whereJson
+                        WHERE ($whereJson)
                         AND visible_states.created <= :$TIMESTAMP_LIMIT_PARAM_NAME
                         ORDER BY tc_output.created, tc_output.transaction_id, tc_output.leaf_idx
                 """,
@@ -120,7 +198,7 @@ class VaultNamedQueryExecutorImpl(
                 query.setParameter(rec.key, serializationService.deserialize(bytes))
             }
 
-            query.firstResult = request.offset
+            query.firstResult = offset
             query.maxResults = request.limit
 
             query.resultList as List<Tuple>
@@ -143,4 +221,9 @@ class VaultNamedQueryExecutorImpl(
             throw NullParameterException(msg)
         }
     }
+
+    private data class FilterResult(
+        val results: List<StateAndRef<ContractState>>,
+        val numberOfRowsFromQuery: Int
+    )
 }

@@ -6,22 +6,22 @@ import net.corda.data.ledger.utxo.token.selection.data.TokenAmount
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimQuery
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimRelease
 import net.corda.data.ledger.utxo.token.selection.data.TokenLedgerChange
-import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
+import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.ledger.utxo.token.cache.converters.EntityConverterImpl
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
-import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY
+import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
 import java.math.BigDecimal
 import java.nio.ByteBuffer
-import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY_DTO
 
 class EntityConverterImplTest {
 
     @Test
     fun `toCachedToken creates and instance of CachedToken`() {
-        assertThat(EntityConverterImpl().toCachedToken(Token())).isInstanceOf(CachedToken::class.java)
+        assertThat(createEntityConverterImpl().toCachedToken(Token())).isInstanceOf(CachedToken::class.java)
     }
 
     @Test
@@ -42,13 +42,13 @@ class EntityConverterImplTest {
             this.tagRegex = "tr"
         }
 
-        val result = EntityConverterImpl()
+        val result = createEntityConverterImpl()
             .toClaimQuery(POOL_CACHE_KEY, tokenClaimQuery)
 
         assertThat(result.externalEventRequestId).isEqualTo("r1")
         assertThat(result.flowId).isEqualTo("f1")
         assertThat(result.targetAmount).isEqualTo(bigDecimal)
-        assertThat(result.poolKey).isEqualTo(POOL_CACHE_KEY_DTO)
+        assertThat(result.poolKey).isEqualTo(POOL_KEY)
     }
 
     @Test
@@ -62,23 +62,18 @@ class EntityConverterImplTest {
             usedTokenStateRefs = listOf("s1", "s2")
         }
 
-        val result = EntityConverterImpl()
+        val result = createEntityConverterImpl()
             .toClaimRelease(POOL_CACHE_KEY, tokenClaimRelease)
 
         assertThat(result.claimId).isEqualTo("c1")
         assertThat(result.externalEventRequestId).isEqualTo("r1")
         assertThat(result.flowId).isEqualTo("f1")
         assertThat(result.usedTokens).containsOnly("s1", "s2")
-        assertThat(result.poolKey).isEqualTo(POOL_CACHE_KEY_DTO)
+        assertThat(result.poolKey).isEqualTo(POOL_KEY)
     }
 
     @Test
-    fun `toTokenCache creates and instance of TokenCache`() {
-        assertThat(EntityConverterImpl().toTokenCache(TokenPoolCacheState())).isInstanceOf(TokenCache::class.java)
-    }
-
-    @Test
-    fun `toLedgerChange creates an instance of LedgerChange`(){
+    fun `toLedgerChange creates an instance of LedgerChange`() {
         val token1 = Token().apply { stateRef = "s1" }
         val token2 = Token().apply { stateRef = "s2" }
         val token3 = Token().apply { stateRef = "s3" }
@@ -86,16 +81,16 @@ class EntityConverterImplTest {
 
         val ledgerChange = TokenLedgerChange().apply {
             this.poolKey = POOL_CACHE_KEY
-            this.producedTokens= listOf(token1,token2)
-            this.consumedTokens= listOf(token3,token4)
+            this.producedTokens = listOf(token1, token2)
+            this.consumedTokens = listOf(token3, token4)
         }
 
-        val result = EntityConverterImpl()
+        val result = createEntityConverterImpl()
             .toLedgerChange(POOL_CACHE_KEY, ledgerChange)
 
-        assertThat(result.poolKey).isEqualTo(POOL_CACHE_KEY_DTO)
-        assertThat(result.producedTokens.map { it.stateRef }).containsOnly("s1","s2")
-        assertThat(result.consumedTokens.map { it.stateRef }).containsOnly("s3","s4")
+        assertThat(result.poolKey).isEqualTo(POOL_KEY)
+        assertThat(result.producedTokens.map { it.stateRef }).containsOnly("s1", "s2")
+        assertThat(result.consumedTokens.map { it.stateRef }).containsOnly("s3", "s4")
     }
 
     @Test
@@ -107,7 +102,7 @@ class EntityConverterImplTest {
         }
 
         assertThat(
-            EntityConverterImpl().amountToBigDecimal(tokenAmount)
+            createEntityConverterImpl().amountToBigDecimal(tokenAmount)
         ).isEqualTo(bigDecimal)
     }
 
@@ -124,11 +119,35 @@ class EntityConverterImplTest {
         }
 
         assertThat(
-            EntityConverterImpl().amountToBigDecimal(tokenAmount)
+            createEntityConverterImpl().amountToBigDecimal(tokenAmount)
         ).isEqualTo(bigDecimal)
 
         assertThat(
-            EntityConverterImpl().amountToBigDecimal(tokenAmount)
+            createEntityConverterImpl().amountToBigDecimal(tokenAmount)
         ).isEqualTo(bigDecimal)
+    }
+
+    @Test
+    fun `toTokenPoolKey creates and instance of TokenPoolKey`() {
+        val tokenClaimRelease = TokenPoolCacheKey.newBuilder()
+            .setTokenType("tt")
+            .setSymbol("sym")
+            .setNotaryX500Name("not")
+            .setIssuerHash("ih")
+            .setShortHolderId("shid")
+            .build()
+
+        val result = createEntityConverterImpl()
+            .toTokenPoolKey(tokenClaimRelease)
+
+        assertThat(result.tokenType).isEqualTo("tt")
+        assertThat(result.symbol).isEqualTo("sym")
+        assertThat(result.notaryX500Name).isEqualTo("not")
+        assertThat(result.issuerHash).isEqualTo("ih")
+        assertThat(result.shortHolderId).isEqualTo("shid")
+    }
+
+    private fun createEntityConverterImpl(): EntityConverterImpl {
+        return EntityConverterImpl(mock(), mock())
     }
 }

@@ -1,11 +1,5 @@
 package net.corda.ledger.utxo.token.cache.repositories.impl
 
-import java.math.BigDecimal
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import javax.persistence.EntityManager
-import javax.persistence.Query
-import javax.persistence.Tuple
 import net.corda.ledger.utxo.token.cache.entities.AvailTokenQueryResult
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 import net.corda.ledger.utxo.token.cache.queries.SqlQueryProvider
@@ -17,27 +11,26 @@ import net.corda.ledger.utxo.token.cache.queries.impl.SqlQueryProviderTokens.Com
 import net.corda.ledger.utxo.token.cache.repositories.UtxoTokenRepository
 import net.corda.ledger.utxo.token.cache.services.UtxoTokenMapper
 import net.corda.ledger.utxo.token.cache.services.mapToToken
-import org.osgi.service.component.annotations.Reference
+import java.math.BigDecimal
+import javax.persistence.EntityManager
+import javax.persistence.Query
+import javax.persistence.Tuple
+import net.corda.ledger.utxo.token.cache.queries.impl.SqlQueryProviderTokens.Companion.SQL_PARAMETER_TOKEN_NOTARY_X500_NAME
 
-@Component(service = [UtxoTokenRepository::class])
-class UtxoTokenRepositoryImpl @Activate constructor(
-    @Reference
-    private val sqlQueryProvider: SqlQueryProvider
+class UtxoTokenRepositoryImpl(
+    private val sqlQueryProvider: SqlQueryProvider,
 ) : UtxoTokenRepository {
-
-    private companion object {
-        private val QUERY_RESULT_TOKEN_LIMIT = 1500
-    }
 
     override fun findTokens(
         entityManager: EntityManager,
         poolKey: TokenPoolKey,
         ownerHash: String?,
-        regexTag: String?
+        regexTag: String?,
+        maxTokens: Int
     ): AvailTokenQueryResult {
 
         val sqlQuery = sqlQueryProvider.getPagedSelectQuery(
-            QUERY_RESULT_TOKEN_LIMIT,
+            maxTokens,
             regexTag != null,
             ownerHash != null
         )
@@ -46,6 +39,7 @@ class UtxoTokenRepositoryImpl @Activate constructor(
             .setParameter(SQL_PARAMETER_TOKEN_TYPE, poolKey.tokenType)
             .setParameter(SQL_PARAMETER_ISSUER_HASH, poolKey.issuerHash)
             .setParameter(SQL_PARAMETER_SYMBOL, poolKey.symbol)
+            .setParameter(SQL_PARAMETER_TOKEN_NOTARY_X500_NAME, poolKey.notaryX500Name)
 
         setParameterIfNecessaryOwnerHash(ownerHash, query)
         setParameterIfNecessaryRegexTag(regexTag, query)
@@ -70,6 +64,7 @@ class UtxoTokenRepositoryImpl @Activate constructor(
             .setParameter(SQL_PARAMETER_TOKEN_TYPE, poolKey.tokenType)
             .setParameter(SQL_PARAMETER_ISSUER_HASH, poolKey.issuerHash)
             .setParameter(SQL_PARAMETER_SYMBOL, poolKey.symbol)
+            .setParameter(SQL_PARAMETER_TOKEN_NOTARY_X500_NAME, poolKey.notaryX500Name)
 
         setParameterIfNecessaryOwnerHash(ownerHash, query)
         setParameterIfNecessaryRegexTag(regexTag, query)
