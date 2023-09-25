@@ -52,13 +52,15 @@ class TokenSelectionFlow2 : ClientStartableFlow {
             // the only token
             val claimResult2 = tokenSelection.tryClaim(queryCriteria)
 
-            // We expect the first claim to succeed
+            // We expect the second claim to fail.
             if (claimResult2 != null) {
                 log.info("Token Selection result: 'We found something, we did not expect to' ")
                 return "FAIL"
             }
 
             // Now we just exit and let the postprocessing handler clean up for us
+            // If we run this flow again we expect to get the same results as we never used
+            // the claimed token and the flow completing should have freed the claim.
             return "SUCCESS"
 
         } catch (e: Exception) {
