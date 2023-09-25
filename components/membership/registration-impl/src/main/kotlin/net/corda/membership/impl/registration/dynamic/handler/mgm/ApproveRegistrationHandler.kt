@@ -131,7 +131,8 @@ internal class ApproveRegistrationHandler(
             val statusUpdateMessage = retrieveRegistrationStatusMessage(
                 memberInfo.platformVersion,
                 registrationId,
-                RegistrationStatus.APPROVED.name
+                RegistrationStatus.APPROVED.name,
+                null
             )
             val persistApproveMessage = if (statusUpdateMessage != null) {
                 p2pRecordsFactory.createAuthenticatedMessageRecord(

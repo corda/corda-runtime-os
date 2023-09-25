@@ -113,7 +113,7 @@ internal class ProcessMemberVerificationResponseHandler(
                 status
             ).createAsyncCommands()
             val statusUpdateMessage = retrieveRegistrationStatusMessage(
-                pendingInfo.platformVersion, registrationId, status.name
+                pendingInfo.platformVersion, registrationId, status.name, null
             )
             val persistStatusMessage = if (statusUpdateMessage != null) {
                 p2pRecordsFactory.createAuthenticatedMessageRecord(
