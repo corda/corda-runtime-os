@@ -3,11 +3,14 @@ package net.corda.ledger.verification.processor.impl
 import net.corda.data.flow.event.FlowEvent
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
+import net.corda.ledger.verification.LedgerVerificationComponent
 import net.corda.ledger.verification.processor.VerificationSubscriptionFactory
 import net.corda.ledger.verification.sandbox.VerificationSandboxService
 import net.corda.libs.configuration.SmartConfig
+import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.config.SyncRPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.schema.Schemas
@@ -48,7 +51,7 @@ class VerificationSubscriptionFactoryImpl @Activate constructor(
         )
     }
 
-    private fun initialiseRpcSubscription() {
+    override fun createRpcSubscription(): RPCSubscription<TransactionVerificationRequest, FlowEvent> {
         val processor = VerificationRpcRequestProcessor(
             currentSandboxGroupContext,
             verificationSandboxService,
@@ -57,6 +60,8 @@ class VerificationSubscriptionFactoryImpl @Activate constructor(
             TransactionVerificationRequest::class.java,
             FlowEvent::class.java
         )
-
+        val rpcConfig = SyncRPCConfig(LedgerVerificationComponent.SUBSCRIPTION_NAME, LedgerVerificationComponent.VERIFICATION_PATH)
+        return subscriptionFactory.createHttpRPCSubscription(rpcConfig, processor)
     }
+
 }
