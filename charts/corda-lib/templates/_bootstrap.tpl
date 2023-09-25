@@ -168,8 +168,8 @@ spec:
                 --name "corda-rbac" \
                 --jdbc-url "${JDBC_URL}?currentSchema=${DB_RBAC_SCHEMA}" \
                 --jdbc-pool-max-size {{ .Values.bootstrap.db.rbac.dbConnectionPool.maxSize | quote }} \
-              {{- with .Values.bootstrap.db.rbac.dbConnectionPool.minSize }}
-                --jdbc-pool-min-size {{ . | quote }}
+              {{- if not ( kindIs "invalid" .Values.bootstrap.db.rbac.dbConnectionPool.minSize ) }}
+                --jdbc-pool-min-size {{ .Values.bootstrap.db.rbac.dbConnectionPool.minSize | quote }}
               {{- end }}
                 --idle-timeout {{ .Values.bootstrap.db.rbac.dbConnectionPool.idleTimeoutSeconds | quote }} \
                 --max-lifetime {{ .Values.bootstrap.db.rbac.dbConnectionPool.maxLifetimeSeconds | quote }} \
@@ -189,8 +189,8 @@ spec:
                 --name "corda-virtual-nodes" \
                 --jdbc-url "${JDBC_URL}" \
                 --jdbc-pool-max-size {{ .Values.bootstrap.db.rbac.dbConnectionPool.maxSize | quote }} \
-              {{- with .Values.bootstrap.db.rbac.dbConnectionPool.minSize }}
-                --jdbc-pool-min-size {{ . | quote }}
+              {{- if not ( kindIs "invalid" .Values.bootstrap.db.rbac.dbConnectionPool.minSize ) }}
+                --jdbc-pool-min-size {{ .Values.bootstrap.db.rbac.dbConnectionPool.minSize | quote }}
               {{- end }}
                 --idle-timeout {{ .Values.bootstrap.db.rbac.dbConnectionPool.idleTimeoutSeconds | quote }} \
                 --max-lifetime {{ .Values.bootstrap.db.rbac.dbConnectionPool.maxLifetimeSeconds | quote }} \
@@ -210,8 +210,8 @@ spec:
                 --name "corda-crypto" \
                 --jdbc-url "${JDBC_URL}?currentSchema=${DB_CRYPTO_SCHEMA}" \
                 --jdbc-pool-max-size {{ .Values.bootstrap.db.crypto.dbConnectionPool.maxSize | quote }} \
-              {{- with .Values.bootstrap.db.crypto.dbConnectionPool.minSize }}
-                --jdbc-pool-min-size {{ . | quote }}
+              {{- if not ( kindIs "invalid" .Values.bootstrap.db.crypto.dbConnectionPool.minSize ) }}
+                --jdbc-pool-min-size {{ .Values.bootstrap.db.crypto.dbConnectionPool.minSize | quote }}
               {{- end }}
                 --idle-timeout {{ .Values.bootstrap.db.crypto.dbConnectionPool.idleTimeoutSeconds | quote }} \
                 --max-lifetime {{ .Values.bootstrap.db.crypto.dbConnectionPool.maxLifetimeSeconds | quote }} \
