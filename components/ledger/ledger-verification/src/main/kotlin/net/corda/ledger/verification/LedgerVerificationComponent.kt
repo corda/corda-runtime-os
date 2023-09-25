@@ -44,12 +44,6 @@ class LedgerVerificationComponent @Activate constructor(
     private val sandboxGroupContextComponent: SandboxGroupContextComponent,
     @Reference(service = VerificationSubscriptionFactory::class)
     private val verificationRequestSubscriptionFactory: VerificationSubscriptionFactory,
-    @Reference(service = SubscriptionFactory::class)
-    private val subscriptionFactory: SubscriptionFactory,
-    @Reference(service = CurrentSandboxGroupContext::class)
-    private val currentSandboxGroupContext: CurrentSandboxGroupContext,
-    @Reference(service = VerificationSandboxService::class)
-    private val verificationSandboxService: VerificationSandboxService
 ) : Lifecycle {
     private var configHandle: Resource? = null
     private var verificationProcessorSubscription: Subscription<String, TransactionVerificationRequest>? = null
@@ -102,21 +96,6 @@ class LedgerVerificationComponent @Activate constructor(
             is StopEvent -> {
                 verificationProcessorSubscription?.close()
                 logger.debug { "Stopping LedgerVerificationComponent." }
-            }
-        }
-    }
-
-    private fun initialiseRpcSubscription() {
-        val processor = VerificationRpcRequestProcessor(
-            currentSandboxGroupContext,
-            verificationSandboxService,
-            UniquenessCheckRequestAvro::class.java,
-            FlowEvent::class.java
-        )
-        lifecycleCoordinator.createManagedResource(RPC_SUBSCRIPTION) {
-            val rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, VERIFICATION_PATH)
-            subscriptionFactory.createHttpRPCSubscription(rpcConfig, processor).also {
-                it.start()
             }
         }
     }

@@ -1,5 +1,6 @@
 package net.corda.ledger.verification.processor.impl
 
+import net.corda.data.flow.event.FlowEvent
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.ledger.verification.processor.VerificationSubscriptionFactory
@@ -45,5 +46,17 @@ class VerificationSubscriptionFactoryImpl @Activate constructor(
             config,
             null
         )
+    }
+
+    private fun initialiseRpcSubscription() {
+        val processor = VerificationRpcRequestProcessor(
+            currentSandboxGroupContext,
+            verificationSandboxService,
+            VerificationRequestHandlerImpl(responseFactory),
+            responseFactory,
+            TransactionVerificationRequest::class.java,
+            FlowEvent::class.java
+        )
+
     }
 }
