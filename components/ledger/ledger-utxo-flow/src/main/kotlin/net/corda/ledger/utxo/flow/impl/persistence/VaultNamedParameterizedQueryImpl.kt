@@ -13,7 +13,6 @@ import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.query.VaultNamedParameterizedQuery
 import java.time.Instant
-import java.util.UUID
 
 // TODO CORE-12032 use delegation to create this class
 @Suppress("LongParameterList")
@@ -76,7 +75,6 @@ class VaultNamedParameterizedQueryImpl<T>(
             recordSuspendable(::ledgerPersistenceFlowTimer) @Suspendable {
                 wrapWithPersistenceException {
                     externalEventExecutor.execute(
-                        requestId = UUID.randomUUID(),
                         VaultNamedQueryExternalEventFactory::class.java,
                         VaultNamedQueryEventParams(queryName, serializedParameters, offset, limit)
                     )

@@ -82,7 +82,6 @@ class UtxoLedgerPersistenceServiceImplTest {
         whenever(serializationService.serialize(any<Any>())).thenReturn(serializedBytes)
         whenever(
             externalEventExecutor.execute(
-                requestId = any(),
                 argumentCaptor.capture(),
                 any()
             )

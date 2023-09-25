@@ -23,7 +23,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
-import java.util.UUID
 
 @Suppress("unused")
 @Component(
@@ -46,7 +45,6 @@ class UtxoLedgerStateQueryServiceImpl @Activate constructor(
         return recordSuspendable({ ledgerPersistenceFlowTimer(FindUnconsumedStatesByType) }) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
-                    requestId = UUID.randomUUID(),
                     FindUnconsumedStatesByTypeExternalEventFactory::class.java,
                     FindUnconsumedStatesByTypeParameters(stateClass)
                 )
@@ -66,7 +64,6 @@ class UtxoLedgerStateQueryServiceImpl @Activate constructor(
                 if (nonCachedStateRefs.isNotEmpty()) {
                     val resolvedStateRefs = wrapWithPersistenceException {
                         externalEventExecutor.execute(
-                            requestId = UUID.randomUUID(),
                             ResolveStateRefsExternalEventFactory::class.java,
                             ResolveStateRefsParameters(stateRefs)
                         )

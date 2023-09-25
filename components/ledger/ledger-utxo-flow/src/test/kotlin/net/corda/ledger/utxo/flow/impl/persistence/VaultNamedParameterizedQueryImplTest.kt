@@ -181,13 +181,7 @@ class VaultNamedParameterizedQueryImplTest {
 
     @Test
     fun `rethrows CordaRuntimeExceptions as CordaPersistenceExceptions`() {
-        whenever(
-            externalEventExecutor.execute(
-                requestId = any(),
-                any<Class<VaultNamedQueryExternalEventFactory>>(),
-                any()
-            )
-        )
+        whenever(externalEventExecutor.execute(any<Class<VaultNamedQueryExternalEventFactory>>(), any()))
             .thenThrow(CordaRuntimeException("boom"))
 
         query.execute()
@@ -198,13 +192,7 @@ class VaultNamedParameterizedQueryImplTest {
 
     @Test
     fun `does not rethrow general exceptions as CordaPersistenceExceptions`() {
-        whenever(
-            externalEventExecutor.execute(
-                requestId = any(),
-                any<Class<VaultNamedQueryExternalEventFactory>>(),
-                any()
-            )
-        )
+        whenever(externalEventExecutor.execute(any<Class<VaultNamedQueryExternalEventFactory>>(), any()))
             .thenThrow(IllegalStateException("boom"))
 
         query.execute()

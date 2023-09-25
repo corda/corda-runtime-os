@@ -24,7 +24,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.nio.ByteBuffer
-import java.util.UUID
 
 @Component(
     service = [ ConsensualLedgerPersistenceService::class, UsedByFlow::class ],
@@ -44,7 +43,6 @@ class ConsensualLedgerPersistenceServiceImpl @Activate constructor(
     override fun find(id: SecureHash): ConsensualSignedTransaction? {
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
-                requestId = UUID.randomUUID(),
                 FindTransactionExternalEventFactory::class.java,
                 FindTransactionParameters(id.toString())
             )
@@ -60,7 +58,6 @@ class ConsensualLedgerPersistenceServiceImpl @Activate constructor(
     ): List<CordaPackageSummary> {
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
-                requestId = UUID.randomUUID(),
                 PersistTransactionExternalEventFactory::class.java,
                 PersistTransactionParameters(serialize(transaction.toContainer()), transactionStatus.value)
             )

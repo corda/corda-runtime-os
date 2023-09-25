@@ -16,7 +16,6 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.time.Instant
-import java.util.UUID
 
 /**
  * Implementation of the Uniqueness Checker Client Service which will invoke the batched uniqueness checker
@@ -48,7 +47,6 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
         val startTime = System.nanoTime()
 
         return externalEventExecutor.execute(
-            requestId = UUID.randomUUID(),
             UniquenessCheckExternalEventFactory::class.java,
             UniquenessCheckExternalEventParams(
                 txId,

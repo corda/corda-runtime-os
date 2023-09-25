@@ -47,13 +47,7 @@ class UtxoLedgerGroupParametersPersistenceServiceImplTest {
     fun `find group parameters that are not cached adds them to the cache and returns them`() {
         val signedGroupParameters = mock<SignedGroupParameters>()
         whenever(groupParametersCache.get(any())).thenReturn(null)
-        whenever(
-            externalEventExecutor.execute(
-                requestId = any(),
-                any<Class<FindSignedGroupParametersExternalEventFactory>>(),
-                any()
-            )
-        )
+        whenever(externalEventExecutor.execute(any<Class<FindSignedGroupParametersExternalEventFactory>>(), any()))
             .thenReturn(listOf(signedGroupParameters))
         assertThat(utxoLedgerGroupParametersPersistenceService.find(mock())).isEqualTo(signedGroupParameters)
         verify(groupParametersCache).put(signedGroupParameters)
@@ -62,13 +56,7 @@ class UtxoLedgerGroupParametersPersistenceServiceImplTest {
     @Test
     fun `find group parameters that are not cached and does not exist returns null and does not cache them`() {
         whenever(groupParametersCache.get(any())).thenReturn(null)
-        whenever(
-            externalEventExecutor.execute(
-                requestId = any(),
-                any<Class<FindSignedGroupParametersExternalEventFactory>>(),
-                any()
-            )
-        ).thenReturn(emptyList())
+        whenever(externalEventExecutor.execute(any<Class<FindSignedGroupParametersExternalEventFactory>>(), any())).thenReturn(emptyList())
         assertThat(utxoLedgerGroupParametersPersistenceService.find(mock())).isEqualTo(null)
         verify(groupParametersCache, never()).put(any())
     }
@@ -76,13 +64,7 @@ class UtxoLedgerGroupParametersPersistenceServiceImplTest {
     @Test
     fun `find group parameters that throws exception from external event rethrows persistence exception`() {
         whenever(groupParametersCache.get(any())).thenReturn(null)
-        whenever(
-            externalEventExecutor.execute(
-                requestId = any(),
-                any<Class<FindSignedGroupParametersExternalEventFactory>>(),
-                any()
-            )
-        )
+        whenever(externalEventExecutor.execute(any<Class<FindSignedGroupParametersExternalEventFactory>>(), any()))
             .thenThrow(CordaRuntimeException(""))
         assertThatThrownBy { utxoLedgerGroupParametersPersistenceService.find(mock()) }
             .isExactlyInstanceOf(CordaPersistenceException::class.java)
@@ -94,11 +76,7 @@ class UtxoLedgerGroupParametersPersistenceServiceImplTest {
         val signedGroupParameters = mock<SignedGroupParameters>()
         whenever(groupParametersCache.get(any())).thenReturn(signedGroupParameters)
         assertThat(utxoLedgerGroupParametersPersistenceService.find(mock())).isEqualTo(signedGroupParameters)
-        verify(externalEventExecutor, never()).execute(
-            requestId = any(),
-            any<Class<FindSignedGroupParametersExternalEventFactory>>(),
-            any()
-        )
+        verify(externalEventExecutor, never()).execute(any<Class<FindSignedGroupParametersExternalEventFactory>>(), any())
         verify(groupParametersCache, never()).put(signedGroupParameters)
     }
 
@@ -111,11 +89,7 @@ class UtxoLedgerGroupParametersPersistenceServiceImplTest {
         whenever(signedGroupParameters.mgmSignatureSpec).thenReturn(mock())
         whenever(groupParametersCache.get(any())).thenReturn(null)
         utxoLedgerGroupParametersPersistenceService.persistIfDoesNotExist(signedGroupParameters)
-        verify(externalEventExecutor).execute(
-            requestId = any(),
-            any<Class<PersistSignedGroupParametersIfDoNotExistExternalEventFactory>>(),
-            any()
-        )
+        verify(externalEventExecutor).execute(any<Class<PersistSignedGroupParametersIfDoNotExistExternalEventFactory>>(), any())
         verify(groupParametersCache).put(signedGroupParameters)
     }
 
@@ -127,13 +101,7 @@ class UtxoLedgerGroupParametersPersistenceServiceImplTest {
         whenever(signedGroupParameters.mgmSignature).thenReturn(DigitalSignatureWithKey(mock(), byteArrayOf(2)))
         whenever(signedGroupParameters.mgmSignatureSpec).thenReturn(mock())
         whenever(groupParametersCache.get(any())).thenReturn(null)
-        whenever(
-            externalEventExecutor.execute(
-                requestId = any(),
-                any<Class<PersistSignedGroupParametersIfDoNotExistExternalEventFactory>>(),
-                any()
-            )
-        )
+        whenever(externalEventExecutor.execute(any<Class<PersistSignedGroupParametersIfDoNotExistExternalEventFactory>>(), any()))
             .thenThrow(CordaRuntimeException(""))
         assertThatThrownBy { utxoLedgerGroupParametersPersistenceService.persistIfDoesNotExist(signedGroupParameters) }
             .isExactlyInstanceOf(CordaPersistenceException::class.java)
@@ -146,11 +114,7 @@ class UtxoLedgerGroupParametersPersistenceServiceImplTest {
         whenever(signedGroupParameters.hash).thenReturn(mock())
         whenever(groupParametersCache.get(any())).thenReturn(signedGroupParameters)
         utxoLedgerGroupParametersPersistenceService.persistIfDoesNotExist(signedGroupParameters)
-        verify(externalEventExecutor, never()).execute(
-            requestId = any(),
-            any<Class<PersistSignedGroupParametersIfDoNotExistExternalEventFactory>>(),
-            any()
-        )
+        verify(externalEventExecutor, never()).execute(any<Class<PersistSignedGroupParametersIfDoNotExistExternalEventFactory>>(), any())
         verify(groupParametersCache, never()).put(signedGroupParameters)
     }
 }

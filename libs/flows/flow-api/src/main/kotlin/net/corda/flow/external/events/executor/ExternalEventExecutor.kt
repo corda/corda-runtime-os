@@ -34,4 +34,13 @@ interface ExternalEventExecutor {
         factoryClass: Class<out ExternalEventFactory<PARAMETERS, RESPONSE, RESUME>>,
         parameters: PARAMETERS
     ): RESUME
+
+    /**
+     * Calling the other [execute] overload with a random [UUID] as the request id.
+     */
+    @Suspendable
+    fun <PARAMETERS : Any, RESPONSE : Any, RESUME> execute(
+        factoryClass: Class<out ExternalEventFactory<PARAMETERS, RESPONSE, RESUME>>,
+        parameters: PARAMETERS
+    ): RESUME = execute(UUID.randomUUID(), factoryClass, parameters)
 }

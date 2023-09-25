@@ -25,7 +25,6 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.UUID
 
 @Component(
     service = [SigningService::class, UsedByFlow::class],
@@ -50,7 +49,6 @@ class SigningServiceImpl @Activate constructor(
     override fun sign(bytes: ByteArray, publicKey: PublicKey, signatureSpec: SignatureSpec): DigitalSignature.WithKeyId {
         return recordSuspendable({ cryptoFlowTimer("sign") }) @Suspendable {
             val digitalSignatureWithKey = externalEventExecutor.execute(
-                requestId = UUID.randomUUID(),
                 CreateSignatureExternalEventFactory::class.java,
                 SignParameters(bytes, keyEncodingService.encodeAsByteArray(publicKey), signatureSpec)
             )
@@ -81,7 +79,6 @@ class SigningServiceImpl @Activate constructor(
                 it.leafKeys
             }
             val foundSigningKeys = externalEventExecutor.execute(
-                requestId = UUID.randomUUID(),
                 FilterMyKeysExternalEventFactory::class.java,
                 plainKeys + compositeKeysLeaves
             ).toSet()

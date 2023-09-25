@@ -15,7 +15,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope
-import java.util.UUID
 
 @Component(service = [TokenSelection::class, UsedByFlow::class], scope = ServiceScope.PROTOTYPE)
 class TokenSelectionImpl @Activate constructor(
@@ -26,7 +25,6 @@ class TokenSelectionImpl @Activate constructor(
     @Suspendable
     override fun tryClaim(criteria: TokenClaimCriteria): TokenClaim? {
         return externalEventExecutor.execute(
-            requestId = UUID.randomUUID(),
             TokenClaimQueryExternalEventFactory::class.java,
             criteria
         )
@@ -35,7 +33,6 @@ class TokenSelectionImpl @Activate constructor(
     @Suspendable
     override fun queryBalance(criteria: TokenBalanceCriteria): TokenBalance {
         return externalEventExecutor.execute(
-            requestId = UUID.randomUUID(),
             TokenBalanceQueryExternalEventFactory::class.java,
             criteria
         )

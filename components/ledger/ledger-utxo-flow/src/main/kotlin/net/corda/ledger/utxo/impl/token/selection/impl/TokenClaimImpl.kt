@@ -7,7 +7,6 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.token.selection.ClaimedToken
 import net.corda.v5.ledger.utxo.token.selection.TokenClaim
-import java.util.UUID
 
 class TokenClaimImpl(
     private val claimId: String,
@@ -23,7 +22,6 @@ class TokenClaimImpl(
     @Suspendable
     override fun useAndRelease(usedTokensRefs: List<StateRef>) {
         externalEventExecutor.execute(
-            requestId = UUID.randomUUID(),
             ClaimReleaseExternalEventFactory::class.java,
             ClaimReleaseParameters(claimId, poolKey, usedTokensRefs)
         )
