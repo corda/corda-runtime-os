@@ -17,7 +17,6 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.Subscription
-import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
@@ -38,19 +37,12 @@ class LedgerVerificationComponent @Activate constructor(
     private val sandboxGroupContextComponent: SandboxGroupContextComponent,
     @Reference(service = VerificationSubscriptionFactory::class)
     private val verificationRequestSubscriptionFactory: VerificationSubscriptionFactory,
-    @Reference(service = SubscriptionFactory::class)
-    private val subscriptionFactory: SubscriptionFactory
 ) : Lifecycle {
     private var configHandle: Resource? = null
     private var verificationProcessorSubscription: Subscription<String, TransactionVerificationRequest>? = null
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        internal const val GROUP_NAME = "verification.ledger.processor"
-        const val CONFIG_HANDLE = "CONFIG_HANDLE"
-        const val SUBSCRIPTION_NAME = "Verification"
-        const val VERIFICATION_PATH = "/verification"
-        const val SUBSCRIPTION = "SUBSCRIPTION"
         const val RPC_SUBSCRIPTION = "RPC_SUBSCRIPTION"
     }
 
@@ -74,6 +66,7 @@ class LedgerVerificationComponent @Activate constructor(
                         coordinator,
                         setOf(BOOT_CONFIG, MESSAGING_CONFIG)
                     )
+                    initialiseRpcSubscription()
                 } else {
                     coordinator.updateStatus(event.status)
                 }
@@ -83,7 +76,6 @@ class LedgerVerificationComponent @Activate constructor(
                 val newVerificationProcessorSubscription = verificationRequestSubscriptionFactory.create(
                     event.config.getConfig(MESSAGING_CONFIG)
                 )
-                initialiseRpcSubscription()
                 logger.debug("Starting LedgerVerificationComponent.")
                 newVerificationProcessorSubscription.start()
                 verificationProcessorSubscription = newVerificationProcessorSubscription

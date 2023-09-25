@@ -88,7 +88,7 @@ class VerificationRpcRequestProcessor(
     private fun errorMessage(
         externalEventContext: ExternalEventContext,
         errorType: ExternalEventResponseErrorType
-    ) = "Exception occurred (type=$errorType) for flow-worker request ${externalEventContext.requestId}"
+    ) = "Exception occurred (type=$errorType) for verification-worker request ${externalEventContext.requestId}"
 }
 
 
