@@ -20,12 +20,14 @@ import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 import java.math.BigInteger
 
+@Suppress("LongParameterList")
 class TokenCacheEventProcessor constructor(
     private val eventConverter: EventConverter,
     private val entityConverter: EntityConverter,
     private val tokenPoolCache: TokenPoolCache,
     private val tokenCacheEventHandlerMap: Map<Class<*>, TokenEventHandler<in TokenEvent>>,
-    private val externalEventResponseFactory: ExternalEventResponseFactory
+    private val externalEventResponseFactory: ExternalEventResponseFactory,
+    private val tokenSelectionMetrics: TokenSelectionMetrics
 ) : StateAndEventProcessor<TokenPoolCacheKey, TokenPoolCacheState, TokenPoolCacheEvent> {
 
     private companion object {
@@ -51,57 +53,57 @@ class TokenCacheEventProcessor constructor(
         }
 
         return try {
-            val nonNullableState = state ?: TokenPoolCacheState().apply {
-                this.poolKey = event.key
-                this.availableTokens = listOf()
-                this.tokenClaims = listOf()
-            }
+            tokenSelectionMetrics.recordProcessingTime(tokenEvent) {
+                val nonNullableState = state ?: TokenPoolCacheState().apply {
+                    this.poolKey = event.key
+                    this.availableTokens = listOf()
+                    this.tokenClaims = listOf()
+                }
 
+                // Temporary logic that covers the upgrade from release/5.0 to release/5.1
+                // The field claimedTokens has been added to the TokenCaim avro object, and it will replace claimedTokenStateRefs.
+                // In order to avoid breaking compatibility, the claimedTokenStateRefs has been deprecated, and it will eventually
+                // be removed. Any claim that contains a non-empty claimedTokenStateRefs field are considered invalid because
+                // this means the avro object is an old one, and it should be replaced by the new format.
+                val validClaims =
+                    nonNullableState.tokenClaims.filter { it.claimedTokenStateRefs.isNullOrEmpty() }
+                val invalidClaims = nonNullableState.tokenClaims - validClaims.toSet()
+                if (invalidClaims.isNotEmpty()) {
+                    val invalidClaimsId = invalidClaims.map { it.claimId }
+                    log.warn("Invalid claims were found and have been discarded. Invalid claims: ${invalidClaimsId}")
+                }
 
+                val poolKey = entityConverter.toTokenPoolKey(event.key)
+                val poolCacheState = entityConverter.toPoolCacheState(nonNullableState)
+                val tokenCache = tokenPoolCache.get(poolKey)
 
-            // Temporary logic that covers the upgrade from release/5.0 to release/5.1
-            // The field claimedTokens has been added to the TokenCaim avro object, and it will replace claimedTokenStateRefs.
-            // In order to avoid breaking compatibility, the claimedTokenStateRefs has been deprecated, and it will eventually
-            // be removed. Any claim that contains a non-empty claimedTokenStateRefs field are considered invalid because
-            // this means the avro object is an old one, and it should be replaced by the new format.
-            val validClaims =
-                nonNullableState.tokenClaims.filter { it.claimedTokenStateRefs.isNullOrEmpty() }
-            val invalidClaims = nonNullableState.tokenClaims - validClaims.toSet()
-            if (invalidClaims.isNotEmpty()) {
-                val invalidClaimsId = invalidClaims.map { it.claimId }
-                log.warn("Invalid claims were found and have been discarded. Invalid claims: ${invalidClaimsId}")
-            }
+                poolCacheState.removeExpiredClaims()
 
-            val poolKey = entityConverter.toTokenPoolKey(event.key)
-            val poolCacheState = entityConverter.toPoolCacheState(nonNullableState)
-            val tokenCache = tokenPoolCache.get(poolKey)
+                val handler = checkNotNull(tokenCacheEventHandlerMap[tokenEvent.javaClass]) {
+                    "Received an event with and unrecognized payload '${tokenEvent.javaClass}'"
+                }
 
-            poolCacheState.removeExpiredClaims()
-
-            val handler = checkNotNull(tokenCacheEventHandlerMap[tokenEvent.javaClass]) {
-                "Received an event with and unrecognized payload '${tokenEvent.javaClass}'"
-            }
-
-            val sb = StringBuffer()
-            sb.appendLine(
-                "Token Selection Request type = ${handler.javaClass.simpleName} Pool = ${nonNullableState.poolKey}"
-            )
-            sb.appendLine("Before Handler:")
-            sb.append(getTokenSummary(tokenCache, poolCacheState))
-
-            val result = handler.handle(tokenCache, poolCacheState, tokenEvent)
-
-            sb.appendLine("After Handler:")
-            sb.append(getTokenSummary(tokenCache, poolCacheState))
-            log.info(sb.toString())
-
-            return if (result == null) {
-                StateAndEventProcessor.Response(poolCacheState.toAvro(), listOf())
-            } else {
-                StateAndEventProcessor.Response(
-                    poolCacheState.toAvro(),
-                    listOf(result)
+                val sb = StringBuffer()
+                sb.appendLine(
+                    "Token Selection Request type = ${handler.javaClass.simpleName} Pool = ${nonNullableState.poolKey}"
                 )
+                sb.appendLine("Before Handler:")
+                sb.append(getTokenSummary(tokenCache, poolCacheState))
+
+                val result = handler.handle(tokenCache, poolCacheState, tokenEvent)
+
+                sb.appendLine("After Handler:")
+                sb.append(getTokenSummary(tokenCache, poolCacheState))
+                log.info(sb.toString())
+
+                if (result == null) {
+                    StateAndEventProcessor.Response(poolCacheState.toAvro(), listOf())
+                } else {
+                    StateAndEventProcessor.Response(
+                        poolCacheState.toAvro(),
+                        listOf(result)
+                    )
+                }
             }
         } catch (e: Exception) {
             val responseMessage = externalEventResponseFactory.platformError(

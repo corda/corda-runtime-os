@@ -59,8 +59,7 @@ class TokenCacheEventProcessorTest {
 
     @Test
     fun `when an unexpected processing exception is thrown the event will be sent to the DLQ`() {
-        val target =
-            TokenCacheEventProcessor(eventConverter, entityConverter, tokenPoolCache, tokenCacheEventHandlerMap, mock())
+        val target = createTokenCacheEventProcessor()
         whenever(eventConverter.convert(any())).thenThrow(IllegalStateException())
 
         val result = target.onNext(stateIn, eventIn)
@@ -79,7 +78,8 @@ class TokenCacheEventProcessorTest {
                 entityConverter,
                 tokenPoolCache,
                 tokenCacheEventHandlerMap,
-                externalEventResponseFactory
+                externalEventResponseFactory,
+                mock()
             )
 
         val result = target.onNext(stateIn, eventIn)
@@ -110,7 +110,8 @@ class TokenCacheEventProcessorTest {
                 entityConverter,
                 tokenPoolCache,
                 tokenCacheEventHandlerMap,
-                externalEventResponseFactory
+                externalEventResponseFactory,
+                mock()
             )
 
         val result = target.onNext(stateIn, eventIn)
@@ -150,8 +151,7 @@ class TokenCacheEventProcessorTest {
         whenever(mockHandler.handle(any(), eq(cachePoolState), eq(event)))
             .thenReturn(handlerResponse)
 
-        val target =
-            TokenCacheEventProcessor(eventConverter, entityConverter, tokenPoolCache, tokenCacheEventHandlerMap, mock())
+        val target = createTokenCacheEventProcessor()
 
         val result = target.onNext(stateIn, eventIn)
 
@@ -174,8 +174,7 @@ class TokenCacheEventProcessorTest {
         whenever(mockHandler.handle(any(), eq(cachePoolState), eq(event)))
             .thenReturn(handlerResponse)
 
-        val target =
-            TokenCacheEventProcessor(eventConverter, entityConverter, tokenPoolCache, tokenCacheEventHandlerMap, mock())
+        val target = createTokenCacheEventProcessor()
 
         val result = target.onNext(null, eventIn)
 
@@ -212,15 +211,25 @@ class TokenCacheEventProcessorTest {
         whenever(mockHandler.handle(any(), eq(cachePoolState), eq(event)))
             .thenReturn(handlerResponse)
 
-        val target =
-            TokenCacheEventProcessor(eventConverter, entityConverter, tokenPoolCache, tokenCacheEventHandlerMap, mock())
+        val target =createTokenCacheEventProcessor()
 
         target.onNext(stateIn, eventIn)
 
         val inOrder = inOrder(cachePoolState, mockHandler)
 
         inOrder.verify(cachePoolState).removeExpiredClaims()
-        inOrder.verify(mockHandler).handle(any(),any(),any())
+        inOrder.verify(mockHandler).handle(any(), any(), any())
+    }
+
+    private fun createTokenCacheEventProcessor(): TokenCacheEventProcessor {
+        return TokenCacheEventProcessor(
+            eventConverter,
+            entityConverter,
+            tokenPoolCache,
+            tokenCacheEventHandlerMap,
+            mock(),
+            mock()
+        )
     }
 
     class FakeTokenEvent : TokenEvent {

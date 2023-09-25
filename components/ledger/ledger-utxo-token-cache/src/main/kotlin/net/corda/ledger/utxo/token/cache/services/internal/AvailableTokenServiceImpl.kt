@@ -12,29 +12,33 @@ import net.corda.ledger.utxo.token.cache.entities.TokenBalance
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 import net.corda.ledger.utxo.token.cache.services.AvailableTokenService
 import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
+import net.corda.ledger.utxo.token.cache.services.TokenSelectionMetrics
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.VirtualNodeInfo
 
+@Suppress("LongParameterList")
 class AvailableTokenServiceImpl(
     private val virtualNodeInfoService: VirtualNodeInfoReadService,
     private val dbConnectionManager: DbConnectionManager,
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
     private val utxoTokenRepository: UtxoTokenRepository,
-    private val serviceConfiguration: ServiceConfiguration
+    private val serviceConfiguration: ServiceConfiguration,
+    private val tokenSelectionMetrics: TokenSelectionMetrics,
 ) : AvailableTokenService, SingletonSerializeAsToken {
     override fun findAvailTokens(poolKey: TokenPoolKey, ownerHash: String?, tagRegex: String?): AvailTokenQueryResult {
         val virtualNode = getVirtualNodeInfo(poolKey)
 
         val entityManagerFactory = getOrCreateEntityManagerFactory(virtualNode)
-
-        return utxoTokenRepository.findTokens(
-            entityManagerFactory.createEntityManager(),
-            poolKey,
-            ownerHash,
-            tagRegex,
-            serviceConfiguration.cachedTokenPageSize
-        )
+        return tokenSelectionMetrics.recordDbOperationTime("find tokens") {
+            utxoTokenRepository.findTokens(
+                entityManagerFactory.createEntityManager(),
+                poolKey,
+                ownerHash,
+                tagRegex,
+                serviceConfiguration.cachedTokenPageSize
+            )
+        }
     }
 
     override fun queryBalance(
@@ -46,7 +50,9 @@ class AvailableTokenServiceImpl(
         val virtualNode = getVirtualNodeInfo(poolKey)
         val entityManagerFactory = getOrCreateEntityManagerFactory(virtualNode)
 
-        val totalBalance = utxoTokenRepository.queryBalance(entityManagerFactory.createEntityManager(), poolKey, ownerHash, tagRegex)
+        val totalBalance = tokenSelectionMetrics.recordDbOperationTime("query balance") {
+            utxoTokenRepository.queryBalance(entityManagerFactory.createEntityManager(), poolKey, ownerHash, tagRegex)
+        }
         val claimedBalance = claimedTokens.sumOf { it.amount }
         val availableBalance = totalBalance - claimedBalance
 
@@ -54,11 +60,13 @@ class AvailableTokenServiceImpl(
     }
 
     private fun getOrCreateEntityManagerFactory(virtualNode: VirtualNodeInfo) =
-        dbConnectionManager.getOrCreateEntityManagerFactory(
-            virtualNode.vaultDmlConnectionId,
-            jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)
-                ?: throw IllegalStateException("persistenceUnitName ${CordaDb.Vault.persistenceUnitName} is not registered.")
-        )
+        tokenSelectionMetrics.entityManagerCreationTime {
+            dbConnectionManager.getOrCreateEntityManagerFactory(
+                virtualNode.vaultDmlConnectionId,
+                jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)
+                    ?: throw IllegalStateException("persistenceUnitName ${CordaDb.Vault.persistenceUnitName} is not registered.")
+            )
+        }
 
     private fun getVirtualNodeInfo(poolKey: TokenPoolKey) =
         virtualNodeInfoService.getByHoldingIdentityShortHash(ShortHash.of(poolKey.shortHolderId))

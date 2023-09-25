@@ -54,12 +54,13 @@ class AvailableTokenServiceImplTest {
         whenever(get(any())).thenReturn(JpaEntitiesSet.create("empty", emptySet()))
     }
 
-    val availableTokenServiceImpl = AvailableTokenServiceImpl(
+    private val availableTokenServiceImpl = AvailableTokenServiceImpl(
         virtualNodeInfoService,
         dbConnectionManager,
         jpaEntitiesRegistry,
         utxoTokenRepository,
-        serviceConfiguration
+        serviceConfiguration,
+        mock()
     )
 
     /**
