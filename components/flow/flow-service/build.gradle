@@ -53,6 +53,11 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+
+    implementation project(':libs:serialization:json-validator')
+    implementation project(":libs:serialization:json-serializers")
+
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-ledger-utxo"

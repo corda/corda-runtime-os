@@ -58,6 +58,19 @@
           "flow-name": "com.r3.corda.demo.interop.tokens.workflows.interop.TokensFlow"
         }
       ]
+    },
+    {
+      "facade-id": "org.corda.interop/platform/lock",
+      "facade-method-mapping": [
+        {
+          "facade-method": "unlock",
+          "flow-name": "com.r3.corda.demo.interop.tokens.workflows.interop.LockFlow"
+        },
+        {
+          "facade-method": "createLock",
+          "flow-name": "com.r3.corda.demo.interop.tokens.workflows.interop.LockFlow"
+        }
+      ]
     }
   ]
 }
