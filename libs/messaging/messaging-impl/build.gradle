@@ -12,6 +12,7 @@ dependencies {
     implementation project(":libs:chunking:chunking-core")
     implementation project(":libs:crypto:cipher-suite")
     implementation project(":libs:crypto:crypto-core")
+    implementation project(path: ':libs:kotlin-coroutines', configuration: 'bundle')
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:messaging:message-bus")
@@ -38,6 +39,7 @@ dependencies {
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:test-utilities")
+    testImplementation project(':libs:platform-info')
     testImplementation project(':libs:web:web-impl')
 
     testImplementation "io.javalin:javalin-osgi:$javalinVersion"

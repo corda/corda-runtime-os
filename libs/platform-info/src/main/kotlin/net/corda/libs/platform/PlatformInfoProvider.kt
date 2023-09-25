@@ -22,4 +22,11 @@ interface PlatformInfoProvider {
      * This is sourced from `Bundle-Version` in the installed JAR's manifest.
      */
     val localWorkerSoftwareVersion: String
+
+    val localWorkerSoftwareShortVersion: String
+        get() {
+            val versionParts = localWorkerSoftwareVersion.split(".")
+            check(versionParts.count() >= 2) { "Version has to have at least 2 parts." }
+            return versionParts.take(2).joinToString(".")
+        }
 }

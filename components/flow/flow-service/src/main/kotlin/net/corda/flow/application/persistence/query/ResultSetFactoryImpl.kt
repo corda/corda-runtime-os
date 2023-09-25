@@ -1,7 +1,8 @@
 package net.corda.flow.application.persistence.query
 
-import net.corda.flow.persistence.query.ResultSetExecutor
+import net.corda.flow.persistence.query.OffsetResultSetExecutor
 import net.corda.flow.persistence.query.ResultSetFactory
+import net.corda.flow.persistence.query.StableResultSetExecutor
 import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.persistence.PagedQuery
@@ -27,9 +28,23 @@ class ResultSetFactoryImpl @Activate constructor(
         limit: Int,
         offset: Int,
         resultClass: Class<R>,
-        resultSetExecutor: ResultSetExecutor<R>
+        resultSetExecutor: OffsetResultSetExecutor<R>
     ): PagedQuery.ResultSet<R> {
-        return ResultSetImpl(serializationService, getSerializedParameters(parameters), limit, offset, resultClass, resultSetExecutor)
+        return OffsetResultSetImpl(serializationService, getSerializedParameters(parameters), limit, offset, resultClass, resultSetExecutor)
+    }
+
+    override fun <R> create(
+        parameters: Map<String, Any>,
+        limit: Int,
+        resultClass: Class<R>,
+        resultSetExecutor: StableResultSetExecutor<R>
+    ): PagedQuery.ResultSet<R> {
+        return StableResultSetImpl(
+            serializationService,
+            getSerializedParameters(parameters).toMutableMap(),
+            limit,
+            resultClass,
+            resultSetExecutor)
     }
 
     private fun getSerializedParameters(parameters: Map<String, Any>): Map<String, ByteBuffer> {

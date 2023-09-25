@@ -21,14 +21,14 @@ import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.v5.base.versioning.Version
+import net.corda.web.api.Endpoint
+import net.corda.web.api.WebServer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.osgi.framework.Bundle
 import java.io.InputStream
-import net.corda.web.api.Endpoint
-import net.corda.web.api.WebServer
 
 /**
  * Tests handling of command-line arguments for the [DBWorker].
@@ -51,6 +51,7 @@ class ConfigTests {
         val dbProcessor = DummyDBProcessor()
         val dbWorker = DBWorker(
             dbProcessor,
+            mock(),
             mock(),
             DummyShutdown(),
             DummyWorkerMonitor(),
@@ -96,6 +97,7 @@ class ConfigTests {
         val dbWorker = DBWorker(
             dbProcessor,
             mock(),
+            mock(),
             DummyShutdown(),
             DummyWorkerMonitor(),
             DummyWebServer(),
@@ -130,6 +132,7 @@ class ConfigTests {
         val dbWorker = DBWorker(
             dbProcessor,
             mock(),
+            mock(),
             DummyShutdown(),
             DummyWorkerMonitor(),
             DummyWebServer(),
@@ -162,6 +165,7 @@ class ConfigTests {
         val dbWorker = DBWorker(
             dbProcessor,
             mock(),
+            mock(),
             DummyShutdown(),
             DummyWorkerMonitor(),
             DummyWebServer(),
@@ -187,6 +191,7 @@ class ConfigTests {
         val dbProcessor = DummyDBProcessor()
         val dbWorker = DBWorker(
             dbProcessor,
+            mock(),
             mock(),
             DummyShutdown(),
             DummyWorkerMonitor(),
@@ -233,6 +238,9 @@ class ConfigTests {
         override fun registerEndpoint(endpoint: Endpoint) = Unit
         override fun removeEndpoint(endpoint: Endpoint)  = Unit
         override val port = 7000
+        override val endpoints: Set<Endpoint>
+            get() = emptySet()
+
         override fun start(port: Int) = Unit
     }
 

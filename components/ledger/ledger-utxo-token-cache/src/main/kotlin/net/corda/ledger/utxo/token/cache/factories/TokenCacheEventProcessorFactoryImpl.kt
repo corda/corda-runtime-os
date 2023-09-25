@@ -22,6 +22,7 @@ import net.corda.ledger.utxo.token.cache.services.TokenCacheEventProcessor
 import net.corda.ledger.utxo.token.cache.services.internal.AvailableTokenServiceImpl
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.orm.JpaEntitiesRegistry
+import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -43,7 +44,7 @@ class TokenCacheEventProcessorFactoryImpl @Activate constructor(
 ) : TokenCacheEventProcessorFactory {
 
     override fun create(): StateAndEventProcessor<TokenPoolCacheKey, TokenPoolCacheState, TokenPoolCacheEvent> {
-        val entityConverter = EntityConverterImpl()
+        val entityConverter = EntityConverterImpl(serviceConfiguration, UTCClock())
         val eventConverter = EventConverterImpl(entityConverter)
         val recordFactory = RecordFactoryImpl(externalEventResponseFactory)
         val tokenFilterStrategy = SimpleTokenFilterStrategy()
@@ -70,7 +71,7 @@ class TokenCacheEventProcessorFactoryImpl @Activate constructor(
             createHandler(TokenLedgerChangeEventHandler()),
             createHandler(TokenBalanceQueryEventHandler(recordFactory, availableTokenService)),
         )
-        return TokenCacheEventProcessor(eventConverter, entityConverter, tokenPoolCache, eventHandlerMap)
+        return TokenCacheEventProcessor(eventConverter, entityConverter, tokenPoolCache, eventHandlerMap, externalEventResponseFactory)
     }
 
     private inline fun <reified T : TokenEvent> createHandler(

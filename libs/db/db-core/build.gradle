@@ -30,9 +30,11 @@ dependencies {
 
 //  `DataSourceFactory` providers are in the jdbc drivers that we *dynamically* load at runtime
 tasks.named('jar', Jar) {
-    bnd '''\
+    bundle {
+        bnd '''\
 -noclassforname: true
 Import-Package: org.osgi.service.jdbc;resolution:=optional,\
     *
 '''
+    }
 }

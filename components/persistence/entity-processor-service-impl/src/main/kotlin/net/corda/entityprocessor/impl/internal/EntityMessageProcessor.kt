@@ -1,6 +1,7 @@
 package net.corda.entityprocessor.impl.internal
 
 import net.corda.crypto.core.parseSecureHash
+import net.corda.data.KeyValuePairList
 import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.persistence.DeleteEntities
@@ -13,6 +14,8 @@ import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.data.persistence.MergeEntities
 import net.corda.data.persistence.PersistEntities
 import net.corda.flow.utils.toMap
+import net.corda.libs.virtualnode.datamodel.repository.RequestsIdsRepository
+import net.corda.libs.virtualnode.datamodel.repository.RequestsIdsRepositoryImpl
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
@@ -35,6 +38,9 @@ import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Duration
 import java.time.Instant
+import java.util.UUID
+import javax.persistence.EntityManager
+import javax.persistence.PersistenceException
 
 fun SandboxGroupContext.getClass(fullyQualifiedClassName: String) =
     this.sandboxGroup.loadClassFromMainBundles(fullyQualifiedClassName)
@@ -54,6 +60,7 @@ class EntityMessageProcessor(
     private val entitySandboxService: EntitySandboxService,
     private val responseFactory: ResponseFactory,
     private val payloadCheck: (bytes: ByteBuffer) -> ByteBuffer,
+    private val requestsIdsRepository: RequestsIdsRepository = RequestsIdsRepositoryImpl()
 ) : DurableProcessor<String, EntityRequest> {
     private companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -137,19 +144,35 @@ class EntityMessageProcessor(
 
         val persistenceServiceInternal = PersistenceServiceInternal(sandbox::getClass, payloadCheck)
 
-        return entityManagerFactory.createEntityManager().transaction {
-            when (val entityRequest = request.request) {
-                is PersistEntities -> responseFactory.successResponse(
-                    request.flowExternalEventContext,
+        val em = entityManagerFactory.createEntityManager()
+        return when (val entityRequest = request.request) {
+            is PersistEntities -> {
+                val requestId = UUID.fromString(request.flowExternalEventContext.requestId)
+                val entityResponse = withDeduplicationCheck(
+                    requestId,
+                    em,
+                    onDuplication = {
+                        EntityResponse(emptyList(), KeyValuePairList(emptyList()), null)
+                    }
+                ) {
                     persistenceServiceInternal.persist(serializationService, it, entityRequest)
-                )
+                }
 
-                is DeleteEntities -> responseFactory.successResponse(
+                responseFactory.successResponse(
+                    request.flowExternalEventContext,
+                    entityResponse
+                )
+            }
+
+            is DeleteEntities -> em.transaction {
+                responseFactory.successResponse(
                     request.flowExternalEventContext,
                     persistenceServiceInternal.deleteEntities(serializationService, it, entityRequest)
                 )
+            }
 
-                is DeleteEntitiesById -> responseFactory.successResponse(
+            is DeleteEntitiesById -> em.transaction {
+                responseFactory.successResponse(
                     request.flowExternalEventContext,
                     persistenceServiceInternal.deleteEntitiesByIds(
                         serializationService,
@@ -157,36 +180,68 @@ class EntityMessageProcessor(
                         entityRequest
                     )
                 )
+            }
 
-                is MergeEntities -> responseFactory.successResponse(
-                    request.flowExternalEventContext,
+            is MergeEntities -> {
+                val entityResponse = em.transaction {
                     persistenceServiceInternal.merge(serializationService, it, entityRequest)
+                }
+                responseFactory.successResponse(
+                    request.flowExternalEventContext,
+                    entityResponse
                 )
+            }
 
-                is FindEntities -> responseFactory.successResponse(
+            is FindEntities -> em.transaction {
+                responseFactory.successResponse(
                     request.flowExternalEventContext,
                     persistenceServiceInternal.find(serializationService, it, entityRequest)
                 )
+            }
 
-                is FindAll -> responseFactory.successResponse(
+            is FindAll -> em.transaction {
+                responseFactory.successResponse(
                     request.flowExternalEventContext,
                     persistenceServiceInternal.findAll(serializationService, it, entityRequest)
                 )
+            }
 
-                is FindWithNamedQuery -> responseFactory.successResponse(
+            is FindWithNamedQuery -> em.transaction {
+                responseFactory.successResponse(
                     request.flowExternalEventContext,
                     persistenceServiceInternal.findWithNamedQuery(serializationService, it, entityRequest)
                 )
+            }
 
-                else -> {
-                    responseFactory.fatalErrorResponse(
-                        request.flowExternalEventContext,
-                        CordaRuntimeException("Unknown command")
-                    )
-                }
+            else -> {
+                responseFactory.fatalErrorResponse(
+                    request.flowExternalEventContext,
+                    CordaRuntimeException("Unknown command")
+                )
             }
         }
     }
 
     private fun String.toSecureHash() = parseSecureHash(this)
+
+    // We should require requestId to be a UUID to avoid request ids collisions
+    private fun withDeduplicationCheck(
+        requestId: UUID,
+        em: EntityManager,
+        onDuplication: () -> EntityResponse,
+        block: (EntityManager) -> EntityResponse,
+    ): EntityResponse {
+        return em.transaction {
+            try {
+                requestsIdsRepository.persist(requestId, it)
+                it.flush()
+            } catch (e: PersistenceException) {
+                // A persistence exception thrown in the de-duplication check means we have already performed the operation and
+                // can therefore treat the request as successful
+                it.transaction.setRollbackOnly()
+                return@transaction onDuplication()
+            }
+            block(em)
+        }
+    }
 }
