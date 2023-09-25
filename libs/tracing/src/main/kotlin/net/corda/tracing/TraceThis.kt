@@ -101,6 +101,16 @@ fun traceEventProcessingSingle(
     }
 }
 
+fun traceEventProcessingSingleTransactionRequest(
+    event: net.corda.ledger.utxo.verification.TransactionVerificationRequest,
+    operationName: String,
+    processingBlock: () -> Record<*, *>
+): Record<*, *> {
+    return TracingState.currentTraceService.nextSpan(operationName, event) {
+        addTraceContextToRecord(processingBlock())
+    }
+}
+
 fun <K : Any, S : Any, V : Any> traceStateAndEventExecution(
     event: Record<K, V>,
     operationName: String,

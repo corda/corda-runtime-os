@@ -1,8 +1,8 @@
 package net.corda.ledger.verification.processor.impl
 
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
-import net.corda.ledger.verification.processor.VerificationSubscriptionFactory
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
+import net.corda.ledger.verification.processor.VerificationSubscriptionFactory
 import net.corda.ledger.verification.sandbox.VerificationSandboxService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.subscription.Subscription

@@ -2,8 +2,12 @@ package net.corda.ledger.verification
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.flow.event.FlowEvent
+import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.ledger.verification.processor.VerificationSubscriptionFactory
+import net.corda.ledger.verification.processor.impl.VerificationRpcRequestProcessor
+import net.corda.ledger.verification.sandbox.VerificationSandboxService
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.Lifecycle
@@ -17,6 +21,9 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.Subscription
+import net.corda.messaging.api.subscription.config.SyncRPCConfig
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
@@ -36,20 +43,32 @@ class LedgerVerificationComponent @Activate constructor(
     @Reference(service = SandboxGroupContextComponent::class)
     private val sandboxGroupContextComponent: SandboxGroupContextComponent,
     @Reference(service = VerificationSubscriptionFactory::class)
-    private val verificationRequestSubscriptionFactory: VerificationSubscriptionFactory
+    private val verificationRequestSubscriptionFactory: VerificationSubscriptionFactory,
+    @Reference(service = SubscriptionFactory::class)
+    private val subscriptionFactory: SubscriptionFactory,
+    @Reference(service = CurrentSandboxGroupContext::class)
+    private val currentSandboxGroupContext: CurrentSandboxGroupContext,
+    @Reference(service = VerificationSandboxService::class)
+    private val verificationSandboxService: VerificationSandboxService
 ) : Lifecycle {
     private var configHandle: Resource? = null
     private var verificationProcessorSubscription: Subscription<String, TransactionVerificationRequest>? = null
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        internal const val GROUP_NAME = "verification.ledger.processor"
+        const val CONFIG_HANDLE = "CONFIG_HANDLE"
+        const val SUBSCRIPTION_NAME = "Verification"
+        const val VERIFICATION_PATH = "/verification"
+        const val SUBSCRIPTION = "SUBSCRIPTION"
+        const val RPC_SUBSCRIPTION = "RPC_SUBSCRIPTION"
     }
 
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
         ::sandboxGroupContextComponent
     )
-    private val coordinator =
+    private val lifecycleCoordinator =
         coordinatorFactory.createCoordinator<LedgerVerificationComponent>(dependentComponents, ::eventHandler)
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -74,6 +93,7 @@ class LedgerVerificationComponent @Activate constructor(
                 val newVerificationProcessorSubscription = verificationRequestSubscriptionFactory.create(
                     event.config.getConfig(MESSAGING_CONFIG)
                 )
+                val newVerificationRpcRequestProcessor()
                 logger.debug("Starting LedgerVerificationComponent.")
                 newVerificationProcessorSubscription.start()
                 verificationProcessorSubscription = newVerificationProcessorSubscription
@@ -86,14 +106,29 @@ class LedgerVerificationComponent @Activate constructor(
         }
     }
 
+    private fun initialiseRpcSubscription() {
+        val processor = VerificationRpcRequestProcessor(
+            currentSandboxGroupContext,
+            verificationSandboxService,
+            UniquenessCheckRequestAvro::class.java,
+            FlowEvent::class.java
+        )
+        lifecycleCoordinator.createManagedResource(RPC_SUBSCRIPTION) {
+            val rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, VERIFICATION_PATH)
+            subscriptionFactory.createHttpRPCSubscription(rpcConfig, processor).also {
+                it.start()
+            }
+        }
+    }
+
     override val isRunning: Boolean
-        get() = coordinator.isRunning
+        get() = lifecycleCoordinator.isRunning
 
     override fun start() {
-        coordinator.start()
+        lifecycleCoordinator.start()
     }
 
     override fun stop() {
-        coordinator.stop()
+        lifecycleCoordinator.stop()
     }
 }
