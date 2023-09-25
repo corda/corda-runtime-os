@@ -17,6 +17,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
+import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -166,17 +167,27 @@ class MGMRegistrationService @Activate constructor(
                 val lastRegistrationRequest = mgmRegistrationRequestHandler.getLastRegistrationRequest(member)
                 val mgmInfo = if (lastRegistrationRequest != null) {
                     val lastMemberInfo = mgmRegistrationMemberInfoHandler.queryForMGMMemberInfo(member)
-                    //TODO check the request for the serial number
-                    val mgmInfo = mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(member, context, lastMemberInfo.serial + 1)
+                    val newSerial = calculateSerial(lastMemberInfo.serial, lastRegistrationRequest.serial)
+                    val mgmInfo = mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
+                        member,
+                        context,
+                        newSerial,
+                        lastMemberInfo.mgmProvidedContext[CREATION_TIME],
+                    )
                     mgmRegistrationContextValidator.validateMemberContext(mgmInfo, lastMemberInfo)
                     val lastGroupPolicy = mgmRegistrationGroupPolicyHandler.getLastGroupPolicy(member)
                     mgmRegistrationContextValidator.validateGroupPolicy(context, lastGroupPolicy)
                     mgmRegistrationMemberInfoHandler.persistMgmMemberInfo(member, mgmInfo)
-                    mgmRegistrationRequestHandler.persistRegistrationRequest(registrationId, member, mgmInfo)
+                    mgmRegistrationRequestHandler.persistRegistrationRequest(
+                        registrationId,
+                        member,
+                        mgmInfo,
+                        newSerial - 1,
+                    )
                     mgmInfo
                 } else {
                     mgmRegistrationContextValidator.validate(context)
-                    val mgmInfo = mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(member, context, 1)
+                    val mgmInfo = mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(member, context)
                     mgmRegistrationMemberInfoHandler.persistMgmMemberInfo(member, mgmInfo)
                     mgmRegistrationGroupPolicyHandler.buildAndPersist(
                         member,
@@ -218,6 +229,20 @@ class MGMRegistrationService @Activate constructor(
         }
     }
 
+    /**
+     * Calculates the serial based on latest member as accurate as possible, so
+     * we compare the serial from the member info with the serial from the request.
+     */
+    private fun calculateSerial(serialFromInfo: Long, serialFromRequest: Long): Long {
+        val futureSerialBasedOnInfo = serialFromInfo + 1
+        // need to add 2 here since request serial is serial of the prev prev info
+        val futureSerialBasedOnRequest = serialFromRequest + 2
+        return if (futureSerialBasedOnInfo >= futureSerialBasedOnRequest) {
+            futureSerialBasedOnInfo
+        } else {
+            futureSerialBasedOnRequest
+        }
+    }
 
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {

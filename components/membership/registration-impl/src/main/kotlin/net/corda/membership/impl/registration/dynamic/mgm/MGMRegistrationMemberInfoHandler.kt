@@ -135,7 +135,8 @@ internal class MGMRegistrationMemberInfoHandler(
     fun buildMgmMemberInfo(
         holdingIdentity: HoldingIdentity,
         context: Map<String, String>,
-        serialNumber: Long
+        serialNumber: Long = 1,
+        creationTime: String? = null,
     ): SelfSignedMemberInfo {
         val cpi = virtualNodeInfoReadService.get(holdingIdentity)?.cpiIdentifier
             ?: throw MGMRegistrationMemberInfoHandlingException(
@@ -177,7 +178,7 @@ internal class MGMRegistrationMemberInfoHandler(
             serialize(memberContext.toSortedMap().toWire()),
             serialize(
                 sortedMapOf(
-                    CREATION_TIME to now,
+                    CREATION_TIME to (creationTime ?: now),
                     MODIFIED_TIME to now,
                     STATUS to MEMBER_STATUS_ACTIVE,
                     IS_MGM to "true",

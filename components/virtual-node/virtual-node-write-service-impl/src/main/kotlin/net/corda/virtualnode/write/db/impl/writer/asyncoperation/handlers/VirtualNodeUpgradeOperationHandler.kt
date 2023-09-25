@@ -4,6 +4,7 @@ import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.core.ShortHash
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.common.v2.RegistrationStatus.APPROVED
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
@@ -33,7 +34,6 @@ import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
-import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.membership.client.MemberResourceClient
 import net.corda.membership.lib.ContextDeserializationException
@@ -208,16 +208,13 @@ internal class VirtualNodeUpgradeOperationHandler(
         return Pair(currentVirtualNode, targetCpiMetadata)
     }
 
-    // Re-register the member if the member already exists
-    // after the virtual node has been upgraded, so that the member CPI version is up-to-date
+    /**
+     * Re-register the member if the member already exists
+     * after the virtual node has been upgraded, so that the member CPI version is up-to-date.
+     * Republishes the MGM's Member Info, if the Group Policy was changed.
+     */
     private fun reRegisterMember(upgradedVNodeInfo: VirtualNodeInfo, cpiMetadata: CpiMetadata) {
         val holdingIdentity = upgradedVNodeInfo.holdingIdentity
-        val registrationRequest = membershipQueryClient.queryRegistrationRequests(
-            viewOwningIdentity = holdingIdentity,
-            requestSubjectX500Name = holdingIdentity.x500Name,
-            statuses = listOf(RegistrationStatus.APPROVED),
-            limit = 1
-        )
         val membershipGroupReader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
 
         val mgmInfo = if (!GroupPolicyParser.isStaticNetwork(cpiMetadata.groupPolicy!!)) {
@@ -240,21 +237,33 @@ internal class VirtualNodeUpgradeOperationHandler(
         }
         virtualNodeInfoPublisher.publish(records)
 
+        val registrationRequest = membershipQueryClient.queryRegistrationRequests(
+            viewOwningIdentity = holdingIdentity,
+            requestSubjectX500Name = holdingIdentity.x500Name,
+            statuses = listOf(APPROVED),
+            limit = 1
+        )
         if (registrationRequest is MembershipQueryResult.Success && registrationRequest.payload.isNotEmpty()) {
             try {
-                val registrationContext = registrationRequest.payload.first()
+                val registrationRequestDetails = registrationRequest.payload.first()
+
+                val updatedSerial = registrationRequestDetails.serial + 1
+                val registrationContext = registrationRequestDetails
                     .memberProvidedContext.data.array()
                     .deserializeContext(keyValuePairListDeserializer)
                     .toMutableMap()
-                if (registrationContext.containsKey(MemberInfoExtension.SERIAL)) {
-                    registrationContext[MemberInfoExtension.SERIAL] =
-                        membershipGroupReader.lookup(holdingIdentity.x500Name)?.serial.toString()
-                }
 
-                memberResourceClient.startRegistration(holdingIdentity.shortHash, registrationContext)
+                registrationContext[MemberInfoExtension.SERIAL] = updatedSerial.toString()
+
+                memberResourceClient.startRegistration(
+                    holdingIdentity.shortHash,
+                    registrationContext,
+                )
             } catch (e: ContextDeserializationException) {
-                logger.warn("Could not deserialize previous registration context for ${holdingIdentity.shortHash}. " +
-                        "Re-registration won't be attempted.")
+                logger.warn(
+                    "Could not deserialize previous registration context for ${holdingIdentity.shortHash}. " +
+                            "Re-registration will not be attempted."
+                )
             }
         } else if (registrationRequest is MembershipQueryResult.Failure) {
             logger.warn("Failed to query for an APPROVED previous registration request for ${holdingIdentity.shortHash}: " +

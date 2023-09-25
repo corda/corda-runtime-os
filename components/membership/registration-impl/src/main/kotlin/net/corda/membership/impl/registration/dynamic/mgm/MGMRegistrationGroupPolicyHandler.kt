@@ -44,7 +44,9 @@ internal class MGMRegistrationGroupPolicyHandler(
 
     fun getLastGroupPolicy(holdingIdentity: HoldingIdentity): LayeredPropertyMap {
        return when (val result = membershipQueryClient.queryGroupPolicy(holdingIdentity)) {
-           is MembershipQueryResult.Failure -> throw MGMRegistrationGroupPolicyHandlingException("")
+           is MembershipQueryResult.Failure -> throw MGMRegistrationGroupPolicyHandlingException(
+               "Retrieving group policy failed due to: ${result.errorMsg}"
+           )
            is MembershipQueryResult.Success -> result.payload.first
        }
     }

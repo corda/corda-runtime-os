@@ -39,6 +39,8 @@ import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.records.Record
 import net.corda.test.util.TestRandom
 import net.corda.test.util.time.TestClock
@@ -192,13 +194,19 @@ class MGMRegistrationMemberInfoHandlerTest {
         on { get(eq(holdingIdentity)) } doReturn virtualNodeInfo
     }
 
+    private val membershipQueryClient = mock<MembershipQueryClient>{
+        on {
+            queryMemberInfo(eq(holdingIdentity), eq(setOf(holdingIdentity)), eq(listOf(MEMBER_STATUS_ACTIVE)))
+        } doReturn MembershipQueryResult.Success(listOf(signedMemberInfo))
+    }
+
     private val mgmRegistrationMemberInfoHandler = MGMRegistrationMemberInfoHandler(
         clock,
         cryptoOpsClient,
         keyEncodingService,
         memberInfoFactory,
         membershipPersistenceClient,
-        mock(),
+        membershipQueryClient,
         platformInfoProvider,
         virtualNodeInfoReadService,
         cordaAvroSerializationFactory,
@@ -530,6 +538,28 @@ class MGMRegistrationMemberInfoHandlerTest {
             )
         }
     }
+
+    @Test
+    fun `querying for mgm info is successful`() {
+        assertThat(mgmRegistrationMemberInfoHandler.queryForMGMMemberInfo(holdingIdentity)).isEqualTo(signedMemberInfo)
+    }
+
+    @Test
+    fun `build MGM info keeps original creation time and sets the serial as expected`() {
+        val serial = 2L
+        val creationTime = clock.instant()
+        mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
+            holdingIdentity,
+            validTestContext,
+            serial,
+            creationTime.toString(),
+        )
+
+        assertThat(mgmContext)
+            .containsEntry(SERIAL, "2")
+            .containsEntry(CREATION_TIME, creationTime.toString())
+    }
+
     private class Operation(
         private val value: MembershipPersistenceResult<Unit>
     ) : MembershipPersistenceOperation<Unit> {

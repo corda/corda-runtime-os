@@ -60,13 +60,11 @@ class MgmRegistrationRequestHandlerTest {
             persistRegistrationRequest(any(), any())
         } doReturn operation
     }
-    private val membershipQueryClient = mock<MembershipQueryClient> {
-
-    }
+    private val membershipQueryClient = mock<MembershipQueryClient>()
     private val mgmRegistrationRequestHandler = MGMRegistrationRequestHandler(
         cordaAvroSerializationFactory,
         membershipPersistenceClient,
-        membershipQueryClient
+        membershipQueryClient,
     )
 
     @Test
@@ -89,6 +87,7 @@ class MgmRegistrationRequestHandlerTest {
         assertThat(captor.firstValue.memberContext.data).isEqualTo(ByteBuffer.wrap(serializedMemberContext))
         assertThat(captor.firstValue.registrationContext.data).isEqualTo(ByteBuffer.wrap(serialisedPayload))
         assertThat(captor.firstValue.status).isEqualTo(RegistrationStatus.APPROVED)
+        assertThat(captor.firstValue.serial).isEqualTo(0)
         assertThat(captor.firstValue.memberContext.signature).isEqualTo(signature)
         assertThat(captor.firstValue.memberContext.signatureSpec).isEqualTo(signatureSpec)
 
@@ -147,5 +146,32 @@ class MgmRegistrationRequestHandlerTest {
         assertThrows<InvalidMembershipRegistrationException> {
             mgmRegistrationRequestHandler.throwIfRegistrationAlreadyApproved(holdingIdentity)
         }
+    }
+
+    @Test
+    fun `persistRegistrationRequest persists request with the provided serial`() {
+        val serial = 10L
+        assertDoesNotThrow {
+            mgmRegistrationRequestHandler.persistRegistrationRequest(
+                registrationId,
+                holdingIdentity,
+                signedMemberInfo,
+                serial,
+            )
+        }
+        val captor = argumentCaptor<RegistrationRequest>()
+        verify(membershipPersistenceClient).persistRegistrationRequest(eq(holdingIdentity), captor.capture())
+        assertThat(captor.firstValue.serial).isEqualTo(serial)
+    }
+
+    @Test
+    fun `retrieving latest registration request is successful`() {
+        val request = mock<RegistrationRequestDetails>()
+        whenever(
+            membershipQueryClient.queryRegistrationRequests(
+                eq(holdingIdentity), eq(holdingIdentity.x500Name), eq(listOf(RegistrationStatus.APPROVED)), eq(1)
+            )
+        ).thenReturn(MembershipQueryResult.Success(listOf(request)))
+        assertThat(mgmRegistrationRequestHandler.getLastRegistrationRequest(holdingIdentity)).isEqualTo(request)
     }
 }

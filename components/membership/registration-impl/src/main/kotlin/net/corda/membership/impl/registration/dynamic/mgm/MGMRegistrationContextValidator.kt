@@ -85,7 +85,7 @@ internal class MGMRegistrationContextValidator(
     }
 
     /**
-     * Performs the same checks as [validate] but additionally checks the
+     * Validates only endpoint changes are submitted for MGM re-registration.
      */
     @Throws(MGMRegistrationContextValidationException::class)
     fun validateMemberContext(
@@ -100,11 +100,14 @@ internal class MGMRegistrationContextValidator(
             }
         if (diff.isNotEmpty()) {
             throw MGMRegistrationContextValidationException(
-                "Fields ${diff.map { it.key }} cannot be added, removed or updated during MGM re-registration.", null
+                "Fields ${diff.map { it.key }.toSet()} cannot be added, removed or updated during MGM re-registration.", null
             )
         }
     }
 
+    /**
+     * Validates there were no group policy related updates submitted for MGM re-registration.
+     */
     @Throws(MGMRegistrationContextValidationException::class)
     fun validateGroupPolicy(registrationContext: Map<String, String>, lastGroupPolicy: LayeredPropertyMap) {
         val groupPolicy = registrationContext.filterKeys { it.startsWith(GROUP_POLICY_PREFIX) }
@@ -112,7 +115,7 @@ internal class MGMRegistrationContextValidator(
         val diff = ((groupPolicy.entries - lastGroupPolicy.entries) + (lastGroupPolicy.entries - groupPolicy.entries))
         if (diff.isNotEmpty()) {
             throw MGMRegistrationContextValidationException(
-                "Fields ${diff.map { it.key }} cannot be added, removed or updated during MGM re-registration.", null
+                "Fields ${diff.map { it.key }.toSet()} cannot be added, removed or updated during MGM re-registration.", null
             )
         }
     }

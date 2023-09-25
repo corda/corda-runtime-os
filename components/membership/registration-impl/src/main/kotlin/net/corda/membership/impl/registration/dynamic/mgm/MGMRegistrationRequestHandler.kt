@@ -37,7 +37,8 @@ internal class MGMRegistrationRequestHandler(
     fun persistRegistrationRequest(
         registrationId: UUID,
         holdingIdentity: HoldingIdentity,
-        mgmInfo: SelfSignedMemberInfo
+        mgmInfo: SelfSignedMemberInfo,
+        serial: Long = 0L,
     ) {
         val serializedRegistrationContext = serialize(KeyValuePairList(emptyList()))
 
@@ -60,7 +61,7 @@ internal class MGMRegistrationRequestHandler(
                     ),
                     CryptoSignatureSpec("", null, null)
                 ),
-                serial = 0L,
+                serial = serial,
             )
         ).execute()
         if (registrationRequestPersistenceResult is MembershipPersistenceResult.Failure) {
@@ -74,8 +75,9 @@ internal class MGMRegistrationRequestHandler(
         return membershipQueryClient.queryRegistrationRequests(
             viewOwningIdentity = holdingIdentity,
             requestSubjectX500Name = holdingIdentity.x500Name,
-            statuses = listOf(RegistrationStatus.APPROVED)
-       ).getOrThrow().sortedBy { it.serial }.lastOrNull()
+            statuses = listOf(RegistrationStatus.APPROVED),
+            limit = 1,
+       ).getOrThrow().lastOrNull()
     }
 
     fun throwIfRegistrationAlreadyApproved(holdingIdentity: HoldingIdentity) {
