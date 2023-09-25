@@ -4,6 +4,7 @@ import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.crypto.core.fullIdHash
 import net.corda.simulator.runtime.serialization.SimpleJsonMarshallingService
 import net.corda.v5.application.crypto.SigningService
+import net.corda.v5.application.crypto.SigningServiceSignContext
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import org.slf4j.LoggerFactory
@@ -36,13 +37,13 @@ class SimWithJsonSigningService(private val keyStore: SimKeyStore) : SigningServ
                       publicKey: PublicKey,
                       signatureSpec: SignatureSpec
     ): DigitalSignature.WithKeyId {
-        return sign(bytes, publicKey, signatureSpec, emptyMap())
+        return sign(bytes, publicKey, signatureSpec, SigningServiceSignContext(null))
     }
 
     override fun sign(bytes: ByteArray,
                       publicKey: PublicKey,
                       signatureSpec: SignatureSpec,
-                      context: Map<String, String>
+                      context: SigningServiceSignContext
     ): DigitalSignature.WithKeyId {
         log.info("Simulating signing of bytes: $bytes")
         val keyParameters = checkNotNull(keyStore.getParameters(publicKey)) {
