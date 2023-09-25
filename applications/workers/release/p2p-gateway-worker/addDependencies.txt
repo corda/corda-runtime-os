@@ -1,0 +1,2321 @@
+> Task :buildSrc:extractPluginRequests UP-TO-DATE
+> Task :buildSrc:generatePluginAdapters UP-TO-DATE
+> Task :buildSrc:compileJava UP-TO-DATE
+> Task :buildSrc:compileGroovy UP-TO-DATE
+> Task :buildSrc:compileGroovyPlugins UP-TO-DATE
+> Task :buildSrc:pluginDescriptors UP-TO-DATE
+> Task :buildSrc:processResources UP-TO-DATE
+> Task :buildSrc:classes UP-TO-DATE
+> Task :buildSrc:jar UP-TO-DATE
+> Task :buildSrc:assemble UP-TO-DATE
+> Task :buildSrc:compileTestJava NO-SOURCE
+> Task :buildSrc:compileTestGroovy NO-SOURCE
+> Task :buildSrc:pluginUnderTestMetadata UP-TO-DATE
+> Task :buildSrc:processTestResources NO-SOURCE
+> Task :buildSrc:testClasses UP-TO-DATE
+> Task :buildSrc:test NO-SOURCE
+> Task :buildSrc:validatePlugins UP-TO-DATE
+> Task :buildSrc:check UP-TO-DATE
+> Task :buildSrc:build UP-TO-DATE
+
+> Configure project :
+********************** CORDA FLOW WORKER BUILD **********************
+SDK version: 11
+JAVA HOME /opt/homebrew/Cellar/sdkman-cli/5.18.0/libexec/candidates/java/11.0.18-zulu/zulu-11.jdk/Contents/Home
+Corda runtime OS release version: 5.0.0.0-SNAPSHOT
+Corda API dependency version spec: 5.0.0.739-alpha-1680161628789
+
+> Task :applications:workers:release:p2p-gateway-worker:allDependencies
+
+------------------------------------------------------------
+Project ':applications:workers:release:p2p-gateway-worker' - P2P Gateway Worker
+------------------------------------------------------------
+
+annotationProcessor - Annotation processors and their dependencies for source set 'main'.
+No dependencies
+
+api - API dependencies for source set 'main'. (n)
+No dependencies
+
+apiDependenciesMetadata
+No dependencies
+
+apiElements - API elements for main. (n)
+No dependencies
+
+apiElements-published (n)
+No dependencies
+
+app (n)
+No dependencies
+
+archives - Configuration for archive artifacts. (n)
+No dependencies
+
+baseline
+\--- net.corda:corda-p2p-gateway-worker:{strictly (0,5.0.0.0-SNAPSHOT[} -> 5.0.0.0-beta-1680186859541
+
+bootstrapClasspath
++--- project :osgi-framework-bootstrap
+|    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789
+|    |    \--- org.slf4j:slf4j-api:1.7.36 (c)
+|    +--- project :osgi-framework-api
+|    +--- org.slf4j:slf4j-api -> 1.7.36
+|    +--- org.slf4j:jul-to-slf4j:1.7.36
+|    |    \--- org.slf4j:slf4j-api:1.7.36
+|    +--- org.apache.felix:org.apache.felix.framework:7.0.5
+|    |    \--- org.codehaus.mojo:animal-sniffer-annotations:1.9
+|    +--- org.apache.logging.log4j:log4j-slf4j-impl:2.19.0
+|    |    +--- org.slf4j:slf4j-api:1.7.25 -> 1.7.36
+|    |    +--- org.apache.logging.log4j:log4j-api:2.19.0
+|    |    \--- org.apache.logging.log4j:log4j-core:2.19.0
+|    |         \--- org.apache.logging.log4j:log4j-api:2.19.0
+|    +--- com.fasterxml.jackson.core:jackson-core:2.14.1
+|    |    \--- com.fasterxml.jackson:jackson-bom:2.14.1
+|    |         +--- com.fasterxml.jackson.core:jackson-annotations:2.14.1 (c)
+|    |         +--- com.fasterxml.jackson.core:jackson-core:2.14.1 (c)
+|    |         \--- com.fasterxml.jackson.core:jackson-databind:2.14.1 (c)
+|    +--- com.fasterxml.jackson.core:jackson-databind:2.14.1
+|    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.14.1
+|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.14.1 (*)
+|    |    +--- com.fasterxml.jackson.core:jackson-core:2.14.1 (*)
+|    |    \--- com.fasterxml.jackson:jackson-bom:2.14.1 (*)
+|    \--- com.fasterxml.jackson.core:jackson-annotations:2.14.1 (*)
++--- org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec:1.1.1.Final
++--- org.slf4j:slf4j-api:1.7.36
++--- project :osgi-framework-api
++--- org.slf4j:slf4j-api:{strictly 1.7.36} -> 1.7.36 (c)
++--- net.corda:corda-api:{strictly 5.0.0.739-alpha-1680161628789} -> 5.0.0.739-alpha-1680161628789 (c)
++--- com.fasterxml.jackson.core:jackson-core:{strictly 2.14.1} -> 2.14.1 (c)
++--- com.fasterxml.jackson.core:jackson-databind:{strictly 2.14.1} -> 2.14.1 (c)
++--- com.fasterxml.jackson.core:jackson-annotations:{strictly 2.14.1} -> 2.14.1 (c)
++--- org.codehaus.mojo:animal-sniffer-annotations:{strictly 1.9} -> 1.9 (c)
+\--- com.fasterxml.jackson:jackson-bom:{strictly 2.14.1} -> 2.14.1 (c)
+
+compileClassPath
+No dependencies
+
+compileClasspath - Compile classpath for compilation 'main' (target  (jvm)).
++--- org.jetbrains:annotations:13.0
++--- org.osgi:osgi.annotation -> 8.0.1
++--- org.osgi:osgi.core -> 8.0.0
++--- org.osgi:org.osgi.service.component.annotations -> 1.5.0
+|    +--- org.osgi:osgi.annotation:8.0.1
+|    +--- org.osgi:org.osgi.namespace.extender:1.0.1
+|    +--- org.osgi:org.osgi.util.function:1.0.0
+|    \--- org.osgi:org.osgi.util.promise:1.0.0
++--- project :applications:workers:worker-common
++--- project :libs:configuration:configuration-core
+|    \--- com.typesafe:config:1.4.2
++--- project :libs:configuration:configuration-validation
++--- project :libs:platform-info
++--- project :processors:gateway-processor
++--- net.corda:corda-api:5.0.0.739-alpha-1680161628789
+|    +--- net.corda:corda-base:5.0.0.739-alpha-1680161628789 (c)
+|    +--- net.corda:corda-config-schema:5.0.0.739-alpha-1680161628789 (c)
+|    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10 (c)
+|    +--- org.jetbrains:annotations:13.0 (c)
+|    +--- org.osgi:osgi.annotation:8.0.0 -> 8.0.1 (c)
+|    +--- org.osgi:osgi.core:8.0.0 (c)
+|    +--- org.osgi:org.osgi.service.component.annotations:1.5.0 (c)
+|    \--- org.slf4j:slf4j-api:1.7.36 (c)
++--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789
+|    \--- org.slf4j:slf4j-api:1.7.36
++--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789
++--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
++--- info.picocli:picocli:4.7.0
++--- org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec:1.1.1.Final
++--- org.slf4j:slf4j-api:1.7.36
+\--- project :osgi-framework-api
+
+compileOnly - Compile only dependencies for compilation 'main' (target  (jvm)). (n)
++--- org.jetbrains:annotations:13.0 (n)
++--- org.osgi:osgi.annotation (n)
++--- org.osgi:osgi.core (n)
+\--- org.osgi:org.osgi.service.component.annotations (n)
+
+compileOnlyApi - Compile only API dependencies for source set 'main'. (n)
+No dependencies
+
+compileOnlyDependenciesMetadata
++--- org.jetbrains:annotations:13.0
++--- org.osgi:osgi.annotation FAILED
++--- org.osgi:osgi.core FAILED
++--- org.osgi:org.osgi.service.component.annotations FAILED
++--- org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec:1.1.1.Final
++--- org.slf4j:slf4j-api:1.7.36
+\--- project :osgi-framework-api
+
+coverageDataElementsForTest - Binary data file containing results of Jacoco test coverage reporting for the test Test Suite's test target. (n)
+No dependencies
+
+default - Configuration for default artifacts. (n)
+No dependencies
+
+detekt - The detekt dependencies to be used for this project.
++--- io.gitlab.arturbosch.detekt:detekt-cli:1.22.+ -> 1.22.0
+|    +--- com.beust:jcommander:1.82
+|    +--- io.gitlab.arturbosch.detekt:detekt-tooling:1.22.0
+|    |    \--- io.gitlab.arturbosch.detekt:detekt-api:1.22.0
+|    |         +--- io.gitlab.arturbosch.detekt:detekt-utils:1.22.0
+|    |         +--- org.jetbrains.kotlin:kotlin-compiler-embeddable:1.7.21
+|    |         |    +--- org.jetbrains.kotlin:kotlin-stdlib:1.7.21
+|    |         |    |    +--- org.jetbrains.kotlin:kotlin-stdlib-common:1.7.21
+|    |         |    |    \--- org.jetbrains:annotations:13.0
+|    |         |    +--- org.jetbrains.kotlin:kotlin-script-runtime:1.7.21
+|    |         |    +--- org.jetbrains.kotlin:kotlin-reflect:1.7.21
+|    |         |    |    \--- org.jetbrains.kotlin:kotlin-stdlib:1.7.21 (*)
+|    |         |    +--- org.jetbrains.kotlin:kotlin-daemon-embeddable:1.7.21
+|    |         |    +--- org.jetbrains.intellij.deps:trove4j:1.0.20200330
+|    |         |    \--- net.java.dev.jna:jna:5.6.0
+|    |         \--- io.gitlab.arturbosch.detekt:detekt-psi-utils:1.22.0
+|    |              \--- org.jetbrains.kotlin:kotlin-compiler-embeddable:1.7.21 (*)
+|    +--- io.gitlab.arturbosch.detekt:detekt-parser:1.22.0
+|    |    +--- io.gitlab.arturbosch.detekt:detekt-psi-utils:1.22.0 (*)
+|    |    +--- io.github.davidburstrom.contester:contester-breakpoint:0.2.0
+|    |    \--- org.jetbrains.kotlin:kotlin-compiler-embeddable:1.7.21 (*)
+|    +--- org.jetbrains.kotlin:kotlin-compiler-embeddable:{strictly 1.7.21} -> 1.7.21 (*)
+|    +--- io.gitlab.arturbosch.detekt:detekt-core:1.22.0
+|    |    +--- org.yaml:snakeyaml:1.33
+|    |    +--- org.jetbrains.kotlin:kotlin-reflect:1.7.21 (*)
+|    |    +--- io.gitlab.arturbosch.detekt:detekt-metrics:1.22.0
+|    |    |    \--- io.gitlab.arturbosch.detekt:detekt-api:1.22.0 (*)
+|    |    +--- io.gitlab.arturbosch.detekt:detekt-psi-utils:1.22.0 (*)
+|    |    +--- io.gitlab.arturbosch.detekt:detekt-report-html:1.22.0
+|    |    |    +--- io.gitlab.arturbosch.detekt:detekt-utils:1.22.0
+|    |    |    \--- org.jetbrains.kotlinx:kotlinx-html-jvm:0.8.0
+|    |    +--- io.gitlab.arturbosch.detekt:detekt-report-md:1.22.0
+|    |    |    +--- io.gitlab.arturbosch.detekt:detekt-metrics:1.22.0 (*)
+|    |    |    +--- io.gitlab.arturbosch.detekt:detekt-api:1.22.0 (*)
+|    |    |    \--- io.gitlab.arturbosch.detekt:detekt-utils:1.22.0
+|    |    +--- io.gitlab.arturbosch.detekt:detekt-report-txt:1.22.0
+|    |    +--- io.gitlab.arturbosch.detekt:detekt-report-xml:1.22.0
+|    |    +--- io.gitlab.arturbosch.detekt:detekt-report-sarif:1.22.0
+|    |    |    \--- io.github.detekt.sarif4k:sarif4k:0.0.1
+|    |    |         +--- org.jetbrains.kotlinx:kotlinx-serialization-json:1.1.0
+|    |    |         |    \--- org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.1.0
+|    |    |         |         +--- org.jetbrains.kotlin:kotlin-stdlib:1.4.30 -> 1.7.21 (*)
+|    |    |         |         +--- org.jetbrains.kotlin:kotlin-stdlib-common:1.4.30 -> 1.7.21
+|    |    |         |         \--- org.jetbrains.kotlinx:kotlinx-serialization-core:1.1.0
+|    |    |         |              \--- org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.1.0
+|    |    |         |                   +--- org.jetbrains.kotlin:kotlin-stdlib:1.4.30 -> 1.7.21 (*)
+|    |    |         |                   \--- org.jetbrains.kotlin:kotlin-stdlib-common:1.4.30 -> 1.7.21
+|    |    |         \--- org.jetbrains.kotlin:kotlin-stdlib:1.4.31 -> 1.7.21 (*)
+|    |    +--- io.gitlab.arturbosch.detekt:detekt-utils:1.22.0
+|    |    +--- io.gitlab.arturbosch.detekt:detekt-api:1.22.0 (*)
+|    |    +--- io.gitlab.arturbosch.detekt:detekt-parser:1.22.0 (*)
+|    |    \--- io.gitlab.arturbosch.detekt:detekt-tooling:1.22.0 (*)
+|    \--- io.gitlab.arturbosch.detekt:detekt-rules:1.22.0
+|         +--- io.gitlab.arturbosch.detekt:detekt-rules-complexity:1.22.0
+|         +--- io.gitlab.arturbosch.detekt:detekt-rules-coroutines:1.22.0
+|         +--- io.gitlab.arturbosch.detekt:detekt-rules-documentation:1.22.0
+|         +--- io.gitlab.arturbosch.detekt:detekt-rules-empty:1.22.0
+|         +--- io.gitlab.arturbosch.detekt:detekt-rules-errorprone:1.22.0
+|         |    \--- io.gitlab.arturbosch.detekt:detekt-tooling:1.22.0 (*)
+|         +--- io.gitlab.arturbosch.detekt:detekt-rules-exceptions:1.22.0
+|         +--- io.gitlab.arturbosch.detekt:detekt-rules-naming:1.22.0
+|         +--- io.gitlab.arturbosch.detekt:detekt-rules-performance:1.22.0
+|         \--- io.gitlab.arturbosch.detekt:detekt-rules-style:1.22.0
+\--- org.yaml:snakeyaml:1.33 (c)
+
+detektPlugins - The detektPlugins libraries to be used for this project.
+\--- io.gitlab.arturbosch.detekt:detekt-formatting:1.22.+ -> 1.22.0
+     +--- com.pinterest.ktlint:ktlint-ruleset-standard:0.47.1
+     |    +--- com.pinterest.ktlint:ktlint-core:0.47.1
+     |    |    +--- org.ec4j.core:ec4j-core:0.3.0
+     |    |    \--- io.github.microutils:kotlin-logging-jvm:2.1.23
+     |    |         \--- org.slf4j:slf4j-api:1.7.32
+     |    \--- io.github.microutils:kotlin-logging-jvm:2.1.23 (*)
+     +--- com.pinterest.ktlint:ktlint-core:0.47.1 (*)
+     \--- com.pinterest.ktlint:ktlint-ruleset-experimental:0.47.1
+          \--- com.pinterest.ktlint:ktlint-core:0.47.1 (*)
+
+dockerImage
+No dependencies
+
+dockerImageJdbc
+No dependencies
+
+implementation - Implementation only dependencies for compilation 'main' (target  (jvm)). (n)
++--- project worker-common (n)
++--- project configuration-core (n)
++--- project configuration-validation (n)
++--- project platform-info (n)
++--- project gateway-processor (n)
++--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (n)
++--- net.corda:corda-base (n)
++--- net.corda:corda-config-schema (n)
++--- org.jetbrains.kotlin:kotlin-osgi-bundle (n)
+\--- info.picocli:picocli:4.7.0 (n)
+
+implementationDependenciesMetadata
++--- project :applications:workers:worker-common
++--- project :libs:configuration:configuration-core
+|    \--- com.typesafe:config:1.4.2
++--- project :libs:configuration:configuration-validation
++--- project :libs:platform-info
++--- project :processors:gateway-processor
++--- net.corda:corda-api:5.0.0.739-alpha-1680161628789
+|    +--- net.corda:corda-base:5.0.0.739-alpha-1680161628789 (c)
+|    +--- net.corda:corda-config-schema:5.0.0.739-alpha-1680161628789 (c)
+|    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10 (c)
+|    \--- org.slf4j:slf4j-api:1.7.36 (c)
++--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789
+|    \--- org.slf4j:slf4j-api:1.7.36
++--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789
++--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+\--- info.picocli:picocli:4.7.0
+
+integrationTestAnnotationProcessor - Annotation processors and their dependencies for source set 'integration test'.
+No dependencies
+
+integrationTestApi - API dependencies for compilation 'integrationTest' (target  (jvm)). (n)
+No dependencies
+
+integrationTestApiDependenciesMetadata
+No dependencies
+
+integrationTestCompileClasspath - Compile classpath for compilation 'integrationTest' (target  (jvm)).
++--- org.jetbrains:annotations:13.0
++--- org.osgi:osgi.annotation -> 8.0.1
++--- org.osgi:osgi.core -> 8.0.0
++--- org.osgi:org.osgi.service.component.annotations -> 1.5.0
+|    +--- org.osgi:osgi.annotation:8.0.1
+|    +--- org.osgi:org.osgi.namespace.extender:1.0.1
+|    +--- org.osgi:org.osgi.util.function:1.0.0
+|    \--- org.osgi:org.osgi.util.promise:1.0.0
++--- project :applications:workers:worker-common
++--- project :libs:configuration:configuration-core
+|    \--- com.typesafe:config:1.4.2
++--- project :libs:configuration:configuration-validation
++--- project :libs:platform-info
++--- project :processors:gateway-processor
++--- net.corda:corda-api:5.0.0.739-alpha-1680161628789
+|    +--- net.corda:corda-base:5.0.0.739-alpha-1680161628789 (c)
+|    +--- net.corda:corda-config-schema:5.0.0.739-alpha-1680161628789 (c)
+|    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10 (c)
+|    +--- org.jetbrains:annotations:13.0 (c)
+|    +--- org.osgi:osgi.annotation:8.0.0 -> 8.0.1 (c)
+|    +--- org.osgi:osgi.core:8.0.0 (c)
+|    +--- org.osgi:org.osgi.service.component.annotations:1.5.0 (c)
+|    \--- org.slf4j:slf4j-api:1.7.36 (c)
++--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789
+|    \--- org.slf4j:slf4j-api:1.7.36
++--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789
++--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
++--- info.picocli:picocli:4.7.0
++--- org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec:1.1.1.Final
++--- org.slf4j:slf4j-api:1.7.36
++--- project :osgi-framework-api
++--- org.assertj:assertj-core:3.24.1
+|    \--- net.bytebuddy:byte-buddy:1.12.21
++--- org.junit.jupiter:junit-jupiter-api:5.9.1
+|    +--- org.junit:junit-bom:5.9.1
+|    |    +--- org.junit.jupiter:junit-jupiter-api:5.9.1 (c)
+|    |    +--- org.junit.jupiter:junit-jupiter-params:5.9.1 (c)
+|    |    \--- org.junit.platform:junit-platform-commons:1.9.1 (c)
+|    +--- org.opentest4j:opentest4j:1.2.0
+|    +--- org.junit.platform:junit-platform-commons:1.9.1
+|    |    +--- org.junit:junit-bom:5.9.1 (*)
+|    |    \--- org.apiguardian:apiguardian-api:1.1.2
+|    \--- org.apiguardian:apiguardian-api:1.1.2
+\--- org.junit.jupiter:junit-jupiter-params:5.9.1
+     +--- org.junit:junit-bom:5.9.1 (*)
+     +--- org.junit.jupiter:junit-jupiter-api:5.9.1 (*)
+     \--- org.apiguardian:apiguardian-api:1.1.2
+
+integrationTestCompileOnly - Compile only dependencies for compilation 'integrationTest' (target  (jvm)). (n)
++--- unspecified (n)
+\--- unspecified (n)
+
+integrationTestCompileOnlyDependenciesMetadata
++--- org.jetbrains:annotations:13.0
++--- org.osgi:osgi.annotation FAILED
++--- org.osgi:osgi.core FAILED
++--- org.osgi:org.osgi.service.component.annotations FAILED
++--- org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec:1.1.1.Final
++--- org.slf4j:slf4j-api:1.7.36
+\--- project :osgi-framework-api
+
+integrationTestImplementation - Implementation only dependencies for compilation 'integrationTest' (target  (jvm)). (n)
+No dependencies
+
+integrationTestImplementationDependenciesMetadata
++--- project :applications:workers:worker-common
++--- project :libs:configuration:configuration-core
+|    \--- com.typesafe:config:1.4.2
++--- project :libs:configuration:configuration-validation
++--- project :libs:platform-info
++--- project :processors:gateway-processor
++--- net.corda:corda-api:5.0.0.739-alpha-1680161628789
+|    +--- net.corda:corda-base:5.0.0.739-alpha-1680161628789 (c)
+|    +--- net.corda:corda-config-schema:5.0.0.739-alpha-1680161628789 (c)
+|    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10 (c)
+|    \--- org.slf4j:slf4j-api:1.7.36 (c)
++--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789
+|    \--- org.slf4j:slf4j-api:1.7.36
++--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789
++--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
++--- info.picocli:picocli:4.7.0
++--- org.assertj:assertj-core:3.24.1
+|    \--- net.bytebuddy:byte-buddy:1.12.21
++--- org.junit.jupiter:junit-jupiter-api:5.9.1
+|    +--- org.junit:junit-bom:5.9.1
+|    |    +--- org.junit.jupiter:junit-jupiter-api:5.9.1 (c)
+|    |    +--- org.junit.jupiter:junit-jupiter-params:5.9.1 (c)
+|    |    \--- org.junit.platform:junit-platform-commons:1.9.1 (c)
+|    +--- org.opentest4j:opentest4j:1.2.0
+|    +--- org.junit.platform:junit-platform-commons:1.9.1
+|    |    +--- org.junit:junit-bom:5.9.1 (*)
+|    |    \--- org.apiguardian:apiguardian-api:1.1.2
+|    \--- org.apiguardian:apiguardian-api:1.1.2
+\--- org.junit.jupiter:junit-jupiter-params:5.9.1
+     +--- org.junit:junit-bom:5.9.1 (*)
+     +--- org.junit.jupiter:junit-jupiter-api:5.9.1 (*)
+     \--- org.apiguardian:apiguardian-api:1.1.2
+
+integrationTestIntransitiveDependenciesMetadata
+No dependencies
+
+integrationTestKotlinScriptDef - Script filename extensions discovery classpath configuration
+No dependencies
+
+integrationTestKotlinScriptDefExtensions
+No dependencies
+
+integrationTestRuntimeClasspath - Runtime classpath of compilation 'integrationTest' (target  (jvm)).
++--- project :applications:workers:worker-common
+|    +--- project :libs:application:addon
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- org.slf4j:slf4j-api -> 1.7.36
+|    |    \--- net.corda:corda-api:5.0.0.739-alpha-1680161628789
+|    |         +--- net.corda:corda-base:5.0.0.739-alpha-1680161628789 (c)
+|    |         +--- net.corda:corda-config-schema:5.0.0.739-alpha-1680161628789 (c)
+|    |         +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10 (c)
+|    |         +--- net.corda:corda-topic-schema:5.0.0.739-alpha-1680161628789 (c)
+|    |         +--- net.corda:corda-avro-schema:5.0.0.739-alpha-1680161628789 (c)
+|    |         +--- org.osgi:osgi.annotation:8.0.0 -> 8.1.0 (c)
+|    |         +--- org.slf4j:slf4j-api:1.7.36 (c)
+|    |         +--- net.corda:corda-application:5.0.0.739-alpha-1680161628789 (c)
+|    |         +--- net.corda:corda-serialization:5.0.0.739-alpha-1680161628789 (c)
+|    |         +--- net.corda:corda-crypto:5.0.0.739-alpha-1680161628789 (c)
+|    |         +--- net.corda:corda-crypto-extensions:5.0.0.739-alpha-1680161628789 (c)
+|    |         +--- javax.persistence:javax.persistence-api:2.2 (c)
+|    |         \--- net.corda:corda-membership:5.0.0.739-alpha-1680161628789 (c)
+|    +--- project :libs:application:banner
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    \--- org.slf4j:slf4j-api -> 1.7.36
+|    +--- project :libs:configuration:configuration-core
+|    |    +--- com.typesafe:config:1.4.2
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789
+|    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    \--- org.slf4j:slf4j-api:1.7.36
+|    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789
+|    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    \--- net.corda:corda-base:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    \--- project :libs:crypto:crypto-core
+|    |         +--- project :libs:crypto:cipher-suite
+|    |         |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |         |    +--- net.corda:corda-crypto -> 5.0.0.739-alpha-1680161628789
+|    |         |    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |         |    |    +--- org.slf4j:slf4j-api:1.7.36
+|    |         |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |         |    |    \--- net.corda:corda-base:5.0.0.739-alpha-1680161628789 (*)
+|    |         |    +--- net.corda:corda-crypto-extensions -> 5.0.0.739-alpha-1680161628789
+|    |         |    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |         |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |         |    |    \--- net.corda:corda-crypto:5.0.0.739-alpha-1680161628789 (*)
+|    |         |    +--- org.bouncycastle:bcprov-jdk18on:1.72
+|    |         |    +--- org.bouncycastle:bcpkix-jdk18on:1.72
+|    |         |    |    +--- org.bouncycastle:bcprov-jdk18on:1.72
+|    |         |    |    \--- org.bouncycastle:bcutil-jdk18on:1.72
+|    |         |    |         \--- org.bouncycastle:bcprov-jdk18on:1.72
+|    |         |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |         |    +--- org.slf4j:slf4j-api -> 1.7.36
+|    |         |    \--- project :libs:crypto:crypto-utils
+|    |         |         +--- org.slf4j:slf4j-api:1.7.36
+|    |         |         +--- org.bouncycastle:bcprov-jdk18on:1.72
+|    |         |         +--- org.bouncycastle:bcpkix-jdk18on:1.72 (*)
+|    |         |         +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |         |         +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |         |         \--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |         +--- net.corda:corda-crypto -> 5.0.0.739-alpha-1680161628789 (*)
+|    |         +--- net.corda:corda-crypto-extensions -> 5.0.0.739-alpha-1680161628789 (*)
+|    |         +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |         +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |         +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789
+|    |         |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |         |    +--- net.corda:corda-base:5.0.0.739-alpha-1680161628789 (*)
+|    |         |    \--- org.apache.avro:avro:1.11.1
+|    |         |         +--- com.fasterxml.jackson.core:jackson-core:2.12.7 -> 2.14.1
+|    |         |         |    \--- com.fasterxml.jackson:jackson-bom:2.14.1
+|    |         |         |         +--- com.fasterxml.jackson.core:jackson-annotations:2.14.1 (c)
+|    |         |         |         +--- com.fasterxml.jackson.core:jackson-core:2.14.1 (c)
+|    |         |         |         \--- com.fasterxml.jackson.core:jackson-databind:2.14.1 (c)
+|    |         |         +--- com.fasterxml.jackson.core:jackson-databind:2.12.7 -> 2.14.1
+|    |         |         |    +--- com.fasterxml.jackson.core:jackson-annotations:2.14.1
+|    |         |         |    |    \--- com.fasterxml.jackson:jackson-bom:2.14.1 (*)
+|    |         |         |    +--- com.fasterxml.jackson.core:jackson-core:2.14.1 (*)
+|    |         |         |    \--- com.fasterxml.jackson:jackson-bom:2.14.1 (*)
+|    |         |         +--- org.apache.commons:commons-compress:1.21
+|    |         |         \--- org.slf4j:slf4j-api:1.7.36
+|    |         \--- project :libs:crypto:crypto-utils (*)
+|    +--- project :libs:configuration:configuration-validation
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- project :libs:configuration:configuration-core (*)
+|    |    +--- project :libs:utilities
+|    |    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- net.corda:corda-application -> 5.0.0.739-alpha-1680161628789
+|    |    |    |    +--- javax.persistence:javax.persistence-api:2.2
+|    |    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |    +--- net.corda:corda-base:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |    +--- net.corda:corda-crypto:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |    +--- net.corda:corda-membership:5.0.0.739-alpha-1680161628789
+|    |    |    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |    |    \--- net.corda:corda-base:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |    \--- net.corda:corda-serialization:5.0.0.739-alpha-1680161628789
+|    |    |    |         +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |         \--- net.corda:corda-base:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- net.corda:corda-serialization -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    |    +--- org.slf4j:slf4j-api -> 1.7.36
+|    |    |    \--- project :libs:configuration:configuration-core (*)
+|    |    +--- com.fasterxml.jackson.core:jackson-databind:2.14.1 (*)
+|    |    +--- com.typesafe:config:1.4.2
+|    |    \--- com.networknt:json-schema-validator:1.0.66
+|    |         +--- com.fasterxml.jackson.core:jackson-databind:2.12.1 -> 2.14.1 (*)
+|    |         +--- org.slf4j:slf4j-api:1.7.30 -> 1.7.36
+|    |         \--- org.apache.commons:commons-lang3:3.7 -> 3.12.0
+|    +--- project :libs:messaging:message-bus
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- com.typesafe:config:1.4.2
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    \--- project :libs:configuration:configuration-core (*)
+|    +--- project :libs:lifecycle:lifecycle
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    \--- org.slf4j:slf4j-api -> 1.7.36
+|    +--- project :libs:lifecycle:registry
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.slf4j:slf4j-api -> 1.7.36
+|    |    \--- project :libs:lifecycle:lifecycle (*)
+|    +--- project :libs:metrics
+|    |    +--- io.micrometer:micrometer-core:0.1.0-SNAPSHOT
+|    |    |    +--- io.micrometer:micrometer-commons:0.1.0-SNAPSHOT
+|    |    |    +--- io.micrometer:micrometer-observation:0.1.0-SNAPSHOT
+|    |    |    |    \--- io.micrometer:micrometer-commons:0.1.0-SNAPSHOT
+|    |    |    +--- org.hdrhistogram:HdrHistogram:2.1.12
+|    |    |    \--- org.latencyutils:LatencyUtils:2.0.3
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    \--- org.slf4j:slf4j-api -> 1.7.36
+|    +--- project :libs:utilities (*)
+|    +--- project :libs:platform-info
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    \--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    +--- project :osgi-framework-api
+|    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    +--- com.typesafe:config:1.4.2
+|    +--- info.picocli:picocli:4.7.0
+|    +--- io.javalin:javalin-osgi:4.6.7
+|    |    +--- io.javalin:javalin:4.6.7
+|    |    |    +--- org.slf4j:slf4j-api:1.7.36
+|    |    |    +--- org.eclipse.jetty:jetty-server:9.4.48.v20220622
+|    |    |    |    +--- javax.servlet:javax.servlet-api:3.1.0
+|    |    |    |    +--- org.eclipse.jetty:jetty-http:9.4.48.v20220622
+|    |    |    |    |    +--- org.eclipse.jetty:jetty-util:9.4.48.v20220622
+|    |    |    |    |    \--- org.eclipse.jetty:jetty-io:9.4.48.v20220622
+|    |    |    |    |         \--- org.eclipse.jetty:jetty-util:9.4.48.v20220622
+|    |    |    |    \--- org.eclipse.jetty:jetty-io:9.4.48.v20220622 (*)
+|    |    |    +--- org.eclipse.jetty:jetty-webapp:9.4.48.v20220622
+|    |    |    |    +--- org.eclipse.jetty:jetty-xml:9.4.48.v20220622
+|    |    |    |    |    \--- org.eclipse.jetty:jetty-util:9.4.48.v20220622
+|    |    |    |    \--- org.eclipse.jetty:jetty-servlet:9.4.48.v20220622
+|    |    |    |         +--- org.eclipse.jetty:jetty-security:9.4.48.v20220622
+|    |    |    |         |    \--- org.eclipse.jetty:jetty-server:9.4.48.v20220622 (*)
+|    |    |    |         \--- org.eclipse.jetty:jetty-util-ajax:9.4.48.v20220622
+|    |    |    |              \--- org.eclipse.jetty:jetty-util:9.4.48.v20220622
+|    |    |    +--- org.eclipse.jetty.websocket:websocket-server:9.4.48.v20220622
+|    |    |    |    +--- org.eclipse.jetty.websocket:websocket-common:9.4.48.v20220622
+|    |    |    |    |    +--- org.eclipse.jetty.websocket:websocket-api:9.4.48.v20220622
+|    |    |    |    |    +--- org.eclipse.jetty:jetty-util:9.4.48.v20220622
+|    |    |    |    |    \--- org.eclipse.jetty:jetty-io:9.4.48.v20220622 (*)
+|    |    |    |    +--- org.eclipse.jetty.websocket:websocket-client:9.4.48.v20220622
+|    |    |    |    |    +--- org.eclipse.jetty:jetty-client:9.4.48.v20220622
+|    |    |    |    |    |    +--- org.eclipse.jetty:jetty-http:9.4.48.v20220622 (*)
+|    |    |    |    |    |    \--- org.eclipse.jetty:jetty-io:9.4.48.v20220622 (*)
+|    |    |    |    |    +--- org.eclipse.jetty:jetty-util:9.4.48.v20220622
+|    |    |    |    |    +--- org.eclipse.jetty:jetty-io:9.4.48.v20220622 (*)
+|    |    |    |    |    \--- org.eclipse.jetty.websocket:websocket-common:9.4.48.v20220622 (*)
+|    |    |    |    +--- org.eclipse.jetty.websocket:websocket-servlet:9.4.48.v20220622
+|    |    |    |    |    +--- org.eclipse.jetty.websocket:websocket-api:9.4.48.v20220622
+|    |    |    |    |    \--- javax.servlet:javax.servlet-api:3.1.0
+|    |    |    |    +--- org.eclipse.jetty:jetty-servlet:9.4.48.v20220622 (*)
+|    |    |    |    \--- org.eclipse.jetty:jetty-http:9.4.48.v20220622 (*)
+|    |    |    \--- org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.5.32 -> org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    \--- org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.5.32 -> org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    +--- com.fasterxml.jackson.core:jackson-databind:2.14.1 (*)
+|    +--- io.micrometer:micrometer-core:0.1.0-SNAPSHOT (*)
+|    +--- io.micrometer:micrometer-registry-prometheus:0.1.0-SNAPSHOT
+|    |    +--- io.micrometer:micrometer-core:0.1.0-SNAPSHOT (*)
+|    |    \--- io.prometheus:simpleclient_common:0.16.0
+|    |         \--- io.prometheus:simpleclient:0.16.0
+|    |              +--- io.prometheus:simpleclient_tracer_otel:0.16.0
+|    |              |    \--- io.prometheus:simpleclient_tracer_common:0.16.0
+|    |              \--- io.prometheus:simpleclient_tracer_otel_agent:0.16.0
+|    |                   \--- io.prometheus:simpleclient_tracer_common:0.16.0
+|    +--- project :libs:lifecycle:lifecycle-impl
+|    |    +--- project :libs:lifecycle:lifecycle (*)
+|    |    +--- project :libs:lifecycle:registry (*)
+|    |    +--- project :libs:utilities (*)
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- com.google.guava:guava:30.1.1-jre
+|    |    |    +--- com.google.guava:failureaccess:1.0.1
+|    |    |    +--- com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava
+|    |    |    +--- com.google.code.findbugs:jsr305:3.0.2
+|    |    |    +--- org.checkerframework:checker-qual:3.8.0 -> 3.27.0
+|    |    |    +--- com.google.errorprone:error_prone_annotations:2.5.1 -> 2.16
+|    |    |    \--- com.google.j2objc:j2objc-annotations:1.3
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    \--- org.slf4j:slf4j-api -> 1.7.36
+|    \--- org.apache.commons:commons-lang3:3.12.0
++--- project :libs:configuration:configuration-core (*)
++--- project :libs:configuration:configuration-validation (*)
++--- project :libs:platform-info (*)
++--- project :processors:gateway-processor
+|    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    +--- project :components:configuration:configuration-read-service
+|    |    +--- project :components:reconciliation:reconciliation
+|    |    |    +--- project :libs:lifecycle:lifecycle (*)
+|    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    \--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- project :libs:configuration:configuration-core (*)
+|    |    +--- project :libs:lifecycle:lifecycle (*)
+|    |    +--- com.typesafe:config:1.4.2
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    \--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    +--- project :components:crypto:crypto-client
+|    |    +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- project :libs:crypto:cipher-suite (*)
+|    |    +--- project :libs:lifecycle:lifecycle (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    \--- project :libs:crypto:crypto-core (*)
+|    +--- project :components:gateway
+|    |    +--- project :libs:messaging:messaging
+|    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    |    +--- com.typesafe:config:1.4.2
+|    |    |    +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- project :libs:chunking:chunking-core
+|    |    |    |    +--- net.corda:corda-crypto -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |    +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    |    |    +--- org.slf4j:slf4j-api -> 1.7.36
+|    |    |    |    +--- project :libs:configuration:configuration-core (*)
+|    |    |    |    \--- project :libs:crypto:crypto-core (*)
+|    |    |    +--- project :libs:lifecycle:lifecycle (*)
+|    |    |    +--- project :libs:messaging:message-bus (*)
+|    |    |    \--- project :libs:configuration:configuration-core (*)
+|    |    +--- project :libs:lifecycle:lifecycle (*)
+|    |    +--- project :components:configuration:configuration-read-service (*)
+|    |    +--- project :components:domino-logic
+|    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- project :libs:lifecycle:lifecycle (*)
+|    |    |    +--- project :libs:configuration:configuration-core (*)
+|    |    |    +--- project :components:configuration:configuration-read-service (*)
+|    |    |    +--- project :libs:messaging:messaging (*)
+|    |    |    +--- project :libs:utilities (*)
+|    |    |    \--- com.typesafe:config:1.4.2
+|    |    +--- project :libs:crypto:delegated-signing
+|    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    \--- net.corda:corda-crypto -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-topic-schema -> 5.0.0.739-alpha-1680161628789
+|    |    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    |    \--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-crypto -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- project :libs:cache:cache-caffeine
+|    |    |    +--- com.github.ben-manes.caffeine:caffeine:3.1.2
+|    |    |    |    +--- org.jetbrains.kotlin:kotlin-bom:1.7.21
+|    |    |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:1.7.21 -> org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10 (c)
+|    |    |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.7.21 -> org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10 (c)
+|    |    |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.7.21 -> org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10 (c)
+|    |    |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib-common:1.7.21 -> org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10 (c)
+|    |    |    |    |    +--- org.jetbrains.kotlin:kotlin-reflect:1.7.21 -> org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10 (c)
+|    |    |    |    |    \--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.7.21 -> 1.8.10 (c)
+|    |    |    |    +--- org.junit:junit-bom:5.9.1
+|    |    |    |    |    +--- org.junit.jupiter:junit-jupiter-api:5.9.1 (c)
+|    |    |    |    |    +--- org.junit.jupiter:junit-jupiter-engine:5.9.1 (c)
+|    |    |    |    |    +--- org.junit.jupiter:junit-jupiter-params:5.9.1 (c)
+|    |    |    |    |    +--- org.junit.platform:junit-platform-commons:1.9.1 (c)
+|    |    |    |    |    \--- org.junit.platform:junit-platform-engine:1.9.1 (c)
+|    |    |    |    +--- org.ow2.asm:asm-bom:9.4
+|    |    |    |    +--- org.checkerframework:checker-qual:3.27.0
+|    |    |    |    +--- com.google.errorprone:error_prone_annotations:2.16
+|    |    |    |    \--- com.fasterxml.jackson:jackson-bom:2.14.1 (c)
+|    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- project :libs:metrics (*)
+|    |    |    +--- project :libs:utilities (*)
+|    |    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    |    \--- org.slf4j:slf4j-api -> 1.7.36
+|    |    +--- project :components:crypto:crypto-client (*)
+|    |    +--- project :libs:crypto:crypto-core (*)
+|    |    +--- project :libs:crypto:crypto-utils (*)
+|    |    +--- project :libs:utilities (*)
+|    |    +--- com.typesafe:config:1.4.2
+|    |    +--- io.netty:netty-codec-http:4.1.86.Final
+|    |    |    +--- io.netty:netty-common:4.1.86.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.86.Final
+|    |    |    |    \--- io.netty:netty-common:4.1.86.Final
+|    |    |    +--- io.netty:netty-transport:4.1.86.Final
+|    |    |    |    +--- io.netty:netty-common:4.1.86.Final
+|    |    |    |    +--- io.netty:netty-buffer:4.1.86.Final (*)
+|    |    |    |    \--- io.netty:netty-resolver:4.1.86.Final
+|    |    |    |         \--- io.netty:netty-common:4.1.86.Final
+|    |    |    +--- io.netty:netty-codec:4.1.86.Final
+|    |    |    |    +--- io.netty:netty-common:4.1.86.Final
+|    |    |    |    +--- io.netty:netty-buffer:4.1.86.Final (*)
+|    |    |    |    \--- io.netty:netty-transport:4.1.86.Final (*)
+|    |    |    \--- io.netty:netty-handler:4.1.86.Final
+|    |    |         +--- io.netty:netty-common:4.1.86.Final
+|    |    |         +--- io.netty:netty-resolver:4.1.86.Final (*)
+|    |    |         +--- io.netty:netty-buffer:4.1.86.Final (*)
+|    |    |         +--- io.netty:netty-transport:4.1.86.Final (*)
+|    |    |         +--- io.netty:netty-transport-native-unix-common:4.1.86.Final
+|    |    |         |    +--- io.netty:netty-common:4.1.86.Final
+|    |    |         |    +--- io.netty:netty-buffer:4.1.86.Final (*)
+|    |    |         |    \--- io.netty:netty-transport:4.1.86.Final (*)
+|    |    |         \--- io.netty:netty-codec:4.1.86.Final (*)
+|    |    +--- commons-validator:commons-validator:1.7
+|    |    |    +--- commons-beanutils:commons-beanutils:1.9.4
+|    |    |    |    +--- commons-logging:commons-logging:1.2
+|    |    |    |    \--- commons-collections:commons-collections:3.2.2
+|    |    |    +--- commons-digester:commons-digester:2.1
+|    |    |    +--- commons-logging:commons-logging:1.2
+|    |    |    \--- commons-collections:commons-collections:3.2.2
+|    |    +--- com.github.ben-manes.caffeine:caffeine:3.1.2 (*)
+|    |    \--- project :libs:schema-registry:schema-registry
+|    |         +--- org.apache.avro:avro:1.11.1 (*)
+|    |         +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |         +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |         \--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    +--- project :libs:configuration:configuration-core (*)
+|    +--- project :libs:configuration:configuration-merger
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- project :libs:configuration:configuration-core (*)
+|    |    +--- project :libs:messaging:message-bus (*)
+|    |    +--- com.typesafe:config:1.4.2
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    \--- org.slf4j:slf4j-api -> 1.7.36
+|    +--- project :libs:lifecycle:lifecycle (*)
+|    +--- project :libs:messaging:messaging (*)
+|    +--- project :libs:schema-registry:schema-registry (*)
+|    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    +--- project :components:configuration:configuration-read-service-impl
+|    |    +--- project :components:configuration:configuration-read-service (*)
+|    |    +--- project :libs:lifecycle:lifecycle (*)
+|    |    +--- project :libs:configuration:configuration-core (*)
+|    |    +--- project :libs:configuration:configuration-merger (*)
+|    |    +--- project :libs:messaging:messaging (*)
+|    |    +--- project :libs:utilities (*)
+|    |    +--- project :libs:schema-registry:schema-registry (*)
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-topic-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- com.typesafe:config:1.4.2
+|    |    \--- org.slf4j:slf4j-api:1.7.36
+|    +--- project :libs:lifecycle:lifecycle-impl (*)
+|    +--- project :libs:messaging:messaging-impl
+|    |    +--- project :libs:chunking:chunking-core (*)
+|    |    +--- project :libs:crypto:cipher-suite (*)
+|    |    +--- project :libs:crypto:crypto-core (*)
+|    |    +--- project :libs:lifecycle:lifecycle (*)
+|    |    +--- project :libs:messaging:messaging (*)
+|    |    +--- project :libs:messaging:message-bus (*)
+|    |    +--- project :libs:metrics (*)
+|    |    +--- project :libs:schema-registry:schema-registry (*)
+|    |    +--- project :libs:configuration:configuration-core (*)
+|    |    +--- project :libs:utilities (*)
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-topic-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    \--- com.typesafe:config:1.4.2
+|    +--- project :libs:crypto:crypto-impl
+|    |    +--- project :libs:crypto:crypto-core (*)
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- project :libs:configuration:configuration-core (*)
+|    |    +--- project :libs:utilities (*)
+|    |    +--- project :libs:layered-property-map
+|    |    |    +--- org.osgi:org.osgi.service.component:1.5.0
+|    |    |    |    +--- org.osgi:osgi.annotation:8.0.1 -> 8.1.0
+|    |    |    |    +--- org.osgi:org.osgi.namespace.extender:1.0.1
+|    |    |    |    +--- org.osgi:org.osgi.util.function:1.0.0 -> 1.2.0
+|    |    |    |    |    \--- org.osgi:osgi.annotation:8.0.1 -> 8.1.0
+|    |    |    |    \--- org.osgi:org.osgi.util.promise:1.0.0 -> 1.3.0
+|    |    |    |         +--- org.osgi:osgi.annotation:8.1.0
+|    |    |    |         \--- org.osgi:org.osgi.util.function:1.1.0 -> 1.2.0 (*)
+|    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    |    +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- net.corda:corda-serialization -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    \--- project :libs:crypto:cipher-suite (*)
+|    |    +--- net.corda:corda-application -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-serialization -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    \--- org.apache.commons:commons-lang3:3.12.0
+|    \--- project :libs:schema-registry:schema-registry-impl
+|         +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|         +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|         +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|         +--- org.apache.avro:avro:1.11.1 (*)
+|         +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|         +--- project :libs:schema-registry:schema-registry (*)
+|         \--- project :libs:utilities (*)
++--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
++--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
++--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
++--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
++--- info.picocli:picocli:4.7.0
++--- project :components:crypto:crypto-client-impl
+|    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    +--- net.corda:corda-topic-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    +--- project :components:configuration:configuration-read-service (*)
+|    +--- project :components:crypto:crypto-client (*)
+|    +--- project :components:crypto:crypto-component-core-impl
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-crypto -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- project :components:configuration:configuration-read-service (*)
+|    |    +--- project :libs:configuration:configuration-core (*)
+|    |    +--- project :libs:crypto:crypto-core (*)
+|    |    +--- project :libs:lifecycle:lifecycle (*)
+|    |    +--- project :libs:messaging:messaging (*)
+|    |    \--- project :libs:utilities (*)
+|    +--- project :libs:configuration:configuration-core (*)
+|    +--- project :libs:crypto:cipher-suite-impl
+|    |    +--- net.corda:corda-serialization -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- project :libs:crypto:cipher-suite (*)
+|    |    +--- project :libs:crypto:crypto-core (*)
+|    |    +--- project :libs:crypto:crypto-impl (*)
+|    |    +--- project :libs:sandbox-types
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-application -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    \--- project :libs:utilities (*)
+|    +--- project :libs:crypto:crypto-core (*)
+|    +--- project :libs:messaging:messaging (*)
+|    \--- project :libs:utilities (*)
++--- project :libs:schema-registry:schema-registry-impl (*)
++--- project :libs:messaging:kafka-message-bus-impl
+|    +--- project :libs:messaging:messaging (*)
+|    +--- project :libs:messaging:message-bus (*)
+|    +--- project :libs:schema-registry:schema-registry (*)
+|    +--- project :libs:configuration:configuration-core (*)
+|    +--- project :libs:configuration:configuration-merger (*)
+|    +--- project :libs:utilities (*)
+|    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    +--- org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:3.3.1_1
+|    |    +--- com.github.luben:zstd-jni:1.5.2-1
+|    |    +--- org.lz4:lz4-java:1.8.0
+|    |    +--- org.xerial.snappy:snappy-java:1.1.8.4
+|    |    \--- org.slf4j:slf4j-api:1.7.36
+|    \--- com.typesafe:config:1.4.2
++--- org.apache.felix:org.apache.felix.scr:2.2.6
+|    \--- org.codehaus.mojo:animal-sniffer-annotations:1.9
++--- org.osgi:org.osgi.service.component:1.5.0 (*)
++--- org.osgi:org.osgi.util.function:1.2.0 (*)
++--- org.osgi:org.osgi.util.promise:1.3.0 (*)
++--- com.typesafe:config:1.4.2
++--- org.assertj:assertj-core:3.24.1
+|    \--- net.bytebuddy:byte-buddy:1.12.21
++--- org.junit.jupiter:junit-jupiter-api:5.9.1
+|    +--- org.junit:junit-bom:5.9.1 (*)
+|    +--- org.opentest4j:opentest4j:1.2.0
+|    \--- org.junit.platform:junit-platform-commons:1.9.1
+|         \--- org.junit:junit-bom:5.9.1 (*)
++--- org.junit.jupiter:junit-jupiter-params:5.9.1
+|    +--- org.junit:junit-bom:5.9.1 (*)
+|    \--- org.junit.jupiter:junit-jupiter-api:5.9.1 (*)
+\--- org.junit.jupiter:junit-jupiter-engine:5.9.1
+     +--- org.junit:junit-bom:5.9.1 (*)
+     +--- org.junit.platform:junit-platform-engine:1.9.1
+     |    +--- org.junit:junit-bom:5.9.1 (*)
+     |    +--- org.opentest4j:opentest4j:1.2.0
+     |    \--- org.junit.platform:junit-platform-commons:1.9.1 (*)
+     \--- org.junit.jupiter:junit-jupiter-api:5.9.1 (*)
+
+integrationTestRuntimeOnly - Runtime only dependencies for compilation 'integrationTest' (target  (jvm)). (n)
++--- unspecified (n)
++--- unspecified (n)
+\--- org.junit.jupiter:junit-jupiter-engine:5.9.1 (n)
+
+integrationTestRuntimeOnlyDependenciesMetadata
++--- org.junit.jupiter:junit-jupiter-engine:5.9.1
+|    +--- org.junit:junit-bom:5.9.1
+|    |    +--- org.junit.jupiter:junit-jupiter-api:5.9.1 (c)
+|    |    +--- org.junit.jupiter:junit-jupiter-engine:5.9.1 (c)
+|    |    +--- org.junit.platform:junit-platform-engine:1.9.1 (c)
+|    |    \--- org.junit.platform:junit-platform-commons:1.9.1 (c)
+|    +--- org.junit.platform:junit-platform-engine:1.9.1
+|    |    +--- org.junit:junit-bom:5.9.1 (*)
+|    |    +--- org.opentest4j:opentest4j:1.2.0
+|    |    +--- org.junit.platform:junit-platform-commons:1.9.1
+|    |    |    +--- org.junit:junit-bom:5.9.1 (*)
+|    |    |    \--- org.apiguardian:apiguardian-api:1.1.2
+|    |    \--- org.apiguardian:apiguardian-api:1.1.2
+|    +--- org.junit.jupiter:junit-jupiter-api:5.9.1
+|    |    +--- org.junit:junit-bom:5.9.1 (*)
+|    |    +--- org.opentest4j:opentest4j:1.2.0
+|    |    +--- org.junit.platform:junit-platform-commons:1.9.1 (*)
+|    |    \--- org.apiguardian:apiguardian-api:1.1.2
+|    \--- org.apiguardian:apiguardian-api:1.1.2
++--- project :components:crypto:crypto-client-impl
++--- project :libs:schema-registry:schema-registry-impl
++--- project :libs:messaging:kafka-message-bus-impl
++--- org.apache.felix:org.apache.felix.scr:2.2.6
+|    \--- org.codehaus.mojo:animal-sniffer-annotations:1.9
++--- org.osgi:org.osgi.service.component:1.5.0
+|    +--- org.osgi:osgi.annotation:8.0.1 -> 8.1.0
+|    +--- org.osgi:org.osgi.namespace.extender:1.0.1
+|    +--- org.osgi:org.osgi.util.function:1.0.0 -> 1.2.0
+|    |    \--- org.osgi:osgi.annotation:8.0.1 -> 8.1.0
+|    \--- org.osgi:org.osgi.util.promise:1.0.0 -> 1.3.0
+|         +--- org.osgi:osgi.annotation:8.1.0
+|         \--- org.osgi:org.osgi.util.function:1.1.0 -> 1.2.0 (*)
++--- org.osgi:org.osgi.util.function:1.2.0 (*)
++--- org.osgi:org.osgi.util.promise:1.3.0 (*)
+\--- com.typesafe:config:1.4.2
+
+intransitiveDependenciesMetadata
+No dependencies
+
+jacocoAgent - The Jacoco agent to use to get coverage data.
+\--- org.jacoco:org.jacoco.agent:0.8.8
+
+jacocoAnt - The Jacoco ant tasks to use to get execute Gradle tasks.
+\--- org.jacoco:org.jacoco.ant:0.8.8
+     +--- org.jacoco:org.jacoco.core:0.8.8
+     |    +--- org.ow2.asm:asm:9.2
+     |    +--- org.ow2.asm:asm-commons:9.2
+     |    |    +--- org.ow2.asm:asm:9.2
+     |    |    +--- org.ow2.asm:asm-tree:9.2
+     |    |    |    \--- org.ow2.asm:asm:9.2
+     |    |    \--- org.ow2.asm:asm-analysis:9.2
+     |    |         \--- org.ow2.asm:asm-tree:9.2 (*)
+     |    \--- org.ow2.asm:asm-tree:9.2 (*)
+     +--- org.jacoco:org.jacoco.report:0.8.8
+     |    \--- org.jacoco:org.jacoco.core:0.8.8 (*)
+     \--- org.jacoco:org.jacoco.agent:0.8.8
+
+kotlinCompilerClasspath
+\--- org.jetbrains.kotlin:kotlin-compiler-embeddable:1.8.10
+     +--- org.jetbrains.kotlin:kotlin-stdlib:1.8.10
+     |    +--- org.jetbrains.kotlin:kotlin-stdlib-common:1.8.10
+     |    \--- org.jetbrains:annotations:13.0
+     +--- org.jetbrains.kotlin:kotlin-script-runtime:1.8.10
+     +--- org.jetbrains.kotlin:kotlin-reflect:1.6.10
+     +--- org.jetbrains.kotlin:kotlin-daemon-embeddable:1.8.10
+     +--- org.jetbrains.intellij.deps:trove4j:1.0.20200330
+     \--- net.java.dev.jna:jna:5.6.0
+
+kotlinCompilerPluginClasspath
+No dependencies
+
+kotlinCompilerPluginClasspathIntegrationTest - Kotlin compiler plugins for compilation 'integrationTest' (target  (jvm))
++--- org.jetbrains.kotlin:kotlin-scripting-compiler-embeddable:1.8.10
+|    +--- org.jetbrains.kotlin:kotlin-scripting-compiler-impl-embeddable:1.8.10
+|    |    +--- org.jetbrains.kotlin:kotlin-scripting-common:1.8.10
+|    |    |    \--- org.jetbrains.kotlin:kotlin-stdlib:1.8.10
+|    |    |         +--- org.jetbrains.kotlin:kotlin-stdlib-common:1.8.10
+|    |    |         \--- org.jetbrains:annotations:13.0
+|    |    +--- org.jetbrains.kotlin:kotlin-scripting-jvm:1.8.10
+|    |    |    +--- org.jetbrains.kotlin:kotlin-script-runtime:1.8.10
+|    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:1.8.10 (*)
+|    |    |    \--- org.jetbrains.kotlin:kotlin-scripting-common:1.8.10 (*)
+|    |    \--- org.jetbrains.kotlin:kotlin-stdlib:1.8.10 (*)
+|    \--- org.jetbrains.kotlin:kotlin-stdlib:1.8.10 (*)
++--- org.jetbrains.kotlin:kotlin-allopen:1.8.10
+|    +--- org.jetbrains.kotlin:kotlin-gradle-plugin-api:1.8.10
+|    |    +--- org.jetbrains.kotlin:kotlin-native-utils:1.8.10
+|    |    |    \--- org.jetbrains.kotlin:kotlin-util-io:1.8.10
+|    |    +--- org.jetbrains.kotlin:kotlin-project-model:1.8.10
+|    |    |    \--- org.jetbrains.kotlin:kotlin-tooling-core:1.8.10
+|    |    \--- org.jetbrains.kotlin:kotlin-tooling-core:1.8.10
+|    \--- org.jetbrains.kotlin:kotlin-gradle-plugin-model:1.8.10
+|         \--- org.jetbrains.kotlin:kotlin-gradle-plugin-api:1.8.10 (*)
+\--- org.jetbrains.kotlin:kotlin-noarg:1.8.10
+     +--- org.jetbrains.kotlin:kotlin-gradle-plugin-api:1.8.10 (*)
+     \--- org.jetbrains.kotlin:kotlin-gradle-plugin-model:1.8.10 (*)
+
+kotlinCompilerPluginClasspathMain - Kotlin compiler plugins for compilation 'main' (target  (jvm))
++--- org.jetbrains.kotlin:kotlin-scripting-compiler-embeddable:1.8.10
+|    +--- org.jetbrains.kotlin:kotlin-scripting-compiler-impl-embeddable:1.8.10
+|    |    +--- org.jetbrains.kotlin:kotlin-scripting-common:1.8.10
+|    |    |    \--- org.jetbrains.kotlin:kotlin-stdlib:1.8.10
+|    |    |         +--- org.jetbrains.kotlin:kotlin-stdlib-common:1.8.10
+|    |    |         \--- org.jetbrains:annotations:13.0
+|    |    +--- org.jetbrains.kotlin:kotlin-scripting-jvm:1.8.10
+|    |    |    +--- org.jetbrains.kotlin:kotlin-script-runtime:1.8.10
+|    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:1.8.10 (*)
+|    |    |    \--- org.jetbrains.kotlin:kotlin-scripting-common:1.8.10 (*)
+|    |    \--- org.jetbrains.kotlin:kotlin-stdlib:1.8.10 (*)
+|    \--- org.jetbrains.kotlin:kotlin-stdlib:1.8.10 (*)
++--- org.jetbrains.kotlin:kotlin-allopen:1.8.10
+|    +--- org.jetbrains.kotlin:kotlin-gradle-plugin-api:1.8.10
+|    |    +--- org.jetbrains.kotlin:kotlin-native-utils:1.8.10
+|    |    |    \--- org.jetbrains.kotlin:kotlin-util-io:1.8.10
+|    |    +--- org.jetbrains.kotlin:kotlin-project-model:1.8.10
+|    |    |    \--- org.jetbrains.kotlin:kotlin-tooling-core:1.8.10
+|    |    \--- org.jetbrains.kotlin:kotlin-tooling-core:1.8.10
+|    \--- org.jetbrains.kotlin:kotlin-gradle-plugin-model:1.8.10
+|         \--- org.jetbrains.kotlin:kotlin-gradle-plugin-api:1.8.10 (*)
+\--- org.jetbrains.kotlin:kotlin-noarg:1.8.10
+     +--- org.jetbrains.kotlin:kotlin-gradle-plugin-api:1.8.10 (*)
+     \--- org.jetbrains.kotlin:kotlin-gradle-plugin-model:1.8.10 (*)
+
+kotlinCompilerPluginClasspathTest - Kotlin compiler plugins for compilation 'test' (target  (jvm))
++--- org.jetbrains.kotlin:kotlin-scripting-compiler-embeddable:1.8.10
+|    +--- org.jetbrains.kotlin:kotlin-scripting-compiler-impl-embeddable:1.8.10
+|    |    +--- org.jetbrains.kotlin:kotlin-scripting-common:1.8.10
+|    |    |    \--- org.jetbrains.kotlin:kotlin-stdlib:1.8.10
+|    |    |         +--- org.jetbrains.kotlin:kotlin-stdlib-common:1.8.10
+|    |    |         \--- org.jetbrains:annotations:13.0
+|    |    +--- org.jetbrains.kotlin:kotlin-scripting-jvm:1.8.10
+|    |    |    +--- org.jetbrains.kotlin:kotlin-script-runtime:1.8.10
+|    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:1.8.10 (*)
+|    |    |    \--- org.jetbrains.kotlin:kotlin-scripting-common:1.8.10 (*)
+|    |    \--- org.jetbrains.kotlin:kotlin-stdlib:1.8.10 (*)
+|    \--- org.jetbrains.kotlin:kotlin-stdlib:1.8.10 (*)
++--- org.jetbrains.kotlin:kotlin-allopen:1.8.10
+|    +--- org.jetbrains.kotlin:kotlin-gradle-plugin-api:1.8.10
+|    |    +--- org.jetbrains.kotlin:kotlin-native-utils:1.8.10
+|    |    |    \--- org.jetbrains.kotlin:kotlin-util-io:1.8.10
+|    |    +--- org.jetbrains.kotlin:kotlin-project-model:1.8.10
+|    |    |    \--- org.jetbrains.kotlin:kotlin-tooling-core:1.8.10
+|    |    \--- org.jetbrains.kotlin:kotlin-tooling-core:1.8.10
+|    \--- org.jetbrains.kotlin:kotlin-gradle-plugin-model:1.8.10
+|         \--- org.jetbrains.kotlin:kotlin-gradle-plugin-api:1.8.10 (*)
+\--- org.jetbrains.kotlin:kotlin-noarg:1.8.10
+     +--- org.jetbrains.kotlin:kotlin-gradle-plugin-api:1.8.10 (*)
+     \--- org.jetbrains.kotlin:kotlin-gradle-plugin-model:1.8.10 (*)
+
+kotlinKlibCommonizerClasspath
+\--- org.jetbrains.kotlin:kotlin-klib-commonizer-embeddable:1.8.10
+     +--- org.jetbrains.kotlin:kotlin-stdlib:1.8.10
+     |    +--- org.jetbrains.kotlin:kotlin-stdlib-common:1.8.10
+     |    \--- org.jetbrains:annotations:13.0
+     \--- org.jetbrains.kotlin:kotlin-compiler-embeddable:1.8.10
+          +--- org.jetbrains.kotlin:kotlin-stdlib:1.8.10 (*)
+          +--- org.jetbrains.kotlin:kotlin-script-runtime:1.8.10
+          +--- org.jetbrains.kotlin:kotlin-reflect:1.6.10
+          +--- org.jetbrains.kotlin:kotlin-daemon-embeddable:1.8.10
+          +--- org.jetbrains.intellij.deps:trove4j:1.0.20200330
+          \--- net.java.dev.jna:jna:5.6.0
+
+kotlinNativeCompilerPluginClasspath
+No dependencies
+
+kotlinScriptDef - Script filename extensions discovery classpath configuration
+No dependencies
+
+kotlinScriptDefExtensions
+No dependencies
+
+mainSourceElements - List of source directories contained in the Main SourceSet. (n)
+No dependencies
+
+profilerAgent
+No dependencies
+
+runtimeClasspath - Runtime classpath of compilation 'main' (target  (jvm)).
++--- project :applications:workers:worker-common
+|    +--- project :libs:application:addon
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- org.slf4j:slf4j-api -> 1.7.36
+|    |    \--- net.corda:corda-api:5.0.0.739-alpha-1680161628789
+|    |         +--- net.corda:corda-base:5.0.0.739-alpha-1680161628789 (c)
+|    |         +--- net.corda:corda-config-schema:5.0.0.739-alpha-1680161628789 (c)
+|    |         +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10 (c)
+|    |         +--- net.corda:corda-topic-schema:5.0.0.739-alpha-1680161628789 (c)
+|    |         +--- net.corda:corda-avro-schema:5.0.0.739-alpha-1680161628789 (c)
+|    |         +--- org.osgi:osgi.annotation:8.0.0 -> 8.1.0 (c)
+|    |         +--- org.slf4j:slf4j-api:1.7.36 (c)
+|    |         +--- net.corda:corda-application:5.0.0.739-alpha-1680161628789 (c)
+|    |         +--- net.corda:corda-serialization:5.0.0.739-alpha-1680161628789 (c)
+|    |         +--- net.corda:corda-crypto:5.0.0.739-alpha-1680161628789 (c)
+|    |         +--- net.corda:corda-crypto-extensions:5.0.0.739-alpha-1680161628789 (c)
+|    |         +--- javax.persistence:javax.persistence-api:2.2 (c)
+|    |         \--- net.corda:corda-membership:5.0.0.739-alpha-1680161628789 (c)
+|    +--- project :libs:application:banner
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    \--- org.slf4j:slf4j-api -> 1.7.36
+|    +--- project :libs:configuration:configuration-core
+|    |    +--- com.typesafe:config:1.4.2
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789
+|    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    \--- org.slf4j:slf4j-api:1.7.36
+|    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789
+|    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    \--- net.corda:corda-base:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    \--- project :libs:crypto:crypto-core
+|    |         +--- project :libs:crypto:cipher-suite
+|    |         |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |         |    +--- net.corda:corda-crypto -> 5.0.0.739-alpha-1680161628789
+|    |         |    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |         |    |    +--- org.slf4j:slf4j-api:1.7.36
+|    |         |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |         |    |    \--- net.corda:corda-base:5.0.0.739-alpha-1680161628789 (*)
+|    |         |    +--- net.corda:corda-crypto-extensions -> 5.0.0.739-alpha-1680161628789
+|    |         |    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |         |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |         |    |    \--- net.corda:corda-crypto:5.0.0.739-alpha-1680161628789 (*)
+|    |         |    +--- org.bouncycastle:bcprov-jdk18on:1.72
+|    |         |    +--- org.bouncycastle:bcpkix-jdk18on:1.72
+|    |         |    |    +--- org.bouncycastle:bcprov-jdk18on:1.72
+|    |         |    |    \--- org.bouncycastle:bcutil-jdk18on:1.72
+|    |         |    |         \--- org.bouncycastle:bcprov-jdk18on:1.72
+|    |         |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |         |    +--- org.slf4j:slf4j-api -> 1.7.36
+|    |         |    \--- project :libs:crypto:crypto-utils
+|    |         |         +--- org.slf4j:slf4j-api:1.7.36
+|    |         |         +--- org.bouncycastle:bcprov-jdk18on:1.72
+|    |         |         +--- org.bouncycastle:bcpkix-jdk18on:1.72 (*)
+|    |         |         +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |         |         +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |         |         \--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |         +--- net.corda:corda-crypto -> 5.0.0.739-alpha-1680161628789 (*)
+|    |         +--- net.corda:corda-crypto-extensions -> 5.0.0.739-alpha-1680161628789 (*)
+|    |         +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |         +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |         +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789
+|    |         |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |         |    +--- net.corda:corda-base:5.0.0.739-alpha-1680161628789 (*)
+|    |         |    \--- org.apache.avro:avro:1.11.1
+|    |         |         +--- com.fasterxml.jackson.core:jackson-core:2.12.7 -> 2.14.1
+|    |         |         |    \--- com.fasterxml.jackson:jackson-bom:2.14.1
+|    |         |         |         +--- com.fasterxml.jackson.core:jackson-annotations:2.14.1 (c)
+|    |         |         |         +--- com.fasterxml.jackson.core:jackson-core:2.14.1 (c)
+|    |         |         |         \--- com.fasterxml.jackson.core:jackson-databind:2.14.1 (c)
+|    |         |         +--- com.fasterxml.jackson.core:jackson-databind:2.12.7 -> 2.14.1
+|    |         |         |    +--- com.fasterxml.jackson.core:jackson-annotations:2.14.1
+|    |         |         |    |    \--- com.fasterxml.jackson:jackson-bom:2.14.1 (*)
+|    |         |         |    +--- com.fasterxml.jackson.core:jackson-core:2.14.1 (*)
+|    |         |         |    \--- com.fasterxml.jackson:jackson-bom:2.14.1 (*)
+|    |         |         +--- org.apache.commons:commons-compress:1.21
+|    |         |         \--- org.slf4j:slf4j-api:1.7.36
+|    |         \--- project :libs:crypto:crypto-utils (*)
+|    +--- project :libs:configuration:configuration-validation
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- project :libs:configuration:configuration-core (*)
+|    |    +--- project :libs:utilities
+|    |    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- net.corda:corda-application -> 5.0.0.739-alpha-1680161628789
+|    |    |    |    +--- javax.persistence:javax.persistence-api:2.2
+|    |    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |    +--- net.corda:corda-base:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |    +--- net.corda:corda-crypto:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |    +--- net.corda:corda-membership:5.0.0.739-alpha-1680161628789
+|    |    |    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |    |    \--- net.corda:corda-base:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |    \--- net.corda:corda-serialization:5.0.0.739-alpha-1680161628789
+|    |    |    |         +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |         \--- net.corda:corda-base:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- net.corda:corda-serialization -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    |    +--- org.slf4j:slf4j-api -> 1.7.36
+|    |    |    \--- project :libs:configuration:configuration-core (*)
+|    |    +--- com.fasterxml.jackson.core:jackson-databind:2.14.1 (*)
+|    |    +--- com.typesafe:config:1.4.2
+|    |    \--- com.networknt:json-schema-validator:1.0.66
+|    |         +--- com.fasterxml.jackson.core:jackson-databind:2.12.1 -> 2.14.1 (*)
+|    |         +--- org.slf4j:slf4j-api:1.7.30 -> 1.7.36
+|    |         \--- org.apache.commons:commons-lang3:3.7 -> 3.12.0
+|    +--- project :libs:messaging:message-bus
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- com.typesafe:config:1.4.2
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    \--- project :libs:configuration:configuration-core (*)
+|    +--- project :libs:lifecycle:lifecycle
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    \--- org.slf4j:slf4j-api -> 1.7.36
+|    +--- project :libs:lifecycle:registry
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.slf4j:slf4j-api -> 1.7.36
+|    |    \--- project :libs:lifecycle:lifecycle (*)
+|    +--- project :libs:metrics
+|    |    +--- io.micrometer:micrometer-core:0.1.0-SNAPSHOT
+|    |    |    +--- io.micrometer:micrometer-commons:0.1.0-SNAPSHOT
+|    |    |    +--- io.micrometer:micrometer-observation:0.1.0-SNAPSHOT
+|    |    |    |    \--- io.micrometer:micrometer-commons:0.1.0-SNAPSHOT
+|    |    |    +--- org.hdrhistogram:HdrHistogram:2.1.12
+|    |    |    \--- org.latencyutils:LatencyUtils:2.0.3
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    \--- org.slf4j:slf4j-api -> 1.7.36
+|    +--- project :libs:utilities (*)
+|    +--- project :libs:platform-info
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    \--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    +--- project :osgi-framework-api
+|    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    +--- com.typesafe:config:1.4.2
+|    +--- info.picocli:picocli:4.7.0
+|    +--- io.javalin:javalin-osgi:4.6.7
+|    |    +--- io.javalin:javalin:4.6.7
+|    |    |    +--- org.slf4j:slf4j-api:1.7.36
+|    |    |    +--- org.eclipse.jetty:jetty-server:9.4.48.v20220622
+|    |    |    |    +--- javax.servlet:javax.servlet-api:3.1.0
+|    |    |    |    +--- org.eclipse.jetty:jetty-http:9.4.48.v20220622
+|    |    |    |    |    +--- org.eclipse.jetty:jetty-util:9.4.48.v20220622
+|    |    |    |    |    \--- org.eclipse.jetty:jetty-io:9.4.48.v20220622
+|    |    |    |    |         \--- org.eclipse.jetty:jetty-util:9.4.48.v20220622
+|    |    |    |    \--- org.eclipse.jetty:jetty-io:9.4.48.v20220622 (*)
+|    |    |    +--- org.eclipse.jetty:jetty-webapp:9.4.48.v20220622
+|    |    |    |    +--- org.eclipse.jetty:jetty-xml:9.4.48.v20220622
+|    |    |    |    |    \--- org.eclipse.jetty:jetty-util:9.4.48.v20220622
+|    |    |    |    \--- org.eclipse.jetty:jetty-servlet:9.4.48.v20220622
+|    |    |    |         +--- org.eclipse.jetty:jetty-security:9.4.48.v20220622
+|    |    |    |         |    \--- org.eclipse.jetty:jetty-server:9.4.48.v20220622 (*)
+|    |    |    |         \--- org.eclipse.jetty:jetty-util-ajax:9.4.48.v20220622
+|    |    |    |              \--- org.eclipse.jetty:jetty-util:9.4.48.v20220622
+|    |    |    +--- org.eclipse.jetty.websocket:websocket-server:9.4.48.v20220622
+|    |    |    |    +--- org.eclipse.jetty.websocket:websocket-common:9.4.48.v20220622
+|    |    |    |    |    +--- org.eclipse.jetty.websocket:websocket-api:9.4.48.v20220622
+|    |    |    |    |    +--- org.eclipse.jetty:jetty-util:9.4.48.v20220622
+|    |    |    |    |    \--- org.eclipse.jetty:jetty-io:9.4.48.v20220622 (*)
+|    |    |    |    +--- org.eclipse.jetty.websocket:websocket-client:9.4.48.v20220622
+|    |    |    |    |    +--- org.eclipse.jetty:jetty-client:9.4.48.v20220622
+|    |    |    |    |    |    +--- org.eclipse.jetty:jetty-http:9.4.48.v20220622 (*)
+|    |    |    |    |    |    \--- org.eclipse.jetty:jetty-io:9.4.48.v20220622 (*)
+|    |    |    |    |    +--- org.eclipse.jetty:jetty-util:9.4.48.v20220622
+|    |    |    |    |    +--- org.eclipse.jetty:jetty-io:9.4.48.v20220622 (*)
+|    |    |    |    |    \--- org.eclipse.jetty.websocket:websocket-common:9.4.48.v20220622 (*)
+|    |    |    |    +--- org.eclipse.jetty.websocket:websocket-servlet:9.4.48.v20220622
+|    |    |    |    |    +--- org.eclipse.jetty.websocket:websocket-api:9.4.48.v20220622
+|    |    |    |    |    \--- javax.servlet:javax.servlet-api:3.1.0
+|    |    |    |    +--- org.eclipse.jetty:jetty-servlet:9.4.48.v20220622 (*)
+|    |    |    |    \--- org.eclipse.jetty:jetty-http:9.4.48.v20220622 (*)
+|    |    |    \--- org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.5.32 -> org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    \--- org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.5.32 -> org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    +--- com.fasterxml.jackson.core:jackson-databind:2.14.1 (*)
+|    +--- io.micrometer:micrometer-core:0.1.0-SNAPSHOT (*)
+|    +--- io.micrometer:micrometer-registry-prometheus:0.1.0-SNAPSHOT
+|    |    +--- io.micrometer:micrometer-core:0.1.0-SNAPSHOT (*)
+|    |    \--- io.prometheus:simpleclient_common:0.16.0
+|    |         \--- io.prometheus:simpleclient:0.16.0
+|    |              +--- io.prometheus:simpleclient_tracer_otel:0.16.0
+|    |              |    \--- io.prometheus:simpleclient_tracer_common:0.16.0
+|    |              \--- io.prometheus:simpleclient_tracer_otel_agent:0.16.0
+|    |                   \--- io.prometheus:simpleclient_tracer_common:0.16.0
+|    +--- project :libs:lifecycle:lifecycle-impl
+|    |    +--- project :libs:lifecycle:lifecycle (*)
+|    |    +--- project :libs:lifecycle:registry (*)
+|    |    +--- project :libs:utilities (*)
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- com.google.guava:guava:30.1.1-jre
+|    |    |    +--- com.google.guava:failureaccess:1.0.1
+|    |    |    +--- com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava
+|    |    |    +--- com.google.code.findbugs:jsr305:3.0.2
+|    |    |    +--- org.checkerframework:checker-qual:3.8.0 -> 3.27.0
+|    |    |    +--- com.google.errorprone:error_prone_annotations:2.5.1 -> 2.16
+|    |    |    \--- com.google.j2objc:j2objc-annotations:1.3
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    \--- org.slf4j:slf4j-api -> 1.7.36
+|    \--- org.apache.commons:commons-lang3:3.12.0
++--- project :libs:configuration:configuration-core (*)
++--- project :libs:configuration:configuration-validation (*)
++--- project :libs:platform-info (*)
++--- project :processors:gateway-processor
+|    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    +--- project :components:configuration:configuration-read-service
+|    |    +--- project :components:reconciliation:reconciliation
+|    |    |    +--- project :libs:lifecycle:lifecycle (*)
+|    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    \--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- project :libs:configuration:configuration-core (*)
+|    |    +--- project :libs:lifecycle:lifecycle (*)
+|    |    +--- com.typesafe:config:1.4.2
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    \--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    +--- project :components:crypto:crypto-client
+|    |    +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- project :libs:crypto:cipher-suite (*)
+|    |    +--- project :libs:lifecycle:lifecycle (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    \--- project :libs:crypto:crypto-core (*)
+|    +--- project :components:gateway
+|    |    +--- project :libs:messaging:messaging
+|    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    |    +--- com.typesafe:config:1.4.2
+|    |    |    +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- project :libs:chunking:chunking-core
+|    |    |    |    +--- net.corda:corda-crypto -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |    +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    |    |    +--- org.slf4j:slf4j-api -> 1.7.36
+|    |    |    |    +--- project :libs:configuration:configuration-core (*)
+|    |    |    |    \--- project :libs:crypto:crypto-core (*)
+|    |    |    +--- project :libs:lifecycle:lifecycle (*)
+|    |    |    +--- project :libs:messaging:message-bus (*)
+|    |    |    \--- project :libs:configuration:configuration-core (*)
+|    |    +--- project :libs:lifecycle:lifecycle (*)
+|    |    +--- project :components:configuration:configuration-read-service (*)
+|    |    +--- project :components:domino-logic
+|    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- project :libs:lifecycle:lifecycle (*)
+|    |    |    +--- project :libs:configuration:configuration-core (*)
+|    |    |    +--- project :components:configuration:configuration-read-service (*)
+|    |    |    +--- project :libs:messaging:messaging (*)
+|    |    |    +--- project :libs:utilities (*)
+|    |    |    \--- com.typesafe:config:1.4.2
+|    |    +--- project :libs:crypto:delegated-signing
+|    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    \--- net.corda:corda-crypto -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-topic-schema -> 5.0.0.739-alpha-1680161628789
+|    |    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    |    \--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-crypto -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- project :libs:cache:cache-caffeine
+|    |    |    +--- com.github.ben-manes.caffeine:caffeine:3.1.2
+|    |    |    |    +--- org.jetbrains.kotlin:kotlin-bom:1.7.21
+|    |    |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:1.7.21 -> org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10 (c)
+|    |    |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.7.21 -> org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10 (c)
+|    |    |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.7.21 -> org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10 (c)
+|    |    |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib-common:1.7.21 -> org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10 (c)
+|    |    |    |    |    +--- org.jetbrains.kotlin:kotlin-reflect:1.7.21 -> org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10 (c)
+|    |    |    |    |    \--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.7.21 -> 1.8.10 (c)
+|    |    |    |    +--- org.junit:junit-bom:5.9.1
+|    |    |    |    +--- org.ow2.asm:asm-bom:9.4
+|    |    |    |    +--- org.checkerframework:checker-qual:3.27.0
+|    |    |    |    +--- com.google.errorprone:error_prone_annotations:2.16
+|    |    |    |    \--- com.fasterxml.jackson:jackson-bom:2.14.1 (c)
+|    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- project :libs:metrics (*)
+|    |    |    +--- project :libs:utilities (*)
+|    |    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    |    \--- org.slf4j:slf4j-api -> 1.7.36
+|    |    +--- project :components:crypto:crypto-client (*)
+|    |    +--- project :libs:crypto:crypto-core (*)
+|    |    +--- project :libs:crypto:crypto-utils (*)
+|    |    +--- project :libs:utilities (*)
+|    |    +--- com.typesafe:config:1.4.2
+|    |    +--- io.netty:netty-codec-http:4.1.86.Final
+|    |    |    +--- io.netty:netty-common:4.1.86.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.86.Final
+|    |    |    |    \--- io.netty:netty-common:4.1.86.Final
+|    |    |    +--- io.netty:netty-transport:4.1.86.Final
+|    |    |    |    +--- io.netty:netty-common:4.1.86.Final
+|    |    |    |    +--- io.netty:netty-buffer:4.1.86.Final (*)
+|    |    |    |    \--- io.netty:netty-resolver:4.1.86.Final
+|    |    |    |         \--- io.netty:netty-common:4.1.86.Final
+|    |    |    +--- io.netty:netty-codec:4.1.86.Final
+|    |    |    |    +--- io.netty:netty-common:4.1.86.Final
+|    |    |    |    +--- io.netty:netty-buffer:4.1.86.Final (*)
+|    |    |    |    \--- io.netty:netty-transport:4.1.86.Final (*)
+|    |    |    \--- io.netty:netty-handler:4.1.86.Final
+|    |    |         +--- io.netty:netty-common:4.1.86.Final
+|    |    |         +--- io.netty:netty-resolver:4.1.86.Final (*)
+|    |    |         +--- io.netty:netty-buffer:4.1.86.Final (*)
+|    |    |         +--- io.netty:netty-transport:4.1.86.Final (*)
+|    |    |         +--- io.netty:netty-transport-native-unix-common:4.1.86.Final
+|    |    |         |    +--- io.netty:netty-common:4.1.86.Final
+|    |    |         |    +--- io.netty:netty-buffer:4.1.86.Final (*)
+|    |    |         |    \--- io.netty:netty-transport:4.1.86.Final (*)
+|    |    |         \--- io.netty:netty-codec:4.1.86.Final (*)
+|    |    +--- commons-validator:commons-validator:1.7
+|    |    |    +--- commons-beanutils:commons-beanutils:1.9.4
+|    |    |    |    +--- commons-logging:commons-logging:1.2
+|    |    |    |    \--- commons-collections:commons-collections:3.2.2
+|    |    |    +--- commons-digester:commons-digester:2.1
+|    |    |    +--- commons-logging:commons-logging:1.2
+|    |    |    \--- commons-collections:commons-collections:3.2.2
+|    |    +--- com.github.ben-manes.caffeine:caffeine:3.1.2 (*)
+|    |    \--- project :libs:schema-registry:schema-registry
+|    |         +--- org.apache.avro:avro:1.11.1 (*)
+|    |         +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |         +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |         \--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    +--- project :libs:configuration:configuration-core (*)
+|    +--- project :libs:configuration:configuration-merger
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- project :libs:configuration:configuration-core (*)
+|    |    +--- project :libs:messaging:message-bus (*)
+|    |    +--- com.typesafe:config:1.4.2
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    \--- org.slf4j:slf4j-api -> 1.7.36
+|    +--- project :libs:lifecycle:lifecycle (*)
+|    +--- project :libs:messaging:messaging (*)
+|    +--- project :libs:schema-registry:schema-registry (*)
+|    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    +--- project :components:configuration:configuration-read-service-impl
+|    |    +--- project :components:configuration:configuration-read-service (*)
+|    |    +--- project :libs:lifecycle:lifecycle (*)
+|    |    +--- project :libs:configuration:configuration-core (*)
+|    |    +--- project :libs:configuration:configuration-merger (*)
+|    |    +--- project :libs:messaging:messaging (*)
+|    |    +--- project :libs:utilities (*)
+|    |    +--- project :libs:schema-registry:schema-registry (*)
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-topic-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- com.typesafe:config:1.4.2
+|    |    \--- org.slf4j:slf4j-api:1.7.36
+|    +--- project :libs:lifecycle:lifecycle-impl (*)
+|    +--- project :libs:messaging:messaging-impl
+|    |    +--- project :libs:chunking:chunking-core (*)
+|    |    +--- project :libs:crypto:cipher-suite (*)
+|    |    +--- project :libs:crypto:crypto-core (*)
+|    |    +--- project :libs:lifecycle:lifecycle (*)
+|    |    +--- project :libs:messaging:messaging (*)
+|    |    +--- project :libs:messaging:message-bus (*)
+|    |    +--- project :libs:metrics (*)
+|    |    +--- project :libs:schema-registry:schema-registry (*)
+|    |    +--- project :libs:configuration:configuration-core (*)
+|    |    +--- project :libs:utilities (*)
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-topic-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    \--- com.typesafe:config:1.4.2
+|    +--- project :libs:crypto:crypto-impl
+|    |    +--- project :libs:crypto:crypto-core (*)
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- project :libs:configuration:configuration-core (*)
+|    |    +--- project :libs:utilities (*)
+|    |    +--- project :libs:layered-property-map
+|    |    |    +--- org.osgi:org.osgi.service.component:1.5.0
+|    |    |    |    +--- org.osgi:osgi.annotation:8.0.1 -> 8.1.0
+|    |    |    |    +--- org.osgi:org.osgi.namespace.extender:1.0.1
+|    |    |    |    +--- org.osgi:org.osgi.util.function:1.0.0 -> 1.2.0
+|    |    |    |    |    \--- org.osgi:osgi.annotation:8.0.1 -> 8.1.0
+|    |    |    |    \--- org.osgi:org.osgi.util.promise:1.0.0 -> 1.3.0
+|    |    |    |         +--- org.osgi:osgi.annotation:8.1.0
+|    |    |    |         \--- org.osgi:org.osgi.util.function:1.1.0 -> 1.2.0 (*)
+|    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    |    +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- net.corda:corda-serialization -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    \--- project :libs:crypto:cipher-suite (*)
+|    |    +--- net.corda:corda-application -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-serialization -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    \--- org.apache.commons:commons-lang3:3.12.0
+|    \--- project :libs:schema-registry:schema-registry-impl
+|         +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|         +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|         +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|         +--- org.apache.avro:avro:1.11.1 (*)
+|         +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|         +--- project :libs:schema-registry:schema-registry (*)
+|         \--- project :libs:utilities (*)
++--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
++--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
++--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
++--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
++--- info.picocli:picocli:4.7.0
++--- project :components:crypto:crypto-client-impl
+|    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    +--- net.corda:corda-topic-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    +--- project :components:configuration:configuration-read-service (*)
+|    +--- project :components:crypto:crypto-client (*)
+|    +--- project :components:crypto:crypto-component-core-impl
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-crypto -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- project :components:configuration:configuration-read-service (*)
+|    |    +--- project :libs:configuration:configuration-core (*)
+|    |    +--- project :libs:crypto:crypto-core (*)
+|    |    +--- project :libs:lifecycle:lifecycle (*)
+|    |    +--- project :libs:messaging:messaging (*)
+|    |    \--- project :libs:utilities (*)
+|    +--- project :libs:configuration:configuration-core (*)
+|    +--- project :libs:crypto:cipher-suite-impl
+|    |    +--- net.corda:corda-serialization -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- project :libs:crypto:cipher-suite (*)
+|    |    +--- project :libs:crypto:crypto-core (*)
+|    |    +--- project :libs:crypto:crypto-impl (*)
+|    |    +--- project :libs:sandbox-types
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-application -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    \--- project :libs:utilities (*)
+|    +--- project :libs:crypto:crypto-core (*)
+|    +--- project :libs:messaging:messaging (*)
+|    \--- project :libs:utilities (*)
++--- project :libs:schema-registry:schema-registry-impl (*)
++--- project :libs:messaging:kafka-message-bus-impl
+|    +--- project :libs:messaging:messaging (*)
+|    +--- project :libs:messaging:message-bus (*)
+|    +--- project :libs:schema-registry:schema-registry (*)
+|    +--- project :libs:configuration:configuration-core (*)
+|    +--- project :libs:configuration:configuration-merger (*)
+|    +--- project :libs:utilities (*)
+|    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    +--- org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:3.3.1_1
+|    |    +--- com.github.luben:zstd-jni:1.5.2-1
+|    |    +--- org.lz4:lz4-java:1.8.0
+|    |    +--- org.xerial.snappy:snappy-java:1.1.8.4
+|    |    \--- org.slf4j:slf4j-api:1.7.36
+|    \--- com.typesafe:config:1.4.2
++--- org.apache.felix:org.apache.felix.scr:2.2.6
+|    \--- org.codehaus.mojo:animal-sniffer-annotations:1.9
++--- org.osgi:org.osgi.service.component:1.5.0 (*)
++--- org.osgi:org.osgi.util.function:1.2.0 (*)
++--- org.osgi:org.osgi.util.promise:1.3.0 (*)
+\--- com.typesafe:config:1.4.2
+
+runtimeElements - Elements of runtime for main. (n)
+No dependencies
+
+runtimeElements-published (n)
+No dependencies
+
+runtimeOnly - Runtime only dependencies for compilation 'main' (target  (jvm)). (n)
++--- project crypto-client-impl (n)
++--- project schema-registry-impl (n)
++--- project kafka-message-bus-impl (n)
++--- org.apache.felix:org.apache.felix.scr:2.2.6 (n)
++--- org.osgi:org.osgi.service.component:1.5.0 (n)
++--- org.osgi:org.osgi.util.function:1.2.0 (n)
++--- org.osgi:org.osgi.util.promise:1.3.0 (n)
+\--- com.typesafe:config:1.4.2 (n)
+
+runtimeOnlyDependenciesMetadata
++--- project :components:crypto:crypto-client-impl
++--- project :libs:schema-registry:schema-registry-impl
++--- project :libs:messaging:kafka-message-bus-impl
++--- org.apache.felix:org.apache.felix.scr:2.2.6
+|    \--- org.codehaus.mojo:animal-sniffer-annotations:1.9
++--- org.osgi:org.osgi.service.component:1.5.0
+|    +--- org.osgi:osgi.annotation:8.0.1 -> 8.1.0
+|    +--- org.osgi:org.osgi.namespace.extender:1.0.1
+|    +--- org.osgi:org.osgi.util.function:1.0.0 -> 1.2.0
+|    |    \--- org.osgi:osgi.annotation:8.0.1 -> 8.1.0
+|    \--- org.osgi:org.osgi.util.promise:1.0.0 -> 1.3.0
+|         +--- org.osgi:osgi.annotation:8.1.0
+|         \--- org.osgi:org.osgi.util.function:1.1.0 -> 1.2.0 (*)
++--- org.osgi:org.osgi.util.function:1.2.0 (*)
++--- org.osgi:org.osgi.util.promise:1.3.0 (*)
+\--- com.typesafe:config:1.4.2
+
+sourceArtifacts (n)
+No dependencies
+
+sourcesElements - sources elements for main. (n)
+No dependencies
+
+systemPackages
++--- org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec:1.1.1.Final
++--- org.slf4j:slf4j-api:1.7.36
++--- project :osgi-framework-api
+\--- org.slf4j:slf4j-api:{strictly 1.7.36} -> 1.7.36 (c)
+
+testAnnotationProcessor - Annotation processors and their dependencies for source set 'test'.
+No dependencies
+
+testApi - API dependencies for compilation 'test' (target  (jvm)). (n)
+No dependencies
+
+testApiDependenciesMetadata
+No dependencies
+
+testArtifacts (n)
+No dependencies
+
+testCompileClasspath - Compile classpath for compilation 'test' (target  (jvm)).
++--- org.jetbrains:annotations:13.0
++--- org.osgi:osgi.annotation -> 8.0.1
++--- org.osgi:osgi.core -> 8.0.0
++--- org.osgi:org.osgi.service.component.annotations -> 1.5.0
+|    +--- org.osgi:osgi.annotation:8.0.1
+|    +--- org.osgi:org.osgi.namespace.extender:1.0.1
+|    +--- org.osgi:org.osgi.util.function:1.0.0
+|    \--- org.osgi:org.osgi.util.promise:1.0.0
++--- project :applications:workers:worker-common
++--- project :libs:configuration:configuration-core
+|    \--- com.typesafe:config:1.4.2
++--- project :libs:configuration:configuration-validation
++--- project :libs:platform-info
++--- project :processors:gateway-processor
++--- net.corda:corda-api:5.0.0.739-alpha-1680161628789
+|    +--- net.corda:corda-base:5.0.0.739-alpha-1680161628789 (c)
+|    +--- net.corda:corda-config-schema:5.0.0.739-alpha-1680161628789 (c)
+|    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10 (c)
+|    +--- org.jetbrains:annotations:13.0 (c)
+|    +--- org.osgi:osgi.annotation:8.0.0 -> 8.0.1 (c)
+|    +--- org.osgi:osgi.core:8.0.0 (c)
+|    +--- org.osgi:org.osgi.service.component.annotations:1.5.0 (c)
+|    \--- org.slf4j:slf4j-api:1.7.36 (c)
++--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789
+|    \--- org.slf4j:slf4j-api:1.7.36
++--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789
++--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
++--- info.picocli:picocli:4.7.0
++--- org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec:1.1.1.Final
++--- org.slf4j:slf4j-api:1.7.36
++--- project :osgi-framework-api
++--- org.assertj:assertj-core:3.24.1
+|    \--- net.bytebuddy:byte-buddy:1.12.21
++--- org.junit.jupiter:junit-jupiter-api:5.9.1
+|    +--- org.junit:junit-bom:5.9.1
+|    |    +--- org.junit.jupiter:junit-jupiter-api:5.9.1 (c)
+|    |    +--- org.junit.jupiter:junit-jupiter-params:5.9.1 (c)
+|    |    \--- org.junit.platform:junit-platform-commons:1.9.1 (c)
+|    +--- org.opentest4j:opentest4j:1.2.0
+|    +--- org.junit.platform:junit-platform-commons:1.9.1
+|    |    +--- org.junit:junit-bom:5.9.1 (*)
+|    |    \--- org.apiguardian:apiguardian-api:1.1.2
+|    \--- org.apiguardian:apiguardian-api:1.1.2
+\--- org.junit.jupiter:junit-jupiter-params:5.9.1
+     +--- org.junit:junit-bom:5.9.1 (*)
+     +--- org.junit.jupiter:junit-jupiter-api:5.9.1 (*)
+     \--- org.apiguardian:apiguardian-api:1.1.2
+
+testCompileOnly - Compile only dependencies for compilation 'test' (target  (jvm)). (n)
+No dependencies
+
+testCompileOnlyDependenciesMetadata
++--- org.jetbrains:annotations:13.0
++--- org.osgi:osgi.annotation FAILED
++--- org.osgi:osgi.core FAILED
++--- org.osgi:org.osgi.service.component.annotations FAILED
++--- org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec:1.1.1.Final
++--- org.slf4j:slf4j-api:1.7.36
+\--- project :osgi-framework-api
+
+testImplementation - Implementation only dependencies for compilation 'test' (target  (jvm)). (n)
++--- org.assertj:assertj-core:3.24.1 (n)
++--- org.junit.jupiter:junit-jupiter-api:5.9.1 (n)
+\--- org.junit.jupiter:junit-jupiter-params:5.9.1 (n)
+
+testImplementationDependenciesMetadata
++--- project :applications:workers:worker-common
++--- project :libs:configuration:configuration-core
+|    \--- com.typesafe:config:1.4.2
++--- project :libs:configuration:configuration-validation
++--- project :libs:platform-info
++--- project :processors:gateway-processor
++--- net.corda:corda-api:5.0.0.739-alpha-1680161628789
+|    +--- net.corda:corda-base:5.0.0.739-alpha-1680161628789 (c)
+|    +--- net.corda:corda-config-schema:5.0.0.739-alpha-1680161628789 (c)
+|    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10 (c)
+|    \--- org.slf4j:slf4j-api:1.7.36 (c)
++--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789
+|    \--- org.slf4j:slf4j-api:1.7.36
++--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789
++--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
++--- info.picocli:picocli:4.7.0
++--- org.assertj:assertj-core:3.24.1
+|    \--- net.bytebuddy:byte-buddy:1.12.21
++--- org.junit.jupiter:junit-jupiter-api:5.9.1
+|    +--- org.junit:junit-bom:5.9.1
+|    |    +--- org.junit.jupiter:junit-jupiter-api:5.9.1 (c)
+|    |    +--- org.junit.jupiter:junit-jupiter-params:5.9.1 (c)
+|    |    \--- org.junit.platform:junit-platform-commons:1.9.1 (c)
+|    +--- org.opentest4j:opentest4j:1.2.0
+|    +--- org.junit.platform:junit-platform-commons:1.9.1
+|    |    +--- org.junit:junit-bom:5.9.1 (*)
+|    |    \--- org.apiguardian:apiguardian-api:1.1.2
+|    \--- org.apiguardian:apiguardian-api:1.1.2
+\--- org.junit.jupiter:junit-jupiter-params:5.9.1
+     +--- org.junit:junit-bom:5.9.1 (*)
+     +--- org.junit.jupiter:junit-jupiter-api:5.9.1 (*)
+     \--- org.apiguardian:apiguardian-api:1.1.2
+
+testIntransitiveDependenciesMetadata
+No dependencies
+
+testKotlinScriptDef - Script filename extensions discovery classpath configuration
+No dependencies
+
+testKotlinScriptDefExtensions
+No dependencies
+
+testResultsElementsForTest - Directory containing binary results of running tests for the test Test Suite's test target. (n)
+No dependencies
+
+testRuntimeClasspath - Runtime classpath of compilation 'test' (target  (jvm)).
++--- project :applications:workers:worker-common
+|    +--- project :libs:application:addon
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- org.slf4j:slf4j-api -> 1.7.36
+|    |    \--- net.corda:corda-api:5.0.0.739-alpha-1680161628789
+|    |         +--- net.corda:corda-base:5.0.0.739-alpha-1680161628789 (c)
+|    |         +--- net.corda:corda-config-schema:5.0.0.739-alpha-1680161628789 (c)
+|    |         +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10 (c)
+|    |         +--- net.corda:corda-topic-schema:5.0.0.739-alpha-1680161628789 (c)
+|    |         +--- net.corda:corda-avro-schema:5.0.0.739-alpha-1680161628789 (c)
+|    |         +--- org.osgi:osgi.annotation:8.0.0 -> 8.1.0 (c)
+|    |         +--- org.slf4j:slf4j-api:1.7.36 (c)
+|    |         +--- net.corda:corda-application:5.0.0.739-alpha-1680161628789 (c)
+|    |         +--- net.corda:corda-serialization:5.0.0.739-alpha-1680161628789 (c)
+|    |         +--- net.corda:corda-crypto:5.0.0.739-alpha-1680161628789 (c)
+|    |         +--- net.corda:corda-crypto-extensions:5.0.0.739-alpha-1680161628789 (c)
+|    |         +--- javax.persistence:javax.persistence-api:2.2 (c)
+|    |         \--- net.corda:corda-membership:5.0.0.739-alpha-1680161628789 (c)
+|    +--- project :libs:application:banner
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    \--- org.slf4j:slf4j-api -> 1.7.36
+|    +--- project :libs:configuration:configuration-core
+|    |    +--- com.typesafe:config:1.4.2
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789
+|    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    \--- org.slf4j:slf4j-api:1.7.36
+|    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789
+|    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    \--- net.corda:corda-base:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    \--- project :libs:crypto:crypto-core
+|    |         +--- project :libs:crypto:cipher-suite
+|    |         |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |         |    +--- net.corda:corda-crypto -> 5.0.0.739-alpha-1680161628789
+|    |         |    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |         |    |    +--- org.slf4j:slf4j-api:1.7.36
+|    |         |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |         |    |    \--- net.corda:corda-base:5.0.0.739-alpha-1680161628789 (*)
+|    |         |    +--- net.corda:corda-crypto-extensions -> 5.0.0.739-alpha-1680161628789
+|    |         |    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |         |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |         |    |    \--- net.corda:corda-crypto:5.0.0.739-alpha-1680161628789 (*)
+|    |         |    +--- org.bouncycastle:bcprov-jdk18on:1.72
+|    |         |    +--- org.bouncycastle:bcpkix-jdk18on:1.72
+|    |         |    |    +--- org.bouncycastle:bcprov-jdk18on:1.72
+|    |         |    |    \--- org.bouncycastle:bcutil-jdk18on:1.72
+|    |         |    |         \--- org.bouncycastle:bcprov-jdk18on:1.72
+|    |         |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |         |    +--- org.slf4j:slf4j-api -> 1.7.36
+|    |         |    \--- project :libs:crypto:crypto-utils
+|    |         |         +--- org.slf4j:slf4j-api:1.7.36
+|    |         |         +--- org.bouncycastle:bcprov-jdk18on:1.72
+|    |         |         +--- org.bouncycastle:bcpkix-jdk18on:1.72 (*)
+|    |         |         +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |         |         +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |         |         \--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |         +--- net.corda:corda-crypto -> 5.0.0.739-alpha-1680161628789 (*)
+|    |         +--- net.corda:corda-crypto-extensions -> 5.0.0.739-alpha-1680161628789 (*)
+|    |         +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |         +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |         +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789
+|    |         |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |         |    +--- net.corda:corda-base:5.0.0.739-alpha-1680161628789 (*)
+|    |         |    \--- org.apache.avro:avro:1.11.1
+|    |         |         +--- com.fasterxml.jackson.core:jackson-core:2.12.7 -> 2.14.1
+|    |         |         |    \--- com.fasterxml.jackson:jackson-bom:2.14.1
+|    |         |         |         +--- com.fasterxml.jackson.core:jackson-annotations:2.14.1 (c)
+|    |         |         |         +--- com.fasterxml.jackson.core:jackson-core:2.14.1 (c)
+|    |         |         |         \--- com.fasterxml.jackson.core:jackson-databind:2.14.1 (c)
+|    |         |         +--- com.fasterxml.jackson.core:jackson-databind:2.12.7 -> 2.14.1
+|    |         |         |    +--- com.fasterxml.jackson.core:jackson-annotations:2.14.1
+|    |         |         |    |    \--- com.fasterxml.jackson:jackson-bom:2.14.1 (*)
+|    |         |         |    +--- com.fasterxml.jackson.core:jackson-core:2.14.1 (*)
+|    |         |         |    \--- com.fasterxml.jackson:jackson-bom:2.14.1 (*)
+|    |         |         +--- org.apache.commons:commons-compress:1.21
+|    |         |         \--- org.slf4j:slf4j-api:1.7.36
+|    |         \--- project :libs:crypto:crypto-utils (*)
+|    +--- project :libs:configuration:configuration-validation
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- project :libs:configuration:configuration-core (*)
+|    |    +--- project :libs:utilities
+|    |    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- net.corda:corda-application -> 5.0.0.739-alpha-1680161628789
+|    |    |    |    +--- javax.persistence:javax.persistence-api:2.2
+|    |    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |    +--- net.corda:corda-base:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |    +--- net.corda:corda-crypto:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |    +--- net.corda:corda-membership:5.0.0.739-alpha-1680161628789
+|    |    |    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |    |    \--- net.corda:corda-base:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |    \--- net.corda:corda-serialization:5.0.0.739-alpha-1680161628789
+|    |    |    |         +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |         \--- net.corda:corda-base:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- net.corda:corda-serialization -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    |    +--- org.slf4j:slf4j-api -> 1.7.36
+|    |    |    \--- project :libs:configuration:configuration-core (*)
+|    |    +--- com.fasterxml.jackson.core:jackson-databind:2.14.1 (*)
+|    |    +--- com.typesafe:config:1.4.2
+|    |    \--- com.networknt:json-schema-validator:1.0.66
+|    |         +--- com.fasterxml.jackson.core:jackson-databind:2.12.1 -> 2.14.1 (*)
+|    |         +--- org.slf4j:slf4j-api:1.7.30 -> 1.7.36
+|    |         \--- org.apache.commons:commons-lang3:3.7 -> 3.12.0
+|    +--- project :libs:messaging:message-bus
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- com.typesafe:config:1.4.2
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    \--- project :libs:configuration:configuration-core (*)
+|    +--- project :libs:lifecycle:lifecycle
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    \--- org.slf4j:slf4j-api -> 1.7.36
+|    +--- project :libs:lifecycle:registry
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.slf4j:slf4j-api -> 1.7.36
+|    |    \--- project :libs:lifecycle:lifecycle (*)
+|    +--- project :libs:metrics
+|    |    +--- io.micrometer:micrometer-core:0.1.0-SNAPSHOT
+|    |    |    +--- io.micrometer:micrometer-commons:0.1.0-SNAPSHOT
+|    |    |    +--- io.micrometer:micrometer-observation:0.1.0-SNAPSHOT
+|    |    |    |    \--- io.micrometer:micrometer-commons:0.1.0-SNAPSHOT
+|    |    |    +--- org.hdrhistogram:HdrHistogram:2.1.12
+|    |    |    \--- org.latencyutils:LatencyUtils:2.0.3
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    \--- org.slf4j:slf4j-api -> 1.7.36
+|    +--- project :libs:utilities (*)
+|    +--- project :libs:platform-info
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    \--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    +--- project :osgi-framework-api
+|    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    +--- com.typesafe:config:1.4.2
+|    +--- info.picocli:picocli:4.7.0
+|    +--- io.javalin:javalin-osgi:4.6.7
+|    |    +--- io.javalin:javalin:4.6.7
+|    |    |    +--- org.slf4j:slf4j-api:1.7.36
+|    |    |    +--- org.eclipse.jetty:jetty-server:9.4.48.v20220622
+|    |    |    |    +--- javax.servlet:javax.servlet-api:3.1.0
+|    |    |    |    +--- org.eclipse.jetty:jetty-http:9.4.48.v20220622
+|    |    |    |    |    +--- org.eclipse.jetty:jetty-util:9.4.48.v20220622
+|    |    |    |    |    \--- org.eclipse.jetty:jetty-io:9.4.48.v20220622
+|    |    |    |    |         \--- org.eclipse.jetty:jetty-util:9.4.48.v20220622
+|    |    |    |    \--- org.eclipse.jetty:jetty-io:9.4.48.v20220622 (*)
+|    |    |    +--- org.eclipse.jetty:jetty-webapp:9.4.48.v20220622
+|    |    |    |    +--- org.eclipse.jetty:jetty-xml:9.4.48.v20220622
+|    |    |    |    |    \--- org.eclipse.jetty:jetty-util:9.4.48.v20220622
+|    |    |    |    \--- org.eclipse.jetty:jetty-servlet:9.4.48.v20220622
+|    |    |    |         +--- org.eclipse.jetty:jetty-security:9.4.48.v20220622
+|    |    |    |         |    \--- org.eclipse.jetty:jetty-server:9.4.48.v20220622 (*)
+|    |    |    |         \--- org.eclipse.jetty:jetty-util-ajax:9.4.48.v20220622
+|    |    |    |              \--- org.eclipse.jetty:jetty-util:9.4.48.v20220622
+|    |    |    +--- org.eclipse.jetty.websocket:websocket-server:9.4.48.v20220622
+|    |    |    |    +--- org.eclipse.jetty.websocket:websocket-common:9.4.48.v20220622
+|    |    |    |    |    +--- org.eclipse.jetty.websocket:websocket-api:9.4.48.v20220622
+|    |    |    |    |    +--- org.eclipse.jetty:jetty-util:9.4.48.v20220622
+|    |    |    |    |    \--- org.eclipse.jetty:jetty-io:9.4.48.v20220622 (*)
+|    |    |    |    +--- org.eclipse.jetty.websocket:websocket-client:9.4.48.v20220622
+|    |    |    |    |    +--- org.eclipse.jetty:jetty-client:9.4.48.v20220622
+|    |    |    |    |    |    +--- org.eclipse.jetty:jetty-http:9.4.48.v20220622 (*)
+|    |    |    |    |    |    \--- org.eclipse.jetty:jetty-io:9.4.48.v20220622 (*)
+|    |    |    |    |    +--- org.eclipse.jetty:jetty-util:9.4.48.v20220622
+|    |    |    |    |    +--- org.eclipse.jetty:jetty-io:9.4.48.v20220622 (*)
+|    |    |    |    |    \--- org.eclipse.jetty.websocket:websocket-common:9.4.48.v20220622 (*)
+|    |    |    |    +--- org.eclipse.jetty.websocket:websocket-servlet:9.4.48.v20220622
+|    |    |    |    |    +--- org.eclipse.jetty.websocket:websocket-api:9.4.48.v20220622
+|    |    |    |    |    \--- javax.servlet:javax.servlet-api:3.1.0
+|    |    |    |    +--- org.eclipse.jetty:jetty-servlet:9.4.48.v20220622 (*)
+|    |    |    |    \--- org.eclipse.jetty:jetty-http:9.4.48.v20220622 (*)
+|    |    |    \--- org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.5.32 -> org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    \--- org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.5.32 -> org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    +--- com.fasterxml.jackson.core:jackson-databind:2.14.1 (*)
+|    +--- io.micrometer:micrometer-core:0.1.0-SNAPSHOT (*)
+|    +--- io.micrometer:micrometer-registry-prometheus:0.1.0-SNAPSHOT
+|    |    +--- io.micrometer:micrometer-core:0.1.0-SNAPSHOT (*)
+|    |    \--- io.prometheus:simpleclient_common:0.16.0
+|    |         \--- io.prometheus:simpleclient:0.16.0
+|    |              +--- io.prometheus:simpleclient_tracer_otel:0.16.0
+|    |              |    \--- io.prometheus:simpleclient_tracer_common:0.16.0
+|    |              \--- io.prometheus:simpleclient_tracer_otel_agent:0.16.0
+|    |                   \--- io.prometheus:simpleclient_tracer_common:0.16.0
+|    +--- project :libs:lifecycle:lifecycle-impl
+|    |    +--- project :libs:lifecycle:lifecycle (*)
+|    |    +--- project :libs:lifecycle:registry (*)
+|    |    +--- project :libs:utilities (*)
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- com.google.guava:guava:30.1.1-jre
+|    |    |    +--- com.google.guava:failureaccess:1.0.1
+|    |    |    +--- com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava
+|    |    |    +--- com.google.code.findbugs:jsr305:3.0.2
+|    |    |    +--- org.checkerframework:checker-qual:3.8.0 -> 3.27.0
+|    |    |    +--- com.google.errorprone:error_prone_annotations:2.5.1 -> 2.16
+|    |    |    \--- com.google.j2objc:j2objc-annotations:1.3
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    \--- org.slf4j:slf4j-api -> 1.7.36
+|    \--- org.apache.commons:commons-lang3:3.12.0
++--- project :libs:configuration:configuration-core (*)
++--- project :libs:configuration:configuration-validation (*)
++--- project :libs:platform-info (*)
++--- project :processors:gateway-processor
+|    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    +--- project :components:configuration:configuration-read-service
+|    |    +--- project :components:reconciliation:reconciliation
+|    |    |    +--- project :libs:lifecycle:lifecycle (*)
+|    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    \--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- project :libs:configuration:configuration-core (*)
+|    |    +--- project :libs:lifecycle:lifecycle (*)
+|    |    +--- com.typesafe:config:1.4.2
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    \--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    +--- project :components:crypto:crypto-client
+|    |    +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- project :libs:crypto:cipher-suite (*)
+|    |    +--- project :libs:lifecycle:lifecycle (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    \--- project :libs:crypto:crypto-core (*)
+|    +--- project :components:gateway
+|    |    +--- project :libs:messaging:messaging
+|    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    |    +--- com.typesafe:config:1.4.2
+|    |    |    +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- project :libs:chunking:chunking-core
+|    |    |    |    +--- net.corda:corda-crypto -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |    +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    |    |    +--- org.slf4j:slf4j-api -> 1.7.36
+|    |    |    |    +--- project :libs:configuration:configuration-core (*)
+|    |    |    |    \--- project :libs:crypto:crypto-core (*)
+|    |    |    +--- project :libs:lifecycle:lifecycle (*)
+|    |    |    +--- project :libs:messaging:message-bus (*)
+|    |    |    \--- project :libs:configuration:configuration-core (*)
+|    |    +--- project :libs:lifecycle:lifecycle (*)
+|    |    +--- project :components:configuration:configuration-read-service (*)
+|    |    +--- project :components:domino-logic
+|    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- project :libs:lifecycle:lifecycle (*)
+|    |    |    +--- project :libs:configuration:configuration-core (*)
+|    |    |    +--- project :components:configuration:configuration-read-service (*)
+|    |    |    +--- project :libs:messaging:messaging (*)
+|    |    |    +--- project :libs:utilities (*)
+|    |    |    \--- com.typesafe:config:1.4.2
+|    |    +--- project :libs:crypto:delegated-signing
+|    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    \--- net.corda:corda-crypto -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-topic-schema -> 5.0.0.739-alpha-1680161628789
+|    |    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    |    \--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-crypto -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- project :libs:cache:cache-caffeine
+|    |    |    +--- com.github.ben-manes.caffeine:caffeine:3.1.2
+|    |    |    |    +--- org.jetbrains.kotlin:kotlin-bom:1.7.21
+|    |    |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib:1.7.21 -> org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10 (c)
+|    |    |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.7.21 -> org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10 (c)
+|    |    |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.7.21 -> org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10 (c)
+|    |    |    |    |    +--- org.jetbrains.kotlin:kotlin-stdlib-common:1.7.21 -> org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10 (c)
+|    |    |    |    |    +--- org.jetbrains.kotlin:kotlin-reflect:1.7.21 -> org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10 (c)
+|    |    |    |    |    \--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.7.21 -> 1.8.10 (c)
+|    |    |    |    +--- org.junit:junit-bom:5.9.1
+|    |    |    |    |    +--- org.junit.jupiter:junit-jupiter-api:5.9.1 (c)
+|    |    |    |    |    +--- org.junit.jupiter:junit-jupiter-engine:5.9.1 (c)
+|    |    |    |    |    +--- org.junit.jupiter:junit-jupiter-params:5.9.1 (c)
+|    |    |    |    |    +--- org.junit.platform:junit-platform-commons:1.9.1 (c)
+|    |    |    |    |    \--- org.junit.platform:junit-platform-engine:1.9.1 (c)
+|    |    |    |    +--- org.ow2.asm:asm-bom:9.4
+|    |    |    |    +--- org.checkerframework:checker-qual:3.27.0
+|    |    |    |    +--- com.google.errorprone:error_prone_annotations:2.16
+|    |    |    |    \--- com.fasterxml.jackson:jackson-bom:2.14.1 (c)
+|    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- project :libs:metrics (*)
+|    |    |    +--- project :libs:utilities (*)
+|    |    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    |    \--- org.slf4j:slf4j-api -> 1.7.36
+|    |    +--- project :components:crypto:crypto-client (*)
+|    |    +--- project :libs:crypto:crypto-core (*)
+|    |    +--- project :libs:crypto:crypto-utils (*)
+|    |    +--- project :libs:utilities (*)
+|    |    +--- com.typesafe:config:1.4.2
+|    |    +--- io.netty:netty-codec-http:4.1.86.Final
+|    |    |    +--- io.netty:netty-common:4.1.86.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.86.Final
+|    |    |    |    \--- io.netty:netty-common:4.1.86.Final
+|    |    |    +--- io.netty:netty-transport:4.1.86.Final
+|    |    |    |    +--- io.netty:netty-common:4.1.86.Final
+|    |    |    |    +--- io.netty:netty-buffer:4.1.86.Final (*)
+|    |    |    |    \--- io.netty:netty-resolver:4.1.86.Final
+|    |    |    |         \--- io.netty:netty-common:4.1.86.Final
+|    |    |    +--- io.netty:netty-codec:4.1.86.Final
+|    |    |    |    +--- io.netty:netty-common:4.1.86.Final
+|    |    |    |    +--- io.netty:netty-buffer:4.1.86.Final (*)
+|    |    |    |    \--- io.netty:netty-transport:4.1.86.Final (*)
+|    |    |    \--- io.netty:netty-handler:4.1.86.Final
+|    |    |         +--- io.netty:netty-common:4.1.86.Final
+|    |    |         +--- io.netty:netty-resolver:4.1.86.Final (*)
+|    |    |         +--- io.netty:netty-buffer:4.1.86.Final (*)
+|    |    |         +--- io.netty:netty-transport:4.1.86.Final (*)
+|    |    |         +--- io.netty:netty-transport-native-unix-common:4.1.86.Final
+|    |    |         |    +--- io.netty:netty-common:4.1.86.Final
+|    |    |         |    +--- io.netty:netty-buffer:4.1.86.Final (*)
+|    |    |         |    \--- io.netty:netty-transport:4.1.86.Final (*)
+|    |    |         \--- io.netty:netty-codec:4.1.86.Final (*)
+|    |    +--- commons-validator:commons-validator:1.7
+|    |    |    +--- commons-beanutils:commons-beanutils:1.9.4
+|    |    |    |    +--- commons-logging:commons-logging:1.2
+|    |    |    |    \--- commons-collections:commons-collections:3.2.2
+|    |    |    +--- commons-digester:commons-digester:2.1
+|    |    |    +--- commons-logging:commons-logging:1.2
+|    |    |    \--- commons-collections:commons-collections:3.2.2
+|    |    +--- com.github.ben-manes.caffeine:caffeine:3.1.2 (*)
+|    |    \--- project :libs:schema-registry:schema-registry
+|    |         +--- org.apache.avro:avro:1.11.1 (*)
+|    |         +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |         +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |         \--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    +--- project :libs:configuration:configuration-core (*)
+|    +--- project :libs:configuration:configuration-merger
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- project :libs:configuration:configuration-core (*)
+|    |    +--- project :libs:messaging:message-bus (*)
+|    |    +--- com.typesafe:config:1.4.2
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    \--- org.slf4j:slf4j-api -> 1.7.36
+|    +--- project :libs:lifecycle:lifecycle (*)
+|    +--- project :libs:messaging:messaging (*)
+|    +--- project :libs:schema-registry:schema-registry (*)
+|    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    +--- project :components:configuration:configuration-read-service-impl
+|    |    +--- project :components:configuration:configuration-read-service (*)
+|    |    +--- project :libs:lifecycle:lifecycle (*)
+|    |    +--- project :libs:configuration:configuration-core (*)
+|    |    +--- project :libs:configuration:configuration-merger (*)
+|    |    +--- project :libs:messaging:messaging (*)
+|    |    +--- project :libs:utilities (*)
+|    |    +--- project :libs:schema-registry:schema-registry (*)
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-topic-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- com.typesafe:config:1.4.2
+|    |    \--- org.slf4j:slf4j-api:1.7.36
+|    +--- project :libs:lifecycle:lifecycle-impl (*)
+|    +--- project :libs:messaging:messaging-impl
+|    |    +--- project :libs:chunking:chunking-core (*)
+|    |    +--- project :libs:crypto:cipher-suite (*)
+|    |    +--- project :libs:crypto:crypto-core (*)
+|    |    +--- project :libs:lifecycle:lifecycle (*)
+|    |    +--- project :libs:messaging:messaging (*)
+|    |    +--- project :libs:messaging:message-bus (*)
+|    |    +--- project :libs:metrics (*)
+|    |    +--- project :libs:schema-registry:schema-registry (*)
+|    |    +--- project :libs:configuration:configuration-core (*)
+|    |    +--- project :libs:utilities (*)
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-topic-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    \--- com.typesafe:config:1.4.2
+|    +--- project :libs:crypto:crypto-impl
+|    |    +--- project :libs:crypto:crypto-core (*)
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- project :libs:configuration:configuration-core (*)
+|    |    +--- project :libs:utilities (*)
+|    |    +--- project :libs:layered-property-map
+|    |    |    +--- org.osgi:org.osgi.service.component:1.5.0
+|    |    |    |    +--- org.osgi:osgi.annotation:8.0.1 -> 8.1.0
+|    |    |    |    +--- org.osgi:org.osgi.namespace.extender:1.0.1
+|    |    |    |    +--- org.osgi:org.osgi.util.function:1.0.0 -> 1.2.0
+|    |    |    |    |    \--- org.osgi:osgi.annotation:8.0.1 -> 8.1.0
+|    |    |    |    \--- org.osgi:org.osgi.util.promise:1.0.0 -> 1.3.0
+|    |    |    |         +--- org.osgi:osgi.annotation:8.1.0
+|    |    |    |         \--- org.osgi:org.osgi.util.function:1.1.0 -> 1.2.0 (*)
+|    |    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    |    +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    +--- net.corda:corda-serialization -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    |    \--- project :libs:crypto:cipher-suite (*)
+|    |    +--- net.corda:corda-application -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-serialization -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    \--- org.apache.commons:commons-lang3:3.12.0
+|    \--- project :libs:schema-registry:schema-registry-impl
+|         +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|         +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|         +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|         +--- org.apache.avro:avro:1.11.1 (*)
+|         +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|         +--- project :libs:schema-registry:schema-registry (*)
+|         \--- project :libs:utilities (*)
++--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
++--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
++--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
++--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
++--- info.picocli:picocli:4.7.0
++--- project :components:crypto:crypto-client-impl
+|    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    +--- net.corda:corda-topic-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    +--- project :components:configuration:configuration-read-service (*)
+|    +--- project :components:crypto:crypto-client (*)
+|    +--- project :components:crypto:crypto-component-core-impl
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-crypto -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- project :components:configuration:configuration-read-service (*)
+|    |    +--- project :libs:configuration:configuration-core (*)
+|    |    +--- project :libs:crypto:crypto-core (*)
+|    |    +--- project :libs:lifecycle:lifecycle (*)
+|    |    +--- project :libs:messaging:messaging (*)
+|    |    \--- project :libs:utilities (*)
+|    +--- project :libs:configuration:configuration-core (*)
+|    +--- project :libs:crypto:cipher-suite-impl
+|    |    +--- net.corda:corda-serialization -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- project :libs:crypto:cipher-suite (*)
+|    |    +--- project :libs:crypto:crypto-core (*)
+|    |    +--- project :libs:crypto:crypto-impl (*)
+|    |    +--- project :libs:sandbox-types
+|    |    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    |    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    |    +--- net.corda:corda-application -> 5.0.0.739-alpha-1680161628789 (*)
+|    |    \--- project :libs:utilities (*)
+|    +--- project :libs:crypto:crypto-core (*)
+|    +--- project :libs:messaging:messaging (*)
+|    \--- project :libs:utilities (*)
++--- project :libs:schema-registry:schema-registry-impl (*)
++--- project :libs:messaging:kafka-message-bus-impl
+|    +--- project :libs:messaging:messaging (*)
+|    +--- project :libs:messaging:message-bus (*)
+|    +--- project :libs:schema-registry:schema-registry (*)
+|    +--- project :libs:configuration:configuration-core (*)
+|    +--- project :libs:configuration:configuration-merger (*)
+|    +--- project :libs:utilities (*)
+|    +--- net.corda:corda-api:5.0.0.739-alpha-1680161628789 (*)
+|    +--- net.corda:corda-avro-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    +--- net.corda:corda-base -> 5.0.0.739-alpha-1680161628789 (*)
+|    +--- net.corda:corda-config-schema -> 5.0.0.739-alpha-1680161628789 (*)
+|    +--- org.jetbrains.kotlin:kotlin-osgi-bundle:1.8.10
+|    +--- org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:3.3.1_1
+|    |    +--- com.github.luben:zstd-jni:1.5.2-1
+|    |    +--- org.lz4:lz4-java:1.8.0
+|    |    +--- org.xerial.snappy:snappy-java:1.1.8.4
+|    |    \--- org.slf4j:slf4j-api:1.7.36
+|    \--- com.typesafe:config:1.4.2
++--- org.apache.felix:org.apache.felix.scr:2.2.6
+|    \--- org.codehaus.mojo:animal-sniffer-annotations:1.9
++--- org.osgi:org.osgi.service.component:1.5.0 (*)
++--- org.osgi:org.osgi.util.function:1.2.0 (*)
++--- org.osgi:org.osgi.util.promise:1.3.0 (*)
++--- com.typesafe:config:1.4.2
++--- org.assertj:assertj-core:3.24.1
+|    \--- net.bytebuddy:byte-buddy:1.12.21
++--- org.junit.jupiter:junit-jupiter-api:5.9.1
+|    +--- org.junit:junit-bom:5.9.1 (*)
+|    +--- org.opentest4j:opentest4j:1.2.0
+|    \--- org.junit.platform:junit-platform-commons:1.9.1
+|         \--- org.junit:junit-bom:5.9.1 (*)
++--- org.junit.jupiter:junit-jupiter-params:5.9.1
+|    +--- org.junit:junit-bom:5.9.1 (*)
+|    \--- org.junit.jupiter:junit-jupiter-api:5.9.1 (*)
+\--- org.junit.jupiter:junit-jupiter-engine:5.9.1
+     +--- org.junit:junit-bom:5.9.1 (*)
+     +--- org.junit.platform:junit-platform-engine:1.9.1
+     |    +--- org.junit:junit-bom:5.9.1 (*)
+     |    +--- org.opentest4j:opentest4j:1.2.0
+     |    \--- org.junit.platform:junit-platform-commons:1.9.1 (*)
+     \--- org.junit.jupiter:junit-jupiter-api:5.9.1 (*)
+
+testRuntimeOnly - Runtime only dependencies for compilation 'test' (target  (jvm)). (n)
+\--- org.junit.jupiter:junit-jupiter-engine:5.9.1 (n)
+
+testRuntimeOnlyDependenciesMetadata
++--- project :components:crypto:crypto-client-impl
++--- project :libs:schema-registry:schema-registry-impl
++--- project :libs:messaging:kafka-message-bus-impl
++--- org.apache.felix:org.apache.felix.scr:2.2.6
+|    \--- org.codehaus.mojo:animal-sniffer-annotations:1.9
++--- org.osgi:org.osgi.service.component:1.5.0
+|    +--- org.osgi:osgi.annotation:8.0.1 -> 8.1.0
+|    +--- org.osgi:org.osgi.namespace.extender:1.0.1
+|    +--- org.osgi:org.osgi.util.function:1.0.0 -> 1.2.0
+|    |    \--- org.osgi:osgi.annotation:8.0.1 -> 8.1.0
+|    \--- org.osgi:org.osgi.util.promise:1.0.0 -> 1.3.0
+|         +--- org.osgi:osgi.annotation:8.1.0
+|         \--- org.osgi:org.osgi.util.function:1.1.0 -> 1.2.0 (*)
++--- org.osgi:org.osgi.util.function:1.2.0 (*)
++--- org.osgi:org.osgi.util.promise:1.3.0 (*)
++--- com.typesafe:config:1.4.2
+\--- org.junit.jupiter:junit-jupiter-engine:5.9.1
+     +--- org.junit:junit-bom:5.9.1
+     |    +--- org.junit.jupiter:junit-jupiter-api:5.9.1 (c)
+     |    +--- org.junit.jupiter:junit-jupiter-engine:5.9.1 (c)
+     |    +--- org.junit.platform:junit-platform-engine:1.9.1 (c)
+     |    \--- org.junit.platform:junit-platform-commons:1.9.1 (c)
+     +--- org.junit.platform:junit-platform-engine:1.9.1
+     |    +--- org.junit:junit-bom:5.9.1 (*)
+     |    +--- org.opentest4j:opentest4j:1.2.0
+     |    +--- org.junit.platform:junit-platform-commons:1.9.1
+     |    |    +--- org.junit:junit-bom:5.9.1 (*)
+     |    |    \--- org.apiguardian:apiguardian-api:1.1.2
+     |    \--- org.apiguardian:apiguardian-api:1.1.2
+     +--- org.junit.jupiter:junit-jupiter-api:5.9.1
+     |    +--- org.junit:junit-bom:5.9.1 (*)
+     |    +--- org.opentest4j:opentest4j:1.2.0
+     |    +--- org.junit.platform:junit-platform-commons:1.9.1 (*)
+     |    \--- org.apiguardian:apiguardian-api:1.1.2
+     \--- org.apiguardian:apiguardian-api:1.1.2
+
+(c) - dependency constraint
+(*) - dependencies omitted (listed previously)
+
+(n) - Not resolved (configuration is not meant to be resolved)
+
+A web-based, searchable dependency report is available by adding the --scan option.
+Kotlin build report is written to file:///Users/dries.samyn/dev/corda-runtime-os/build/reports/kotlin-build/corda-runtime-os-build-2023-03-30-16-56-39.txt
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 8.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+See https://docs.gradle.org/7.6.1/userguide/command_line_interface.html#sec:command_line_warnings
+
+BUILD SUCCESSFUL in 6s
+11 actionable tasks: 1 executed, 10 up-to-date
+
+Publishing build scan...
+https://gradle.dev.r3.com/s/u2qmchwfr2e4s
+
