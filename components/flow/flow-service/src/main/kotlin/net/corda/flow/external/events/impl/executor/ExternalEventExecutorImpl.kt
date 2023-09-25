@@ -20,15 +20,18 @@ class ExternalEventExecutorImpl @Activate constructor(
 
     @Suspendable
     override fun <PARAMETERS : Any, RESPONSE : Any, RESUME> execute(
-        requestId: UUID,
         factoryClass: Class<out ExternalEventFactory<PARAMETERS, RESPONSE, RESUME>>,
         parameters: PARAMETERS
     ): RESUME {
+        // `requestId` is a unique id per event. It is used to achieve idempotency by de-duplicating events processing (on processors side).
+        // Consuming duplicate events can happen from retrying an event from Kafka which however did some persistent work previously but
+        // did not fully succeed (Kafka was not notified), therefore we retry/ reprocess it.
+        val requestId = UUID.randomUUID().toString()
         @Suppress("unchecked_cast")
         return with(flowFiberService.getExecutingFiber()) {
             suspend(
                 FlowIORequest.ExternalEvent(
-                    requestId.toString(),
+                    requestId,
                     factoryClass,
                     parameters,
                     externalContext(this)
