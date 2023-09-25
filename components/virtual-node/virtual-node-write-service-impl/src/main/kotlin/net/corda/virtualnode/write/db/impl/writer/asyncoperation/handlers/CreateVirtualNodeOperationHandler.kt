@@ -68,11 +68,13 @@ internal class CreateVirtualNodeOperationHandler(
             }
 
             // For each of the platform DB's run the creation process
-            for (vNodeDb in vNodeDbs.values.filter { it.isPlatformManagedDb || it.ddlConnectionProvided }) {
+            for (vNodeDb in vNodeDbs.values.filter { it.isPlatformManagedDb }) {
                 execLog.measureExecTime("create schema and user in ${vNodeDb.dbType} DB") {
                     vNodeDb.createSchemasAndUsers()
                 }
+            }
 
+            for (vNodeDb in vNodeDbs.values.filter { it.isPlatformManagedDb || it.ddlConnectionProvided }) {
                 execLog.measureExecTime("apply DB migrations in ${vNodeDb.dbType} DB") {
                     vNodeDb.runDbMigration(VirtualNodeWriterProcessor.systemTerminatorTag)
                 }
