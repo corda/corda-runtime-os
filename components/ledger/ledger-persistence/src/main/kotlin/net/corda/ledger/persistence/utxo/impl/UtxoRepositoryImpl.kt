@@ -90,57 +90,56 @@ class UtxoRepositoryImpl @Activate constructor(
             .mapToComponentGroups(UtxoComponentGroupMapper(transactionId))
     }
 
-    override fun findUnconsumedVisibleStatesByType(
-        entityManager: EntityManager
-    ): List<UtxoTransactionOutputDto> {
-        return entityManager.createNativeQuery(queryProvider.findUnconsumedVisibleStatesByType, Tuple::class.java)
-            .setParameter("verified", TransactionStatus.VERIFIED.value)
-            .resultListAsTuples()
+    private fun mapToUtxoTransactionOutputDto(queryObj: Query): List<UtxoTransactionOutputDto> {
+        return queryObj.resultListAsTuples()
             .map { t ->
                 UtxoTransactionOutputDto(
                     t[0] as String, // transactionId
-                    t[1] as Int, // leaf ID
+                    t[1] as Int,    // leaf ID
                     t[2] as ByteArray, // outputs info data
-                    t[3] as ByteArray // outputs data
+                    t[3] as ByteArray  // outputs data
                 )
             }
+    }
+
+    private fun findUnconsumedVisibleStates(
+        entityManager: EntityManager,
+        query: String,
+        stateClassType: String?
+    ): List<UtxoTransactionOutputDto> {
+        val queryObj = entityManager.createNativeQuery(query, Tuple::class.java)
+            .setParameter("verified", TransactionStatus.VERIFIED.value)
+
+        if (stateClassType != null) {
+            queryObj.setParameter("type", stateClassType)
+        }
+
+        return mapToUtxoTransactionOutputDto(queryObj)
+    }
+
+    override fun findUnconsumedVisibleStatesByType(
+        entityManager: EntityManager
+    ): List<UtxoTransactionOutputDto> {
+        return findUnconsumedVisibleStates(entityManager, queryProvider.findUnconsumedVisibleStatesByType, null)
     }
 
     override fun findUnconsumedVisibleStatesByExactType(
         entityManager: EntityManager,
         stateClassType: String
     ): List<UtxoTransactionOutputDto> {
-        return entityManager.createNativeQuery(queryProvider.findUnconsumedVisibleStatesByExactType, Tuple::class.java)
-            .setParameter("verified", TransactionStatus.VERIFIED.value)
-            .setParameter("type", stateClassType)
-            .resultListAsTuples()
-            .map { t ->
-                UtxoTransactionOutputDto(
-                    t[0] as String, // transactionId
-                    t[1] as Int, // leaf ID
-                    t[2] as ByteArray, // outputs info data
-                    t[3] as ByteArray // outputs data
-                )
-            }
+        return findUnconsumedVisibleStates(entityManager, queryProvider.findUnconsumedVisibleStatesByExactType, stateClassType)
     }
 
     override fun resolveStateRefs(
         entityManager: EntityManager,
         stateRefs: List<StateRef>
     ): List<UtxoTransactionOutputDto> {
-        return entityManager.createNativeQuery(queryProvider.resolveStateRefs, Tuple::class.java)
+        val queryObj = entityManager.createNativeQuery(queryProvider.resolveStateRefs, Tuple::class.java)
             .setParameter("transactionIds", stateRefs.map { it.transactionId.toString() })
             .setParameter("stateRefs", stateRefs.map { it.toString() })
             .setParameter("verified", TransactionStatus.VERIFIED.value)
-            .resultListAsTuples()
-            .map { t ->
-                UtxoTransactionOutputDto(
-                    t[0] as String, // transactionId
-                    t[1] as Int, // leaf ID
-                    t[2] as ByteArray, // outputs info data
-                    t[3] as ByteArray // outputs data
-                )
-            }
+
+        return mapToUtxoTransactionOutputDto(queryObj)
     }
 
     override fun findTransactionSignatures(

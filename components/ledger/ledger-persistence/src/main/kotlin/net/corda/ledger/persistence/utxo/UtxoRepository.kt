@@ -25,7 +25,7 @@ interface UtxoRepository {
         transactionId: String
     ): Map<Int, List<ByteArray>>
 
-    /** Retrieves transaction component leafs related to visible unspent states and subclass states and subclass states */
+    /** Retrieves transaction component leafs related to visible unspent states by type and subtypes */
     fun findUnconsumedVisibleStatesByType(
         entityManager: EntityManager
     ):  List<UtxoTransactionOutputDto>

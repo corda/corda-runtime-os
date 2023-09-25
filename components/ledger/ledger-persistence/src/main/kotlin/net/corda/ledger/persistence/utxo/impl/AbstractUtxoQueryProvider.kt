@@ -66,9 +66,9 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
                 AND tx_o.leaf_idx = tc_output.leaf_idx
             JOIN {h-schema}utxo_transaction_status AS ts
                 ON ts.transaction_id = tx_o.transaction_id
-            WHERE (tx_o.type = :type    
+            WHERE tx_o.type = :type    
                 AND rts.consumed IS NULL
-                AND ts.status = :verified)
+                AND ts.status = :verified
             ORDER BY tc_output.created, tc_output.transaction_id, tc_output.leaf_idx"""
             .trimIndent()
 
