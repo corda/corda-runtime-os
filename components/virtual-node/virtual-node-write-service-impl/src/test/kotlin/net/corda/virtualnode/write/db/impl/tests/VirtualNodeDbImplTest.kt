@@ -210,7 +210,7 @@ class VirtualNodeDbImplTest {
 
     private fun createVirtualNodeDb(
         isPlatformManagedDb: Boolean,
-        connectionProvided: Boolean = false,
+        ddlConnectionProvided: Boolean = false,
         dbConnections: Map<DbPrivilege, DbConnection> = mapOf(
             DbPrivilege.DDL to ddlConnection,
             DbPrivilege.DML to dmlConnection,
@@ -218,7 +218,7 @@ class VirtualNodeDbImplTest {
     ): VirtualNodeDbImpl {
         return VirtualNodeDbImpl(
             isPlatformManagedDb,
-            connectionProvided,
+            ddlConnectionProvided,
             dbConnections,
             dbType,
             holdingIdShortHash,

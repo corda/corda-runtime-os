@@ -68,7 +68,7 @@ internal class CreateVirtualNodeOperationHandler(
             }
 
             // For each of the platform DB's run the creation process
-            for (vNodeDb in vNodeDbs.values.filter { it.isPlatformManagedDb || it.connectionProvided }) {
+            for (vNodeDb in vNodeDbs.values.filter { it.isPlatformManagedDb || it.ddlConnectionProvided }) {
                 execLog.measureExecTime("create schema and user in ${vNodeDb.dbType} DB") {
                     vNodeDb.createSchemasAndUsers()
                 }
