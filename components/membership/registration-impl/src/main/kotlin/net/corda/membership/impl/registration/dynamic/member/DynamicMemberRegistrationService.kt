@@ -86,7 +86,7 @@ import net.corda.membership.lib.toWire
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.p2p.helpers.KeySpecExtractor
 import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.spec
-import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.validateSpecName
+import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.validateSchemeAndSignatureSpec
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -582,7 +582,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             specType: KeySpecExtractor.KeySpecType = KeySpecExtractor.KeySpecType.OTHER
         ): SignatureSpec {
             if (specFromContext != null) {
-                key.validateSpecName(specFromContext, specType)
+                key.validateSchemeAndSignatureSpec(specFromContext, specType)
                 return SignatureSpecImpl(specFromContext)
             }
             logger.info(

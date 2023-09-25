@@ -57,14 +57,14 @@ class HsqldbUtxoQueryProvider @Activate constructor(
         get() = """
             MERGE INTO {h-schema}utxo_transaction_output AS uto
             USING (VALUES :transactionId, CAST(:groupIndex AS INT), CAST(:leafIndex AS INT), :type, :tokenType, :tokenIssuerHash,
-                          :tokenSymbol, :tokenTag, :tokenOwnerHash, :tokenAmount, CAST(:createdAt AS TIMESTAMP))
-                AS x(transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash,
+                          :tokenNotaryX500Name, :tokenSymbol, :tokenTag, :tokenOwnerHash, :tokenAmount, CAST(:createdAt AS TIMESTAMP))
+                AS x(transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash, token_notary_x500_name,
                      token_symbol, token_tag, token_owner_hash, token_amount, created)
             ON uto.transaction_id = x.transaction_id AND uto.group_idx = x.group_idx AND uto.leaf_idx = x.leaf_idx
             WHEN NOT MATCHED THEN
-                INSERT (transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash,
+                INSERT (transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash, token_notary_x500_name,
                         token_symbol, token_tag, token_owner_hash, token_amount, created)
-                VALUES (x.transaction_id, x.group_idx, x.leaf_idx, x.type, x.token_type, x.token_issuer_hash,
+                VALUES (x.transaction_id, x.group_idx, x.leaf_idx, x.type, x.token_type, x.token_issuer_hash, x.token_notary_x500_name,
                         x.token_symbol, x.token_tag, x.token_owner_hash, x.token_amount, x.created)"""
             .trimIndent()
 

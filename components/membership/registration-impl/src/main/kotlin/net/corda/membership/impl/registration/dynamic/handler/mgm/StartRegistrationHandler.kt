@@ -169,11 +169,12 @@ internal class StartRegistrationHandler(
             }
             if (registrationRequest.serial!! > 0) { //re-registration
                 validateRegistrationRequest(activeOrSuspendedInfo != null) {
-                    "Member has not registered previously so serial number should be 0."
+                    "Member has not registered previously so serial number should be 0, but it was ${registrationRequest.serial}."
                 }
                 validateRegistrationRequest(activeOrSuspendedInfo!!.serial <= registrationRequest.serial!!) {
                     "Registration request was submitted for an older version of member info. " +
-                            "Please submit a new request."
+                    "The submitted serial was ${registrationRequest.serial}, but the latest serial is ${activeOrSuspendedInfo.serial}. " +
+                    "Please submit a new request with an up-to-date serial number."
                 }
             } else if (registrationRequest.serial!! == 0L) { // initial registration
                 validateRegistrationRequest(activeOrSuspendedInfo == null) {
