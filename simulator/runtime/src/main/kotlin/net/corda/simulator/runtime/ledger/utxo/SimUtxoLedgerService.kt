@@ -103,9 +103,6 @@ class SimUtxoLedgerService(
      * [UtxoTransactionOutputEntity] based on [ContractState] type. Converts the entities fetched into [StateAndRef]
      * by deserializing the contractStateData and encumbranceData
      *
-     * Unlike real implementation, this function filters by type using db query instead of in-memory, which means
-     * it finds the exact types rather than finding them including their subclasses
-     *
      * @param type The [ContractState] type to filter unconsumed states
      */
     @Suppress("UNCHECKED_CAST")
@@ -133,14 +130,8 @@ class SimUtxoLedgerService(
         return stateAndRefs
     }
 
-    /**
-     * This does exactly the same thing as [findUnconsumedStatesByType] unlike real implementation where it finds
-     * the states by type and its subclasses, both functions will find them excluding subclasses.
-     *
-     * @param type The [ContractState] type to filter unconsumed states
-     */
     override fun <T : ContractState> findUnconsumedStatesByExactType(type: Class<T>): List<StateAndRef<T>> {
-       return findUnconsumedStatesByType(type)
+        TODO("Not implemented yet")
     }
 
     /**
