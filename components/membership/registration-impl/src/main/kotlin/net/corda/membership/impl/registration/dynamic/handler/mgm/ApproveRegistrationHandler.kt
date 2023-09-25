@@ -20,6 +20,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.VersionedMessageBuilder.retrieveRegistrationStatusMessage
+import net.corda.membership.lib.registration.DECLINED_REASON_FOR_USER_INTERNAL_ERROR
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -152,7 +153,9 @@ internal class ApproveRegistrationHandler(
             logger.warn("Could not approve registration request: '$registrationId'", e)
             return RegistrationHandlerResult(
                 state,
-                listOf(Record(REGISTRATION_COMMAND_TOPIC, key, RegistrationCommand(DeclineRegistration(e.message))))
+                listOf(Record(REGISTRATION_COMMAND_TOPIC, key,
+                    RegistrationCommand(DeclineRegistration(e.message, DECLINED_REASON_FOR_USER_INTERNAL_ERROR)))
+                )
             )
         }
 

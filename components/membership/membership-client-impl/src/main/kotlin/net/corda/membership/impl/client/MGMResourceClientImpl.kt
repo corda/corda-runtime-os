@@ -597,7 +597,7 @@ class MGMResourceClientImpl @Activate constructor(
             if (approve) {
                 publishRegistrationCommand(ApproveRegistration(), memberName, mgm.groupId)
             } else {
-                publishRegistrationCommand(DeclineRegistration(reason ?: ""), memberName, mgm.groupId)
+                publishRegistrationCommand(DeclineRegistration(reason ?: "", null), memberName, mgm.groupId)
             }
         }
 
@@ -615,7 +615,7 @@ class MGMResourceClientImpl @Activate constructor(
                     "declined. Refer to the docs on Member Suspension to suspend approved members." }
 
             publishRegistrationCommand(
-                DeclineRegistration(FORCE_DECLINE_MESSAGE),
+                DeclineRegistration(FORCE_DECLINE_MESSAGE, null),
                 findMemberName(requestStatus.memberProvidedContext),
                 mgm.groupId
             )

@@ -912,7 +912,7 @@ class MGMResourceClientTest {
                     Record(
                         Schemas.Membership.REGISTRATION_COMMAND_TOPIC,
                         "$memberName-$DEFAULT_MEMBER_GROUP_ID",
-                        RegistrationCommand(DeclineRegistration(reason))
+                        RegistrationCommand(DeclineRegistration(reason, null))
                     )
                 )
             )
@@ -1086,7 +1086,7 @@ class MGMResourceClientTest {
                     Record(
                         Schemas.Membership.REGISTRATION_COMMAND_TOPIC,
                         "$memberName-$DEFAULT_MEMBER_GROUP_ID",
-                        RegistrationCommand(DeclineRegistration("Force declined by MGM"))
+                        RegistrationCommand(DeclineRegistration("Force declined by MGM", null))
                     )
                 )
             )
