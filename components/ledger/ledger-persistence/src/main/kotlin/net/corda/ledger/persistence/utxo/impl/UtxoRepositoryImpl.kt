@@ -90,18 +90,6 @@ class UtxoRepositoryImpl @Activate constructor(
             .mapToComponentGroups(UtxoComponentGroupMapper(transactionId))
     }
 
-    private fun mapToUtxoTransactionOutputDto(queryObj: Query): List<UtxoTransactionOutputDto> {
-        return queryObj.resultListAsTuples()
-            .map { t ->
-                UtxoTransactionOutputDto(
-                    t[0] as String, // transactionId
-                    t[1] as Int,    // leaf ID
-                    t[2] as ByteArray, // outputs info data
-                    t[3] as ByteArray  // outputs data
-                )
-            }
-    }
-
     private fun findUnconsumedVisibleStates(
         entityManager: EntityManager,
         query: String,
@@ -379,4 +367,16 @@ class UtxoRepositoryImpl @Activate constructor(
 
     @Suppress("UNCHECKED_CAST")
     private fun Query.resultListAsTuples() = resultList as List<Tuple>
+
+    private fun mapToUtxoTransactionOutputDto(queryObj: Query): List<UtxoTransactionOutputDto> {
+        return queryObj.resultListAsTuples()
+            .map { t ->
+                UtxoTransactionOutputDto(
+                    t[0] as String, // transactionId
+                    t[1] as Int,    // leaf ID
+                    t[2] as ByteArray, // outputs info data
+                    t[3] as ByteArray  // outputs data
+                )
+            }
+    }
 }
