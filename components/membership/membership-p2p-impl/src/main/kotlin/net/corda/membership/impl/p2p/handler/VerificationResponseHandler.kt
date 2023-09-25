@@ -22,7 +22,10 @@ internal class VerificationResponseHandler(
         header: AuthenticatedMessageHeader,
         payload: ByteBuffer
     ): Record<String, RegistrationCommand> {
-        logger.info("Received verification response from ${header.source}. Sending it to RegistrationManagementService to process.")
+        logger.info(
+            "Received verification response with message ID ${header.messageId} and trace ID ${header.traceId} from ${header.source}. " +
+                    "Sending it to RegistrationManagementService to process."
+        )
         val response = avroSchemaRegistry.deserialize<VerificationResponse>(payload)
         return Record(
             REGISTRATION_COMMAND_TOPIC,
