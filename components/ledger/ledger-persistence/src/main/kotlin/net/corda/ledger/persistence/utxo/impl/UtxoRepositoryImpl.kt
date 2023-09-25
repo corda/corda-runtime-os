@@ -102,7 +102,7 @@ class UtxoRepositoryImpl @Activate constructor(
             queryObj.setParameter("type", stateClassType)
         }
 
-        return mapToUtxoTransactionOutputDto(queryObj)
+        return queryObj.mapToUtxoTransactionOutputDto()
     }
 
     override fun findUnconsumedVisibleStatesByType(
@@ -122,12 +122,11 @@ class UtxoRepositoryImpl @Activate constructor(
         entityManager: EntityManager,
         stateRefs: List<StateRef>
     ): List<UtxoTransactionOutputDto> {
-        val queryObj = entityManager.createNativeQuery(queryProvider.resolveStateRefs, Tuple::class.java)
+        return entityManager.createNativeQuery(queryProvider.resolveStateRefs, Tuple::class.java)
             .setParameter("transactionIds", stateRefs.map { it.transactionId.toString() })
             .setParameter("stateRefs", stateRefs.map { it.toString() })
             .setParameter("verified", TransactionStatus.VERIFIED.value)
-
-        return mapToUtxoTransactionOutputDto(queryObj)
+            .mapToUtxoTransactionOutputDto()
     }
 
     override fun findTransactionSignatures(
@@ -368,8 +367,8 @@ class UtxoRepositoryImpl @Activate constructor(
     @Suppress("UNCHECKED_CAST")
     private fun Query.resultListAsTuples() = resultList as List<Tuple>
 
-    private fun mapToUtxoTransactionOutputDto(queryObj: Query): List<UtxoTransactionOutputDto> {
-        return queryObj.resultListAsTuples()
+    private fun Query.mapToUtxoTransactionOutputDto(): List<UtxoTransactionOutputDto> {
+        return resultListAsTuples()
             .map { t ->
                 UtxoTransactionOutputDto(
                     t[0] as String, // transactionId
