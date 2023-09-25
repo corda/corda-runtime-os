@@ -70,10 +70,10 @@ spec:
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
       {{- include "corda.tolerations" . | nindent 6 }}
       serviceAccountName: {{ include "corda.bootstrapPreinstallServiceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
       securityContext:
-        runAsUser: 10001
-        runAsGroup: 10002
-        fsGroup: 1000
+        {{ . | toYaml | nindent 8 }}
+      {{- end }}
       containers:
         - name: preinstall-checks
           image: {{ include "corda.bootstrapCliImage" . }}
@@ -135,10 +135,10 @@ spec:
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
       {{- include "corda.tolerations" $ | nindent 6 }}
       {{- include "corda.bootstrapServiceAccount" . | nindent 6 }}
+      {{- with .Values.podSecurityContext }}
       securityContext:
-        runAsUser: 10001
-        runAsGroup: 10002
-        fsGroup: 1000
+        {{ . | toYaml | nindent 8 }}
+      {{- end }}
       containers:
         - name: fin
           image: {{ include "corda.bootstrapCliImage" . }}
@@ -223,10 +223,10 @@ spec:
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
       {{- include "corda.tolerations" . | nindent 6 }}
       {{- include "corda.bootstrapServiceAccount" . | nindent 6 }}
+      {{- with .Values.podSecurityContext }}
       securityContext:
-        runAsUser: 10001
-        runAsGroup: 10002
-        fsGroup: 1000
+        {{ . | toYaml | nindent 8 }}
+      {{- end }}
       containers:
         - name: create-topics
           image: {{ include "corda.bootstrapCliImage" . }}
@@ -369,10 +369,10 @@ spec:
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
       {{- include "corda.tolerations" . | nindent 6 }}
       {{- include "corda.bootstrapServiceAccount" . | nindent 6 }}
+      {{- with .Values.podSecurityContext }}
       securityContext:
-        runAsUser: 10001
-        runAsGroup: 10002
-        fsGroup: 1000
+        {{ . | toYaml | nindent 8 }}
+      {{- end }}
       containers:
         - name: create-rbac-role-user-admin
           image: {{ include "corda.bootstrapCliImage" . }}
@@ -511,7 +511,7 @@ a second init container to execute the output SQL to the relevant database
   {{- include "corda.bootstrapResources" . | nindent 2 }}
   {{- include "corda.containerSecurityContext" . | nindent 2 }}
   {{- if eq .name "db" }}
-  args: [ 'database', 'spec', '-g', 'config:{{ .Values.db.cluster.schema }},rbac:{{ .Values.bootstrap.db.rbac.schema }},crypto:{{ .Values.bootstrap.db.crypto.schema }}', '-c', '-l', '/tmp', '--jdbc-url', 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}', '-u', $(PGUSER), '-p', $(PGPASSWORD) ]
+  args: [ 'database', 'spec', '-g', 'config:{{ .Values.db.cluster.schema }},rbac:{{ .Values.bootstrap.db.rbac.schema }},crypto:{{ .Values.bootstrap.db.crypto.schema }},stateManager:{{ .Values.bootstrap.db.stateManager.schema }}', '-c', '-l', '/tmp', '--jdbc-url', 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}', '-u', $(PGUSER), '-p', $(PGPASSWORD) ]
   {{- else }}
   args: [ 'initial-config', '{{ .subCommand | default "create-db-config" }}',{{ " " -}}
 

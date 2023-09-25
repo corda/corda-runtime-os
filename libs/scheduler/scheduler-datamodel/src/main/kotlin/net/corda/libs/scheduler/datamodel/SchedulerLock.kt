@@ -2,7 +2,7 @@ package net.corda.libs.scheduler.datamodel
 
 /**
  * Represents a lock on a given Task, allowing to find out when the last time was one was triggered.
- * This lock must be released by calling `updateAndRelease` or will be released when closing the `ScheduleLock`.
+ * This lock must be released by closing the `ScheduleLock`.
  */
 interface SchedulerLock : AutoCloseable {
     /**
@@ -20,8 +20,14 @@ interface SchedulerLock : AutoCloseable {
     val secondsSinceLastScheduledTrigger: Long
 
     /**
-     * Update the Scheduler Log with the current timestamp.
-     * `schedulerId` is the name/id of the current process.
+     * Updates the scheduler log entry with the current timestamp.
+     *
+     * @param schedulerId is the name/id of the current process.
      */
-    fun updateAndRelease(schedulerId: String)
+    fun updateLog(schedulerId: String)
+
+    /**
+     * Releases the log entry in the database.
+     */
+    override fun close()
 }

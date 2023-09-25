@@ -85,9 +85,11 @@ dependencies {
 }
 
 tasks.named('jar', Jar) {
-    bnd '''\
-    DynamicImport-Package: org.hibernate.proxy
-    '''
+    bundle {
+        bnd '''\
+DynamicImport-Package: org.hibernate.proxy
+'''
+    }
 }
 
 tasks.register('backingStoreBenchmark', Test) {
@@ -105,9 +107,7 @@ tasks.register('backingStoreBenchmark', Test) {
     systemProperty "postgresPassword", project.getProperty("postgresPassword")
     systemProperty "postgresPort", project.getProperty("postgresPort")
     systemProperty "postgresUser", project.getProperty("postgresUser")
-}
 
-backingStoreBenchmark {
     // Ensures benchmark is always re-run if executed from the console
     outputs.upToDateWhen { false }
 }

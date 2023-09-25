@@ -3,7 +3,6 @@ package net.corda.applications.workers.uniqueness
 import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.JavaSerialisationFilter
-import net.corda.applications.workers.workercommon.PathAndConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
@@ -70,12 +69,11 @@ class UniquenessWorker @Activate constructor(
 
         configureTracing("Uniqueness Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
 
-        val databaseConfig = PathAndConfig(BootConfig.BOOT_DB, params.databaseParams)
         val config = WorkerHelpers.getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
-            listOf(databaseConfig)
+            listOf(WorkerHelpers.createConfigFromParams(BootConfig.BOOT_DB, params.databaseParams))
         )
 
         uniquenessProcessor.start(config)

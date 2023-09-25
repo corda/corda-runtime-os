@@ -13,15 +13,16 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRequest
 import net.corda.data.flow.event.session.SessionData
+import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.identity.HoldingIdentity
-import net.corda.data.p2p.HostedIdentityEntry
-import net.corda.data.p2p.HostedIdentitySessionKeyAndCert
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.membership.locally.hosted.identities.IdentityInfo
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -42,6 +43,7 @@ import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.session.mapper.service.FlowMapperService
 import net.corda.test.flow.util.buildSessionEvent
+import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -53,6 +55,7 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.lang.System.currentTimeMillis
 import java.nio.ByteBuffer
+import java.security.KeyPairGenerator
 import java.time.Instant
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -93,6 +96,10 @@ class FlowMapperServiceIntegrationTest {
 
     private val schemaVersion = ConfigurationSchemaVersion(1, 0)
 
+    private val aliceHoldingIdentity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group1")
+    private val bobHoldingIdentity = HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group1")
+    private val charlieHoldingIdentity = HoldingIdentity("CN=Charlie, O=Charlie Corp, L=LDN, C=GB", "group1")
+
 
     @BeforeEach
     fun setup() {
@@ -100,39 +107,21 @@ class FlowMapperServiceIntegrationTest {
             setup = true
             val publisher = publisherFactory.createPublisher(PublisherConfig(clientId), messagingConfig)
             setupConfig(publisher)
+            val keyPairGenerator = KeyPairGenerator.getInstance("RSA")
+            keyPairGenerator.initialize(2048)
+            val publicKey = keyPairGenerator.generateKeyPair().public
+            val alice = aliceHoldingIdentity.toCorda()
+            val bob = bobHoldingIdentity.toCorda()
+            val aliceIdentityInfo = IdentityInfo(alice, listOf(), publicKey)
+            val bobIdentityInfo = IdentityInfo(bob, listOf(), publicKey)
 
-            val aliceHoldingIdentity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group1")
-            val bobHoldingIdentity = HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group1")
-
-            val tlsTenantId = "tlsTenantId"
-            val tlsCertificates = mutableListOf<String>()
-            val sessionPublicKey = "sessionPublicKey"
-            val sessionCertificates = listOf("sessionCertificates")
-            val preferredSessionKeyAndCert = HostedIdentitySessionKeyAndCert(sessionPublicKey, sessionCertificates)
-            val alternativeSessionKeysAndCerts = mutableListOf<HostedIdentitySessionKeyAndCert>()
-
-            val bobHostedIdentityEntry = HostedIdentityEntry(
-                bobHoldingIdentity,
-                tlsTenantId,
-                tlsCertificates,
-                preferredSessionKeyAndCert,
-                alternativeSessionKeysAndCerts
+            (locallyHostedIdentityService as DummyLocallyHostedIdentitiesService).setIdentityInfo(
+                alice, aliceIdentityInfo
+            )
+            (locallyHostedIdentityService as DummyLocallyHostedIdentitiesService).setIdentityInfo(
+                bob, bobIdentityInfo
             )
 
-            val aliceHostedIdentityEntry = HostedIdentityEntry(
-                aliceHoldingIdentity,
-                tlsTenantId,
-                tlsCertificates,
-                preferredSessionKeyAndCert,
-                alternativeSessionKeysAndCerts
-            )
-
-            val holdingIdentityToKey: List<Record<String, HostedIdentityEntry>> = listOf(
-                Record("p2p.hosted.identities", "bob", bobHostedIdentityEntry),
-                Record("p2p.hosted.identities", "alice", aliceHostedIdentityEntry)
-            )
-
-            publisher.publish(holdingIdentityToKey)
             flowMapperService.start()
             locallyHostedIdentityService.start()
         }
@@ -145,18 +134,19 @@ class FlowMapperServiceIntegrationTest {
         val publisher = publisherFactory.createPublisher(PublisherConfig(testId), messagingConfig)
 
         //send 2 session init, 1 is duplicate
-        val sessionInitEvent = Record<Any, Any>(
+        val sessionDataAndInitEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
                 buildSessionEvent(
                     MessageDirection.OUTBOUND, testId, 1, SessionData(ByteBuffer.wrap("bytes".toByteArray()), SessionInit(
                         testId, testId, emptyKeyValuePairList(), emptyKeyValuePairList()
                     )),
+                    initiatedIdentity = charlieHoldingIdentity,
                     contextSessionProps = emptyKeyValuePairList()
                 )
             )
         )
 
-        publisher.publish(listOf(sessionInitEvent, sessionInitEvent))
+        publisher.publish(listOf(sessionDataAndInitEvent, sessionDataAndInitEvent))
 
         //validate p2p out only receives 1 init
         val p2pLatch = CountDownLatch(1)
@@ -304,9 +294,11 @@ class FlowMapperServiceIntegrationTest {
         val sessionInitEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
                 buildSessionEvent(
-                    MessageDirection.OUTBOUND, testId, 1, SessionInit(
+                    MessageDirection.OUTBOUND, testId, 1, SessionCounterpartyInfoRequest(SessionInit(
                         testId, testId, emptyKeyValuePairList(), emptyKeyValuePairList()
-                    ), contextSessionProps = emptyKeyValuePairList()
+                    )),
+                    initiatedIdentity = charlieHoldingIdentity,
+                    contextSessionProps = emptyKeyValuePairList()
                 )
             )
         )
@@ -334,6 +326,7 @@ class FlowMapperServiceIntegrationTest {
                     testId,
                     2,
                     SessionData(ByteBuffer.wrap("".toByteArray()), null),
+                    initiatedIdentity = charlieHoldingIdentity,
                     contextSessionProps = emptyKeyValuePairList()
                 )
             )
@@ -355,6 +348,49 @@ class FlowMapperServiceIntegrationTest {
         flowEventSub.close()
     }
 
+
+    @Test
+    fun `when the flow mapper receives an inbound session message for a non-existent session, an error is returned`() {
+        val testId = "test5"
+        val publisher = publisherFactory.createPublisher(PublisherConfig(testId), messagingConfig)
+
+        //send data, no state
+        val sessionDataEvent = Record<Any, Any>(
+            FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
+                buildSessionEvent(
+                    MessageDirection.INBOUND,
+                    testId,
+                    2,
+                    SessionData(ByteBuffer.wrap("".toByteArray()), null),
+                    initiatingIdentity = aliceHoldingIdentity,
+                    initiatedIdentity = bobHoldingIdentity,
+                    contextSessionProps = emptyKeyValuePairList()
+                )
+            )
+        )
+
+        val mapperLatch = CountDownLatch(2) // The initial message and the error back.
+        val records = mutableListOf<SessionEvent>()
+        val mapperSub = subscriptionFactory.createPubSubSubscription(
+            SubscriptionConfig("$testId-mapper", FLOW_MAPPER_EVENT_TOPIC),
+            TestFlowMapperProcessor(mapperLatch, records),
+            messagingConfig
+        )
+        mapperSub.start()
+        try {
+            publisher.publish(listOf(sessionDataEvent))
+            assertTrue(mapperLatch.await(10, TimeUnit.SECONDS))
+        } finally {
+            mapperSub.close()
+        }
+        val requiredSessionID = "$testId-INITIATED"
+        val event = records.find {
+            it.sessionId == requiredSessionID
+        } ?: throw AssertionError("No event matching required session ID $requiredSessionID was found")
+        assertThat(event.messageDirection).isEqualTo(MessageDirection.INBOUND)
+        assertThat(event.sessionId).isEqualTo("$testId-INITIATED")
+        assertThat(event.payload).isInstanceOf(SessionError::class.java)
+    }
 
     private fun setupConfig(publisher: Publisher) {
         val bootConfig = smartConfigFactory.create(ConfigFactory.parseString(bootConf))

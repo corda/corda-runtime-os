@@ -29,6 +29,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 
 @Suppress("MaxLineLength")
@@ -117,8 +118,8 @@ class TransactionBackchainReceiverFlowV1Test {
     fun `a transaction without any dependencies does not need resolving`() {
         assertThat(callTransactionBackchainReceiverFlow(emptySet()).complete()).isEmpty()
 
-        verifyNoInteractions(session)
-        verifyNoInteractions(utxoLedgerPersistenceService)
+        verify(session).send(TransactionBackchainRequestV1.Stop)
+        verifyNoMoreInteractions(session)
         verifyNoInteractions(
             utxoLedgerGroupParametersPersistenceService,
             signedGroupParametersVerifier
@@ -192,6 +193,44 @@ class TransactionBackchainReceiverFlowV1Test {
         verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(TX_ID_1)))
         verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(TX_ID_2)))
         verify(session, never()).sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(TX_ID_3)))
+        verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction1, UNVERIFIED)
+        verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction2, UNVERIFIED)
+        verify(utxoLedgerPersistenceService, never()).persistIfDoesNotExist(retrievedTransaction3, UNVERIFIED)
+        verifyNoInteractions(
+            utxoLedgerGroupParametersPersistenceService,
+            signedGroupParametersVerifier
+        )
+    }
+
+    @Test
+    fun `receiving only transactions that are stored locally as VERIFIED does not have their dependencies added to the transactions to retrieve and stops resolution`() {
+        whenever(utxoLedgerPersistenceService.findSignedTransaction(TX_ID_1)).thenReturn(retrievedTransaction1)
+
+        whenever(session.sendAndReceive(eq(List::class.java), any())).thenReturn(
+            listOf(retrievedTransaction1),
+            listOf(retrievedTransaction2)
+        )
+
+        whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(any(), eq(UNVERIFIED)))
+            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
+
+        whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(any(), eq(UNVERIFIED)))
+            .thenReturn(TransactionExistenceStatus.VERIFIED to listOf(PACKAGE_SUMMARY))
+
+        whenever(retrievedTransaction1.id).thenReturn(TX_ID_1)
+        whenever(retrievedTransaction1.inputStateRefs).thenReturn(listOf(TX_3_INPUT_DEPENDENCY_STATE_REF_1))
+        whenever(retrievedTransaction1.referenceStateRefs).thenReturn(listOf(TX_3_INPUT_REFERENCE_DEPENDENCY_STATE_REF_1))
+
+        whenever(retrievedTransaction2.id).thenReturn(TX_ID_2)
+        whenever(retrievedTransaction2.inputStateRefs).thenReturn(emptyList())
+        whenever(retrievedTransaction2.referenceStateRefs).thenReturn(emptyList())
+
+        assertThat(callTransactionBackchainReceiverFlow(setOf(TX_ID_1, TX_ID_2)).complete()).isEqualTo(emptyList<SecureHash>())
+
+        verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(TX_ID_1)))
+        verify(session).sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(TX_ID_2)))
+        verify(session, never()).sendAndReceive(List::class.java, TransactionBackchainRequestV1.Get(setOf(TX_ID_3)))
+        verify(session).send(TransactionBackchainRequestV1.Stop)
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction1, UNVERIFIED)
         verify(utxoLedgerPersistenceService).persistIfDoesNotExist(retrievedTransaction2, UNVERIFIED)
         verify(utxoLedgerPersistenceService, never()).persistIfDoesNotExist(retrievedTransaction3, UNVERIFIED)

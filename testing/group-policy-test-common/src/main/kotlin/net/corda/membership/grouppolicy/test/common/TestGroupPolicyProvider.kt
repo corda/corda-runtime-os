@@ -53,6 +53,8 @@ class TestGroupPolicyProviderImpl @Activate constructor(
         }
     }
 
+    override fun getP2PParameters(holdingIdentity: HoldingIdentity) = policies[holdingIdentity]?.p2pParameters
+
     override val isRunning: Boolean
         get() = coordinator.status == LifecycleStatus.UP
 

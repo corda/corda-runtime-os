@@ -83,6 +83,7 @@ import net.corda.schema.membership.MembershipSchema
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.KeySchemeCodes
 import net.corda.v5.membership.MemberContext
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -138,6 +139,7 @@ class MGMRegistrationServiceTest {
     private val sessionCryptoSigningKey: CryptoSigningKey = mock {
         on { publicKey } doReturn ByteBuffer.wrap(SESSION_KEY_STRING.toByteArray())
         on { category } doReturn SESSION_INIT
+        on { schemeCodeName } doReturn KeySchemeCodes.RSA_CODE_NAME
     }
     private val ecdhKey: PublicKey = mock {
         on { encoded } doReturn ECDH_KEY_STRING.toByteArray()

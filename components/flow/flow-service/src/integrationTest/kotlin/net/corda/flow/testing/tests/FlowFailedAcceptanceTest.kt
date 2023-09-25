@@ -56,7 +56,7 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `An initiated flow failing removes the flow's checkpoint publishes a failed flow status and schedules flow cleanup`() {
         `when` {
-            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL)
+            sessionCounterpartyInfoRequestReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL)
                 .completedWithError(EXCEPTION)
         }
 

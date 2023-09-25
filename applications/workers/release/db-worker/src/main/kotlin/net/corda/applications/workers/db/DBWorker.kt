@@ -3,7 +3,7 @@ package net.corda.applications.workers.db
 import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.JavaSerialisationFilter
-import net.corda.applications.workers.workercommon.PathAndConfig
+import net.corda.applications.workers.workercommon.WorkerHelpers
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
@@ -17,6 +17,7 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.db.DBProcessor
+import net.corda.processors.scheduler.SchedulerProcessor
 import net.corda.processors.token.cache.TokenCacheProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.tracing.configureTracing
@@ -37,6 +38,8 @@ class DBWorker @Activate constructor(
     private val processor: DBProcessor,
     @Reference(service = TokenCacheProcessor::class)
     private val tokenCacheProcessor: TokenCacheProcessor,
+    @Reference(service = SchedulerProcessor::class)
+    private val schedulerProcessor: SchedulerProcessor,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
     @Reference(service = WorkerMonitor::class)
@@ -75,16 +78,16 @@ class DBWorker @Activate constructor(
 
         configureTracing("DB Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
 
-        val databaseConfig = PathAndConfig(BOOT_DB, params.databaseParams)
         val config = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
-            listOf(databaseConfig)
+            listOf(WorkerHelpers.createConfigFromParams(BOOT_DB, params.databaseParams))
         )
 
         processor.start(config)
         tokenCacheProcessor.start(config)
+        schedulerProcessor.start(config)
     }
 
     override fun shutdown() {
@@ -92,6 +95,7 @@ class DBWorker @Activate constructor(
         processor.stop()
         webServer.stop()
         tokenCacheProcessor.stop()
+        schedulerProcessor.stop()
         shutdownTracing()
     }
 }
