@@ -24,7 +24,6 @@ class CryptoRewrapBusProcessor(
         val records = mutableListOf<Record<String, IndividualKeyRotationResponse>>()
         events.forEach {
             val request = it.value
-            val startTimestamp = Instant.now()
             if (request != null) {
                 cryptoService.rewrapWrappingKey(request.tenantId, request.oldKeyAlias, request.newKeyAlias)
             }
@@ -35,7 +34,6 @@ class CryptoRewrapBusProcessor(
                     request.tenantId,
                     request.oldKeyAlias,
                     request.newKeyAlias,
-                    startTimestamp,
                     endTimestamp
                 )
             records.add(Record(REWRAP_MESSAGE_RESPONSE_TOPIC, request.requestId, value))
@@ -48,8 +46,7 @@ class CryptoRewrapBusProcessor(
         tenantId: String,
         oldKeyAlias: String,
         newKeyAlias: String,
-        startTimestamp: Instant,
         endTimestamp: Instant,
     ): IndividualKeyRotationResponse =
-        IndividualKeyRotationResponse(requestId, tenantId, oldKeyAlias, newKeyAlias, startTimestamp, endTimestamp)
+        IndividualKeyRotationResponse(requestId, tenantId, oldKeyAlias, newKeyAlias, endTimestamp)
 }

@@ -105,6 +105,7 @@ class CryptoRekeyBusProcessor(
         null,
         alreadyRotatedKeys,
         numberOfKeysToBeRotated,
+        Instant.now(),
         Instant.now()
     )
 
