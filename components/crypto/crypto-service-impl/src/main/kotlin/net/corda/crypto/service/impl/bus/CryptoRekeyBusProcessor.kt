@@ -56,8 +56,6 @@ class CryptoRekeyBusProcessor(
                 if (wrappingRepo.findKey(request!!.oldKeyAlias) != null) {
                     keysToRotate++
                     tenantIdsWithKeysToRotate.add(virtualNode.holdingIdentity.toString())
-                    // issue a Kafka record for the key to be re-wrapped
-
                 }
             }
 
@@ -65,11 +63,17 @@ class CryptoRekeyBusProcessor(
                 PublisherConfig(request!!.requestId),
                 messagingConfig
             )
-            publisher.start()
 
+            // For each tenant, whose wrapping repo contains key that needs rotating, create a Kafka record and publish it
+            // to-do this needs to be updated as there might be millions of records, and we might try to do it more efficiently
 
-            // For each tenant, whose wrapping repo contains key to be rotated, create a Kafka record and publish it
-            // to-do this needs to be updated as there might be millions of records and we might try to do it more efficient
+            // If the user sets up the limit of the individual key rotations, do only that number of rotations
+            // We are rotating root keys at the moment, so for each tenant there will be maximum one key, hence we can
+            // limit the number from tenantIds.
+            if (request.limit != null) {
+                tenantIdsWithKeysToRotate = tenantIdsWithKeysToRotate.take(request.limit).toMutableList()
+            }
+
             tenantIdsWithKeysToRotate.forEach { tenant ->
                 publisher.publish(
                     listOf(
@@ -87,7 +91,7 @@ class CryptoRekeyBusProcessor(
                 )
             }
         }
-        return events
+        return emptyList()
     }
 
     private fun createResponseContext(

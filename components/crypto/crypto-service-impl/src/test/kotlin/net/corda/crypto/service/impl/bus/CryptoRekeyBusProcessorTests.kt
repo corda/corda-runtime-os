@@ -61,4 +61,10 @@ class CryptoRekeyBusProcessorTests {
     fun `do a mocked key rotation`() {
         // to be implemented
     }
+
+    @Test
+    fun `limit for key rotation operations is reflected`() {
+        // to be implemented
+    }
+
 }
