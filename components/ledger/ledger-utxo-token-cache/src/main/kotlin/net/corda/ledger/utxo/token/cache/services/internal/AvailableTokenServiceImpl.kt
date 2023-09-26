@@ -20,10 +20,9 @@ class AvailableTokenServiceImpl(
     private val virtualNodeInfoService: VirtualNodeInfoReadService,
     private val dbConnectionManager: DbConnectionManager,
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
-    private val utxoTokenRepository: UtxoTokenRepository,
-    private val serviceConfiguration: ServiceConfiguration
+    private val utxoTokenRepository: UtxoTokenRepository
 ) : AvailableTokenService, SingletonSerializeAsToken {
-    override fun findAvailTokens(poolKey: TokenPoolKey, ownerHash: String?, tagRegex: String?): AvailTokenQueryResult {
+    override fun findAvailTokens(poolKey: TokenPoolKey, ownerHash: String?, tagRegex: String?, maxTokens: Int): AvailTokenQueryResult {
         val virtualNode = getVirtualNodeInfo(poolKey)
 
         val entityManagerFactory = getOrCreateEntityManagerFactory(virtualNode)
@@ -33,7 +32,7 @@ class AvailableTokenServiceImpl(
             poolKey,
             ownerHash,
             tagRegex,
-            serviceConfiguration.cachedTokenPageSize
+            maxTokens
         )
     }
 

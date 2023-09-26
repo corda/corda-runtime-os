@@ -44,8 +44,6 @@ class AvailableTokenServiceImplTest {
         whenever(queryBalance(any(), any(), isNull(), isNull())).thenReturn(totalBalance)
     }
 
-    private val serviceConfiguration = mock<ServiceConfiguration>()
-
     private val poolKey = mock<TokenPoolKey>().apply {
         whenever(shortHolderId).thenReturn(SecureHashImpl(DigestAlgorithmName.SHA2_256.name, "random".toByteArray()).toHexString())
     }
@@ -54,12 +52,11 @@ class AvailableTokenServiceImplTest {
         whenever(get(any())).thenReturn(JpaEntitiesSet.create("empty", emptySet()))
     }
 
-    val availableTokenServiceImpl = AvailableTokenServiceImpl(
+    private val availableTokenServiceImpl = AvailableTokenServiceImpl(
         virtualNodeInfoService,
         dbConnectionManager,
         jpaEntitiesRegistry,
-        utxoTokenRepository,
-        serviceConfiguration
+        utxoTokenRepository
     )
 
     /**
