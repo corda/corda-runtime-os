@@ -13,6 +13,7 @@ import net.corda.lifecycle.TimerEvent
 import net.corda.metrics.CordaMetrics
 import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.ReconcilerWriter
+import net.corda.utilities.VisibleForTesting
 import net.corda.utilities.debug
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
@@ -114,7 +115,8 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
      * @throws [ReconciliationException] to notify an error occurred at kafka or db [ReconcilerReader.getAllVersionedRecords].
      */
     @Suppress("ComplexMethod")
-    fun reconcile(): Int {
+    @VisibleForTesting
+    internal fun reconcile(): Int {
         val kafkaRecords =
             kafkaReader.getAllVersionedRecords()?.asSequence()?.associateBy { it.key }
                 ?: throw ReconciliationException("Error occurred while retrieving kafka records")
@@ -153,7 +155,9 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
             }
         }
 
-        firstRun = false
+        if (firstRun) {
+            firstRun = false
+        }
 
         return reconciledCount
     }
