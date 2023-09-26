@@ -84,15 +84,24 @@ dependencies {
     smokeTestImplementation project(":testing:packaging-test-utilities")
     smokeTestImplementation project(':testing:test-utilities')
     smokeTestImplementation project(":testing:uniqueness:uniqueness-utilities")
+    smokeTestRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
+    smokeTestRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+
     //TODO - check do you need all of these
     implementation project(':libs:virtual-node:sandbox-group-context')
     smokeTestImplementation project(':testing:sandboxes')
     implementation project (':components:virtual-node:sandbox-group-context-service')
     runtimeOnly project(':components:virtual-node:sandbox-amqp')
     runtimeOnly project(':components:virtual-node:sandbox-json')
-
-    smokeTestRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
-    smokeTestRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    implementation project(':libs:ledger:ledger-common-data')
+    implementation project(':libs:ledger:ledger-utxo-data')
+    implementation project(':libs:ledger:ledger-utxo-transaction-verifier')
+    smokeTestImplementation project(':libs:ledger:ledger-common-data')
+    smokeTestImplementation project(':testing:ledger:ledger-common-testkit')
+    implementation project(':testing:db-message-bus-testkit')
+    implementation project(':testing:ledger:ledger-common-testkit')
+    implementation project(':testing:sandboxes')
+    implementation project(':testing:test-utilities')
 }
 
 def smokeTestResources = tasks.named('processSmokeTestResources', ProcessResources) {
