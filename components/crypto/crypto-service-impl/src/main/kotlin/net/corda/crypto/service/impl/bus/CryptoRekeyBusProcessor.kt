@@ -24,7 +24,7 @@ class CryptoRekeyBusProcessor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val wrappingRepositoryFactory: WrappingRepositoryFactory,
     private val publisherFactory: PublisherFactory,
-    private val cryptoConfig: SmartConfig,
+    private val messagingConfig: SmartConfig,
 ) : DurableProcessor<String, KeyRotationRequest> {
 
     override val keyClass: Class<String> = String::class.java
@@ -63,7 +63,7 @@ class CryptoRekeyBusProcessor(
 
             val publisher = publisherFactory.createPublisher(
                 PublisherConfig(request!!.requestId),
-                cryptoConfig
+                messagingConfig
             )
             publisher.start()
 
