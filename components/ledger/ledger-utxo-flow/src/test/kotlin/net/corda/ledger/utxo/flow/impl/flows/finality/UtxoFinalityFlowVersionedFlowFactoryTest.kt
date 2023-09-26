@@ -3,7 +3,6 @@ package net.corda.ledger.utxo.flow.impl.flows.finality
 import net.corda.ledger.utxo.flow.impl.flows.finality.v1.UtxoFinalityFlowV1
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.libs.platform.PlatformVersion.CORDA_5_1
-import net.corda.libs.platform.PlatformVersion.CORDA_5_0
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import org.assertj.core.api.Assertions.assertThat
@@ -11,7 +10,6 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import kotlin.test.assertSame
 
 class UtxoFinalityFlowVersionedFlowFactoryTest {
 

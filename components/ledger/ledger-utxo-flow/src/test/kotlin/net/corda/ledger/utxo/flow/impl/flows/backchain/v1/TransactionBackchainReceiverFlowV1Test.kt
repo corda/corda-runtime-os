@@ -309,7 +309,7 @@ class TransactionBackchainReceiverFlowV1Test {
     }
 
     @Test
-    fun `receiving signed group parameters that was not requested  throws an exception`() {
+    fun `receiving signed group parameters that was not requested throws an exception`() {
         whenever(utxoLedgerPersistenceService.findSignedTransaction(TX_ID_1)).thenReturn(retrievedTransaction1)
 
         whenever(session.sendAndReceive(eq(List::class.java), any())).thenReturn(

@@ -7,7 +7,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
-import kotlin.test.assertSame
 
 class UtxoReceiveFinalityFlowVersionedFlowFactoryTest {
 
