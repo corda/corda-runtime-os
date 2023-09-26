@@ -95,11 +95,9 @@ publishing {
     }
 }
 
-tasks.register('smokeTest', Test) {
+tasks.register('pluginSmokeTest', Test) {
     description = "Runs smoke tests for Corda CLI plugins."
     group = "verification"
-
-//    dependsOn smokeTestResources
 
     testClassesDirs = project.sourceSets["smokeTest"].output.classesDirs
     classpath = project.sourceSets["smokeTest"].runtimeClasspath
