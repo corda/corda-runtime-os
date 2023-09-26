@@ -128,11 +128,9 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
                     // Forced reconciliation is meant to fix CORE-17354
                     if (forceInitialReconciliation && firstRun) {
                         dbRecord.version >= matchedKafkaRecord.version // force reconcile
-                                || dbRecord.isDeleted // reconcile db deletes
                     } else {
                         dbRecord.version > matchedKafkaRecord.version // reconcile db updates
-                                || dbRecord.isDeleted // reconcile db deletes
-                    }
+                    } || dbRecord.isDeleted // reconcile db deletes
                 }
 
                 if (toBeReconciled) {
