@@ -125,7 +125,7 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
                 val toBeReconciled = if (matchedKafkaRecord == null) {
                     !dbRecord.isDeleted // reconcile db inserts (i.e. db column cpi.is_deleted == false)
                 } else {
-                    // Forced reconciliation is meant to fix CORE-14827
+                    // Forced reconciliation is meant to fix CORE-17354
                     if (forceInitialReconciliation && firstRun) {
                         dbRecord.version >= matchedKafkaRecord.version // force reconcile
                                 || dbRecord.isDeleted // reconcile db deletes
