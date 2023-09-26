@@ -27,7 +27,7 @@ class VaultNamedQueryExecutorImpl(
 ) : VaultNamedQueryExecutor {
 
     private companion object {
-        const val UTXO_VISIBLE_TX_TABLE = "utxo_visible_transaction_state"
+        const val UTXO_VISIBLE_TX_TABLE = "utxo_visible_transaction_output"
         const val UTXO_TX_COMPONENT_TABLE = "utxo_transaction_component"
         const val TIMESTAMP_LIMIT_PARAM_NAME = "Corda_TimestampLimit"
 

@@ -61,7 +61,8 @@ interface UtxoRepository {
         id: String,
         privacySalt: ByteArray,
         account: String,
-        timestamp: Instant
+        timestamp: Instant,
+        status: TransactionStatus
     )
 
     /** Persists transaction component leaf [data] (operation is idempotent) */
@@ -98,19 +99,9 @@ interface UtxoRepository {
         tokenTag: String? = null,
         tokenOwnerHash: String? = null,
         tokenAmount: BigDecimal? = null,
-        timestamp: Instant
-    )
-
-    /** Persists visible transaction states (operation is idempotent) */
-    @Suppress("LongParameterList")
-    fun persistTransactionVisibleStates(
-        entityManager: EntityManager,
-        transactionId: String,
-        groupIndex: Int,
-        leafIndex: Int,
+        timestamp: Instant,
         consumed: Boolean,
-        customRepresentation: CustomRepresentation,
-        timestamp: Instant
+        customRepresentation: CustomRepresentation
     )
 
     /** Persists transaction [signature] (operation is idempotent) */
@@ -136,13 +127,13 @@ interface UtxoRepository {
     )
 
     /**
-     * Persists or updates transaction [transactionStatus]. There is only one status per transaction. In case that status already
+     * Updates transaction [transactionStatus]. There is only one status per transaction. In case that status already
      * exists, it will be updated only if old and new statuses are one of the following combinations (and ignored otherwise):
      * - UNVERIFIED -> *
      * - VERIFIED -> VERIFIED
      * - INVALID -> INVALID
      */
-    fun persistTransactionStatus(
+    fun updateTransactionStatus(
         entityManager: EntityManager,
         transactionId: String,
         transactionStatus: TransactionStatus,

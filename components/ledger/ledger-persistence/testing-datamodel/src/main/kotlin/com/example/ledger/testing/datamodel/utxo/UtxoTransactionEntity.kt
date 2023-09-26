@@ -28,12 +28,15 @@ data class UtxoTransactionEntity(
 
     @get:Column(name = "created", nullable = false)
     var created: Instant,
+
+    @get:Column(name = "status", nullable = false)
+    var status: String,
+
+    @get:Column(name = "updated", nullable = false)
+    var updated: Instant
 ) {
     @get:OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
     var components: MutableList<UtxoTransactionComponentEntity> = mutableListOf()
-
-    @get:OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
-    var statuses: MutableList<UtxoTransactionStatusEntity> = mutableListOf()
 
     @get:OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
     var signatures: MutableList<UtxoTransactionSignatureEntity> = mutableListOf()

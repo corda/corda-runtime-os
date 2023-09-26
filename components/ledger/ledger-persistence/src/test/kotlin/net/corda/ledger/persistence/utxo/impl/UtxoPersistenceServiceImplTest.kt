@@ -43,16 +43,15 @@ class UtxoPersistenceServiceImplTest {
     private val persistedJsonStrings = mutableMapOf<String, CustomRepresentation>()
 
     private val mockRepository = mock<UtxoRepository> {
-        on { persistTransactionVisibleStates(any(), any(), any(), any(), any(), any(), any()) } doAnswer {
+        on { persistTransactionOutput(any(), any(), any(), any(), any(), any(), any(),
+            any(), any(), any(), any(), any(), any(), any(), any()) } doAnswer {
             val txId = it.getArgument<String>(1)
-            val customRepresentation = it.getArgument<CustomRepresentation>(5)
+            val customRepresentation = it.arguments.last() as CustomRepresentation
             persistedJsonStrings[txId] = customRepresentation
         }
 
-        on { persistTransaction(any(), any(), any(), any(), any()) } doAnswer {}
+        on { persistTransaction(any(), any(), any(), any(), any(), any()) } doAnswer {}
         on { persistTransactionComponentLeaf(any(), any(), any(), any(), any(), any(), any()) } doAnswer {}
-        on { persistTransactionOutput(any(), any(), any(), any(), any(), any(), any(), any(), any(),
-            any(), any(), any(), any()) } doAnswer {}
     }
 
     private val mockPrivacySalt = mock<PrivacySalt> {

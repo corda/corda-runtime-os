@@ -134,7 +134,8 @@ class UtxoPersistenceServiceImpl(
             transactionIdString,
             transaction.privacySalt.bytes,
             transaction.account,
-            nowUtc
+            nowUtc,
+            transaction.status
         )
 
         // Insert the Transactions components
@@ -183,28 +184,9 @@ class UtxoPersistenceServiceImpl(
                 utxoToken?.filterFields?.tag,
                 utxoToken?.filterFields?.ownerHash?.toString(),
                 utxoToken?.amount,
-                nowUtc
-            )
-        }
-
-        // Insert relevancy information for outputs
-        transaction.visibleStatesIndexes.forEach { visibleStateIndex ->
-
-            val jsonString = transaction.getVisibleStates()[visibleStateIndex]?.let {
-                extractJsonDataFromState(it)
-            } ?: run {
-                log.warn("Could not find visible state with index $visibleStateIndex, defaulting to empty JSON string.")
-                "{}"
-            }
-
-            repository.persistTransactionVisibleStates(
-                em,
-                transactionIdString,
-                UtxoComponentGroup.OUTPUTS.ordinal,
-                visibleStateIndex,
+                nowUtc,
                 consumed = false,
-                CustomRepresentation(jsonString),
-                nowUtc
+                CustomRepresentation(extractJsonDataFromState(stateAndRef))
             )
         }
 
@@ -231,14 +213,6 @@ class UtxoPersistenceServiceImpl(
             )
         }
 
-        // Insert the transactions current status
-        repository.persistTransactionStatus(
-            em,
-            transactionIdString,
-            transaction.status,
-            nowUtc
-        )
-
         // Insert the CPK details liked to this transaction
         // TODOs: The CPK file meta does not exist yet, this will be implemented by
         // https://r3-cev.atlassian.net/browse/CORE-7626
@@ -263,7 +237,7 @@ class UtxoPersistenceServiceImpl(
 
     override fun updateStatus(id: String, transactionStatus: TransactionStatus) {
         entityManagerFactory.transaction { em ->
-            repository.persistTransactionStatus(em, id, transactionStatus, utcClock.instant())
+            repository.updateTransactionStatus(em, id, transactionStatus, utcClock.instant())
         }
     }
 
