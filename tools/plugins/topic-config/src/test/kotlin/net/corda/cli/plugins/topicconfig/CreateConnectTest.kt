@@ -15,41 +15,54 @@ class CreateConnectTest {
 
     @Test
     fun `validate empty topic list`() {
-        assertThat(command().getTopics(emptyList())).isEmpty()
+        assertThat(getCommandWithGeneratedConfig().getTopics(emptyList())).isEmpty()
     }
 
     @Test
     fun `validate new topic with no config`() {
-        assertThat(command().getTopics(listOf(Create.TopicConfig("topic", emptyList(), emptyList(), emptyMap()))))
+        assertThat(getCommandWithGeneratedConfig().getTopics(listOf(Create.GeneratedTopicConfig("topic", emptyMap()))))
             .containsEntry("topic", NewTopic("topic", 1, 1).configs(emptyMap()))
     }
 
     @Test
     fun `validate new topic with config`() {
-        assertThat(command().getTopics(listOf(Create.TopicConfig("topic", emptyList(), emptyList(), mapOf("key" to "value")))))
+        assertThat(getCommandWithGeneratedConfig().getTopics(listOf(Create.GeneratedTopicConfig("topic", mapOf("key" to "value")))))
             .containsEntry("topic", NewTopic("topic", 1, 1).configs(mapOf("key" to "value")))
     }
 
     @Test
-    fun `validate acls with consumer and producer`() {
-        assertThat(command().getAclBindings(listOf(Create.TopicConfig("topic", listOf("db"), listOf("flow")))))
+    fun `validate acls created from config file`() {
+        val cmd = getCommandWithConfigFile()
+        val acls = cmd.getGeneratedTopicConfigs().acls
+        assertThat(cmd.getAclBindings(acls))
             .containsExactly(
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "topic", PatternType.LITERAL),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "avro.schema", PatternType.LITERAL),
+                    AccessControlEntry("User:Chris", "*", AclOperation.READ, AclPermissionType.ALLOW)),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "avro.schema", PatternType.LITERAL),
+                    AccessControlEntry("User:Chris", "*", AclOperation.WRITE, AclPermissionType.ALLOW)),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "avro.schema", PatternType.LITERAL),
+                    AccessControlEntry("User:Chris", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW)),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "avro.schema", PatternType.LITERAL),
+                    AccessControlEntry("User:Mo", "*", AclOperation.READ, AclPermissionType.ALLOW)),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "avro.schema", PatternType.LITERAL),
+                    AccessControlEntry("User:Mo", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW)),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "certificates.rpc.ops", PatternType.LITERAL),
                     AccessControlEntry("User:Dan", "*", AclOperation.READ, AclPermissionType.ALLOW)),
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "topic", PatternType.LITERAL),
-                    AccessControlEntry("User:Dan", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW)),
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "topic", PatternType.LITERAL),
-                    AccessControlEntry("User:Fiona", "*", AclOperation.WRITE, AclPermissionType.ALLOW)),
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "topic", PatternType.LITERAL),
-                    AccessControlEntry("User:Fiona", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW))
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "certificates.rpc.ops", PatternType.LITERAL),
+                    AccessControlEntry("User:Dan", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW))
+
             )
     }
 
-    private fun command() : CreateConnect {
-        val createConnect = CreateConnect()
-        createConnect.create = Create()
-        createConnect.create!!.topic = TopicPlugin.Topic()
-        createConnect.create!!.kafkaUsers = mapOf("db" to "Dan", "flow" to "Fiona")
-        return createConnect
+    private fun getCommandWithGeneratedConfig() = CreateConnect().apply {
+        create = Create()
+        create!!.topic = TopicPlugin.Topic()
+        create!!.kafkaUsers = mapOf("crypto" to "Chris", "db" to "Dan", "flow" to "Fiona", "membership" to "Mo")
+    }
+
+    private fun getCommandWithConfigFile() = CreateConnect().apply {
+        configFilePath = javaClass.classLoader.getResource("short_generated_topic_config.yaml")?.path
+        create = Create()
+        create!!.topic = TopicPlugin.Topic()
     }
 }

@@ -2,20 +2,20 @@ package net.corda.cli.plugins.topicconfig
 
 import org.apache.kafka.clients.admin.Admin
 import org.apache.kafka.clients.admin.AdminClientConfig
-import org.apache.kafka.clients.admin.AlterConfigOp
-import org.apache.kafka.clients.admin.ConfigEntry
 import org.apache.kafka.clients.admin.NewTopic
 import org.apache.kafka.clients.admin.existingTopicNamesWithPrefix
 import org.apache.kafka.common.acl.AccessControlEntry
 import org.apache.kafka.common.acl.AclBinding
 import org.apache.kafka.common.acl.AclOperation
 import org.apache.kafka.common.acl.AclPermissionType
-import org.apache.kafka.common.config.ConfigResource
 import org.apache.kafka.common.errors.TopicExistsException
 import org.apache.kafka.common.resource.PatternType
 import org.apache.kafka.common.resource.ResourcePattern
 import org.apache.kafka.common.resource.ResourceType
+import com.fasterxml.jackson.module.kotlin.readValue
 import picocli.CommandLine
+import java.io.File
+import java.nio.file.Files
 import java.time.LocalDateTime
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
@@ -34,10 +34,10 @@ class CreateConnect : Runnable {
     var wait: Long = 60
 
     @CommandLine.Option(
-        names = ["-d", "--delete"],
-        description = ["Delete existing topics with prefix before creating new ones"]
+        names = ["-f", "--file"],
+        description = ["Relative path of the Kafka topic configuration file in YAML format"]
     )
-    var delete: Boolean = false
+    var configFilePath: String? = null
 
     override fun run() {
         // Switch ClassLoader so LoginModules can be found
@@ -50,32 +50,24 @@ class CreateConnect : Runnable {
         kafkaProperties[AdminClientConfig.DEFAULT_API_TIMEOUT_MS_CONFIG] = timeoutMillis
 
         val client = Admin.create(kafkaProperties)
-        val topicConfigs = create!!.getTopicConfigs().map { it.copy(name = create!!.getTopicName(it)) }
+        val topicConfigs = getGeneratedTopicConfigs()
 
         try {
             val existingTopicNames = client.existingTopicNamesWithPrefix(create!!.topic!!.namePrefix, wait)
+            val existingTopicsToUpdate = topicConfigs.topics.map { it.name }.filter { existingTopicNames.contains(it) }
 
-            val topicConfigsToProcess = if (delete) {
-                if (existingTopicNames.isNotEmpty()) {
-                    println("Deleting existing topics: ${existingTopicNames.joinToString()}")
-                    val configOp = listOf(AlterConfigOp(ConfigEntry("retention.ms", "1"), AlterConfigOp.OpType.SET))
-                    val alterConfigs = existingTopicNames.associate { ConfigResource(ConfigResource.Type.TOPIC, it) to configOp }
-                    client.incrementalAlterConfigs(alterConfigs).all().get(wait, TimeUnit.SECONDS)
-                    client.deleteTopics(existingTopicNames).all().get(wait, TimeUnit.SECONDS)
-                }
-                topicConfigs
-            } else {
-                val existingTopicsToIgnore = topicConfigs.map { it.name }.filter { existingTopicNames.contains(it) }
-                if (existingTopicsToIgnore.isNotEmpty()) {
-                    println("Ignoring existing topics: ${existingTopicsToIgnore.joinToString { it }}")
-                }
-                topicConfigs.filterNot { existingTopicsToIgnore.contains(it.name) }
+            if (existingTopicsToUpdate.isNotEmpty()) {
+                println("The following topics already exist and will not be included in the configuration update: " +
+                        existingTopicsToUpdate.joinToString { it })
             }
 
-            if (topicConfigsToProcess.isNotEmpty()) {
-                createTopicsWithRetry(client, topicConfigsToProcess)
-                client.createAcls(getAclBindings(topicConfigsToProcess)).all().get()
+            val topicConfigsToCreate = topicConfigs.topics.filterNot { existingTopicsToUpdate.contains(it.name) }
+            if (topicConfigsToCreate.isNotEmpty()) {
+                createTopicsWithRetry(client, topicConfigsToCreate)
             }
+
+            // create all ACLs (if entries already exist, they are overwritten)
+            client.createAcls(getAclBindings(topicConfigs.acls)).all().get()
         } catch (e: ExecutionException) {
             throw e.cause ?: e
         }
@@ -83,7 +75,7 @@ class CreateConnect : Runnable {
         Thread.currentThread().contextClassLoader = contextCL
     }
 
-    private fun createTopicsWithRetry(client: Admin, topicConfigs: List<Create.TopicConfig>) {
+    private fun  createTopicsWithRetry(client: Admin, topicConfigs: List<Create.GeneratedTopicConfig>) {
         val topics = getTopics(topicConfigs).toMutableMap()
         println("Creating topics: ${topics.keys.joinToString { it }}")
         val end = LocalDateTime.now().plusSeconds(wait)
@@ -121,30 +113,28 @@ class CreateConnect : Runnable {
         }
     }
 
-    fun getAclBindings(topicConfigs: List<Create.TopicConfig>) =
-        topicConfigs.flatMap { topicConfig: Create.TopicConfig ->
-            val pattern = ResourcePattern(ResourceType.TOPIC, topicConfig.name, PatternType.LITERAL)
-            val consumerEntries = create!!.getUsersForProcessors(topicConfig.consumers)
-                .map { user ->
-                    listOf(
-                        AccessControlEntry("User:$user", "*", AclOperation.READ, AclPermissionType.ALLOW),
-                        AccessControlEntry("User:$user", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW)
-                    )
-                }.flatten()
-            val producerEntries = create!!.getUsersForProcessors(topicConfig.producers)
-                .map { user ->
-                    listOf(
-                        AccessControlEntry("User:$user", "*", AclOperation.WRITE, AclPermissionType.ALLOW),
-                        AccessControlEntry("User:$user", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW)
-                    )
-                }.flatten()
-            (consumerEntries + producerEntries).map { AclBinding(pattern, it) }
+    fun getAclBindings(acls: List<Create.GeneratedTopicACL>): List<AclBinding> {
+        return acls.flatMap { acl ->
+            val pattern = ResourcePattern(ResourceType.TOPIC, acl.topic, PatternType.LITERAL)
+            val aclEntries = acl.users.flatMap { user ->
+                user.operations.map { operation ->
+                    AccessControlEntry("User:${user.name}", "*", AclOperation.fromString(operation), AclPermissionType.ALLOW)
+                }
+            }
+            aclEntries.map { AclBinding(pattern, it) }
         }
+    }
 
-    fun getTopics(topicConfigs: List<Create.TopicConfig>) =
-        topicConfigs.map { topicConfig: Create.TopicConfig ->
+    fun getTopics(topicConfigs: List<Create.GeneratedTopicConfig>) =
+        topicConfigs.map { topicConfig: Create.GeneratedTopicConfig ->
             topicConfig.name to NewTopic(topicConfig.name, create!!.partitionOverride, create!!.replicaOverride)
                 .configs(topicConfig.config)
         }.toMap()
 
+    fun getGeneratedTopicConfigs(): Create.GeneratedTopicDefinitions = if (configFilePath == null) {
+        create!!.getGeneratedTopicConfigs()
+    } else {
+        // Simply read the info from provided file
+        create!!.mapper.readValue(Files.readString(File(configFilePath!!).toPath()))
+    }
 }

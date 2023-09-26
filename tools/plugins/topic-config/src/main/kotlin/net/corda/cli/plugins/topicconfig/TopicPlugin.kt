@@ -26,7 +26,7 @@ class TopicPlugin : Plugin() {
     }
 
     @Extension
-    @CommandLine.Command(name = "topic", subcommands = [Create::class, Delete::class], description = ["Plugin for Kafka topic operations."])
+    @CommandLine.Command(name = "topic", subcommands = [Create::class], description = ["Plugin for Kafka topic operations."])
     class Topic : CordaCliPlugin {
 
         @CommandLine.Option(
@@ -56,23 +56,6 @@ class TopicPlugin : Plugin() {
             kafkaProperties[AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG] = bootstrapServer
             return kafkaProperties
         }
-
-        fun getKafkaTopicsCommand(): String {
-            var command = "kafka-topics.sh --bootstrap-server $bootstrapServer"
-            if (kafkaConfig != null) {
-                command += " --command-config $kafkaConfig"
-            }
-            return command
-        }
-
-        fun getKafkaAclsCommand(): String {
-            var command = "kafka-acls.sh --bootstrap-server $bootstrapServer"
-            if (kafkaConfig != null) {
-                command += " --command-config $kafkaConfig"
-            }
-            return command
-        }
-
     }
 
 }

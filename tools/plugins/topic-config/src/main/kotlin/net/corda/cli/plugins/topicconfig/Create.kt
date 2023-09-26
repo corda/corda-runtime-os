@@ -51,8 +51,28 @@ class Create(
         val topics: Map<String, TopicConfig>
     )
 
+    data class GeneratedTopicDefinitions(
+        val topics: List<GeneratedTopicConfig>,
+        val acls: List<GeneratedTopicACL>
+    )
+
+    data class GeneratedTopicConfig(
+        val name: String,
+        val config: Map<String, String> = emptyMap()
+    )
+    data class GeneratedTopicACL(
+        val topic: String,
+        val users: List<UserConfig>
+    )
+
+    data class UserConfig(
+        val name: String,
+        val operations: List<String>
+    )
+
     val mapper: ObjectMapper = ObjectMapper(YAMLFactory()
         .enable(YAMLGenerator.Feature.MINIMIZE_QUOTES)
+        .enable(YAMLGenerator.Feature.LITERAL_BLOCK_STYLE)
         .disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER))
         .registerModule(KotlinModule.Builder()
             .withReflectionCacheSize(512)
@@ -135,4 +155,29 @@ class Create(
         }.toMap()
     }
 
+    fun getGeneratedTopicConfigs(): GeneratedTopicDefinitions {
+        val topicConfigs = mutableListOf<GeneratedTopicConfig>()
+        val acls = mutableListOf<GeneratedTopicACL>()
+
+        getTopicConfigs().forEach { topicConfig ->
+            val topicName = getTopicName(topicConfig)
+            topicConfigs.add(GeneratedTopicConfig(topicName, topicConfig.config))
+
+            val usersReadAccess = getUsersForProcessors(topicConfig.consumers)
+            val usersWriteAccess = getUsersForProcessors(topicConfig.producers)
+
+            val users = (usersReadAccess + usersWriteAccess).toSet().map {
+                val operations = mutableListOf("describe")
+                if (it in usersWriteAccess)
+                    operations.add("write")
+                if (it in usersReadAccess)
+                    operations.add("read")
+                UserConfig(it, operations.reversed())
+            }
+
+            acls.add(GeneratedTopicACL(topicName, users))
+        }
+
+        return GeneratedTopicDefinitions(topicConfigs, acls)
+    }
 }
