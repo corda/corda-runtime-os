@@ -25,7 +25,8 @@ internal abstract class UnauthenticatedMessageHandler<T : Any>(
             }
             else -> {
                 throw UnsupportedOperationException(
-                    "Handler does not support message type. Only InboundUnauthenticatedMessage and OutboundUnauthenticatedMessage are allowed."
+                    "Handler does not support message type. Only InboundUnauthenticatedMessage and " +
+                            "OutboundUnauthenticatedMessage are allowed."
                 )
             }
         }
