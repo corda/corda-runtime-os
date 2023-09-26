@@ -46,6 +46,32 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
             ORDER BY tc_output.created, tc_output.transaction_id, tc_output.leaf_idx"""
             .trimIndent()
 
+    override val findUnconsumedVisibleStatesByExactType: String
+        get() = """
+            SELECT tc_output.transaction_id, 
+            tc_output.leaf_idx, 
+            tc_output_info.data as output_info_data,
+            tc_output.data AS output_data 
+            FROM {h-schema}utxo_visible_transaction_state AS rts
+            JOIN {h-schema}utxo_transaction_component AS tc_output_info
+                ON tc_output_info.transaction_id = rts.transaction_id
+                AND tc_output_info.leaf_idx = rts.leaf_idx
+                AND tc_output_info.group_idx = ${UtxoComponentGroup.OUTPUTS_INFO.ordinal}
+            JOIN {h-schema}utxo_transaction_component AS tc_output
+                ON tc_output.transaction_id = tc_output_info.transaction_id
+                AND tc_output.leaf_idx = tc_output_info.leaf_idx
+                AND tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal}
+            JOIN {h-schema}utxo_transaction_output AS tx_o
+                ON tx_o.transaction_id = tc_output.transaction_id
+                AND tx_o.leaf_idx = tc_output.leaf_idx
+            JOIN {h-schema}utxo_transaction_status AS ts
+                ON ts.transaction_id = tx_o.transaction_id
+            WHERE tx_o.type = :type    
+                AND rts.consumed IS NULL
+                AND ts.status = :verified
+            ORDER BY tc_output.created, tc_output.transaction_id, tc_output.leaf_idx"""
+            .trimIndent()
+
     override val findTransactionSignatures: String
         get() = """
             SELECT signature
