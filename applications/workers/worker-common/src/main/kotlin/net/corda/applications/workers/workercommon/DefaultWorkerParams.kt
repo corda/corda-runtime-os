@@ -1,12 +1,11 @@
 package net.corda.applications.workers.workercommon
 
-import net.corda.applications.workers.workercommon.internal.WORKER_MONITOR_PORT
 import net.corda.schema.configuration.BootConfig
 import picocli.CommandLine.Option
 import java.nio.file.Path
 
 /** The startup parameters handled by all workers. */
-class DefaultWorkerParams(healthPortOverride: Int = WORKER_MONITOR_PORT) {
+class DefaultWorkerParams(healthPortOverride: Int = WORKER_SERVER_PORT) {
     @Option(names = ["-h", "--help"], usageHelp = true, description = ["Display help and exit."])
     var helpRequested = false
 
@@ -34,14 +33,11 @@ class DefaultWorkerParams(healthPortOverride: Int = WORKER_MONITOR_PORT) {
     )
     var maxAllowedMessageSize: Int? = null
 
-    @Option(names = ["-n", "--disable-worker-monitor"], description = ["Disables the worker monitor."])
-    var disableWorkerMonitor = false
-
     @Option(
-        names = ["-p", "--worker-monitor-port"],
-        description = ["The port the worker monitor should listen on. Defaults to $WORKER_MONITOR_PORT."]
+        names = ["-p", "--worker-server-port"],
+        description = ["The port the worker http server should listen on. Defaults to $WORKER_SERVER_PORT."]
     )
-    var workerMonitorPort = healthPortOverride
+    var workerServerPort = healthPortOverride
 
     @Option(names = ["-m", "--messaging-params"], description = ["Messaging parameters for the worker."])
     var messaging = emptyMap<String, String>()
