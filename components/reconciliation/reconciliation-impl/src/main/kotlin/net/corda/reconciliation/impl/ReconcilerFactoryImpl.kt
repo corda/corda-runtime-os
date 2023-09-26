@@ -31,6 +31,6 @@ class ReconcilerFactoryImpl @Activate constructor(
             valueClass,
             coordinatorFactory,
             reconciliationIntervalMs,
-            forceInitialReconciliation
+            forceInitialReconciliation,
         )
 }
