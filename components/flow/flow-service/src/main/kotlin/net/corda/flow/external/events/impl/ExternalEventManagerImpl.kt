@@ -153,14 +153,31 @@ class ExternalEventManagerImpl(
         instant: Instant,
         retryWindow: Duration
     ): Pair<ExternalEventState, Record<*, *>?> {
-        val eventToSend = externalEventState.eventToSend
         val sendTimestamp = externalEventState.sendTimestamp
-        when {
-            sendTimestamp == null -> {
-                externalEventState.sendTimestamp = instant
-                externalEventState.retries = 0
+        val record = when (externalEventState.status.type) {
+            ExternalEventStateType.OK -> {
+                if (sendTimestamp == null) {
+                    externalEventState.sendTimestamp = instant
+                    externalEventState.retries = 0
+                    generateRecord(externalEventState, instant)
+                } else {
+                    null
+                }
             }
-            (sendTimestamp + retryWindow) >= instant -> {
+            ExternalEventStateType.RETRY -> {
+                checkRetry(externalEventState, instant, retryWindow)
+                generateRecord(externalEventState, instant)
+            }
+            else -> {
+                null
+            }
+        }
+        return externalEventState to record
+    }
+
+    private fun checkRetry(externalEventState: ExternalEventState, instant: Instant, retryWindow: Duration) {
+        when {
+            (externalEventState.sendTimestamp + retryWindow) >= instant -> {
                 // Do nothing. This check ensures that subsequent branches are checking the case where the external
                 // event is outside the retry window.
             }
@@ -176,6 +193,10 @@ class ExternalEventManagerImpl(
                         "the retry window.")
             }
         }
+    }
+
+    private fun generateRecord(externalEventState: ExternalEventState, instant: Instant) : Record<*, *> {
+        val eventToSend = externalEventState.eventToSend
         eventToSend.timestamp = instant
         log.info(
             flowTraceMarker,
@@ -183,7 +204,6 @@ class ExternalEventManagerImpl(
             externalEventState.requestId,
             eventToSend.topic
         )
-
-        return externalEventState to Record(eventToSend.topic, eventToSend.key.array(), eventToSend.payload.array())
+        return Record(eventToSend.topic, eventToSend.key.array(), eventToSend.payload.array())
     }
 }

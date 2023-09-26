@@ -470,4 +470,64 @@ class ExternalEventManagerImplTest {
             )
         }
     }
+
+    @Test
+    fun `getEventToSend does not return a record if the status is not OK or RETRY`() {
+        val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
+        val key = ByteBuffer.wrap(KEY.toByteArray())
+        val payload = ByteBuffer.wrap(byteArrayOf(1, 2, 3))
+
+        val externalEvent = ExternalEvent().apply {
+            this.topic = TOPIC
+            this.key = key
+            this.payload = payload
+            this.timestamp = now.minusSeconds(10)
+        }
+
+        val externalEventState = ExternalEventState().apply {
+            requestId = REQUEST_ID_1
+            eventToSend = externalEvent
+            sendTimestamp = now.minusSeconds(10)
+            status = ExternalEventStateStatus(ExternalEventStateType.PLATFORM_ERROR, ExceptionEnvelope())
+            retries = 0
+        }
+
+        val (_, record) = externalEventManager.getEventToSend(
+            externalEventState,
+            now,
+            Duration.ofSeconds(100L)
+        )
+
+        assertEquals(null, record)
+    }
+
+    @Test
+    fun `getEventToSend does not return a record if the state is OK and a record has already been sent`() {
+        val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
+        val key = ByteBuffer.wrap(KEY.toByteArray())
+        val payload = ByteBuffer.wrap(byteArrayOf(1, 2, 3))
+
+        val externalEvent = ExternalEvent().apply {
+            this.topic = TOPIC
+            this.key = key
+            this.payload = payload
+            this.timestamp = now.minusSeconds(10)
+        }
+
+        val externalEventState = ExternalEventState().apply {
+            requestId = REQUEST_ID_1
+            eventToSend = externalEvent
+            sendTimestamp = now.minusSeconds(10)
+            status = ExternalEventStateStatus(ExternalEventStateType.OK, null)
+            retries = 0
+        }
+
+        val (_, record) = externalEventManager.getEventToSend(
+            externalEventState,
+            now,
+            Duration.ofSeconds(100L)
+        )
+
+        assertEquals(null, record)
+    }
 }

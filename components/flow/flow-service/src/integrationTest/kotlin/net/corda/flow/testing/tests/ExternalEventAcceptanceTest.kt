@@ -221,7 +221,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Receiving an event resends the external event if status is OK but the retry window has been surpassed`() {
+    fun `Receiving an event does not resend the external event if status is OK but the retry window has been surpassed`() {
         given {
             startFlowEventReceived(
                 FLOW_ID1,
@@ -249,7 +249,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 flowDidNotResume()
-                externalEvent(TOPIC, KEY, ANY_INPUT)
+                noExternalEvent(TOPIC)
             }
         }
     }
