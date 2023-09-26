@@ -153,9 +153,6 @@ class ExternalEventManagerImpl(
         instant: Instant,
         retryWindow: Duration
     ): Pair<ExternalEventState, Record<*, *>?> {
-        // reuse the window configuration as the maximum length of time to retry for
-        // reuse the retry count to indicate the number of retries outside the retry window
-        // if we've retried too many times, stop and report an error.
         val eventToSend = externalEventState.eventToSend
         val sendTimestamp = externalEventState.sendTimestamp
         when {

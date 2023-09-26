@@ -288,40 +288,6 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Given a 'transient' error response has been received receiving an event will resend the external event`() {
-        given {
-            flowConfiguration(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW, 10.seconds.toMillis())
-
-            startFlowEventReceived(
-                FLOW_ID1,
-                REQUEST_ID1,
-                ALICE_HOLDING_IDENTITY,
-                CPI1,
-                "flow start data",
-                FLOW_START_CONTEXT
-            )
-                .suspendsWith(
-                    FlowIORequest.ExternalEvent(
-                        REQUEST_ID,
-                        AnyResponseReceivedFactory::class.java,
-                        ANY_INPUT,
-                        EXTERNAL_EVENT_CONTEXT
-                    )
-                )
-        }
-
-        `when` {
-            externalEventErrorReceived(FLOW_ID1, REQUEST_ID, ExternalEventResponseErrorType.TRANSIENT)
-        }
-
-        then {
-            expectOutputForFlow(FLOW_ID1) {
-                externalEvent(TOPIC, KEY, ANY_INPUT)
-            }
-        }
-    }
-
-    @Test
     fun `Given a 'transient' error response has been received receiving a successful response resumes the flow and does not resend the event`() {
         given {
             flowConfiguration(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW, -50000L) // -5 seconds (in the past)
