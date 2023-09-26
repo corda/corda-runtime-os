@@ -1,8 +1,9 @@
 package net.corda.cli.plugins.topicconfig
 
+import com.fasterxml.jackson.module.kotlin.readValue
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import java.io.*
+import java.io.File
 import java.nio.file.Files
 
 class GenerateTest {
@@ -13,19 +14,13 @@ class GenerateTest {
         command.create!!.topic!!.bootstrapServer = "address" // not used, should be ignored
         command.create!!.topic!!.kafkaConfig = "/tmp/working_dir/config.properties"
 
-        // Capture command output
-        val baos = ByteArrayOutputStream()
-        System.setOut(PrintStream(baos))
-        command.run()
-        // Restore STDOUT
-        System.setOut(PrintStream(FileOutputStream(FileDescriptor.out)))
-        val expectedConfigYaml = javaClass.classLoader.getResource("topic_generated_config.yaml")?.file
-        val expectedLines = Files.readAllLines(File(expectedConfigYaml!!).toPath()).filter { it.isNotBlank() }
-        val actualLines = baos.toString().split(System.lineSeparator()).filter { it.isNotBlank() }
-        assertEquals(expectedLines.size, actualLines.size)
-        expectedLines.forEachIndexed { index, line ->
-            assertEquals(line.trim(), actualLines[index].trim())
-        }
+        val expectedConfigYamlFile = javaClass.classLoader.getResource("topic_generated_config.yaml")?.file
+        val expectedConfigString = Files.readString(File(expectedConfigYamlFile!!).toPath())
+        val expectedConfig: Create.GeneratedTopicDefinitions = command.create!!.mapper.readValue(expectedConfigString)
+
+        val actualConfig = command.create!!.getGeneratedTopicConfigs()
+
+        assertEquals(expectedConfig, actualConfig)
     }
 
     private fun command() : Generate {
