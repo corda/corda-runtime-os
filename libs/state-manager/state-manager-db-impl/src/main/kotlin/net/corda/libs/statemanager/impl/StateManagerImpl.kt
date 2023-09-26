@@ -14,8 +14,7 @@ import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
-// TODO-[CORE-17025]: remove Hibernate
-// TODO-[CORE-16323]: remove current "hack" and implement proper optimistic locking
+// TODO-[CORE-16323]: check whether the optimistic locking can be improved / merged into single SQL statement.
 class StateManagerImpl(
     private val stateRepository: StateRepository,
     private val entityManagerFactory: EntityManagerFactory,
@@ -113,9 +112,9 @@ class StateManagerImpl(
         }
     }
 
-    override fun getUpdatedBetween(start: Instant, finish: Instant): Map<String, State> {
+    override fun updatedBetween(start: Instant, finish: Instant): Map<String, State> {
         return entityManagerFactory.transaction { em ->
-            stateRepository.findUpdatedBetween(em, start, finish)
+            stateRepository.updatedBetween(em, start, finish)
         }
             .map { it.fromPersistentEntity() }
             .associateBy { it.key }
@@ -124,6 +123,19 @@ class StateManagerImpl(
     override fun find(key: String, operation: Operation, value: Any): Map<String, State> {
         return entityManagerFactory.transaction { em ->
             stateRepository.filterByMetadata(em, key, operation, value)
+        }.map {
+            it.fromPersistentEntity()
+        }.associateBy {
+            it.key
+        }
+    }
+
+    override fun findUpdatedBetweenWithMetadataFilter(
+        start: Instant, finish: Instant,
+        key: String, operation: Operation, value: Any
+    ): Map<String, State> {
+        return entityManagerFactory.transaction { em ->
+            stateRepository.filterByUpdatedBetweenAndMetadata(em, start, finish, key, operation, value)
         }.map {
             it.fromPersistentEntity()
         }.associateBy {

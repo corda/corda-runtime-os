@@ -79,12 +79,12 @@ interface StateManager : AutoCloseable {
      * @param finish Time filter upper bound (inclusive).
      * @return States that were last updated between [start] and [finish] times.
      */
-    fun getUpdatedBetween(start: Instant, finish: Instant): Map<String, State>
+    fun updatedBetween(start: Instant, finish: Instant): Map<String, State>
 
     /**
-     * Retrieve states based on custom [operation] to be executed against a single [key] within the [State.metadata].
-     * Only states that have been successfully committed and distributed within the underlying persistent
-     * storage are returned.
+     * Retrieve all states for which the value corresponding to the [key] within the [State.metadata] matches the
+     * custom [operation]. Only states that have been successfully committed and distributed within the underlying
+     * persistent storage are returned.
      *
      * @param key The name of the key in the [State.metadata] to apply the comparison on.
      * @param operation The comparison operation to perform (">", "=", "<", "<>", etc.).
@@ -92,4 +92,21 @@ interface StateManager : AutoCloseable {
      * @return states for which the [State.metadata] has [key] for which [value] matches [operation].
      */
     fun find(key: String, operation: Operation, value: Any): Map<String, State>
+
+    /**
+     * Retrieve all states, updated for the last time between [start] (inclusive) and [finish] (inclusive), for which
+     * the value corresponding to the [key] within the [State.metadata] matches the custom [operation]. Only states
+     * that have been successfully committed and distributed within the underlying persistent storage are returned.
+     *
+     * @param start Time filter lower bound (inclusive).
+     * @param finish Time filter upper bound (inclusive).
+     * @param key The name of the key in the [State.metadata] to apply the comparison on.
+     * @param operation The comparison operation to perform (">", "=", "<", "<>", etc.).
+     * @param value The value to compare against.
+     * @return states for which the [State.metadata] has [key] for which [value] matches [operation].
+     */
+    fun findUpdatedBetweenWithMetadataFilter(
+        start: Instant, finish: Instant,
+        key: String, operation: Operation, value: Any
+    ): Map<String, State>
 }
