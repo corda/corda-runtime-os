@@ -149,7 +149,8 @@ class GroupParametersReconcilerTest {
                 eq(reconcilerWriter),
                 eq(HoldingIdentity::class.java),
                 eq(InternalGroupParameters::class.java),
-                any()
+                any(),
+                any(),
             )
         } doReturn reconciler
     }
