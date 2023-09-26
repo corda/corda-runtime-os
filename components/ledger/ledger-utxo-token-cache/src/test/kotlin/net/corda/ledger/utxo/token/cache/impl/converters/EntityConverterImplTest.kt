@@ -80,7 +80,7 @@ class EntityConverterImplTest {
             .setPoolKey(POOL_CACHE_KEY)
             .build()
 
-        val result = EntityConverterImpl()
+        val result = createEntityConverterImpl()
             .toForceClaimRelease(POOL_CACHE_KEY, tokenForceClaimRelease)
 
         assertThat(result.claimId).isEqualTo("c1")
