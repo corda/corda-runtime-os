@@ -1,14 +1,15 @@
 package net.corda.applications.workers.smoketest.services
 
 import net.corda.applications.workers.smoketest.utils.PLATFORM_VERSION
+import net.corda.crypto.cipher.suite.SignatureSpecImpl
+import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.parseSecureHash
+import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.identity.HoldingIdentity
-import net.corda.data.uniqueness.UniquenessCheckRequestAvro
-import net.corda.data.uniqueness.UniquenessCheckResponseAvro
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
 import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
@@ -17,8 +18,10 @@ import net.corda.e2etest.utilities.conditionallyUploadCpiSigningCertificate
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
 import net.corda.e2etest.utilities.registerStaticMember
+import net.corda.ledger.utxo.verification.CordaPackageSummary
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.ledger.utxo.verification.TransactionVerificationResponse
+import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.messagebus.kafka.serialization.CordaAvroSerializationFactoryImpl
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.test.util.time.AutoTickTestClock
@@ -39,6 +42,9 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.UUID
 import kotlin.random.Random
+import net.corda.sandboxgroupcontext.SandboxGroupContext
+import java.nio.ByteBuffer
+
 
 /**
  * Tests for the Verification RPC service
@@ -54,7 +60,8 @@ class VerificationRPCSmokeTests {
 
     private val avroSerializer = serializationFactory.createAvroSerializer<TransactionVerificationRequest> { }
     private val avroFlowEventDeserializer = serializationFactory.createAvroDeserializer({}, FlowEvent::class.java)
-    private val avroVerificationDeserializer = serializationFactory.createAvroDeserializer({}, TransactionVerificationResponse::class.java)
+    private val avroVerificationDeserializer =
+        serializationFactory.createAvroDeserializer({}, TransactionVerificationResponse::class.java)
 
     companion object {
         const val TEST_CPI_NAME = "ledger-utxo-demo-app"
@@ -120,6 +127,16 @@ class VerificationRPCSmokeTests {
 
     @Test
     fun `RPC endpoint accepts a request and returns back a response`() {
+        val virtualNodeInfo = virtualNodeService.load(TEST_CPB)
+        val holdingIdentity = virtualNodeInfo.holdingIdentity
+        val cpksMetadata =
+            cpiInfoReadService.get(virtualNodeInfo.cpiIdentifier)!!.cpksMetadata.filter { it.isContractCpk() }
+        val cpkSummaries = cpksMetadata.map { it.toCpkSummary() }
+        val verificationSandboxService = virtualNodeService.verificationSandboxService
+        val sandbox = verificationSandboxService.get(holdingIdentity, cpkSummaries)
+        val transaction = createTestTransaction(sandbox, isValid = true)
+        val request = createRequest(sandbox, holdingIdentity, transaction, cpkSummaries)
+
         val url = "${System.getProperty("verificationWorkerUrl")}api/$PLATFORM_VERSION/verification"
 
         logger.info("verification url: $url")
@@ -132,18 +149,19 @@ class VerificationRPCSmokeTests {
             .build()
         val response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
 
-        assertThat(response.statusCode()).isEqualTo(200).withFailMessage("status code on response: ${response.statusCode()} url: $url")
+        assertThat(response.statusCode()).isEqualTo(200)
+            .withFailMessage("status code on response: ${response.statusCode()} url: $url")
 
         val responseBody: ByteArray = response.body()
         val responseEvent = avroFlowEventDeserializer.deserialize(responseBody)
 
         assertThat(responseEvent).isNotNull
 
-        val deserializedExternalEventResponse = avroVerificationDeserializer.deserialize((responseEvent?.payload as ExternalEventResponse).payload.array())
+        val deserializedExternalEventResponse =
+            avroVerificationDeserializer.deserialize((responseEvent?.payload as ExternalEventResponse).payload.array())
 
         assertThat(deserializedExternalEventResponse).isNotNull
         //TODO - need a verification assertion
-        //UniquenessAssertions.assertStandardSuccessResponse(deserializedExternalEventResponse!!, testClock)
     }
 
     private val testClock = AutoTickTestClock(Instant.MAX, Duration.ofSeconds(1))
@@ -157,28 +175,88 @@ class VerificationRPCSmokeTests {
     }
 
     private val defaultNotaryVNodeHoldingIdentity = HoldingIdentity(notaryX500, groupId)
+
     // We don't use Instant.MAX because this appears to cause a long overflow in Avro
     private val defaultTimeWindowUpperBound: Instant =
         LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
 
-    //TODO - need verification payload
-    private fun payloadBuilder(txId: SecureHash = randomSecureHash())
-            : UniquenessCheckRequestAvro.Builder =
-        UniquenessCheckRequestAvro.newBuilder(
-            UniquenessCheckRequestAvro(
-                defaultNotaryVNodeHoldingIdentity,
-                ExternalEventContext(
-                    UUID.randomUUID().toString(),
-                    UUID.randomUUID().toString(),
-                    KeyValuePairList(emptyList())
-                ),
-                txId.toString(),
-                aliceX500,
-                emptyList(),
-                emptyList(),
-                0,
-                null,
-                defaultTimeWindowUpperBound
+    private fun createTestTransaction(ctx: SandboxGroupContext, isValid: Boolean): UtxoLedgerTransactionContainer {
+        val signatory = ctx.getSerializationService().serialize(publicKeyExample).bytes
+
+        val input = ctx.getSerializationService().serialize(
+            StateRef(parseSecureHash("SHA-256:1111111111111111"), 0)
+        ).bytes
+
+        val outputState = ctx.getSerializationService().serialize(
+            TestState(isValid, listOf())
+        ).bytes
+
+        val outputInfo = ctx.getSerializationService().serialize(
+            UtxoOutputInfoComponent(
+                null, null, NOTARY_X500_NAME, PUBLIC_KEY, outputState::class.java.canonicalName, "contract tag"
             )
+        ).bytes
+
+        val command = ctx.getSerializationService().serialize(TestCommand()).bytes
+
+        val wireTransaction = wireTransactionFactory.createExample(
+            jsonMarshallingService,
+            jsonValidator,
+            listOf(
+                emptyList(),
+                listOf(signatory),
+                listOf(outputInfo),
+                emptyList(),
+                emptyList(),
+                listOf(input),
+                emptyList(),
+                listOf(outputState),
+                listOf(command)
+            ),
+            ledgerModel = UtxoLedgerTransactionImpl::class.java.name,
+            transactionSubType = "GENERAL",
+            memberShipGroupParametersHash = "MEMBERSHIP_GROUP_PARAMETERS_HASH"
         )
+        val inputStateAndRefs: List<StateAndRef<*>> = listOf()
+        val referenceStateAndRefs: List<StateAndRef<*>> = listOf()
+
+        val groupParameters = KeyValuePairList(
+            listOf(
+                KeyValuePair("corda.epoch", "5"),
+                KeyValuePair("corda.modifiedTime", Instant.now().toString()),
+            ).sorted()
+        )
+        val serializedGroupParameters = keyValueSerializer.serialize(groupParameters)!!
+        val mgmSignatureGroupParameters = DigitalSignatureWithKey(publicKeyExample, "bytes".toByteArray())
+
+        val signedGroupParameters = groupParametersFactory.create(
+            ByteBuffer.wrap(serializedGroupParameters).array(),
+            mgmSignatureGroupParameters,
+            SignatureSpecImpl("dummySignatureName")
+        )
+
+        return UtxoLedgerTransactionContainer(wireTransaction, inputStateAndRefs, referenceStateAndRefs, signedGroupParameters)
+    }
+
+    private fun CpkMetadata.toCpkSummary() =
+        CordaPackageSummary(
+            cpkId.name,
+            cpkId.version,
+            cpkId.signerSummaryHash.toString(),
+            fileChecksum.toString()
+        )
+
+    //TODO - need verification payload
+    private fun payloadBuilder(
+        ctx: SandboxGroupContext,
+        holdingIdentity: HoldingIdentity,
+        transaction: UtxoLedgerTransactionContainer,
+        cpksSummaries: List<CordaPackageSummary>
+    ) = TransactionVerificationRequest(
+        Instant.now(),
+        holdingIdentity.toAvro(),
+        ctx.serialize(transaction),
+        cpksSummaries,
+        EXTERNAL_EVENT_CONTEXT
+    )
 }

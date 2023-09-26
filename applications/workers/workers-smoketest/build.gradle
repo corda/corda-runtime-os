@@ -84,6 +84,12 @@ dependencies {
     smokeTestImplementation project(":testing:packaging-test-utilities")
     smokeTestImplementation project(':testing:test-utilities')
     smokeTestImplementation project(":testing:uniqueness:uniqueness-utilities")
+    //TODO - check do you need all of these
+    implementation project(':libs:virtual-node:sandbox-group-context')
+    smokeTestImplementation project(':testing:sandboxes')
+    implementation project (':components:virtual-node:sandbox-group-context-service')
+    runtimeOnly project(':components:virtual-node:sandbox-amqp')
+    runtimeOnly project(':components:virtual-node:sandbox-json')
 
     smokeTestRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
     smokeTestRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
