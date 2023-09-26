@@ -177,7 +177,7 @@ class VirtualNodeDbFactoryImplTest {
     }
 
     @Test
-    fun `createVNodeDbs sets ddlConnectionProvided to true when provided with DML and DDL connection`() {
+    fun `createVNodeDbs sets ddlConnectionProvided to true and isPlatformManagedDb to false when provided with DML and DDL connection`() {
         val request = VirtualNodeCreateRequest(
             /* holdingId = */ mock(),
             /* cpiFileChecksum = */ "",
@@ -193,10 +193,12 @@ class VirtualNodeDbFactoryImplTest {
         val dbs = impl.createVNodeDbs(ShortHash.of("1234123412341234"), request)
 
         assertAll(dbs.map { (dbType, db) -> { assertTrue(db.ddlConnectionProvided, dbType.name) } })
+        assertAll(dbs.map { (dbType, db) -> { assertFalse(db.isPlatformManagedDb, dbType.name) } })
     }
 
     @Test
-    fun `createVNodeDbs sets ddlConnectionProvided to false when provided with DML connection but no DDL connection`() {
+    @Suppress("MaxLineLength")
+    fun `createVNodeDbs sets ddlConnectionProvided and isPlatformManaged to false when provided with DML connection but no DDL connection`() {
         val request = VirtualNodeCreateRequest(
             /* holdingId = */ mock(),
             /* cpiFileChecksum = */ "",
@@ -212,10 +214,12 @@ class VirtualNodeDbFactoryImplTest {
         val dbs = impl.createVNodeDbs(ShortHash.of("1234123412341234"), request)
 
         assertAll(dbs.map { (dbType, db) -> { assertFalse(db.ddlConnectionProvided, dbType.name) } })
+        assertAll(dbs.map { (dbType, db) -> { assertFalse(db.isPlatformManagedDb, dbType.name) } })
     }
 
     @Test
-    fun `createVNodeDbs sets ddlConnectionProvided to false when provided with DDL no DML connection - uses cluster DB, DDL ignored`() {
+    @Suppress("MaxLineLength")
+    fun `createVNodeDbs sets ddlConnectionProvided to false and isPlatformManagedDb to true when provided with DDL no DML connection - uses cluster DB, DDL ignored`() {
         val request = VirtualNodeCreateRequest(
             /* holdingId = */ mock(),
             /* cpiFileChecksum = */ "",
@@ -231,6 +235,7 @@ class VirtualNodeDbFactoryImplTest {
         val dbs = impl.createVNodeDbs(ShortHash.of("1234123412341234"), request)
 
         assertAll(dbs.map { (dbType, db) -> { assertFalse(db.ddlConnectionProvided, dbType.name) } })
+        assertAll(dbs.map { (dbType, db) -> { assertTrue(db.isPlatformManagedDb, dbType.name) } })
     }
 
     @Test
