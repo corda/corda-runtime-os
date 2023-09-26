@@ -135,7 +135,7 @@ class TokenCacheEventProcessorTest {
     fun `forward an event to its handler and return the response`() {
         tokenPoolCacheEvent.payload = "message"
 
-        val outputState = TokenPoolCacheState()
+        val outputState = TokenPoolCacheState().apply { tokenClaims = listOf() }
         val handlerResponse = Record<String, FlowEvent>("", "", null)
 
         val stateIn = TokenPoolCacheState().apply {
@@ -165,7 +165,7 @@ class TokenCacheEventProcessorTest {
     fun `null state will be defaulted to an empty state before processing`() {
         tokenPoolCacheEvent.payload = "message"
 
-        val outputState = TokenPoolCacheState()
+        val outputState = TokenPoolCacheState().apply { tokenClaims = listOf() }
         val handlerResponse = Record<String, FlowEvent>("", "", null)
 
         whenever(entityConverter.toPoolCacheState(any())).thenReturn(cachePoolState)
