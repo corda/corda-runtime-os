@@ -61,12 +61,16 @@ class SigningServiceImpl @Activate constructor(
                       context: SigningServiceSignContext
     ): DigitalSignature.WithKeyId {
         return recordSuspendable({ cryptoFlowTimer("sign") }) @Suspendable {
+            var contextMap = mutableMapOf<String, String>()
+            if (!context.keyCategory.isNullOrEmpty()) {
+                contextMap["category"] = context.keyCategory
+            }
             val digitalSignatureWithKey = externalEventExecutor.execute(
                 CreateSignatureExternalEventFactory::class.java,
                 SignParameters(bytes,
                     keyEncodingService.encodeAsByteArray(publicKey),
                     signatureSpec,
-                    mapOf("category" to context.keyCategory))
+                    contextMap.toMap())
             )
 
             DigitalSignatureWithKeyId(
