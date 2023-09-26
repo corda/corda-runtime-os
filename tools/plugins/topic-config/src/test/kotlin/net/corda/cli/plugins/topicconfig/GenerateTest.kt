@@ -14,7 +14,7 @@ class GenerateTest {
         command.create!!.topic!!.bootstrapServer = "address" // not used, should be ignored
         command.create!!.topic!!.kafkaConfig = "/tmp/working_dir/config.properties"
 
-        val expectedConfigYamlFile = javaClass.classLoader.getResource("topic_generated_config.yaml")?.file
+        val expectedConfigYamlFile = javaClass.classLoader.getResource("generated_topic_config.yaml")?.file
         val expectedConfigString = Files.readString(File(expectedConfigYamlFile!!).toPath())
         val expectedConfig: Create.GeneratedTopicDefinitions = command.create!!.mapper.readValue(expectedConfigString)
 
