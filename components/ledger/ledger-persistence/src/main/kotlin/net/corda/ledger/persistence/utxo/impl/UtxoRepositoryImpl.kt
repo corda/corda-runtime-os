@@ -164,13 +164,16 @@ class UtxoRepositoryImpl @Activate constructor(
         id: String,
         privacySalt: ByteArray,
         account: String,
-        timestamp: Instant
+        timestamp: Instant,
+        status: TransactionStatus
     ) {
         entityManager.createNativeQuery(queryProvider.persistTransaction)
             .setParameter("id", id)
             .setParameter("privacySalt", privacySalt)
             .setParameter("accountId", account)
             .setParameter("createdAt", timestamp)
+            .setParameter("status", status)
+            .setParameter("updatedAt", timestamp)
             .executeUpdate()
             .logResult("transaction [$id]")
     }
@@ -220,9 +223,11 @@ class UtxoRepositoryImpl @Activate constructor(
         tokenTag: String?,
         tokenOwnerHash: String?,
         tokenAmount: BigDecimal?,
-        timestamp: Instant
+        timestamp: Instant,
+        consumed: Boolean,
+        customRepresentation: CustomRepresentation
     ) {
-        entityManager.createNativeQuery(queryProvider.persistTransactionOutput)
+        entityManager.createNativeQuery(queryProvider.persistTransactionOutput(consumed))
             .setParameter("transactionId", transactionId)
             .setParameter("groupIndex", groupIndex)
             .setParameter("leafIndex", leafIndex)
@@ -238,28 +243,10 @@ class UtxoRepositoryImpl @Activate constructor(
             .setParameter("tokenAmount", BigDecimal.ZERO)
             .setParameter("tokenAmount", tokenAmount)
             .setParameter("createdAt", timestamp)
-            .executeUpdate()
-            .logResult("transaction output [$transactionId, $groupIndex, $leafIndex]")
-    }
-
-    override fun persistTransactionVisibleStates(
-        entityManager: EntityManager,
-        transactionId: String,
-        groupIndex: Int,
-        leafIndex: Int,
-        consumed: Boolean,
-        customRepresentation: CustomRepresentation,
-        timestamp: Instant,
-    ) {
-        entityManager.createNativeQuery(queryProvider.persistTransactionVisibleStates(consumed))
-            .setParameter("transactionId", transactionId)
-            .setParameter("groupIndex", groupIndex)
-            .setParameter("leafIndex", leafIndex)
-            .setParameter("custom_representation", customRepresentation.json)
-            .setParameter("createdAt", timestamp)
+            .setParameter("customRepresentation", customRepresentation.json)
             .run { if (consumed) setParameter("consumedAt", timestamp) else this }
             .executeUpdate()
-            .logResult("transaction relevancy [$transactionId, $groupIndex, $leafIndex]")
+            .logResult("transaction output [$transactionId, $leafIndex]")
     }
 
     override fun persistTransactionSignature(
@@ -301,14 +288,14 @@ class UtxoRepositoryImpl @Activate constructor(
             .logResult("transaction source [$transactionId, $groupIndex, $leafIndex]")
     }
 
-    override fun persistTransactionStatus(
+    override fun updateTransactionStatus(
         entityManager: EntityManager,
         transactionId: String,
         transactionStatus: TransactionStatus,
         timestamp: Instant
     ) {
         // Insert/update status. Update ignored unless: UNVERIFIED -> * | VERIFIED -> VERIFIED | INVALID -> INVALID
-        val rowsUpdated = entityManager.createNativeQuery(queryProvider.persistTransactionStatus)
+        val rowsUpdated = entityManager.createNativeQuery(queryProvider.updateTransactionStatus)
             .setParameter("transactionId", transactionId)
             .setParameter("status", transactionStatus.value)
             .setParameter("updatedAt", timestamp)

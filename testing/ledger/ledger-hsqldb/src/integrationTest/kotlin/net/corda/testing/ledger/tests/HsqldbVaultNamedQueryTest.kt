@@ -3,16 +3,12 @@ package net.corda.testing.ledger.tests
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionComponentEntity
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionComponentEntityId
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionEntity
-import com.example.ledger.testing.datamodel.utxo.UtxoTransactionOutputEntity
+import com.example.ledger.testing.datamodel.utxo.UtxoVisibleTransactionOutputEntity
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionOutputEntityId
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionSignatureEntity
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionSignatureEntityId
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionSourceEntity
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionSourceEntityId
-import com.example.ledger.testing.datamodel.utxo.UtxoTransactionStatusEntity
-import com.example.ledger.testing.datamodel.utxo.UtxoTransactionStatusEntityId
-import com.example.ledger.testing.datamodel.utxo.UtxoVisibleTransactionStateEntity
-import com.example.ledger.testing.datamodel.utxo.UtxoVisibleTransactionStateEntityId
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
@@ -41,7 +37,7 @@ import org.osgi.test.junit5.service.ServiceExtension
 @ExtendWith(ServiceExtension::class)
 class HsqldbVaultNamedQueryTest {
     private companion object {
-        private const val UTXO_VISIBLE_TX_STATE = "utxo_visible_transaction_state"
+        private const val UTXO_VISIBLE_TX_STATE = "utxo_visible_transaction_output"
         private const val BASE_QUERY = "SELECT * FROM $UTXO_VISIBLE_TX_STATE AS visible_state WHERE "
         private const val TIMEOUT_MILLIS = 10000L
 
@@ -85,16 +81,12 @@ class HsqldbVaultNamedQueryTest {
             UtxoTransactionEntity::class.java,
             UtxoTransactionComponentEntity::class.java,
             UtxoTransactionComponentEntityId::class.java,
-            UtxoTransactionStatusEntity::class.java,
-            UtxoTransactionStatusEntityId::class.java,
-            UtxoTransactionOutputEntity::class.java,
+            UtxoVisibleTransactionOutputEntity::class.java,
             UtxoTransactionOutputEntityId::class.java,
             UtxoTransactionSignatureEntity::class.java,
             UtxoTransactionSignatureEntityId::class.java,
             UtxoTransactionSourceEntity::class.java,
-            UtxoTransactionSourceEntityId::class.java,
-            UtxoVisibleTransactionStateEntity::class.java,
-            UtxoVisibleTransactionStateEntityId::class.java
+            UtxoTransactionSourceEntityId::class.java
         ))
         entityManagerFactory = dbConnectionManager.createEntityManagerFactory(dbConnectionId, entities)
     }
@@ -107,25 +99,34 @@ class HsqldbVaultNamedQueryTest {
                 id = txId.toString(),
                 privacySalt = byteArrayOf(),
                 accountId = ACCOUNT_ID.toString(),
-                created = timestamp
+                created = timestamp,
+                status = "V",
+                updated = timestamp
             )
 
-            val visibleStates = mutableListOf<UtxoVisibleTransactionStateEntity>()
+            val visibleStates = mutableListOf<UtxoVisibleTransactionOutputEntity>()
             for (state in states) {
                 tx.components += UtxoTransactionComponentEntity(
                     transaction = tx,
                     groupIndex = state.groupIndex,
                     leafIndex = state.leafIndex,
                     data = byteArrayOf(0x01, 0x02, 0x03, 0x04),
-                    hash = "",
-                    timestamp
+                    hash = ""
                 )
 
-                visibleStates += UtxoVisibleTransactionStateEntity(
+                visibleStates += UtxoVisibleTransactionOutputEntity(
                     transaction = tx,
                     groupIndex = state.groupIndex,
                     leafIndex = state.leafIndex,
-                    state.customRepresentation,
+                    type = "com.r3.Dummy",
+                    tokenType = null,
+                    tokenIssuerHash = null,
+                    tokenNotaryX500Name = null,
+                    tokenSymbol = null,
+                    tokenTag = null,
+                    tokenOwnerHash = null,
+                    tokenAmount = null,
+                    customRepresentation = state.customRepresentation,
                     created = timestamp,
                     consumed = null
                 )
@@ -136,14 +137,14 @@ class HsqldbVaultNamedQueryTest {
         }
     }
 
-    private fun executeQuery(sqlText: String, txId: UUID, parameters: (Query) -> Unit): List<UtxoVisibleTransactionStateEntity> {
+    private fun executeQuery(sqlText: String, txId: UUID, parameters: (Query) -> Unit): List<UtxoVisibleTransactionOutputEntity> {
         @Suppress("unchecked_cast")
         return entityManagerFactory.transaction { em ->
-            em.createNativeQuery("$BASE_QUERY $sqlText AND transaction_id = :txId", UtxoVisibleTransactionStateEntity::class.java)
+            em.createNativeQuery("$BASE_QUERY $sqlText AND transaction_id = :txId", UtxoVisibleTransactionOutputEntity::class.java)
                 .setParameter("txId", txId.toString())
                 .also(parameters)
                 .resultList
-        } as List<UtxoVisibleTransactionStateEntity>
+        } as List<UtxoVisibleTransactionOutputEntity>
     }
 
     @Test
@@ -164,7 +165,6 @@ class HsqldbVaultNamedQueryTest {
         }.single()
         assertAll(
             { assertEquals(txId.toString(), numberResult.transaction.id) },
-            { assertEquals(30, numberResult.groupIndex) },
             { assertEquals(50, numberResult.leafIndex) }
         )
 
@@ -173,7 +173,6 @@ class HsqldbVaultNamedQueryTest {
         }.single()
         assertAll(
             { assertEquals(txId.toString(), stringResult.transaction.id) },
-            { assertEquals(10, stringResult.groupIndex) },
             { assertEquals(20, stringResult.leafIndex) }
         )
     }
@@ -197,7 +196,6 @@ class HsqldbVaultNamedQueryTest {
         }.single()
         assertAll(
             { assertEquals(txId.toString(), numberResult.transaction.id) },
-            { assertEquals(15, numberResult.groupIndex) },
             { assertEquals(25, numberResult.leafIndex) }
         )
 
@@ -207,7 +205,6 @@ class HsqldbVaultNamedQueryTest {
         }.single()
         assertAll(
             { assertEquals(txId.toString(), stringResult.transaction.id) },
-            { assertEquals(0, stringResult.groupIndex) },
             { assertEquals(1, stringResult.leafIndex) }
         )
     }
@@ -231,7 +228,6 @@ class HsqldbVaultNamedQueryTest {
         }.single()
         assertAll(
             { assertEquals(txId.toString(), numberResult.transaction.id) },
-            { assertEquals(25, numberResult.groupIndex) },
             { assertEquals(35, numberResult.leafIndex) }
         )
 
@@ -241,7 +237,6 @@ class HsqldbVaultNamedQueryTest {
         }.single()
         assertAll(
             { assertEquals(txId.toString(), stringResult.transaction.id) },
-            { assertEquals(10, stringResult.groupIndex) },
             { assertEquals(11, stringResult.leafIndex) }
         )
     }
@@ -262,7 +257,6 @@ class HsqldbVaultNamedQueryTest {
         val visibleState = executeQuery(sqlText, txId) {}.single()
         assertAll(
             { assertEquals(txId.toString(), visibleState.transaction.id) },
-            { assertEquals(30, visibleState.groupIndex) },
             { assertEquals(50, visibleState.leafIndex) }
         )
     }
@@ -286,7 +280,6 @@ class HsqldbVaultNamedQueryTest {
 
         assertAll(
             { assertEquals(txId.toString(), visibleState.transaction.id) },
-            { assertEquals(10, visibleState.groupIndex) },
             { assertEquals(20, visibleState.leafIndex) }
         )
     }
