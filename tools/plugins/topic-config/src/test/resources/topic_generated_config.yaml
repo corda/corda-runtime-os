@@ -257,6 +257,8 @@ topics:
       min.compaction.lag.ms: 60000
       max.compaction.lag.ms: 604800000
       min.cleanable.dirty.ratio: 0.5
+  - name: scheduled.task.db.processor
+    config: {}
   - name: services.token.event
     config: {}
   - name: services.token.event.state
@@ -795,6 +797,13 @@ acls:
           - read
           - write
           - describe
+  - topic: scheduled.task.db.processor
+    users:
+      - name: Dan
+        operations:
+        - read
+        - write
+        - describe
   - topic: services.token.event
     users:
       - name: Dan

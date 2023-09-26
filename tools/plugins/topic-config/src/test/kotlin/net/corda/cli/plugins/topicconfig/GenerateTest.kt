@@ -21,6 +21,8 @@ class GenerateTest {
         val actualConfig = command.create!!.getGeneratedTopicConfigs()
 
         assertEquals(expectedConfig, actualConfig)
+
+        command.run()
     }
 
     private fun command() : Generate {
