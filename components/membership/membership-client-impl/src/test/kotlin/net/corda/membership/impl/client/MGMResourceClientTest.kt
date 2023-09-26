@@ -59,6 +59,7 @@ import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
+import net.corda.membership.lib.registration.DECLINED_REASON_FOR_USER_GENERAL_MANUAL_DECLINED
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -124,8 +125,6 @@ class MGMResourceClientTest {
         const val SERIAL = 1L
         const val REASON = "test"
         const val DEFAULT_MEMBER_GROUP_ID = "DEFAULT_MEMBER_GROUP_ID"
-        const val USER_REASON = "The request was manually declined by the network operator. " +
-                "Please reach out to them to find out the reason the request was declined."
 
         val RULE_TYPE = ApprovalRuleType.STANDARD
         val memberName = MemberX500Name.parse("CN=Bob,O=Bob,OU=Unit1,L=London,ST=State1,C=GB")
@@ -914,7 +913,7 @@ class MGMResourceClientTest {
                     Record(
                         Schemas.Membership.REGISTRATION_COMMAND_TOPIC,
                         "$memberName-$DEFAULT_MEMBER_GROUP_ID",
-                        RegistrationCommand(DeclineRegistration(reason, USER_REASON))
+                        RegistrationCommand(DeclineRegistration(reason, DECLINED_REASON_FOR_USER_GENERAL_MANUAL_DECLINED))
                     )
                 )
             )
@@ -1088,7 +1087,7 @@ class MGMResourceClientTest {
                     Record(
                         Schemas.Membership.REGISTRATION_COMMAND_TOPIC,
                         "$memberName-$DEFAULT_MEMBER_GROUP_ID",
-                        RegistrationCommand(DeclineRegistration("Force declined by MGM", USER_REASON))
+                        RegistrationCommand(DeclineRegistration("Force declined by MGM", DECLINED_REASON_FOR_USER_GENERAL_MANUAL_DECLINED))
                     )
                 )
             )
