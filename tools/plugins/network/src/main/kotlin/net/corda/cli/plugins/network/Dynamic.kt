@@ -8,6 +8,7 @@ import picocli.CommandLine.Command
         OnboardMgm::class,
         OnBoardMember::class,
     ],
+    mixinStandardHelpOptions = true,
     description = ["For Onboarding Member and MGM"]
 )
 class Dynamic

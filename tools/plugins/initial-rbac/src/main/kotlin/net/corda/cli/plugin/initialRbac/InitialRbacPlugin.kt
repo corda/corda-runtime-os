@@ -25,6 +25,7 @@ class InitialRbacPlugin : Plugin() {
         subcommands = [UserAdminSubcommand::class, VNodeCreatorSubcommand::class,
             CordaDeveloperSubcommand::class, FlowExecutorSubcommand::class,
             AllClusterRolesSubcommand::class],
+        mixinStandardHelpOptions = true,
         description = ["Creates common RBAC roles"]
     )
     class PluginEntryPoint : CordaCliPlugin

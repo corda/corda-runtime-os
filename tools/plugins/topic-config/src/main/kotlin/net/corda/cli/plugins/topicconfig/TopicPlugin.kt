@@ -26,7 +26,12 @@ class TopicPlugin : Plugin() {
     }
 
     @Extension
-    @CommandLine.Command(name = "topic", subcommands = [Create::class, Delete::class], description = ["Plugin for Kafka topic operations."])
+    @CommandLine.Command(
+        name = "topic",
+        subcommands = [Create::class, Delete::class],
+        description = ["Plugin for Kafka topic operations."],
+        mixinStandardHelpOptions = true
+    )
     class Topic : CordaCliPlugin {
 
         @CommandLine.Option(
