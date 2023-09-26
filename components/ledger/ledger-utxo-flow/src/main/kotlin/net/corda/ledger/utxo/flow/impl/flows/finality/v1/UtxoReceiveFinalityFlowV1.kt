@@ -6,7 +6,6 @@ import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityPayload
-import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityVersion
 import net.corda.ledger.utxo.flow.impl.flows.finality.addTransactionIdToFlowContext
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
 import net.corda.ledger.utxo.flow.impl.flows.finality.v1.FinalityNotarizationFailureType.Companion.toFinalityNotarizationFailureType
@@ -27,11 +26,16 @@ import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+/**
+ * V1 changed slightly between 5.0 and 5.1.
+ * (5.1's initial payload contains the number of parties to let bypass steps later not needed for two parties cases)
+ * This change is not managed through flow versioning since flow interoperability is not supported between these versions.
+ */
+
 @CordaSystemFlow
 class UtxoReceiveFinalityFlowV1(
     private val session: FlowSession,
-    private val validator: UtxoTransactionValidator,
-    val version: UtxoFinalityVersion
+    private val validator: UtxoTransactionValidator
 ) : UtxoFinalityBaseV1() {
 
     private companion object {
@@ -101,12 +105,9 @@ class UtxoReceiveFinalityFlowV1(
 
     @Suspendable
     private fun receiveTransactionAndBackchain(): Pair<UtxoSignedTransactionInternal, Boolean> {
-        val (initialTransaction, transferAdditionalSignatures) = if (version == UtxoFinalityVersion.V1) {
-            session.receive(UtxoSignedTransactionInternal::class.java) to true
-        } else {
-            val payload = session.receive(FinalityPayload::class.java)
-            payload.initialTransaction to payload.transferAdditionalSignatures
-        }
+        val payload = session.receive(FinalityPayload::class.java)
+        val initialTransaction = payload.initialTransaction
+        val transferAdditionalSignatures = payload.transferAdditionalSignatures
 
         if (log.isDebugEnabled) {
             log.debug( "Beginning receive finality for transaction: ${initialTransaction.id}")
