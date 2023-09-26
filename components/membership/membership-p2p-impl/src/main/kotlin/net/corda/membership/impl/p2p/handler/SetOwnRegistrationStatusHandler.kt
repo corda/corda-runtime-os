@@ -10,33 +10,18 @@ import net.corda.membership.lib.RegistrationStatusV2
 import net.corda.membership.lib.SetOwnRegistrationStatusV2
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.schema.registry.deserialize
 import net.corda.virtualnode.toCorda
-import java.nio.ByteBuffer
 
 internal class SetOwnRegistrationStatusHandler(
-    private val avroSchemaRegistry: AvroSchemaRegistry
-) : AuthenticatedMessageHandler() {
+    avroSchemaRegistry: AvroSchemaRegistry
+) : BaseSetOwnRegistrationStatusHandler<SetOwnRegistrationStatus>(avroSchemaRegistry) {
+
+    override val payloadType = SetOwnRegistrationStatus::class.java
+
     override fun invokeAuthenticatedMessage(
         header: AuthenticatedMessageHeader,
-        payload: ByteBuffer
-    ): Record<String, RegistrationCommand> {
-        val response = if (avroSchemaRegistry.getClassType(payload) == SetOwnRegistrationStatus::class.java) {
-            avroSchemaRegistry.deserialize<SetOwnRegistrationStatus>(payload).convertToNewVersion()
-        } else {
-            avroSchemaRegistry.deserialize(payload)
-        }
-        return Record(
-            REGISTRATION_COMMAND_TOPIC,
-            "${response.registrationId}-${response.newStatus}-${header.destination.toCorda().shortHash}",
-            RegistrationCommand(
-                PersistMemberRegistrationState(
-                    header.destination,
-                    response
-                )
-            )
-        )
-    }
+        payload: SetOwnRegistrationStatus
+    ) = processV2Payload(header, payload.convertToNewVersion())
 
     private fun SetOwnRegistrationStatus.convertToNewVersion() : SetOwnRegistrationStatusV2 {
         val status = when(newStatus) {
@@ -53,5 +38,37 @@ internal class SetOwnRegistrationStatusHandler(
             else -> throw IllegalArgumentException("Unknown status '${newStatus.name}' received.")
         }
         return SetOwnRegistrationStatusV2(registrationId, status)
+    }
+}
+
+internal class SetOwnRegistrationStatusV2Handler(
+    avroSchemaRegistry: AvroSchemaRegistry
+) : BaseSetOwnRegistrationStatusHandler<SetOwnRegistrationStatusV2>(avroSchemaRegistry) {
+
+    override val payloadType = SetOwnRegistrationStatusV2::class.java
+    override fun invokeAuthenticatedMessage(
+        header: AuthenticatedMessageHeader,
+        payload: SetOwnRegistrationStatusV2
+    ) = processV2Payload(header, payload)
+}
+
+abstract class BaseSetOwnRegistrationStatusHandler<T : Any>(
+    avroSchemaRegistry: AvroSchemaRegistry
+) : AuthenticatedMessageHandler<T>(avroSchemaRegistry) {
+
+    fun processV2Payload(
+        header: AuthenticatedMessageHeader,
+        payload: SetOwnRegistrationStatusV2
+    ): Record<String, RegistrationCommand> {
+        return Record(
+            REGISTRATION_COMMAND_TOPIC,
+            "${payload.registrationId}-${payload.newStatus}-${header.destination.toCorda().shortHash}",
+            RegistrationCommand(
+                PersistMemberRegistrationState(
+                    header.destination,
+                    payload
+                )
+            )
+        )
     }
 }

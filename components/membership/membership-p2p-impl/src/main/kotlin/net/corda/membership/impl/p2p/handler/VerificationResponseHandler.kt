@@ -7,32 +7,31 @@ import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.schema.registry.deserialize
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
 
 internal class VerificationResponseHandler(
-    private val avroSchemaRegistry: AvroSchemaRegistry
-) : AuthenticatedMessageHandler() {
+    avroSchemaRegistry: AvroSchemaRegistry
+) : AuthenticatedMessageHandler<VerificationResponse>(avroSchemaRegistry) {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
+    override val payloadType = VerificationResponse::class.java
+
     override fun invokeAuthenticatedMessage(
         header: AuthenticatedMessageHeader,
-        payload: ByteBuffer
+        payload: VerificationResponse
     ): Record<String, RegistrationCommand> {
         logger.info(
             "Received verification response with message ID ${header.messageId} and trace ID ${header.traceId} from ${header.source}. " +
                     "Sending it to RegistrationManagementService to process."
         )
-        val response = avroSchemaRegistry.deserialize<VerificationResponse>(payload)
         return Record(
             REGISTRATION_COMMAND_TOPIC,
             "${header.source.x500Name}-${header.source.groupId}",
             RegistrationCommand(
                 ProcessMemberVerificationResponse(
-                    response
+                    payload
                 )
             )
         )

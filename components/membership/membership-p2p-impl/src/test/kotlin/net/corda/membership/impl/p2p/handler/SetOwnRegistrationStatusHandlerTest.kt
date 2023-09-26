@@ -32,18 +32,19 @@ class SetOwnRegistrationStatusHandlerTest {
     private val avroSchemaRegistry: AvroSchemaRegistry = mock {
         on { getClassType(payloadV1) } doReturn SetOwnRegistrationStatus::class.java
         on { getClassType(payloadV2) } doReturn SetOwnRegistrationStatusV2::class.java
-        on { deserialize<SetOwnRegistrationStatus>(payloadV1) } doReturn statusV1
-        on { deserialize<SetOwnRegistrationStatusV2>(payloadV2) } doReturn statusV2
+        on { deserialize(payloadV1, SetOwnRegistrationStatus::class.java, null) } doReturn statusV1
+        on { deserialize(payloadV2, SetOwnRegistrationStatusV2::class.java, null) } doReturn statusV2
     }
     private val identity = HoldingIdentity("O=Alice, L=London, C=GB", "GroupId")
     private val header = mock<AuthenticatedMessageHeader> {
         on { destination } doReturn identity
     }
-    private val handler = SetOwnRegistrationStatusHandler(avroSchemaRegistry)
+    private val v1Handler = SetOwnRegistrationStatusHandler(avroSchemaRegistry)
+    private val v2Handler = SetOwnRegistrationStatusV2Handler(avroSchemaRegistry)
 
     @Test
     fun `invokeAuthenticatedMessage returns PersistMemberRegistrationState command - V1 version converted to V2 successfully`() {
-        val record = handler.invokeAuthenticatedMessage(header, payloadV1)
+        val record = v1Handler.invoke(header, payloadV1)
 
         assertSoftly { softly ->
             softly.assertThat(record.topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
@@ -61,7 +62,7 @@ class SetOwnRegistrationStatusHandlerTest {
 
     @Test
     fun `invokeAuthenticatedMessage returns PersistMemberRegistrationState command - V2 version`() {
-        val record = handler.invokeAuthenticatedMessage(header, payloadV2)
+        val record = v2Handler.invoke(header, payloadV2)
 
         assertSoftly { softly ->
             softly.assertThat(record.topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)

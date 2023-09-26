@@ -29,13 +29,15 @@ internal class RegistrationRequestHandler(
     private val stableKeyPairDecryptor: StableKeyPairDecryptor,
     private val keyEncodingService: KeyEncodingService,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
-) : UnauthenticatedMessageHandler() {
+) : UnauthenticatedMessageHandler<UnauthenticatedRegistrationRequest>(avroSchemaRegistry) {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
+    override val payloadType = UnauthenticatedRegistrationRequest::class.java
+
     override fun invokeUnauthenticatedMessage(
-        payload: ByteBuffer
+        payload: UnauthenticatedRegistrationRequest
     ): Record<String, RegistrationCommand>? {
         try {
             logger.info("Received registration request. Issuing QueueRegistration command.")
@@ -68,8 +70,7 @@ internal class RegistrationRequestHandler(
     }
 
     /** Decrypts the received encrypted registration request received from member. */
-    private fun decryptPayload(payload: ByteBuffer): Pair<MembershipRegistrationRequest, HoldingIdentity> {
-        val request = avroSchemaRegistry.deserialize<UnauthenticatedRegistrationRequest>(payload)
+    private fun decryptPayload(request: UnauthenticatedRegistrationRequest): Pair<MembershipRegistrationRequest, HoldingIdentity> {
         val reqHeader = request.header
         val mgm = reqHeader.mgm.toCorda()
         val memberKey = keyEncodingService.decodePublicKey(reqHeader.key)

@@ -16,6 +16,7 @@ import net.corda.membership.impl.p2p.handler.MembershipSyncRequestHandler
 import net.corda.membership.impl.p2p.handler.MessageHandler
 import net.corda.membership.impl.p2p.handler.RegistrationRequestHandler
 import net.corda.membership.impl.p2p.handler.SetOwnRegistrationStatusHandler
+import net.corda.membership.impl.p2p.handler.SetOwnRegistrationStatusV2Handler
 import net.corda.membership.impl.p2p.handler.VerificationRequestHandler
 import net.corda.membership.impl.p2p.handler.VerificationResponseHandler
 import net.corda.membership.lib.SetOwnRegistrationStatusV2
@@ -42,21 +43,20 @@ class MembershipP2PProcessor(
         const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
     }
 
-    private val messageProcessorFactories: Map<Class<*>, () -> MessageHandler> = mapOf(
-        UnauthenticatedRegistrationRequest::class.java to {
-            RegistrationRequestHandler(
-                avroSchemaRegistry,
-                stableKeyPairDecryptor,
-                keyEncodingService,
-                membershipGroupReaderProvider,
-            )
-        },
-        VerificationRequest::class.java to { VerificationRequestHandler(avroSchemaRegistry) },
-        VerificationResponse::class.java to { VerificationResponseHandler(avroSchemaRegistry) },
-        MembershipPackage::class.java to { MembershipPackageHandler(avroSchemaRegistry) },
-        MembershipSyncRequest::class.java to { MembershipSyncRequestHandler(avroSchemaRegistry) },
-        SetOwnRegistrationStatus::class.java to { SetOwnRegistrationStatusHandler(avroSchemaRegistry) },
-        SetOwnRegistrationStatusV2::class.java to { SetOwnRegistrationStatusHandler(avroSchemaRegistry) }
+    private val messageProcessorFactories: Map<Class<*>, MessageHandler<*>> = mapOf(
+        UnauthenticatedRegistrationRequest::class.java to
+                RegistrationRequestHandler(
+                    avroSchemaRegistry,
+                    stableKeyPairDecryptor,
+                    keyEncodingService,
+                    membershipGroupReaderProvider,
+                ),
+        VerificationRequest::class.java to VerificationRequestHandler(avroSchemaRegistry),
+        VerificationResponse::class.java to VerificationResponseHandler(avroSchemaRegistry),
+        MembershipPackage::class.java to MembershipPackageHandler(avroSchemaRegistry),
+        MembershipSyncRequest::class.java to MembershipSyncRequestHandler(avroSchemaRegistry),
+        SetOwnRegistrationStatus::class.java to SetOwnRegistrationStatusHandler(avroSchemaRegistry),
+        SetOwnRegistrationStatusV2::class.java to SetOwnRegistrationStatusV2Handler(avroSchemaRegistry)
     )
 
     override fun onNext(events: List<Record<String, AppMessage>>): List<Record<*, *>> {
@@ -76,7 +76,13 @@ class MembershipP2PProcessor(
                     null
                 }
                 val processor = try {
-                    classType?.let { getHandler(it) }
+                    classType?.let {
+                        messageProcessorFactories[it]
+                            ?: throw MembershipP2PException(
+                                "No handler has been registered to handle the p2p request received. " +
+                                        "Request received: [$it]"
+                            )
+                    }
                 } catch (ex: MembershipP2PException) {
                     logger.error("Could not get handler for request.", ex)
                     null
@@ -89,15 +95,6 @@ class MembershipP2PProcessor(
                     msg.payload
                 )
             }
-    }
-
-    private fun getHandler(requestClass: Class<*>): MessageHandler {
-        val factory = messageProcessorFactories[requestClass]
-            ?: throw MembershipP2PException(
-                "No handler has been registered to handle the p2p request received. " +
-                        "Request received: [$requestClass]"
-            )
-        return factory.invoke()
     }
 
     class MembershipP2PException(msg: String) : CordaRuntimeException(msg)

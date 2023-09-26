@@ -7,25 +7,24 @@ import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
-import net.corda.schema.registry.deserialize
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
 
 internal class VerificationRequestHandler(
-    private val avroSchemaRegistry: AvroSchemaRegistry
-) : AuthenticatedMessageHandler()  {
+    avroSchemaRegistry: AvroSchemaRegistry
+) : AuthenticatedMessageHandler<VerificationRequest>(avroSchemaRegistry)  {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
+    override val payloadType = VerificationRequest::class.java
+
     override fun invokeAuthenticatedMessage(
         header: AuthenticatedMessageHeader,
-        payload: ByteBuffer
+        payload: VerificationRequest
     ): Record<String, RegistrationCommand> {
         logger.info("Received verification request from ${header.source}. Sending it to RegistrationManagementService to process.")
-        val request = avroSchemaRegistry.deserialize<VerificationRequest>(payload)
-        val registrationId = request.registrationId
+        val registrationId = payload.registrationId
         return Record(
             REGISTRATION_COMMAND_TOPIC,
             "$registrationId-${header.destination.toCorda().shortHash}",
@@ -33,7 +32,7 @@ internal class VerificationRequestHandler(
                 ProcessMemberVerificationRequest(
                     header.destination,
                     header.source,
-                    request
+                    payload
                 )
             )
         )
