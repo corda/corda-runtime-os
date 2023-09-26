@@ -101,9 +101,9 @@ internal class ReconcilerEventHandlerTest {
                 forceInitialReconciliation = true
             )
 
-        val reconciledInFirstReconciliation =  reconcilerEventHandler.reconcile()
-        val reconciledInSecondReconciliation =  reconcilerEventHandler.reconcile()
-        assertEquals(1, reconciledInFirstReconciliation)
-        assertEquals(0, reconciledInSecondReconciliation)
+        val reconciledOnFirstReconciliation =  reconcilerEventHandler.reconcile()
+        val reconciledOnSecondReconciliation =  reconcilerEventHandler.reconcile()
+        assertEquals(1, reconciledOnFirstReconciliation)
+        assertEquals(0, reconciledOnSecondReconciliation)
     }
 }
