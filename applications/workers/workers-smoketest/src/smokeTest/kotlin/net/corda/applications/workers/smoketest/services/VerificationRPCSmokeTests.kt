@@ -17,6 +17,8 @@ import net.corda.e2etest.utilities.conditionallyUploadCpiSigningCertificate
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
 import net.corda.e2etest.utilities.registerStaticMember
+import net.corda.ledger.utxo.verification.TransactionVerificationRequest
+import net.corda.ledger.utxo.verification.TransactionVerificationResponse
 import net.corda.messagebus.kafka.serialization.CordaAvroSerializationFactoryImpl
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.test.util.time.AutoTickTestClock
@@ -49,10 +51,10 @@ class VerificationRPCSmokeTests {
     private val serializationFactory = CordaAvroSerializationFactoryImpl(
         AvroSchemaRegistryImpl()
     )
-//TODO - serializers for verification
-    private val avroSerializer = serializationFactory.createAvroSerializer<UniquenessCheckRequestAvro> { }
+
+    private val avroSerializer = serializationFactory.createAvroSerializer<TransactionVerificationRequest> { }
     private val avroFlowEventDeserializer = serializationFactory.createAvroDeserializer({}, FlowEvent::class.java)
-    private val avroUniquenessDeserializer = serializationFactory.createAvroDeserializer({}, UniquenessCheckResponseAvro::class.java)
+    private val avroVerificationDeserializer = serializationFactory.createAvroDeserializer({}, TransactionVerificationResponse::class.java)
 
     companion object {
         const val TEST_CPI_NAME = "ledger-utxo-demo-app"
@@ -137,7 +139,7 @@ class VerificationRPCSmokeTests {
 
         assertThat(responseEvent).isNotNull
 
-        val deserializedExternalEventResponse = avroUniquenessDeserializer.deserialize((responseEvent?.payload as ExternalEventResponse).payload.array())
+        val deserializedExternalEventResponse = avroVerificationDeserializer.deserialize((responseEvent?.payload as ExternalEventResponse).payload.array())
 
         assertThat(deserializedExternalEventResponse).isNotNull
         //TODO - need a verification assertion
