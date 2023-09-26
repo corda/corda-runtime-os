@@ -2,23 +2,18 @@ package net.corda.ledger.utxo.token.cache.services
 
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.external.ExternalEventContext
-import net.corda.data.ledger.utxo.token.selection.data.TokenAmount
 import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.utxo.token.cache.converters.EntityConverter
 import net.corda.ledger.utxo.token.cache.converters.EventConverter
-import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
-import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.entities.TokenEvent
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolCache
 import net.corda.ledger.utxo.token.cache.handlers.TokenEventHandler
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import org.slf4j.LoggerFactory
-import java.math.BigDecimal
-import java.math.BigInteger
 
 @Suppress("LongParameterList")
 class TokenCacheEventProcessor constructor(
@@ -83,18 +78,18 @@ class TokenCacheEventProcessor constructor(
                     "Received an event with and unrecognized payload '${tokenEvent.javaClass}'"
                 }
 
-                val sb = StringBuffer()
+               /* val sb = StringBuffer()
                 sb.appendLine(
                     "Token Selection Request type = ${handler.javaClass.simpleName} Pool = ${nonNullableState.poolKey}"
                 )
                 sb.appendLine("Before Handler:")
-                sb.append(getTokenSummary(tokenCache, poolCacheState))
+                sb.append(getTokenSummary(tokenCache, poolCacheState))*/
 
                 val result = handler.handle(tokenCache, poolCacheState, tokenEvent)
-
+/*
                 sb.appendLine("After Handler:")
                 sb.append(getTokenSummary(tokenCache, poolCacheState))
-                log.info(sb.toString())
+                log.info(sb.toString())*/
 
                 if (result == null) {
                     StateAndEventProcessor.Response(poolCacheState.toAvro(), listOf())
@@ -117,7 +112,7 @@ class TokenCacheEventProcessor constructor(
             StateAndEventProcessor.Response(state, listOf(responseMessage), markForDLQ = false)
         }
     }
-
+/*
     private fun getTokenSummary(tokenCache: TokenCache, state: PoolCacheState): String {
         val cachedTokenValue = tokenCache.sumOf { it.amount }
         val cachedTokenCount = tokenCache.count()
@@ -154,5 +149,5 @@ class TokenCacheEventProcessor constructor(
             BigInteger(unscaledValueBytes),
             avroTokenAmount.scale
         )
-    }
+    }*/
 }
