@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 
 object Health {
-    private val logger = LoggerFactory.getLogger(Metrics::class.java)
+    private val logger = LoggerFactory.getLogger(Health::class.java)
     private val objectMapper = ObjectMapper()
     private val lastLogMessage = ConcurrentHashMap(mapOf(HTTP_HEALTH_ROUTE to "", HTTP_STATUS_ROUTE to ""))
 
