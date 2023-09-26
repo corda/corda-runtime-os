@@ -26,6 +26,7 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
     keyClass: Class<K>,
     valueClass: Class<V>,
     var reconciliationIntervalMs: Long,
+    private val forceInitialReconciliation: Boolean = false,
 ) : LifecycleEventHandler {
 
     val name = "${ReconcilerEventHandler::class.java.name}<${keyClass.name}, ${valueClass.name}>"
@@ -105,6 +106,8 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
         }
     }
 
+    private var firstRun = true
+
     // TODO following method should be extracted to dedicated file, to be tested separately
     // TODO Must add to the below DEBUG logging reporting to be reconciled records potentially more
     /**
@@ -122,8 +125,14 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
                 val toBeReconciled = if (matchedKafkaRecord == null) {
                     !dbRecord.isDeleted // reconcile db inserts (i.e. db column cpi.is_deleted == false)
                 } else {
-                    dbRecord.version > matchedKafkaRecord.version // reconcile db updates
-                            || dbRecord.isDeleted // reconcile db deletes
+                    // Forced reconciliation is meant to fix CORE-14827
+                    if (forceInitialReconciliation && firstRun) {
+                        dbRecord.version >= matchedKafkaRecord.version // force reconcile
+                                || dbRecord.isDeleted // reconcile db deletes
+                    } else {
+                        dbRecord.version > matchedKafkaRecord.version // reconcile db updates
+                                || dbRecord.isDeleted // reconcile db deletes
+                    }
                 }
 
                 if (toBeReconciled) {
@@ -145,6 +154,8 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
                 reconciledCount++
             }
         }
+
+        firstRun = false
 
         return reconciledCount
     }
