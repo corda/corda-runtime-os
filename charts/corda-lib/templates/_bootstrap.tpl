@@ -503,37 +503,7 @@ spec:
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
           {{- include "corda.containerSecurityContext" . | nindent 10 }}
-          args: ['initial-rbac', 'user-admin', '--yield', '300', '--user', "$(REST_API_ADMIN_USERNAME)",
-            '--password', "$(REST_API_ADMIN_PASSWORD)",
-            '--target', "https://{{ include "corda.fullname" . }}-rest-worker:443", '--insecure']
-          volumeMounts:
-            - mountPath: /tmp
-              name: temp
-            {{- include "corda.log4jVolumeMount" . | nindent 12 }}
-          env:
-            {{- include "corda.restApiAdminSecretEnv" . | nindent 12 }}
-            {{- include "corda.bootstrapCliEnv" . | nindent 12 }}
-        - name: create-rbac-role-vnode-creator
-          image: {{ include "corda.bootstrapCliImage" . }}
-          imagePullPolicy: {{ .Values.imagePullPolicy }}
-          {{- include "corda.bootstrapResources" . | nindent 10 }}
-          {{- include "corda.containerSecurityContext" . | nindent 10 }}
-          args: ['initial-rbac', 'vnode-creator', '--yield', '300', '--user', "$(REST_API_ADMIN_USERNAME)",
-            '--password', "$(REST_API_ADMIN_PASSWORD)",
-            '--target', "https://{{ include "corda.fullname" . }}-rest-worker:443", '--insecure']
-          volumeMounts:
-            - mountPath: /tmp
-              name: temp
-            {{- include "corda.log4jVolumeMount" . | nindent 12 }}
-          env:
-            {{- include "corda.restApiAdminSecretEnv" . | nindent 12 }}
-            {{- include "corda.bootstrapCliEnv" . | nindent 12 }}
-        - name: create-rbac-role-corda-dev
-          image: {{ include "corda.bootstrapCliImage" . }}
-          imagePullPolicy: {{ .Values.imagePullPolicy }}
-          {{- include "corda.bootstrapResources" . | nindent 10 }}
-          {{- include "corda.containerSecurityContext" . | nindent 10 }}
-          args: ['initial-rbac', 'corda-developer', '--yield', '300', '--user', "$(REST_API_ADMIN_USERNAME)",
+          args: ['initial-rbac', 'all-cluster-roles', '--yield', '300', '--user', "$(REST_API_ADMIN_USERNAME)",
             '--password', "$(REST_API_ADMIN_PASSWORD)",
             '--target', "https://{{ include "corda.fullname" . }}-rest-worker:443", '--insecure']
           volumeMounts:

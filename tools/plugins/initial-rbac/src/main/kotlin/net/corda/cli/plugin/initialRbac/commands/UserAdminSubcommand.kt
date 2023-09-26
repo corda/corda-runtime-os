@@ -8,7 +8,7 @@ import net.corda.rbac.schema.RbacKeys.UUID_REGEX
 import picocli.CommandLine
 import java.util.concurrent.Callable
 
-private const val USER_ADMIN_ROLE = "UserAdminRole"
+const val USER_ADMIN_ROLE = "UserAdminRole"
 
 @CommandLine.Command(
     name = "user-admin",
