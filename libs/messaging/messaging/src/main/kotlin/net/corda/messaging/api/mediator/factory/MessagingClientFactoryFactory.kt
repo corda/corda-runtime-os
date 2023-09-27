@@ -9,7 +9,6 @@ interface MessagingClientFactoryFactory {
     /**
      * Creates a message bus messaging client factory.
      *
-     *
      * @param id Messaging client ID.
      * @param messageBusConfig Message bus related configuration.
      */

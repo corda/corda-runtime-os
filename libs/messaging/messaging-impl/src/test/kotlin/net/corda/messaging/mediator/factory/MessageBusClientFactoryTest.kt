@@ -31,9 +31,9 @@ class MessageBusClientFactoryTest {
     }
 
     @Test
-    fun testCreateMessageBusProducer() {
+    fun testCreateMessageBusClient() {
         val config = MessagingClientConfig {}
-        val messageBusProducer = messageBusClientFactory.create(config)
-        Assertions.assertNotNull(messageBusProducer)
+        val messageBusClient = messageBusClientFactory.create(config)
+        Assertions.assertNotNull(messageBusClient)
     }
 }
