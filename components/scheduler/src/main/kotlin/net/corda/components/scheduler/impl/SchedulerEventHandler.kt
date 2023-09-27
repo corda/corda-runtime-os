@@ -69,9 +69,11 @@ class SchedulerEventHandler(
                     publisher.publish(schedule.taskName, schedule.scheduleTriggerTopic)
                     schedulerLock.updateLog(schedulerName)
                 } else {
-                    logger.debug { "Skipping publishing task scheduler for ${schedule.taskName} " +
-                            "because it has only been ${schedulerLock.secondsSinceLastScheduledTrigger} " +
-                            "since the last trigger." }
+                    logger.debug {
+                        "Skipping publishing task scheduler for ${schedule.taskName} " +
+                                "because it has only been ${schedulerLock.secondsSinceLastScheduledTrigger} " +
+                                "since the last trigger."
+                    }
                 }
             }
             scheduleNext(coordinator)
