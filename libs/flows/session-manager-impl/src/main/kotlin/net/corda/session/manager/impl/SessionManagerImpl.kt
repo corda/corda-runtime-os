@@ -66,6 +66,7 @@ class SessionManagerImpl @Activate constructor(
         contextSessionProperties: KeyValuePairList,
         counterparty: HoldingIdentity,
         instant: Instant,
+        initialStatus: SessionStateType,
     ): SessionState = SessionState.newBuilder()
             .setSessionId(sessionId)
             .setSessionStartTime(instant)
@@ -74,7 +75,7 @@ class SessionManagerImpl @Activate constructor(
             .setReceivedEventsState(SessionProcessState(0, mutableListOf()))
             .setSendEventsState(SessionProcessState(0, mutableListOf()))
             .setSessionProperties(contextSessionProperties)
-            .setStatus(SessionStateType.CREATED)
+            .setStatus(initialStatus)
             .setHasScheduledCleanup(false)
             .setRequireClose(contextSessionProperties.toMap()[Constants.FLOW_SESSION_REQUIRE_CLOSE].toBoolean())
             .build()

@@ -3,6 +3,7 @@ package net.corda.ledger.persistence.utxo.impl
 import net.corda.data.ledger.persistence.FindSignedGroupParameters
 import net.corda.data.ledger.persistence.FindSignedLedgerTransaction
 import net.corda.data.ledger.persistence.FindTransaction
+import net.corda.data.ledger.persistence.FindUnconsumedStatesByExactType
 import net.corda.data.ledger.persistence.FindTransactionIdsAndStatuses
 import net.corda.data.ledger.persistence.FindUnconsumedStatesByType
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
@@ -24,6 +25,7 @@ import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransacti
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindSignedGroupParametersRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindSignedLedgerTransactionRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionRequestHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindUnconsumedStatesByExactTypeRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindUnconsumedStatesByTypeRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistSignedGroupParametersIfDoNotExistRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistTransactionIfDoesNotExistRequestHandler
@@ -90,6 +92,15 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
             }
             is FindUnconsumedStatesByType -> {
                 UtxoFindUnconsumedStatesByTypeRequestHandler(
+                    req,
+                    sandbox,
+                    externalEventContext,
+                    persistenceService,
+                    outputRecordFactory
+                )
+            }
+            is FindUnconsumedStatesByExactType -> {
+                UtxoFindUnconsumedStatesByExactTypeRequestHandler(
                     req,
                     sandbox,
                     externalEventContext,

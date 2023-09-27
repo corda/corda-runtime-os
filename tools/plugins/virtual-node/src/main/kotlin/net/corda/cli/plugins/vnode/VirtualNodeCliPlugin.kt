@@ -28,6 +28,7 @@ class VirtualNodeCliPlugin : Plugin() {
     @CommandLine.Command(
         name = "vnode",
         subcommands = [ResetCommand::class, PlatformMigration::class],
+        mixinStandardHelpOptions = true,
         description = ["Manages a virtual node"]
     )
     class PluginEntryPoint : CordaCliPlugin

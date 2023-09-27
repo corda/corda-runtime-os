@@ -1,7 +1,7 @@
 package net.corda.applications.workers.workercommon.internal
 
+import com.typesafe.config.ConfigFactory
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
-import net.corda.applications.workers.workercommon.PathAndConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
@@ -9,6 +9,7 @@ import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.ConfigDefaults
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.MessagingConfig
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
@@ -27,10 +28,10 @@ class BootstrapConfigTest {
         )
     }
     private val extraParamsMap = listOf(
-        PathAndConfig("fred", mapOf("age" to "12", "hair" to "none"))
+        ConfigFactory.parseMap(mapOf("fred.age" to "12", "fred.hair" to "none"))
     )
-    private val file1 = Path.of(this::class.java.classLoader.getResource("test1.properties").toURI())
-    private val file2 = Path.of(this::class.java.classLoader.getResource("test2.properties").toURI())
+    private val file1 = Path.of(this::class.java.classLoader.getResource("test1.properties")!!.toURI())
+    private val file2 = Path.of(this::class.java.classLoader.getResource("test2.properties")!!.toURI())
 
     @Test
     fun `when file is provided use it as fallback`() {
@@ -48,7 +49,7 @@ class BootstrapConfigTest {
 
     @Test
     fun `when 2 files are provided use last (properties)`() {
-        defaultWorkerParams.configFiles = listOf(file1,file2)
+        defaultWorkerParams.configFiles = listOf(file1, file2)
         val config = WorkerHelpers.getBootstrapConfig(
             mockSecretsServiceFactoryResolver,
             defaultWorkerParams,
@@ -79,14 +80,9 @@ class BootstrapConfigTest {
             mockSecretsServiceFactoryResolver,
             DefaultWorkerParams(1234).also {
                 it.configFiles =
-                    listOf(Path.of(this::class.java.classLoader.getResource("example-config.json").toURI()))
+                    listOf(Path.of(this::class.java.classLoader.getResource("example-config.json")!!.toURI()))
             },
-            mockConfigurationValidator,
-            listOf(
-                PathAndConfig(BootConfig.BOOT_DB, emptyMap()),
-                PathAndConfig(BootConfig.BOOT_CRYPTO, emptyMap()),
-                PathAndConfig(BootConfig.BOOT_REST, emptyMap()),
-            )
+            mockConfigurationValidator
         )
 
         assertSoftly { softly ->
@@ -116,7 +112,33 @@ class BootstrapConfigTest {
             softly.assertThat(config.getString("rest.tls.keystore.path")).isEqualTo("tls-path")
 
             softly.assertThat(config.hasPath("secrets")).isFalse
+
+            softly.assertThat(config.getString(BootConfig.BOOT_STATE_MANAGER_TYPE)).isEqualTo("DATABASE")
+            softly.assertThat(config.getString(BootConfig.BOOT_STATE_MANAGER_JDBC_URL)).isEqualTo("cnx-url")
+            softly.assertThat(config.getString(BootConfig.BOOT_STATE_MANAGER_DB_USER)).isEqualTo("cnx-user")
+            softly.assertThat(config.getString(BootConfig.BOOT_STATE_MANAGER_DB_PASS)).isEqualTo("cnx-password")
         }
+    }
+
+    @Test
+    fun `state manager config can be provided in default worker params and put into boot config`() {
+        val config = WorkerHelpers.getBootstrapConfig(
+            mockSecretsServiceFactoryResolver,
+            DefaultWorkerParams(1234).also {
+                it.stateManagerParams = mapOf(
+                    "database.user" to "user123",
+                    "database.pass" to "pass123",
+                )
+                it.secrets = mapOf(
+                    "salt" to "foo",
+                    "passphrase" to "bar",
+                )
+            },
+            mockConfigurationValidator
+        )
+
+        assertThat(config.getString(BootConfig.BOOT_STATE_MANAGER_DB_USER)).isEqualTo("user123")
+        assertThat(config.getString(BootConfig.BOOT_STATE_MANAGER_DB_PASS)).isEqualTo("pass123")
     }
 
     @Test
@@ -124,13 +146,7 @@ class BootstrapConfigTest {
         val config = WorkerHelpers.getBootstrapConfig(
             mockSecretsServiceFactoryResolver,
             defaultWorkerParams,
-            mockConfigurationValidator,
-            listOf(
-                PathAndConfig(BootConfig.BOOT_SECRETS, emptyMap()),
-                PathAndConfig(BootConfig.BOOT_DB, emptyMap()),
-                PathAndConfig(BootConfig.BOOT_CRYPTO, emptyMap()),
-                PathAndConfig(BootConfig.BOOT_REST, emptyMap()),
-            )
+            mockConfigurationValidator
         )
 
         assertSoftly { softly ->
@@ -139,6 +155,59 @@ class BootstrapConfigTest {
             softly.assertThat(config.getInt("instanceId")).isNotNull
             softly.assertThat(config.getInt("maxAllowedMessageSize")).isEqualTo(972800)
             softly.assertThat(config.getString("topicPrefix")).isEqualTo("")
+        }
+
+    }
+
+    @Test
+    fun `extra configs provided override other config that may clash`() {
+        val config = WorkerHelpers.getBootstrapConfig(
+            mockSecretsServiceFactoryResolver,
+            defaultWorkerParams,
+            mockConfigurationValidator,
+            listOf(
+                ConfigFactory.parseMap(
+                    mapOf(
+                        "dir.tmp" to "newConf",
+                        "maxAllowedMessageSize" to 0
+                    )
+                ),
+            )
+        )
+
+        assertSoftly { softly ->
+            softly.assertThat(config.getString("dir.tmp")).isEqualTo("newConf")
+            softly.assertThat(config.getString("dir.workspace")).isEqualTo(ConfigDefaults.WORKSPACE_DIR)
+            softly.assertThat(config.getInt("instanceId")).isNotNull
+            softly.assertThat(config.getInt("maxAllowedMessageSize")).isEqualTo(0)
+            softly.assertThat(config.getString("topicPrefix")).isEqualTo("")
+        }
+
+    }
+
+    @Test
+    fun `getBootstrapConfig converts integers to strings at predefined paths`() {
+        defaultWorkerParams.stateManagerParams = mapOf(
+            "database.pool.maxSize" to "111",
+            "database.pool.minSize" to "222",
+            "database.pool.idleTimeoutSeconds" to "333",
+            "database.pool.maxLifetimeSeconds" to "444",
+            "database.pool.keepAliveTimeSeconds" to "555",
+            "database.pool.validationTimeoutSeconds" to "666",
+        )
+        val config = WorkerHelpers.getBootstrapConfig(
+            mockSecretsServiceFactoryResolver,
+            defaultWorkerParams,
+            mockConfigurationValidator
+        )
+
+        assertSoftly { softly ->
+            softly.assertThat(config.getInt(MessagingConfig.StateManager.JDBC_POOL_MAX_SIZE)).isEqualTo(111)
+            softly.assertThat(config.getInt(MessagingConfig.StateManager.JDBC_POOL_MIN_SIZE)).isEqualTo(222)
+            softly.assertThat(config.getInt(MessagingConfig.StateManager.JDBC_POOL_IDLE_TIMEOUT_SECONDS)).isEqualTo(333)
+            softly.assertThat(config.getInt(MessagingConfig.StateManager.JDBC_POOL_MAX_LIFETIME_SECONDS)).isEqualTo(444)
+            softly.assertThat(config.getInt(MessagingConfig.StateManager.JDBC_POOL_KEEP_ALIVE_TIME_SECONDS)).isEqualTo(555)
+            softly.assertThat(config.getInt(MessagingConfig.StateManager.JDBC_POOL_VALIDATION_TIMEOUT_SECONDS)).isEqualTo(666)
         }
 
     }

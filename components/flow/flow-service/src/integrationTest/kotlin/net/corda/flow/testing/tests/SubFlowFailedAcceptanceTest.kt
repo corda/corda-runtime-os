@@ -171,7 +171,7 @@ fun `Given a subFlow contains an initiated and closed session when the subFlow f
         }
 
         `when` {
-            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2)
+            sessionCounterpartyInfoRequestReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2)
                 .suspendsWith(
                     FlowIORequest.SubFlowFailed(
                         RuntimeException(),
@@ -197,7 +197,7 @@ fun `Given a subFlow contains an initiated and closed session when the subFlow f
         }
 
         `when` {
-            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2)
+            sessionCounterpartyInfoRequestReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(INITIATED_SESSION_ID_1)))
                 .suspendsWith(
                     FlowIORequest.SubFlowFailed(
@@ -222,7 +222,7 @@ fun `Given a subFlow contains an initiated and closed session when the subFlow f
             membershipGroupFor(BOB_HOLDING_IDENTITY)
             initiatingToInitiatedFlow(PROTOCOL_2, FLOW_NAME, FLOW_NAME_2)
 
-            sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2)
+            sessionCounterpartyInfoRequestReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2)
                 .suspendsWith(FlowIORequest.Receive(setOf(
                     SessionInfo(INITIATED_SESSION_ID_1, initiatedIdentityMemberName),
                 )))

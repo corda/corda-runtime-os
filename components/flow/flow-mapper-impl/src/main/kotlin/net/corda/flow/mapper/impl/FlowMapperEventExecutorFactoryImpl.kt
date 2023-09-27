@@ -6,7 +6,6 @@ import net.corda.data.flow.event.mapper.ExecuteCleanup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.event.session.SessionError
-import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
@@ -15,7 +14,6 @@ import net.corda.flow.mapper.impl.executor.ExecuteCleanupEventExecutor
 import net.corda.flow.mapper.impl.executor.ScheduleCleanupEventExecutor
 import net.corda.flow.mapper.impl.executor.SessionErrorExecutor
 import net.corda.flow.mapper.impl.executor.SessionEventExecutor
-import net.corda.flow.mapper.impl.executor.SessionInitExecutor
 import net.corda.flow.mapper.impl.executor.SessionInitProcessor
 import net.corda.flow.mapper.impl.executor.StartFlowExecutor
 import net.corda.libs.configuration.SmartConfig
@@ -42,20 +40,7 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
     ): FlowMapperEventExecutor {
         return when (val flowMapperEventPayload = flowMapperEvent.payload) {
             is SessionEvent -> {
-                when (val sessionPayload = flowMapperEventPayload.payload) {
-                    is SessionInit -> {
-                        SessionInitExecutor(
-                            eventKey,
-                            flowMapperEventPayload,
-                            sessionPayload,
-                            state,
-                            flowConfig,
-                            recordFactory,
-                            instant,
-                            sessionInitProcessor
-                        )
-                    }
-
+                when (flowMapperEventPayload.payload) {
                     is SessionError -> {
                         SessionErrorExecutor(
                             eventKey,

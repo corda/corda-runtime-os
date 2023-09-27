@@ -2,8 +2,6 @@ package net.corda.session.manager.integration
 
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
-import net.corda.flow.utils.INITIATED_SESSION_ID_SUFFIX
-import net.corda.flow.utils.isInitiatedIdentity
 import java.util.LinkedList
 
 class MessageBus : BusInteractions {
@@ -11,17 +9,7 @@ class MessageBus : BusInteractions {
     private val inboundMessages: LinkedList<SessionEvent> = LinkedList<SessionEvent>()
 
     override fun getNextInboundMessage(isInitiating: Boolean) : SessionEvent? {
-        return toggleSessionId(inboundMessages.poll())
-    }
-
-    private fun toggleSessionId(sessionEvent: SessionEvent?): SessionEvent? {
-        val sessionId = sessionEvent?.sessionId ?: return sessionEvent
-        sessionEvent.sessionId = if (isInitiatedIdentity(sessionId)) {
-            sessionId.removeSuffix(INITIATED_SESSION_ID_SUFFIX)
-        } else {
-            sessionId + INITIATED_SESSION_ID_SUFFIX
-        }
-        return sessionEvent
+        return inboundMessages.poll()
     }
 
     override fun duplicateMessage(position: Int) {

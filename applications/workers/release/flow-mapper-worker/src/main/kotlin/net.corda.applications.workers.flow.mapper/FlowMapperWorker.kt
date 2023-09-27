@@ -2,17 +2,17 @@ package net.corda.applications.workers.flow.mapper
 
 import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
+import net.corda.applications.workers.workercommon.Health
 import net.corda.applications.workers.workercommon.JavaSerialisationFilter
+import net.corda.applications.workers.workercommon.Metrics
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
-import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupMonitor
-import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupWebserver
-import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.libs.platform.PlatformInfoProvider
+import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.flow.mapper.FlowMapperProcessor
@@ -33,8 +33,8 @@ class FlowMapperWorker @Activate constructor(
     private val flowMapperProcessor: FlowMapperProcessor,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
-    @Reference(service = WorkerMonitor::class)
-    private val workerMonitor: WorkerMonitor,
+    @Reference(service = LifecycleRegistry::class)
+    private val lifecycleRegistry: LifecycleRegistry,
     @Reference(service = ConfigurationValidatorFactory::class)
     private val configurationValidatorFactory: ConfigurationValidatorFactory,
     @Reference(service = PlatformInfoProvider::class)
@@ -65,12 +65,12 @@ class FlowMapperWorker @Activate constructor(
         JavaSerialisationFilter.install()
 
         val params = getParams(args, FlowMapperWorkerParams())
-        webServer.setupWebserver(params.defaultParams)
         if (printHelpOrVersion(params.defaultParams, FlowMapperWorker::class.java, shutDownService)) return
-        setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
+        Metrics.configure(webServer, this.javaClass.simpleName)
+        Health.configure(webServer, lifecycleRegistry)
 
         configureTracing("Flow Mapper Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
-
+        webServer.start(params.defaultParams.workerServerPort)
         val config = getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,

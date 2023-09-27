@@ -10,7 +10,6 @@ import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.utxo.flow.impl.UtxoLedgerMetricRecorder
 import net.corda.ledger.utxo.flow.impl.flows.backchain.InvalidBackchainException
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TopologicalSort
-import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackChainResolutionVersion
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.ledger.utxo.flow.impl.persistence.TransactionExistenceStatus
@@ -30,11 +29,10 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.LoggerFactory
 
 /**
- * The V2 protocol is an extension of the V1 protocol, which can be enabled via a switch (on both sides).
- * In order to avoid huge code duplication, we kept V1 class implementing both protocols and added a switch that makes
- * it behave according to the V2 protocol.
+ * V1 changed slightly between 5.0 and 5.1. (5.1 supports distributing SignedGroupParameters.)
+ * This change is not managed through flow versioning since flow interoperability is not supported between these versions.
  *
- * This flow will throw a [CordaRuntimeException] if we found any transactions in the database with an [INVALID] status
+ * This flow will throw a [InvalidBackchainException] if we found any transactions in the database with an [INVALID] status
  * during the back-chain resolution.
  */
 
@@ -42,8 +40,7 @@ import org.slf4j.LoggerFactory
 class TransactionBackchainReceiverFlowV1(
     private val initialTransactionIds: Set<SecureHash>,
     private val originalTransactionsToRetrieve: Set<SecureHash>,
-    private val session: FlowSession,
-    val version: TransactionBackChainResolutionVersion
+    private val session: FlowSession
 ) : SubFlow<TopologicalSort> {
 
     private companion object {
@@ -149,11 +146,6 @@ class TransactionBackchainReceiverFlowV1(
     private fun retrieveGroupParameters(
         retrievedTransaction: UtxoSignedTransaction
     ) {
-        if (version == TransactionBackChainResolutionVersion.V1) {
-            log.trace { "Backchain resolution of $initialTransactionIds - Group parameters retrieval is not available in V1" }
-            return
-        }
-
         val (groupParametersHash, groupParameters) = fetchGroupParametersAndHashForTransaction(retrievedTransaction)
 
         if (groupParameters != null) {
@@ -258,10 +250,8 @@ class TransactionBackchainReceiverFlowV1(
 
                         // Once we added the unverified transactions' dependencies into the "to retrieve" set
                         // we can remove the parent transaction from the set as we don't need to get that from
-                        // the initiator
-                        if (version == TransactionBackChainResolutionVersion.V1) {
-                            transactionsToRetrieve.remove(transactionId)
-                        } else if (fetchGroupParametersAndHashForTransaction(transactionFromDb).second != null) {
+                        // the initiator but only if we know its group parameters
+                        if (fetchGroupParametersAndHashForTransaction(transactionFromDb).second != null) {
                             transactionsToRetrieve.remove(transactionId)
                         }
                     } else {

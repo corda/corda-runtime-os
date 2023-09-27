@@ -1,6 +1,8 @@
 package net.corda.applications.workers.workercommon
 
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory.fromAnyRef
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
@@ -10,20 +12,16 @@ import net.corda.osgi.api.Shutdown
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.ConfigDefaults
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import org.osgi.framework.FrameworkUtil
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.InputStream
 import java.lang.management.ManagementFactory
-import net.corda.web.api.WebServer
 import kotlin.math.absoluteValue
 import kotlin.random.Random
-
-/** Associates a configuration key/value map with the path at which the configuration should be stored. */
-data class PathAndConfig(val path: String, val config: Map<String, String>)
 
 enum class BusType {
     KAFKA,
@@ -33,9 +31,26 @@ enum class BusType {
 /** Helpers used across multiple workers. */
 class WorkerHelpers {
     companion object {
-        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val BOOT_CONFIG_PATH = "net/corda/applications/workers/workercommon/boot/corda.boot.json"
-        private val SENSITIVE_ARGS = setOf("-ddatabase.pass", "-spassphrase", "-msasl.jaas.config")
+        private val SENSITIVE_ARGS = setOf(
+            "-ddatabase.pass",
+            "database.pass",
+            "--stateManager.database.pass",
+            "-spassphrase",
+            "-msasl.jaas.config"
+        )
+
+        /**
+         * Define the paths of any boot config that must be treated as integers for boot config json validation.
+         */
+        private val BOOT_CONFIG_INTEGER_PATHS = setOf(
+            MessagingConfig.StateManager.JDBC_POOL_MAX_SIZE,
+            MessagingConfig.StateManager.JDBC_POOL_MIN_SIZE,
+            MessagingConfig.StateManager.JDBC_POOL_IDLE_TIMEOUT_SECONDS,
+            MessagingConfig.StateManager.JDBC_POOL_MAX_LIFETIME_SECONDS,
+            MessagingConfig.StateManager.JDBC_POOL_KEEP_ALIVE_TIME_SECONDS,
+            MessagingConfig.StateManager.JDBC_POOL_VALIDATION_TIMEOUT_SECONDS,
+        )
 
         /**
          * Parses the [args] into the [params].
@@ -51,6 +66,73 @@ class WorkerHelpers {
                 throw IllegalArgumentException(e.message)
             }
             return params
+        }
+
+        /**
+         * Creates a Typesafe Config object from a map of parameters by adding a top-level key to each parameter's key.
+         *
+         * This function takes a map of parameters and a `topLevelKey` as input and generates a Typesafe Config object.
+         * Each key in the input map is modified by prepending the `topLevelKey` followed by a dot ('.') separator.
+         *
+         * For example, given `topLevelKey` = "config" and the input map:
+         * ```
+         * {
+         *     "key1" to "value1",
+         *     "key2" to "value2"
+         * }
+         * ```
+         * The resulting Typesafe Config object will have keys like:
+         * ```
+         * config.key1 = "value1"
+         * config.key2 = "value2"
+         * ```
+         *
+         * @param topLevelKey The top-level key to be added to each parameter's key.
+         * @param params The input map of parameters to be included in the resulting Config.
+         * @return A Typesafe Config object created from the modified parameter keys.
+         */
+        fun createConfigFromParams(topLevelKey: String, params: Map<String, String>): Config {
+            return ConfigFactory.parseMap(
+                params.mapKeys { (originalKey, _) -> "$topLevelKey.$originalKey" }
+            )
+        }
+
+        /**
+         * Merges a list of Config objects over a base Config, with configurations from the list taking precedence.
+         *
+         * @param baseConfig The base Config which will be used as fallback when merged with the reciever config list.
+         * @return A new Config object containing the merged configuration.
+         */
+        fun List<Config>.mergeOver(baseConfig: Config): Config {
+            val accumulator = ConfigFactory.empty()
+            return this.fold(accumulator) { mergedConfig, config ->
+                mergedConfig.withFallback(config)
+            }.withFallback(baseConfig)
+        }
+
+        /**
+         * Converts configuration parameters that should be [Integer] from their [String] representations to actual Integers
+         * before performing boot configuration validation. PicoCLI casts parameters in maps to strings, so this function
+         * helps ensure that specific configuration paths are treated as integers.
+         *
+         * For example, when passing the command-line argument:
+         *
+         * ```
+         * --stateManager database.pool.maxSize=1
+         * ```
+         *
+         * The corresponding map will be `["database.pool.maxSize" to "1"]`. This function checks if the specified configuration
+         * paths (defined in [BOOT_CONFIG_INTEGER_PATHS]) exist in the given `bootConfig` and, if found, converts them to integer values.
+         *
+         * @param bootConfig The SmartConfig containing the configuration parameters.
+         * @return A new SmartConfig with specified integer configuration paths converted to actual integers.
+         */
+        private fun prepareIntegerConfigPaths(bootConfig: SmartConfig): SmartConfig {
+            var updatedConfig = bootConfig
+            BOOT_CONFIG_INTEGER_PATHS.forEach { path ->
+                if(bootConfig.hasPath(path)) updatedConfig = updatedConfig.withValue(path, fromAnyRef(bootConfig.getInt(path)))
+            }
+            return updatedConfig
         }
 
         /**
@@ -74,27 +156,20 @@ class WorkerHelpers {
             secretsServiceFactoryResolver: SecretsServiceFactoryResolver,
             defaultParams: DefaultWorkerParams,
             validator: ConfigurationValidator,
-            extraParams: List<PathAndConfig> = emptyList(),
+            extraConfigs: List<Config> = emptyList(),
         ): SmartConfig {
-            val extraParamsMap = extraParams
-                .map { (path, params) -> params.mapKeys { (key, _) -> "$path.$key" } }
-                .flatMap { map -> map.entries }
-                .associate { (key, value) -> key to value }
-
-            val defaultParamsAndValues = listOf<Triple<String,Any?,Any>>(
-                Triple(ConfigKeys.WORKSPACE_DIR,defaultParams.workspaceDir, ConfigDefaults.WORKSPACE_DIR),
-                Triple(ConfigKeys.TEMP_DIR,defaultParams.tempDir, ConfigDefaults.TEMP_DIR),
-                Triple(BootConfig.INSTANCE_ID,defaultParams.instanceId, Random.nextInt().absoluteValue),
-                Triple(BootConfig.TOPIC_PREFIX,defaultParams.topicPrefix, ""),
-                Triple(MAX_ALLOWED_MSG_SIZE,defaultParams.maxAllowedMessageSize, 972800),
+            val defaultParamsAndValues = listOf<Triple<String, Any?, Any>>(
+                Triple(ConfigKeys.WORKSPACE_DIR, defaultParams.workspaceDir, ConfigDefaults.WORKSPACE_DIR),
+                Triple(ConfigKeys.TEMP_DIR, defaultParams.tempDir, ConfigDefaults.TEMP_DIR),
+                Triple(BootConfig.INSTANCE_ID, defaultParams.instanceId, Random.nextInt().absoluteValue),
+                Triple(BootConfig.TOPIC_PREFIX, defaultParams.topicPrefix, ""),
+                Triple(MAX_ALLOWED_MSG_SIZE, defaultParams.maxAllowedMessageSize, 972800),
             )
             val defaultParamsMap = defaultParamsAndValues
                 .mapNotNull { t -> t.second?.let { t.first to t.second } }
                 .toMap()
 
-            val defaultParamsDefaultValuesMap = defaultParamsAndValues
-                .map { it.first to it.third }
-                .toMap()
+            val defaultParamsDefaultValuesMap = defaultParamsAndValues.associate { it.first to it.third }
 
             //if we've requested a db message bus use that. default use kafka when not set
             val defaultMessagingParams = defaultParams.messaging
@@ -107,8 +182,12 @@ class WorkerHelpers {
             val secretsConfig =
                 defaultParams.secrets.mapKeys { (key, _) -> "${BootConfig.BOOT_SECRETS}.${key.trim()}" }
 
-            val config = ConfigFactory
-                .parseMap(messagingParams + defaultParamsMap + extraParamsMap + secretsConfig)
+            val stateManagerConfig =
+                defaultParams.stateManagerParams.mapKeys { (key, _) -> "${BootConfig.BOOT_STATE_MANAGER}.${key.trim()}" }
+
+            val builtConfig = ConfigFactory.parseMap(messagingParams + defaultParamsMap + secretsConfig + stateManagerConfig)
+
+            val config = extraConfigs.mergeOver(builtConfig)
 
             // merge with all files
             val configWithFiles = defaultParams.configFiles.reversed().fold(config) { acc, next ->
@@ -121,7 +200,9 @@ class WorkerHelpers {
                     configWithFiles.getConfig(BootConfig.BOOT_SECRETS).atPath(BootConfig.BOOT_SECRETS),
                     secretsServiceFactoryResolver.findAll())
 
-            val bootConfig = smartConfigFactory.create(configWithFiles.withoutPath(BootConfig.BOOT_SECRETS))
+            val unvalidatedBootConfig = smartConfigFactory.create(configWithFiles.withoutPath(BootConfig.BOOT_SECRETS))
+
+            val bootConfig = prepareIntegerConfigPaths(unvalidatedBootConfig)
 
             validator.validate(ConfigKeys.BOOT_CONFIG, bootConfig, loadResource(BOOT_CONFIG_PATH), true)
 
@@ -149,21 +230,6 @@ class WorkerHelpers {
                     "Failed to find resource $resource on worker startup."
                 )
             return url.openStream()
-        }
-
-        /** Sets up the [workerMonitor] based on the [params]. */
-        fun setupMonitor(workerMonitor: WorkerMonitor, params: DefaultWorkerParams, workerType: String) {
-            if (!params.disableWorkerMonitor) {
-                workerMonitor.registerEndpoints(workerType)
-            }
-        }
-
-        fun WebServer.setupWebserver(params: DefaultWorkerParams) {
-            this.start(params.workerMonitorPort)
-        }
-
-        fun startBanner() {
-
         }
 
         /**

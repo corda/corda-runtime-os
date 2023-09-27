@@ -4,6 +4,7 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRequest
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.checkpoint.FlowStackItem
@@ -16,7 +17,6 @@ import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
-import net.corda.flow.pipeline.handlers.waiting.WaitingForSessionInit
 import net.corda.flow.pipeline.handlers.waiting.WaitingForStartFlow
 import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.flow.utils.KeyValueStore
@@ -69,7 +69,7 @@ class FlowRunnerImpl @Activate constructor(
             }
             is SessionEvent -> {
                 val sessionInit = getInitPayload(receivedEvent)
-                if (sessionInit != null && waitingFor is WaitingForSessionInit) {
+                if (sessionInit != null && waitingFor is WaitingForStartFlow) {
                     startInitiatedFlow(context, sessionInit, receivedEvent)
                 } else {
                     resumeFlow(context, flowContinuation)
@@ -81,8 +81,8 @@ class FlowRunnerImpl @Activate constructor(
 
     private fun getInitPayload(sessionEvent: SessionEvent): SessionInit? {
         return when (val payload = sessionEvent.payload) {
-            is SessionInit -> payload
-            is SessionData -> if (sessionEvent.sequenceNum == 1) payload.sessionInit else null
+            is SessionCounterpartyInfoRequest -> payload.sessionInit
+            is SessionData -> payload.sessionInit
             else -> null
         }
     }
