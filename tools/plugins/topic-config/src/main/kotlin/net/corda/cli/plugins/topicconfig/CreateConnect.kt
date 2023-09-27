@@ -75,7 +75,7 @@ class CreateConnect : Runnable {
         Thread.currentThread().contextClassLoader = contextCL
     }
 
-    private fun  createTopicsWithRetry(client: Admin, topicConfigs: List<Create.GeneratedTopicConfig>) {
+    private fun  createTopicsWithRetry(client: Admin, topicConfigs: List<Create.PreviewTopicConfiguration>) {
         val topics = getTopics(topicConfigs).toMutableMap()
         println("Creating topics: ${topics.keys.joinToString { it }}")
         val end = LocalDateTime.now().plusSeconds(wait)
@@ -113,7 +113,7 @@ class CreateConnect : Runnable {
         }
     }
 
-    fun getAclBindings(acls: List<Create.GeneratedTopicACL>): List<AclBinding> {
+    fun getAclBindings(acls: List<Create.PreviewTopicACL>): List<AclBinding> {
         return acls.flatMap { acl ->
             val pattern = ResourcePattern(ResourceType.TOPIC, acl.topic, PatternType.LITERAL)
             val aclEntries = acl.users.flatMap { user ->
@@ -125,14 +125,14 @@ class CreateConnect : Runnable {
         }
     }
 
-    fun getTopics(topicConfigs: List<Create.GeneratedTopicConfig>) =
-        topicConfigs.map { topicConfig: Create.GeneratedTopicConfig ->
+    fun getTopics(topicConfigs: List<Create.PreviewTopicConfiguration>) =
+        topicConfigs.associate { topicConfig: Create.PreviewTopicConfiguration ->
             topicConfig.name to NewTopic(topicConfig.name, create!!.partitionOverride, create!!.replicaOverride)
                 .configs(topicConfig.config)
-        }.toMap()
+        }
 
-    fun getGeneratedTopicConfigs(): Create.GeneratedTopicDefinitions = if (configFilePath == null) {
-        create!!.getGeneratedTopicConfigs()
+    fun getGeneratedTopicConfigs(): Create.PreviewTopicConfigurations = if (configFilePath == null) {
+        create!!.getTopicConfigsForPreview()
     } else {
         // Simply read the info from provided file
         create!!.mapper.readValue(Files.readString(File(configFilePath!!).toPath()))

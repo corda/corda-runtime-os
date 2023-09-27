@@ -20,13 +20,13 @@ class CreateConnectTest {
 
     @Test
     fun `validate new topic with no config`() {
-        assertThat(getCommandWithGeneratedConfig().getTopics(listOf(Create.GeneratedTopicConfig("topic", emptyMap()))))
+        assertThat(getCommandWithGeneratedConfig().getTopics(listOf(Create.PreviewTopicConfiguration("topic", emptyMap()))))
             .containsEntry("topic", NewTopic("topic", 1, 1).configs(emptyMap()))
     }
 
     @Test
     fun `validate new topic with config`() {
-        assertThat(getCommandWithGeneratedConfig().getTopics(listOf(Create.GeneratedTopicConfig("topic", mapOf("key" to "value")))))
+        assertThat(getCommandWithGeneratedConfig().getTopics(listOf(Create.PreviewTopicConfiguration("topic", mapOf("key" to "value")))))
             .containsEntry("topic", NewTopic("topic", 1, 1).configs(mapOf("key" to "value")))
     }
 
