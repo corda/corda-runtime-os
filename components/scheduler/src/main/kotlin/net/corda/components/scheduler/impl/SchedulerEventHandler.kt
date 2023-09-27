@@ -75,8 +75,8 @@ class SchedulerEventHandler(
         }
         scheduleNext(coordinator)
     } catch (e: Throwable) {
-        logger.warn("Task scheduling for ${schedule.taskName} failed. Terminating Scheduler", e)
-        coordinator.updateStatus(LifecycleStatus.DOWN)
+        logger.error("Task scheduling for ${schedule.taskName} failed. Terminating Scheduler", e)
+        coordinator.updateStatus(LifecycleStatus.ERROR)
     }
 
     private fun scheduleNext(coordinator: LifecycleCoordinator) {
