@@ -107,7 +107,7 @@ import org.slf4j.LoggerFactory
 import java.net.http.HttpClient as JavaHttpClient
 import java.net.http.HttpRequest as JavaHttpRequest
 
-class GatewayIntegrationTest : TestBase() {
+internal class GatewayIntegrationTest : TestBase() {
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val GROUP_ID = "Group - 1"
@@ -426,6 +426,81 @@ class GatewayIntegrationTest : TestBase() {
                 .containsExactlyInAnyOrderElementsOf(gatewayMessages.map { it.key.toString() })
         }
 
+
+        @Test
+        @Timeout(30)
+        fun `http client to gateway with a few paths`() {
+            alice.publish(Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(listOf(1))))
+            val pathsCount = 7
+            val paths = (1..pathsCount).map {
+                "path/$it"
+            }
+            val port = getOpenPort()
+            val serversAddresses = paths.map { path ->
+                URI.create("https://www.alice.net:$port/$path/")
+            }
+            val serversConfigurations = serversAddresses.map {  serverAddress ->
+                GatewayServerConfiguration(
+                    serverAddress.host,
+                    serverAddress.port,
+                    serverAddress.path,
+                )
+            }
+            val gatewayMessages = serversAddresses.associateWith { url ->
+                val linkInMessage = LinkInMessage(authenticatedP2PMessage(url.toString()))
+                GatewayMessage(url.toString(), linkInMessage.payload)
+            }
+            Gateway(
+                createConfigurationServiceFor(
+                    GatewayConfiguration(
+                        serversConfigurations,
+                        aliceSslConfig,
+                        MAX_REQUEST_SIZE
+                    ),
+                ),
+                alice.subscriptionFactory,
+                alice.publisherFactory,
+                alice.lifecycleCoordinatorFactory,
+                messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
+                alice.cryptoOpsClient,
+                avroSchemaRegistry
+            ).usingLifecycle {
+                alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore, aliceHoldingIdentity)
+                it.startAndWaitForStarted()
+                gatewayMessages.forEach { (serverAddress, gatewayMessage) ->
+                    val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore, null)
+                    HttpClient(
+                        serverInfo,
+                        bobSslConfig,
+                        NioEventLoopGroup(1),
+                        NioEventLoopGroup(1),
+                        ConnectionConfiguration(),
+                    ).use { client ->
+                        client.start()
+                        val httpResponse = client.write(avroSchemaRegistry.serialize(gatewayMessage).array()).get()
+                        assertThat(httpResponse.statusCode).isEqualTo(HttpResponseStatus.OK)
+                        assertThat(httpResponse.payload).isNotNull
+                        val gatewayResponse = avroSchemaRegistry.deserialize<GatewayResponse>(ByteBuffer.wrap(httpResponse.payload))
+                        assertThat(gatewayResponse.id).isEqualTo(gatewayMessage.id)
+                    }
+                }
+            }
+
+            // Verify Gateway has successfully forwarded the message to the P2P_IN topic
+            val publishedRecords = alice.getRecords(LINK_IN_TOPIC, pathsCount).mapNotNull {
+                it.value as? LinkInMessage
+            }.mapNotNull {
+                it.payload as? AuthenticatedDataMessage
+            }.map {
+                it.payload
+            }.map {
+                String(it.array())
+            }
+            assertThat(publishedRecords)
+                .hasSize(pathsCount)
+                .containsExactlyInAnyOrderElementsOf(gatewayMessages.map { it.key.toString() })
+        }
+
         @Test
         @Timeout(30)
         fun `http client to gateway after changing URL`() {
@@ -435,7 +510,7 @@ class GatewayIntegrationTest : TestBase() {
                 getOpenPort(),
                 "/url/one",
             )
-            val serverConfigurationTwo = serverConfigurationOne.copy(urlPath = "/url/two")
+            val serverConfigurationTwo = serverConfigurationOne.copy(urlPaths = setOf("/url/two"))
             val linkInMessageOne = LinkInMessage(authenticatedP2PMessage("one"))
             val messageOne = GatewayMessage("one", linkInMessageOne.payload)
             val linkInMessageTwo = LinkInMessage(authenticatedP2PMessage("two"))
@@ -462,7 +537,7 @@ class GatewayIntegrationTest : TestBase() {
                 val serverAddress = URI.create(
                     "https://${serverConfigurationOne.hostAddress}:" +
                         serverConfigurationOne.hostPort +
-                        serverConfigurationOne.urlPath,
+                        serverConfigurationOne.urlPaths.first(),
                 )
                 val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore, null)
                 HttpClient(
@@ -496,7 +571,7 @@ class GatewayIntegrationTest : TestBase() {
                     val serverTwoAddress = URI.create(
                         "https://${serverConfigurationTwo.hostAddress}:" +
                             serverConfigurationTwo.hostPort +
-                            serverConfigurationTwo.urlPath,
+                            serverConfigurationTwo.urlPaths.first(),
                     )
                     val serverTwoInfo = DestinationInfo(serverTwoAddress, aliceSNI[0], null, truststoreKeyStore, null)
                     HttpClient(

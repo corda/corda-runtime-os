@@ -4,7 +4,9 @@
 {{- include "corda.worker" ( list $ .Values.workers.db "db"
   ( dict "clusterDbAccess" true )
 ) }}
-{{- include "corda.worker" ( list $ .Values.workers.flow "flow" ) }}
+{{- include "corda.worker" ( list $ .Values.workers.flow "flow"
+  ( dict "stateManagerDbAccess" true )
+) }}
 {{- include "corda.worker" ( list $ .Values.workers.flowMapper "flowMapper" ) }}
 {{- include "corda.worker" ( list $ .Values.workers.verification "verification" ) }}
 {{- include "corda.worker" ( list $ .Values.workers.membership "membership" ) }}

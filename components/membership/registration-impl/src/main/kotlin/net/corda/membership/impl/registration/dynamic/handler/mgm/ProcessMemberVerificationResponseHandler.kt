@@ -25,6 +25,7 @@ import net.corda.membership.lib.approval.RegistrationRulesEngine
 import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
 import net.corda.membership.lib.VersionedMessageBuilder.retrieveRegistrationStatusMessage
 import net.corda.membership.lib.deserializeContext
+import net.corda.membership.lib.registration.DECLINED_REASON_FOR_USER_INTERNAL_ERROR
 import net.corda.membership.lib.toMap
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.getTtlMinutes
@@ -112,7 +113,7 @@ internal class ProcessMemberVerificationResponseHandler(
                 status
             ).createAsyncCommands()
             val statusUpdateMessage = retrieveRegistrationStatusMessage(
-                pendingInfo.platformVersion, registrationId, status.name
+                pendingInfo.platformVersion, registrationId, status.name, null
             )
             val persistStatusMessage = if (statusUpdateMessage != null) {
                 p2pRecordsFactory.createAuthenticatedMessageRecord(
@@ -142,7 +143,7 @@ internal class ProcessMemberVerificationResponseHandler(
                     REGISTRATION_COMMAND_TOPIC,
                     key,
                     RegistrationCommand(
-                        DeclineRegistration(e.message)
+                        DeclineRegistration(e.message, DECLINED_REASON_FOR_USER_INTERNAL_ERROR)
                     )
                 ),
             )

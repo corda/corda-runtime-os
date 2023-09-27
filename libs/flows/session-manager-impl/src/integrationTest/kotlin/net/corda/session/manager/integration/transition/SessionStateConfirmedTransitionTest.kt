@@ -51,7 +51,7 @@ class SessionStateConfirmedTransitionTest {
     fun `Receive init when in state confirmed`() {
         val sessionState = buildConfirmedState()
 
-        val sessionEvent = generateMessage(SessionMessageType.INIT, instant, MessageDirection.INBOUND)
+        val sessionEvent = generateMessage(SessionMessageType.COUNTERPARTY_INFO, instant, MessageDirection.INBOUND)
         sessionEvent.sequenceNum = 1
         val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CONFIRMED)

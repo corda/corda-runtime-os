@@ -65,11 +65,11 @@ class HttpHelper {
          * Extension function which validates an incoming request.
          * @return an [HttpResponseStatus] containing the status code
          */
-        fun HttpRequest.validate(maxRequestSize: Long, urlPath: String): HttpResponseStatus {
+        fun HttpRequest.validate(maxRequestSize: Long, urlPaths: Collection<String>): HttpResponseStatus {
             try {
                 val uri = URI.create(this.uri()).normalize()
 
-                if (uri.path != urlPath) {
+                if (!urlPaths.contains(uri.path)) {
                     return HttpResponseStatus.NOT_FOUND
                 }
 

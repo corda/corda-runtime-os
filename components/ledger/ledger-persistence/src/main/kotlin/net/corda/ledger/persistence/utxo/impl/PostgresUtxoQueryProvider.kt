@@ -43,10 +43,10 @@ class PostgresUtxoQueryProvider @Activate constructor(
     override val persistTransactionOutput: String
         get() = """
             INSERT INTO {h-schema}utxo_transaction_output(
-                transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash,
+                transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash, token_notary_x500_name,
                 token_symbol, token_tag, token_owner_hash, token_amount, created)
             VALUES(
-                :transactionId, :groupIndex, :leafIndex, :type, :tokenType, :tokenIssuerHash,
+                :transactionId, :groupIndex, :leafIndex, :type, :tokenType, :tokenIssuerHash, :tokenNotaryX500Name,
                 :tokenSymbol, :tokenTag, :tokenOwnerHash, :tokenAmount, :createdAt)
             ON CONFLICT DO NOTHING"""
             .trimIndent()

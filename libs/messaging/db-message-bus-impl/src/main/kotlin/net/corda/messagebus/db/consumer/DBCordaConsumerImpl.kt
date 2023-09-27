@@ -203,7 +203,21 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
         }
     }
 
-    override fun commitSyncOffsets(event: CordaConsumerRecord<K, V>, metaData: String?) {
+    override fun asyncCommitOffsets(callback: CordaConsumer.Callback?) {
+        dbAccess.writeOffsets(
+            lastReadOffset.map { (cordaTopicPartition, offset) ->
+                    CommittedPositionEntry(
+                        cordaTopicPartition.topic,
+                        groupId,
+                        cordaTopicPartition.partition,
+                        offset,
+                        ATOMIC_TRANSACTION,
+                    )
+                }
+        )
+    }
+
+    override fun syncCommitOffsets(event: CordaConsumerRecord<K, V>, metaData: String?) {
         dbAccess.writeOffsets(
             listOf(
                 CommittedPositionEntry(

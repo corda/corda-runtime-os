@@ -90,20 +90,32 @@ class UtxoRepositoryImpl @Activate constructor(
             .mapToComponentGroups(UtxoComponentGroupMapper(transactionId))
     }
 
+    private fun findUnconsumedVisibleStates(
+        entityManager: EntityManager,
+        query: String,
+        stateClassType: String?
+    ): List<UtxoTransactionOutputDto> {
+        val queryObj = entityManager.createNativeQuery(query, Tuple::class.java)
+            .setParameter("verified", TransactionStatus.VERIFIED.value)
+
+        if (stateClassType != null) {
+            queryObj.setParameter("type", stateClassType)
+        }
+
+        return queryObj.mapToUtxoTransactionOutputDto()
+    }
+
     override fun findUnconsumedVisibleStatesByType(
         entityManager: EntityManager
     ): List<UtxoTransactionOutputDto> {
-        return entityManager.createNativeQuery(queryProvider.findUnconsumedVisibleStatesByType, Tuple::class.java)
-            .setParameter("verified", TransactionStatus.VERIFIED.value)
-            .resultListAsTuples()
-            .map { t ->
-                UtxoTransactionOutputDto(
-                    t[0] as String, // transactionId
-                    t[1] as Int, // leaf ID
-                    t[2] as ByteArray, // outputs info data
-                    t[3] as ByteArray // outputs data
-                )
-            }
+        return findUnconsumedVisibleStates(entityManager, queryProvider.findUnconsumedVisibleStatesByType, null)
+    }
+
+    override fun findUnconsumedVisibleStatesByExactType(
+        entityManager: EntityManager,
+        stateClassType: String
+    ): List<UtxoTransactionOutputDto> {
+        return findUnconsumedVisibleStates(entityManager, queryProvider.findUnconsumedVisibleStatesByExactType, stateClassType)
     }
 
     override fun resolveStateRefs(
@@ -114,15 +126,7 @@ class UtxoRepositoryImpl @Activate constructor(
             .setParameter("transactionIds", stateRefs.map { it.transactionId.toString() })
             .setParameter("stateRefs", stateRefs.map { it.toString() })
             .setParameter("verified", TransactionStatus.VERIFIED.value)
-            .resultListAsTuples()
-            .map { t ->
-                UtxoTransactionOutputDto(
-                    t[0] as String, // transactionId
-                    t[1] as Int, // leaf ID
-                    t[2] as ByteArray, // outputs info data
-                    t[3] as ByteArray // outputs data
-                )
-            }
+            .mapToUtxoTransactionOutputDto()
     }
 
     override fun findTransactionSignatures(
@@ -211,6 +215,7 @@ class UtxoRepositoryImpl @Activate constructor(
         type: String,
         tokenType: String?,
         tokenIssuerHash: String?,
+        tokenNotaryX500Name: String?,
         tokenSymbol: String?,
         tokenTag: String?,
         tokenOwnerHash: String?,
@@ -224,6 +229,7 @@ class UtxoRepositoryImpl @Activate constructor(
             .setParameter("type", type)
             .setParameter("tokenType", tokenType)
             .setParameter("tokenIssuerHash", tokenIssuerHash)
+            .setParameter("tokenNotaryX500Name", tokenNotaryX500Name)
             .setParameter("tokenSymbol", tokenSymbol)
             .setParameter("tokenTag", tokenTag)
             .setParameter("tokenOwnerHash", tokenOwnerHash)
@@ -360,4 +366,16 @@ class UtxoRepositoryImpl @Activate constructor(
 
     @Suppress("UNCHECKED_CAST")
     private fun Query.resultListAsTuples() = resultList as List<Tuple>
+
+    private fun Query.mapToUtxoTransactionOutputDto(): List<UtxoTransactionOutputDto> {
+        return resultListAsTuples()
+            .map { t ->
+                UtxoTransactionOutputDto(
+                    t[0] as String, // transactionId
+                    t[1] as Int,    // leaf ID
+                    t[2] as ByteArray, // outputs info data
+                    t[3] as ByteArray  // outputs data
+                )
+            }
+    }
 }
