@@ -1,6 +1,5 @@
 package net.corda.interop.identity.write
 
-import jdk.jfr.Enabled
 import net.corda.crypto.core.ShortHash
 import net.corda.interop.core.InteropIdentity
 import net.corda.lifecycle.Lifecycle
