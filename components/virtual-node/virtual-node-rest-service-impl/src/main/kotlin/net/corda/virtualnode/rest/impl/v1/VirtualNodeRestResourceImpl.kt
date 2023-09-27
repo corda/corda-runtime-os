@@ -263,14 +263,15 @@ internal class VirtualNodeRestResourceImpl(
 
     override fun upgradeVirtualNode(
         virtualNodeShortId: String,
-        targetCpiFileChecksum: String
+        targetCpiFileChecksum: String,
+        forceUpgrade: Boolean
     ): ResponseEntity<AsyncResponse> {
         val currentVirtualNode = virtualNodeValidationService.validateAndGetVirtualNode(virtualNodeShortId)
         val currentCpi = requireNotNull(cpiInfoReadService.get(currentVirtualNode.cpiIdentifier)) {
             "Current CPI ${currentVirtualNode.cpiIdentifier} associated with virtual node $virtualNodeShortId was not found."
         }
 
-        if (currentCpi.fileChecksum.toHexString().slice(targetCpiFileChecksum.indices) == targetCpiFileChecksum) {
+        if (!forceUpgrade && currentCpi.fileChecksum.toHexString().slice(targetCpiFileChecksum.indices) == targetCpiFileChecksum) {
             throw InvalidStateChangeException("Virtual Node with shorthash $virtualNodeShortId already has " +
                     "CPI with file checksum $targetCpiFileChecksum")
         }
@@ -284,7 +285,8 @@ internal class VirtualNodeRestResourceImpl(
                 virtualNodeShortId,
                 currentCpi.fileChecksum.toHexString(),
                 targetCpi.fileChecksum.toHexString(),
-                restContextProvider.principal
+                restContextProvider.principal,
+                forceUpgrade
             )
         }
 
@@ -338,14 +340,15 @@ internal class VirtualNodeRestResourceImpl(
         virtualNodeShortId: String,
         currentCpiFileChecksum: String,
         targetCpiFileChecksum: String,
-        actor: String
+        actor: String,
+        forceUpgrade: Boolean
     ): String {
         val requestId = generateUpgradeRequestId(virtualNodeShortId, currentCpiFileChecksum, targetCpiFileChecksum)
 
         sendAsync(
             virtualNodeShortId,
             VirtualNodeAsynchronousRequest(
-                requestTime, requestId, VirtualNodeUpgradeRequest(virtualNodeShortId, targetCpiFileChecksum, actor)
+                requestTime, requestId, VirtualNodeUpgradeRequest(virtualNodeShortId, targetCpiFileChecksum, actor, forceUpgrade)
             )
         )
 

@@ -12,6 +12,7 @@ import net.corda.rest.annotations.HttpPOST
 import net.corda.rest.annotations.HttpPUT
 import net.corda.rest.annotations.HttpRestResource
 import net.corda.rest.annotations.RestPathParameter
+import net.corda.rest.annotations.RestQueryParameter
 import net.corda.rest.asynchronous.v1.AsyncOperationStatus
 import net.corda.rest.asynchronous.v1.AsyncResponse
 import net.corda.rest.response.ResponseEntity
@@ -116,6 +117,11 @@ interface VirtualNodeRestResource : RestResource {
         @RestPathParameter(description = "Short ID of the virtual node instance to update")
         virtualNodeShortId: String,
         @RestPathParameter(description = "The file checksum of the CPI to upgrade to.")
-        targetCpiFileChecksum: String
+        targetCpiFileChecksum: String,
+        @RestQueryParameter(
+            description = "Whether this upgrade should be forced regardless of OperationInProgress.",
+            required = false
+        )
+        forceUpgrade: Boolean = false
     ): ResponseEntity<AsyncResponse>
 }
