@@ -26,7 +26,7 @@ class ProcessorTaskTest {
     }
 
     private lateinit var cordaProducer: CordaProducer
-    private lateinit var mediatorProducer: MessageBusProducer
+    private lateinit var mediatorProducer: MessageBusClient
 
     private val defaultHeaders: List<Pair<String, String>> = emptyList()
     private val messageProps: MutableMap<String, Any> = mutableMapOf(
@@ -39,7 +39,7 @@ class ProcessorTaskTest {
     @BeforeEach
     fun setup() {
         cordaProducer = mock()
-        mediatorProducer = MessageBusProducer("client-id", cordaProducer)
+        mediatorProducer = MessageBusClient("client-id", cordaProducer)
     }
 
     @Test

@@ -12,7 +12,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-@Suppress("LongParameterList")
 @Component(service = [MultiSourceEventMediatorFactory::class])
 class MultiSourceEventMediatorFactoryImpl @Activate constructor(
     @Reference(service = CordaAvroSerializationFactory::class)
@@ -42,15 +41,4 @@ class MultiSourceEventMediatorFactoryImpl @Activate constructor(
             lifecycleCoordinatorFactory,
         )
     }
-
-    // TODO
-//        val msgConfig = messagingConfig.withFallback(defaults)
-//        messagingConfig.getInt(BootConfig.INSTANCE_ID),
-//        Duration.ofMillis(messagingConfig.getLong(MessagingConfig.Subscription.POLL_TIMEOUT)),
-//        Duration.ofMillis(messagingConfig.getLong(MessagingConfig.Subscription.THREAD_STOP_TIMEOUT)),
-//        messagingConfig.getInt(MessagingConfig.Subscription.PROCESSOR_RETRIES),
-//        messagingConfig.getInt(MessagingConfig.Subscription.SUBSCRIBE_RETRIES),
-//        messagingConfig.getInt(MessagingConfig.Subscription.COMMIT_RETRIES),
-//        Duration.ofMillis(messagingConfig.getLong(MessagingConfig.Subscription.PROCESSOR_TIMEOUT)),
-//        messagingConfig
 }

@@ -17,13 +17,17 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class MessageBusClientTest {
+    private companion object {
+        const val MSG_PROP_KEY = "key"
+        const val TEST_ENDPOINT = "topic"
+    }
+
     private lateinit var cordaProducer: CordaProducer
     private lateinit var messageBusClient: MessageBusClient
 
     private val defaultHeaders: List<Pair<String, String>> = emptyList()
     private val messageProps: MutableMap<String, Any> = mutableMapOf(
-        "topic" to "topic",
-        "key" to "key",
+        MSG_PROP_KEY to "key",
         "headers" to defaultHeaders
     )
     private val message: MediatorMessage<Any> = MediatorMessage("value", messageProps)
@@ -37,11 +41,11 @@ class MessageBusClientTest {
 
     @Test
     fun testSend() {
-        messageBusClient.send(message)
+        messageBusClient.send(message, TEST_ENDPOINT)
 
         val expected = CordaProducerRecord(
-            message.getProperty<String>("topic"),
-            message.getProperty("key"),
+            TEST_ENDPOINT,
+            message.getProperty(MSG_PROP_KEY),
             message.payload
         )
 
@@ -51,15 +55,15 @@ class MessageBusClientTest {
     @Test
     fun testSendWithError() {
         val record = CordaProducerRecord(
-            message.getProperty<String>("topic"),
-            message.getProperty("key"),
+            TEST_ENDPOINT,
+            message.getProperty(MSG_PROP_KEY),
             message.payload
         )
 
         doThrow(CordaRuntimeException("")).whenever(cordaProducer).send(eq(record), any())
         assertThrows<CordaRuntimeException> {
             runBlocking {
-                messageBusClient.send(message).await()
+                messageBusClient.send(message, TEST_ENDPOINT).await()
             }
         }
     }
