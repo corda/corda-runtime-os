@@ -119,11 +119,13 @@ class VerificationRPCSmokeTests {
         if (cpks != null) {
             cpks.forEach {cpkMetadata ->
                 val id = cpkMetadata["id"]
-                val name = cpkMetadata["name"]
-                val version = cpkMetadata["version"]
-                val signerSummaryHash = cpkMetadata["version"]
-                val version = cpkMetadata["version"]
-
+                val name = id["name"].textValue()
+                val version = id["version"].textValue()
+                val signerSummaryHash = id["signerSummaryHash"].textValue()
+                val checksum = cpkMetadata["hash"].textValue()
+                val cordaPackageSummary = CordaPackageSummary(
+                    name, version, signerSummaryHash, checksum
+                )
             }
         }
 
