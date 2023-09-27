@@ -39,7 +39,7 @@ class FlowMapperListener(
                         listOf(
                             Record(
                                 FLOW_MAPPER_EVENT_TOPIC, key, FlowMapperEvent(
-                                    ExecuteCleanup()
+                                    ExecuteCleanup(listOf())
                                 )
                             )
                         )
