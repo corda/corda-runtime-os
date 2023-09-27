@@ -25,9 +25,11 @@ class SetOwnRegistrationStatusHandlerTest {
         RegistrationStatus.DECLINED
     )
     private val payloadV2 = ByteBuffer.wrap(byteArrayOf(4, 5, 6))
+    private val reason = "some reason"
     private val statusV2 = SetOwnRegistrationStatusV2(
         "id",
-        RegistrationStatusV2.DECLINED
+        RegistrationStatusV2.DECLINED,
+        reason
     )
     private val avroSchemaRegistry: AvroSchemaRegistry = mock {
         on { getClassType(payloadV1) } doReturn SetOwnRegistrationStatus::class.java
@@ -44,6 +46,11 @@ class SetOwnRegistrationStatusHandlerTest {
     @Test
     fun `invokeAuthenticatedMessage returns PersistMemberRegistrationState command - V1 version converted to V2 successfully`() {
         val record = handler.invokeAuthenticatedMessage(header, payloadV1)
+        val statusV2WithoutReason = SetOwnRegistrationStatusV2(
+            "id",
+            RegistrationStatusV2.DECLINED,
+            null
+        )
 
         assertSoftly { softly ->
             softly.assertThat(record.topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
@@ -52,7 +59,7 @@ class SetOwnRegistrationStatusHandlerTest {
                 RegistrationCommand(
                     PersistMemberRegistrationState(
                         identity,
-                        statusV2
+                        statusV2WithoutReason
                     )
                 )
             )
