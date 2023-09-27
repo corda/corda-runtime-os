@@ -81,7 +81,7 @@ class TransactionBackchainReceiverFlowV1(
 
         while (transactionsToRetrieve.isNotEmpty()) {
 
-            handleExistingTransactionsAndTheirDependencies(existingTransactionIdsInDb, transactionsToRetrieve)
+            handleExistingTransactionsAndTheirDependencies(existingTransactionIdsInDb, transactionsToRetrieve, sortedTransactionIds)
 
             val batch = transactionsToRetrieve.take(batchSize)
 
@@ -204,7 +204,8 @@ class TransactionBackchainReceiverFlowV1(
     @Suppress("NestedBlockDepth")
     private fun handleExistingTransactionsAndTheirDependencies(
         existingTransactionIdsInDb: MutableMap<SecureHash, TransactionStatus>,
-        transactionsToRetrieve: LinkedHashSet<SecureHash>
+        transactionsToRetrieve: LinkedHashSet<SecureHash>,
+        sortedTransactionIds: TopologicalSort
     ) {
         var transactionsToCheck = transactionsToRetrieve.toMutableList()
 
@@ -243,25 +244,35 @@ class TransactionBackchainReceiverFlowV1(
                     )
 
                     if (transactionFromDb != null) {
-                        // Add the dependencies to the "to retrieve" set (we might remove them later)
-                        transactionsToRetrieve.addAll(transactionFromDb.dependencies)
+                        // Add the dependencies to the "to retrieve" set they might be removed later on if they are in the DB
+                        // and also add them to the topological sort so it can be verified later on
+                        addUnseenDependenciesToRetrieve(
+                            transactionFromDb,
+                            sortedTransactionIds,
+                            transactionsToRetrieve
+                        )
                         // and we also need to check them
                         newTransactionsToCheck.addAll(transactionFromDb.dependencies)
 
                         // Once we added the unverified transactions' dependencies into the "to retrieve" set
-                        // we can remove those from the set as we don't need to get those from the initiator
-                        // but only if we "know" its group parameters, otherwise we need to keep it there
+                        // we can remove the parent transaction from the set as we don't need to get that from
+                        // the initiator
                         if (version == TransactionBackChainResolutionVersion.V1) {
                             transactionsToRetrieve.remove(transactionId)
                         } else if (fetchGroupParametersAndHashForTransaction(transactionFromDb).second != null) {
                             transactionsToRetrieve.remove(transactionId)
                         }
+
                     } else {
                         log.trace {
                             "Transaction with ID $transactionId is present in the database with unverified status " +
                                     "but could not fetch the signed transaction object and its dependencies."
                         }
                     }
+                } else {
+                    // If the transaction is not present in the database we just add it to the "to retrieve" set
+                    // as we need to retrieve that from the counterparty
+                    transactionsToRetrieve.add(transactionId)
                 }
             }
             transactionsToCheck = newTransactionsToCheck

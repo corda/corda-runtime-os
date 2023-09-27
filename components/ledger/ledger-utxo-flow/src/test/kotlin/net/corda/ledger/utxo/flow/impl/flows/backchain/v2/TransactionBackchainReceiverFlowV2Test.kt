@@ -163,8 +163,10 @@ class TransactionBackchainReceiverFlowV2Test {
         )
         whenever(groupParameters.hash).thenReturn(groupParametersHash1)
 
-        whenever(session.sendAndReceive(eq(List::class.java), eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_2))))).thenReturn(
-            listOf(retrievedTransaction2)
+        whenever(session.sendAndReceive(eq(List::class.java),
+            eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_2)))))
+            .thenReturn(
+                listOf(retrievedTransaction2)
         )
 
         whenever(utxoLedgerGroupParametersPersistenceService.find(groupParametersHash1))
@@ -173,8 +175,15 @@ class TransactionBackchainReceiverFlowV2Test {
         whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(any(), eq(UNVERIFIED)))
             .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
 
+        // Since TX_ID_1 is already in the DB it will not be retrieved but TX_ID_2 will be
+        // and both will be in the topological sort
         assertThat(callTransactionBackchainReceiverFlow(setOf(TX_ID_1)).complete())
-            .isEqualTo(listOf(TX_ID_2))
+            .containsExactlyInAnyOrder(TX_ID_1, TX_ID_2)
+
+        verify(session, times(1)).sendAndReceive(
+            eq(List::class.java),
+            eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_2)))
+        )
     }
 
     /**
@@ -341,9 +350,111 @@ class TransactionBackchainReceiverFlowV2Test {
             .thenReturn(mock())
 
         // Since both the base, dependency and dependency of dependency transaction were present in the database,
-        // and we know their group params, nothing should have been retrieved
+        // nothing should have been retrieved but all three should be in the topological sort
         assertThat(callTransactionBackchainReceiverFlow(setOf(TX_ID_1)).complete())
-            .isEmpty()
+            .containsExactlyInAnyOrder(
+                TX_ID_1,
+                TX_ID_2,
+                TX_ID_3
+            )
+
+        verify(session, never()).sendAndReceive(
+            eq(List::class.java),
+            any()
+        )
+    }
+
+    /**
+     * This test is simulating a scenario where we want to fetch a transaction that has one dependency and
+     * that dependency has another dependency. The main transaction is in the database and so its dependency.
+     * However, the dependency of the dependency is not in the database, so we need to retrieve that from the
+     * counterparty.
+     */
+    @Test
+    fun `dependency of dependency of transaction will be fetched if it is not in the database`() {
+        // Have a transaction with TX_ID_2 that is unverified, but it's in the database and has dependencies
+        whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
+            .thenReturn(mapOf(
+                TX_ID_1 to UNVERIFIED,
+                TX_ID_2 to UNVERIFIED
+            ))
+
+        whenever(tx1Metadata.getMembershipGroupParametersHash())
+            .thenReturn(groupParametersHash1.toString())
+
+        whenever(session.sendAndReceive(eq(SignedGroupParameters::class.java), any()))
+            .thenReturn(groupParameters)
+
+        whenever(groupParameters.hash)
+            .thenReturn(groupParametersHash1)
+
+        // Base transaction
+        whenever(utxoLedgerPersistenceService.findSignedTransaction(eq(TX_ID_1), eq(UNVERIFIED)))
+            .thenReturn(retrievedTransaction1)
+
+        whenever(retrievedTransaction1.id)
+            .thenReturn(TX_ID_1)
+        whenever(retrievedTransaction1.inputStateRefs)
+            .thenReturn(listOf(StateRef(TX_ID_2, 0)))
+        whenever(retrievedTransaction1.referenceStateRefs)
+            .thenReturn(emptyList())
+        whenever(retrievedTransaction1.metadata)
+            .thenReturn(tx1Metadata)
+
+        // Dependency
+        whenever(utxoLedgerPersistenceService.findSignedTransaction(
+            eq(TX_ID_2),
+            eq(UNVERIFIED))
+        ).thenReturn(retrievedTransaction2)
+
+        whenever(retrievedTransaction2.id)
+            .thenReturn(TX_ID_2)
+        whenever(retrievedTransaction2.inputStateRefs)
+            .thenReturn(listOf(StateRef(TX_ID_3, 0)))
+        whenever(retrievedTransaction2.referenceStateRefs)
+            .thenReturn(emptyList())
+        whenever(retrievedTransaction2.metadata)
+            .thenReturn(tx1Metadata)
+
+        // Dependency of dependency
+        whenever(utxoLedgerPersistenceService.findSignedTransaction(
+            eq(TX_ID_3),
+            eq(UNVERIFIED))
+        ).thenReturn(retrievedTransaction3)
+
+        whenever(retrievedTransaction3.id)
+            .thenReturn(TX_ID_3)
+        whenever(retrievedTransaction3.inputStateRefs)
+            .thenReturn(emptyList())
+        whenever(retrievedTransaction3.referenceStateRefs)
+            .thenReturn(emptyList())
+        whenever(retrievedTransaction3.metadata)
+            .thenReturn(tx1Metadata)
+
+        whenever(utxoLedgerGroupParametersPersistenceService.find(groupParametersHash1))
+            .thenReturn(mock())
+
+        whenever(session.sendAndReceive(eq(List::class.java),
+            eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_3))))).thenReturn(
+            listOf(retrievedTransaction3)
+        )
+
+        whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(any(), eq(UNVERIFIED)))
+            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
+
+        // Since only the base and dependency transaction were present in the database,
+        // TX_ID_3 should have been retrieved but all three should be in the topological sort
+        assertThat(callTransactionBackchainReceiverFlow(setOf(TX_ID_1)).complete())
+            .containsExactlyInAnyOrder(
+                TX_ID_1,
+                TX_ID_2,
+                TX_ID_3
+            )
+
+        verify(session, times(1)).sendAndReceive(
+            eq(List::class.java),
+            eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_3)))
+        )
     }
 
     /**
@@ -445,10 +556,16 @@ class TransactionBackchainReceiverFlowV2Test {
         whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(any(), eq(UNVERIFIED)))
             .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
 
+
         // Since both the base, dependency and dependency of dependency transaction were present in the database,
-        // nothing should have been retrieved
+        // but TX_ID_4's group params not know it should have been retrieved and all should be in the topological sort
         assertThat(callTransactionBackchainReceiverFlow(setOf(TX_ID_1)).complete())
-            .containsExactly(TX_ID_3)
+            .containsExactlyInAnyOrder(TX_ID_1, TX_ID_2, TX_ID_3)
+
+        verify(session, times(1)).sendAndReceive(
+            eq(List::class.java),
+            eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_3)))
+        )
     }
 
     @Test
