@@ -125,7 +125,6 @@ pipeline {
         always {
             script {      
                     findBuildScans()
-                    splunkLogGenerator()
                     pipelineUtils.getPodLogs("postgres")
                     pipelineUtils.dropPostgresDB(postgresCredentialsId, env.CORDA_DEV_CLUSTER_DB_NAME)
             }
