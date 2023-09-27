@@ -184,7 +184,6 @@ internal class InteropRestResourceImpl @Activate constructor(
                     "Cannot import members when creating a new interop group."
                 )
             }
-            UUID.randomUUID()
         } else if (groupIdField == vNodeInfo.holdingIdentity.groupId) {
             throw InvalidInputDataException(
                 "Cannot use the groupId of your own identity during the creation of interop identity."
