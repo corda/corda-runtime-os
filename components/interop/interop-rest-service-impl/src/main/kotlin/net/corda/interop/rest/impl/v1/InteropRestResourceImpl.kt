@@ -144,6 +144,8 @@ internal class InteropRestResourceImpl @Activate constructor(
     ): CreateInteropIdentityRest.Response {
         val validHoldingIdentityShortHash = validateShortHash(holdingIdentityShortHash)
         val vNodeInfo = getAndValidateVirtualNodeInfoByShortHash(validHoldingIdentityShortHash)
+        val vNodeShortHash = vNodeInfo.getVNodeShortHash()
+        val registryView = interopIdentityRegistryService.getVirtualNodeRegistryView(vNodeShortHash)
 
         if (interopIdentityRegistryService
                 .getVirtualNodeRegistryView(validHoldingIdentityShortHash)
@@ -182,6 +184,7 @@ internal class InteropRestResourceImpl @Activate constructor(
                     "Cannot import members when creating a new interop group."
                 )
             }
+            UUID.randomUUID()
         } else if (groupIdField == vNodeInfo.holdingIdentity.groupId) {
             throw InvalidInputDataException(
                 "Cannot use the groupId of your own identity during the creation of interop identity."
@@ -189,6 +192,11 @@ internal class InteropRestResourceImpl @Activate constructor(
         } else {
             validateUUID(groupIdField) {
                 "Malformed group policy. Group ID must be a valid uuid or 'CREATE_ID', got: $groupIdField"
+            }
+            if (registryView.getOwnedIdentities(groupIdField).isNotEmpty()) {
+                throw InvalidInputDataException(
+                    "Virtual node $vNodeShortHash already has an interop identity in interop group $groupIdField."
+                )
             }
         }
 
