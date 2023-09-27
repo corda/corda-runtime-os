@@ -1,5 +1,6 @@
 package net.corda.applications.workers.smoketest.services
 
+import com.fasterxml.jackson.module.kotlin.contains
 import net.corda.applications.workers.smoketest.utils.PLATFORM_VERSION
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
@@ -8,11 +9,15 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.identity.HoldingIdentity
+import net.corda.e2etest.utilities.ClusterInfo
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
 import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
+import net.corda.e2etest.utilities.assertWithRetryIgnoringExceptions
+import net.corda.e2etest.utilities.cluster
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
 import net.corda.e2etest.utilities.conditionallyUploadCpiSigningCertificate
+import net.corda.e2etest.utilities.getExistingCpi
 import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
 import net.corda.e2etest.utilities.registerStaticMember
@@ -22,8 +27,10 @@ import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.ledger.utxo.verification.TransactionVerificationResponse
 import net.corda.ledger.utxo.verification.TransactionVerificationStatus
 import net.corda.messagebus.kafka.serialization.CordaAvroSerializationFactoryImpl
+import net.corda.rest.ResponseCode
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.virtualnode.toAvro
+import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -107,6 +114,19 @@ class VerificationRPCSmokeTests {
             staticMemberList
         )
 
+        val node = DEFAULT_CLUSTER.getExistingCpi(cpiName)
+        val cpks = node?.get("cpks")
+        if (cpks != null) {
+            cpks.forEach {cpkMetadata ->
+                val id = cpkMetadata["id"]
+                val name = cpkMetadata["name"]
+                val version = cpkMetadata["version"]
+                val signerSummaryHash = cpkMetadata["version"]
+                val version = cpkMetadata["version"]
+
+            }
+        }
+
         val aliceActualHoldingId = getOrCreateVirtualNodeFor(aliceX500, cpiName)
         val bobActualHoldingId = getOrCreateVirtualNodeFor(bobX500, cpiName)
         val charlieActualHoldingId = getOrCreateVirtualNodeFor(charlieX500, cpiName)
@@ -121,6 +141,7 @@ class VerificationRPCSmokeTests {
         registerStaticMember(bobHoldingId)
         registerStaticMember(charlieHoldingId)
         registerStaticMember(notaryHoldingId, UniquenessCheckerRPCSmokeTests.NOTARY_SERVICE_X500)
+
     }
 
     @Test
@@ -129,7 +150,7 @@ class VerificationRPCSmokeTests {
 
         logger.info("verification url: $url")
         val serializedPayload =
-            avroSerializer.serialize(payloadBuilder(avroSerializer, defaultNotaryVNodeHoldingIdentity, transaction, cpkSummaries))
+            avroSerializer.serialize(payloadBuilder(avroTransactionSerializer, defaultNotaryVNodeHoldingIdentity, transaction, cpkSummaries))
 
         val request = HttpRequest.newBuilder()
             .uri(URI.create(url))
