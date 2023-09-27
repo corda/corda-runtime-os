@@ -12,7 +12,6 @@ class AssetContract: Contract {
     internal companion object {
         const val REQUIRE_SINGLE_COMMAND = "Requires a single command."
         const val REQUIRES_ZERO_INPUTS = "The transaction requires zero inputs"
-        const val REQUIRES_ONE_INPUT = "The transaction requires one input"
         const val REQUIRES_ONE_OUTPUT = "The transaction requires one output"
         const val REQUIRES_ONE_ASSET_OUTPUT = "The transaction requires one Asset output"
         const val REQUIRES_ONE_ASSET_INPUT = "The transaction requires one Asset input"
@@ -23,8 +22,6 @@ class AssetContract: Contract {
     interface AssetCommands : Command {
         class Create: AssetCommands
         class Transfer: AssetCommands
-        class Lock: AssetCommands
-        class Unlock: AssetCommands
     }
 
 
@@ -45,7 +42,6 @@ class AssetContract: Contract {
             }
             // Rules applied only to transactions with the Update Command.
             is AssetCommands.Transfer -> {
-                REQUIRES_ONE_INPUT using (transaction.inputContractStates.size == 1)
                 REQUIRES_ONE_ASSET_OUTPUT using (transaction.getOutputStates(Asset::class.java).size == 1)
                 REQUIRES_ONE_ASSET_INPUT using (transaction.getInputStates(Asset::class.java).size == 1)
 
@@ -54,12 +50,6 @@ class AssetContract: Contract {
 
                 val output = transaction.getOutputStates(Asset::class.java)[0]
                 REQUIRES_DIFFERENT_OWNER using (input.owner != output.owner)
-            }
-            is AssetCommands.Lock -> {
-                // Verification logic required while locking the asset goes here
-            }
-            is AssetCommands.Unlock -> {
-                // Verification logic required while unlocking the asset goes here
             }
             else -> {
                 throw CordaRuntimeException("Invalid Command")

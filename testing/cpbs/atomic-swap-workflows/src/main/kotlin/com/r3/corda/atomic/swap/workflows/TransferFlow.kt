@@ -18,7 +18,6 @@ import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.membership.MemberInfo
 import org.slf4j.LoggerFactory
-import java.security.PublicKey
 import java.time.Duration
 import java.time.Instant
 
@@ -28,7 +27,7 @@ data class TransferFlowArgs(val newOwner: String, val stateId: String)
 data class TransferFlowResult(val transactionId: String, val stateId: String, val ownerPublicKey: String)
 
 
-class TransferFlow: ClientStartableFlow {
+class TransferFlow : ClientStartableFlow {
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -69,10 +68,10 @@ class TransferFlow: ClientStartableFlow {
             val inputState = stateAndRef.state.contractState
 
             val myInfo = memberLookup.myInfo()
-            val ownerInfo = memberLookup.lookup(inputState.owner) ?:
-            throw CordaRuntimeException("MemberLookup can't find current state owner.")
-            val newOwnerInfo = memberLookup.lookup(MemberX500Name.parse(flowArgs.newOwner)) ?:
-            throw CordaRuntimeException("MemberLookup can't find new state owner.")
+            val ownerInfo = memberLookup.lookup(inputState.owner)
+                ?: throw CordaRuntimeException("MemberLookup can't find current state owner.")
+            val newOwnerInfo = memberLookup.lookup(MemberX500Name.parse(flowArgs.newOwner))
+                ?: throw CordaRuntimeException("MemberLookup can't find new state owner.")
 
             if (myInfo.name != ownerInfo.name) {
                 throw CordaRuntimeException("Only the owner of a state can transfer it to a new owner.")
@@ -86,11 +85,13 @@ class TransferFlow: ClientStartableFlow {
                 listOf(inputState.owner, newOwnerInfo.ledgerKeys[0])
             )
 
-            val assetWithCompositeKey = constructLockedAsset(lockState, newOwnerInfo)
+            val assetWithCompositeKey = constructLockedAsset(inputState, newOwnerInfo)
 
-            val outputState = inputState.withNewOwner(newOwnerInfo.ledgerKeys[0],
+            val outputState = inputState.withNewOwner(
+                assetWithCompositeKey.owner,
 //                listOf(ownerInfo.ledgerKeys[0], newOwnerInfo.ledgerKeys[0]))
-                listOf(assetWithCompositeKey.creator))
+                listOf(assetWithCompositeKey.owner)
+            )
 
             val txBuilder = ledgerService.createTransactionBuilder()
 
@@ -104,11 +105,19 @@ class TransferFlow: ClientStartableFlow {
                 .addSignatories(lockState.participants)
                 .addSignatories(outputState.participants)
 
+
             val signedTransaction = txBuilder.toSignedTransaction()
 
-            val transactionId = flowEngine.subFlow(FinalizeFlow(signedTransaction, listOf(ownerInfo.name, newOwnerInfo.name)))
+            val transactionId =
+                flowEngine.subFlow(FinalizeFlow(signedTransaction, listOf(ownerInfo.name, newOwnerInfo.name)))
 
-            return jsonMarshallingService.format(TransferFlowResult(transactionId, outputState.assetId, outputState.owner.toString()))
+            return jsonMarshallingService.format(
+                TransferFlowResult(
+                    transactionId,
+                    outputState.assetId,
+                    outputState.owner.toString()
+                )
+            )
 
         } catch (e: Exception) {
             log.warn("Failed to process utxo flow for request body '$requestBody' because: '${e.message}'")
@@ -116,7 +125,7 @@ class TransferFlow: ClientStartableFlow {
         }
     }
 
-    private fun constructLockedAsset(asset: OwnableState, newOwner: MemberInfo): PublicKey {
+    private fun constructLockedAsset(asset: Asset, newOwner: MemberInfo): Asset {
         // Build composite key
         val compositeKey = compositeKeyGenerator.create(
             listOf(
@@ -125,8 +134,6 @@ class TransferFlow: ClientStartableFlow {
             ), 1
         )
 
-        //return asset.withNewOwner(compositeKey, listOf(asset.owner, newOwner.ledgerKeys[0]))
-//        return LockState(compositeKey, newOwnerInfo.ledgerKeys[0], inputState.assetName, inputState.assetId,)
-        return compositeKey
+        return asset.withNewOwner(compositeKey, listOf(asset.owner, newOwner.ledgerKeys[0]))
     }
 }

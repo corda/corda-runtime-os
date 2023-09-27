@@ -18,6 +18,12 @@ dependencies {
     cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     cordaProvided 'net.corda:corda-ledger-utxo'
 
+    cordapp ("$cordaUtxoLibGroupId:corda-ledger-extensions-base:$cordaUtxoLibVersion")
+    cordapp ("$cordaUtxoLibGroupId:corda-ledger-extensions-fungible:$cordaUtxoLibVersion")
+    cordapp ("$cordaUtxoLibGroupId:corda-ledger-extensions-identifiable:$cordaUtxoLibVersion")
+    cordapp ("$cordaUtxoLibGroupId:corda-ledger-extensions-issuable:$cordaUtxoLibVersion")
+    cordapp ("$cordaUtxoLibGroupId:corda-ledger-extensions-ownable:$cordaUtxoLibVersion")
+
     testImplementation project(":libs:application:application-impl")
     testImplementation project(':libs:crypto:crypto-core')
     testImplementation project(":libs:sandbox-types")

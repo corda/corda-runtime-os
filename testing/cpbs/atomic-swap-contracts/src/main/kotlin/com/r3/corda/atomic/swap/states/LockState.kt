@@ -11,7 +11,8 @@ data class LockState (
     val receiver: PublicKey,
     val assetName: String,
     val assetId: String,
-    private val participants: List<PublicKey>) : ContractState {
+    private val participants: List<PublicKey>,
+    val bool: Boolean = true) : ContractState {
 
     override fun getParticipants(): List<PublicKey> {
         return participants
