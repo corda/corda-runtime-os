@@ -10,7 +10,8 @@ import net.corda.cli.plugins.packaging.signing.CertificateLoader.readCertificate
 
 @CommandLine.Command(
     name = "verify",
-    description = ["Verifies a CPK/CPB/CPI."]
+    description = ["Verifies a CPK/CPB/CPI."],
+    mixinStandardHelpOptions = true
 )
 class Verify : Runnable {
 
