@@ -117,7 +117,10 @@ class VerificationRPCSmokeTests {
         val node = DEFAULT_CLUSTER.getExistingCpi(cpiName)
         val cpks = node?.get("cpks")
         if (cpks != null) {
-            cpks.forEach {cpkMetadata ->
+            val cpkSummaries = cpks?.filter {cpkMetadata ->
+                cpkMetadata["cpkMetadata"].textValue() == "CONTRACT"
+            }
+                ?.map {cpkMetadata ->
                 val id = cpkMetadata["id"]
                 val name = id["name"].textValue()
                 val version = id["version"].textValue()
