@@ -7,6 +7,7 @@ import net.corda.ledger.common.data.transaction.TransactionStatus.INVALID
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.utxo.flow.impl.UtxoLedgerMetricRecorder
+import net.corda.ledger.utxo.flow.impl.flows.backchain.InvalidBackchainException
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TopologicalSort
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackChainResolutionVersion
 import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
@@ -16,7 +17,6 @@ import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
@@ -110,6 +110,75 @@ class TransactionBackchainReceiverFlowV1Test {
     }
 
     /**
+     * This test is simulating a scenario where:
+     *
+     * TX1 (in DB)-------> TX2 (not in DB)
+     *  |           |
+     *  |           |
+     *  |          \/
+     *  |-------> TX3 (in DB)
+     *
+     *  Both TX1 and TX2 reference TX3.
+     *  TX1 and TX3 are in the database but TX2 is not.
+     *  This way TX1's dependencies will be expanded first, TX2 will be added to the "to retrieve" set and will be retrieved.
+     *  However, TX3 will already be part of the topological sort by the time we get to TX2, so its dependencies should
+     *  not be retrieved.
+     */
+    @Test
+    fun `transaction that is in the DB and referenced by multiple transactions - one in DB and one retrievable will only be retrieved once`() {
+        whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
+            .thenReturn(mapOf(
+                TX_ID_1 to UNVERIFIED,
+                TX_ID_3 to UNVERIFIED
+            ))
+
+        // TX1
+        whenever(utxoLedgerPersistenceService.findSignedTransaction(eq(TX_ID_1), eq(UNVERIFIED)))
+            .thenReturn(retrievedTransaction1)
+
+        whenever(retrievedTransaction1.id).thenReturn(TX_ID_1)
+        whenever(retrievedTransaction1.inputStateRefs).thenReturn(listOf(
+            StateRef(TX_ID_2, 0),
+            StateRef(TX_ID_3, 0)
+        ))
+        whenever(retrievedTransaction1.referenceStateRefs).thenReturn(emptyList())
+
+        // TX3
+        whenever(utxoLedgerPersistenceService.findSignedTransaction(eq(TX_ID_3), eq(UNVERIFIED)))
+            .thenReturn(retrievedTransaction3)
+
+        whenever(retrievedTransaction3.id).thenReturn(TX_ID_1)
+        whenever(retrievedTransaction3.inputStateRefs).thenReturn(emptyList())
+        whenever(retrievedTransaction1.referenceStateRefs).thenReturn(emptyList())
+
+        // TX2
+        whenever(session.sendAndReceive(eq(List::class.java), eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_2))))).thenReturn(
+            listOf(retrievedTransaction2)
+        )
+
+        whenever(retrievedTransaction2.id).thenReturn(TX_ID_2)
+        whenever(retrievedTransaction2.inputStateRefs).thenReturn(listOf(StateRef(TX_ID_3, 0)))
+        whenever(retrievedTransaction2.referenceStateRefs).thenReturn(emptyList())
+
+        whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(any(), eq(UNVERIFIED)))
+            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
+
+
+        assertThat(callTransactionBackchainReceiverFlow(setOf(TX_ID_1)).complete())
+            .containsExactlyInAnyOrder(TX_ID_1, TX_ID_2, TX_ID_3)
+
+        verify(session, times(1)).sendAndReceive(
+            eq(List::class.java),
+            eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_2)))
+        )
+
+        // Since TX3 should already be part of the topological sort by the time we fetch TX2,
+        // it shouldn't be fetched from the DB again
+        verify(utxoLedgerPersistenceService, times(1)).findSignedTransaction(TX_ID_1, UNVERIFIED)
+        verify(utxoLedgerPersistenceService, times(1)).findSignedTransaction(TX_ID_3, UNVERIFIED)
+    }
+
+    /**
      * This test is simulating a scenario where we want to fetch one transaction, but we already have that in our database.
      * However, it is in an unverified status. In that case it will be removed from the `transactionsToRetrieve` list
      * and will not be requested but its dependencies WILL BE requested.
@@ -175,7 +244,7 @@ class TransactionBackchainReceiverFlowV1Test {
         whenever(retrievedTransaction2.inputStateRefs).thenReturn(emptyList())
         whenever(retrievedTransaction2.referenceStateRefs).thenReturn(emptyList())
 
-        val exception = assertThrows<CordaRuntimeException> {
+        val exception = assertThrows<InvalidBackchainException> {
             callTransactionBackchainReceiverFlow(setOf(TX_ID_2))
         }
 

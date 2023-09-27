@@ -8,6 +8,7 @@ import net.corda.ledger.common.data.transaction.TransactionStatus.INVALID
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.utxo.flow.impl.UtxoLedgerMetricRecorder
+import net.corda.ledger.utxo.flow.impl.flows.backchain.InvalidBackchainException
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TopologicalSort
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackChainResolutionVersion
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
@@ -230,9 +231,8 @@ class TransactionBackchainReceiverFlowV1(
 
             // Remove the transaction from the "to retrieve" and "to check" collections if they are in our DB,
             // and they are verified
-            listOf(transactionsToCheck, transactionsToRetrieve).forEach { collection ->
-                collection.removeIf { existingTransactionIdsInDb[it] == VERIFIED }
-            }
+            transactionsToCheck.removeIf { existingTransactionIdsInDb[it] == VERIFIED }
+            transactionsToRetrieve.removeIf { existingTransactionIdsInDb[it] == VERIFIED }
 
             val newTransactionsToCheck = mutableListOf<SecureHash>()
             transactionsToCheck.forEach { transactionId ->
@@ -244,15 +244,17 @@ class TransactionBackchainReceiverFlowV1(
                     )
 
                     if (transactionFromDb != null) {
-                        // Add the dependencies to the "to retrieve" set they might be removed later on if they are in the DB
-                        // and also add them to the topological sort so it can be verified later on
-                        addUnseenDependenciesToRetrieve(
-                            transactionFromDb,
-                            sortedTransactionIds,
-                            transactionsToRetrieve
-                        )
-                        // and we also need to check them
-                        newTransactionsToCheck.addAll(transactionFromDb.dependencies)
+                        // Add the dependencies we haven't seen yet to the "to retrieve" and "to check" sets.
+                        // They might be removed later on from the "to retrieve" set if they are in the DB.
+                        // Also add them to the topological sort, so it can be verified later on
+                        if (transactionId !in sortedTransactionIds.transactionIds) {
+                            transactionFromDb.dependencies.let { dependencies ->
+                                val unseenDependencies = dependencies - sortedTransactionIds.transactionIds
+                                sortedTransactionIds.add(transactionId, dependencies)
+                                transactionsToRetrieve.addAll(unseenDependencies)
+                                newTransactionsToCheck.addAll(unseenDependencies)
+                            }
+                        }
 
                         // Once we added the unverified transactions' dependencies into the "to retrieve" set
                         // we can remove the parent transaction from the set as we don't need to get that from
@@ -262,7 +264,6 @@ class TransactionBackchainReceiverFlowV1(
                         } else if (fetchGroupParametersAndHashForTransaction(transactionFromDb).second != null) {
                             transactionsToRetrieve.remove(transactionId)
                         }
-
                     } else {
                         log.trace {
                             "Transaction with ID $transactionId is present in the database with unverified status " +
@@ -311,5 +312,3 @@ class TransactionBackchainReceiverFlowV1(
         return result
     }
 }
-
-class InvalidBackchainException(message: String) : CordaRuntimeException(message, null)

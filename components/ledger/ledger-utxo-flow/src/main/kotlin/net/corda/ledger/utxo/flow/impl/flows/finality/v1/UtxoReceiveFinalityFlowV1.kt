@@ -11,7 +11,7 @@ import net.corda.ledger.utxo.flow.impl.flows.finality.addTransactionIdToFlowCont
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
 import net.corda.ledger.utxo.flow.impl.flows.finality.v1.FinalityNotarizationFailureType.Companion.toFinalityNotarizationFailureType
 import net.corda.flow.application.GroupParametersLookupInternal
-import net.corda.ledger.utxo.flow.impl.flows.backchain.v1.InvalidBackchainException
+import net.corda.ledger.utxo.flow.impl.flows.backchain.InvalidBackchainException
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
