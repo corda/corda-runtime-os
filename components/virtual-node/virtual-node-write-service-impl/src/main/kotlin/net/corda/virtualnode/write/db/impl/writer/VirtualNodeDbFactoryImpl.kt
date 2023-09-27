@@ -113,10 +113,11 @@ internal class VirtualNodeDbFactoryImpl(
 
         val ddlProvided = ddlConfig?.isNotBlank() == true
         val hasConnections = dbConnections.values.any { it != null }
-        val isPlatformManagedDb = hasConnections && (usingClusterDb || ddlProvided)
+        val connectionStringsProvided = hasConnections && ddlProvided && !usingClusterDb
 
         return VirtualNodeDbImpl(
-            isPlatformManagedDb,
+            usingClusterDb,
+            connectionStringsProvided,
             dbConnections,
             dbType,
             holdingIdentityShortHash,
