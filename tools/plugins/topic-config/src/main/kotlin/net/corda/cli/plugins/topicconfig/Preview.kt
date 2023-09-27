@@ -4,7 +4,7 @@ import picocli.CommandLine
 import java.io.FileDescriptor
 import java.io.FileWriter
 
-@CommandLine.Command(name = "generate", description = ["Generates a textual representation of the intended Kafka topic configuration"])
+@CommandLine.Command(name = "preview", description = ["Generates a textual representation of the intended Kafka topic configuration"])
 class Preview : Runnable {
 
     @CommandLine.ParentCommand
