@@ -764,6 +764,10 @@ class MGMRestResourceImpl internal constructor(
 
         private fun validateRegex(expression: String) {
             try {
+                if (expression.isBlank()) {
+                    throw BadRequestException("The regular expression was a blank string.")
+                }
+
                 expression.toRegex()
             } catch (e: PatternSyntaxException) {
                 throw BadRequestException("The regular expression's syntax is invalid.\n${e.message}")
