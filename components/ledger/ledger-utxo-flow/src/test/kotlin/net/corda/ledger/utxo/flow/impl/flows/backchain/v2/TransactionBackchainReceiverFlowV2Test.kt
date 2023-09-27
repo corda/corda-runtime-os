@@ -219,6 +219,24 @@ class TransactionBackchainReceiverFlowV2Test {
             TX_ID_1, UNVERIFIED)
         verify(utxoLedgerPersistenceService, times(1)).findSignedTransaction(
             TX_ID_3, UNVERIFIED)
+
+        verify(session, never()).sendAndReceive(
+            eq(List::class.java),
+            eq(TransactionBackchainRequestV1.Get(setOf(
+                TX_ID_1,
+                TX_ID_3
+            )))
+        )
+
+        verify(session, never()).sendAndReceive(
+            eq(List::class.java),
+            eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_1)))
+        )
+
+        verify(session, never()).sendAndReceive(
+            eq(List::class.java),
+            eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_3)))
+        )
     }
 
     /**

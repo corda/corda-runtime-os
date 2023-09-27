@@ -172,6 +172,21 @@ class TransactionBackchainReceiverFlowV1Test {
             eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_2)))
         )
 
+        verify(session, never()).sendAndReceive(
+            eq(List::class.java),
+            eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_1, TX_ID_3)))
+        )
+
+        verify(session, never()).sendAndReceive(
+            eq(List::class.java),
+            eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_1)))
+        )
+
+        verify(session, never()).sendAndReceive(
+            eq(List::class.java),
+            eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_3)))
+        )
+
         // Since TX3 should already be part of the topological sort by the time we fetch TX2,
         // it shouldn't be fetched from the DB again
         verify(utxoLedgerPersistenceService, times(1)).findSignedTransaction(TX_ID_1, UNVERIFIED)
