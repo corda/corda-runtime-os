@@ -40,10 +40,10 @@ dependencies {
     integrationTestImplementation project(":components:membership:locally-hosted-identities-service")
     integrationTestImplementation project(":testing:db-message-bus-testkit")
     integrationTestImplementation project(":libs:flows:flow-utils")
+    integrationTestImplementation project(":libs:virtual-node:virtual-node-info")
 
     integrationTestRuntimeOnly project(":components:configuration:configuration-read-service-impl")
     integrationTestRuntimeOnly project(":components:flow:flow-mapper-impl")
-    integrationTestRuntimeOnly project(":components:membership:locally-hosted-identities-service-impl")
     integrationTestRuntimeOnly project(":libs:crypto:cipher-suite-impl")
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
     integrationTestRuntimeOnly project(":libs:messaging:messaging-impl")

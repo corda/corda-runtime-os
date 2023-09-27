@@ -7,7 +7,7 @@ import net.corda.rbac.schema.RbacKeys.VNODE_SHORT_HASH_REGEX
 import picocli.CommandLine
 import java.util.concurrent.Callable
 
-private const val CORDA_DEV_ROLE = "CordaDeveloperRole"
+const val CORDA_DEV_ROLE = "CordaDeveloperRole"
 
 @CommandLine.Command(
     name = "corda-developer",

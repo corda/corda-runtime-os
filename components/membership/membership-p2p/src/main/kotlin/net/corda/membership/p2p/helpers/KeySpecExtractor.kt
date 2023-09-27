@@ -56,7 +56,7 @@ class KeySpecExtractor(
             SPHINCS256_CODE_NAME to listOf(SignatureSpecs.SPHINCS256_SHA512.signatureName),
         ) + validSpecsNamesForSessionKeys
 
-        fun CryptoSigningKey.validateSpecName(specName: String, type: KeySpecType = KeySpecType.OTHER) {
+        fun CryptoSigningKey.validateSchemeAndSignatureSpec(specName: String?, type: KeySpecType = KeySpecType.OTHER) {
             val validSpecs = if (type == KeySpecType.SESSION) {
                 requireNotNull(validSpecsNamesForSessionKeys[this.schemeCodeName]) {
                     "Invalid key scheme ${this.schemeCodeName}. The following " +
@@ -64,11 +64,14 @@ class KeySpecExtractor(
                 }
             } else {
                 requireNotNull(validSpecsNames[this.schemeCodeName]) {
-                    "Could not identify spec for key scheme ${this.schemeCodeName}."
+                    "Invalid key scheme ${this.schemeCodeName}. The following " +
+                            "schemes could be used when generating keys: ${validSpecsNames.keys}"
                 }
             }
-            require(validSpecs.contains(specName)) {
-                "Invalid key spec $specName. Valid specs for key scheme ${this.schemeCodeName} are $validSpecs."
+            specName?.let {
+                require(validSpecs.contains(it)) {
+                    "Invalid key spec $it. Valid specs for key scheme ${this.schemeCodeName} are $validSpecs."
+                }
             }
         }
     }

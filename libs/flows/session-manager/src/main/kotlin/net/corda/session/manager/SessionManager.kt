@@ -27,7 +27,7 @@ interface SessionManager {
      * These can be retrieved via [getMessagesToSend]
      * Events are deduplicated and reordered based on sequence number and stored within the session state.
      * [sessionState] tracks which events have been delivered to the client library as well as the next expected session event sequence
-     * number to be received. [SessionState] should be set to null for [SessionInit] session events.
+     * number to be received.
      * Any session acknowledgements available on the [SessionEvent] are used to remove messages from the undelivered sendEvents queue
      * @param key The key on which the [sessionState] is stored for logging purposes.
      * @param sessionState The session state. This should be null in the case of [SessionInit]
@@ -67,7 +67,8 @@ interface SessionManager {
         sessionId: String,
         contextSessionProperties: KeyValuePairList,
         counterparty: HoldingIdentity,
-        instant: Instant
+        instant: Instant,
+        initialStatus: SessionStateType = SessionStateType.CREATED
     ): SessionState
 
     /**

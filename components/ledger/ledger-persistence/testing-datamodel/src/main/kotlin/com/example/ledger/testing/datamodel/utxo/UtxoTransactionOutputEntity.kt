@@ -45,6 +45,9 @@ data class UtxoTransactionOutputEntity(
     @get:Column(name = "token_issuer_hash", nullable = true)
     var tokenIssuerHash: String?,
 
+    @get:Column(name = "token_notary_x500_name", nullable = true)
+    var tokenNotaryX500Name: String?,
+
     @get:Column(name = "token_symbol", nullable = true)
     var tokenSymbol: String?,
 

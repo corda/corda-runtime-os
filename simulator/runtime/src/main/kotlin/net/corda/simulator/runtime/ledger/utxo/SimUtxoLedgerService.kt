@@ -29,6 +29,7 @@ import net.corda.v5.membership.NotaryInfo
 /**
  * Simulator implementation of [UtxoLedgerService]
  */
+@Suppress("TooManyFunctions")
 class SimUtxoLedgerService(
     member: MemberX500Name,
     private val fiber: SimFiber,
@@ -127,6 +128,10 @@ class SimUtxoLedgerService(
             SimStateAndRef(transactionState, stateRef)
         }
         return stateAndRefs
+    }
+
+    override fun <T : ContractState> findUnconsumedStatesByExactType(type: Class<T>): List<StateAndRef<T>> {
+        TODO("Not implemented yet")
     }
 
     /**

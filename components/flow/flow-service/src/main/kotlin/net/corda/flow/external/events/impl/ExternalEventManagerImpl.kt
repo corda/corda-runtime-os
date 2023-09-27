@@ -3,7 +3,6 @@ package net.corda.flow.external.events.impl
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
-import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.external.ExternalEvent
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
@@ -12,9 +11,7 @@ import net.corda.data.flow.state.external.ExternalEventStateStatus
 import net.corda.data.flow.state.external.ExternalEventStateType
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.pipeline.exceptions.FlowFatalException
-import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
-import net.corda.schema.configuration.FlowConfig
 import net.corda.utilities.FLOW_TRACING_MARKER
 import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
@@ -25,8 +22,8 @@ import org.slf4j.LoggerFactory
 import org.slf4j.Marker
 import org.slf4j.MarkerFactory
 import java.nio.ByteBuffer
+import java.time.Duration
 import java.time.Instant
-import java.time.temporal.ChronoUnit
 
 @Component(service = [ExternalEventManager::class])
 class ExternalEventManagerImpl(
@@ -154,66 +151,59 @@ class ExternalEventManagerImpl(
     override fun getEventToSend(
         externalEventState: ExternalEventState,
         instant: Instant,
-        config: SmartConfig
+        retryWindow: Duration
     ): Pair<ExternalEventState, Record<*, *>?> {
-        return when {
-            hasNotSentOriginalEvent(externalEventState) -> {
-                log.debug {
-                    "Sending external event request ${externalEventState.requestId} " +
-                            externalEventState.eventToSend
+        val sendTimestamp = externalEventState.sendTimestamp
+        val record = when (externalEventState.status.type) {
+            ExternalEventStateType.OK -> {
+                if (sendTimestamp == null) {
+                    externalEventState.sendTimestamp = instant
+                    externalEventState.retries = 0
+                    generateRecord(externalEventState, instant)
+                } else {
+                    null
                 }
-                getAndUpdateEventToSend(externalEventState, instant, config)
             }
-
-            canRetryEvent(externalEventState, instant) -> {
-                log.debug {
-                    "Resending external event request ${externalEventState.requestId} which was last sent at " +
-                            externalEventState.eventToSend.timestamp
-                }
-                if (externalEventState.status.type == ExternalEventStateType.OK) {
-                    externalEventState.status.exception =
-                        ExceptionEnvelope(
-                            "NoResponse",
-                            "Received no response for external event request, ensure all workers are running"
-                        )
-                    externalEventState.status.type = ExternalEventStateType.RETRY
-                    externalEventState.retries = externalEventState.retries.inc()
-                }
-                getAndUpdateEventToSend(externalEventState, instant, config)
+            ExternalEventStateType.RETRY -> {
+                checkRetry(externalEventState, instant, retryWindow)
+                generateRecord(externalEventState, instant)
             }
+            else -> {
+                null
+            }
+        }
+        return externalEventState to record
+    }
 
-            else -> externalEventState to null
+    private fun checkRetry(externalEventState: ExternalEventState, instant: Instant, retryWindow: Duration) {
+        when {
+            (externalEventState.sendTimestamp + retryWindow) >= instant -> {
+                // Do nothing. This check ensures that subsequent branches are checking the case where the external
+                // event is outside the retry window.
+            }
+            externalEventState.retries == 0 -> {
+                // Use the retries field to indicate how many times the event has been retried outside the window.
+                // Retrying once outside the window is required in case the flow engine receives the event to trigger
+                // the retry late. This guarantees an external event will be tried at least twice. After that though,
+                // retrying further is unlikely to clear the problem.
+                externalEventState.retries++
+            }
+            else -> {
+                throw FlowFatalException("External event with request ID ${externalEventState.requestId} exceeded " +
+                        "the retry window.")
+            }
         }
     }
 
-    private fun hasNotSentOriginalEvent(externalEventState: ExternalEventState): Boolean {
-        return externalEventState.sendTimestamp == null
-    }
-
-    private fun canRetryEvent(externalEventState: ExternalEventState, instant: Instant): Boolean {
-        return if (externalEventState.status.type !in setOf(
-                ExternalEventStateType.PLATFORM_ERROR,
-                ExternalEventStateType.FATAL_ERROR
-            )
-        ) {
-            val sendTimestamp = externalEventState.sendTimestamp.truncatedTo(ChronoUnit.MILLIS).toEpochMilli()
-            val currentTimestamp = instant.truncatedTo(ChronoUnit.MILLIS).toEpochMilli()
-            sendTimestamp < currentTimestamp
-        } else {
-            false
-        }
-    }
-
-    private fun getAndUpdateEventToSend(
-        externalEventState: ExternalEventState,
-        instant: Instant,
-        config: SmartConfig
-    ): Pair<ExternalEventState, Record<*, *>?> {
+    private fun generateRecord(externalEventState: ExternalEventState, instant: Instant) : Record<*, *> {
         val eventToSend = externalEventState.eventToSend
         eventToSend.timestamp = instant
-        externalEventState.sendTimestamp = instant.plusMillis(config.getLong(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW))
-        log.info(flowTraceMarker, "Dispatching external event with id '{}' to '{}'", externalEventState.requestId, eventToSend.topic)
-
-        return externalEventState to Record(eventToSend.topic, eventToSend.key.array(), eventToSend.payload.array())
+        log.info(
+            flowTraceMarker,
+            "Dispatching external event with id '{}' to '{}'",
+            externalEventState.requestId,
+            eventToSend.topic
+        )
+        return Record(eventToSend.topic, eventToSend.key.array(), eventToSend.payload.array())
     }
 }

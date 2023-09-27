@@ -13,7 +13,12 @@ import java.util.jar.JarEntry
 import java.util.jar.JarFile
 import picocli.CommandLine
 
-@CommandLine.Command(name = "create", description = ["Create Kafka topics"], subcommands = [Generate::class, CreateConnect::class])
+@CommandLine.Command(
+    name = "create",
+    description = ["Create Kafka topics"],
+    subcommands = [Generate::class, CreateConnect::class],
+    mixinStandardHelpOptions = true
+)
 class Create(
     private val cl: ClassLoader = TopicPlugin.classLoader,
     private val resourceGetter: (String) -> List<URL> = { path -> cl.getResources(path).toList().filterNotNull() }

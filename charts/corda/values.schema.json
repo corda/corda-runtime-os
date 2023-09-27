@@ -1258,6 +1258,106 @@
                                 }
                             }]
                         },
+                        "stateManager": {
+                            "type": "object",
+                            "default": {},
+                            "title": "State Manager db configuration",
+                            "required": [
+                                "dbConnectionPool",
+                                "schema"
+                            ],
+                            "properties": {
+                                "schema": {
+                                    "type": "string",
+                                    "default": "STATE_MANAGER",
+                                    "title": "the schema in which the State Manager entities will be stored",
+                                    "examples": [
+                                        "STATE_MANAGER"
+                                    ],
+                                    "minLength": 1
+                                },
+                                "username": {
+                                    "$ref": "#/$defs/config"
+                                },
+                                "password": {
+                                    "$ref": "#/$defs/config"
+                                },
+                                "dbConnectionPool": {
+                                    "type": "object",
+                                    "default": {},
+                                    "title": "JDBC connection pool configuration for State Manager DB",
+                                    "required": [
+                                        "maxSize",
+                                        "idleTimeoutSeconds",
+                                        "maxLifetimeSeconds",
+                                        "keepAliveTimeSeconds",
+                                        "validationTimeoutSeconds"
+                                    ],
+                                    "properties": {
+                                        "maxSize": {
+                                            "type": "integer",
+                                            "default": 5,
+                                            "title": "maximum JDBC connection pool size for State Manager DB",
+                                            "examples": [
+                                                5
+                                            ]
+                                        },
+                                        "minSize": {
+                                            "anyOf": [
+                                                {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                },
+                                                {
+                                                    "type": "null"
+                                                }
+                                            ],
+                                            "default": null,
+                                            "title": "minimum JDBC connection pool size for State Manager DB; null value means pool's min size will default to pool's max size value"
+                                        },
+                                        "idleTimeoutSeconds": {
+                                            "type": "integer",
+                                            "default": 120,
+                                            "minimum": 0,
+                                            "title": "maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool"
+                                        },
+                                        "maxLifetimeSeconds": {
+                                            "type": "integer",
+                                            "default": 1800,
+                                            "minimum": 1,
+                                            "title": "maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached \"maxLifetime\" timeout, it will be removed from the pool only when it becomes idle"
+                                        },
+                                        "keepAliveTimeSeconds": {
+                                            "type": "integer",
+                                            "default": 0,
+                                            "minimum": 0,
+                                            "title": "interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled"
+                                        },
+                                        "validationTimeoutSeconds": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "default": 5,
+                                            "title": "maximum time (in seconds) that the pool will wait for a connection to be validated as alive"
+                                        }
+                                    },
+                                    "examples": [{
+                                        "maxSize": 5
+                                    }]
+                                }
+                            },
+                            "examples": [{
+                                "schema": "STATE_MANAGER",
+                                "password": {
+                                    "value": "password"
+                                },
+                                "username": {
+                                    "value": "username"
+                                },
+                                "dbConnectionPool": {
+                                    "maxSize": 5
+                                }
+                            }]
+                        },
                         "clientImage": {
                             "type": "object",
                             "default": {},
@@ -1793,7 +1893,8 @@
                         },
                         {
                             "required": [
-                                "verifyInstrumentation"
+                                "verifyInstrumentation",
+                                "stateManagerDbConnectionPool"
                             ],
                             "properties": {
                                 "image": {},
@@ -1805,6 +1906,66 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
+                                "stateManagerDbConnectionPool": {
+                                    "type": "object",
+                                    "default": {},
+                                    "title": "Flow worker JDBC connection pool configuration for State Manager DB",
+                                    "required": [
+                                        "maxSize",
+                                        "idleTimeoutSeconds",
+                                        "maxLifetimeSeconds",
+                                        "keepAliveTimeSeconds",
+                                        "validationTimeoutSeconds"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "maxSize": {
+                                            "type": "integer",
+                                            "default": 5,
+                                            "title": "Flow worker JDBC connection pool size for State Manager DB",
+                                            "examples": [
+                                                5
+                                            ]
+                                        },
+                                        "minSize": {
+                                            "anyOf": [
+                                                {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                },
+                                                {
+                                                    "type": "null"
+                                                }
+                                            ],
+                                            "default": null,
+                                            "title": "Flow worker minimum JDBC connection pool size for State Manager DB; null value means pool's min size will default to pool's max size value"
+                                        },
+                                        "idleTimeoutSeconds": {
+                                            "type": "integer",
+                                            "default": 120,
+                                            "minimum": 0,
+                                            "title": "maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool"
+                                        },
+                                        "maxLifetimeSeconds": {
+                                            "type": "integer",
+                                            "default": 1800,
+                                            "minimum": 1,
+                                            "title": "maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached \"maxLifetime\" timeout, it will be removed from the pool only when it becomes idle"
+                                        },
+                                        "keepAliveTimeSeconds": {
+                                            "type": "integer",
+                                            "default": 0,
+                                            "minimum": 0,
+                                            "title": "interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled"
+                                        },
+                                        "validationTimeoutSeconds": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "default": 5,
+                                            "title": "maximum time (in seconds) that the pool will wait for a connection to be validated as alive"
+                                        }
+                                    }
+                                },
                                 "verifyInstrumentation": {
                                     "type": "boolean",
                                     "default": false,

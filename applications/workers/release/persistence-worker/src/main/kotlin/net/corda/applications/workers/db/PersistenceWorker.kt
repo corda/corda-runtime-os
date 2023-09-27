@@ -2,18 +2,17 @@ package net.corda.applications.workers.db
 
 import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
+import net.corda.applications.workers.workercommon.Health
 import net.corda.applications.workers.workercommon.JavaSerialisationFilter
-import net.corda.applications.workers.workercommon.PathAndConfig
+import net.corda.applications.workers.workercommon.Metrics
 import net.corda.applications.workers.workercommon.WorkerHelpers
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
-import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupMonitor
-import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupWebserver
-import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.libs.platform.PlatformInfoProvider
+import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.persistence.PersistenceProcessor
@@ -36,8 +35,8 @@ class PersistenceWorker @Activate constructor(
     private val persistenceProcessor: PersistenceProcessor,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
-    @Reference(service = WorkerMonitor::class)
-    private val workerMonitor: WorkerMonitor,
+    @Reference(service = LifecycleRegistry::class)
+    private val lifecycleRegistry: LifecycleRegistry,
     @Reference(service = PlatformInfoProvider::class)
     val platformInfoProvider: PlatformInfoProvider,
     @Reference(service = ApplicationBanner::class)
@@ -64,20 +63,19 @@ class PersistenceWorker @Activate constructor(
         JavaSerialisationFilter.install()
 
         val params = getParams(args, PersistenceWorkerParams())
-        webServer.setupWebserver(params.defaultParams)
         if (printHelpOrVersion(params.defaultParams, PersistenceWorker::class.java, shutDownService)) return
-        setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
+        Metrics.configure(webServer, this.javaClass.simpleName)
+        Health.configure(webServer, lifecycleRegistry)
 
         configureTracing("Persistence Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
 
-        val databaseConfig = PathAndConfig(BootConfig.BOOT_DB, params.databaseParams)
         val config = WorkerHelpers.getBootstrapConfig(
             secretsServiceFactoryResolver,
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
-            listOf(databaseConfig)
+            listOf(WorkerHelpers.createConfigFromParams(BootConfig.BOOT_DB, params.databaseParams))
         )
-
+        webServer.start(params.defaultParams.workerServerPort)
         persistenceProcessor.start(config)
     }
 
