@@ -16,7 +16,7 @@ abstract class AuthenticatedMessageHandler<T : Any>(
         when (header) {
             is AuthenticatedMessageHeader -> {
                 logger.info(
-                    "Invoking registration handler for ${payloadType.simpleName} with message ID ${header.messageId} and trace ID " +
+                    "Invoking p2p handler for ${payloadType.simpleName} with message ID ${header.messageId} and trace ID " +
                         "${header.traceId} from ${header.source} to ${header.destination}."
                 )
             }

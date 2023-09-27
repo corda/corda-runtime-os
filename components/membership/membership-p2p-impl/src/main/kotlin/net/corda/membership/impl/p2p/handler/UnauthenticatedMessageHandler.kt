@@ -17,10 +17,10 @@ internal abstract class UnauthenticatedMessageHandler<T : Any>(
     override fun invoke(header: Any, payload: ByteBuffer): Record<*, *>? {
         when (header) {
             is InboundUnauthenticatedMessageHeader -> {
-                logger.info("Invoking registration handler for ${payloadType.simpleName} with message ID ${header.messageId}.")
+                logger.info("Invoking p2p handler for ${payloadType.simpleName} with message ID ${header.messageId}.")
             }
             is OutboundUnauthenticatedMessageHeader -> {
-                logger.info("Invoking registration handler for ${payloadType.simpleName} with message ID ${header.messageId} " +
+                logger.info("Invoking p2p handler for ${payloadType.simpleName} with message ID ${header.messageId} " +
                         "from ${header.source} to ${header.destination}.")
             }
             else -> {
