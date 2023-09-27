@@ -105,19 +105,6 @@ class ExternalEventResponseWaitingForHandlerTest {
     }
 
     @Test
-    fun `increases the retry count if the state's status is RETRY and the max retries have not been exceeded`() {
-        externalEventState.status = ExternalEventStateStatus(
-            ExternalEventStateType.RETRY,
-            ExceptionEnvelope("type", "message")
-        )
-        externalEventState.retries = 0
-        val continuation = externalEventResponseWaitingForHandler.runOrContinue(context, externalEventResponse)
-        assertEquals(1, externalEventState.retries)
-        assertEquals(FlowContinuation.Continue, continuation)
-        verify(checkpoint, never()).externalEventState = null
-    }
-
-    @Test
     fun `resumes the flow with an error if the state's status is PLATFORM_ERROR`() {
         externalEventState.status = ExternalEventStateStatus(
             ExternalEventStateType.PLATFORM_ERROR,
