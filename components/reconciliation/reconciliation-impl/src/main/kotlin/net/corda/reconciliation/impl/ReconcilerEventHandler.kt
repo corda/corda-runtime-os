@@ -125,14 +125,20 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
             dbReader.getAllVersionedRecords()?.filter { dbRecord ->
                 val matchedKafkaRecord = kafkaRecords[dbRecord.key]
                 val toBeReconciled = if (matchedKafkaRecord == null) {
-                    !dbRecord.isDeleted // reconcile db inserts (i.e. db column cpi.is_deleted == false)
+                    !dbRecord.isDeleted // reconcile db inserted records (i.e. db column cpi.is_deleted == false)
                 } else {
-                    // Forced reconciliation is meant to fix CORE-17354
+                    // Forced initial reconciliation is meant to fix an issue with config update and cluster upgrade.
+                    // On config section schema update, because Kafka is already populated and DB and Kafka records' versions
+                    // match for that config section it means that config section would not get reconciled.
+                    // This means newly added property(ies) to config schema will not get added to config published on Kafka.
+                    // With forcing reconciliation, all DB configs go through reconciliation (version is overlooked) and therefore
+                    // through the defaulting config process which will add the property(ies) and subsequently will publish them
+                    // to Kafka. We only need to force the first reconciliation.
                     if (forceInitialReconciliation && firstRun) {
-                        dbRecord.version >= matchedKafkaRecord.version // force reconcile
+                        dbRecord.version >= matchedKafkaRecord.version // reconcile all db records
                     } else {
-                        dbRecord.version > matchedKafkaRecord.version // reconcile db updates
-                    } || dbRecord.isDeleted // reconcile db deletes
+                        dbRecord.version > matchedKafkaRecord.version // reconcile db updated records
+                    } || dbRecord.isDeleted // reconcile db soft deleted records
                 }
 
                 if (toBeReconciled) {
