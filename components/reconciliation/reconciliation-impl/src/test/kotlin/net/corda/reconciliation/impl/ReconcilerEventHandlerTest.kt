@@ -108,4 +108,55 @@ internal class ReconcilerEventHandlerTest {
         assertEquals(1, reconciledOnFirstReconciliation)
         assertEquals(0, reconciledOnSecondReconciliation)
     }
+
+    @Test
+    fun `on not forceInitialReconciliation the first reconciliation is not forced reconciled`() {
+        val dbRecord = object : VersionedRecord<String, Int> {
+            override val version: Int
+                get() = 1
+            override val isDeleted: Boolean
+                get() = false
+            override val key: String
+                get() = "key1"
+            override val value: Int
+                get() = 1
+        }
+
+        val kafkaRecord = object : VersionedRecord<String, Int> {
+            override val version: Int
+                get() = 1
+            override val isDeleted: Boolean
+                get() = false
+            override val key: String
+                get() = "key1"
+            override val value: Int
+                get() = 1
+        }
+
+        val dbReader = mock<ReconcilerReader<String, Int>>().also {
+            whenever(it.getAllVersionedRecords()).doAnswer {
+                listOf<VersionedRecord<String, Int>>(dbRecord).stream()
+            }
+        }
+
+        val kafkaReader = mock<ReconcilerReader<String, Int>>().also {
+            whenever(it.getAllVersionedRecords()).doAnswer {
+                listOf<VersionedRecord<String, Int>>(kafkaRecord).stream()
+            }
+        }
+
+        reconcilerEventHandler =
+            ReconcilerEventHandler(
+                dbReader,
+                kafkaReader,
+                writer = mock(),
+                keyClass = String::class.java,
+                valueClass = Int::class.java,
+                10L,
+                forceInitialReconciliation = false
+            )
+
+        val reconciledOnFirstReconciliation = reconcilerEventHandler.reconcile()
+        assertEquals(0, reconciledOnFirstReconciliation)
+    }
 }
