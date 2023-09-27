@@ -3,6 +3,7 @@ package net.corda.e2etest.utilities.config
 import com.fasterxml.jackson.databind.JsonNode
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigRenderOptions
 import net.corda.e2etest.utilities.ClusterInfo
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.test.util.eventually
@@ -59,7 +60,7 @@ class SingleClusterTestConfigManager(
             // Store original config for later revert.
             originalConfigs.computeIfAbsent(section) { previousConfig }
 
-            val mergedConfig = configOverride.withFallback(previousConfig).root().render()
+            val mergedConfig = configOverride.withFallback(previousConfig).root().render(ConfigRenderOptions.concise())
 
             logger.info(
                 "Updating from config \"$previousSourceConfig\" to \"$mergedConfig\" for section \"$section\" on " +
@@ -85,7 +86,7 @@ class SingleClusterTestConfigManager(
             val (previousVersion, previousSourceConfig) = with(getConfig(section)) {
                 version to sourceConfig
             }
-            val preTestConfig = originalConfig.root().render()
+            val preTestConfig = originalConfig.root().render(ConfigRenderOptions.concise())
 
             logger.info(
                 "Reverting test config for section \"$section\" from \"$previousSourceConfig\" to \"$preTestConfig\" " +
