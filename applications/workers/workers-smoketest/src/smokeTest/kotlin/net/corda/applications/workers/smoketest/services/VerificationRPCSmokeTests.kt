@@ -114,24 +114,6 @@ class VerificationRPCSmokeTests {
             staticMemberList
         )
 
-        val node = DEFAULT_CLUSTER.getExistingCpi(cpiName)
-        val cpks = node?.get("cpks")
-        if (cpks != null) {
-            val cpkSummaries = cpks?.filter {cpkMetadata ->
-                cpkMetadata["cpkMetadata"].textValue() == "CONTRACT"
-            }
-                ?.map {cpkMetadata ->
-                val id = cpkMetadata["id"]
-                val name = id["name"].textValue()
-                val version = id["version"].textValue()
-                val signerSummaryHash = id["signerSummaryHash"].textValue()
-                val checksum = cpkMetadata["hash"].textValue()
-                val cordaPackageSummary = CordaPackageSummary(
-                    name, version, signerSummaryHash, checksum
-                )
-            }
-        }
-
         val aliceActualHoldingId = getOrCreateVirtualNodeFor(aliceX500, cpiName)
         val bobActualHoldingId = getOrCreateVirtualNodeFor(bobX500, cpiName)
         val charlieActualHoldingId = getOrCreateVirtualNodeFor(charlieX500, cpiName)
@@ -151,6 +133,21 @@ class VerificationRPCSmokeTests {
 
     @Test
     fun `RPC endpoint accepts a request and returns back a response`() {
+        val node = DEFAULT_CLUSTER.getExistingCpi(cpiName)
+        val cpks = node?.get("cpks")
+        val cpkSummaries = cpks?.filter { cpkMetadata ->
+            cpkMetadata["cpkMetadata"].textValue() == "CONTRACT"
+        }
+            ?.map { cpkMetadata ->
+                val id = cpkMetadata["id"]
+                val name = id["name"].textValue()
+                val version = id["version"].textValue()
+                val signerSummaryHash = id["signerSummaryHash"].textValue()
+                val checksum = cpkMetadata["hash"].textValue()
+                CordaPackageSummary(
+                    name, version, signerSummaryHash, checksum
+                )
+            }
         val url = "${System.getProperty("verificationWorkerUrl")}api/$PLATFORM_VERSION/verification"
 
         logger.info("verification url: $url")
