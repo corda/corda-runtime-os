@@ -18,14 +18,15 @@ fun interface MessageRouterFactory {
      *
      *     MessageRouter { message ->
      *         when (message.payload) {
-     *             is FlowEvent -> RoutingDestination(messageBusClient, "flow.event.topic")
+     *             is FlowMapperEvent -> routeTo(messageBusClient, FLOW_MAPPER_EVENT_TOPIC)
+     *             is FlowStatus -> routeTo(messageBusClient, FLOW_STATUS_TOPIC)
      *             else -> throw IllegalStateException("No route defined for message $message")
      *         }
      *     }
      * }
      * ```
      *
-     * @param clientFinder Messaging client finder
+     * @param clientFinder Messaging client finder.
      * @return created message router.
      */
     fun create(clientFinder: MessagingClientFinder): MessageRouter
