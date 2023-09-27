@@ -131,9 +131,9 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
                     // On config section schema update, because Kafka is already populated and DB and Kafka records' versions
                     // match for that config section it means that config section would not get reconciled.
                     // This means newly added property(ies) to config schema will not get added to config published on Kafka.
-                    // With forcing reconciliation, all DB configs go through reconciliation (version is overlooked) and therefore
-                    // through the defaulting config process which will add the property(ies) and subsequently will publish them
-                    // to Kafka. We only need to force the first reconciliation.
+                    // With forcing reconciliation, all DB configs go through reconciliation again (version is overlooked) and
+                    // therefore through the defaulting config process which will add the property(ies) and subsequently
+                    // will publish them to Kafka. We only need to force the first reconciliation.
                     if (forceInitialReconciliation && firstRun) {
                         dbRecord.version >= matchedKafkaRecord.version // reconcile all db records
                     } else {
