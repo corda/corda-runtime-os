@@ -1,10 +1,17 @@
 package net.corda.flow.service
 
 import com.typesafe.config.ConfigValueFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
+import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.checkpoint.Checkpoint
+import net.corda.data.ledger.persistence.LedgerPersistenceRequest
+import net.corda.data.persistence.EntityRequest
+import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
+import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -14,6 +21,7 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.messaging.api.mediator.RoutingDestination.Companion.routeTo
@@ -23,8 +31,14 @@ import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.mediator.factory.MessagingClientFactoryFactory
 import net.corda.messaging.api.mediator.factory.MultiSourceEventMediatorFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.schema.Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
+import net.corda.schema.Schemas.Persistence.PERSISTENCE_ENTITY_PROCESSOR_TOPIC
+import net.corda.schema.Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC
+import net.corda.schema.Schemas.UniquenessChecker.UNIQUENESS_CHECK_TOPIC
+import net.corda.schema.Schemas.Verification.VERIFICATION_LEDGER_PROCESSOR_TOPIC
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
@@ -44,7 +58,8 @@ class FlowExecutorMediatorImpl (
     private val eventMediatorFactory: MultiSourceEventMediatorFactory,
     private val mediatorConsumerFactoryFactory: MediatorConsumerFactoryFactory,
     private val messagingClientFactoryFactory: MessagingClientFactoryFactory,
-    private val toMessagingConfig: (Map<String, SmartConfig>) -> SmartConfig
+    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    private val toMessagingConfig: (Map<String, SmartConfig>) -> SmartConfig,
 ) : FlowExecutor {
 
     @Activate
@@ -59,12 +74,15 @@ class FlowExecutorMediatorImpl (
         mediatorConsumerFactoryFactory: MediatorConsumerFactoryFactory,
         @Reference(service = MessagingClientFactoryFactory::class)
         messagingClientFactoryFactory: MessagingClientFactoryFactory,
+        @Reference(service = CordaAvroSerializationFactory::class)
+        cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     ) : this(
         coordinatorFactory,
         flowEventProcessorFactory,
         eventMediatorFactory,
         mediatorConsumerFactoryFactory,
         messagingClientFactoryFactory,
+        cordaAvroSerializationFactory,
         { cfg -> cfg.getConfig(MESSAGING_CONFIG) }
     )
 
@@ -77,6 +95,7 @@ class FlowExecutorMediatorImpl (
     private val coordinator = coordinatorFactory.createCoordinator<FlowExecutor> { event, _ -> eventHandler(event) }
     private var subscriptionRegistrationHandle: RegistrationHandle? = null
     private var multiSourceEventMediator: MultiSourceEventMediator<String, Checkpoint, FlowEvent>? = null
+    private val deserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
 
     override fun onConfigChange(config: Map<String, SmartConfig>) {
         try {
@@ -174,10 +193,31 @@ class FlowExecutorMediatorImpl (
         val messageBusClient = clientFinder.find(MESSAGE_BUS_CLIENT)
 
         MessageRouter { message ->
-            when (message.payload) {
+            when (val event = message.event()) {
+                is EntityRequest -> routeTo(messageBusClient, PERSISTENCE_ENTITY_PROCESSOR_TOPIC)
                 is FlowMapperEvent -> routeTo(messageBusClient, FLOW_MAPPER_EVENT_TOPIC)
-                else -> throw IllegalStateException("No route defined for message $message")
+                is FlowOpsRequest -> routeTo(messageBusClient, FLOW_OPS_MESSAGE_TOPIC)
+                is FlowStatus -> routeTo(messageBusClient, FLOW_STATUS_TOPIC)
+                is LedgerPersistenceRequest -> routeTo(messageBusClient, PERSISTENCE_LEDGER_PROCESSOR_TOPIC)
+                is TransactionVerificationRequest -> routeTo(messageBusClient, VERIFICATION_LEDGER_PROCESSOR_TOPIC)
+                is UniquenessCheckRequestAvro -> routeTo(messageBusClient, UNIQUENESS_CHECK_TOPIC)
+                else -> {
+                    val eventType = event?.let { it::class.java }
+                    throw IllegalStateException("No route defined for event type [$eventType]")
+                }
             }
+        }
+    }
+
+    /**
+     * Deserialized message payload if it is a [ByteArray] (seems to be the case for external events).
+     */
+    private fun  MediatorMessage<Any>.event(): Any? {
+        val event = payload
+        return if (event is ByteArray) {
+            deserializer.deserialize(event)
+        } else {
+            event
         }
     }
 }

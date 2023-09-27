@@ -169,10 +169,8 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                 val clientTasks = mediatorTaskManager.createProducerTasks(validResults, messageRouter)
                 val clientResults = mediatorTaskManager.executeProducerTasks(clientTasks)
                 msgProcessorTasks =
-                    mediatorTaskManager.createMsgProcessorTasks(clientResults) + mediatorTaskManager.createMsgProcessorTasks(
-                        invalidResults,
-                        conflictingStates
-                    )
+                    mediatorTaskManager.createMsgProcessorTasks(clientResults) +
+                    mediatorTaskManager.createMsgProcessorTasks(invalidResults, conflictingStates)
             } while (msgProcessorTasks.isNotEmpty())
             commitOffsets()
         }
