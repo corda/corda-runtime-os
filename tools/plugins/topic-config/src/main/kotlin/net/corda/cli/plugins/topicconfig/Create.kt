@@ -16,7 +16,7 @@ import picocli.CommandLine
 @CommandLine.Command(
     name = "create",
     description = ["Create Kafka topics"],
-    subcommands = [Generate::class, CreateConnect::class],
+    subcommands = [Preview::class, CreateConnect::class],
     mixinStandardHelpOptions = true
 )
 class Create(
@@ -56,16 +56,16 @@ class Create(
         val topics: Map<String, TopicConfig>
     )
 
-    data class GeneratedTopicDefinitions(
-        val topics: List<GeneratedTopicConfig>,
-        val acls: List<GeneratedTopicACL>
+    data class PreviewTopicConfigurations(
+        val topics: List<PreviewTopicConfiguration>,
+        val acls: List<PreviewTopicACL>
     )
 
-    data class GeneratedTopicConfig(
+    data class PreviewTopicConfiguration(
         val name: String,
         val config: Map<String, String> = emptyMap()
     )
-    data class GeneratedTopicACL(
+    data class PreviewTopicACL(
         val topic: String,
         val users: List<UserConfig>
     )
@@ -160,13 +160,17 @@ class Create(
         }.toMap()
     }
 
-    fun getGeneratedTopicConfigs(): GeneratedTopicDefinitions {
-        val topicConfigs = mutableListOf<GeneratedTopicConfig>()
-        val acls = mutableListOf<GeneratedTopicACL>()
+    fun getTopicConfigsForPreview(): PreviewTopicConfigurations {
+        return getTopicConfigsForPreview(getTopicConfigs())
+    }
 
-        getTopicConfigs().forEach { topicConfig ->
+    fun getTopicConfigsForPreview(topicConfigurations: List<TopicConfig>): PreviewTopicConfigurations {
+        val topicConfigs = mutableListOf<PreviewTopicConfiguration>()
+        val acls = mutableListOf<PreviewTopicACL>()
+
+        topicConfigurations.forEach { topicConfig ->
             val topicName = getTopicName(topicConfig)
-            topicConfigs.add(GeneratedTopicConfig(topicName, topicConfig.config))
+            topicConfigs.add(PreviewTopicConfiguration(topicName, topicConfig.config))
 
             val usersReadAccess = getUsersForProcessors(topicConfig.consumers)
             val usersWriteAccess = getUsersForProcessors(topicConfig.producers)
@@ -180,9 +184,9 @@ class Create(
                 UserConfig(it, operations.reversed())
             }
 
-            acls.add(GeneratedTopicACL(topicName, users))
+            acls.add(PreviewTopicACL(topicName, users))
         }
 
-        return GeneratedTopicDefinitions(topicConfigs, acls)
+        return PreviewTopicConfigurations(topicConfigs, acls)
     }
 }
