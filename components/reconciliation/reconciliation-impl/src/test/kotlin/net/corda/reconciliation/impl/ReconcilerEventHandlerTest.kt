@@ -56,30 +56,30 @@ internal class ReconcilerEventHandlerTest {
         assertEquals(updateIntervalEvent.intervalMs, reconcilerEventHandler.reconciliationIntervalMs)
     }
 
+    private val dbRecord = object : VersionedRecord<String, Int> {
+        override val version: Int
+            get() = 1
+        override val isDeleted: Boolean
+            get() = false
+        override val key: String
+            get() = "key1"
+        override val value: Int
+            get() = 1
+    }
+
+    private val kafkaRecord = object : VersionedRecord<String, Int> {
+        override val version: Int
+            get() = 1
+        override val isDeleted: Boolean
+            get() = false
+        override val key: String
+            get() = "key1"
+        override val value: Int
+            get() = 1
+    }
+
     @Test
     fun `on forceInitialReconciliation only the first reconciliation is force reconciled`() {
-        val dbRecord = object : VersionedRecord<String, Int> {
-            override val version: Int
-                get() = 1
-            override val isDeleted: Boolean
-                get() = false
-            override val key: String
-                get() = "key1"
-            override val value: Int
-                get() = 1
-        }
-
-        val kafkaRecord = object : VersionedRecord<String, Int> {
-            override val version: Int
-                get() = 1
-            override val isDeleted: Boolean
-                get() = false
-            override val key: String
-                get() = "key1"
-            override val value: Int
-                get() = 1
-        }
-
         val dbReader = mock<ReconcilerReader<String, Int>>().also {
             whenever(it.getAllVersionedRecords()).doAnswer {
                 listOf<VersionedRecord<String, Int>>(dbRecord).stream()
@@ -111,28 +111,6 @@ internal class ReconcilerEventHandlerTest {
 
     @Test
     fun `on not forceInitialReconciliation the first reconciliation is not forced reconciled`() {
-        val dbRecord = object : VersionedRecord<String, Int> {
-            override val version: Int
-                get() = 1
-            override val isDeleted: Boolean
-                get() = false
-            override val key: String
-                get() = "key1"
-            override val value: Int
-                get() = 1
-        }
-
-        val kafkaRecord = object : VersionedRecord<String, Int> {
-            override val version: Int
-                get() = 1
-            override val isDeleted: Boolean
-                get() = false
-            override val key: String
-                get() = "key1"
-            override val value: Int
-                get() = 1
-        }
-
         val dbReader = mock<ReconcilerReader<String, Int>>().also {
             whenever(it.getAllVersionedRecords()).doAnswer {
                 listOf<VersionedRecord<String, Int>>(dbRecord).stream()
