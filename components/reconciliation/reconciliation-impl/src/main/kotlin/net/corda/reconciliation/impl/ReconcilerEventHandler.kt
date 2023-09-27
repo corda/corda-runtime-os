@@ -27,7 +27,7 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
     keyClass: Class<K>,
     valueClass: Class<V>,
     var reconciliationIntervalMs: Long,
-    private val forceInitialReconciliation: Boolean = false,
+    private val forceInitialReconciliation: Boolean,
 ) : LifecycleEventHandler {
 
     val name = "${ReconcilerEventHandler::class.java.name}<${keyClass.name}, ${valueClass.name}>"
@@ -155,9 +155,7 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
             }
         }
 
-        if (firstRun) {
-            firstRun = false
-        }
+        firstRun = false
 
         return reconciledCount
     }

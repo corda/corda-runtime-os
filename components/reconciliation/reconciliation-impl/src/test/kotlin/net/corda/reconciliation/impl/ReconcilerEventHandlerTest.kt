@@ -26,7 +26,8 @@ internal class ReconcilerEventHandlerTest {
                 mock(),
                 String::class.java,
                 Int::class.java,
-                1000L
+                1000L,
+                forceInitialReconciliation = false,
             )
         Assertions.assertEquals(
             "${ReconcilerEventHandler::class.java.name}<${String::class.java.name}, ${Int::class.java.name}>",
@@ -43,7 +44,8 @@ internal class ReconcilerEventHandlerTest {
                 mock(),
                 String::class.java,
                 Int::class.java,
-                1000L
+                1000L,
+                forceInitialReconciliation = false,
             )
 
         val updateIntervalEvent = ReconcilerEventHandler.UpdateIntervalEvent(2000L)

@@ -15,7 +15,7 @@ internal class ReconcilerImpl<K : Any, V : Any>(
     valueClass: Class<V>,
     coordinatorFactory: LifecycleCoordinatorFactory,
     reconciliationIntervalMs: Long,
-    forceInitialReconciliation: Boolean = false,
+    forceInitialReconciliation: Boolean,
 ) : Reconciler {
 
     val name = "${ReconcilerImpl::class.java.name}<${keyClass.name}, ${valueClass.name}>"
