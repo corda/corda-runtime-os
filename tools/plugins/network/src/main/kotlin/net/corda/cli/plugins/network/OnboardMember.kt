@@ -30,19 +30,19 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_SIGNATU
         "Onboard a member"
     ]
 )
-class OnBoardMember : Runnable, BaseOnboard() {
+class OnboardMember : Runnable, BaseOnboard() {
     @Option(
-        names = ["--cpb-file"],
+        names = ["--cpb-file", "-b"],
         description = [
-            "Location of a CPB file (Use either cpb-file or cpi-hash).",
-            "The CPI will be signed with default options."
+            "Location of a CPB file (Use either --cpb-file or --cpi-hash).",
+            "The plugin will generate a CPI signed with default options."
         ]
     )
     var cpbFile: File? = null
 
     @Option(
         names = ["--role", "-r"],
-        description = ["Member role, if any. It is not mandatory to provide a role. Multiple roles can be specified"],
+        description = ["Member role, if any. Multiple roles may be specified"],
     )
     var roles: Set<MemberRole> = emptySet()
 
@@ -54,7 +54,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
     var customProperties: Map<String, String> = emptyMap()
 
     @Option(
-        names = ["--group-policy-file"],
+        names = ["--group-policy-file", "-g"],
         description = [
             "Location of a group policy file (default to ~/.corda/gp/groupPolicy.json).",
             "Relevant only if cpb-file is used"
@@ -64,19 +64,19 @@ class OnBoardMember : Runnable, BaseOnboard() {
         File(File(File(File(System.getProperty("user.home")), ".corda"), "gp"), "groupPolicy.json")
 
     @Option(
-        names = ["--cpi-hash"],
-        description = ["The CPI hash (Use either cpb-file or cpi-hash)."]
+        names = ["--cpi-hash", "-h"],
+        description = ["The CPI hash of a previously uploaded CPI (use either --cpb-file or --cpi-hash)."]
     )
     var cpiHash: String? = null
 
     @Option(
-        names = ["--pre-auth-token"],
+        names = ["--pre-auth-token", "-a"],
         description = ["Pre-auth token to use for registration."]
     )
     var preAuthToken: String? = null
 
     @Option(
-        names = ["--wait"],
+        names = ["--wait", "-w"],
         description = ["Wait until member gets approved/declined. False, by default."]
     )
     var waitForFinalStatus: Boolean = false
@@ -245,7 +245,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
 
     override fun run() {
         verifyAndPrintError {
-            println("On-boarding member $name")
+            println("Onboarding member '$name'.")
 
             configureGateway()
 
@@ -253,9 +253,9 @@ class OnBoardMember : Runnable, BaseOnboard() {
 
             if (mtls) {
                 println(
-                    "Using $certificateSubject as client certificate. " +
-                            "The onboarding will fail until the the subject is added to the MGM's allow list. " +
-                            "You can do that using the allowClientCertificate command."
+                    "Using '$certificateSubject' as client certificate. " +
+                            "Onboarding will fail until the the subject is added to the MGM's allowed list. " +
+                            "See command: 'allowClientCertificate'."
                 )
             }
 
@@ -267,7 +267,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
             register(waitForFinalStatus)
 
             if (waitForFinalStatus) {
-                println("Member $name was onboarded.")
+                println("Member '$name' was onboarded.")
             } else {
                 println(
                     "Registration request has been submitted. Wait for MGM approval to finalize registration. " +

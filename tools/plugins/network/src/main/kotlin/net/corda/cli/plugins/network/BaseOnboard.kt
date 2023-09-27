@@ -112,19 +112,13 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     lateinit var name: String
 
     @Option(
-        names = ["--ca"],
-        description = ["The CA location (default to ~/.corda/ca)"]
-    )
-    var caHome: File = File(File(File(System.getProperty("user.home")), ".corda"), "ca")
-
-    @Option(
-        names = ["--mtls", "--mutual-tls", "-m"],
+        names = ["--mutual-tls", "-m"],
         description = ["Enable mutual TLS"]
     )
     var mtls: Boolean = false
 
     @Option(
-        names = ["--tls-certificate-subject"],
+        names = ["--tls-certificate-subject", "-c"],
         description = [
             "The TLS certificate subject. Leave empty to use random certificate subject." +
                     "Will only be used on the first onboard to the cluster."
@@ -133,7 +127,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     var tlsCertificateSubject: String? = null
 
     @Option(
-        names = ["--p2p-gateway-url"],
+        names = ["--p2p-gateway-url", "-g"],
         description = ["P2P Gateway URL. Multiple URLs may be provided. Defaults to https://localhost:8080."]
     )
     var p2pGatewayUrls: List<String> = listOf("https://localhost:8080")
@@ -141,6 +135,8 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     protected val json by lazy {
         ObjectMapper()
     }
+
+    private val caHome: File = File(File(File(System.getProperty("user.home")), ".corda"), "ca")
 
     internal class OnboardException(message: String) : Exception(message)
 

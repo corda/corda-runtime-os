@@ -23,7 +23,7 @@ class ExportGroupPolicy : Runnable, RestCommand() {
     @Option(
         names = ["-h", "--holding-identity-short-hash"],
         arity = "1",
-        description = ["Short hash of the holding identity to be checked."]
+        description = ["The holding identity ID of the MGM."]
     )
     var holdingIdentityShortHash: String? = null
 
