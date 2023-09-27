@@ -100,7 +100,7 @@ internal class ReconcilerEventHandlerTest {
                 keyClass = String::class.java,
                 valueClass = Int::class.java,
                 10L,
-                forceInitialReconciliation = true
+                forceInitialReconciliation = true,
             )
 
         val reconciledOnFirstReconciliation = reconcilerEventHandler.reconcile()
@@ -131,7 +131,7 @@ internal class ReconcilerEventHandlerTest {
                 keyClass = String::class.java,
                 valueClass = Int::class.java,
                 10L,
-                forceInitialReconciliation = false
+                forceInitialReconciliation = false,
             )
 
         val reconciledOnFirstReconciliation = reconcilerEventHandler.reconcile()
