@@ -75,10 +75,10 @@ internal class MediatorTaskManager<K : Any, S : Any, E : Any>(
      */
     fun createMsgProcessorTasks(
         invalidResults: List<ProcessorTask.Result<K, S, E>>,
-        persistedStates: Map<String, State>,
+        persistedStates: Map<String, State?>,
     ): List<ProcessorTask<K, S, E>> {
         return invalidResults.map {
-            it.processorTask.copy(persistedState = persistedStates[it.processorTask.key]!!)
+            it.processorTask.copy(persistedState = persistedStates[it.processorTask.key])
         }
     }
 

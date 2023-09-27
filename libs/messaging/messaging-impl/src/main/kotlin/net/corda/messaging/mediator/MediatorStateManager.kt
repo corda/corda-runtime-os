@@ -42,19 +42,27 @@ class MediatorStateManager<K : Any, S : Any, E : Any>(
      * @return The latest states in case persistence failed due to conflict (state being updated by another process in
      * the meanwhile).
      */
-    fun persistStates(processorTaskResults: Collection<ProcessorTask.Result<K, S, E>>): Map<String, State> {
+    fun persistStates(processorTaskResults: Collection<ProcessorTask.Result<K, S, E>>): Map<String, State?> {
         val states = processorTaskResults.mapNotNull { result ->
             result.updatedState
         }
-        val (newStates, existingStates) = states.partition { it.version == State.INITIAL_VERSION }
-        val invalidStates = mutableMapOf<String, State>()
+        val (newStates, existingStates) = states.partition { state ->
+            state.version == State.INITIAL_VERSION
+        }
+        val latestValuesForFailedStates = mutableMapOf<String, State?>()
         if (newStates.isNotEmpty()) {
-            invalidStates.putAll(stateManager.update(newStates))
+            val failedStatesKeys = stateManager.create(newStates).keys
+            if (failedStatesKeys.isNotEmpty()) {
+                val latestStatesValues = stateManager.get(failedStatesKeys)
+                latestValuesForFailedStates.putAll(failedStatesKeys.associateWith { key ->
+                    latestStatesValues[key]
+                })
+            }
         }
         if (existingStates.isNotEmpty()) {
-            invalidStates.putAll(stateManager.update(existingStates))
+            latestValuesForFailedStates.putAll(stateManager.update(existingStates))
         }
-        return invalidStates
+        return latestValuesForFailedStates
     }
 
     /**
