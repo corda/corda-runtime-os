@@ -71,7 +71,8 @@ class InteropIdentityRegistryServiceImplTest {
             facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
-            endpointProtocol = "https://alice.corda5.r3.com:10000"
+            endpointProtocol = "https://alice.corda5.r3.com:10000",
+            enabled = true
         )
 
         val interopIdentity2 = InteropIdentity(
@@ -81,7 +82,8 @@ class InteropIdentityRegistryServiceImplTest {
             facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
-            endpointProtocol = "https://bob.corda5.r3.com:10000"
+            endpointProtocol = "https://bob.corda5.r3.com:10000",
+            enabled = true
         )
 
         cache.putInteropIdentity(shortHash1, interopIdentity1)
