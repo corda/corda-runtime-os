@@ -300,7 +300,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         eventConsumer.poll(PAUSED_POLL_TIMEOUT).forEach { event ->
             // Should not happen, the warning is left in place for easier troubleshooting in case it does.
             log.warn("Polling from paused eventConsumer has lost event with key: ${event.key}, this will likely " +
-                    "cause execution problems for events with this id")
+                             "cause execution problems for events with this id")
         }
 
         // Rebalance occurred: give up, nothing can be assumed at this point.
@@ -364,9 +364,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    private val updatedStatesForPosting = mutableListOf<Map<K, S?>>()
-
-    override fun updateInMemoryStatePostCommit(updatedStates: Map<Int, MutableMap<K, S?>>, clock: Clock) {
+    override fun updateInMemoryStatePostCommit(updatedStates: MutableMap<Int, MutableMap<K, S?>>, clock: Clock) {
         val updatedStatesByKey = mutableMapOf<K, S?>()
         updatedStates.forEach { (partitionId, states) ->
             for (entry in states) {
@@ -376,7 +374,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                 //will never be null, created on assignment in rebalance listener
                 val currentStatesByPartition = currentStates[partitionId]
                     ?: throw CordaMessageAPIFatalException("Current State map for " +
-                            "group ${config.group} on topic $stateTopic[$partitionId] is null.")
+                                                                   "group ${config.group} on topic $stateTopic[$partitionId] is null.")
                 updatedStatesByKey[key] = value
                 if (value != null) {
                     currentStatesByPartition[key] = Pair(clock.instant().toEpochMilli(), value)
@@ -385,23 +383,8 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                 }
             }
         }
-        synchronized(this) {
-            updatedStatesForPosting.add(updatedStatesByKey)
-        }
-    }
 
-    override fun postUpdates() {
-        val states = synchronized(this) {
-            updatedStatesForPosting.toList().also {
-                updatedStatesForPosting.clear()
-            }
-        }
-        // Rebalancing is done as a side effect of poll, therefore we must fire off all callbacks in the same thread
-        // that we poll in. This class doesn't have direct knowledge of that, so we expose this function to the public
-        // api in order that the client can call it itself
-        states.forEach {
-            stateAndEventListener?.onPostCommit(it)
-        }
+        stateAndEventListener?.onPostCommit(updatedStatesByKey)
     }
 
     override fun resetPollInterval() {

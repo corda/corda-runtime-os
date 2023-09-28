@@ -45,29 +45,29 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
 
     @Suspendable
     override fun verify(transaction: UtxoLedgerTransaction) {
-        val startTime = System.nanoTime()
+        recordSuspendable(::transactionVerificationFlowTimer) @Suspendable {
 
             val signedGroupParameters = transaction.groupParameters as SignedGroupParameters
             signedGroupParametersVerifier.verify(transaction, signedGroupParameters)
             verifyNotaryAllowed(transaction, signedGroupParameters)
 
-        val verificationResult = externalEventExecutor.execute(
-            TransactionVerificationExternalEventFactory::class.java,
-            TransactionVerificationParameters(
-                serialize(transaction.toContainer()),
-                transaction.getCpkMetadata()
+            val verificationResult = externalEventExecutor.execute(
+                TransactionVerificationExternalEventFactory::class.java,
+                TransactionVerificationParameters(
+                    serialize(transaction.toContainer()),
+                    transaction.getCpkMetadata()
+                )
             )
-        )
 
-        if (verificationResult.status != TransactionVerificationStatus.VERIFIED) {
-            throw TransactionVerificationException(
-                transaction.id,
-                verificationResult.status,
-                verificationResult.errorType,
-                verificationResult.errorMessage
-            )
+            if (verificationResult.status != TransactionVerificationStatus.VERIFIED) {
+                throw TransactionVerificationException(
+                    transaction.id,
+                    verificationResult.status,
+                    verificationResult.errorType,
+                    verificationResult.errorMessage
+                )
+            }
         }
-        transactionVerificationFlowTimer().record(Duration.ofNanos(System.nanoTime() - startTime))
     }
 
     private fun UtxoLedgerTransaction.toContainer() =
