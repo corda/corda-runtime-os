@@ -16,6 +16,7 @@ dependencies {
     implementation project(':libs:utilities')
     implementation project(":components:flow:flow-mapper-impl")
     implementation project(":components:flow:flow-mapper")
+    implementation project(":components:membership:locally-hosted-identities-service")
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
@@ -37,7 +38,6 @@ dependencies {
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:flow:flow-utilities")
 
-    integrationTestImplementation project(":components:membership:locally-hosted-identities-service")
     integrationTestImplementation project(":testing:db-message-bus-testkit")
     integrationTestImplementation project(":libs:flows:flow-utils")
     integrationTestImplementation project(":libs:virtual-node:virtual-node-info")
