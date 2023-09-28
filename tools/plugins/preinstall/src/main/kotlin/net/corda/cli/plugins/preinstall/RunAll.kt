@@ -3,7 +3,7 @@ package net.corda.cli.plugins.preinstall
 import picocli.CommandLine
 import java.util.concurrent.Callable
 
-@CommandLine.Command(name = "run-all", description = ["Runs all preinstall checks."])
+@CommandLine.Command(name = "run-all", description = ["Runs all preinstall checks."], mixinStandardHelpOptions = true)
 class RunAll : Callable<Int> {
 
     @CommandLine.Parameters(

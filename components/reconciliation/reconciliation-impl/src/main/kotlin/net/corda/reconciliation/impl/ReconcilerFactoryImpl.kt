@@ -20,7 +20,17 @@ class ReconcilerFactoryImpl @Activate constructor(
         writer: ReconcilerWriter<K, V>,
         keyClass: Class<K>,
         valueClass: Class<V>,
-        reconciliationIntervalMs: Long
+        reconciliationIntervalMs: Long,
+        forceInitialReconciliation: Boolean,
     ): Reconciler =
-        ReconcilerImpl(dbReader, kafkaReader, writer, keyClass, valueClass, coordinatorFactory, reconciliationIntervalMs)
+        ReconcilerImpl(
+            dbReader,
+            kafkaReader,
+            writer,
+            keyClass,
+            valueClass,
+            coordinatorFactory,
+            reconciliationIntervalMs,
+            forceInitialReconciliation,
+        )
 }
