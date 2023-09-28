@@ -1,6 +1,7 @@
 package net.corda.messaging.subscription
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.deadletter.StateAndEventDeadLetterRecord
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -30,11 +31,13 @@ import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.getDLQTopic
 import net.corda.schema.Schemas.getStateAndEventStateTopic
 import net.corda.utilities.debug
+import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.net.http.HttpClient
 import java.nio.ByteBuffer
 import java.time.Clock
 import java.time.Duration
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
@@ -49,10 +52,18 @@ internal class FlowStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val chunkSerializerService: ChunkSerializerService,
     private val stateAndEventListener: StateAndEventListener<K, S>? = null,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val clock: Clock = Clock.systemUTC(),
 ) : StateAndEventSubscription<K, S, E> {
 
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.clientId}")
+
+    private var nullableProducer: CordaProducer? = null
+    private var nullableStateAndEventConsumer: StateAndEventConsumer<K, S, E>? = null
+    private var nullableEventConsumer: CordaConsumer<K, E>? = null
+    private var threadLooper =
+        ThreadLooper(log, config, lifecycleCoordinatorFactory, "state/event processing thread", ::runConsumeLoop)
 
     private val processingThreads = ThreadPoolExecutor(
         8,
@@ -62,12 +73,6 @@ internal class FlowStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         LinkedBlockingQueue(),
         ThreadFactoryBuilder().setNameFormat("state-and-event-processing-thread-%d").setDaemon(false).build()
     )
-
-    private var nullableProducer: CordaProducer? = null
-    private var nullableStateAndEventConsumer: StateAndEventConsumer<K, S, E>? = null
-    private var nullableEventConsumer: CordaConsumer<K, E>? = null
-    private var threadLooper =
-        ThreadLooper(log, config, lifecycleCoordinatorFactory, "state/event processing thread", ::runConsumeLoop)
 
     private val producer: CordaProducer
         get() {
@@ -95,13 +100,20 @@ internal class FlowStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val processorMeter = CordaMetrics.Metric.Messaging.MessageProcessorTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
-        .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.ON_NEXT_OPERATION)
+        .withTag(CordaMetrics.Tag.OperationName, MetricsConstants.BATCH_PROCESS_OPERATION)
         .build()
 
     private val commitTimer = CordaMetrics.Metric.Messaging.MessageCommitTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
         .build()
+
+    private val httpClient: HttpClient = HttpClient.newBuilder()
+        .connectTimeout(java.time.Duration.ofSeconds(10))
+        .build()
+
+    private val avroSerializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
+    private val avroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
 
     /**
      * Is the subscription running.
@@ -235,13 +247,9 @@ internal class FlowStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
      */
     private fun tryProcessBatchOfEvents(events: List<CordaConsumerRecord<K, E>>): Boolean {
         val outputRecords = mutableListOf<Record<*, *>>()
-//        val updatedStates: MutableMap<Int, MutableMap<K, S?>> = ConcurrentHashMap()
-        // maps shouldn't need to be concurrent since we never clash on keys
-        // seems that you can;t have null in concurrent map so gone back to mutable map
         val updatedStates: MutableMap<Int, MutableMap<K, S?>> = mutableMapOf()
         // Pre-populate the updated states with the current in-memory state.
         events.forEach {
-//            val partitionMap = updatedStates.computeIfAbsent(it.partition) { ConcurrentHashMap() }
             val partitionMap = updatedStates.computeIfAbsent(it.partition) { mutableMapOf() }
             partitionMap.computeIfAbsent(it.key) { key ->
                 stateAndEventConsumer.getInMemoryStateValue(key)
@@ -259,8 +267,11 @@ internal class FlowStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 )
             }
         } catch (ex: StateAndEventConsumer.RebalanceInProgressException) {
-            log.warn ("Abandoning processing of events(keys: ${events.joinToString { it.key.toString() }}, " +
-                    "size: ${events.size}) due to rebalance", ex)
+            log.warn(
+                "Abandoning processing of events(keys: ${events.joinToString { it.key.toString() }}, " +
+                        "size: ${events.size}) due to rebalance",
+                ex
+            )
             return true
         }
 

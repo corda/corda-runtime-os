@@ -161,6 +161,7 @@ class CordaSubscriptionFactory @Activate constructor(
             lifecycleCoordinatorFactory,
             messagingChunkFactory.createChunkSerializerService(messagingConfig.getLong(MAX_ALLOWED_MSG_SIZE)),
             stateAndEventListener,
+            cordaAvroSerializationFactory
         )
     }
 
