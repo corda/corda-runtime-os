@@ -19,7 +19,6 @@ dependencies {
                 strictly slf4jV2Version
             }
         }
-
     }
 
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
