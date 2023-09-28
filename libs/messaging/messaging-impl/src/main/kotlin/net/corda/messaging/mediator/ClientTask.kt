@@ -4,18 +4,19 @@ import kotlinx.coroutines.runBlocking
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
+import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_ENDPOINT
 import java.util.concurrent.Callable
 
 /**
  * [ClientTask] sends a [MediatorMessage] to [MessagingClient] selected by [MessageRouter].
  */
-class ClientTask<K: Any, S: Any, E: Any>(
+class ClientTask<K : Any, S : Any, E : Any>(
     private val message: MediatorMessage<Any>,
     private val messageRouter: MessageRouter,
     val processorTask: ProcessorTask<K, S, E>,
-): Callable<ClientTask.Result<K, S, E>> {
+) : Callable<ClientTask.Result<K, S, E>> {
 
-    class Result<K: Any, S: Any, E: Any>(
+    class Result<K : Any, S : Any, E : Any>(
         val clientTask: ClientTask<K, S, E>,
         val replyMessage: MediatorMessage<E>?,
     ) {
@@ -24,9 +25,13 @@ class ClientTask<K: Any, S: Any, E: Any>(
 
     override fun call(): Result<K, S, E> {
         val destination = messageRouter.getDestination(message)
+
         @Suppress("UNCHECKED_CAST")
         val reply = runBlocking {
-            with(destination) { client.send(message, endpoint).await() }
+            with(destination) {
+                message.addProperty(MSG_PROP_ENDPOINT, endpoint)
+                client.send(message).await()
+            }
         } as MediatorMessage<E>?
         return Result(this, reply)
     }

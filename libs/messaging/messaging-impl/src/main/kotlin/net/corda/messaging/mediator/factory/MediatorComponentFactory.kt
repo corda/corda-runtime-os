@@ -1,4 +1,4 @@
-package net.corda.messaging.mediator
+package net.corda.messaging.mediator.factory
 
 import net.corda.messaging.api.mediator.MediatorConsumer
 import net.corda.messaging.api.mediator.MessageRouter
@@ -18,7 +18,7 @@ internal class MediatorComponentFactory<K : Any, S : Any, E : Any>(
     private val consumerFactories: Collection<MediatorConsumerFactory>,
     private val clientFactories: Collection<MessagingClientFactory>,
     private val messageRouterFactory: MessageRouterFactory,
-    ) {
+) {
 
     /**
      * Creates message consumers.
@@ -29,7 +29,7 @@ internal class MediatorComponentFactory<K : Any, S : Any, E : Any>(
     fun createConsumers(
         onSerializationError: (ByteArray) -> Unit
     ): List<MediatorConsumer<K, E>> {
-        check (consumerFactories.isNotEmpty()) {
+        check(consumerFactories.isNotEmpty()) {
             "None consumer factory set in configuration"
         }
         return consumerFactories.map { consumerFactory ->
@@ -52,7 +52,7 @@ internal class MediatorComponentFactory<K : Any, S : Any, E : Any>(
     fun createClients(
         onSerializationError: (ByteArray) -> Unit
     ): List<MessagingClient> {
-        check (clientFactories.isNotEmpty()) {
+        check(clientFactories.isNotEmpty()) {
             "None client factory set in configuration"
         }
         return clientFactories.map { clientFactory ->

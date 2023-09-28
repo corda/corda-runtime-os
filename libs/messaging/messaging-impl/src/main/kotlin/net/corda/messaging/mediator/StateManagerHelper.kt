@@ -9,7 +9,7 @@ import net.corda.libs.statemanager.api.StateManager
 /**
  * Helper for working with [StateManager], used by [MultiSourceEventMediatorImpl].
  */
-class MediatorStateManager<K : Any, S : Any, E : Any>(
+class StateManagerHelper<K : Any, S : Any, E : Any>(
     private val stateManager: StateManager,
     private val serializer: CordaAvroSerializer<Any>,
     private val stateDeserializer: CordaAvroDeserializer<S>,

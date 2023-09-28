@@ -13,15 +13,15 @@ import java.util.concurrent.Callable
  * event. Result of processing are output events and final updated state.
  */
 @Suppress("LongParameterList")
-data class ProcessorTask<K: Any, S: Any, E: Any>(
+data class ProcessorTask<K : Any, S : Any, E : Any>(
     val key: String,
     val persistedState: State?,
     val events: Collection<CordaConsumerRecord<K, E>>,
     private val processor: StateAndEventProcessor<K, S, E>,
-    private val mediatorStateManager: MediatorStateManager<K, S, E>,
-): Callable<ProcessorTask.Result<K, S, E>> {
+    private val stateManagerHelper: StateManagerHelper<K, S, E>,
+) : Callable<ProcessorTask.Result<K, S, E>> {
 
-    class Result<K: Any, S: Any, E: Any>(
+    class Result<K : Any, S : Any, E : Any>(
         val processorTask: ProcessorTask<K, S, E>,
         val outputEvents: List<Record<*, *>>,
         val updatedState: State?,
@@ -30,7 +30,7 @@ data class ProcessorTask<K: Any, S: Any, E: Any>(
     }
 
     override fun call(): Result<K, S, E> {
-        var stateValue = mediatorStateManager.deserializeValue(persistedState)
+        var stateValue = stateManagerHelper.deserializeValue(persistedState)
 
         val outputEvents = events.map { event ->
             val response = processor.onNext(stateValue, event.toRecord())
@@ -38,7 +38,7 @@ data class ProcessorTask<K: Any, S: Any, E: Any>(
             response.responseEvents
         }.flatten()
 
-        val updatedState = mediatorStateManager.createOrUpdateState(
+        val updatedState = stateManagerHelper.createOrUpdateState(
             key,
             persistedState,
             stateValue

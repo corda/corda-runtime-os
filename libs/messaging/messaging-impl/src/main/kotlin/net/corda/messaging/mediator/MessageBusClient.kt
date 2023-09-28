@@ -18,9 +18,9 @@ class MessageBusClient(
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun send(message: MediatorMessage<*>, endpoint: String): Deferred<MediatorMessage<*>?> =
+    override fun send(message: MediatorMessage<*>): Deferred<MediatorMessage<*>?> =
         CompletableDeferred<MediatorMessage<*>?>().apply {
-            producer.send(message.toCordaProducerRecord(endpoint)) { ex ->
+            producer.send(message.toCordaProducerRecord()) { ex ->
                 if (ex != null) {
                     completeExceptionally(ex)
                 } else {
@@ -40,9 +40,9 @@ class MessageBusClient(
     }
 }
 
-private fun MediatorMessage<*>.toCordaProducerRecord(endpoint: String) : CordaProducerRecord<*, *> {
+private fun MediatorMessage<*>.toCordaProducerRecord() : CordaProducerRecord<*, *> {
     return CordaProducerRecord(
-        topic = endpoint,
+        topic = this.getProperty<String>("topic"),
         key = this.getProperty("key"),
         value = this.payload,
         headers = this.getProperty<Headers>("headers"),

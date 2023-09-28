@@ -13,9 +13,9 @@ import java.time.Instant
 /**
  * Helper that creates and executes various tasks used by [MultiSourceEventMediatorImpl].
  */
-internal class MediatorTaskManager<K : Any, S : Any, E : Any>(
+internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
     private val taskManager: TaskManager,
-    private val stateManager: MediatorStateManager<K, S, E>,
+    private val stateManager: StateManagerHelper<K, S, E>,
 ) {
 
     /**
