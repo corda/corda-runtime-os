@@ -175,6 +175,6 @@ interface SubscriptionFactory {
         subscriptionConfig: SubscriptionConfig,
         processor: StateAndEventProcessor<K, S, E>,
         messagingConfig: SmartConfig,
-        stateAndEventListener: StateAndEventListener<K, S>?
+        stateAndEventListener: StateAndEventListener<K, S>? = null
     ): StateAndEventSubscription<K, S, E>
 }
