@@ -15,7 +15,6 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.impl.registration.VerificationResponseKeys.FAILURE_REASONS
 import net.corda.membership.impl.registration.VerificationResponseKeys.VERIFIED
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
-import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
