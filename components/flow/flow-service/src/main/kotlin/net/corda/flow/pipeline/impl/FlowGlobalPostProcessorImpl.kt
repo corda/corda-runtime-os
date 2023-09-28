@@ -14,6 +14,7 @@ import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
+import net.corda.schema.configuration.FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW
 import net.corda.schema.configuration.FlowConfig.SESSION_FLOW_CLEANUP_TIME
 import net.corda.session.manager.SessionManager
 import net.corda.utilities.debug
@@ -22,6 +23,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.time.Duration
 import java.time.Instant
 
 @Component(service = [FlowGlobalPostProcessor::class])
@@ -147,15 +149,15 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
     }
 
     /**
-     * Check to see if any external events needs to be sent or resent due to no response being received within a given time period.
+     * Check to see if any external events needs to be sent or resent.
      */
     private fun getExternalEvent(context: FlowEventContext<Any>, now: Instant): List<Record<*, *>> {
-        val config = context.flowConfig
         val externalEventState = context.checkpoint.externalEventState
         return if (externalEventState == null) {
             listOf()
         } else {
-            externalEventManager.getEventToSend(externalEventState, now, config)
+            val retryWindow = context.flowConfig.getLong(EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW)
+            externalEventManager.getEventToSend(externalEventState, now, Duration.ofMillis(retryWindow))
                 .let { (updatedExternalEventState, record) ->
                     context.checkpoint.externalEventState = updatedExternalEventState
                     if (record != null) {

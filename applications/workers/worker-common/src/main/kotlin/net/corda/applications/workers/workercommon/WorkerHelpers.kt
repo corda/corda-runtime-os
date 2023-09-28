@@ -20,7 +20,6 @@ import org.slf4j.Logger
 import picocli.CommandLine
 import java.io.InputStream
 import java.lang.management.ManagementFactory
-import net.corda.web.api.WebServer
 import kotlin.math.absoluteValue
 import kotlin.random.Random
 
@@ -231,21 +230,6 @@ class WorkerHelpers {
                     "Failed to find resource $resource on worker startup."
                 )
             return url.openStream()
-        }
-
-        /** Sets up the [workerMonitor] based on the [params]. */
-        fun setupMonitor(workerMonitor: WorkerMonitor, params: DefaultWorkerParams, workerType: String) {
-            if (!params.disableWorkerMonitor) {
-                workerMonitor.registerEndpoints(workerType)
-            }
-        }
-
-        fun WebServer.setupWebserver(params: DefaultWorkerParams) {
-            this.start(params.workerMonitorPort)
-        }
-
-        fun startBanner() {
-
         }
 
         /**

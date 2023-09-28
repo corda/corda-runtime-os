@@ -55,8 +55,7 @@ class TokenCacheEventProcessorFactoryImpl @Activate constructor(
             virtualNodeInfoService,
             dbConnectionManager,
             jpaEntitiesRegistry,
-            utxoTokenRepository,
-            serviceConfiguration
+            utxoTokenRepository
         )
 
         val eventHandlerMap = mapOf<Class<*>, TokenEventHandler<in TokenEvent>>(
@@ -64,7 +63,8 @@ class TokenCacheEventProcessorFactoryImpl @Activate constructor(
                 TokenClaimQueryEventHandler(
                     tokenFilterStrategy,
                     recordFactory,
-                    availableTokenService
+                    availableTokenService,
+                    serviceConfiguration
                 )
             ),
             createHandler(TokenClaimReleaseEventHandler(recordFactory)),

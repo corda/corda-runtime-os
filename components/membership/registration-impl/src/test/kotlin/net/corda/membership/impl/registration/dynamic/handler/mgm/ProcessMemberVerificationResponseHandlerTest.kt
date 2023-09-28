@@ -484,7 +484,7 @@ class ProcessMemberVerificationResponseHandlerTest {
 
             val mockedBuilder = Mockito.mockStatic(VersionedMessageBuilder::class.java).also {
                 it.`when`<VersionedMessageBuilder> {
-                    VersionedMessageBuilder.retrieveRegistrationStatusMessage(any(), any(), any())
+                    VersionedMessageBuilder.retrieveRegistrationStatusMessage(any(), any(), any(), any())
                 } doReturn null
             }
 

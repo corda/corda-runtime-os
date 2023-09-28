@@ -63,7 +63,8 @@ class ConfigReconciler(
                 writer = reconcilerWriter,
                 keyClass = String::class.java,
                 valueClass = Configuration::class.java,
-                reconciliationIntervalMs = intervalMillis
+                reconciliationIntervalMs = intervalMillis,
+                forceInitialReconciliation = true,
             ).also { it.start() }
         } else {
             log.info("Updating Config ${Reconciler::class.java.name}")

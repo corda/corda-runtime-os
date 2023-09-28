@@ -171,7 +171,8 @@ class ApproveRegistrationHandlerTest {
                 eq(
                     SetOwnRegistrationStatus(
                         registrationId,
-                        RegistrationStatus.APPROVED
+                        RegistrationStatus.APPROVED,
+                        null
                     )
                 ),
                 anyOrNull(),
@@ -257,7 +258,7 @@ class ApproveRegistrationHandlerTest {
     fun `invoke does not send registration status update message when status cannot be retrieved`() {
         val mockedBuilder = Mockito.mockStatic(VersionedMessageBuilder::class.java).also {
             it.`when`<VersionedMessageBuilder> {
-                VersionedMessageBuilder.retrieveRegistrationStatusMessage(any(), any(), any())
+                VersionedMessageBuilder.retrieveRegistrationStatusMessage(any(), any(), any(), any())
             } doReturn null
         }
 
