@@ -285,7 +285,6 @@ class TransactionBackchainReceiverFlowV1Test {
      */
     @Test
     fun `dependency of dependency of transaction will be fetched if it is in the database but group params not known`() {
-        // Have a transaction with TX_ID_2 that is unverified, but it's in the database and has dependencies
         whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
             .thenReturn(mapOf(
                 TX_ID_1 to UNVERIFIED,
@@ -395,7 +394,6 @@ class TransactionBackchainReceiverFlowV1Test {
      */
     @Test
     fun `transaction will not be requested if it is present in the database (UNVERIFIED) but their dependencies will be`() {
-        // Have a transaction with TX_ID_2 that is unverified, but it's in the database and has dependencies
         whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
             .thenReturn(mapOf(TX_ID_2 to UNVERIFIED))
 
@@ -446,7 +444,6 @@ class TransactionBackchainReceiverFlowV1Test {
      */
     @Test
     fun `flow will throw exception if any of the transactions are invalid`() {
-        // Have a transaction with TX_ID_2 that is unverified, but it's in the database and has dependencies
         whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
             .thenReturn(mapOf(
                 TX_ID_2 to UNVERIFIED,
@@ -480,7 +477,6 @@ class TransactionBackchainReceiverFlowV1Test {
      */
     @Test
     fun `dependency of dependency of transaction will not be fetched if it is in the database`() {
-        // Have a transaction with TX_ID_2 that is unverified, but it's in the database and has dependencies
         whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
             .thenReturn(mapOf(
                 TX_ID_1 to UNVERIFIED,
@@ -557,7 +553,6 @@ class TransactionBackchainReceiverFlowV1Test {
      */
     @Test
     fun `dependency of dependency of transaction will be fetched if it is not in the database`() {
-        // Have a transaction with TX_ID_2 that is unverified, but it's in the database and has dependencies
         whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
             .thenReturn(mapOf(
                 TX_ID_1 to UNVERIFIED,
@@ -638,7 +633,6 @@ class TransactionBackchainReceiverFlowV1Test {
      */
     @Test
     fun `if transaction status changed to invalid from unverified exception will be thrown`() {
-        // Have a transaction with TX_ID_2 that is unverified, but it's in the database and has dependencies
         whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
             .thenReturn(mapOf(
                 TX_ID_1 to UNVERIFIED,
@@ -673,7 +667,6 @@ class TransactionBackchainReceiverFlowV1Test {
      */
     @Test
     fun `if transaction status changed to verified from unverified it will not be retrieved`() {
-        // Have a transaction with TX_ID_2 that is unverified, but it's in the database and has dependencies
         whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
             .thenReturn(mapOf(
                 TX_ID_1 to UNVERIFIED,
