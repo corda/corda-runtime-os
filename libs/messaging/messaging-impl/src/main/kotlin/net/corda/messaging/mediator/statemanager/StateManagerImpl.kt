@@ -1,17 +1,15 @@
 package net.corda.messaging.mediator.statemanager
 
 import net.corda.libs.statemanager.api.IntervalFilter
-import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.SingleKeyFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
-import java.time.Instant
 
 // TODO This is used temporarily until State Manager implementation is finished
 @Component(service = [StateManager::class])
-class StateManagerImpl  @Activate constructor() : StateManager {
+class StateManagerImpl @Activate constructor() : StateManager {
     private val storage = mutableMapOf<String, State>()
 
     override fun create(states: Collection<State>): Map<String, Exception> {
