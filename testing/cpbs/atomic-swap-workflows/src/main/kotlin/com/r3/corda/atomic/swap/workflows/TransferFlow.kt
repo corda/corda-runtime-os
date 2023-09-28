@@ -5,6 +5,7 @@ import com.r3.corda.atomic.swap.contracts.LockContract
 import com.r3.corda.atomic.swap.states.Asset
 import com.r3.corda.atomic.swap.states.LockState
 import net.corda.v5.application.crypto.CompositeKeyGenerator
+import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
@@ -18,6 +19,7 @@ import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.membership.MemberInfo
 import org.slf4j.LoggerFactory
+import java.security.PublicKey
 import java.time.Duration
 import java.time.Instant
 
@@ -48,7 +50,11 @@ class TransferFlow : ClientStartableFlow {
     @CordaInject
     lateinit var compositeKeyGenerator: CompositeKeyGenerator
 
+    @CordaInject
+    lateinit var signingService: SigningService
+
     @Suspendable
+    @Suppress("UNCHECKED_CAST")
     override fun call(requestBody: ClientRequestBody): String {
         log.info("TransferFlow.call() called")
 
@@ -93,6 +99,11 @@ class TransferFlow : ClientStartableFlow {
                 listOf(assetWithCompositeKey.owner)
             )
 
+            val myKeys = signingService.findMySigningKeys((lockState.participants + outputState.participants).toSet()).flatMap { it.toPair().toList() }
+            val keysToAddToSignatories = (lockState.participants + myKeys).filterNotNull().toSet()
+
+            log.info("KEYS PLEASE: $keysToAddToSignatories")
+
             val txBuilder = ledgerService.createTransactionBuilder()
 
                 .setNotary(stateAndRef.state.notaryName)
@@ -102,11 +113,13 @@ class TransferFlow : ClientStartableFlow {
                 .addOutputState(outputState)
                 .addCommand(LockContract.LockCommands.Lock())
                 .addCommand(AssetContract.AssetCommands.Transfer())
-                .addSignatories(lockState.participants)
-                .addSignatories(outputState.participants)
+//                .addSignatories(lockState.participants)
+//                .addSignatories(outputState.participants)
+                .addSignatories(keysToAddToSignatories)
 
 
             val signedTransaction = txBuilder.toSignedTransaction()
+//            val fullySignedTx = flowEngine.subFlow(CollectSignaturesForCompositeKeyFlow(signedTransaction., listOf(counterParty)))
 
             val transactionId =
                 flowEngine.subFlow(FinalizeFlow(signedTransaction, listOf(ownerInfo.name, newOwnerInfo.name)))

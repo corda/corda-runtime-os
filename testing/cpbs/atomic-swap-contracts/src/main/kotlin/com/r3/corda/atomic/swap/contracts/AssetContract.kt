@@ -40,7 +40,7 @@ class AssetContract: Contract {
                 val asset = transaction.getOutputStates(Asset::class.java)[0]
                 REQUIRES_OWNER_SIGN using (transaction.signatories.contains(asset.owner))
             }
-            // Rules applied only to transactions with the Update Command.
+            // Rules applied only to transactions with the Transfer Command.
             is AssetCommands.Transfer -> {
                 REQUIRES_ONE_ASSET_OUTPUT using (transaction.getOutputStates(Asset::class.java).size == 1)
                 REQUIRES_ONE_ASSET_INPUT using (transaction.getInputStates(Asset::class.java).size == 1)

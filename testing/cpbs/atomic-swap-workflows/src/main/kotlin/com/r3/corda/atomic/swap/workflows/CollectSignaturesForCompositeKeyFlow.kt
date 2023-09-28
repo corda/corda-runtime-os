@@ -12,7 +12,11 @@
 //import net.corda.v5.application.flows.ClientRequestBody
 //import net.corda.v5.application.flows.ClientStartableFlow
 //import net.corda.v5.application.flows.CordaInject
+//import net.corda.v5.application.flows.FlowEngine
 //import net.corda.v5.application.marshalling.JsonMarshallingService
+//import net.corda.v5.application.messaging.FlowMessaging
+//import net.corda.v5.base.types.MemberX500Name
+//import net.corda.v5.ledger.utxo.UtxoLedgerService
 //import java.security.PublicKey
 //
 ///**
@@ -23,20 +27,30 @@
 // * @param signers - the list of signing [Party]s
 // */
 //
-//data class CollectSignaturesForCompositeKeyFlowArgs(val stx: String, val signers: List<PublicKey>)
+//data class CollectSignaturesForCompositeKeyFlowArgs(val stx: String, val signers: List<MemberX500Name>)
 //class CollectSignaturesForCompositeKeyFlow: ClientStartableFlow {
 //    @CordaInject
 //    lateinit var jsonMarshallingService: JsonMarshallingService
 //
+//    @CordaInject
+//    lateinit var ledgerService: UtxoLedgerService
+//
+//    @CordaInject
+//    lateinit var flowEngine: FlowEngine
+//
+//    @CordaInject
+//    lateinit var flowMessaging: FlowMessaging
+//
+//
 //    override fun call(requestBody: ClientRequestBody): String {
 //        val flowArgs = requestBody.getRequestBodyAs(jsonMarshallingService, CollectSignaturesForCompositeKeyFlowArgs::class.java)
-//        val sessions = flowArgs.signers.map { initiateFlow(it) }
+//        val sessions = flowArgs.signers.map { flowMessaging.initiateFlow(it) }
 //
 //        // We filter out any responses that are not
 //        // `TransactionSignature`s (i.e. refusals to sign).
 //        val signatures = sessions
 //            .map { it.sendAndReceive<Any>(flowArgs.stx).unwrap { data -> data } }
-//            .filterIsInstance<TransactionSignature>()
+//            .filterIsInstance<Signature>()
 //        return flowArgs.stx.withAdditionalSignatures(signatures)
 //    }
 //}
