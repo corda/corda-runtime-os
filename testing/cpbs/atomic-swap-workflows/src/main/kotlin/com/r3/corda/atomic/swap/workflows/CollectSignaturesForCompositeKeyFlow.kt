@@ -62,7 +62,7 @@
 ////    @Suspendable
 ////    override fun call() {
 ////        otherPartySession.receive<SignedTransaction>().unwrap { partStx ->
-////            // TODO: add conditions where we might not sign
+////            // TO DO: add conditions where we might not sign
 ////
 ////            val returnStatus = serviceHub.createSignature(partStx)
 ////            otherPartySession.send(returnStatus)

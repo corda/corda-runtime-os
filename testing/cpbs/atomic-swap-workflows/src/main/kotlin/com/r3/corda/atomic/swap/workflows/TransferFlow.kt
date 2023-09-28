@@ -19,7 +19,6 @@ import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.membership.MemberInfo
 import org.slf4j.LoggerFactory
-import java.security.PublicKey
 import java.time.Duration
 import java.time.Instant
 
@@ -101,7 +100,8 @@ class TransferFlow : ClientStartableFlow {
 
             log.info("KEYS PLEASE lockState.participants: ${lockState.participants}")
             log.info("KEYS PLEASE outputState.participants: ${outputState.participants}")
-            val myKeys = signingService.findMySigningKeys((lockState.participants + outputState.participants).toSet()).flatMap { it.toPair().toList() }
+            val myKeys = signingService.findMySigningKeys((lockState.participants + outputState.participants).toSet())
+                .flatMap { it.toPair().toList() }
             log.info("KEYS PLEASE myKeys: $myKeys")
             val keysToAddToSignatories = (lockState.participants + myKeys).filterNotNull().toSet()
 
