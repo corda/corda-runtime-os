@@ -24,7 +24,7 @@ internal class TestLocallyHostedIdentitiesServiceImpl  @Activate constructor(
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
         }
-    override fun getIdentityInfo(identity: HoldingIdentity): IdentityInfo? {
+    override fun isHostedLocally(identity: HoldingIdentity): IdentityInfo? {
         throw UnsupportedOperationException()
     }
 

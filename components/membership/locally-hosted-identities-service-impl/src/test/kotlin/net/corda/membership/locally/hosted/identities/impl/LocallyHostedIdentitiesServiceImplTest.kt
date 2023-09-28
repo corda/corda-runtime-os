@@ -261,7 +261,7 @@ class LocallyHostedIdentitiesServiceImplTest {
                 mapOf("id1" to identityEntry),
             )
 
-            assertThat(service.getIdentityInfo(identity)).isEqualTo(
+            assertThat(service.pollForIdentityInfo(identity)).isEqualTo(
                 IdentityInfo(
                     identity,
                     certificates,
@@ -286,7 +286,7 @@ class LocallyHostedIdentitiesServiceImplTest {
                 mapOf("id1" to identityEntry),
             )
 
-            assertThat(service.getIdentityInfo(identity)).isNull()
+            assertThat(service.pollForIdentityInfo(identity)).isNull()
         }
 
         @Test
@@ -301,7 +301,7 @@ class LocallyHostedIdentitiesServiceImplTest {
                 emptyMap(),
             )
 
-            assertThat(service.getIdentityInfo(identity)).isEqualTo(
+            assertThat(service.pollForIdentityInfo(identity)).isEqualTo(
                 IdentityInfo(
                     identity,
                     certificates,
@@ -325,7 +325,7 @@ class LocallyHostedIdentitiesServiceImplTest {
                 emptyMap(),
             )
 
-            assertThat(service.getIdentityInfo(identity)).isNull()
+            assertThat(service.pollForIdentityInfo(identity)).isNull()
         }
 
         @Test
@@ -340,13 +340,13 @@ class LocallyHostedIdentitiesServiceImplTest {
             )
 
             assertDoesNotThrow {
-                service.getIdentityInfo(identity)
+                service.pollForIdentityInfo(identity)
             }
         }
     }
 
     @Nested
-    inner class GetIdentityInfoTest {
+    inner class PollForIdentityInfoTest {
         @BeforeEach
         fun setup() {
             handler.firstValue.processEvent(
@@ -365,7 +365,7 @@ class LocallyHostedIdentitiesServiceImplTest {
             whenever(coordinator.status).thenReturn(LifecycleStatus.DOWN)
 
             assertThrows<CordaRuntimeException> {
-                service.getIdentityInfo(identity)
+                service.pollForIdentityInfo(identity)
             }
         }
 
@@ -375,7 +375,7 @@ class LocallyHostedIdentitiesServiceImplTest {
                 mapOf("id1" to identityEntry),
             )
 
-            assertThat(service.getIdentityInfo(identity)).isNotNull
+            assertThat(service.pollForIdentityInfo(identity)).isNotNull
         }
 
         @Test
@@ -384,14 +384,14 @@ class LocallyHostedIdentitiesServiceImplTest {
                 mapOf("id1" to identityEntry),
             )
 
-            service.getIdentityInfo(identity)
+            service.pollForIdentityInfo(identity)
 
             verify(sleeper, never()).invoke(any())
         }
 
         @Test
         fun `it will sleep if the identity not exists`() {
-            service.getIdentityInfo(identity)
+            service.pollForIdentityInfo(identity)
 
             verify(sleeper, atLeastOnce()).invoke(any())
         }
@@ -404,9 +404,48 @@ class LocallyHostedIdentitiesServiceImplTest {
                 )
             }
 
-            service.getIdentityInfo(identity)
+            service.pollForIdentityInfo(identity)
 
-            assertThat(service.getIdentityInfo(identity)).isNotNull
+            assertThat(service.pollForIdentityInfo(identity)).isNotNull
         }
     }
+
+    @Nested
+    inner class IsHostedLocallyTest {
+        @BeforeEach
+        fun setup() {
+            handler.firstValue.processEvent(
+                ConfigChangedEvent(
+                    emptySet(),
+                    mapOf(
+                        ConfigKeys.MESSAGING_CONFIG to messagingConfig,
+                    ),
+                ),
+                coordinator,
+            )
+        }
+
+        @Test
+        fun `it throws an exception when not ready`() {
+            whenever(coordinator.status).thenReturn(LifecycleStatus.DOWN)
+
+            assertThrows<CordaRuntimeException> {
+                service.isHostedLocally(identity)
+            }
+        }
+        @Test
+        fun `it returns true if the identity is local`() {
+            processor.firstValue.onSnapshot(
+                mapOf("id1" to identityEntry),
+            )
+
+            assertThat(service.isHostedLocally(identity)).isTrue
+        }
+        @Test
+        fun `it return false the identity doesn't exist`() {
+            assertThat(service.isHostedLocally(identity)).isFalse
+        }
+
+    }
+
 }

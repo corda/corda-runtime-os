@@ -31,7 +31,7 @@ class SignerFactoryTest {
         on { preferredSessionKey } doReturn publicKey
     }
     private val membershipHostingMap = mock<LocallyHostedIdentitiesService> {
-        on { getIdentityInfo(mgm.holdingIdentity) } doReturn hostedIdentityInfo
+        on { isHostedLocally(mgm.holdingIdentity) } doReturn hostedIdentityInfo
     }
     private val cryptoOpsClient = mock<CryptoOpsClient>()
     private val factory = SignerFactory(cryptoOpsClient, membershipHostingMap)
@@ -45,7 +45,7 @@ class SignerFactoryTest {
 
     @Test
     fun `factory throws an exception if identity can not be found`() {
-        whenever(membershipHostingMap.getIdentityInfo(any())).doReturn(null)
+        whenever(membershipHostingMap.isHostedLocally(any())).doReturn(null)
 
         assertThrows<IllegalStateException> {
             factory.createSigner(mgm)
