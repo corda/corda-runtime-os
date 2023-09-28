@@ -2,6 +2,7 @@ package net.corda.cli.plugins.topicconfig
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
 import com.fasterxml.jackson.module.kotlin.KotlinFeature
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -15,7 +16,7 @@ import picocli.CommandLine
 @CommandLine.Command(
     name = "create",
     description = ["Create Kafka topics"],
-    subcommands = [CreateScript::class, CreateConnect::class],
+    subcommands = [Preview::class, CreateConnect::class],
     mixinStandardHelpOptions = true
 )
 class Create(
@@ -55,8 +56,30 @@ class Create(
         val topics: Map<String, TopicConfig>
     )
 
-    private val mapper: ObjectMapper = ObjectMapper(YAMLFactory()).registerModule(
-        KotlinModule.Builder()
+    data class PreviewTopicConfigurations(
+        val topics: List<PreviewTopicConfiguration>,
+        val acls: List<PreviewTopicACL>
+    )
+
+    data class PreviewTopicConfiguration(
+        val name: String,
+        val config: Map<String, String> = emptyMap()
+    )
+    data class PreviewTopicACL(
+        val topic: String,
+        val users: List<UserConfig>
+    )
+
+    data class UserConfig(
+        val name: String,
+        val operations: List<String>
+    )
+
+    val mapper: ObjectMapper = ObjectMapper(YAMLFactory()
+        .enable(YAMLGenerator.Feature.MINIMIZE_QUOTES)
+        .enable(YAMLGenerator.Feature.LITERAL_BLOCK_STYLE)
+        .disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER))
+        .registerModule(KotlinModule.Builder()
             .withReflectionCacheSize(512)
             .configure(KotlinFeature.NullToEmptyCollection, true)
             .configure(KotlinFeature.NullToEmptyMap, true)
@@ -137,4 +160,33 @@ class Create(
         }.toMap()
     }
 
+    fun getTopicConfigsForPreview(): PreviewTopicConfigurations {
+        return getTopicConfigsForPreview(getTopicConfigs())
+    }
+
+    fun getTopicConfigsForPreview(topicConfigurations: List<TopicConfig>): PreviewTopicConfigurations {
+        val topicConfigs = mutableListOf<PreviewTopicConfiguration>()
+        val acls = mutableListOf<PreviewTopicACL>()
+
+        topicConfigurations.forEach { topicConfig ->
+            val topicName = getTopicName(topicConfig)
+            topicConfigs.add(PreviewTopicConfiguration(topicName, topicConfig.config))
+
+            val usersReadAccess = getUsersForProcessors(topicConfig.consumers)
+            val usersWriteAccess = getUsersForProcessors(topicConfig.producers)
+
+            val users = (usersReadAccess + usersWriteAccess).toSet().map {
+                val operations = mutableListOf("describe")
+                if (it in usersWriteAccess)
+                    operations.add("write")
+                if (it in usersReadAccess)
+                    operations.add("read")
+                UserConfig(it, operations.reversed())
+            }
+
+            acls.add(PreviewTopicACL(topicName, users))
+        }
+
+        return PreviewTopicConfigurations(topicConfigs, acls)
+    }
 }
