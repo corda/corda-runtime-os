@@ -51,6 +51,7 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
     private val responseFactory: ResponseFactory
 ): UtxoRequestHandlerSelector {
 
+    @Suppress("LongMethod")
     override fun selectHandler(sandbox: SandboxGroupContext, request: LedgerPersistenceRequest): RequestHandler {
         val persistenceService = UtxoPersistenceServiceImpl(
             entityManagerFactory = sandbox.getEntityManagerFactory(),
