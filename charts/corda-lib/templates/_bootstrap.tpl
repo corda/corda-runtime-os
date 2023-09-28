@@ -359,6 +359,8 @@ spec:
           {{- include "corda.bootstrapResources" . | nindent 10 }}
           args: [
             'topic',
+            '-b', '{{ include "corda.kafkaBootstrapServers" . }}',
+            '-k', '/tmp/config.properties',
             {{- if .Values.kafka.topicPrefix }}
             '-n', '{{ .Values.kafka.topicPrefix }}',
             {{- end }}
@@ -370,9 +372,9 @@ spec:
             {{- end }}
             '-r', '{{ .Values.bootstrap.kafka.replicas }}',
             '-p', '{{ .Values.bootstrap.kafka.partitions }}',
-            'connect',
-            '-b', '{{ include "corda.kafkaBootstrapServers" . }}',
-            '-k', '/tmp/config.properties',
+            'connect'{{- if .Values.bootstrap.kafka.cleanup }},
+            '-d',
+            {{- end }}
             '-w', '{{ .Values.bootstrap.kafka.timeoutSeconds }}'
           ]
           volumeMounts:

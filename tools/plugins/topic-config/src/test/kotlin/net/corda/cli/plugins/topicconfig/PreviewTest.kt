@@ -11,6 +11,8 @@ class PreviewTest {
     @Test
     fun `validate topic configuration is generated correctly`() {
         val command = command()
+        command.create!!.topic!!.bootstrapServer = "address" // not used, should be ignored
+        command.create!!.topic!!.kafkaConfig = "/tmp/working_dir/config.properties"
 
         val expectedConfigYamlFile = javaClass.classLoader.getResource("preview_config.yaml")?.file
         val expectedConfigString = Files.readString(File(expectedConfigYamlFile!!).toPath())
