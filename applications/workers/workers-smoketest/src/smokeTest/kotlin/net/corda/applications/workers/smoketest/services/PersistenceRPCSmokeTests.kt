@@ -1,14 +1,12 @@
 package net.corda.applications.workers.smoketest.services
 
 import net.corda.applications.workers.smoketest.utils.PLATFORM_VERSION
-import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
-import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.identity.HoldingIdentity
-import net.corda.data.uniqueness.UniquenessCheckRequestAvro
-import net.corda.data.uniqueness.UniquenessCheckResponseAvro
+import net.corda.data.ledger.persistence.LedgerPersistenceRequest
+import net.corda.data.ledger.persistence.LedgerTypes
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
 import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
@@ -19,9 +17,6 @@ import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
 import net.corda.e2etest.utilities.registerStaticMember
 import net.corda.messagebus.kafka.serialization.CordaAvroSerializationFactoryImpl
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
-import net.corda.test.util.time.AutoTickTestClock
-import net.corda.uniqueness.utils.UniquenessAssertions
-import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -31,16 +26,12 @@ import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-import java.security.MessageDigest
 import java.time.Duration
 import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneOffset
 import java.util.UUID
-import kotlin.random.Random
 
 /**
- * Tests for the UniquenessChecker RPC service
+ * Tests for the Persistence RPC service
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PersistenceRPCSmokeTests {
@@ -51,9 +42,8 @@ class PersistenceRPCSmokeTests {
         AvroSchemaRegistryImpl()
     )
 
-    private val avroSerializer = serializationFactory.createAvroSerializer<UniquenessCheckRequestAvro> { }
+    private val avroSerializer = serializationFactory.createAvroSerializer<LedgerPersistenceRequest> { }
     private val avroFlowEventDeserializer = serializationFactory.createAvroDeserializer({}, FlowEvent::class.java)
-    private val avroUniquenessDeserializer = serializationFactory.createAvroDeserializer({}, UniquenessCheckResponseAvro::class.java)
 
     companion object {
         const val TEST_CPI_NAME = "ledger-utxo-demo-app"
@@ -119,9 +109,9 @@ class PersistenceRPCSmokeTests {
 
     @Test
     fun `RPC endpoint accepts a request and returns back a response`() {
-        val url = "${System.getProperty("uniquenessWorkerUrl")}api/$PLATFORM_VERSION/uniqueness-checker"
+        val url = "${System.getProperty("persistenceWorkerUrl")}api/$PLATFORM_VERSION/persistence"
 
-        logger.info("uniqueness url: $url")
+        logger.info("persistence url: $url")
         val serializedPayload = avroSerializer.serialize(payloadBuilder().build())
 
         val request = HttpRequest.newBuilder()
@@ -138,44 +128,27 @@ class PersistenceRPCSmokeTests {
 
         assertThat(responseEvent).isNotNull
 
-        val deserializedExternalEventResponse = avroUniquenessDeserializer.deserialize((responseEvent?.payload as ExternalEventResponse).payload.array())
-
-        assertThat(deserializedExternalEventResponse).isNotNull
-        UniquenessAssertions.assertStandardSuccessResponse(deserializedExternalEventResponse!!, testClock)
-    }
-
-    private val testClock = AutoTickTestClock(Instant.MAX, Duration.ofSeconds(1))
-
-    /**
-     * Returns a random secure hash of the specified algorithm
-     */
-    private fun randomSecureHash(algorithm: String = "SHA-256"): SecureHash {
-        val digest = MessageDigest.getInstance(algorithm)
-        return SecureHashImpl(digest.algorithm, digest.digest(Random.nextBytes(16)))
+        //val deserializedExternalEventResponse = avroUniquenessDeserializer.deserialize((responseEvent?.payload as ExternalEventResponse).payload.array())
+        //assertThat(deserializedExternalEventResponse).isNotNull
+        //TODO - persistence assertions
     }
 
     private val defaultNotaryVNodeHoldingIdentity = HoldingIdentity(notaryX500, groupId)
-    // We don't use Instant.MAX because this appears to cause a long overflow in Avro
-    private val defaultTimeWindowUpperBound: Instant =
-        LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
+    private val payload = "payload"
 
-    private fun payloadBuilder(txId: SecureHash = randomSecureHash())
-            : UniquenessCheckRequestAvro.Builder =
-        UniquenessCheckRequestAvro.newBuilder(
-            UniquenessCheckRequestAvro(
+    private fun payloadBuilder()
+            : LedgerPersistenceRequest.Builder =
+        LedgerPersistenceRequest.newBuilder(
+            LedgerPersistenceRequest(
+                Instant.MAX,
                 defaultNotaryVNodeHoldingIdentity,
+                LedgerTypes.CONSENSUAL,
+                payload,
                 ExternalEventContext(
                     UUID.randomUUID().toString(),
                     UUID.randomUUID().toString(),
                     KeyValuePairList(emptyList())
-                ),
-                txId.toString(),
-                aliceX500,
-                emptyList(),
-                emptyList(),
-                0,
-                null,
-                defaultTimeWindowUpperBound
+                )
             )
         )
 }
