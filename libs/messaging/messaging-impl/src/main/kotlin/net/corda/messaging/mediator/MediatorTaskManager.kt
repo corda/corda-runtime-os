@@ -1,11 +1,10 @@
 package net.corda.messaging.mediator
 
 import kotlinx.coroutines.runBlocking
+import net.corda.libs.statemanager.api.State
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
-import net.corda.messaging.api.mediator.statemanager.State
-import net.corda.messaging.api.mediator.statemanager.StateManager
 import net.corda.messaging.api.mediator.taskmanager.TaskManager
 import net.corda.messaging.api.mediator.taskmanager.TaskType
 import net.corda.messaging.api.processor.StateAndEventProcessor

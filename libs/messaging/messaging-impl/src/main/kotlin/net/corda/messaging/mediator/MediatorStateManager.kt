@@ -2,9 +2,9 @@ package net.corda.messaging.mediator
 
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
-import net.corda.messaging.api.mediator.statemanager.Metadata
-import net.corda.messaging.api.mediator.statemanager.State
-import net.corda.messaging.api.mediator.statemanager.StateManager
+import net.corda.libs.statemanager.api.Metadata
+import net.corda.libs.statemanager.api.State
+import net.corda.libs.statemanager.api.StateManager
 
 /**
  * Helper for working with [StateManager], used by [MultiSourceEventMediatorImpl].
@@ -30,7 +30,7 @@ class MediatorStateManager<K : Any, S : Any, E : Any>(
         State(
             key,
             serializedValue,
-            persistedState?.version ?: State.INITIAL_VERSION,
+            persistedState?.version ?: State.VERSION_INITIAL_VALUE,
             persistedState?.metadata ?: Metadata()
         )
     }
@@ -47,7 +47,7 @@ class MediatorStateManager<K : Any, S : Any, E : Any>(
             result.updatedState
         }
         val (newStates, existingStates) = states.partition { state ->
-            state.version == State.INITIAL_VERSION
+            state.version == State.VERSION_INITIAL_VALUE
         }
         val latestValuesForFailedStates = mutableMapOf<String, State?>()
         if (newStates.isNotEmpty()) {

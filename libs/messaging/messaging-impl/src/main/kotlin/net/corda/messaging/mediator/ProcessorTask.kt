@@ -1,7 +1,7 @@
 package net.corda.messaging.mediator
 
+import net.corda.libs.statemanager.api.State
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
-import net.corda.messaging.api.mediator.statemanager.State
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.utils.toRecord
