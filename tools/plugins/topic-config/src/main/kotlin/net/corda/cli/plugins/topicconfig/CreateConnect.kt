@@ -15,8 +15,10 @@ import org.apache.kafka.common.resource.ResourceType
 import com.fasterxml.jackson.module.kotlin.readValue
 import picocli.CommandLine
 import java.io.File
+import java.io.FileInputStream
 import java.nio.file.Files
 import java.time.LocalDateTime
+import java.util.*
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -26,6 +28,19 @@ class CreateConnect : Runnable {
 
     @CommandLine.ParentCommand
     var create: Create? = null
+
+    @CommandLine.Option(
+        names = ["-b", "--bootstrap-server"],
+        description = ["Bootstrap server address"],
+        required = true
+    )
+    var bootstrapServer: String = ""
+
+    @CommandLine.Option(
+        names = ["-k", "--kafka-config"],
+        description = ["Path to Kafka configuration file"]
+    )
+    var kafkaConfig: String? = null
 
     @CommandLine.Option(
         names = ["-w", "--wait"],
@@ -45,7 +60,7 @@ class CreateConnect : Runnable {
         Thread.currentThread().contextClassLoader = this::class.java.classLoader
 
         val timeoutMillis = (wait * 1000).toInt()
-        val kafkaProperties = create!!.topic!!.getKafkaProperties()
+        val kafkaProperties = getKafkaProperties()
         kafkaProperties[AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG] = timeoutMillis
         kafkaProperties[AdminClientConfig.DEFAULT_API_TIMEOUT_MS_CONFIG] = timeoutMillis
 
@@ -136,5 +151,14 @@ class CreateConnect : Runnable {
     } else {
         // Simply read the info from provided file
         create!!.mapper.readValue(Files.readString(File(configFilePath!!).toPath()))
+    }
+
+    fun getKafkaProperties(): Properties {
+        val kafkaProperties = Properties()
+        if (kafkaConfig != null) {
+            kafkaProperties.load(FileInputStream(kafkaConfig!!))
+        }
+        kafkaProperties[AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG] = bootstrapServer
+        return kafkaProperties
     }
 }
