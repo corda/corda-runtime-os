@@ -6,8 +6,10 @@ import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
+import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.Operation
+import net.corda.libs.statemanager.api.SingleKeyFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.metadata
@@ -71,7 +73,8 @@ class StateManagerIntegrationTest {
     )
 
     private val queryProvider = PostgresQueryProvider()
-    private val stateManager: StateManager = StateManagerImpl(StateRepositoryImpl(queryProvider), entityManagerFactoryFactory)
+    private val stateManager: StateManager =
+        StateManagerImpl(StateRepositoryImpl(queryProvider), entityManagerFactoryFactory)
 
     private fun ObjectMapper.toMetadata(metadata: String) =
         this.readValue(metadata, object : TypeReference<Metadata>() {})
@@ -404,7 +407,7 @@ class StateManagerIntegrationTest {
             buildStateKey(keyIndexRange.last)
         )
 
-        val filteredStates = stateManager.updatedBetween(startTime, finishTime)
+        val filteredStates = stateManager.updatedBetween(IntervalFilter(startTime, finishTime))
         assertThat(filteredStates).hasSize(count)
 
         for (i in keyIndexRange) {
@@ -427,7 +430,12 @@ class StateManagerIntegrationTest {
         val statesToUpdate = mutableSetOf<State>()
         for (i in keyUpdateIndexRange) {
             statesToUpdate.add(
-                State(buildStateKey(i), "updated_state_$i".toByteArray(), State.VERSION_INITIAL_VALUE, metadata("k1" to "v$i"))
+                State(
+                    buildStateKey(i),
+                    "updated_state_$i".toByteArray(),
+                    State.VERSION_INITIAL_VALUE,
+                    metadata("k1" to "v$i")
+                )
             )
         }
 
@@ -437,7 +445,7 @@ class StateManagerIntegrationTest {
             buildStateKey(keyUpdateIndexRange.last)
         )
 
-        val filteredUpdateStates = stateManager.updatedBetween(updateStartTime, updateFinishTime)
+        val filteredUpdateStates = stateManager.updatedBetween(IntervalFilter(updateStartTime, updateFinishTime))
         assertThat(filteredUpdateStates).hasSize(count / 2)
 
         for (i in keyUpdateIndexRange) {
@@ -478,22 +486,22 @@ class StateManagerIntegrationTest {
         )
 
         // Numeric
-        assertThat(stateManager.find("number", Operation.Equals, count)).hasSize(1)
-        assertThat(stateManager.find("number", Operation.NotEquals, count)).hasSize(count - 1)
-        assertThat(stateManager.find("number", Operation.GreaterThan, count)).isEmpty()
-        assertThat(stateManager.find("number", Operation.LesserThan, count)).hasSize(count - 1)
+        assertThat(stateManager.find(SingleKeyFilter("number", Operation.Equals, count))).hasSize(1)
+        assertThat(stateManager.find(SingleKeyFilter("number", Operation.NotEquals, count))).hasSize(count - 1)
+        assertThat(stateManager.find(SingleKeyFilter("number", Operation.GreaterThan, count))).isEmpty()
+        assertThat(stateManager.find(SingleKeyFilter("number", Operation.LesserThan, count))).hasSize(count - 1)
 
         // String
-        assertThat(stateManager.find("string", Operation.Equals, "random_$count")).hasSize(1)
-        assertThat(stateManager.find("string", Operation.NotEquals, "random")).hasSize(count)
-        assertThat(stateManager.find("string", Operation.GreaterThan, "random_1")).hasSize(count - 1)
-        assertThat(stateManager.find("string", Operation.LesserThan, "random_1")).isEmpty()
+        assertThat(stateManager.find(SingleKeyFilter("string", Operation.Equals, "random_$count"))).hasSize(1)
+        assertThat(stateManager.find(SingleKeyFilter("string", Operation.NotEquals, "random"))).hasSize(count)
+        assertThat(stateManager.find(SingleKeyFilter("string", Operation.GreaterThan, "random_1"))).hasSize(count - 1)
+        assertThat(stateManager.find(SingleKeyFilter("string", Operation.LesserThan, "random_1"))).isEmpty()
 
         // Booleans
-        assertThat(stateManager.find("boolean", Operation.Equals, true)).hasSize(count / 2)
-        assertThat(stateManager.find("boolean", Operation.NotEquals, true)).hasSize(count / 2)
-        assertThat(stateManager.find("boolean", Operation.GreaterThan, false)).hasSize(count / 2)
-        assertThat(stateManager.find("boolean", Operation.LesserThan, false)).isEmpty()
+        assertThat(stateManager.find(SingleKeyFilter("boolean", Operation.Equals, true))).hasSize(count / 2)
+        assertThat(stateManager.find(SingleKeyFilter("boolean", Operation.NotEquals, true))).hasSize(count / 2)
+        assertThat(stateManager.find(SingleKeyFilter("boolean", Operation.GreaterThan, false))).hasSize(count / 2)
+        assertThat(stateManager.find(SingleKeyFilter("boolean", Operation.LesserThan, false))).isEmpty()
     }
 
     @Test
@@ -514,19 +522,34 @@ class StateManagerIntegrationTest {
         )
 
         assertThat(
-            stateManager.findUpdatedBetweenWithMetadataFilter(halfTime, finishTime, "number", Operation.Equals, 1)
+            stateManager.findUpdatedBetweenWithMetadataFilter(
+                IntervalFilter(halfTime, finishTime),
+                SingleKeyFilter("number", Operation.Equals, 1)
+            )
         ).hasSize(0)
         assertThat(
-            stateManager.findUpdatedBetweenWithMetadataFilter(halfTime, finishTime, "number", Operation.NotEquals, 1)
+            stateManager.findUpdatedBetweenWithMetadataFilter(
+                IntervalFilter(halfTime, finishTime),
+                SingleKeyFilter("number", Operation.NotEquals, 1)
+            )
         ).hasSize(half)
         assertThat(
-            stateManager.findUpdatedBetweenWithMetadataFilter(halfTime, finishTime, "number", Operation.GreaterThan, half)
+            stateManager.findUpdatedBetweenWithMetadataFilter(
+                IntervalFilter(halfTime, finishTime),
+                SingleKeyFilter("number", Operation.GreaterThan, half)
+            )
         ).hasSize(half)
         assertThat(
-            stateManager.findUpdatedBetweenWithMetadataFilter(halfTime, finishTime, "number", Operation.LesserThan, count)
+            stateManager.findUpdatedBetweenWithMetadataFilter(
+                IntervalFilter(halfTime, finishTime),
+                SingleKeyFilter("number", Operation.LesserThan, count)
+            )
         ).hasSize(half - 1)
         assertThat(
-            stateManager.findUpdatedBetweenWithMetadataFilter(finishTime, finishTime.plusSeconds(30), "number", Operation.LesserThan, count)
+            stateManager.findUpdatedBetweenWithMetadataFilter(
+                IntervalFilter(finishTime, finishTime.plusSeconds(30)),
+                SingleKeyFilter("number", Operation.LesserThan, count)
+            )
         ).isEmpty()
     }
 
