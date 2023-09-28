@@ -79,7 +79,7 @@ class CreateConnect : Runnable {
         Thread.currentThread().contextClassLoader = contextCL
     }
 
-    private fun  createTopicsWithRetry(client: Admin, topicConfigs: List<Create.PreviewTopicConfiguration>) {
+    private fun createTopicsWithRetry(client: Admin, topicConfigs: List<Create.PreviewTopicConfiguration>) {
         val topics = getTopics(topicConfigs).toMutableMap()
         println("Creating topics: ${topics.keys.joinToString { it }}")
         val end = LocalDateTime.now().plusSeconds(wait)
