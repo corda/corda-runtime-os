@@ -17,7 +17,8 @@ import java.util.UUID
     name = "onboard-mgm",
     description = [
         "Onboard MGM member.",
-    ]
+    ],
+    mixinStandardHelpOptions = true
 )
 class OnboardMgm : Runnable, BaseOnboard() {
     @Option(
@@ -81,7 +82,10 @@ class OnboardMgm : Runnable, BaseOnboard() {
             val groupId = json.readTree(groupPolicyResponse).get("groupId").asText()
 
             // write the groupId to the file
-            groupIdFile.writeText(groupId)
+            groupIdFile.apply {
+                parentFile.mkdirs()
+                writeText(groupId)
+            }
         }
     }
 
