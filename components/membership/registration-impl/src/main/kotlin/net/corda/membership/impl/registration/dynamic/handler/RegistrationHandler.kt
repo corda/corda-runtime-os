@@ -2,6 +2,7 @@ package net.corda.membership.impl.registration.dynamic.handler
 
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.command.registration.RegistrationCommand
+import net.corda.data.membership.state.CommandMetadata
 import net.corda.data.membership.state.RegistrationState
 import net.corda.membership.lib.metrics.TimerMetricTypes
 import net.corda.membership.lib.metrics.getTimerMetric
@@ -14,7 +15,8 @@ interface RegistrationHandler<T> {
             if (commandType.isInstance(command)) {
                 @Suppress("unchecked_cast")
                 return recordTimerMetric(state, event.key, command as T) { s, k, c ->
-                    invoke(s, k, c)
+                    val result = invoke(s, k, c)
+                    result.copy(updatedState = addInvocationMetadata(result.updatedState))
                 }
             } else {
                 throw CordaRuntimeException("Invalid command: $command")
@@ -46,4 +48,16 @@ interface RegistrationHandler<T> {
     fun invoke(state: RegistrationState?, key: String, command: T): RegistrationHandlerResult
 
     val commandType: Class<T>
+
+    private fun addInvocationMetadata(state: RegistrationState?): RegistrationState? {
+        return state?.let {
+            val lastIndex = it.commands.maxBy { metadata -> metadata.index }.index
+            RegistrationState(
+                it.registrationId,
+                it.registeringMember,
+                it.mgm,
+                it.commands + CommandMetadata(lastIndex + 1, commandType.simpleName)
+            )
+        }
+    }
 }

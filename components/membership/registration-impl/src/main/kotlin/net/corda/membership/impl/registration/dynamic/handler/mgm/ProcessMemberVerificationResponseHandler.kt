@@ -71,12 +71,20 @@ internal class ProcessMemberVerificationResponseHandler(
 
     override val commandType = ProcessMemberVerificationResponse::class.java
 
+    private val RegistrationState.commandHasBeenExecuted: Boolean
+        get() = commands.map { it.command }.contains(commandType.simpleName)
+
+
     override fun invoke(
         state: RegistrationState?,
         key: String,
         command: ProcessMemberVerificationResponse
     ): RegistrationHandlerResult {
-        if (state == null) throw MissingRegistrationStateException
+        // Continue without processing this stage again if the state has been nullified or if the command has been executed previously.
+        // This is to prevent multiple processing attempts in the case of replays at a p2p level.
+        if (state == null || state.commandHasBeenExecuted) {
+            return RegistrationHandlerResult(state, emptyList())
+        }
         val registrationId = state.registrationId
         val mgm = state.mgm
         val member = state.registeringMember
@@ -148,10 +156,7 @@ internal class ProcessMemberVerificationResponseHandler(
                 ),
             )
         }
-        return RegistrationHandlerResult(
-            RegistrationState(registrationId, member, mgm),
-            messages,
-        )
+        return RegistrationHandlerResult(state, messages)
     }
 
     private fun getNextRegistrationStatus(
