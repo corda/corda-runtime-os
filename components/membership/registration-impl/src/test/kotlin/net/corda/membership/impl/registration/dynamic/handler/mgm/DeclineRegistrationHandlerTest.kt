@@ -96,6 +96,7 @@ class DeclineRegistrationHandlerTest {
                     SetOwnRegistrationStatus(
                         REGISTRATION_ID,
                         RegistrationStatus.DECLINED,
+                        null
                     )
                 ),
                 any(),
@@ -154,7 +155,7 @@ class DeclineRegistrationHandlerTest {
     fun `handler does not send registration status update message when status cannot be retrieved`() {
         val mockedBuilder = Mockito.mockStatic(VersionedMessageBuilder::class.java).also {
             it.`when`<VersionedMessageBuilder> {
-                VersionedMessageBuilder.retrieveRegistrationStatusMessage(any(), any(), any())
+                VersionedMessageBuilder.retrieveRegistrationStatusMessage(any(), any(), any(), any())
             } doReturn null
         }
 

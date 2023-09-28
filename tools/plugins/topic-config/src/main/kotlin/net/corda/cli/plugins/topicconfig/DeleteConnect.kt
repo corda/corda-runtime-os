@@ -12,7 +12,11 @@ import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 
 
-@CommandLine.Command(name = "connect", description = ["Connects to Kafka broker to delete topics"])
+@CommandLine.Command(
+    name = "connect",
+    description = ["Connects to Kafka broker to delete topics"],
+    mixinStandardHelpOptions = true
+)
 class DeleteConnect : Runnable {
 
     @ParentCommand

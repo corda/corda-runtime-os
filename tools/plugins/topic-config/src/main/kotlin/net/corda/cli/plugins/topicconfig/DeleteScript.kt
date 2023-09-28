@@ -9,7 +9,11 @@ import java.nio.file.Path
 import kotlin.io.path.createDirectories
 import kotlin.io.path.exists
 
-@CommandLine.Command(name = "script", description = ["Generates a script for the deletion of Kafka topics"])
+@CommandLine.Command(
+    name = "script",
+    description = ["Generates a script for the deletion of Kafka topics"],
+    mixinStandardHelpOptions = true
+)
 class DeleteScript(
     private val writerFactory: (String) -> FileWriter = { file -> FileWriter(File(file)) },
 ) : Runnable {

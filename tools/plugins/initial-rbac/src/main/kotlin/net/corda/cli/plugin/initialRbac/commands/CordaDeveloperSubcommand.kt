@@ -7,14 +7,15 @@ import net.corda.rbac.schema.RbacKeys.VNODE_SHORT_HASH_REGEX
 import picocli.CommandLine
 import java.util.concurrent.Callable
 
-private const val CORDA_DEV_ROLE = "CordaDeveloperRole"
+const val CORDA_DEV_ROLE = "CordaDeveloperRole"
 
 @CommandLine.Command(
     name = "corda-developer",
     description = ["""Creates a role ('$CORDA_DEV_ROLE') which will permit:
         - vNode reset
         - vNode vault sync
-        - Change state of the vNode"""]
+        - Change state of the vNode"""],
+    mixinStandardHelpOptions = true
 )
 class CordaDeveloperSubcommand : RestCommand(), Callable<Int> {
 

@@ -6,7 +6,11 @@ import picocli.CommandLine
 import java.io.File
 import java.io.FileWriter
 
-@CommandLine.Command(name = "script", description = ["Generates a script for the creation of Kafka topics"])
+@CommandLine.Command(
+    name = "script",
+    description = ["Generates a script for the creation of Kafka topics"],
+    mixinStandardHelpOptions = true
+)
 class CreateScript(
     private val writerFactory: (String) -> FileWriter = { file -> FileWriter(File(file)) }
 ) : Runnable {
