@@ -99,7 +99,10 @@ class TransferFlow : ClientStartableFlow {
                 listOf(assetWithCompositeKey.owner)
             )
 
+            log.info("KEYS PLEASE lockState.participants: ${lockState.participants}")
+            log.info("KEYS PLEASE outputState.participants: ${outputState.participants}")
             val myKeys = signingService.findMySigningKeys((lockState.participants + outputState.participants).toSet()).flatMap { it.toPair().toList() }
+            log.info("KEYS PLEASE myKeys: $myKeys")
             val keysToAddToSignatories = (lockState.participants + myKeys).filterNotNull().toSet()
 
             log.info("KEYS PLEASE: $keysToAddToSignatories")
