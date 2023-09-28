@@ -370,10 +370,9 @@ spec:
             {{- end }}
             '-r', '{{ .Values.bootstrap.kafka.replicas }}',
             '-p', '{{ .Values.bootstrap.kafka.partitions }}',
-            'connect'{{- if .Values.bootstrap.kafka.cleanup }},
+            'connect',
             '-b', '{{ include "corda.kafkaBootstrapServers" . }}',
             '-k', '/tmp/config.properties',
-            '-d',
             '-w', '{{ .Values.bootstrap.kafka.timeoutSeconds }}'
             {{- end }}
           ]
