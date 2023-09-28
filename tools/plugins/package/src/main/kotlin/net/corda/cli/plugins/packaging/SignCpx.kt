@@ -9,7 +9,8 @@ import picocli.CommandLine
 
 @CommandLine.Command(
     name = "sign",
-    description = ["Signs a CPK/CPB/CPI."]
+    description = ["Signs a CPK/CPB/CPI."],
+    mixinStandardHelpOptions = true
 )
 class SignCpx : Runnable {
 
