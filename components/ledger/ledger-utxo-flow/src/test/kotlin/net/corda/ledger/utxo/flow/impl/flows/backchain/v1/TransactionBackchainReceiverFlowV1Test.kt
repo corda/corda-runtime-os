@@ -663,6 +663,114 @@ class TransactionBackchainReceiverFlowV1Test {
 
     /**
      * This test is simulating a scenario where the transaction's status was originally UNVERIFIED in the database,
+     * but then it disappeared from the DB.
+     */
+    @Test
+    fun `if transaction status was unverified then it disappeared from the DB it will be retrieved`() {
+        whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
+            .thenReturn(mapOf(
+                TX_ID_1 to UNVERIFIED,
+            ))
+
+        whenever(session.sendAndReceive(eq(SignedGroupParameters::class.java), any())).thenReturn(
+            groupParameters,
+        )
+        whenever(groupParameters.hash).thenReturn(groupParametersHash1)
+        whenever(tx1Metadata.getMembershipGroupParametersHash()).thenReturn(groupParametersHash1.toString())
+
+        whenever(utxoLedgerPersistenceService.findSignedLedgerTransactionWithStatus(eq(TX_ID_1), eq(UNVERIFIED)))
+            .thenReturn(null)
+
+        whenever(session.sendAndReceive(eq(List::class.java),
+            eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_1))))).thenReturn(
+            listOf(retrievedTransaction1)
+        )
+
+        whenever(retrievedTransaction1.id)
+            .thenReturn(TX_ID_1)
+        whenever(retrievedTransaction1.inputStateRefs)
+            .thenReturn(emptyList())
+        whenever(retrievedTransaction1.referenceStateRefs)
+            .thenReturn(emptyList())
+        whenever(retrievedTransaction1.metadata)
+            .thenReturn(tx1Metadata)
+
+        whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(any(), eq(UNVERIFIED)))
+            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
+
+        whenever(utxoLedgerGroupParametersPersistenceService.find(groupParametersHash1))
+            .thenReturn(mock())
+
+        assertThat(callTransactionBackchainReceiverFlow(setOf(TX_ID_1)).complete()).containsExactlyInAnyOrder(TX_ID_1)
+
+        verify(utxoLedgerPersistenceService, times(1))
+            .findSignedLedgerTransactionWithStatus(eq(TX_ID_1), eq(UNVERIFIED))
+
+        verify(utxoLedgerPersistenceService, times(1))
+            .findTransactionIdsAndStatuses(eq(listOf(TX_ID_1)))
+
+        verify(session, times(1)).sendAndReceive(
+            eq(List::class.java),
+            eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_1)))
+        )
+    }
+
+    /**
+     * This test is simulating a scenario where the transaction's status was originally UNVERIFIED in the database,
+     * but then its status could not be fetched.
+     */
+    @Test
+    fun `if transaction status was unverified then its status could not be fetched it will be retrieved`() {
+        whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
+            .thenReturn(mapOf(
+                TX_ID_1 to UNVERIFIED,
+            ))
+
+        whenever(session.sendAndReceive(eq(SignedGroupParameters::class.java), any())).thenReturn(
+            groupParameters,
+        )
+        whenever(groupParameters.hash).thenReturn(groupParametersHash1)
+        whenever(tx1Metadata.getMembershipGroupParametersHash()).thenReturn(groupParametersHash1.toString())
+
+        whenever(utxoLedgerPersistenceService.findSignedLedgerTransactionWithStatus(eq(TX_ID_1), eq(UNVERIFIED)))
+            .thenReturn(Pair(null, UNVERIFIED))
+
+        whenever(retrievedTransaction1.id)
+            .thenReturn(TX_ID_1)
+        whenever(retrievedTransaction1.inputStateRefs)
+            .thenReturn(emptyList())
+        whenever(retrievedTransaction1.referenceStateRefs)
+            .thenReturn(emptyList())
+        whenever(retrievedTransaction1.metadata)
+            .thenReturn(tx1Metadata)
+
+        whenever(session.sendAndReceive(eq(List::class.java),
+            eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_1))))).thenReturn(
+            listOf(retrievedTransaction1)
+        )
+
+        whenever(utxoLedgerPersistenceService.persistIfDoesNotExist(any(), eq(UNVERIFIED)))
+            .thenReturn(TransactionExistenceStatus.DOES_NOT_EXIST to listOf(PACKAGE_SUMMARY))
+
+        whenever(utxoLedgerGroupParametersPersistenceService.find(groupParametersHash1))
+            .thenReturn(mock())
+
+        assertThat(callTransactionBackchainReceiverFlow(setOf(TX_ID_1)).complete()).containsExactlyInAnyOrder(TX_ID_1)
+
+        verify(utxoLedgerPersistenceService, times(1))
+            .findSignedLedgerTransactionWithStatus(eq(TX_ID_1), eq(UNVERIFIED))
+
+        verify(utxoLedgerPersistenceService, times(1))
+            .findTransactionIdsAndStatuses(eq(listOf(TX_ID_1)))
+
+        verify(session, times(1)).sendAndReceive(
+            eq(List::class.java),
+            eq(TransactionBackchainRequestV1.Get(setOf(TX_ID_1)))
+        )
+    }
+
+    /**
+     * This test is simulating a scenario where the transaction's status was originally UNVERIFIED in the database,
      * but then it changed to VERIFIED while the flow was in flight.
      */
     @Test

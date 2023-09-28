@@ -230,7 +230,10 @@ class TransactionBackchainReceiverFlowV1(
                     val (transactionFromDb, status) = utxoLedgerPersistenceService.findSignedLedgerTransactionWithStatus(
                         transactionId,
                         UNVERIFIED
-                    ) ?: throw InvalidBackchainException("Transaction with ID $transactionId not exist.")
+                    )
+                        // If we can't fetch the transaction from the DB we skip it
+                        // and just keep it in the "to retrieve" set, so it will be fetched later
+                        ?: return@forEach
 
                     when (status) {
                         VERIFIED -> {
@@ -252,41 +255,28 @@ class TransactionBackchainReceiverFlowV1(
 
                         UNVERIFIED -> {
                             // If the status is still UNVERIFIED we can continue as expected
-                            if (transactionFromDb == null) {
-                                throw InvalidBackchainException(
-                                    "Transaction with ID $transactionId disappeared. " +
-                                            "Backchain resolution cannot be continued."
-                                )
-                            }
-                            // Add the dependencies we haven't seen yet to the "to retrieve" and "to check" sets.
-                            // They might be removed later on from the "to retrieve" set if they are in the DB.
-                            // Also add them to the topological sort, so it can be verified later on
-                            if (transactionId !in sortedTransactionIds.transactionIds) {
-                                transactionFromDb.dependencies.let { dependencies ->
-                                    val unseenDependencies = dependencies - sortedTransactionIds.transactionIds
-                                    sortedTransactionIds.add(transactionId, dependencies)
-                                    transactionsToRetrieve.addAll(unseenDependencies)
-                                    newTransactionsToCheck.addAll(unseenDependencies)
+                            if (transactionFromDb != null) {
+                                // Add the dependencies we haven't seen yet to the "to retrieve" and "to check" sets.
+                                // They might be removed later on from the "to retrieve" set if they are in the DB.
+                                // Also add them to the topological sort, so it can be verified later on
+                                if (transactionId !in sortedTransactionIds.transactionIds) {
+                                    transactionFromDb.dependencies.let { dependencies ->
+                                        val unseenDependencies = dependencies - sortedTransactionIds.transactionIds
+                                        sortedTransactionIds.add(transactionId, dependencies)
+                                        transactionsToRetrieve.addAll(unseenDependencies)
+                                        newTransactionsToCheck.addAll(unseenDependencies)
+                                    }
+                                }
+
+                                // Once we added the unverified transactions' dependencies into the "to retrieve" set
+                                // we can remove the parent transaction from the set as we don't need to get that from
+                                // the initiator but only if we know its group parameters
+                                if (fetchGroupParametersAndHashForTransaction(transactionFromDb).second != null) {
+                                    transactionsToRetrieve.remove(transactionId)
                                 }
                             }
-
-                            // Once we added the unverified transactions' dependencies into the "to retrieve" set
-                            // we can remove the parent transaction from the set as we don't need to get that from
-                            // the initiator but only if we know its group parameters
-                            if (fetchGroupParametersAndHashForTransaction(transactionFromDb).second != null) {
-                                transactionsToRetrieve.remove(transactionId)
-                            }
                         }
-
-                        else -> throw InvalidBackchainException(
-                            "Invalid status retrieved for transaction with ID $transactionId: $status. " +
-                                    "Backchain resolution cannot be continued."
-                        )
                     }
-                } else {
-                    // If the transaction is not present in the database we just add it to the "to retrieve" set
-                    // as we need to retrieve that from the counterparty
-                    transactionsToRetrieve.add(transactionId)
                 }
             }
             transactionsToCheck = newTransactionsToCheck
