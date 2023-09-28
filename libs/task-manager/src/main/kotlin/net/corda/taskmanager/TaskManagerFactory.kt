@@ -8,15 +8,15 @@ import java.util.concurrent.Executors
 
 object TaskManagerFactory {
     fun createThreadPoolTaskManager(
-        threads: Int = 8,
-        name: String = UUID.randomUUID().toString(),
+        name: String,
+        threads: Int,
         metricPrefix: String = "taskmanager."
     ): TaskManager {
         return TaskManagerImpl(
             CordaExecutorServiceWrapper(
                 name,
                 "corda.$metricPrefix",
-                Executors.newFixedThreadPool(threads),
+                Executors.newScheduledThreadPool(threads),
                 CordaMetrics.registry
             )
         )
