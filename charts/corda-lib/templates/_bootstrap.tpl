@@ -374,7 +374,6 @@ spec:
             '-b', '{{ include "corda.kafkaBootstrapServers" . }}',
             '-k', '/tmp/config.properties',
             '-w', '{{ .Values.bootstrap.kafka.timeoutSeconds }}'
-            {{- end }}
           ]
           volumeMounts:
             - mountPath: /tmp
