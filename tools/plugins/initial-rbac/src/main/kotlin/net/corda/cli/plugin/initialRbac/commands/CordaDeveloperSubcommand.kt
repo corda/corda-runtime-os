@@ -14,7 +14,8 @@ const val CORDA_DEV_ROLE = "CordaDeveloperRole"
     description = ["""Creates a role ('$CORDA_DEV_ROLE') which will permit:
         - vNode reset
         - vNode vault sync
-        - Change state of the vNode"""]
+        - Change state of the vNode"""],
+    mixinStandardHelpOptions = true
 )
 class CordaDeveloperSubcommand : RestCommand(), Callable<Int> {
 

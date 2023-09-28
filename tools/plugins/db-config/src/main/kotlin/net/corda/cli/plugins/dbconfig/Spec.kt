@@ -22,7 +22,8 @@ import java.sql.DriverManager
 @CommandLine.Command(
     name = "spec",
     description = ["Does database schema generation from liquibase. Can run offline or connect to a live database for " +
-            "migration to a new version."]
+            "migration to a new version."],
+    mixinStandardHelpOptions = true
 )
 class Spec(private val config: SpecConfig = SpecConfig()) : Runnable {
     @CommandLine.Option(

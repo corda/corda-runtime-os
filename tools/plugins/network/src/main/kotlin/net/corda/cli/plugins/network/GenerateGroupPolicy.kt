@@ -15,7 +15,11 @@ import java.util.UUID
  * Subcommand for generating GroupPolicy.json file, containing the requirements for joining a group, can be used for
  * providing static membership information for mocking a membership group.
  */
-@CommandLine.Command(name = "groupPolicy", description = ["Generates GroupPolicy.json file."])
+@CommandLine.Command(
+    name = "groupPolicy",
+    description = ["Generates GroupPolicy.json file."],
+    mixinStandardHelpOptions = true
+)
 class GenerateGroupPolicy(private val output: ConsoleOutput = ConsoleOutput()) : Runnable {
 
     @CommandLine.Option(
