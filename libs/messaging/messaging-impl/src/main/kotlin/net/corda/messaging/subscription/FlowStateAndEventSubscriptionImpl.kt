@@ -297,14 +297,6 @@ internal class FlowStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         return false
     }
 
-    data class GroupedEventData<E, K, S: Any>(
-        val key: K,
-        val state: S?,
-        val topic: String,
-        val partitionId: Int,
-        val future: CompletableFuture<List<Pair<CordaConsumerRecord<K, E>, StateAndEventProcessor.Response<S>?>>>
-    )
-
     private fun processEvents(
         groupedEvents: Map<K, List<CordaConsumerRecord<K, E>>>,
         outputRecords: MutableList<Record<*, *>>,
@@ -312,7 +304,6 @@ internal class FlowStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     ) {
         val future = stateAndEventConsumer.waitForFunctionToFinish(
             {
-                val startTime = System.nanoTime()
                 val groupedEventDatas: List<GroupedEventData<E, K, S>> = groupedEvents.map { (key, events) ->
                     log.debug { "Processing events: $events" }
                     val partitionId = events.first().partition
@@ -324,7 +315,6 @@ internal class FlowStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                         partitionId,
                         CompletableFuture.supplyAsync(
                             {
-                                log.error("PROCESSING ON NEXT for key $key")
                                 events.map { event ->
                                     event to processor.onNext(state, event.toRecord())
                                 }
@@ -333,10 +323,8 @@ internal class FlowStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                         )
                     )
                 }
-                // we might want to put a timeout somewhere
-                groupedEventDatas.forEach { it.future.join() }
 
-                log.error("COMPLETED FUTURES: ${groupedEventDatas.size} IN TIME: ${Duration.ofNanos(System.nanoTime() - startTime)}")
+                groupedEventDatas.forEach { it.future.join() }
 
                 groupedEventDatas.map { (key, state, topic, partitionId, future) ->
                     val eventUpdatesFromFuture: List<Pair<CordaConsumerRecord<K, E>, StateAndEventProcessor.Response<S>?>> = future.get()
@@ -437,4 +425,12 @@ internal class FlowStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             throw CordaMessageAPIIntermittentException(message, ex)
         }
     }
+
+    data class GroupedEventData<E, K, S: Any>(
+        val key: K,
+        val state: S?,
+        val topic: String,
+        val partitionId: Int,
+        val future: CompletableFuture<List<Pair<CordaConsumerRecord<K, E>, StateAndEventProcessor.Response<S>?>>>
+    )
 }
