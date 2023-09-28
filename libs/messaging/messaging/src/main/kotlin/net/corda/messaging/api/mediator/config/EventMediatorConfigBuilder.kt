@@ -9,6 +9,10 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 
 /**
  * Builder for creating [EventMediatorConfig].
+ *
+ * @param K Type of event key.
+ * @param S Type of event state.
+ * @param E Type of event.
  */
 class EventMediatorConfigBuilder<K: Any, S: Any, E: Any> {
 

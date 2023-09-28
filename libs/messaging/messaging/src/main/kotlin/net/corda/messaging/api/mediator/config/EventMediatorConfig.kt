@@ -10,8 +10,11 @@ import net.corda.schema.configuration.MessagingConfig
 import java.time.Duration
 
 /**
- * Class to store the required params to create a [MultiSourceEventMediator].
+ * Class to store configuration required to create a [MultiSourceEventMediator].
  *
+ * @param K Type of event key.
+ * @param S Type of event state.
+ * @param E Type of event.
  * @property name The unique name for a multi-source event mediator.
  * @property messagingConfig Messaging related configuration.
  * @property consumerFactories Factories for creating message consumers.

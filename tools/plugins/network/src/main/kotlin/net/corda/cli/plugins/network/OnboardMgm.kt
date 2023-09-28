@@ -81,7 +81,10 @@ class OnboardMgm : Runnable, BaseOnboard() {
             val groupId = json.readTree(groupPolicyResponse).get("groupId").asText()
 
             // write the groupId to the file
-            groupIdFile.writeText(groupId)
+            groupIdFile.apply {
+                parentFile.mkdirs()
+                writeText(groupId)
+            }
         }
     }
 

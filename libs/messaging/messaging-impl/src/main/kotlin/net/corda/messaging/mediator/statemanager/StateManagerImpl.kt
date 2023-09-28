@@ -1,12 +1,13 @@
 package net.corda.messaging.mediator.statemanager
 
-import net.corda.messaging.api.mediator.statemanager.Operation
-import net.corda.messaging.api.mediator.statemanager.State
-import net.corda.messaging.api.mediator.statemanager.StateManager
+import net.corda.libs.statemanager.api.Operation
+import net.corda.libs.statemanager.api.State
+import net.corda.libs.statemanager.api.StateManager
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import java.time.Instant
 
+// TODO This is used temporarily until State Manager implementation is finished
 @Component(service = [StateManager::class])
 class StateManagerImpl  @Activate constructor() : StateManager {
     private val storage = mutableMapOf<String, State>()

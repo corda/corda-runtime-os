@@ -9,7 +9,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 import kotlin.concurrent.thread
 
-
+// TODO This is used temporarily until Task Manager implementation is finished
 @Component(service = [TaskManager::class])
 class TaskManagerImpl  @Activate constructor() : TaskManager {
     private var executorService = Executors.newSingleThreadExecutor()

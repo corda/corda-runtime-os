@@ -3,10 +3,10 @@ package net.corda.messaging.mediator.factory
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
-import net.corda.messaging.api.mediator.statemanager.StateManager
 import net.corda.messaging.api.mediator.taskmanager.TaskManager
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import org.junit.jupiter.api.Assertions
