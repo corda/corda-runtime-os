@@ -2,11 +2,12 @@ package net.corda.ledger.persistence
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.data.flow.event.FlowEvent
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.ledger.persistence.processor.LedgerPersistenceRequestSubscriptionFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.test.impl.LifecycleTest
-import net.corda.messaging.api.subscription.Subscription
+import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -36,10 +37,10 @@ class LedgerPersistenceServiceTest {
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
     private val cpiInfoReadService = mock<CpiInfoReadService>()
 
-    private val subscription1 = mock<Subscription<String, LedgerPersistenceRequest>>()
-    private val subscription2 = mock<Subscription<String, LedgerPersistenceRequest>>()
+    private val subscription1 = mock<RPCSubscription<LedgerPersistenceRequest, FlowEvent>>()
+    private val subscription2 = mock<RPCSubscription<LedgerPersistenceRequest, FlowEvent>>()
     private val ledgerPersistenceRequestSubscriptionFactory = mock<LedgerPersistenceRequestSubscriptionFactory>().apply {
-        whenever(this.create(MINIMUM_SMART_CONFIG)).thenReturn(subscription1, subscription2)
+        whenever(this.createRpcSubscription()).thenReturn(subscription1, subscription2)
     }
 
     private val exampleConfig = mapOf(
@@ -49,8 +50,8 @@ class LedgerPersistenceServiceTest {
 
     @Test
     fun `on configuration event creates and starts subscription`() {
-        val subscription = mock<Subscription<String, LedgerPersistenceRequest>>()
-        whenever(ledgerPersistenceRequestSubscriptionFactory.create(MINIMUM_SMART_CONFIG)).thenReturn(subscription)
+        val subscription = mock<RPCSubscription<LedgerPersistenceRequest, FlowEvent>>()
+        whenever(ledgerPersistenceRequestSubscriptionFactory.createRpcSubscription()).thenReturn(subscription)
 
         getTokenCacheComponentTestContext().run {
             testClass.start()
@@ -58,7 +59,7 @@ class LedgerPersistenceServiceTest {
 
             sendConfigUpdate<LedgerPersistenceService>(exampleConfig)
 
-            verify(ledgerPersistenceRequestSubscriptionFactory).create(MINIMUM_SMART_CONFIG)
+            verify(ledgerPersistenceRequestSubscriptionFactory).createRpcSubscription()
             verify(subscription).start()
         }
     }
@@ -71,12 +72,11 @@ class LedgerPersistenceServiceTest {
 
             sendConfigUpdate<LedgerPersistenceService>(exampleConfig)
 
-            verify(ledgerPersistenceRequestSubscriptionFactory).create(MINIMUM_SMART_CONFIG)
+            verify(ledgerPersistenceRequestSubscriptionFactory).createRpcSubscription()
             verify(subscription1).start()
 
             sendConfigUpdate<LedgerPersistenceService>(exampleConfig)
             verify(subscription1).close()
-            verify(subscription2).start()
         }
     }
 
