@@ -337,15 +337,20 @@ class VirtualNodeUpgradeOperationHandlerTest {
     }
 
     @Test
-    fun `upgrade handler allows upgrade with operation in progress if forceUpgrade is specified`() {
-        val vNode = mock<VirtualNodeInfo> {
-            whenever(it.cpiIdentifier).thenReturn(currentCpiId)
-            whenever(it.flowOperationalStatus).thenReturn(OperationalStatus.INACTIVE)
-            whenever(it.flowStartOperationalStatus).thenReturn(OperationalStatus.INACTIVE)
-            whenever(it.flowP2pOperationalStatus).thenReturn(OperationalStatus.INACTIVE)
-            whenever(it.vaultDbOperationalStatus).thenReturn(OperationalStatus.INACTIVE)
-            whenever(it.operationInProgress).thenReturn("some-op")
-        }
+    fun `upgrade handler allows upgrade to proceed with operation in progress if forceUpgrade is specified`() {
+        val vNode = VirtualNodeInfo(
+            holdingIdentity,
+            currentCpiId,
+            vaultDmlConnectionId = UUID.randomUUID(),
+            cryptoDmlConnectionId = UUID.randomUUID(),
+            flowP2pOperationalStatus = OperationalStatus.INACTIVE,
+            flowStartOperationalStatus = OperationalStatus.INACTIVE,
+            flowOperationalStatus = OperationalStatus.INACTIVE,
+            vaultDbOperationalStatus = OperationalStatus.INACTIVE,
+            timestamp = Instant.now(),
+            operationInProgress = "Upgrade vNode"
+        )
+
         whenever(virtualNodeRepository.find(em, ShortHash.of(vnodeId))).thenReturn(vNode)
         whenever(
             virtualNodeRepository.upgradeVirtualNodeCpi(
@@ -354,15 +359,16 @@ class VirtualNodeUpgradeOperationHandlerTest {
         ).thenReturn(vNode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
         whenever(oldVirtualNodeEntityRepository.getCPIMetadataById(any(), any())).thenReturn(currentCpiMetadata)
+        whenever(virtualNodeInfoPublisher.publish(any())).thenReturn(emptyList())
 
-        withRejectedOperation(VirtualNodeOperationStateDto.VALIDATION_FAILED, "Operation some-op already in progress") {
-            handler.handle(
-                Instant.now(),
-                requestId,
-                forceUpgradeRequest
-            )
-        }
-    }
+        handler.handle(
+            Instant.now(),
+            requestId,
+            forceUpgradeRequest
+        )
+
+        verify(virtualNodeRepository, times(1)).upgradeVirtualNodeCpi(any(), any(), any(), any(), any(), any(), any(), any(), any())
+}
 
     @Test
     fun `upgrade handler can't find target CPI throws`() {
