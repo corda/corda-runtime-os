@@ -11,12 +11,16 @@ class DummyLocallyHostedIdentitiesService @Activate constructor() : LocallyHoste
 
     private val identityMap = mutableMapOf<HoldingIdentity, IdentityInfo>()
 
-    override fun getIdentityInfo(identity: HoldingIdentity): IdentityInfo? {
-        return identityMap[identity]
-    }
-
     fun setIdentityInfo(identity: HoldingIdentity, identityInfo: IdentityInfo) {
         identityMap[identity] = identityInfo
+    }
+
+    override fun isHostedLocally(identity: HoldingIdentity): Boolean {
+        return identity in identityMap.keys
+    }
+
+    override fun pollForIdentityInfo(identity: HoldingIdentity): IdentityInfo? {
+        return identityMap[identity]
     }
 
     override val isRunning: Boolean
