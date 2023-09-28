@@ -5,7 +5,7 @@ import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.interop.FacadeService
 import net.corda.v5.application.interop.InterOpIdentityInfo
-import net.corda.v5.application.interop.InteropIdentityLookUp
+import net.corda.v5.application.interop.InteropIdentityLookup
 import net.corda.v5.base.annotations.Suspendable
 import org.slf4j.LoggerFactory
 import java.util.UUID
@@ -18,7 +18,7 @@ class SwapResponderSubFlow(private val message: Payment):
     lateinit var facadeService: FacadeService
 
     @CordaInject
-    lateinit var interopIdentityLookUp : InteropIdentityLookUp
+    lateinit var interopIdentityLookUp : InteropIdentityLookup
 
     @Suspendable
     override fun call(): UUID {

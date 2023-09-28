@@ -1,6 +1,6 @@
 @Library('corda-shared-build-pipeline-steps@5.1') _
 
-cordaPipeline(
+cordaPipelineKubernetesAgent(
     dailyBuildCron: 'H H/6 * * *',
     runIntegrationTests: true,
     createPostgresDb: true,
@@ -15,5 +15,6 @@ cordaPipeline(
     // allow publishing an installer to a download site
     publishToDownloadSiteTask: ':tools:plugins:publish',
     // TODO - remove this when J17 is the default in the pipeline
-    javaVersion: '17'
+    javaVersion: '17',
+    enableNotifications : false
     )

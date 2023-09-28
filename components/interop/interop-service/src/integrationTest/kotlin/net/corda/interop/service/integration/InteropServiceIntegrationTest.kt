@@ -111,6 +111,7 @@ class InteropServiceIntegrationTest {
     val destinationIdentity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", groupId)
     val destinationAliasIdentity = HoldingIdentity("CN=Alice Alias, O=Alice Corp, L=LDN, C=GB", groupId)
 
+    @Suppress("UNUSED_VARIABLE")
     private fun messagesToPublish(session: String) : List<Record<*,*>> {
         val interopMessage: ByteBuffer = ByteBuffer.wrap(
             cordaAvroSerializationFactory.createAvroSerializer<InteropMessage> { }.serialize(
@@ -140,17 +141,22 @@ class InteropServiceIntegrationTest {
         ))
 
         val inboundSessionEvent = SessionEvent(
-            MessageDirection.INBOUND, Instant.now(), session, 1, destinationAliasIdentity, sourceIdentity, 0, listOf(),
-            SessionInit(sourceIdentity.toString(), null, contextUserProperties, emptyKeyValuePairList(), emptyKeyValuePairList(), interopMessage))
+            MessageDirection.INBOUND, Instant.now(), session, 1, destinationAliasIdentity, sourceIdentity,
+            SessionInit("cpi_id", "flow_id", emptyKeyValuePairList(), emptyKeyValuePairList()),
+            contextUserProperties
+        )
 
         val outboundSessionEvent = SessionEvent(
-            MessageDirection.OUTBOUND, Instant.now(), session, 2, destinationAliasIdentity, sourceIdentity, 0, listOf(),
-            SessionInit(sourceIdentity.toString(), null, contextUserProperties, emptyKeyValuePairList(), emptyKeyValuePairList(), interopMessage))
+            MessageDirection.OUTBOUND, Instant.now(), session, 2, destinationAliasIdentity, sourceIdentity,
+            SessionInit("cpi_id", "flow_id", emptyKeyValuePairList(), emptyKeyValuePairList()),
+            contextUserProperties
+        )
 
         val inboundMsg = Record(Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC, session, FlowMapperEvent(inboundSessionEvent))
         val outboundMsg = Record(Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC, session, FlowMapperEvent(outboundSessionEvent))
         return listOf(inboundMsg, outboundMsg)
     }
+
     @Test //Dummy test to unblock :components:interop:interop-service:testOSGi as the next one is turned off
     fun dummyTest() {
         assertTrue(true)

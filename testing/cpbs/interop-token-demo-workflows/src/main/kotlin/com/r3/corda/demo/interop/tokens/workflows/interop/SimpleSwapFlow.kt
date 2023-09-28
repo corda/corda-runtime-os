@@ -10,7 +10,7 @@ import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.interop.FacadeService
-import net.corda.v5.application.interop.InteropIdentityLookUp
+import net.corda.v5.application.interop.InteropIdentityLookup
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
@@ -48,7 +48,7 @@ class SimpleSwapFlow : ClientStartableFlow {
     lateinit var facadeService: FacadeService
 
     @CordaInject
-    lateinit var interopIdentityLookUp : InteropIdentityLookUp
+    lateinit var interopIdentityLookUp : InteropIdentityLookup
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {

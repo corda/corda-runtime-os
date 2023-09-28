@@ -1,0 +1,90 @@
+plugins {
+    id 'biz.aQute.bnd.builder'
+    id 'com.jfrog.artifactory'
+    id 'maven-publish'
+}
+
+description 'AWS SDK (CloudWatch)'
+
+/**
+ * Wrap these AWS SDK components into a single OSGi bundle.
+ *
+ * THIS IS A TEMPORARY ARTIFACT THAT SHOULD NOT BE RELEASED.
+ */
+dependencies {
+    implementation platform("software.amazon.awssdk:bom-internal:$awssdkVersion")
+    compileOnly "software.amazon.awssdk:cloudwatch:$awssdkVersion"
+    compileOnly "software.amazon.awssdk:sts:$awssdkVersion"
+    compileOnly "software.amazon.awssdk:apache-client:$awssdkVersion"
+    compileOnly "software.amazon.awssdk:netty-nio-client:$awssdkVersion"
+    compileOnly 'org.apache.httpcomponents:httpclient'
+    compileOnly 'org.apache.httpcomponents:httpcore'
+    runtimeOnly 'commons-codec:commons-codec'
+    runtimeOnly 'io.netty:netty-codec-http2'
+    runtimeOnly 'io.netty:netty-transport-classes-epoll'
+    runtimeOnly 'org.reactivestreams:reactive-streams'
+}
+
+tasks.named('jar', Jar) {
+    archiveBaseName = 'corda-awssdk'
+
+    bundle {
+        bnd """\
+Bundle-Name: \${project.description}
+Bundle-SymbolicName: \${project.group}.awssdk
+Bundle-Version: ${awssdkVersion}
+Export-Package: \
+    !software.amazon.awssdk.http.apache.*,\
+    !software.amazon.awssdk.http.nio.netty.*,\
+    !software.amazon.awssdk.metrics.internal.*,\
+    !software.amazon.awssdk.profiles.internal.*,\
+    !software.amazon.awssdk.protocols.jsoncore.internal.*,\
+    !software.amazon.awssdk.protocols.query.internal.*,\
+    !software.amazon.awssdk.regions.internal.*,\
+    !software.amazon.awssdk.services.cloudwatch.internal.*,\
+    !software.amazon.awssdk.services.cloudwatch.endpoints.internal.*,\
+    !software.amazon.awssdk.services.cloudwatch.waiters.internal.*,\
+    !software.amazon.awssdk.services.sts.internal.*,\
+    !software.amazon.awssdk.utils.internal.*,\
+    software.amazon.awssdk.*
+Import-Package: \
+   scala.util;resolution:=optional,\
+   *
+Quasar-Ignore-Package: software.amazon.**,org.apache.http**
+-fixupmessages "Export [^,]++,\\\\s++has (\\\\d++),\\\\s++private references "; restrict:=warning; is:=error
+-includepackage: \
+    software.amazon.awssdk.services.cloudwatch.*,\
+    software.amazon.awssdk.services.sts.*,\
+    software.amazon.awssdk.core.exception,\
+    software.amazon.awssdk.http.apache,\
+    software.amazon.awssdk.http.nio.netty
+-conditionalpackage: \
+    software.amazon.*,\
+    org.apache.http.*
+-includeresource: \
+    @aws-core-${awssdkVersion}.jar!/META-INF/native-image/software.amazon.awssdk/aws-core/*,\
+    @sdk-core-${awssdkVersion}.jar!/META-INF/native-image/software.amazon.awssdk/sdk-core/*,\
+    @apache-client-${awssdkVersion}.jar!/META-INF/native-image/software.amazon.awssdk/apache-client/*,\
+    @netty-nio-client-${awssdkVersion}.jar!/META-INF/native-image/software.amazon.awssdk/netty-nio-client/*,\
+    @apache-client-${awssdkVersion}.jar!/META-INF/services/*,\
+    @netty-nio-client-${awssdkVersion}.jar!/META-INF/services/*,\
+    @third-party-jackson-core-${awssdkVersion}.jar!/META-INF/services/*
+"""
+    }
+}
+
+tasks.named('sourcesJar', Jar) {
+    enabled = false
+}
+
+publishing {
+    publications {
+        awsSDK(MavenPublication) {
+            from components.java
+        }
+    }
+}
+
+artifactoryPublish {
+    publications('awsSDK')
+}

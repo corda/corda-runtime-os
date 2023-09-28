@@ -4,9 +4,11 @@ import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.data.KeyValuePair
-import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.SignedData
+import net.corda.interop.group.policy.read.InteropGroupPolicyReadService
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -23,11 +25,18 @@ import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.impl.grouppolicy.GroupPolicyProviderImpl.FinishedRegistrationsProcessor
-import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
-import net.corda.membership.lib.grouppolicy.InteropGroupPolicyReader
+import net.corda.membership.lib.grouppolicy.InteropGroupPolicy
 import net.corda.membership.lib.grouppolicy.MGMGroupPolicy
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
@@ -38,6 +47,9 @@ import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.membership.MGMContext
+import net.corda.v5.membership.MemberContext
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoListener
@@ -64,8 +76,9 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 
 /**
  * Unit tests for [GroupPolicyProviderImpl]
@@ -94,6 +107,17 @@ class GroupPolicyProviderImplTest {
     private val groupPolicy4: String? = null
     private val groupPolicy5 = "{\"$registrationProtocolKey\": \"$regProtocol3\", \"$groupIdKey\": \"$groupId2\"}"
     private val groupPolicy6 = "{\"$registrationProtocolKey\": \"$regProtocol3\", \"$groupIdKey\": \"$groupId3\"}"
+    private val interopGroupPolicy = """
+                                        {
+                                          "groupId": "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08",
+                                          "p2pParameters": {
+                                            "tlsPki": "Standard",
+                                            "tlsVersion": "1.3",
+                                            "protocolMode": "Authenticated_Encryption",
+                                            "tlsType": "OneWay"
+                                          }
+                                        }
+                                     """
 
     private val parsedGroupPolicy1: GroupPolicy = mock {
         on { groupId } doReturn groupId1
@@ -110,6 +134,13 @@ class GroupPolicyProviderImplTest {
     private val parsedGroupPolicy6: GroupPolicy = mock {
         on { groupId } doReturn groupId3
         on { registrationProtocol }.doReturn(regProtocol3)
+    }
+    private val p2pParams : GroupPolicy.P2PParameters = mock{
+        on { tlsPki } doReturn GroupPolicyConstants.PolicyValues.P2PParameters.TlsPkiMode.STANDARD
+    }
+    private val parsedInteropGroupPolicy: InteropGroupPolicy = mock {
+        on { groupId } doReturn groupId3
+        on { p2pParameters } doReturn p2pParams
     }
     private val parsedMgmGroupPolicy: MGMGroupPolicy = mock()
 
@@ -135,30 +166,6 @@ class GroupPolicyProviderImplTest {
     private val cpiIdentifier3: CpiIdentifier = mock()
     private val cpiIdentifier4: CpiIdentifier = mock()
     private val cpiIdentifier5: CpiIdentifier = mock()
-
-    private val validPersistentMemberInfo = PersistentMemberInfo(
-        holdingIdentity5.toAvro(),
-        KeyValuePairList(
-            listOf(
-                KeyValuePair(
-                    MemberInfoExtension.PARTY_NAME,
-                    holdingIdentity5.x500Name.toString(),
-                ),
-            ),
-        ),
-        KeyValuePairList(
-            listOf(
-                KeyValuePair(
-                    MemberInfoExtension.IS_MGM,
-                    "true",
-                ),
-                KeyValuePair(
-                    MemberInfoExtension.STATUS,
-                    MemberInfoExtension.MEMBER_STATUS_ACTIVE,
-                ),
-            ),
-        ),
-    )
 
     private var virtualNodeListener: VirtualNodeInfoListener? = null
 
@@ -195,6 +202,7 @@ class GroupPolicyProviderImplTest {
         LifecycleCoordinatorName.forComponent<CpiInfoReadService>(),
         LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+        LifecycleCoordinatorName.forComponent<InteropGroupPolicyReadService>(),
     )
     private val dependencyServiceRegistration: RegistrationHandle = mock()
     private val configHandle: Resource = mock()
@@ -214,8 +222,8 @@ class GroupPolicyProviderImplTest {
         on { registerComponentForUpdates(eq(coordinator), eq(configs)) } doReturn configHandle
     }
 
-    private val interopGroupPolicyReader: InteropGroupPolicyReader = mock {
-        on { getGroupPolicy(holdingIdentity6) } doReturn groupPolicy6
+    private val interopGroupPolicyReadService: InteropGroupPolicyReadService = mock {
+        on { getGroupPolicy(eq(holdingIdentity6.groupId)) } doReturn interopGroupPolicy
     }
 
     private val subscriptionFactory: SubscriptionFactory = mock {
@@ -231,10 +239,31 @@ class GroupPolicyProviderImplTest {
         on { parse(eq(holdingIdentity4), eq(null), any()) }.doThrow(BadGroupPolicyException(""))
         on { parse(eq(holdingIdentity5), eq(groupPolicy3), any()) }.doReturn(parsedMgmGroupPolicy)
         on { parse(eq(holdingIdentity6), eq(groupPolicy6), any()) }.doReturn(parsedGroupPolicy6)
+        on { parseInteropGroupPolicy(eq(interopGroupPolicy)) }.doReturn(parsedInteropGroupPolicy)
     }
 
     private val membershipQueryClient: MembershipQueryClient = mock {
         on { queryGroupPolicy(any()) }.doReturn(MembershipQueryResult.Success(properties to 1L))
+    }
+
+    private val bobPersistentMemberInfo = createPersistentMemberInfo(holdingIdentity2)
+    private val bobMemberContext: MemberContext = mock {
+        on { entries } doReturn mapOf(PARTY_NAME to bob.toString()).entries
+    }
+
+    private val mgmPersistentMemberInfo = createPersistentMemberInfo(holdingIdentity5)
+    private val mgmMemberContext: MemberContext = mock()
+    private val validMgmMgmContext: MGMContext = mock()
+    private val validMgmMemberInfo: MemberInfo = mock {
+        on { memberProvidedContext } doReturn mgmMemberContext
+        on { mgmProvidedContext } doReturn validMgmMgmContext
+        on { name } doReturn mgm
+        on { isMgm } doReturn true
+        on { isActive } doReturn true
+    }
+
+    private val memberInfoFactory: MemberInfoFactory = mock {
+        on { createMemberInfo(eq(mgmPersistentMemberInfo)) } doReturn validMgmMemberInfo
     }
 
     private fun postStartEvent() = postEvent(StartEvent())
@@ -264,6 +293,19 @@ class GroupPolicyProviderImplTest {
         )
     }
 
+    private val byteBuffer = ByteBuffer.wrap(byteArrayOf())
+    private fun createPersistentMemberInfo(owner: HoldingIdentity) = PersistentMemberInfo(
+        owner.toAvro(),
+        null,
+        null,
+        SignedData(
+            byteBuffer,
+            CryptoSignatureWithKey(byteBuffer, byteBuffer),
+            CryptoSignatureSpec("", null, null),
+        ),
+        byteBuffer,
+    )
+
     @BeforeEach
     fun setUp() {
         groupPolicyProvider = GroupPolicyProviderImpl(
@@ -274,15 +316,16 @@ class GroupPolicyProviderImplTest {
             membershipQueryClient,
             subscriptionFactory,
             configurationReadService,
-            interopGroupPolicyReader
+            memberInfoFactory,
+            interopGroupPolicyReadService
         )
     }
 
-    fun startComponentAndDependencies() {
+    private fun startComponentAndDependencies() {
         postConfigChangedEvent()
     }
 
-    fun assertExpectedGroupPolicy(
+    private fun assertExpectedGroupPolicy(
         groupPolicy: GroupPolicy?,
         groupId: String?,
         registrationProtocol: String?,
@@ -589,9 +632,9 @@ class GroupPolicyProviderImplTest {
         postConfigChangedEvent()
         startComponentAndDependencies()
 
-        groupPolicyProvider.FinishedRegistrationsProcessor() {_, _ -> }
+        groupPolicyProvider.FinishedRegistrationsProcessor(memberInfoFactory) {_, _ -> }
             .onNext(
-                Record("", "", validPersistentMemberInfo),
+                Record("", "", mgmPersistentMemberInfo),
                 null,
                 emptyMap()
             )
@@ -608,9 +651,9 @@ class GroupPolicyProviderImplTest {
 
         whenever(groupPolicyParser.parse(eq(holdingIdentity5), any(), any())).thenReturn(null)
 
-        groupPolicyProvider.FinishedRegistrationsProcessor()  {_, _ -> }
+        groupPolicyProvider.FinishedRegistrationsProcessor(memberInfoFactory)  {_, _ -> }
             .onNext(
-                Record("", "", validPersistentMemberInfo),
+                Record("", "", mgmPersistentMemberInfo),
                 null,
                 emptyMap(),
             )
@@ -626,9 +669,9 @@ class GroupPolicyProviderImplTest {
         postConfigChangedEvent()
         startComponentAndDependencies()
 
-        groupPolicyProvider.FinishedRegistrationsProcessor()  {_, _ -> }
+        groupPolicyProvider.FinishedRegistrationsProcessor(memberInfoFactory)  {_, _ -> }
             .onNext(
-                Record("", "", validPersistentMemberInfo),
+                Record("", "", mgmPersistentMemberInfo),
                 null,
                 emptyMap(),
             )
@@ -640,9 +683,9 @@ class GroupPolicyProviderImplTest {
 
         // on new event we will fail parsing
         whenever(groupPolicyParser.parse(eq(holdingIdentity5), any(), any())).thenReturn(null)
-        groupPolicyProvider.FinishedRegistrationsProcessor()  {_, _ -> }
+        groupPolicyProvider.FinishedRegistrationsProcessor(memberInfoFactory)  {_, _ -> }
             .onNext(
-                Record("", "", validPersistentMemberInfo),
+                Record("", "", mgmPersistentMemberInfo),
                 null,
                 emptyMap(),
             )
@@ -660,17 +703,17 @@ class GroupPolicyProviderImplTest {
 
         whenever(groupPolicyParser.parse(eq(holdingIdentity5), any(), any())).thenReturn(null)
 
-        groupPolicyProvider.FinishedRegistrationsProcessor()  {_, _ -> }
+        groupPolicyProvider.FinishedRegistrationsProcessor(memberInfoFactory)  {_, _ -> }
             .onNext(
-                Record("", "", validPersistentMemberInfo),
+                Record("", "", mgmPersistentMemberInfo),
                 null,
                 emptyMap(),
             )
         verify(groupPolicyParser, times(1)).parse(eq(holdingIdentity5), any(), any())
 
-        groupPolicyProvider.FinishedRegistrationsProcessor()  {_, _ -> }
+        groupPolicyProvider.FinishedRegistrationsProcessor(memberInfoFactory)  {_, _ -> }
             .onNext(
-                Record("", "", validPersistentMemberInfo),
+                Record("", "", mgmPersistentMemberInfo),
                 null,
                 emptyMap(),
             )
@@ -866,7 +909,7 @@ class GroupPolicyProviderImplTest {
         startComponentAndDependencies()
 
         processor.firstValue.onNext(
-            Record("", "", validPersistentMemberInfo),
+            Record("", "", mgmPersistentMemberInfo),
             null,
             emptyMap()
         )
@@ -888,9 +931,7 @@ class GroupPolicyProviderImplTest {
         postConfigChangedEvent()
         startComponentAndDependencies()
 
-        processor.firstValue.onSnapshot(
-            mapOf("" to validPersistentMemberInfo)
-        )
+        processor.firstValue.onSnapshot(mapOf("" to mgmPersistentMemberInfo))
 
         assertThat(holdingIdentity).isEqualTo(holdingIdentity5)
         assertThat(groupPolicy).isEqualTo(parsedMgmGroupPolicy)
@@ -907,34 +948,17 @@ class GroupPolicyProviderImplTest {
         postConfigChangedEvent()
         startComponentAndDependencies()
 
+        val bobMgmContext: MGMContext = mock {
+            on { entries } doReturn mapOf(IS_MGM to "true", STATUS to MEMBER_STATUS_ACTIVE).entries
+        }
+        val bobMemberInfo: MemberInfo = mock {
+            on { memberProvidedContext } doReturn bobMemberContext
+            on { mgmProvidedContext } doReturn bobMgmContext
+        }
+        whenever(memberInfoFactory.createMemberInfo(bobPersistentMemberInfo)).doReturn(bobMemberInfo)
+
         processor.firstValue.onNext(
-            Record(
-                "",
-                "",
-                PersistentMemberInfo(
-                    holdingIdentity2.toAvro(),
-                    KeyValuePairList(
-                        listOf(
-                            KeyValuePair(
-                                MemberInfoExtension.PARTY_NAME,
-                                holdingIdentity2.x500Name.toString(),
-                            ),
-                        ),
-                    ),
-                    KeyValuePairList(
-                        listOf(
-                            KeyValuePair(
-                                MemberInfoExtension.IS_MGM,
-                                "true",
-                            ),
-                            KeyValuePair(
-                                MemberInfoExtension.STATUS,
-                                MemberInfoExtension.MEMBER_STATUS_ACTIVE,
-                            ),
-                        ),
-                    ),
-                )
-            ),
+            Record("", "", bobPersistentMemberInfo),
             null,
             emptyMap()
         )
@@ -953,34 +977,17 @@ class GroupPolicyProviderImplTest {
         postConfigChangedEvent()
         startComponentAndDependencies()
 
+        val bobMgmContext: MGMContext = mock {
+            on { entries } doReturn mapOf(STATUS to MEMBER_STATUS_ACTIVE).entries
+        }
+        val bobMemberInfo: MemberInfo = mock {
+            on { memberProvidedContext } doReturn bobMemberContext
+            on { mgmProvidedContext } doReturn bobMgmContext
+        }
+        whenever(memberInfoFactory.createMemberInfo(mgmPersistentMemberInfo)).doReturn(bobMemberInfo)
+
         processor.firstValue.onNext(
-            Record(
-                "",
-                "",
-                PersistentMemberInfo(
-                    holdingIdentity5.toAvro(),
-                    KeyValuePairList(
-                        listOf(
-                            KeyValuePair(
-                                MemberInfoExtension.PARTY_NAME,
-                                holdingIdentity2.x500Name.toString(),
-                            ),
-                        ),
-                    ),
-                    KeyValuePairList(
-                        listOf(
-                            KeyValuePair(
-                                MemberInfoExtension.IS_MGM,
-                                "true",
-                            ),
-                            KeyValuePair(
-                                MemberInfoExtension.STATUS,
-                                MemberInfoExtension.MEMBER_STATUS_ACTIVE,
-                            ),
-                        ),
-                    ),
-                )
-            ),
+            Record("", "", mgmPersistentMemberInfo),
             null,
             emptyMap()
         )
@@ -999,34 +1006,17 @@ class GroupPolicyProviderImplTest {
         postConfigChangedEvent()
         startComponentAndDependencies()
 
+        val nonMgmMgmContext: MGMContext = mock {
+            on { entries } doReturn mapOf(IS_MGM to "false", STATUS to MEMBER_STATUS_ACTIVE).entries
+        }
+        val nonMgmMgmMemberInfo: MemberInfo = mock {
+            on { memberProvidedContext } doReturn mgmMemberContext
+            on { mgmProvidedContext } doReturn nonMgmMgmContext
+        }
+        whenever(memberInfoFactory.createMemberInfo(mgmPersistentMemberInfo)).doReturn(nonMgmMgmMemberInfo)
+
         processor.firstValue.onNext(
-            Record(
-                "",
-                "",
-                PersistentMemberInfo(
-                    holdingIdentity5.toAvro(),
-                    KeyValuePairList(
-                        listOf(
-                            KeyValuePair(
-                                MemberInfoExtension.PARTY_NAME,
-                                holdingIdentity5.x500Name.toString(),
-                            ),
-                        ),
-                    ),
-                    KeyValuePairList(
-                        listOf(
-                            KeyValuePair(
-                                MemberInfoExtension.IS_MGM,
-                                "false",
-                            ),
-                            KeyValuePair(
-                                MemberInfoExtension.STATUS,
-                                MemberInfoExtension.MEMBER_STATUS_ACTIVE,
-                            ),
-                        ),
-                    ),
-                )
-            ),
+            Record("", "", mgmPersistentMemberInfo),
             null,
             emptyMap()
         )
@@ -1045,34 +1035,17 @@ class GroupPolicyProviderImplTest {
         postConfigChangedEvent()
         startComponentAndDependencies()
 
+        val nonActiveMgmMgmContext: MGMContext = mock {
+            on { entries } doReturn mapOf(IS_MGM to "true", STATUS to MEMBER_STATUS_PENDING).entries
+        }
+        val nonActiveMgmMemberInfo: MemberInfo = mock {
+            on { memberProvidedContext } doReturn mgmMemberContext
+            on { mgmProvidedContext } doReturn nonActiveMgmMgmContext
+        }
+        whenever(memberInfoFactory.createMemberInfo(mgmPersistentMemberInfo)).doReturn(nonActiveMgmMemberInfo)
+
         processor.firstValue.onNext(
-            Record(
-                "",
-                "",
-                PersistentMemberInfo(
-                    holdingIdentity5.toAvro(),
-                    KeyValuePairList(
-                        listOf(
-                            KeyValuePair(
-                                MemberInfoExtension.PARTY_NAME,
-                                holdingIdentity5.x500Name.toString(),
-                            ),
-                        ),
-                    ),
-                    KeyValuePairList(
-                        listOf(
-                            KeyValuePair(
-                                MemberInfoExtension.IS_MGM,
-                                "true",
-                            ),
-                            KeyValuePair(
-                                MemberInfoExtension.STATUS,
-                                MemberInfoExtension.MEMBER_STATUS_PENDING,
-                            ),
-                        ),
-                    ),
-                )
-            ),
+            Record("", "", mgmPersistentMemberInfo),
             null,
             emptyMap()
         )
@@ -1081,13 +1054,11 @@ class GroupPolicyProviderImplTest {
     }
 
     @Test
-    fun `Interop groupPolicy is returned when CPI metadata is null `() {
+    fun `Interop p2p parameters are returned when mgm group policy not found `() {
         startComponentAndDependencies()
         postConfigChangedEvent()
-        assertExpectedGroupPolicy(
-            groupPolicyProvider.getGroupPolicy(holdingIdentity6),
-            groupId3,
-            regProtocol3
-        )
+        val actualParams = groupPolicyProvider.getP2PParameters(holdingIdentity6)
+        assertNotNull(actualParams)
+        assertEquals(GroupPolicyConstants.PolicyValues.P2PParameters.TlsPkiMode.STANDARD, actualParams?.tlsPki)
     }
 }

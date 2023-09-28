@@ -5,7 +5,6 @@ import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.CounterPartyFlowInfo
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.pipeline.events.FlowEventContext
-import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.osgi.service.component.annotations.Component
@@ -18,7 +17,7 @@ import org.osgi.service.component.annotations.Component
   * Any other state means that the SessionInit/SessionConfirm messages have been transmitted so the data can be retrieved from the
   * [SessionState]
   */
- @Component(service = [FlowWaitingForHandler::class])
+@Component(service = [FlowWaitingForHandler::class])
 class CounterpartyFlowInfoWaitingForHandler : FlowWaitingForHandler<CounterPartyFlowInfo> {
 
     override val type = CounterPartyFlowInfo::class.java
@@ -27,18 +26,20 @@ class CounterpartyFlowInfoWaitingForHandler : FlowWaitingForHandler<CounterParty
         val checkpoint = context.checkpoint
 
         val sessionId = waitingFor.sessionId
-        val sessionState = checkpoint.getSessionState(sessionId) ?: throw FlowPlatformException("Failed to get counterparty info " +
-                "as the session does not exist.")
+        val sessionState = checkpoint.getSessionState(sessionId)
 
-        return when(sessionState.status) {
-            SessionStateType.CREATED -> FlowContinuation.Continue
-            SessionStateType.ERROR -> {
-                FlowContinuation.Error(
-                    CordaRuntimeException(
-                        "Failed to get counterparty info due to sessions with errorred status."
-                    )
+        return when(sessionState?.status) {
+            null -> FlowContinuation.Error(
+                CordaRuntimeException(
+                    "Failed to get counterparty info as the session does not exist."
                 )
-            }
+            )
+            SessionStateType.CREATED -> FlowContinuation.Continue
+            SessionStateType.ERROR -> FlowContinuation.Error(
+                CordaRuntimeException(
+                    "Failed to get counterparty info due to sessions with errorred status."
+                )
+            )
             else -> FlowContinuation.Run(Unit)
         }
     }

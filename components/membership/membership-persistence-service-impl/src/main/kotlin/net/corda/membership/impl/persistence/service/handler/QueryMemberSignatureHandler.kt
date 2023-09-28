@@ -1,26 +1,27 @@
 package net.corda.membership.impl.persistence.service.handler
 
-import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.query.QueryMemberSignature
-import net.corda.data.membership.db.response.query.MemberSignature
-import net.corda.data.membership.db.response.query.MemberSignatureQueryResponse
+import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.virtualnode.toCorda
-import java.nio.ByteBuffer
 
+/**
+ * Keeping this handler until we completely remove the [QueryMemberSignature] command.
+ * Converting the reply to a [MemberInfoQueryResponse] for now.
+ */
 internal class QueryMemberSignatureHandler(
     persistenceHandlerServices: PersistenceHandlerServices
-) : BasePersistenceHandler<QueryMemberSignature, MemberSignatureQueryResponse>(persistenceHandlerServices) {
+) : BasePersistenceHandler<QueryMemberSignature, MemberInfoQueryResponse>(persistenceHandlerServices) {
     override val operation = QueryMemberSignature::class.java
     override fun invoke(
         context: MembershipRequestContext,
         request: QueryMemberSignature,
-    ): MemberSignatureQueryResponse {
+    ): MemberInfoQueryResponse {
         return transaction(context.holdingIdentity.toCorda().shortHash) { em ->
-            MemberSignatureQueryResponse(
+            MemberInfoQueryResponse(
                 request.queryIdentities.mapNotNull { holdingIdentity ->
                     val memberInfoEntity = em.find(
                         MemberInfoEntity::class.java,
@@ -31,16 +32,19 @@ internal class QueryMemberSignatureHandler(
                         )
                     ) ?: throw MembershipPersistenceException("Could not find signature for $holdingIdentity")
 
-                    MemberSignature(
-                        holdingIdentity,
-                        CryptoSignatureWithKey(
-                            ByteBuffer.wrap(memberInfoEntity.memberSignatureKey),
-                            ByteBuffer.wrap(memberInfoEntity.memberSignatureContent)
-                        ),
-                        retrieveSignatureSpec(memberInfoEntity.memberSignatureSpec)
-                    )
+                    memberInfoEntity.toPersistentMemberInfo(context.holdingIdentity)
                 }
             )
         }
     }
+
+    private fun MemberInfoEntity.toPersistentMemberInfo(viewOwningMember: net.corda.data.identity.HoldingIdentity) =
+        memberInfoFactory.createPersistentMemberInfo(
+            viewOwningMember,
+            memberContext,
+            mgmContext,
+            memberSignatureKey,
+            memberSignatureContent,
+            memberSignatureSpec,
+        )
 }

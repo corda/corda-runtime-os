@@ -5,7 +5,6 @@ import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
-import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
@@ -98,6 +97,7 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
                     member.memberSignatureSpec,
                     serializedMgmContext,
                     member.serialNumber,
+                    isDeleted = false
                 )
             )
 
@@ -115,11 +115,14 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
             registrationRequest.lastModified = now
 
             UpdateMemberAndRegistrationRequestResponse(
-                PersistentMemberInfo(
+                memberInfoFactory.createPersistentMemberInfo(
                     context.holdingIdentity,
-                    keyValuePairListDeserializer.deserialize(member.memberContext),
-                    mgmContext,
-                ),
+                    member.memberContext,
+                    serializedMgmContext,
+                    member.memberSignatureKey,
+                    member.memberSignatureContent,
+                    member.memberSignatureSpec,
+                )
             )
         }
     }

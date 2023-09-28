@@ -84,7 +84,8 @@ class VerificationRequestHandlerImpl(private val responseFactory: ExternalEventR
             UtxoLedgerTransactionImpl(
                 WrappedUtxoWireTransaction(wireTransaction, serializationService),
                 inputStateAndRefs,
-                referenceStateAndRefs
+                referenceStateAndRefs,
+                groupParameters
             )
         }
 }

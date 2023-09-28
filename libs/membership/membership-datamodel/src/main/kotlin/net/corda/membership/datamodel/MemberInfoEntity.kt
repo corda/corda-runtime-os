@@ -56,6 +56,9 @@ class MemberInfoEntity(
 
     @Column(name = "serial_number", nullable = false)
     var serialNumber: Long,
+
+    @Column(name = "is_deleted", nullable = false, updatable = true)
+    var isDeleted: Boolean = false,
 ) {
     override fun equals(other: Any?): Boolean {
         if (other === this) return true

@@ -3,6 +3,7 @@ package net.corda.membership.impl.registration.dynamic
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
@@ -37,7 +38,9 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
@@ -57,6 +60,7 @@ import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import java.security.PublicKey
 import java.time.Instant
 import java.util.*
 
@@ -76,21 +80,31 @@ class  RegistrationProcessorTest {
         const val testTopicKey = "key"
         const val SERIAL = 0L
 
-        val memberContext = KeyValuePairList(listOf(KeyValuePair("key", "value"), KeyValuePair(PLATFORM_VERSION, "50100")))
+        const val encodedSessionKey = "BBC123456789"
+        val memberContext = KeyValuePairList(
+            listOf(
+                KeyValuePair("key", "value"),
+                KeyValuePair(PLATFORM_VERSION, "50100"),
+                KeyValuePair(PARTY_SESSION_KEYS_PEM.format(0), encodedSessionKey),
+            )
+        )
         val registrationContext = KeyValuePairList(listOf(KeyValuePair("key-2", "value-2")))
+        val serialisedSigningKey = "456".toByteArray()
+        val signingKey = mock<PublicKey>()
         val signature = CryptoSignatureWithKey(
-            ByteBuffer.wrap("456".toByteArray()),
+            ByteBuffer.wrap(serialisedSigningKey),
             ByteBuffer.wrap("789".toByteArray())
         )
+        val signatureSpec = CryptoSignatureSpec("test", null, null)
         val signedMemberContext = SignedData(
             memberContext.toByteBuffer(),
             signature,
-            CryptoSignatureSpec("", null, null)
+            signatureSpec,
         )
         val signedRegistrationContext = SignedData(
             registrationContext.toByteBuffer(),
             signature,
-            CryptoSignatureSpec("", null, null)
+            signatureSpec,
         )
         val registrationRequest =
             MembershipRegistrationRequest(
@@ -107,12 +121,8 @@ class  RegistrationProcessorTest {
                 registrationId,
                 holdingIdentity.toCorda().shortHash.value,
                 1,
-                memberContext,
-                signature,
-                mock(),
-                mock(),
-                mock(),
-                mock(),
+                signedMemberContext,
+                signedRegistrationContext,
                 "",
                 SERIAL,
             )
@@ -160,8 +170,9 @@ class  RegistrationProcessorTest {
     private lateinit var deserializer: CordaAvroDeserializer<KeyValuePairList>
     private lateinit var verificationRequestResponseSerializer: CordaAvroSerializer<Any>
     private lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
-    lateinit var membershipPersistenceClient: MembershipPersistenceClient
+    private lateinit var membershipPersistenceClient: MembershipPersistenceClient
     private lateinit var membershipQueryClient: MembershipQueryClient
+    private lateinit var keyEncodingService: KeyEncodingService
     private val operation = mock<MembershipPersistenceOperation<Unit>> {
         on { createAsyncCommands() } doReturn emptyList()
     }
@@ -174,7 +185,7 @@ class  RegistrationProcessorTest {
         on { parse(eq(STATUS), eq(String::class.java)) } doReturn MEMBER_STATUS_ACTIVE
         on { parseOrNull(eq(IS_MGM), any<Class<Boolean>>()) } doReturn false
     }
-    private val memberInfo: MemberInfo = mock {
+    private val memberInfo: SelfSignedMemberInfo = mock {
         on { name } doReturn x500Name
         on { memberProvidedContext } doReturn memberMemberContext
         on { mgmProvidedContext } doReturn memberMgmContext
@@ -196,7 +207,7 @@ class  RegistrationProcessorTest {
     @BeforeEach
     fun setUp() {
         memberInfoFactory = mock {
-            on { create(any<SortedMap<String, String?>>(), any()) } doReturn memberInfo
+            on { createSelfSignedMemberInfo(any(), any(), any(), any()) } doReturn memberInfo
         }
         membershipGroupReader = mock {
             on { lookup(eq(mgmX500Name), any()) } doReturn mgmMemberInfo
@@ -208,11 +219,13 @@ class  RegistrationProcessorTest {
         }
         deserializer = mock {
             on { deserialize(eq(memberContext.toByteBuffer().array())) } doReturn memberContext
+            on { deserialize(eq(registrationRequestDetails.registrationContext.data.array())) } doReturn mock()
         }
         verificationRequestResponseSerializer = mock {
             on { serialize(eq(verificationRequest)) } doReturn "REQUEST".toByteArray()
             on { serialize(eq(verificationResponse)) } doReturn "RESPONSE".toByteArray()
             on { serialize(isA<SetOwnRegistrationStatus>()) } doReturn "setStatus".toByteArray()
+            on { serialize(any()) } doReturn "serializedData".toByteArray()
         }
         cordaAvroSerializationFactory = mock {
             on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
@@ -227,7 +240,8 @@ class  RegistrationProcessorTest {
             on {
                 queryMemberInfo(
                     eq(mgmHoldingIdentity.toCorda()),
-                    any()
+                    any(),
+                    any(),
                 )
             } doReturn MembershipQueryResult.Success(emptyList())
             on {
@@ -242,6 +256,10 @@ class  RegistrationProcessorTest {
                 )
             } doReturn MembershipQueryResult.Success(listOf(registrationRequestDetails))
         }
+        keyEncodingService = mock {
+            on { decodePublicKey(serialisedSigningKey) } doReturn signingKey
+            on { decodePublicKey(encodedSessionKey) } doReturn signingKey
+        }
 
         processor = RegistrationProcessor(
             clock,
@@ -252,6 +270,8 @@ class  RegistrationProcessorTest {
             membershipQueryClient,
             mock(),
             mock(),
+            mock(),
+            keyEncodingService,
         )
     }
 

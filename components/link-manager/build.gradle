@@ -64,6 +64,7 @@ dependencies {
     implementation project(":components:virtual-node:cpi-info-read-service")
     implementation project(":libs:membership:membership-common")
     implementation project(":components:membership:membership-group-read")
+    runtimeOnly project(":libs:web:web-impl")
 
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:p2p:certificates")
@@ -71,6 +72,8 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
     testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    testImplementation project(":components:interop:interop-group-policy-read-service")
+    testImplementation project(":components:interop:interop-group-policy-read-service-impl")
 
     integrationTestImplementation project(":components:gateway")
     integrationTestImplementation project(":testing:db-message-bus-testkit")

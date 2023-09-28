@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test
 class SessionInitProcessorReceiveTest {
 
     private fun createSessionInit() =
-        SessionInit("flow", "flowId1", emptyKeyValuePairList(), emptyKeyValuePairList(), emptyKeyValuePairList(), null)
+        SessionInit("flow", "flowId1", emptyKeyValuePairList(), emptyKeyValuePairList())
 
     @Test
     fun `Receive duplicate init when state is not null`() {
@@ -22,7 +22,8 @@ class SessionInitProcessorReceiveTest {
             MessageDirection.INBOUND,
             "sessionId",
             1,
-            createSessionInit()
+            createSessionInit(),
+            contextSessionProps = emptyKeyValuePairList()
         )
 
         val sessionInitProcessor = SessionInitProcessorReceive(
@@ -38,7 +39,6 @@ class SessionInitProcessorReceiveTest {
 
         assertThat(sessionState).isNotNull
         assertThat(sessionState.sendEventsState.undeliveredMessages).isEmpty()
-        assertThat(sessionState.sendAck).isTrue
     }
 
     @Test
@@ -47,7 +47,8 @@ class SessionInitProcessorReceiveTest {
             MessageDirection.INBOUND,
             "sessionId",
             1,
-            createSessionInit()
+            createSessionInit(),
+            contextSessionProps = emptyKeyValuePairList()
         )
 
         val sessionInitProcessor = SessionInitProcessorReceive(
@@ -75,7 +76,8 @@ class SessionInitProcessorReceiveTest {
             MessageDirection.INBOUND,
             "sessionId",
             1,
-            createSessionInit()
+            createSessionInit(),
+            contextSessionProps = emptyKeyValuePairList()
         )
 
         val sessionInitProcessor = SessionInitProcessorReceive("key", null, sessionInitEvent, Instant.now())
@@ -90,6 +92,5 @@ class SessionInitProcessorReceiveTest {
         assertThat(receivedEvents.undeliveredMessages.first()).isEqualTo(sessionInitEvent)
 
         assertThat(sessionState.sendEventsState.undeliveredMessages).isEmpty()
-        assertThat(sessionState.sendAck).isTrue
     }
 }

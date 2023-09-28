@@ -6,6 +6,7 @@ import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
 import net.corda.ledger.utxo.token.cache.converters.EntityConverter
 import net.corda.ledger.utxo.token.cache.converters.EventConverter
 import net.corda.ledger.utxo.token.cache.entities.TokenEvent
+import net.corda.ledger.utxo.token.cache.entities.TokenPoolCache
 import net.corda.ledger.utxo.token.cache.handlers.TokenEventHandler
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
@@ -14,6 +15,7 @@ import org.slf4j.LoggerFactory
 class TokenCacheEventProcessor constructor(
     private val eventConverter: EventConverter,
     private val entityConverter: EntityConverter,
+    private val tokenPoolCache: TokenPoolCache,
     private val tokenCacheEventHandlerMap: Map<Class<*>, TokenEventHandler<in TokenEvent>>,
 ) : StateAndEventProcessor<TokenPoolCacheKey, TokenPoolCacheState, TokenPoolCacheEvent> {
 
@@ -41,8 +43,22 @@ class TokenCacheEventProcessor constructor(
                 this.tokenClaims = listOf()
             }
 
-            val tokenCache = entityConverter.toTokenCache(nonNullableState)
+            // Temporary logic that covers the upgrade from release/5.0 to release/5.1
+            // The field claimedTokens has been added to the TokenCaim avro object, and it will replace claimedTokenStateRefs.
+            // In order to avoid breaking compatibility, the claimedTokenStateRefs has been deprecated, and it will eventually
+            // be removed. Any claim that contains a non-empty claimedTokenStateRefs field are considered invalid because
+            // this means the avro object is an old one, and it should be replaced by the new format.
+            val validClaims =
+                nonNullableState.tokenClaims.filter { it.claimedTokenStateRefs.isNullOrEmpty() }
+            val invalidClaims = nonNullableState.tokenClaims - validClaims.toSet()
+            if (invalidClaims.isNotEmpty()) {
+                val invalidClaimsId = invalidClaims.map { it.claimId }
+                log.warn("Invalid claims were found and have been discarded. Invalid claims: ${invalidClaimsId}")
+            }
+
+            val poolKey = entityConverter.toTokenPoolKey(event.key)
             val poolCacheState = entityConverter.toPoolCacheState(nonNullableState)
+            val tokenCache = tokenPoolCache.get(poolKey)
 
             val handler = checkNotNull(tokenCacheEventHandlerMap[tokenEvent.javaClass]) {
                 "Received an event with and unrecognized payload '${tokenEvent.javaClass}'"

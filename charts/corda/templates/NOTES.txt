@@ -1,7 +1,7 @@
 {{- if .Values.bootstrap.db.enabled }}
 1. Extract the username and password for the REST API admin created during bootstrap:
-kubectl get secret {{ include "corda.restApiAdminUsernameSecretName" . }} -o go-template='{{ `{{` }} .data.{{ include "corda.restApiAdminSecretUsernameKey" . }} | base64decode {{ `}}` }}'
-kubectl get secret {{ include "corda.restApiAdminPasswordSecretName" . }} -o go-template='{{ `{{` }} .data.{{ include "corda.restApiAdminSecretPasswordKey" . }} | base64decode {{ `}}` }}'
+kubectl get secret {{ include "corda.restApiAdminUsernameSecretName" . }} --namespace {{ .Release.Namespace }} -o go-template='{{ `{{` }} .data.{{ include "corda.restApiAdminSecretUsernameKey" . }} | base64decode {{ `}}` }}'
+kubectl get secret {{ include "corda.restApiAdminPasswordSecretName" . }} --namespace {{ .Release.Namespace }} -o go-template='{{ `{{` }} .data.{{ include "corda.restApiAdminSecretPasswordKey" . }} | base64decode {{ `}}` }}'
 {{- else }}
 1. The REST API admin username and password were specified when the configuration database was initialized.
 {{- end }}

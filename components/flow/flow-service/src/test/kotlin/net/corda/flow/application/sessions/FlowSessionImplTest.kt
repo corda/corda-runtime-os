@@ -11,9 +11,9 @@ import net.corda.flow.application.sessions.impl.FlowSessionImpl
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.state.FlowContext
 import net.corda.flow.utils.KeyValueStore
+import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSION_USED
-import net.corda.internal.serialization.SerializedBytesImpl
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -159,6 +159,35 @@ class FlowSessionImplTest {
         verify(flowFiber).suspend(any<FlowIORequest.Send>())
     }
 
+
+    @Test
+    fun `calling close when not CLOSED will cause the flow to suspend`() {
+        val session = createInitiatingSession()
+        val flowCheckpoint = mockFlowFiberService.flowCheckpoint
+        whenever(flowCheckpoint.getSessionState(SESSION_ID))
+            .thenReturn(SessionState().apply {
+                status = SessionStateType.CONFIRMED
+            })
+
+        session.close()
+        val flowIORequestCapture = argumentCaptor<FlowIORequest<*>>()
+
+        verify(flowFiber, times(1)).suspend(flowIORequestCapture.capture())
+        assertTrue(flowIORequestCapture.firstValue is FlowIORequest.CloseSessions)
+    }
+
+    @Test
+    fun `calling close when CLOSED will not cause the flow to suspend`() {
+        val session = createInitiatingSession()
+        val flowCheckpoint = mockFlowFiberService.flowCheckpoint
+        whenever(flowCheckpoint.getSessionState(SESSION_ID))
+            .thenReturn(SessionState().apply {
+                status = SessionStateType.CLOSED
+            })
+        session.close()
+        verify(flowFiber, times(0)).suspend(any<FlowIORequest.CloseSessions>())
+    }
+
     @Test
     fun `send suspends the fiber to send a message`() {
         val session = createInitiatedSession()
@@ -185,8 +214,7 @@ class FlowSessionImplTest {
                 SessionState()
             } else {
                 SessionState().apply {
-                    counterpartySessionProperties =
-                        testSessionProps()
+                    sessionProperties = testSessionProps()
                 }
             }
         }
@@ -203,7 +231,7 @@ class FlowSessionImplTest {
     @Test
     fun `Get counterparty info retrieves data when it is available in the fiber`() {
         val checkpoint = mockFlowFiberService.flowCheckpoint
-        whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(SessionState().apply { counterpartySessionProperties =
+        whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(SessionState().apply { sessionProperties =
             testSessionProps() })
         val session = createInitiatingSession()
 
@@ -220,8 +248,10 @@ class FlowSessionImplTest {
         names = ["ERROR", "CLOSED"]
     )
     fun `Send, receive, sendAndReceive will throw if session state is CLOSED or ERROR`(testStatus: SessionStateType) {
-        whenever(mockFlowFiberService.flowCheckpoint.getSessionState(SESSION_ID)).thenReturn(SessionState().apply { status =
-            testStatus })
+        whenever(mockFlowFiberService.flowCheckpoint.getSessionState(SESSION_ID)).thenReturn(SessionState().apply {
+            status =
+                testStatus
+        })
         val session = createInitiatingSession()
 
         assertThrows<CordaRuntimeException> { session.send(HI) }
@@ -245,7 +275,8 @@ class FlowSessionImplTest {
         mockFlowFiberService,
         serializationService,
         flowContext,
-        FlowSessionImpl.Direction.INITIATED_SIDE
+        FlowSessionImpl.Direction.INITIATED_SIDE,
+        true
     )
 
     private fun createInitiatingSession() = FlowSessionImpl(
@@ -255,7 +286,8 @@ class FlowSessionImplTest {
         mockFlowFiberService,
         serializationService,
         flowContext,
-        FlowSessionImpl.Direction.INITIATING_SIDE
+        FlowSessionImpl.Direction.INITIATING_SIDE,
+        true
     )
 
 }

@@ -1,8 +1,6 @@
 package net.corda.flow.testing.tests
 
 import net.corda.data.KeyValuePairList
-import java.nio.ByteBuffer
-import java.util.stream.Stream
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.data.persistence.EntityRequest
@@ -27,6 +25,8 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.osgi.service.component.annotations.Component
 import org.osgi.test.junit5.service.ServiceExtension
+import java.nio.ByteBuffer
+import java.util.stream.Stream
 
 @ExtendWith(ServiceExtension::class)
 @Execution(ExecutionMode.SAME_THREAD)
@@ -34,6 +34,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
 
     private companion object {
         const val REQUEST_ID = "requestId"
+        const val SECOND_REQUEST_ID = "secondRequestId"
         const val TOPIC = "topic"
         const val KEY = "key"
         val FLOW_START_CONTEXT = mapOf("key" to "value")
@@ -131,7 +132,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             externalEventReceived(FLOW_ID1, REQUEST_ID, response)
-                .suspendsWith(FlowIORequest.ForceCheckpoint)
+                .completedSuccessfullyWith("hello")
         }
 
         then {
@@ -206,7 +207,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
                 )
 
             externalEventReceived(FLOW_ID1, REQUEST_ID, STRING_RESPONSE)
-                .suspendsWith(FlowIORequest.ForceCheckpoint)
+                .completedSuccessfullyWith("hello")
         }
 
         then {
@@ -242,9 +243,9 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
                 )
         }
 
-
         `when` {
-            wakeupEventReceived(FLOW_ID1)
+            // Use this as a trigger for the pipeline - an external event not the one we are expecting.
+            externalEventReceived(FLOW_ID1, SECOND_REQUEST_ID, ANY_INPUT)
         }
 
         then {
@@ -276,9 +277,9 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
                 )
         }
 
-
         `when` {
-            wakeupEventReceived(FLOW_ID1)
+            // Use this as a trigger for the pipeline - an external event not the one we are expecting.
+            externalEventReceived(FLOW_ID1, SECOND_REQUEST_ID, ANY_INPUT)
         }
 
         then {
@@ -394,8 +395,8 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
         Thread.sleep(10.seconds.toMillis())
 
         `when` {
-            wakeupEventReceived(FLOW_ID1)
-                .suspendsWith(FlowIORequest.ForceCheckpoint)
+            // Use this as a trigger for the pipeline - an external event not the one we are expecting.
+            externalEventReceived(FLOW_ID1, SECOND_REQUEST_ID, ANY_INPUT)
         }
 
         then {
@@ -432,7 +433,6 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             externalEventReceived(FLOW_ID1, REQUEST_ID, ANY_RESPONSE)
-                .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
         then {

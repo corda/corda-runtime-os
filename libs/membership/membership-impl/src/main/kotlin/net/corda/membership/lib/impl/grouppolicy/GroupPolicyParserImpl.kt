@@ -181,7 +181,7 @@ class GroupPolicyParserImpl @Activate constructor(
         }
         return parsedGroupPolicy?.mgmInfo?.let {
             val now = clock.instant().toString()
-            memberInfoFactory.create(
+            memberInfoFactory.createMemberInfo(
                 it.filterKeys { !it.equals(SERIAL) }.toSortedMap(),
                 sortedMapOf(
                     CREATION_TIME to now,

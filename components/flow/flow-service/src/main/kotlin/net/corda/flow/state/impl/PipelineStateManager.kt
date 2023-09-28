@@ -49,6 +49,9 @@ class PipelineStateManager(
     val retryCount: Int
         get() = state.retryState?.retryCount ?: -1
 
+    val firstFailureTimestamp: Instant?
+        get() = state.retryState?.firstFailureTimestamp
+
     /**
      * Update the current pipeline state to set a retry of the current event.
      */

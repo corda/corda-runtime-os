@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.interop.group.policy.read.InteropGroupPolicyReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -17,16 +18,12 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.grouppolicy.GroupPolicyProvider
-import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
-import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
-import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
-import net.corda.membership.lib.grouppolicy.InteropGroupPolicyReader
 import net.corda.membership.lib.grouppolicy.MGMGroupPolicy
-import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.processor.CompactedProcessor
@@ -39,6 +36,7 @@ import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.debug
 import net.corda.v5.base.types.LayeredPropertyMap
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -66,8 +64,10 @@ class GroupPolicyProviderImpl @Activate constructor(
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = InteropGroupPolicyReader::class)
-    private val interopGroupPolicyReader: InteropGroupPolicyReader
+    @Reference(service = MemberInfoFactory::class)
+    private val memberInfoFactory: MemberInfoFactory,
+    @Reference(service = InteropGroupPolicyReadService::class)
+    private val interopGroupPolicyReadService: InteropGroupPolicyReadService
 ) : GroupPolicyProvider {
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
@@ -94,12 +94,28 @@ class GroupPolicyProviderImpl @Activate constructor(
     private var messagingConfig: SmartConfig? = null
 
     override fun getGroupPolicy(holdingIdentity: HoldingIdentity) = impl.getGroupPolicy(holdingIdentity)
+
     override fun registerListener(name: String, callback: (HoldingIdentity, GroupPolicy) -> Unit) {
-        val listener = Listener(name, callback)
+        val listener = Listener(name, memberInfoFactory, callback)
         messagingConfig?.also {
             listener.start(it)
         }
         listeners.put(name, listener)?.stop()
+    }
+
+    override fun getP2PParameters(holdingIdentity: HoldingIdentity) : GroupPolicy.P2PParameters? {
+        val mgmGroupPolicy = getGroupPolicy(holdingIdentity)
+        return if (mgmGroupPolicy == null) {
+            val groupPolicyJson = interopGroupPolicyReadService.getGroupPolicy(holdingIdentity.groupId)
+            if (groupPolicyJson != null) {
+                groupPolicyParser.parseInteropGroupPolicy(groupPolicyJson).p2pParameters
+            } else {
+                logger.warn("Could not get interop group policy for holding identity with Id : [${holdingIdentity.shortHash}].")
+                null
+            }
+        } else {
+            mgmGroupPolicy.p2pParameters
+        }
     }
 
     override fun start() = coordinator.start()
@@ -124,6 +140,7 @@ class GroupPolicyProviderImpl @Activate constructor(
                         LifecycleCoordinatorName.forComponent<CpiInfoReadService>(),
                         LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
                         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                        LifecycleCoordinatorName.forComponent<InteropGroupPolicyReadService>(),
                     )
                 )
             }
@@ -277,10 +294,6 @@ class GroupPolicyProviderImpl @Activate constructor(
                 "Could not get CPI metadata for holding identity [${holdingIdentity}] and CPI with identifier " +
                         "[${vNodeInfo?.cpiIdentifier.toString()}]. Any updates to the group policy will be processed later."
             )
-        }
-        val groupPolicy: String? = metadata?.groupPolicy ?: interopGroupPolicyReader.getGroupPolicy(holdingIdentity)
-        if (groupPolicy == null) {
-            logger.warn("Could not get interop group policy for holding identity [${holdingIdentity}].")
             return null
         }
 
@@ -293,7 +306,7 @@ class GroupPolicyProviderImpl @Activate constructor(
         return try {
             groupPolicyParser.parse(
                 holdingIdentity,
-                groupPolicy,
+                metadata.groupPolicy,
                 ::persistedPropertyQuery
             )
         } catch (e: BadGroupPolicyException) {
@@ -307,6 +320,7 @@ class GroupPolicyProviderImpl @Activate constructor(
      * This will make sure we have the trust stores and other important information in the group policy ready.
      */
     internal inner class FinishedRegistrationsProcessor(
+        private val memberInfoFactory: MemberInfoFactory,
         private val callBack: (HoldingIdentity, GroupPolicy) -> Unit
     ) : CompactedProcessor<String, PersistentMemberInfo> {
         override fun onSnapshot(currentData: Map<String, PersistentMemberInfo>) {
@@ -327,13 +341,12 @@ class GroupPolicyProviderImpl @Activate constructor(
 
         private fun gotData(member: PersistentMemberInfo) {
             try {
-                val memberContext = member.memberContext.toMap()
-                val mgmContext = member.mgmContext.toMap()
+                val memberInfo = memberInfoFactory.createMemberInfo(member)
                 // Only notify when an active MGM is added to itself
                 if (
-                    (memberContext[PARTY_NAME] == member.viewOwningMember.x500Name) &&
-                    (mgmContext[IS_MGM] == "true") &&
-                    (mgmContext[STATUS] == MEMBER_STATUS_ACTIVE)
+                    memberInfo.name == MemberX500Name.parse(member.viewOwningMember.x500Name) &&
+                    memberInfo.isMgm &&
+                    memberInfo.isActive
                 ) {
                     val holdingIdentity = member.viewOwningMember.toCorda()
                     val gp = parseGroupPolicy(holdingIdentity)
@@ -354,6 +367,7 @@ class GroupPolicyProviderImpl @Activate constructor(
     }
     private inner class Listener(
         private val name: String,
+        private val memberInfoFactory: MemberInfoFactory,
         val callBack: (HoldingIdentity, GroupPolicy) -> Unit,
     ) {
         private var subscription: CompactedSubscription<String, PersistentMemberInfo>? = null
@@ -362,7 +376,7 @@ class GroupPolicyProviderImpl @Activate constructor(
             subscription?.close()
             subscription = subscriptionFactory.createCompactedSubscription(
                 SubscriptionConfig("$CONSUMER_GROUP-$name", MEMBER_LIST_TOPIC),
-                FinishedRegistrationsProcessor(callBack),
+                FinishedRegistrationsProcessor(memberInfoFactory, callBack),
                 messagingConfig,
             ).also {
                 it.start()

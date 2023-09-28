@@ -5,7 +5,7 @@ import com.typesafe.config.ConfigValueFactory
 import java.nio.ByteBuffer
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.event.Wakeup
+import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.checkpoint.Checkpoint
@@ -38,6 +38,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Instant
 
 class FlowEventExceptionProcessorImplTest {
     private val flowMessageFactory = mock<FlowMessageFactory>()
@@ -47,9 +48,9 @@ class FlowEventExceptionProcessorImplTest {
     private val flowCheckpoint = mock<FlowCheckpoint>()
 
     private val flowConfig = ConfigFactory.empty()
-        .withValue(FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS, ConfigValueFactory.fromAnyRef(2))
+        .withValue(FlowConfig.PROCESSING_MAX_RETRY_WINDOW_DURATION, ConfigValueFactory.fromAnyRef(1000L))
     private val smartFlowConfig = SmartConfigFactory.createWithoutSecurityServices().create(flowConfig)
-    private val inputEvent = Wakeup()
+    private val inputEvent = ExternalEventResponse()
     private val context = buildFlowEventContext<Any>(checkpoint = flowCheckpoint, inputEventPayload = inputEvent)
     private val converterResponse = StateAndEventProcessor.Response<Checkpoint>(
         null,
@@ -100,17 +101,21 @@ class FlowEventExceptionProcessorImplTest {
         val flowStatusUpdate = FlowStatus()
         val key = FlowKey()
         val flowStatusUpdateRecord = Record("", key, flowStatusUpdate)
+        val flowId = "f1"
+        val flowEventRecord = Record("", flowId, FlowEvent(flowId, ExternalEventResponse()))
+        whenever(flowCheckpoint.flowId).thenReturn(flowId)
         whenever(flowCheckpoint.currentRetryCount).thenReturn(1)
         whenever(flowMessageFactory.createFlowRetryingStatusMessage(flowCheckpoint)).thenReturn(flowStatusUpdate)
         whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)
         whenever(flowCheckpoint.doesExist).thenReturn(true)
         whenever(flowCheckpoint.flowKey).thenReturn(key)
+        whenever(flowRecordFactory.createFlowEventRecord(flowId, ExternalEventResponse())).thenReturn(flowEventRecord)
 
         val result = target.process(error, context)
 
         assertThat(result).isSameAs(converterResponse)
         verify(flowEventContextConverter).convert(argThat {
-            assertThat(this.outputRecords).containsOnly(flowStatusUpdateRecord)
+            assertThat(this.outputRecords).containsOnly(flowStatusUpdateRecord, flowEventRecord)
             true
         }
         )
@@ -124,16 +129,20 @@ class FlowEventExceptionProcessorImplTest {
         val error = FlowTransientException("error")
         val flowStatusUpdate = FlowStatus()
         val flowStatusUpdateRecord = Record("", FlowKey(), flowStatusUpdate)
+        val flowId = "f1"
+        val flowEventRecord = Record("", flowId, FlowEvent(flowId, ExternalEventResponse()))
+        whenever(flowCheckpoint.flowId).thenReturn(flowId)
         whenever(flowCheckpoint.currentRetryCount).thenReturn(1)
         whenever(flowMessageFactory.createFlowRetryingStatusMessage(flowCheckpoint)).thenReturn(flowStatusUpdate)
         whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)
+        whenever(flowRecordFactory.createFlowEventRecord(flowId, ExternalEventResponse())).thenReturn(flowEventRecord)
         whenever(flowCheckpoint.doesExist).thenReturn(false)
 
         val result = target.process(error, context)
 
         assertThat(result).isSameAs(converterResponse)
         verify(flowEventContextConverter).convert(argThat {
-            assertThat(this.outputRecords).containsOnly(flowStatusUpdateRecord)
+            assertThat(this.outputRecords).containsOnly(flowStatusUpdateRecord, flowEventRecord)
             true
         }
         )
@@ -143,17 +152,19 @@ class FlowEventExceptionProcessorImplTest {
     }
 
     @Test
-    fun `flow transient exception processed as fatal when retry limit reached`() {
+    fun `flow transient exception processed as fatal when retry window expired`() {
         val error = FlowTransientException("mock error message")
         val flowStatusUpdate = FlowStatus()
         val flowStatusUpdateRecord = Record("", FlowKey(), flowStatusUpdate)
-        whenever(flowCheckpoint.currentRetryCount).thenReturn(2)
+        val retryCount = 2
+        val now = Instant.now()
+        whenever(flowCheckpoint.currentRetryCount).thenReturn(retryCount)
+        whenever(flowCheckpoint.firstFailureTimestamp).thenReturn(now.minusMillis(2000))
         whenever(
             flowMessageFactory.createFlowFailedStatusMessage(
                 flowCheckpoint,
                 FlowProcessingExceptionTypes.FLOW_FAILED,
-                "Execution failed with \"${error.message}\" after " +
-                        "${flowConfig.getInt(FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS)} retry attempts.",
+                "Execution failed with \"${error.message}\" after $retryCount retry attempts in a retry window of PT1S.",
             )
         ).thenReturn(flowStatusUpdate)
         whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)
@@ -196,14 +207,12 @@ class FlowEventExceptionProcessorImplTest {
     }
 
     @Test
-    fun `flow platform exception marks sets pending exception and outputs wakeup`() {
+    fun `flow platform exception marks sets pending exception`() {
         val flowId = "f1"
         val error = FlowPlatformException("error")
-        val flowEventRecord = Record("", flowId, FlowEvent(flowId, Wakeup()))
         val key = FlowKey()
 
         whenever(flowCheckpoint.flowId).thenReturn(flowId)
-        whenever(flowRecordFactory.createFlowEventRecord(flowId, Wakeup())).thenReturn(flowEventRecord)
         whenever(flowCheckpoint.doesExist).thenReturn(true)
         whenever(flowCheckpoint.flowKey).thenReturn(key)
 
@@ -211,7 +220,7 @@ class FlowEventExceptionProcessorImplTest {
 
         assertThat(result).isSameAs(converterResponse)
         verify(flowEventContextConverter).convert(argThat {
-            assertThat(this.outputRecords).containsOnly(flowEventRecord)
+            assertThat(this.outputRecords).isEmpty()
             true
         })
 
@@ -224,17 +233,15 @@ class FlowEventExceptionProcessorImplTest {
     fun `flow platform exception when doesExist false does not remove from flow fiber cache`() {
         val flowId = "f1"
         val error = FlowPlatformException("error")
-        val flowEventRecord = Record("", flowId, FlowEvent(flowId, Wakeup()))
 
         whenever(flowCheckpoint.flowId).thenReturn(flowId)
-        whenever(flowRecordFactory.createFlowEventRecord(flowId, Wakeup())).thenReturn(flowEventRecord)
         whenever(flowCheckpoint.doesExist).thenReturn(false)
 
         val result = target.process(error, context)
 
         assertThat(result).isSameAs(converterResponse)
         verify(flowEventContextConverter).convert(argThat {
-            assertThat(this.outputRecords).containsOnly(flowEventRecord)
+            assertThat(this.outputRecords).isEmpty()
             true
         })
 
@@ -255,14 +262,18 @@ class FlowEventExceptionProcessorImplTest {
     @Test
     fun `failure to create a status message does not prevent transient failure handling from succeeding`() {
         val error = FlowTransientException("error")
+        val flowId = "f1"
+        val flowEventRecord = Record("", flowId, FlowEvent(flowId, ExternalEventResponse()))
+        whenever(flowCheckpoint.flowId).thenReturn(flowId)
         whenever(flowCheckpoint.currentRetryCount).thenReturn(1)
         whenever(flowMessageFactory.createFlowRetryingStatusMessage(flowCheckpoint)).thenThrow(IllegalStateException())
+        whenever(flowRecordFactory.createFlowEventRecord(flowId, ExternalEventResponse())).thenReturn(flowEventRecord)
 
         val result = target.process(error, context)
 
         assertThat(result).isSameAs(converterResponse)
         verify(flowEventContextConverter).convert(argThat {
-            assertThat(this.outputRecords).isEmpty()
+            assertThat(this.outputRecords).containsOnly(flowEventRecord)
             true
         }
         )

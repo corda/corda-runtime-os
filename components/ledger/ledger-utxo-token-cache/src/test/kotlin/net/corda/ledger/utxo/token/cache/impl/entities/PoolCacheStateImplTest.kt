@@ -1,9 +1,11 @@
 package net.corda.ledger.utxo.token.cache.impl.entities
 
+import net.corda.data.ledger.utxo.token.selection.data.Token
+import net.corda.data.ledger.utxo.token.selection.data.TokenAmount
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaim
 import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
-import net.corda.ledger.utxo.token.cache.entities.PoolCacheStateImpl
+import net.corda.ledger.utxo.token.cache.entities.internal.PoolCacheStateImpl
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
@@ -15,11 +17,11 @@ class PoolCacheStateImplTest {
     fun `is token claimed checks underlying state object`() {
         val claim1 = TokenClaim().apply {
             claimId = "r1"
-            claimedTokenStateRefs = listOf("s1", "s2")
+            claimedTokens = listOf(createToken("s1"), createToken("s2"))
         }
         val claim2 = TokenClaim().apply {
             claimId = "r2"
-            claimedTokenStateRefs = listOf("s3")
+            claimedTokens = listOf(createToken("s3"))
         }
 
         val state = TokenPoolCacheState().apply {
@@ -33,7 +35,10 @@ class PoolCacheStateImplTest {
         assertThat(target.isTokenClaimed("s4")).isFalse()
 
         // Assert adding/removing a claim is accounted changes the results as expected
-        val cachedToken1 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s4") }
+        val cachedToken1 = mock<CachedToken>().apply {
+            whenever(stateRef).thenReturn("s4")
+            whenever(toAvro()).thenReturn(createToken("s4"))
+        }
         target.addNewClaim("r3", listOf(cachedToken1))
         assertThat(target.isTokenClaimed("s4")).isTrue
         target.removeClaim("r1")
@@ -44,7 +49,7 @@ class PoolCacheStateImplTest {
     fun `does claim exist checks underlying state object`() {
         val claim1 = TokenClaim().apply {
             claimId = "r1"
-            claimedTokenStateRefs = listOf()
+            claimedTokens = listOf()
         }
 
         val state = TokenPoolCacheState().apply {
@@ -61,11 +66,11 @@ class PoolCacheStateImplTest {
     fun `remove claim removes it from the underlying state object`() {
         val claim1 = TokenClaim().apply {
             claimId = "r1"
-            claimedTokenStateRefs = listOf()
+            claimedTokens = listOf()
         }
         val claim2 = TokenClaim().apply {
             claimId = "r2"
-            claimedTokenStateRefs = listOf()
+            claimedTokens = listOf()
         }
 
         val state = TokenPoolCacheState().apply {
@@ -81,11 +86,17 @@ class PoolCacheStateImplTest {
     fun `add claim adds it from the underlying state object`() {
         val claim1 = TokenClaim().apply {
             claimId = "r1"
-            claimedTokenStateRefs = listOf()
+            claimedTokens = listOf()
         }
 
-        val cachedToken1 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s1") }
-        val cachedToken2 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s2") }
+        val cachedToken1 = mock<CachedToken>().apply {
+            whenever(stateRef).thenReturn("s1")
+            whenever(toAvro()).thenReturn(createToken("s1"))
+        }
+        val cachedToken2 = mock<CachedToken>().apply {
+            whenever(stateRef).thenReturn("s2")
+            whenever(toAvro()).thenReturn(createToken("s2"))
+        }
 
         val state = TokenPoolCacheState().apply {
             this.tokenClaims = listOf(claim1)
@@ -95,19 +106,19 @@ class PoolCacheStateImplTest {
 
         assertThat(state.tokenClaims).hasSize(2)
         assertThat(state.tokenClaims[1].claimId).isEqualTo("r2")
-        assertThat(state.tokenClaims[1].claimedTokenStateRefs).containsOnly("s1", "s2")
+        assertThat(state.tokenClaims[1].claimedTokens).containsOnly(createToken("s1"), createToken("s2"))
     }
 
     @Test
     fun `when tokens are removed the underlying claims are updated`() {
         val claim1 = TokenClaim().apply {
             claimId = "r1"
-            claimedTokenStateRefs = listOf("s1","s2")
+            claimedTokens = listOf(createToken("s1"), createToken("s2"))
         }
 
         val claim2 = TokenClaim().apply {
             claimId = "r2"
-            claimedTokenStateRefs = listOf("s3", "s4")
+            claimedTokens = listOf(createToken("s3"), createToken("s4"))
         }
 
         val state = TokenPoolCacheState().apply {
@@ -120,7 +131,7 @@ class PoolCacheStateImplTest {
         // and therefore should also be removed.
         assertThat(state.tokenClaims).hasSize(1)
         assertThat(state.tokenClaims[0].claimId).isEqualTo("r1")
-        assertThat(state.tokenClaims[0].claimedTokenStateRefs).containsOnly("s1")
+        assertThat(state.tokenClaims[0].claimedTokens).containsOnly(createToken("s1"))
     }
 
     @Test
@@ -133,4 +144,12 @@ class PoolCacheStateImplTest {
 
         assertThat(result).isSameAs(state)
     }
+
+    private fun createToken(stateRef: String) =
+        Token().apply {
+            this.stateRef = stateRef
+            tag = ""
+            ownerHash = ""
+            amount = TokenAmount()
+        }
 }

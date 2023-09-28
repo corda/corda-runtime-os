@@ -5,6 +5,7 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.hes.StableKeyPairDecryptor
+import net.corda.interop.group.policy.read.InteropGroupPolicyReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -76,6 +77,8 @@ class MemberProcessorImpl @Activate constructor(
     private val membersClientCertificatePublisher: MembersClientCertificatePublisher,
     @Reference(service = ExpirationProcessor::class)
     private val expirationProcessor: ExpirationProcessor,
+    @Reference(service = InteropGroupPolicyReadService::class)
+    private val interopGroupPolicyReadService: InteropGroupPolicyReadService
 ) : MemberProcessor {
 
     private companion object {
@@ -103,6 +106,7 @@ class MemberProcessorImpl @Activate constructor(
         ::locallyHostedIdentitiesService,
         ::membersClientCertificatePublisher,
         ::expirationProcessor,
+        ::interopGroupPolicyReadService
     )
 
     private val coordinator =

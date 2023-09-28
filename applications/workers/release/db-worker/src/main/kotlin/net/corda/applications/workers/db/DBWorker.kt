@@ -9,6 +9,7 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getPa
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupMonitor
+import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupWebserver
 import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
@@ -17,10 +18,10 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.db.DBProcessor
 import net.corda.processors.token.cache.TokenCacheProcessor
-import net.corda.processors.uniqueness.UniquenessProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.tracing.configureTracing
 import net.corda.tracing.shutdownTracing
+import net.corda.web.api.WebServer
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -34,14 +35,14 @@ import picocli.CommandLine.Option
 class DBWorker @Activate constructor(
     @Reference(service = DBProcessor::class)
     private val processor: DBProcessor,
-    @Reference(service = UniquenessProcessor::class)
-    private val uniquenessProcessor: UniquenessProcessor,
     @Reference(service = TokenCacheProcessor::class)
     private val tokenCacheProcessor: TokenCacheProcessor,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
     @Reference(service = WorkerMonitor::class)
     private val workerMonitor: WorkerMonitor,
+    @Reference(service = WebServer::class)
+    private val webServer: WebServer,
     @Reference(service = ConfigurationValidatorFactory::class)
     private val configurationValidatorFactory: ConfigurationValidatorFactory,
     @Reference(service = PlatformInfoProvider::class)
@@ -65,7 +66,10 @@ class DBWorker @Activate constructor(
 
         JavaSerialisationFilter.install()
 
+
         val params = getParams(args, DBWorkerParams())
+
+        webServer.setupWebserver(params.defaultParams)
         if (printHelpOrVersion(params.defaultParams, DBWorker::class.java, shutDownService)) return
         setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
@@ -80,14 +84,13 @@ class DBWorker @Activate constructor(
         )
 
         processor.start(config)
-        uniquenessProcessor.start()
         tokenCacheProcessor.start(config)
     }
 
     override fun shutdown() {
         logger.info("DB worker stopping.")
         processor.stop()
-        workerMonitor.stop()
+        webServer.stop()
         tokenCacheProcessor.stop()
         shutdownTracing()
     }

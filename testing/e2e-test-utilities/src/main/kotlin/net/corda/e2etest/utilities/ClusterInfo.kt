@@ -1,5 +1,6 @@
 package net.corda.e2etest.utilities
 
+import net.corda.rest.annotations.RestApiVersion
 import java.net.URI
 
 /**
@@ -17,6 +18,7 @@ abstract class ClusterInfo {
         private const val DEFAULT_REST_PORT = 8888
         private const val DEFAULT_P2P_HOST = "localhost"
         private const val DEFAULT_P2P_PORT = 8080
+        private val DEFAULT_REST_API_VERSION = RestApiVersion.C5_1.toString()
     }
 
     val name: String get() = "E2E_CLUSTER_${id}"
@@ -25,6 +27,7 @@ abstract class ClusterInfo {
     private val restPasswordPropertyName get() = "${name}_REST_PASSWORD"
     private val p2pHostPropertyName get() = "${name}_P2P_HOST"
     private val p2pPortPropertyName get() = "${name}_P2P_PORT"
+    private val restApiVersionPropertyName get() = "${name}_REST_API_VERSION"
 
 
     /**
@@ -48,6 +51,10 @@ abstract class ClusterInfo {
             System.getenv(p2pPortPropertyName)?.toInt() ?: DEFAULT_P2P_PORT,
             "1"
         )
+    }
+
+    open val restApiVersion by lazy {
+        RestApiVersion.valueOf(System.getenv(restApiVersionPropertyName) ?: DEFAULT_REST_API_VERSION)
     }
 
 }
@@ -94,4 +101,11 @@ object ClusterBInfo : ClusterInfo() {
  */
 object ClusterCInfo : ClusterInfo() {
     override val id = "C"
+}
+
+/**
+ * Default cluster info for E2E test cluster on which 5.0 deployment will run
+ */
+object ClusterFive0Info : ClusterInfo() {
+    override val id = "FIVE0"
 }

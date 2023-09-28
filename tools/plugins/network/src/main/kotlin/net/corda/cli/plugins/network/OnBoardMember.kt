@@ -8,33 +8,50 @@ import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
 import java.security.MessageDigest
-import java.util.UUID
+import net.corda.cli.plugins.network.enums.MemberRole
+import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
+import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEYS_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
+import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
+import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_SIGNATURE_SPEC
+import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_SIGNATURE_SPEC
 
 @Command(
-    name = "member",
+    name = "onboard-member",
     description = [
-        "Onboard a member",
-        "This sub command should only be used in for internal development"
+        "Onboard a member"
     ]
 )
 class OnBoardMember : Runnable, BaseOnboard() {
     @Option(
-        names = ["--cpi-file"],
-        description = [
-            "Location of a CPI file (Use either cpi-file, cpb-file or cpi-hash).",
-            "To create the CPI use the MGM created group policy file and sign it using the package create-cpi command."
-        ]
-    )
-    var cpiFile: File? = null
-
-    @Option(
         names = ["--cpb-file"],
         description = [
-            "Location of a CPB file (Use either cpi-file, cpb-file or cpi-hash).",
-            "Usage of --cpi-file or --cpi-hash is recommended. The CPI will be signed with default options."
+            "Location of a CPB file (Use either cpb-file or cpi-hash).",
+            "The CPI will be signed with default options."
         ]
     )
     var cpbFile: File? = null
+
+    @Option(
+        names = ["--role", "-r"],
+        description = ["Member role, if any. It is not mandatory to provide a role. Multiple roles can be specified"],
+    )
+    var roles: Set<MemberRole> = emptySet()
+
+    @Option(
+        names = ["--set", "-s"],
+        description = ["Pass a custom key-value pair to the command to be included in the registration context. " +
+                "Specified as <key>=<value>. Multiple --set arguments may be provided."],
+    )
+    var customProperties: Map<String, String> = emptyMap()
 
     @Option(
         names = ["--group-policy-file"],
@@ -48,15 +65,9 @@ class OnBoardMember : Runnable, BaseOnboard() {
 
     @Option(
         names = ["--cpi-hash"],
-        description = ["The CPI hash (Use either cpi-file, cpb-file or cpi-hash)."]
+        description = ["The CPI hash (Use either cpb-file or cpi-hash)."]
     )
     var cpiHash: String? = null
-
-    @Option(
-        names = ["--x500-name", "-x"],
-        description = ["The X500 name of the member. Default to a random member name"]
-    )
-    override var x500Name: String = "O=${UUID.randomUUID()}, L=London, C=GB"
 
     @Option(
         names = ["--pre-auth-token"],
@@ -74,11 +85,8 @@ class OnBoardMember : Runnable, BaseOnboard() {
         if (cpiHash != null) {
             return@lazy cpiHash!!
         }
-        if (cpiFile != null) {
-            return@lazy uploadCpi(cpiFile!!)
-        }
         if (cpbFile?.canRead() != true) {
-            throw OnboardException("Please set either CPB file, CPI file or CPI hash")
+            throw OnboardException("Please set either CPB file or CPI hash")
         } else {
             uploadCpb(cpbFile!!)
         }
@@ -187,53 +195,85 @@ class OnBoardMember : Runnable, BaseOnboard() {
         assignSoftHsmAndGenerateKey("LEDGER")
     }
 
-    override val registrationContext by lazy {
-        val preAuth = if (preAuthToken != null) mapOf("corda.auth.token" to preAuthToken) else emptyMap()
-        val endpoints = mutableMapOf<String, String>()
+    private val notaryKeyId by lazy {
+        assignSoftHsmAndGenerateKey("NOTARY")
+    }
 
-        p2pGatewayUrls.mapIndexed { index, url ->
-            endpoints["corda.endpoints.$index.connectionURL"] = url
-            endpoints["corda.endpoints.$index.protocolVersion"] = "1"
+    override val registrationContext by lazy {
+        val preAuth = preAuthToken?.let { mapOf("corda.auth.token" to it) } ?: emptyMap()
+        val roleProperty: Map<String, String> = roles.mapIndexed { index: Int, memberRole: MemberRole ->
+            "$ROLES_PREFIX.$index" to memberRole.value
+        }.toMap()
+
+        val extProperties = customProperties.filterKeys { it.startsWith("$CUSTOM_KEY_PREFIX.") }
+
+        val notaryProperties = if (roles.contains(MemberRole.NOTARY)) {
+            val notaryServiceName = customProperties[NOTARY_SERVICE_NAME] ?:
+                throw IllegalArgumentException("When specifying a NOTARY role, " +
+                        "you also need to specify a custom property for its name under $NOTARY_SERVICE_NAME.")
+            mapOf(
+                NOTARY_SERVICE_NAME to notaryServiceName,
+                NOTARY_SERVICE_PROTOCOL to "com.r3.corda.notary.plugin.nonvalidating",
+                NOTARY_SERVICE_PROTOCOL_VERSIONS.format("0") to "1",
+                NOTARY_KEYS_ID.format("0") to notaryKeyId,
+                NOTARY_KEY_SPEC.format("0") to "SHA256withECDSA"
+            )
+        } else {
+            emptyMap()
         }
 
-        mapOf(
-            "corda.session.keys.0.id" to sessionKeyId,
-            "corda.session.keys.0.signature.spec" to "SHA256withECDSA",
-            "corda.ledger.keys.0.id" to ledgerKeyId,
-            "corda.ledger.keys.0.signature.spec" to "SHA256withECDSA",
-        ) + endpoints + preAuth
+        val endpoints: Map<String, String> = p2pGatewayUrls
+            .flatMapIndexed { index, url ->
+                listOf(
+                    URL_KEY.format(index) to url,
+                    PROTOCOL_VERSION.format(index) to "1"
+                )
+            }
+            .toMap()
+
+        val sessionKeys = mapOf(
+            PARTY_SESSION_KEYS_ID.format(0) to sessionKeyId,
+            SESSION_KEYS_SIGNATURE_SPEC.format(0) to "SHA256withECDSA"
+        )
+        val ledgerKeys = mapOf(
+            LEDGER_KEYS_ID.format(0) to ledgerKeyId,
+            LEDGER_KEY_SIGNATURE_SPEC.format(0) to "SHA256withECDSA"
+        )
+
+        sessionKeys + ledgerKeys + endpoints + preAuth + roleProperty + notaryProperties + extProperties
     }
 
     override fun run() {
-        println("This sub command should only be used in for internal development")
-        println("On-boarding member $x500Name")
+        verifyAndPrintError {
+            println("On-boarding member $name")
 
-        configureGateway()
+            configureGateway()
 
-        createTlsKeyIdNeeded()
+            createTlsKeyIdNeeded()
 
-        if (mtls) {
-            println(
-                "Using $certificateSubject as client certificate. " +
-                        "The onboarding will fail until the the subject is added to the MGM's allow list. " +
-                        "You can do that using the allowClientCertificate command."
-            )
-        }
+            if (mtls) {
+                println(
+                    "Using $certificateSubject as client certificate. " +
+                            "The onboarding will fail until the the subject is added to the MGM's allow list. " +
+                            "You can do that using the allowClientCertificate command."
+                )
+            }
 
-        setupNetwork()
+            setupNetwork()
 
-        println("Provided registration context: ")
-        println(registrationContext)
+            println("Provided registration context: ")
+            println(registrationContext)
 
-        register(waitForFinalStatus)
+            register(waitForFinalStatus)
 
-        if (waitForFinalStatus) {
-            println("Member $x500Name was onboarded.")
-        } else {
-            println(
-                "Registration request has been submitted. Wait for MGM approval to finalize registration. " +
-                        "MGM may need to approve your request manually."
-            )
+            if (waitForFinalStatus) {
+                println("Member $name was onboarded.")
+            } else {
+                println(
+                    "Registration request has been submitted. Wait for MGM approval to finalize registration. " +
+                            "MGM may need to approve your request manually."
+                )
+            }
         }
     }
 }

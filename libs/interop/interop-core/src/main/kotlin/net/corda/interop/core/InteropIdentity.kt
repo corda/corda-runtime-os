@@ -27,23 +27,4 @@ data class InteropIdentity(
             interopIdentity.endpointProtocol
         )
     }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as InteropIdentity
-
-        if (x500Name != other.x500Name) return false
-        if (groupId != other.groupId) return false
-        return shortHash == other.shortHash
-    }
-
-    override fun hashCode(): Int {
-        var result = x500Name.hashCode()
-        result = 31 * result + groupId.hashCode()
-        result = 31 * result + owningVirtualNodeShortHash.hashCode()
-        result = 31 * result + shortHash.hashCode()
-        return result
-    }
 }
