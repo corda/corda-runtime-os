@@ -14,6 +14,7 @@ import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
+// TODO-[CORE-17025]: remove Hibernate.
 // TODO-[CORE-16323]: check whether the optimistic locking can be improved / merged into single SQL statement.
 class StateManagerImpl(
     private val stateRepository: StateRepository,
