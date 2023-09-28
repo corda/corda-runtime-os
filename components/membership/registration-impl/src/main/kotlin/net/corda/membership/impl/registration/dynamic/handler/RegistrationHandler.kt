@@ -8,6 +8,7 @@ import net.corda.membership.lib.metrics.TimerMetricTypes
 import net.corda.membership.lib.metrics.getTimerMetric
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import org.slf4j.LoggerFactory
 
 interface RegistrationHandler<T> {
     fun invoke(state: RegistrationState?, event: Record<String, RegistrationCommand>): RegistrationHandlerResult {
@@ -16,7 +17,10 @@ interface RegistrationHandler<T> {
                 @Suppress("unchecked_cast")
                 return recordTimerMetric(state, event.key, command as T) { s, k, c ->
                     val result = invoke(s, k, c)
-                    result.copy(updatedState = addInvocationMetadata(result.updatedState))
+                    when {
+                        result.skipped -> result
+                        else -> result.copy(updatedState = addInvocationMetadata(result.updatedState))
+                    }
                 }
             } else {
                 throw CordaRuntimeException("Invalid command: $command")
@@ -51,13 +55,20 @@ interface RegistrationHandler<T> {
 
     private fun addInvocationMetadata(state: RegistrationState?): RegistrationState? {
         return state?.let {
-            val lastIndex = it.commands.maxBy { metadata -> metadata.index }.index
+            val lastIndex = it.commands.maxByOrNull { metadata -> metadata.index }?.index ?: 0
             RegistrationState(
                 it.registrationId,
                 it.registeringMember,
                 it.mgm,
                 it.commands + CommandMetadata(lastIndex + 1, commandType.simpleName)
-            )
+            ).also { regSt ->
+                LoggerFactory.getLogger("CharlieTempLogger").info(
+                    "${regSt.registrationId} - ${regSt.registeringMember} - ${regSt.mgm} - "
+                            + regSt.commands.joinToString(prefix = "[", postfix = "]") { com ->
+                        "${com.index}-${com.command}"
+                    }
+                )
+            }
         }
     }
 }
