@@ -12,51 +12,52 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
-    implementation project(":components:configuration:configuration-read-service")
-    implementation project(":components:external-messaging-services")
-    implementation project(":components:membership:membership-group-read")
+    implementation project(':components:configuration:configuration-read-service')
+    implementation project(':components:external-messaging-services')
+    implementation project(':components:membership:membership-group-read')
     implementation project(':components:membership:group-policy')
-    implementation project(":components:virtual-node:virtual-node-info-read-service")
-    implementation project(":components:virtual-node:cpi-info-read-service")
-    implementation project(":components:virtual-node:cpk-read-service")
-    implementation project(":components:virtual-node:sandbox-group-context-service")
+    implementation project(':components:virtual-node:virtual-node-info-read-service')
+    implementation project(':components:virtual-node:cpi-info-read-service')
+    implementation project(':components:virtual-node:cpk-read-service')
+    implementation project(':components:virtual-node:sandbox-group-context-service')
     runtimeOnly project(':components:virtual-node:sandbox-amqp')
     runtimeOnly project(':components:virtual-node:sandbox-json')
 
-    implementation project(":libs:cache:cache-caffeine")
-    implementation project(":libs:configuration:configuration-core")
-    implementation project(":libs:crypto:crypto-core")
-    implementation project(":libs:crypto:crypto-flow")
-    implementation project(":libs:external-messaging")
+    implementation project(':libs:cache:cache-caffeine')
+    implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:crypto:crypto-core')
+    implementation project(':libs:crypto:crypto-flow')
+    implementation project(':libs:external-messaging')
     implementation project(':libs:flows:flow-api')
     implementation project(':libs:flows:session-manager')
     implementation project(":libs:flows:flow-utils")
-    implementation project(":libs:lifecycle:lifecycle")
-    implementation project(":libs:membership:membership-common")
-    implementation project(":libs:metrics")
+    implementation project(':libs:lifecycle:lifecycle')
+    implementation project(':libs:membership:membership-common')
+    implementation project(':libs:metrics')
     implementation project(":libs:messaging:messaging")
     implementation project(':libs:platform-info')
-    implementation project(":libs:sandbox")
+    implementation project(':libs:sandbox')
     implementation project(':libs:serialization:serialization-amqp')
-    implementation project(":libs:serialization:serialization-checkpoint-api")
-    implementation project(":libs:utilities")
-    implementation project(":libs:virtual-node:sandbox-group-context")
+    implementation project(':libs:serialization:serialization-checkpoint-api')
+    implementation project(':libs:state-manager:state-manager-api')
+    implementation project(':libs:utilities')
+    implementation project(':libs:virtual-node:sandbox-group-context')
     implementation project(':libs:virtual-node:virtual-node-info')
     implementation project(':libs:platform-info')
-    implementation project(":libs:serialization:serialization-avro")
-    implementation project(":libs:tracing")
+    implementation project(':libs:serialization:serialization-avro')
+    implementation project(':libs:tracing')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation "net.corda:corda-application"
-    implementation "net.corda:corda-ledger-utxo"
-    implementation "net.corda:corda-avro-schema"
-    implementation "net.corda:corda-base"
-    implementation "net.corda:corda-config-schema"
+    implementation 'net.corda:corda-application'
+    implementation 'net.corda:corda-ledger-utxo'
+    implementation 'net.corda:corda-avro-schema'
+    implementation 'net.corda:corda-base'
+    implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-ledger-common'
-    implementation project(":libs:packaging:packaging")
-    implementation "net.corda:corda-topic-schema"
+    implementation project(':libs:packaging:packaging')
+    implementation 'net.corda:corda-topic-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
@@ -69,11 +70,11 @@ dependencies {
     testImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
     testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 
-    testImplementation project(":libs:flows:session-manager-impl")
-    testImplementation project(":libs:lifecycle:lifecycle-test-impl")
-    testImplementation project(":libs:lifecycle:lifecycle-impl")
-    testImplementation project(":libs:lifecycle:registry")
-    testImplementation project(":testing:flow:flow-utilities")
+    testImplementation project(':libs:flows:session-manager-impl')
+    testImplementation project(':libs:lifecycle:lifecycle-test-impl')
+    testImplementation project(':libs:lifecycle:lifecycle-impl')
+    testImplementation project(':libs:lifecycle:registry')
+    testImplementation project(':testing:flow:flow-utilities')
     testImplementation project(':testing:test-utilities')
 
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
@@ -85,13 +86,13 @@ dependencies {
 
     integrationTestRuntimeOnly project(':libs:application:application-impl')
     integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
-    integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
+    integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
     integrationTestRuntimeOnly project(':libs:serialization:serialization-checkpoint-api')
     integrationTestRuntimeOnly project(':libs:serialization:serialization-kryo')
-    integrationTestRuntimeOnly project(":components:membership:membership-group-read-impl")
-    integrationTestRuntimeOnly project(":components:virtual-node:cpk-read-service-impl")
+    integrationTestRuntimeOnly project(':components:membership:membership-group-read-impl')
+    integrationTestRuntimeOnly project(':components:virtual-node:cpk-read-service-impl')
 
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
 }
