@@ -8,7 +8,6 @@ import net.corda.membership.lib.metrics.TimerMetricTypes
 import net.corda.membership.lib.metrics.getTimerMetric
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import org.slf4j.LoggerFactory
 
 interface RegistrationHandler<T> {
     fun invoke(state: RegistrationState?, event: Record<String, RegistrationCommand>): RegistrationHandlerResult {
