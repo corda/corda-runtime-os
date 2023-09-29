@@ -56,7 +56,7 @@ class TokenClaimQueryEventHandler(
 
         return if (selectedAmount >= event.targetAmount) {
             // Claimed tokens should not be stored in the token cache
-            log.info("Claimed tokens: '${selectedTokens.map { it.stateRef }.joinToString(", ")}'")
+            log.info("Claimed tokens : '${selectedTokens.map { it.stateRef }.joinToString(", ")}' - '${ event.flowId}' - '${   event.externalEventRequestId}'")
             tokenCache.removeAll(selectedTokens.map { it.stateRef }.toSet())
             state.addNewClaim(event.externalEventRequestId, selectedTokens)
             recordFactory.getSuccessfulClaimResponse(
