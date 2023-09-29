@@ -61,14 +61,7 @@ interface RegistrationHandler<T> {
                 it.registeringMember,
                 it.mgm,
                 it.commands + CommandMetadata(lastIndex + 1, commandType.simpleName)
-            ).also { regSt ->
-                LoggerFactory.getLogger("CharlieTempLogger").info(
-                    "${regSt.registrationId} - ${regSt.registeringMember} - ${regSt.mgm} - "
-                            + regSt.commands.joinToString(prefix = "[", postfix = "]") { com ->
-                        "${com.index}-${com.command}"
-                    }
-                )
-            }
+            )
         }
     }
 }
