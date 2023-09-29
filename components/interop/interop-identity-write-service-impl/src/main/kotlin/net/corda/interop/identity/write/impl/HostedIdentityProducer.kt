@@ -40,7 +40,10 @@ class HostedIdentityProducer(
         logger.info("Interop hosted identity published with key : ${record.key} and value : ${record.value}")
     }
 
-    private fun createHostedIdentityRecord(vNodeShortHash: ShortHash, interopIdentity: InteropIdentity): Record<String, HostedIdentityEntry> {
+    private fun createHostedIdentityRecord(
+        vNodeShortHash: ShortHash,
+        interopIdentity: InteropIdentity
+    ): Record<String, HostedIdentityEntry> {
         val interopIdentityShortHash = computeShortHash(interopIdentity.x500Name, interopIdentity.groupId)
         val sessionKey = sessionKeyGenerator.getOrCreateSessionKey(interopIdentity, vNodeShortHash.value)
         val keyAndCert = HostedIdentitySessionKeyAndCert.newBuilder()
