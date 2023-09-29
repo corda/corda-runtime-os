@@ -67,9 +67,6 @@ class VerificationRpcRequestProcessor(
             }
         }
         return result as FlowEvent
-        //future refactor TODO
-        //key, topic not interested
-        //could refactor handleRequest to return value as FlowEvent (wrapped for kafka somewhere)
     }
 
 
