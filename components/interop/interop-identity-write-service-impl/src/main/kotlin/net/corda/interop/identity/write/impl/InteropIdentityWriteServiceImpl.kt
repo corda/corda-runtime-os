@@ -179,8 +179,7 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
         configurationReadService.start()
         registration?.close()
         registration = coordinator.followStatusChangesByName(setOf(
-            LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-//            LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+            LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
         ))
     }
 

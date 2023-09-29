@@ -39,8 +39,6 @@ class MembershipInfoProducer(
                     identityToPublish.endpointProtocol
                 ),
                 KeyValuePair(MemberInfoExtension.GROUP_ID, ownedInteropIdentity.groupId),
-//                KeyValuePair(MemberInfoExtension.LEDGER_KEY_HASHES_KEY.format(0), ledgerKeyHashesKey),
-//                KeyValuePair(MemberInfoExtension.LEDGER_KEY_SIGNATURE_SPEC.format(0), "SHA256withECDSA"),
                 KeyValuePair(MemberInfoExtension.SOFTWARE_VERSION, "5.0.0.0-Fox10-RC03"),
                 KeyValuePair(MemberInfoExtension.PLATFORM_VERSION, "5000"),
                 KeyValuePair(MemberInfoExtension.INTEROP_ROLE, "interop"),
