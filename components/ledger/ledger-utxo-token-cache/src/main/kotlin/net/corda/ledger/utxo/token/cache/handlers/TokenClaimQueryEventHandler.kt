@@ -10,6 +10,8 @@ import net.corda.ledger.utxo.token.cache.services.AvailableTokenService
 import net.corda.ledger.utxo.token.cache.services.TokenFilterStrategy
 import net.corda.messaging.api.records.Record
 import java.math.BigDecimal
+import java.math.BigInteger
+import net.corda.ledger.utxo.token.cache.entities.DbCachedToken
 import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
 
 class TokenClaimQueryEventHandler(
@@ -24,6 +26,29 @@ class TokenClaimQueryEventHandler(
         state: PoolCacheState,
         event: ClaimQuery
     ): Record<String, FlowEvent> {
+
+        val claimId = event.externalEventRequestId
+        val claim = state.claim(claimId)
+        if(claim != null) {
+            return recordFactory.getSuccessfulClaimResponse(
+                event.flowId,
+                event.externalEventRequestId,
+                event.poolKey,
+                claim.claimedTokens.map {
+                    DbCachedToken(it.stateRef,
+                        BigDecimal(
+                            BigInteger(
+                                ByteArray(it.amount.unscaledValue.remaining())
+                                    .apply { it.amount.unscaledValue.get(this) }
+                            ),
+                            it.amount.scale
+                        ),
+                        it.tag,
+                        it.ownerHash
+                    )
+                }
+            )
+        }
 
         // Attempt to select the tokens from the current cache
         var selectionResult = selectTokens(tokenCache, state, event)
@@ -50,7 +75,7 @@ class TokenClaimQueryEventHandler(
         return if (selectedAmount >= event.targetAmount) {
             // Claimed tokens should not be stored in the token cache
             tokenCache.removeAll(selectedTokens.map { it.stateRef }.toSet())
-            state.addNewClaim(event.externalEventRequestId, selectedTokens)
+            state.addNewClaim(claimId, selectedTokens)
             recordFactory.getSuccessfulClaimResponse(
                 event.flowId,
                 event.externalEventRequestId,

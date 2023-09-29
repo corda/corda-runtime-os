@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.token.cache.entities
 
 import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
+import net.corda.data.ledger.utxo.token.selection.data.TokenClaim
 
 /**
  * The [PoolCacheState] represents the current state for a pool of cached [CachedToken]s
@@ -23,6 +24,15 @@ interface PoolCacheState {
      * @return True of the claim exists.
      */
     fun claimExists(claimId: String): Boolean
+
+    /**
+     * Returns an existing claim
+     *
+     * @param claimId The unique identifier of the claim
+     *
+     * @return Existing claim if it exists
+     */
+    fun claim(claimId: String): TokenClaim?
 
     /**
      * Removes an existing claim from the cache if it exists
