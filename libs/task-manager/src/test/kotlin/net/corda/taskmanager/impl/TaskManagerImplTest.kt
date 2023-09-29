@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.ScheduledExecutorService
@@ -128,5 +129,11 @@ class TaskManagerImplTest {
         assertThat(taskManager.liveTaskCounts).containsExactlyEntriesOf(
             mapOf(TaskManagerImpl.Type.SCHEDULED to 0)
         )
+    }
+
+    @Test
+    fun `shutdown terminates executor service`() {
+        taskManager.shutdown().get()
+        verify(executorService).awaitTermination(any(), any())
     }
 }
