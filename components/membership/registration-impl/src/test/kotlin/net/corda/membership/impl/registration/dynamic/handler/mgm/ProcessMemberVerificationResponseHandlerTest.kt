@@ -16,7 +16,7 @@ import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.p2p.v2.SetOwnRegistrationStatus
 import net.corda.data.membership.p2p.VerificationResponse
 import net.corda.data.membership.preauth.PreAuthToken
-import net.corda.data.membership.state.CommandMetadata
+import net.corda.data.membership.state.CompletedCommandMetadata
 import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
@@ -293,7 +293,7 @@ class ProcessMemberVerificationResponseHandlerTest {
             state.registrationId,
             state.registeringMember,
             state.mgm,
-            listOf(CommandMetadata(1, processMemberVerificationResponseHandler.commandType.simpleName))
+            listOf(CompletedCommandMetadata(1, processMemberVerificationResponseHandler.commandType.simpleName))
         )
         val result = assertDoesNotThrow {
             invokeTestFunction(inputState)

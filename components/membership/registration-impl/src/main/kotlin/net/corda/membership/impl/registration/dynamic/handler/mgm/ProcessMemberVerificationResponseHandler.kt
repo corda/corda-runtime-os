@@ -230,7 +230,8 @@ internal class ProcessMemberVerificationResponseHandler(
         }
     }
 
-    private fun isStatePreviouslyProcessed(state: RegistrationState): Boolean = state.commands.map { it.command }.contains(commandType.simpleName)
+    private fun isStatePreviouslyProcessed(state: RegistrationState): Boolean =
+        state.previouslyCompletedCommands.map { it.command }.contains(commandType.simpleName)
 
     // Continue without processing this stage again if the state has been nullified or if the command has been executed previously.
     // This is to prevent multiple processing attempts in the case of replays at a p2p level.

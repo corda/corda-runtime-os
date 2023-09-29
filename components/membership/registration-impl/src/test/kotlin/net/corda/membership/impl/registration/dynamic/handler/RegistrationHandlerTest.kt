@@ -2,7 +2,7 @@ package net.corda.membership.impl.registration.dynamic.handler
 
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.command.registration.RegistrationCommand
-import net.corda.data.membership.state.CommandMetadata
+import net.corda.data.membership.state.CompletedCommandMetadata
 import net.corda.data.membership.state.RegistrationState
 import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions.assertThat
@@ -51,25 +51,25 @@ class RegistrationHandlerTest {
         val result = testImpl.invoke(state, mockRecord)
 
         assertThat(result.updatedState).isNotNull
-        assertThat(result.updatedState?.commands).containsExactlyInAnyOrderElementsOf(
+        assertThat(result.updatedState?.previouslyCompletedCommands).containsExactlyInAnyOrderElementsOf(
             listOf(
-                CommandMetadata(1, MyCommand::class.java.simpleName)
+                CompletedCommandMetadata(1, MyCommand::class.java.simpleName)
             )
         )
     }
 
     @Test
     fun `additional command metadata is added as expected`() {
-        val state = RegistrationState("123", mock(), mock(), listOf(CommandMetadata(1, "FakeCommand")))
+        val state = RegistrationState("123", mock(), mock(), listOf(CompletedCommandMetadata(1, "FakeCommand")))
         whenever(resultFactory.call()).doReturn(RegistrationHandlerResult(state, emptyList()))
 
         val result = testImpl.invoke(state, mockRecord)
 
         assertThat(result.updatedState).isNotNull
-        assertThat(result.updatedState?.commands).containsExactlyInAnyOrderElementsOf(
+        assertThat(result.updatedState?.previouslyCompletedCommands).containsExactlyInAnyOrderElementsOf(
             listOf(
-                CommandMetadata(1, "FakeCommand"),
-                CommandMetadata(2, MyCommand::class.java.simpleName)
+                CompletedCommandMetadata(1, "FakeCommand"),
+                CompletedCommandMetadata(2, MyCommand::class.java.simpleName)
             )
         )
     }

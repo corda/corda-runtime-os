@@ -2,7 +2,7 @@ package net.corda.membership.impl.registration.dynamic.handler
 
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.command.registration.RegistrationCommand
-import net.corda.data.membership.state.CommandMetadata
+import net.corda.data.membership.state.CompletedCommandMetadata
 import net.corda.data.membership.state.RegistrationState
 import net.corda.membership.lib.metrics.TimerMetricTypes
 import net.corda.membership.lib.metrics.getTimerMetric
@@ -54,12 +54,12 @@ interface RegistrationHandler<T> {
 
     private fun addInvocationMetadata(state: RegistrationState?): RegistrationState? {
         return state?.let {
-            val lastIndex = it.commands.maxByOrNull { metadata -> metadata.index }?.index ?: 0
+            val lastIndex = it.previouslyCompletedCommands.maxByOrNull { metadata -> metadata.index }?.index ?: 0
             RegistrationState(
                 it.registrationId,
                 it.registeringMember,
                 it.mgm,
-                it.commands + CommandMetadata(lastIndex + 1, commandType.simpleName)
+                it.previouslyCompletedCommands + CompletedCommandMetadata(lastIndex + 1, commandType.simpleName)
             )
         }
     }
