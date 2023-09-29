@@ -1,7 +1,9 @@
 package net.corda.session.mapper.service.executor
 
 import net.corda.data.flow.state.mapper.FlowMapperStateType
+import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.Operation
+import net.corda.libs.statemanager.api.SingleKeyFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.metadata
@@ -76,14 +78,29 @@ class ScheduledTaskHandlerTest {
             TODO("Not yet implemented")
         }
 
-        override fun getUpdatedBetween(start: Instant, finish: Instant): Map<String, State> {
-            return states.filter {
-                it.value.modifiedTime.isBefore(finish) && it.value.modifiedTime.isAfter(start)
-            }
+        override fun updatedBetween(intervalFilter: IntervalFilter): Map<String, State> {
+            TODO("Not yet implemented")
         }
 
-        override fun find(key: String, operation: Operation, value: Any): Map<String, State> {
+        override fun find(singleKeyFilter: SingleKeyFilter): Map<String, State> {
             TODO("Not yet implemented")
+        }
+
+        override fun findUpdatedBetweenWithMetadataFilter(
+            intervalFilter: IntervalFilter,
+            singleKeyFilter: SingleKeyFilter
+        ): Map<String, State> {
+            val inInterval = { state: State ->
+                state.modifiedTime.isAfter(intervalFilter.start) && state.modifiedTime.isBefore(intervalFilter.finish)
+            }
+            // For the metadata filter assume it uses equals.
+            if (singleKeyFilter.operation != Operation.Equals) {
+                throw IllegalArgumentException("Must use equals")
+            }
+            val keyFilterMatches = { state: State ->
+                state.metadata[singleKeyFilter.key] == singleKeyFilter.value
+            }
+            return states.filter { inInterval(it.value) && keyFilterMatches(it.value) }
         }
 
         override fun close() {

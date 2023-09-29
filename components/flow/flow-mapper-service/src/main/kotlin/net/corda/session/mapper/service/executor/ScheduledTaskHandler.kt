@@ -2,6 +2,9 @@ package net.corda.session.mapper.service.executor
 
 import net.corda.data.flow.event.mapper.ExecuteCleanup
 import net.corda.data.flow.state.mapper.FlowMapperStateType
+import net.corda.libs.statemanager.api.IntervalFilter
+import net.corda.libs.statemanager.api.Operation
+import net.corda.libs.statemanager.api.SingleKeyFilter
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.session.mapper.service.state.StateMetadataKeys.FLOW_MAPPER_STATUS
 import net.corda.utilities.debug
@@ -33,13 +36,11 @@ class ScheduledTaskHandler(
 
     private fun getExpiredStateIds() : List<String> {
         val windowExpiry = clock.instant() - Duration.ofMillis(cleanupWindow)
-        val states = stateManager.getUpdatedBetween(Instant.MIN, windowExpiry)
-        // This should use the state manager lookup API combining a metadata lookup and a time window, but that doesn't
-        // exist yet.
-        return states.filter {
-            val state = it.value
-            state.metadata[FLOW_MAPPER_STATUS] == FlowMapperStateType.CLOSING.toString()
-        }.map {
+        val states = stateManager.findUpdatedBetweenWithMetadataFilter(
+            IntervalFilter(Instant.MIN, windowExpiry),
+            SingleKeyFilter(FLOW_MAPPER_STATUS, Operation.Equals, FlowMapperStateType.CLOSING.toString())
+        )
+        return states.map {
             it.key
         }.also {
             logger.debug { "Found ${states.size} states eligible for cleanup" }
