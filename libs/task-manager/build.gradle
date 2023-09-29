@@ -9,6 +9,7 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation:8.0.1'
 
     implementation project(":libs:metrics")
+    implementation "com.google.guava:guava:$guavaVersion"
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 }
