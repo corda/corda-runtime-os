@@ -82,6 +82,7 @@ internal class ProcessMemberVerificationResponseHandler(
         // Continue without processing this stage again if the state has been nullified or if the command has been executed previously.
         // This is to prevent multiple processing attempts in the case of replays at a p2p level.
         if (state == null || state.commandHasBeenExecuted) {
+            logger.info("${ProcessMemberVerificationResponse::class.java.simpleName} command ignored since it has been processed already.")
             return RegistrationHandlerResult(state, emptyList(), skipped = true)
         }
         val registrationId = state.registrationId
