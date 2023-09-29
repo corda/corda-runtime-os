@@ -11,7 +11,8 @@ import net.corda.messaging.api.mediator.factory.MessagingClientFactory
 import net.corda.messaging.api.mediator.factory.MessagingClientFinder
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
-import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -76,18 +77,18 @@ class MediatorComponentFactoryTest {
 
         val mediatorConsumers = mediatorComponentFactory.createConsumers(onSerializationError)
 
-        Assertions.assertEquals(consumerFactories.size, mediatorConsumers.size)
+        assertEquals(consumerFactories.size, mediatorConsumers.size)
         mediatorConsumers.forEach {
-            Assertions.assertNotNull(it)
+            assertNotNull(it)
         }
 
         consumerFactories.forEach {
             val consumerConfigCaptor = argumentCaptor<MediatorConsumerConfig<String, String>>()
             verify(it).create(consumerConfigCaptor.capture())
             val consumerConfig = consumerConfigCaptor.firstValue
-            Assertions.assertEquals(String::class.java, consumerConfig.keyClass)
-            Assertions.assertEquals(String::class.java, consumerConfig.valueClass)
-            Assertions.assertEquals(onSerializationError, consumerConfig.onSerializationError)
+            assertEquals(String::class.java, consumerConfig.keyClass)
+            assertEquals(String::class.java, consumerConfig.valueClass)
+            assertEquals(onSerializationError, consumerConfig.onSerializationError)
         }
     }
 
@@ -111,16 +112,16 @@ class MediatorComponentFactoryTest {
 
         val mediatorClients = mediatorComponentFactory.createClients(onSerializationError)
 
-        Assertions.assertEquals(clientFactories.size, mediatorClients.size)
+        assertEquals(clientFactories.size, mediatorClients.size)
         mediatorClients.forEach {
-            Assertions.assertNotNull(it)
+            assertNotNull(it)
         }
 
         clientFactories.forEach {
             val clientConfigCaptor = argumentCaptor<MessagingClientConfig>()
             verify(it).create(clientConfigCaptor.capture())
             val clientConfig = clientConfigCaptor.firstValue
-            Assertions.assertEquals(onSerializationError, clientConfig.onSerializationError)
+            assertEquals(onSerializationError, clientConfig.onSerializationError)
         }
     }
 
@@ -150,14 +151,14 @@ class MediatorComponentFactoryTest {
 
         val messageRouter = mediatorComponentFactory.createRouter(clients)
 
-        Assertions.assertNotNull(messageRouter)
+        assertNotNull(messageRouter)
 
         val messagingClientFinderCaptor = argumentCaptor<MessagingClientFinder>()
         verify(messageRouterFactory).create(messagingClientFinderCaptor.capture())
         val messagingClientFinder = messagingClientFinderCaptor.firstValue
 
         clients.forEachIndexed { id, client ->
-            Assertions.assertEquals(client, messagingClientFinder.find(id.toString()))
+            assertEquals(client, messagingClientFinder.find(id.toString()))
         }
         assertThrows<IllegalStateException> {
             messagingClientFinder.find("unknownId")

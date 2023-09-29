@@ -30,7 +30,7 @@ internal class MediatorComponentFactory<K : Any, S : Any, E : Any>(
         onSerializationError: (ByteArray) -> Unit
     ): List<MediatorConsumer<K, E>> {
         check(consumerFactories.isNotEmpty()) {
-            "None consumer factory set in configuration"
+            "No consumer factory set in configuration"
         }
         return consumerFactories.map { consumerFactory ->
             consumerFactory.create(
@@ -53,7 +53,7 @@ internal class MediatorComponentFactory<K : Any, S : Any, E : Any>(
         onSerializationError: (ByteArray) -> Unit
     ): List<MessagingClient> {
         check(clientFactories.isNotEmpty()) {
-            "None client factory set in configuration"
+            "No client factory set in configuration"
         }
         return clientFactories.map { clientFactory ->
             clientFactory.create(
