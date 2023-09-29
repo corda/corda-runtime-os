@@ -224,19 +224,25 @@ class DbConnectionManagerImplTest {
         whenever(entityManager.createNamedQuery(any())).doReturn(query)
         whenever(query.resultList).doReturn(listOf(connectionJPA))
 
+        val dbConnectionOps = LateInitDbConnectionOps()
         val dbConnectionManager = DbConnectionManagerImpl(
             lifecycleCoordinatorFactory, dataSourceFactory, entityManagerFactoryFactory, entityRegistry,
-            DbConnectionRepositoryFactory(), LateInitDbConnectionOps(), duration, sleeper)
+            DbConnectionRepositoryFactory(), dbConnectionOps, duration, sleeper)
         dbConnectionManager.initialise(clusterDbConfig)
+        assertThat(dbConnectionManager.getIssuedDataSources().size).isEqualTo(0)
         dbConnectionManager.getDataSource(connectionJPA.name, connectionJPA.privilege)
 
         verify(dataSourceFactory).createFromConfig(otherDbConfig)
-
+        assertThat(dbConnectionManager.getIssuedDataSources().size).isEqualTo(1)
+            
         val paramNameCaptor = ArgumentCaptor.forClass(String::class.java)
         val paramValueCaptor = ArgumentCaptor.forClass(Any::class.java)
         verify(query, atLeastOnce()).setParameter(paramNameCaptor.capture(), paramValueCaptor.capture())
         assertThat(paramNameCaptor.allValues).contains("name","privilege")
         assertThat(paramValueCaptor.allValues.map { it.toString() }).contains("test-connection","DDL")
+        
+        assertThat(dbConnectionManager.testConnection()).isTrue()
+        
     }
 
     @ParameterizedTest

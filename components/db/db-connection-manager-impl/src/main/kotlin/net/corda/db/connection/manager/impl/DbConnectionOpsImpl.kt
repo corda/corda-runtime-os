@@ -26,6 +26,8 @@ class DbConnectionOpsImpl(
 
     private val clusterEntityManagerFactory = createManagerFactory(CordaDb.CordaCluster.persistenceUnitName, getClusterDataSource())
 
+    private val issuedDataSources = mutableSetOf <DataSource>()
+    
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -35,14 +37,15 @@ class DbConnectionOpsImpl(
 
     override fun createDatasource(connectionId: UUID): CloseableDataSource {
         logger.debug { "Creating datasource for connection $connectionId" }
-        return dbConnectionsRepository.create(connectionId) ?: throw DBConfigurationException("Details for $connectionId cannot be found")
+        return (dbConnectionsRepository.create(connectionId) ?: throw DBConfigurationException("Details for $connectionId cannot be found"))
+            .also { issuedDataSources.add(it) }
     }
 
     override fun getDataSource(name: String, privilege: DbPrivilege): DataSource? =
-        dbConnectionsRepository.create(name, privilege)
+        dbConnectionsRepository.create(name, privilege)?.also { issuedDataSources.add(it) }
 
     override fun getDataSource(config: SmartConfig): CloseableDataSource =
-        dbConnectionsRepository.create(config)
+        dbConnectionsRepository.create(config).also { issuedDataSources.add(it) }
 
     override fun putConnection(name: String, privilege: DbPrivilege, config: SmartConfig,
                                description: String?, updateActor: String): UUID =
@@ -71,7 +74,7 @@ class DbConnectionOpsImpl(
         entitiesSet: JpaEntitiesSet
     ): EntityManagerFactory {
         logger.info("Loading DB connection details for ${entitiesSet.persistenceUnitName}/$privilege")
-        val dataSource = dbConnectionsRepository.create(name, privilege) ?:
+        val dataSource = dbConnectionsRepository.create(name, privilege)?.also { issuedDataSources.add(it) } ?:
         throw DBConfigurationException("Details for $name/$privilege cannot be found")
         return entityManagerFactoryFactory.create(
             name,
@@ -83,8 +86,9 @@ class DbConnectionOpsImpl(
     override fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet):
             EntityManagerFactory {
         logger.info("Loading DB connection details for $connectionId")
-        val dataSource = dbConnectionsRepository.create(connectionId) ?:
+        val dataSource = dbConnectionsRepository.create(connectionId) ?. also { issuedDataSources.add(it) } ?:
         throw DBConfigurationException("Details for $connectionId cannot be found")
+            
         return entityManagerFactoryFactory.create(
             connectionId.toString(),
             entitiesSet.classes.toList(),
@@ -98,6 +102,8 @@ class DbConnectionOpsImpl(
     ): EntityManagerFactory {
         throw UnsupportedOperationException("You should be using ${DbConnectionOpsImpl::createEntityManagerFactory} instead")
     }
+
+    override fun getIssuedDataSources(): Collection<DataSource> = issuedDataSources
 
     private fun createManagerFactory(name: String, dataSource: CloseableDataSource): EntityManagerFactory {
         return entityManagerFactoryFactory.create(

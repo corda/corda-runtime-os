@@ -78,6 +78,7 @@ class DbConnectionManagerImpl (
 
     override fun testConnection(): Boolean = try {
         checkDatabaseConnection(getClusterDataSource())
+        dbConnectionOps.getIssuedDataSources().forEach { checkDatabaseConnection(it) }
         true
     }  catch (e: DBConfigurationException) {
         logger.debug("DB check failed", e)
@@ -101,15 +102,19 @@ class DbConnectionManagerImpl (
     }
 
     /**
-     * Initialise the [DbConnectionManagerImpl] with the given Cluster DB config.
+     * Initialise the [DbConnectionManagerImpl] with the given Cluster DB config. We weren't able to do this
+     * in the constructor since it is only now that we get the configuration we need to do this.
      *
      * This also validates we can connect to the configured cluster DB and retries until it is successful.
+     * 
+     * @param config for the speicifc database we are dealing with
      */
     override fun initialise(config: SmartConfig) {
-        // configure connection to cluster DB and try/retry to connect
+        // configure our private internal connection to cluster DB for the purpose of finding  connections to other
+        // database, and try/retry to connect
         this.lateInitialisedConfig = config
         val clusterDataSource = dataSourceFactory.createFromConfig(config)
-        val clusterEntityManagerFactory = createManagerFactory(CordaDb.CordaCluster.persistenceUnitName, clusterDataSource)
+        val clusterEntityManagerFactory = createClusterEntityManagerFactory(clusterDataSource)
         val dbConnectionsRepository = dbConnectionRepositoryFactory.create(
             clusterDataSource, dataSourceFactory, clusterEntityManagerFactory, config.factory)
         this.dbConnectionsRepository = dbConnectionsRepository
@@ -132,25 +137,29 @@ class DbConnectionManagerImpl (
             try {
                 checkDatabaseConnection(clusterDataSource)
                 logger.info("Connection to Cluster DB is successful.")
-                eventHandler.scheduleNextDbCheck(lifecycleCoordinator)
-                return
+                break
             } catch (e: DBConfigurationException) {
                 logger.warn("Failed to connect to Cluster DB. " +
                         "Will be retrying in ${checkConnectionRetryTimeout.seconds}s: $e")
                 sleeper(checkConnectionRetryTimeout)
             }
         }
+        // At this point we have successfully closed the connection `clusterDataSource` but it's still accessible via 
+        // this.dbConnectionsRepository, which feels like a potential bug.
+        
+        // use lifecycle coordinator to periodically call this.testConnection()
+        eventHandler.scheduleNextDbCheck(lifecycleCoordinator)
     }
 
     /**
      * Creates [EntityManagerFactory] from given [DataSource] and name used to lookup
      * registered entity classes.
      *
-     * @param name Name for lookup in [JpaEntitiesRegistry] to get entity classes
      * @param dataSource DataSource
      */
-    private fun createManagerFactory(name: String, dataSource: CloseableDataSource): EntityManagerFactory {
-        logger.debug { "Creating EntityManagerFactory for persistence unit $name" }
+    private fun createClusterEntityManagerFactory(dataSource: CloseableDataSource): EntityManagerFactory {
+        val name = CordaDb.CordaCluster.persistenceUnitName
+        logger.debug { "Creating EntityManagerFactory for cluster database name $name" }
         return entityManagerFactoryFactory.create(
             name,
             entitiesRegistry.get(name)?.classes?.toList() ?:
@@ -165,6 +174,18 @@ class DbConnectionManagerImpl (
      * @throws DBConfigurationException If the cluster database cannot be connected to.
      */
     private fun checkDatabaseConnection(dataSource: DataSource) = try {
+        /* Make a test connection to the data source then close it immediately.
+           This is equivalent to
+              val connection = dataSource.getConnection()
+              connection.close()
+           but that causes an IntelliJ error.
+           
+           Also since the dataSource is a Hikari connection pool this will typically not
+           actually establish and release a real network connection to a database across network.
+           
+           We could potentially also call `isValid()` on the connection before releasing it. 
+         */
+        
         dataSource.connection.close()
     } catch (e: Exception) {
         throw DBConfigurationException("Could not connect to cluster database.", e)

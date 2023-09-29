@@ -11,6 +11,27 @@ import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
+import javax.sql.DataSource
+
+/*
+ * Implements a simple caching layer by encapsulating an object implementing `DbConnectionOps`
+ * (typically an instance of `DbConnectionsOpsImpl`). The reason for this is that connecting to most databases
+ * in Corda requires a database lookup in the cluster database to get the connection details for the other database,
+ * and that is slow enough to be worth implementing.
+ * 
+ * So, if you are using this class, you have two levels of cache for database connections:
+ * 
+ *   1. This cache, which stores `EntityManagerFramework` for specific (name, privilege) combinations
+ *   2. The Hikari connection pool cache, which keeps a number of actual network connections available.
+ * 
+ * Since the EntityManagerFramework objects stored in this cache include database connection details, and
+ * potentially those can change, we need a way to clear out EntityManagerFrameworks from this cache when they
+ * aren't working since we may have received updated credentials via dynamic configuration, and we don't want
+ * to keep retrying with the old connection details.
+ * 
+ * The `EntityManagerFactory` for the cluster database connection of `DbConnectionManagerImpl` does not go in this
+ * cache.
+ */
 
 class DbConnectionOpsCachedImpl(
     private val delegate: DbConnectionOps,
@@ -70,4 +91,6 @@ class DbConnectionOpsCachedImpl(
             delegate.createEntityManagerFactory(connectionId, entitiesSet)
         }
     }
+
+    override fun getIssuedDataSources(): Collection<DataSource> = delegate.getIssuedDataSources()
 }

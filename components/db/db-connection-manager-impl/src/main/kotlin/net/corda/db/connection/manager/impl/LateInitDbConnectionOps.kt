@@ -70,4 +70,6 @@ class LateInitDbConnectionOps: DbConnectionOps {
         entitiesSet: JpaEntitiesSet
     ): EntityManagerFactory =
         delegate.getOrCreateEntityManagerFactory(connectionId, entitiesSet)
+
+    override fun getIssuedDataSources(): Collection<DataSource> = delegate.getIssuedDataSources()
 }

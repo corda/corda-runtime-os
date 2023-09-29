@@ -171,4 +171,8 @@ class DbConnectionManagerImpl @Activate constructor(
     ): CloseableDataSource {
         TODO("Not yet implemented")
     }
+
+    override fun getIssuedDataSources(): Collection<DataSource> {
+        TODO("Not yet implemented")
+    }
 }

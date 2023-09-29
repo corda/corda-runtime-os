@@ -142,4 +142,10 @@ interface DbConnectionOps {
     fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet): EntityManagerFactory
 
     fun getOrCreateEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet): EntityManagerFactory
+    
+    /*
+     * Return all data sources that have been isssued by the previous methods
+     * 
+     */
+    fun getIssuedDataSources() : Collection<DataSource>
 }

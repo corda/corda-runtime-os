@@ -165,4 +165,5 @@ class FakeDbConnectionManager(
         TODO("Not yet implemented")
     }
 
+    override fun getIssuedDataSources(): Collection<DataSource> = emptySet()
 }
