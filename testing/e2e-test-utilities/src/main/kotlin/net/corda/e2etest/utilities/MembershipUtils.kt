@@ -83,6 +83,7 @@ fun ClusterInfo.onboardMember(
     val ledgerKeyId = createKeyFor(holdingId, "$holdingId$CAT_LEDGER", CAT_LEDGER, DEFAULT_KEY_SCHEME)
 
     if (!keyExists(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS)) {
+        disableCertificateRevocationChecks()
         val tlsKeyId = createKeyFor(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS, DEFAULT_KEY_SCHEME)
         val tlsCsr = generateCsr(x500Name, tlsKeyId)
         val tlsCert = getCa().generateCert(tlsCsr)
