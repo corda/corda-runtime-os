@@ -1,63 +1,21 @@
 package net.corda.applications.workers.smoketest.services
 
-import com.fasterxml.jackson.module.kotlin.contains
-import net.corda.applications.workers.smoketest.utils.PLATFORM_VERSION
-import net.corda.avro.serialization.CordaAvroSerializer
-import net.corda.data.KeyValuePair
-import net.corda.data.KeyValuePairList
-import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.event.external.ExternalEventContext
-import net.corda.data.flow.event.external.ExternalEventResponse
-import net.corda.data.identity.HoldingIdentity
-import net.corda.e2etest.utilities.ClusterInfo
-import net.corda.e2etest.utilities.DEFAULT_CLUSTER
-import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
-import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
-import net.corda.e2etest.utilities.assertWithRetryIgnoringExceptions
-import net.corda.e2etest.utilities.cluster
-import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
-import net.corda.e2etest.utilities.conditionallyUploadCpiSigningCertificate
-import net.corda.e2etest.utilities.getExistingCpi
-import net.corda.e2etest.utilities.getHoldingIdShortHash
-import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
-import net.corda.e2etest.utilities.registerStaticMember
-import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionContainer
-import net.corda.ledger.utxo.verification.CordaPackageSummary
-import net.corda.ledger.utxo.verification.TransactionVerificationRequest
-import net.corda.ledger.utxo.verification.TransactionVerificationResponse
-import net.corda.ledger.utxo.verification.TransactionVerificationStatus
-import net.corda.messagebus.kafka.serialization.CordaAvroSerializationFactoryImpl
-import net.corda.rest.ResponseCode
-import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
-import net.corda.virtualnode.toAvro
-import org.assertj.core.api.Assertions
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import org.slf4j.LoggerFactory
-import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
-import java.nio.ByteBuffer
-import java.time.Duration
-import java.time.Instant
-import java.util.UUID
 
 /**
  * Tests for the Verification RPC service
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class VerificationRPCSmokeTests {
-    private val httpClient: HttpClient = HttpClient.newBuilder()
+/*    private val httpClient: HttpClient = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(30))
         .build()
     private val serializationFactory = CordaAvroSerializationFactoryImpl(
         AvroSchemaRegistryImpl()
     )
 
-    private val avroTransactionSerializer = serializationFactory.createAvroSerializer<UtxoLedgerTransactionContainer> { }
+    private val avroTransactionSerializer =
+        serializationFactory.createAvroSerializer<UtxoLedgerTransactionContainer> { }
     private val avroSerializer = serializationFactory.createAvroSerializer<TransactionVerificationRequest> { }
     private val avroFlowEventDeserializer = serializationFactory.createAvroDeserializer({}, FlowEvent::class.java)
     private val avroVerificationDeserializer =
@@ -150,9 +108,16 @@ class VerificationRPCSmokeTests {
             }
         val url = "${System.getProperty("verificationWorkerUrl")}api/$PLATFORM_VERSION/verification"
 
+        val transaction = UtxoLedgerTransactionContainer(wireTransaction =, inputStateAndRefs =)
+
         logger.info("verification url: $url")
         val serializedPayload =
-            avroSerializer.serialize(payloadBuilder(avroTransactionSerializer, defaultNotaryVNodeHoldingIdentity, transaction, cpkSummaries))
+            cpkSummaries?.let {
+                payloadBuilder(
+                    avroTransactionSerializer, defaultNotaryVNodeHoldingIdentity, transaction,
+                    it
+                )
+            }?.let { avroSerializer.serialize(it) }
 
         val request = HttpRequest.newBuilder()
             .uri(URI.create(url))
@@ -188,5 +153,5 @@ class VerificationRPCSmokeTests {
         ByteBuffer.wrap(serializer.serialize(transaction)),
         cpksSummaries,
         EXTERNAL_EVENT_CONTEXT
-    )
+    )*/
 }
