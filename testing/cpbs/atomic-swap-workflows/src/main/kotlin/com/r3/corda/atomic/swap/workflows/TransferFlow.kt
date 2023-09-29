@@ -105,7 +105,7 @@ class TransferFlow : ClientStartableFlow {
             log.info("KEYS PLEASE myKeys: $myKeys")
             val keysToAddToSignatories = (lockState.participants + myKeys).filterNotNull().toSet()
 
-            log.info("KEYS PLEASE: $keysToAddToSignatories")
+            log.info("KEYS PLEASE keysToAddToSignatories: $keysToAddToSignatories")
 
             val txBuilder = ledgerService.createTransactionBuilder()
 
@@ -116,9 +116,9 @@ class TransferFlow : ClientStartableFlow {
                 .addOutputState(outputState)
                 .addCommand(LockContract.LockCommands.Lock())
                 .addCommand(AssetContract.AssetCommands.Transfer())
-//                .addSignatories(lockState.participants)
-//                .addSignatories(outputState.participants)
-                .addSignatories(keysToAddToSignatories)
+//                .addSignatories(keysToAddToSignatories)
+                .addSignatories(lockState.participants)
+                .addSignatories(outputState.participants)
 
 
             val signedTransaction = txBuilder.toSignedTransaction()

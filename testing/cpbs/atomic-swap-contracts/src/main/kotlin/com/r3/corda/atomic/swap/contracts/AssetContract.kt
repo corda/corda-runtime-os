@@ -46,7 +46,7 @@ class AssetContract: Contract {
                 REQUIRES_ONE_ASSET_INPUT using (transaction.getInputStates(Asset::class.java).size == 1)
 
                 val input = transaction.getInputStates(Asset::class.java)[0]
-                REQUIRES_OWNER_SIGN using (transaction.signatories.contains(input.owner))
+//                REQUIRES_OWNER_SIGN using (transaction.signatories.contains(input.owner))
 
                 val output = transaction.getOutputStates(Asset::class.java)[0]
                 REQUIRES_DIFFERENT_OWNER using (input.owner != output.owner)
