@@ -373,7 +373,7 @@ spec:
             '-r', '{{ .Values.bootstrap.kafka.replicas }}',
             '-p', '{{ .Values.bootstrap.kafka.partitions }}',
             'connect',
-            '-w', '{{ .Values.bootstrap.kafka.timeoutSeconds }}'
+            '-w'
           ]
           volumeMounts:
             - mountPath: /tmp

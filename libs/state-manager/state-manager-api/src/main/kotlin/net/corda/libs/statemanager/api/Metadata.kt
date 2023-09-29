@@ -1,16 +1,6 @@
 package net.corda.libs.statemanager.api
 
 /**
- * Supported comparison operations on metadata values.
- */
-enum class Operation {
-    Equals,
-    NotEquals,
-    LesserThan,
-    GreaterThan,
-}
-
-/**
  * Mutable map that allows only primitive types to be used as values.
  */
 class Metadata(
