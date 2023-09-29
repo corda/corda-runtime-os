@@ -372,9 +372,7 @@ spec:
             {{- end }}
             '-r', '{{ .Values.bootstrap.kafka.replicas }}',
             '-p', '{{ .Values.bootstrap.kafka.partitions }}',
-            'connect'{{- if .Values.bootstrap.kafka.cleanup }},
-            '-d',
-            {{- end }}
+            'connect',
             '-w', '{{ .Values.bootstrap.kafka.timeoutSeconds }}'
           ]
           volumeMounts:
