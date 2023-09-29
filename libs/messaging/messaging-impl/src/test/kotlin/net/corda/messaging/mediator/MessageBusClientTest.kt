@@ -48,7 +48,7 @@ class MessageBusClientTest {
 
         val expected = CordaProducerRecord(
             TEST_ENDPOINT,
-            message.getProperty(MSG_PROP_KEY),
+            TEST_KEY,
             message.payload
         )
 
