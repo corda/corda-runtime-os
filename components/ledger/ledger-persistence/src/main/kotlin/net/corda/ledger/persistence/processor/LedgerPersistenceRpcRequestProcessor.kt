@@ -22,7 +22,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
 
-//TODO - should this kdoc change now
 /**
  * Handles incoming requests, typically from the flow worker, and sends responses.
  */
