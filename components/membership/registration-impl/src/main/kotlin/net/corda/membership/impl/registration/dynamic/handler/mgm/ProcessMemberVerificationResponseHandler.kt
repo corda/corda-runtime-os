@@ -70,22 +70,15 @@ internal class ProcessMemberVerificationResponseHandler(
 
     override val commandType = ProcessMemberVerificationResponse::class.java
 
-    private val RegistrationState.commandHasBeenExecuted: Boolean
-        get() = commands.map { it.command }.contains(commandType.simpleName)
-
-
     override fun invoke(
         state: RegistrationState?,
         key: String,
         command: ProcessMemberVerificationResponse
     ): RegistrationHandlerResult {
-        // Continue without processing this stage again if the state has been nullified or if the command has been executed previously.
-        // This is to prevent multiple processing attempts in the case of replays at a p2p level.
-        if (state == null || state.commandHasBeenExecuted) {
-            logger.info("${ProcessMemberVerificationResponse::class.java.simpleName} command ignored since it has been processed already.")
+        if(processingShouldBeSkipped(state)) {
             return RegistrationHandlerResult(state, emptyList(), skipped = true)
         }
-        val registrationId = state.registrationId
+        val registrationId = state!!.registrationId
         val mgm = state.mgm
         val member = state.registeringMember
         val messages = try {
@@ -235,6 +228,25 @@ internal class ProcessMemberVerificationResponseHandler(
             )
             throw InvalidPreAuthTokenException("Pre-auth token provided is not valid. A valid UUID is expected.")
         }
+    }
+
+    private fun isStatePreviouslyProcessed(state: RegistrationState): Boolean = state.commands.map { it.command }.contains(commandType.simpleName)
+
+    // Continue without processing this stage again if the state has been nullified or if the command has been executed previously.
+    // This is to prevent multiple processing attempts in the case of replays at a p2p level.
+    private fun processingShouldBeSkipped(state: RegistrationState?): Boolean = if (state == null) {
+        logger.info(
+            "${ProcessMemberVerificationResponse::class.java.simpleName} command ignored. " +
+                    "Registration state is null indicating that registration processing has completed."
+        )
+        true
+    } else if(isStatePreviouslyProcessed(state)) {
+        logger.info(
+            "${ProcessMemberVerificationResponse::class.java.simpleName} command ignored. " +
+                    "Command was processed already.")
+        true
+    } else {
+        false
     }
 
     class InvalidPreAuthTokenException(msg: String) : CordaRuntimeException(msg)
