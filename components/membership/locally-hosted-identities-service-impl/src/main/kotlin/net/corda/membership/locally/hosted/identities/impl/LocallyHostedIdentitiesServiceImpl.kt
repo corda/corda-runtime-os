@@ -224,7 +224,7 @@ class LocallyHostedIdentitiesServiceImpl(
         if (!isRunning) {
             throw CordaRuntimeException("Service is not ready")
         }
-        return identity in identities.keys
+        return identities.containsKey(identity)
     }
 
     override val isRunning
