@@ -88,7 +88,6 @@ class LedgerPersistenceService @Activate constructor(
                 newLedgerProcessorSubscription.start()
                 ledgerProcessorSubscription = newLedgerProcessorSubscription
                 coordinator.updateStatus(LifecycleStatus.UP)
-                // RPC Subscription doesn't need to be re-created because it doesn't take config.
             }
             is StopEvent -> {
                 ledgerProcessorSubscription?.close()
