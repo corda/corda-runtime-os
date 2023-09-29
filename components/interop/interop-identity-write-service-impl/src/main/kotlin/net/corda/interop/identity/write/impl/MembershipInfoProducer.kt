@@ -1,6 +1,5 @@
 package net.corda.interop.identity.write.impl
 
-import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
@@ -20,16 +19,11 @@ import java.util.concurrent.atomic.AtomicReference
 @Suppress("ForbiddenComment")
 class MembershipInfoProducer(
     private val publisher: AtomicReference<Publisher?>,
-    private val cryptoOpsClient: CryptoOpsClient
+    private val sessionKeyGenerator: SessionKeyGenerator,
+
 ) {
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-
-        // TODO: CORE-15749 - Key generation and interop certificates
-        private val DUMMY_CERTIFICATE =
-            this::class.java.getResource("/dummy_certificate.pem")?.readText()
-        private val DUMMY_PUBLIC_SESSION_KEY =
-            this::class.java.getResource("/dummy_session_key.pem")?.readText()
 
         val mgmContext = listOf(
             KeyValuePair(MemberInfoExtension.STATUS, "ACTIVE"),
@@ -63,7 +57,6 @@ class MembershipInfoProducer(
             log.error("Member info publisher is null, not publishing.")
             return
         }
-
         val viewOwningMemberHoldingIdentity = HoldingIdentity(
             MemberX500Name.parse(ownedInteropIdentity.x500Name), ownedInteropIdentity.groupId)
 
@@ -71,19 +64,11 @@ class MembershipInfoProducer(
         val memberInfoList = newInteropIdentities.map { identityToPublish ->
             var memberContext = getMemberContext(identityToPublish, ownedInteropIdentity)
             if (realHoldingIdentity != null) {
-                val sessionKey = cryptoOpsClient.generateKeyPair(
-                    tenantId = realHoldingIdentity.shortHash.value,
-                    category = "SESSION_INIT",
-                    alias = identityToPublish.x500Name,
-                    scheme = "CORDA.ECDSA.SECP256R1",
-                )
-                log.info("**********************************************")
-                log.info("************************* PARTY_SESSION_KEYS : ${sessionKey}")
-                log.info("**********************************************")
+                val sessionKey = sessionKeyGenerator.getOrCreateSessionKey(identityToPublish, realHoldingIdentity.shortHash.value)
                 memberContext = memberContext.plus(
                     listOf(
-                        KeyValuePair(String.format(MemberInfoExtension.PARTY_SESSION_KEYS, 0), sessionKey.toString()),
-                        KeyValuePair(MemberInfoExtension.LEDGER_KEYS_KEY.format(0), sessionKey.toString()),
+                        KeyValuePair(String.format(MemberInfoExtension.PARTY_SESSION_KEYS, 0), sessionKey),
+                        KeyValuePair(MemberInfoExtension.LEDGER_KEYS_KEY.format(0), sessionKey),
                         KeyValuePair(MemberInfoExtension.INTEROP_MAPPING_X500_NAME, realHoldingIdentity.x500Name.toString()),
                         KeyValuePair(MemberInfoExtension.INTEROP_MAPPING_GROUP, realHoldingIdentity.groupId)
                     )
@@ -102,7 +87,6 @@ class MembershipInfoProducer(
                 )
             )
         }
-
         publisher.get()!!.publish(memberInfoList)
     }
 }

@@ -31,10 +31,13 @@ dependencies {
     implementation project(":libs:configuration:configuration-core")
     implementation project(":components:configuration:configuration-read-service")
     implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation project(":components:membership:certificates-client")
+    implementation project(":components:membership:certificates-client-impl")
 
     runtimeOnly project(":components:interop:interop-identity-write-service-impl")
     runtimeOnly project(":components:interop:interop-identity-registry-service-impl")
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
+    runtimeOnly project(":components:membership:certificates-client-impl")
 
     testImplementation project(":libs:lifecycle:lifecycle-impl")
     testImplementation project(":libs:lifecycle:registry")

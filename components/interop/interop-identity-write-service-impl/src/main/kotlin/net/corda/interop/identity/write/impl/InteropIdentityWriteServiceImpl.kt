@@ -6,7 +6,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.databind.node.TextNode
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.interop.identity.write.InteropIdentityWriteService
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -49,7 +51,11 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = CryptoOpsClient::class)
-    private val cryptoOpsClient: CryptoOpsClient
+    private val cryptoOpsClient: CryptoOpsClient,
+    @Reference(service = KeyEncodingService::class)
+    private val keyEncodingService: KeyEncodingService,
+    @Reference(service = HSMRegistrationClient::class)
+    private val hsmRegistrationClient: HSMRegistrationClient
 ) : InteropIdentityWriteService, LifecycleEventHandler {
     companion object {
         val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -65,9 +71,10 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
 
     private val publisher: AtomicReference<Publisher?> = AtomicReference()
 
+    private val sessionKeyGenerator = SessionKeyGenerator(cryptoOpsClient, keyEncodingService, hsmRegistrationClient)
     private val interopIdentityProducer = InteropIdentityProducer(publisher)
-    private val hostedIdentityProducer = HostedIdentityProducer(publisher, cryptoOpsClient)
-    private val membershipInfoProducer = MembershipInfoProducer(publisher,cryptoOpsClient)
+    private val hostedIdentityProducer = HostedIdentityProducer(publisher, sessionKeyGenerator)
+    private val membershipInfoProducer = MembershipInfoProducer(publisher, sessionKeyGenerator)
     private val interopGroupPolicyProducer = InteropGroupPolicyProducer(publisher)
 
     override val isRunning: Boolean
