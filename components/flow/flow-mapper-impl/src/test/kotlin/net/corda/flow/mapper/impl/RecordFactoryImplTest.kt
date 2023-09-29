@@ -57,10 +57,10 @@ internal class RecordFactoryImplTest {
         val byteArray = "SessionEventSerialized".toByteArray()
 
         whenever(cordaAvroSerializer.serialize(any<SessionEvent>())).thenReturn(byteArray)
-        whenever(locallyHostedIdentitiesServiceSameCluster.isHostedLocally(any())).thenReturn(mock())
+        whenever(locallyHostedIdentitiesServiceSameCluster.isHostedLocally(any())).thenReturn(true)
 
         val locallyHostedIdentitiesServiceDifferentCluster: LocallyHostedIdentitiesService = mock()
-        whenever(locallyHostedIdentitiesServiceDifferentCluster.isHostedLocally(any())).thenReturn(null)
+        whenever(locallyHostedIdentitiesServiceDifferentCluster.isHostedLocally(any())).thenReturn(false)
 
         recordFactoryImplSameCluster = RecordFactoryImpl(cordaAvroSerializationFactory, locallyHostedIdentitiesServiceSameCluster)
         recordFactoryImplDifferentCluster = RecordFactoryImpl(cordaAvroSerializationFactory, locallyHostedIdentitiesServiceDifferentCluster)
