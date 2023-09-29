@@ -15,7 +15,8 @@ internal object TaskManagerFactoryImpl : TaskManagerFactory {
         threads: Int,
     ): TaskManager {
         return TaskManagerImpl(
-            CordaExecutorServiceWrapper(
+            longRunningThreadName = "$threadName-long-running-thread",
+            executorService = CordaExecutorServiceWrapper(
                 name,
                 "corda.taskmanager.$metricPrefix.",
                 Executors.newScheduledThreadPool(

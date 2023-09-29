@@ -1,6 +1,7 @@
 package net.corda.taskmanager.impl
 
 import net.corda.taskmanager.TaskManager
+import net.corda.utilities.VisibleForTesting
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
@@ -8,30 +9,24 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
-internal class TaskManagerImpl(private val executorService: ScheduledExecutorService) : TaskManager {
+internal class TaskManagerImpl(
+    private val longRunningThreadName: String,
+    private val executorService: ScheduledExecutorService
+) : TaskManager {
 
     enum class Type {
         SHORT_RUNNING, LONG_RUNNING, SCHEDULED
     }
 
-    private var liveTaskCounts = ConcurrentHashMap<Type, Int>()
-
-    override fun shutdown(): CompletableFuture<Void> {
-        executorService.shutdown()
-        // This [CompletableFuture] must not run on the executor service otherwise it'll never shut down.
-        // [runAsync] runs this task in the fork join common pool.
-        val shutdownFuture = CompletableFuture.runAsync {
-            executorService.awaitTermination(100, TimeUnit.SECONDS)
-        }
-        return shutdownFuture
-    }
+    @VisibleForTesting
+    val liveTaskCounts = ConcurrentHashMap<Type, Int>()
 
     override fun <T> executeShortRunningTask(command: () -> T): CompletableFuture<T> {
         incrementTaskCount(Type.SHORT_RUNNING)
         return CompletableFuture.supplyAsync(
-            { command().also { decrementTaskCount(Type.SHORT_RUNNING) } },
+            { command() },
             executorService
-        )
+        ).whenComplete { _, _ -> decrementTaskCount(Type.SHORT_RUNNING) }
     }
 
     override fun <T> executeLongRunningTask(command: () -> T): CompletableFuture<T> {
@@ -42,13 +37,16 @@ internal class TaskManagerImpl(private val executorService: ScheduledExecutorSer
             start = true,
             isDaemon = true,
             contextClassLoader = null,
-            name = "Task Manager - $uniqueId",
+            name = "$longRunningThreadName-$uniqueId",
             priority = -1,
         ) {
-            result.complete(command())
-            decrementTaskCount(Type.LONG_RUNNING)
+            try {
+                result.complete(command())
+            } catch (t: Throwable) {
+                result.completeExceptionally(t)
+            }
         }
-        return result
+        return result.whenComplete { _, _ -> decrementTaskCount(Type.LONG_RUNNING) }
     }
 
     override fun <T> executeScheduledTask(command: () -> T, delay: Long, unit: TimeUnit): CompletableFuture<T> {
@@ -56,17 +54,30 @@ internal class TaskManagerImpl(private val executorService: ScheduledExecutorSer
         val result = CompletableFuture<T>()
         executorService.schedule(
             {
-                result.complete(command())
-                decrementTaskCount(Type.SCHEDULED)
+                try {
+                    result.complete(command())
+                } catch (t: Throwable) {
+                    result.completeExceptionally(t)
+                }
             },
             delay,
             unit
         )
-        return result
+        return result.whenComplete { _, _ -> decrementTaskCount(Type.SCHEDULED) }
     }
 
     override fun execute(command: Runnable) {
         executorService.execute(command)
+    }
+
+    override fun shutdown(): CompletableFuture<Void> {
+        executorService.shutdown()
+        // This [CompletableFuture] must not run on the executor service otherwise it'll never shut down.
+        // [runAsync] runs this task in the fork join common pool.
+        val shutdownFuture = CompletableFuture.runAsync {
+            executorService.awaitTermination(100, TimeUnit.SECONDS)
+        }
+        return shutdownFuture
     }
 
     private fun incrementTaskCount(type: Type) {
