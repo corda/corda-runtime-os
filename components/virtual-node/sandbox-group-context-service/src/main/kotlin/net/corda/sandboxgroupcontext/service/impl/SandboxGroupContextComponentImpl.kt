@@ -108,11 +108,11 @@ class SandboxGroupContextComponentImpl @Activate constructor(
             is StartEvent -> onStart(coordinator)
             is StopEvent -> onStop()
             is RegistrationStatusChangeEvent -> onRegistrationChangeEvent(event, coordinator)
-            is ConfigChangedEvent -> onConfigChangeEvent(event, coordinator)
+            is ConfigChangedEvent -> onConfigChangeEvent(coordinator)
         }
     }
 
-    private fun onConfigChangeEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
+    private fun onConfigChangeEvent(coordinator: LifecycleCoordinator) {
         SandboxGroupType.values().forEach {
             val cacheSize = SANDBOX_CACHE_SIZE_DEFAULT
 
