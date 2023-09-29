@@ -1,15 +1,15 @@
 package net.corda.messaging.mediator.statemanager
 
-import net.corda.libs.statemanager.api.Operation
+import net.corda.libs.statemanager.api.IntervalFilter
+import net.corda.libs.statemanager.api.SingleKeyFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
-import java.time.Instant
 
 // TODO This is used temporarily until State Manager implementation is finished
 @Component(service = [StateManager::class])
-class StateManagerImpl  @Activate constructor() : StateManager {
+class StateManagerImpl @Activate constructor() : StateManager {
     private val storage = mutableMapOf<String, State>()
 
     override fun create(states: Collection<State>): Map<String, Exception> {
@@ -38,16 +38,22 @@ class StateManagerImpl  @Activate constructor() : StateManager {
         TODO("Not yet implemented")
     }
 
-    override fun getUpdatedBetween(start: Instant, finish: Instant): Map<String, State> {
+    override fun updatedBetween(intervalFilter: IntervalFilter): Map<String, State> {
         TODO("Not yet implemented")
     }
 
-    override fun find(key: String, operation: Operation, value: Any): Map<String, State> {
+    override fun find(singleKeyFilter: SingleKeyFilter): Map<String, State> {
+        TODO("Not yet implemented")
+    }
+
+    override fun findUpdatedBetweenWithMetadataFilter(
+        intervalFilter: IntervalFilter,
+        singleKeyFilter: SingleKeyFilter
+    ): Map<String, State> {
         TODO("Not yet implemented")
     }
 
     override fun close() {
         TODO("Not yet implemented")
     }
-
 }
