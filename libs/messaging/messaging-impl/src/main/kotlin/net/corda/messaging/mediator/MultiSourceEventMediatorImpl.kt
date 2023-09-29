@@ -1,11 +1,13 @@
 package net.corda.messaging.mediator
 
+import kotlinx.coroutines.runBlocking
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorConsumer
 import net.corda.messaging.api.mediator.MessageRouter
@@ -14,6 +16,7 @@ import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.mediator.taskmanager.TaskManager
 import net.corda.messaging.mediator.factory.MediatorComponentFactory
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
@@ -72,8 +75,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                 lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
 
                 while (!stopped) {
-                    // Poll and process events
-                    TODO("Not yet implemented")
+                    processEvents()
                 }
 
             } catch (exception: Exception) {
@@ -110,5 +112,34 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     private fun closeConsumersAndProducers() {
         consumers.forEach { it.close() }
         clients.forEach { it.close() }
+    }
+
+    private fun processEvents() {
+        log.debug { "Polling and processing events" }
+        val messages = pollConsumers()
+        if (messages.isNotEmpty()) {
+            // TODO Process messages
+            commitOffsets()
+        }
+    }
+
+    private fun pollConsumers(): List<CordaConsumerRecord<K, E>> {
+        return runBlocking {
+            consumers.map { consumer ->
+                consumer.poll(config.pollTimeout)
+            }.map {
+                it.await()
+            }
+        }.flatten()
+    }
+
+    private fun commitOffsets() {
+        runBlocking {
+            consumers.map { consumer ->
+                consumer.asyncCommitOffsets()
+            }.map {
+                it.await()
+            }
+        }
     }
 }
