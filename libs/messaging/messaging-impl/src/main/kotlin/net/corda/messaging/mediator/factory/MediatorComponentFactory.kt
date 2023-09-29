@@ -11,7 +11,7 @@ import net.corda.messaging.api.mediator.factory.MessagingClientFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 
 /**
- * Factory for creating various components used by [MultiSourceEventMediatorImpl]
+ * Factory for creating various components used by Multi-Source Event Mediator.
  */
 internal class MediatorComponentFactory<K : Any, S : Any, E : Any>(
     private val messageProcessor: StateAndEventProcessor<K, S, E>,
@@ -30,7 +30,7 @@ internal class MediatorComponentFactory<K : Any, S : Any, E : Any>(
         onSerializationError: (ByteArray) -> Unit
     ): List<MediatorConsumer<K, E>> {
         check(consumerFactories.isNotEmpty()) {
-            "None consumer factory set in configuration"
+            "No consumer factory set in configuration"
         }
         return consumerFactories.map { consumerFactory ->
             consumerFactory.create(
@@ -53,7 +53,7 @@ internal class MediatorComponentFactory<K : Any, S : Any, E : Any>(
         onSerializationError: (ByteArray) -> Unit
     ): List<MessagingClient> {
         check(clientFactories.isNotEmpty()) {
-            "None client factory set in configuration"
+            "No client factory set in configuration"
         }
         return clientFactories.map { clientFactory ->
             clientFactory.create(

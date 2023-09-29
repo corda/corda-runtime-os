@@ -28,7 +28,8 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_SIGNATU
     name = "onboard-member",
     description = [
         "Onboard a member"
-    ]
+    ],
+    mixinStandardHelpOptions = true
 )
 class OnBoardMember : Runnable, BaseOnboard() {
     @Option(

@@ -17,7 +17,8 @@ const val USER_ADMIN_ROLE = "UserAdminRole"
         - creation/deletion of permissions
         - creation/deletion of roles
         - assigning/un-assigning roles to users
-        - assigning/un-assigning permissions to roles"""]
+        - assigning/un-assigning permissions to roles"""],
+    mixinStandardHelpOptions = true
 )
 class UserAdminSubcommand : RestCommand(), Callable<Int> {
 

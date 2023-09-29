@@ -21,7 +21,11 @@ import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
-@CommandLine.Command(name = "connect", description = ["Connects to Kafka broker to create topics"])
+@CommandLine.Command(
+    name = "connect",
+    description = ["Connects to Kafka broker to create topics"],
+    mixinStandardHelpOptions = true
+)
 class CreateConnect : Runnable {
 
     @CommandLine.ParentCommand
