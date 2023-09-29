@@ -1,6 +1,5 @@
 package net.corda.messaging.subscription
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.deadletter.StateAndEventDeadLetterRecord
@@ -30,18 +29,15 @@ import net.corda.messaging.utils.tryGetResult
 import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.getDLQTopic
 import net.corda.schema.Schemas.getStateAndEventStateTopic
+import net.corda.taskmanager.TaskManagerFactory
 import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.net.http.HttpClient
 import java.nio.ByteBuffer
 import java.time.Clock
-import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
 internal class FlowStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
@@ -65,13 +61,11 @@ internal class FlowStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private var threadLooper =
         ThreadLooper(log, config, lifecycleCoordinatorFactory, "state/event processing thread", ::runConsumeLoop)
 
-    private val processingThreads = ThreadPoolExecutor(
-        8,
-        8,
-        0L,
-        TimeUnit.MILLISECONDS,
-        LinkedBlockingQueue(),
-        ThreadFactoryBuilder().setNameFormat("state-and-event-processing-thread-%d").setDaemon(false).build()
+    private val taskManager = TaskManagerFactory.INSTANCE.createThreadPoolTaskManager(
+        name = "Flow State and Event",
+        threadName = "flow-state-and-event",
+        metricPrefix = "flow",
+        threads = 8
     )
 
     private val producer: CordaProducer
@@ -313,14 +307,11 @@ internal class FlowStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                         state,
                         events.first().topic,
                         partitionId,
-                        CompletableFuture.supplyAsync(
-                            {
-                                events.map { event ->
-                                    event to processor.onNext(state, event.toRecord())
-                                }
-                            },
-                            processingThreads
-                        )
+                        taskManager.executeShortRunningTask {
+                            events.map { event ->
+                                event to processor.onNext(state, event.toRecord())
+                            }
+                        }
                     )
                 }
 
