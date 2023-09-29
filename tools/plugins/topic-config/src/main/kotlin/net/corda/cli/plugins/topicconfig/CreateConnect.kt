@@ -13,6 +13,9 @@ import org.apache.kafka.common.resource.PatternType
 import org.apache.kafka.common.resource.ResourcePattern
 import org.apache.kafka.common.resource.ResourceType
 import com.fasterxml.jackson.module.kotlin.readValue
+import org.apache.kafka.clients.admin.AlterConfigOp
+import org.apache.kafka.clients.admin.ConfigEntry
+import org.apache.kafka.common.config.ConfigResource
 import picocli.CommandLine
 import java.io.File
 import java.nio.file.Files
@@ -64,15 +67,12 @@ class CreateConnect : Runnable {
 
             try {
                 val existingTopicNames = client.existingTopicNamesWithPrefix(create!!.topic!!.namePrefix, wait)
-                val existingTopicsToUpdate =
-                    topicConfigs.topics.map { it.name }.filter { existingTopicNames.contains(it) }
-
+                val existingTopicsToUpdate = topicConfigs.topics.filter { existingTopicNames.contains(it.name) }
                 if (existingTopicsToUpdate.isNotEmpty()) {
-                    println("The following topics already exist and will not be included in the configuration update: " +
-                            existingTopicsToUpdate.joinToString { it })
+                    updateTopics(client, existingTopicsToUpdate)
                 }
 
-                val topicConfigsToCreate = topicConfigs.topics.filterNot { existingTopicsToUpdate.contains(it.name) }
+                val topicConfigsToCreate = topicConfigs.topics.filterNot { existingTopicsToUpdate.contains(it) }
                 if (topicConfigsToCreate.isNotEmpty()) {
                     createTopicsWithRetry(client, topicConfigsToCreate)
                 }
@@ -122,6 +122,25 @@ class CreateConnect : Runnable {
         }
         if (errors.isNotEmpty()) {
             throw errors.first()
+        }
+    }
+
+    private fun updateTopics(client: Admin, topicConfigs: List<Create.PreviewTopicConfiguration>) {
+        println("Updating topics: ${topicConfigs.map{ it.name }.joinToString { it }}")
+        val update = topicConfigs.associate { topicConfig ->
+            ConfigResource(ConfigResource.Type.TOPIC, topicConfig.name) to topicConfig.config.map { entry ->
+                AlterConfigOp(ConfigEntry(entry.key, entry.value), AlterConfigOp.OpType.SET)
+            }
+        }
+
+        client.incrementalAlterConfigs(update).values().forEach { (topic, future) ->
+            try {
+                future.get(wait, TimeUnit.SECONDS)
+                println("Updated topic ${topic.name()}")
+            } catch (e: Exception) {
+                println("Failed to update topic ${topic.name()}: ${e.message}")
+                throw e
+            }
         }
     }
 
