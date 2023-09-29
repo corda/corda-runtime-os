@@ -20,7 +20,6 @@ import net.corda.messaging.api.mediator.taskmanager.TaskType
 import net.corda.messaging.mediator.factory.MediatorComponentFactory
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
-import java.time.Duration
 import java.util.UUID
 
 @Suppress("LongParameterList")
@@ -47,7 +46,6 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     private val taskManagerHelper = TaskManagerHelper(
         taskManager, stateManagerHelper
     )
-    private val pollTimeoutInNanos = config.pollTimeout.toNanos()
     private val uniqueId = UUID.randomUUID().toString()
     private val lifecycleCoordinatorName = LifecycleCoordinatorName(
         "MultiSourceEventMediator--${config.name}", uniqueId
@@ -157,7 +155,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 
     private fun processEvents() {
         log.debug { "Polling and processing events" }
-        val messages = poll(pollTimeoutInNanos)
+        val messages = pollConsumers()
         if (messages.isNotEmpty()) {
             val msgGroups = messages.groupBy { it.key }
             val persistedStates = stateManager.get(msgGroups.keys.map { it.toString() })
@@ -180,11 +178,13 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    private fun poll(pollTimeoutInNanos: Long): List<CordaConsumerRecord<K, E>> {
-        val maxEndTime = System.nanoTime() + pollTimeoutInNanos
-        return consumers.map { consumer ->
-            val remainingTime = (maxEndTime - System.nanoTime()).coerceAtLeast(0)
-            consumer.poll(Duration.ofNanos(remainingTime))
+    private fun pollConsumers(): List<CordaConsumerRecord<K, E>> {
+        return runBlocking {
+            consumers.map { consumer ->
+                consumer.poll(config.pollTimeout)
+            }.map {
+                it.await()
+            }
         }.flatten()
     }
 
