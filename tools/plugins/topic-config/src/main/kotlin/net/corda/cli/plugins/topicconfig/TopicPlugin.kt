@@ -43,7 +43,6 @@ class TopicPlugin : Plugin() {
         @CommandLine.Option(
             names = ["-b", "--bootstrap-server"],
             description = ["Bootstrap server address"],
-            required = true
         )
         var bootstrapServer: String = ""
 

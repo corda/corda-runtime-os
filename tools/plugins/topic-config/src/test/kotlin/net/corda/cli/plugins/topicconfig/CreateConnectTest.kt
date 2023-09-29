@@ -9,7 +9,12 @@ import org.apache.kafka.common.resource.PatternType
 import org.apache.kafka.common.resource.ResourcePattern
 import org.apache.kafka.common.resource.ResourceType
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import java.io.ByteArrayOutputStream
+import java.io.FileDescriptor
+import java.io.FileOutputStream
+import java.io.PrintStream
 
 class CreateConnectTest {
 
@@ -54,6 +59,21 @@ class CreateConnectTest {
             )
     }
 
+    @Test
+    fun `kafka server address is mandatory`() {
+        val command = CreateConnect().apply {
+            create = Create()
+            create?.topic = TopicPlugin.Topic()
+        }
+        val baos = ByteArrayOutputStream()
+        System.setOut(PrintStream(baos))
+        command.run()
+        System.setOut(PrintStream(FileOutputStream(FileDescriptor.out)))
+
+        assertEquals("Required parameters missing: kafka bootstrap server [-b, --bootstrap-server]",
+            baos.toString().trim())
+    }
+
     private fun getCommandWithGeneratedConfig() = CreateConnect().apply {
         create = Create()
         create!!.topic = TopicPlugin.Topic()
@@ -61,7 +81,7 @@ class CreateConnectTest {
     }
 
     private fun getCommandWithConfigFile() = CreateConnect().apply {
-        configFilePath = javaClass.classLoader.getResource("short_generated_topic_config.yaml")?.path
+        configFilePath = this::class.java.classLoader.getResource("short_generated_topic_config.yaml")?.path
         create = Create()
         create!!.topic = TopicPlugin.Topic()
     }

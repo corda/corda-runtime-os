@@ -48,32 +48,40 @@ class CreateConnect : Runnable {
         val contextCL = Thread.currentThread().contextClassLoader
         Thread.currentThread().contextClassLoader = this::class.java.classLoader
 
-        val timeoutMillis = (wait * 1000).toInt()
-        val kafkaProperties = create!!.topic!!.getKafkaProperties()
-        kafkaProperties[AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG] = timeoutMillis
-        kafkaProperties[AdminClientConfig.DEFAULT_API_TIMEOUT_MS_CONFIG] = timeoutMillis
+        // The bootstrapServer (-b) argument is mandatory only for this subcommand
+        // To avoid breaking existing scripts or tools which use the CLI topic-config plugin, we need
+        // to keep the existing usage as topic -b [address] -k [config_file] create ... connect
+        if (create!!.topic!!.bootstrapServer.isEmpty()) {
+            println("Required parameters missing: kafka bootstrap server [-b, --bootstrap-server]")
+        } else {
+            val timeoutMillis = (wait * 1000).toInt()
+            val kafkaProperties = create!!.topic!!.getKafkaProperties()
+            kafkaProperties[AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG] = timeoutMillis
+            kafkaProperties[AdminClientConfig.DEFAULT_API_TIMEOUT_MS_CONFIG] = timeoutMillis
 
-        val client = Admin.create(kafkaProperties)
-        val topicConfigs = getGeneratedTopicConfigs()
+            val client = Admin.create(kafkaProperties)
+            val topicConfigs = getGeneratedTopicConfigs()
 
-        try {
-            val existingTopicNames = client.existingTopicNamesWithPrefix(create!!.topic!!.namePrefix, wait)
-            val existingTopicsToUpdate = topicConfigs.topics.map { it.name }.filter { existingTopicNames.contains(it) }
+            try {
+                val existingTopicNames = client.existingTopicNamesWithPrefix(create!!.topic!!.namePrefix, wait)
+                val existingTopicsToUpdate =
+                    topicConfigs.topics.map { it.name }.filter { existingTopicNames.contains(it) }
 
-            if (existingTopicsToUpdate.isNotEmpty()) {
-                println("The following topics already exist and will not be included in the configuration update: " +
-                        existingTopicsToUpdate.joinToString { it })
+                if (existingTopicsToUpdate.isNotEmpty()) {
+                    println("The following topics already exist and will not be included in the configuration update: " +
+                            existingTopicsToUpdate.joinToString { it })
+                }
+
+                val topicConfigsToCreate = topicConfigs.topics.filterNot { existingTopicsToUpdate.contains(it.name) }
+                if (topicConfigsToCreate.isNotEmpty()) {
+                    createTopicsWithRetry(client, topicConfigsToCreate)
+                }
+
+                // create all ACLs (if entries already exist, they are overwritten)
+                client.createAcls(getAclBindings(topicConfigs.acls)).all().get()
+            } catch (e: ExecutionException) {
+                throw e.cause ?: e
             }
-
-            val topicConfigsToCreate = topicConfigs.topics.filterNot { existingTopicsToUpdate.contains(it.name) }
-            if (topicConfigsToCreate.isNotEmpty()) {
-                createTopicsWithRetry(client, topicConfigsToCreate)
-            }
-
-            // create all ACLs (if entries already exist, they are overwritten)
-            client.createAcls(getAclBindings(topicConfigs.acls)).all().get()
-        } catch (e: ExecutionException) {
-            throw e.cause ?: e
         }
 
         Thread.currentThread().contextClassLoader = contextCL
