@@ -1,10 +1,8 @@
 package net.corda.sandboxgroupcontext.service.impl
 
-import com.typesafe.config.ConfigException
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpk.read.CpkReadService
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -82,7 +80,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
         //  when configuration default handling is complete (CORE-3780), this should be moved
         //  and changed to a sensible default, while keeping 2 as a default for our test environments.
         //  2 is good for a test environment as it is likely to validate both caching and eviction.
-        const val SANDBOX_CACHE_SIZE_DEFAULT = 2L
+        const val SANDBOX_CACHE_SIZE_DEFAULT = 50L
 
         private const val REGISTRATION = "REGISTRATION"
         private const val CONFIG = "CONFIG"
@@ -115,14 +113,8 @@ class SandboxGroupContextComponentImpl @Activate constructor(
     }
 
     private fun onConfigChangeEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        val config = event.config.getConfig(ConfigKeys.SANDBOX_CONFIG)
-
         SandboxGroupType.values().forEach {
-            val cacheSize = try {
-                config.getConfig(it.name.lowercase()).getLong(ConfigKeys.SANDBOX_CACHE_SIZE)
-            } catch (e: ConfigException.Missing) {
-                SANDBOX_CACHE_SIZE_DEFAULT
-            }
+            val cacheSize = SANDBOX_CACHE_SIZE_DEFAULT
 
             logger.info("Re-creating Sandbox ${it.name} cache with size: {}", cacheSize)
             resizeCache(it, cacheSize)
