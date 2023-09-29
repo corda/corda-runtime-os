@@ -230,7 +230,7 @@ internal class ProcessMemberVerificationResponseHandler(
         }
     }
 
-    private fun isStatePreviouslyProcessed(state: RegistrationState): Boolean =
+    private fun isCommandPreviouslyProcessed(state: RegistrationState): Boolean =
         state.previouslyCompletedCommands.map { it.command }.contains(commandType.simpleName)
 
     // Continue without processing this stage again if the state has been nullified or if the command has been executed previously.
@@ -241,7 +241,7 @@ internal class ProcessMemberVerificationResponseHandler(
                     "Registration state is null indicating that registration processing has completed."
         )
         true
-    } else if(isStatePreviouslyProcessed(state)) {
+    } else if(isCommandPreviouslyProcessed(state)) {
         logger.info(
             "${ProcessMemberVerificationResponse::class.java.simpleName} command ignored. " +
                     "Command was processed already.")
