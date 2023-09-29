@@ -39,13 +39,13 @@ class LedgerPersistenceServiceTest {
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
     private val cpiInfoReadService = mock<CpiInfoReadService>()
 
-    private val subscription1 = mock<Subscription<String, LedgerPersistenceRequest>>()
-    private val subscription2 = mock<Subscription<String, LedgerPersistenceRequest>>()
+    private val kafkaSubscription1 = mock<Subscription<String, LedgerPersistenceRequest>>()
+    private val kafkaSubscription2 = mock<Subscription<String, LedgerPersistenceRequest>>()
     private val rpcSubscription = mock<RPCSubscription<LedgerPersistenceRequest, FlowEvent>>()
 
     private val ledgerPersistenceRequestSubscriptionFactory =
         mock<LedgerPersistenceRequestSubscriptionFactory>().apply {
-            whenever(this.create(MINIMUM_SMART_CONFIG)).thenReturn(subscription1, subscription2)
+            whenever(this.create(MINIMUM_SMART_CONFIG)).thenReturn(kafkaSubscription1, kafkaSubscription2)
             whenever(this.createRpcSubscription()).thenReturn(rpcSubscription)
         }
 
@@ -57,12 +57,21 @@ class LedgerPersistenceServiceTest {
     @Test
     fun `on configuration event creates and starts subscription`() {
         getTokenCacheComponentTestContext().run {
+            val subscription = mock<Subscription<String, LedgerPersistenceRequest>>()
+            whenever(ledgerPersistenceRequestSubscriptionFactory.create(MINIMUM_SMART_CONFIG)).thenReturn(subscription)
+
+            val rpcSubscription = mock<RPCSubscription<LedgerPersistenceRequest, FlowEvent>>()
+            whenever(ledgerPersistenceRequestSubscriptionFactory.createRpcSubscription()).thenReturn(rpcSubscription)
+
             testClass.start()
             bringDependenciesUp()
 
             sendConfigUpdate<LedgerPersistenceService>(exampleConfig)
 
             verify(ledgerPersistenceRequestSubscriptionFactory).create(MINIMUM_SMART_CONFIG)
+            verify(ledgerPersistenceRequestSubscriptionFactory).createRpcSubscription()
+
+            verify(subscription).start()
             verify(rpcSubscription).start()
         }
     }
@@ -72,13 +81,17 @@ class LedgerPersistenceServiceTest {
         getTokenCacheComponentTestContext().run {
             testClass.start()
             bringDependenciesUp()
-            sendConfigUpdate<LedgerPersistenceService>(exampleConfig)
+            verify(ledgerPersistenceRequestSubscriptionFactory).createRpcSubscription()
+            verify(rpcSubscription).start()
 
-            verify(subscription1).start()
             sendConfigUpdate<LedgerPersistenceService>(exampleConfig)
-            verify(subscription1).close()
-            verify(subscription2).start()
+            verify(ledgerPersistenceRequestSubscriptionFactory).create(MINIMUM_SMART_CONFIG)
+            verify(kafkaSubscription1).start()
+
+            sendConfigUpdate<LedgerPersistenceService>(exampleConfig)
+            verify(kafkaSubscription1).close()
             verify(ledgerPersistenceRequestSubscriptionFactory, times(2)).create(MINIMUM_SMART_CONFIG)
+            verify(kafkaSubscription2).start()
         }
     }
 
