@@ -15,7 +15,6 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.impl.registration.VerificationResponseKeys.FAILURE_REASONS
 import net.corda.membership.impl.registration.VerificationResponseKeys.VERIFIED
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
-import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
@@ -76,8 +75,10 @@ internal class ProcessMemberVerificationResponseHandler(
         key: String,
         command: ProcessMemberVerificationResponse
     ): RegistrationHandlerResult {
-        if (state == null) throw MissingRegistrationStateException
-        val registrationId = state.registrationId
+        if(processingShouldBeSkipped(state)) {
+            return RegistrationHandlerResult(state, emptyList(), skipped = true)
+        }
+        val registrationId = state!!.registrationId
         val mgm = state.mgm
         val member = state.registeringMember
         val messages = try {
@@ -148,10 +149,7 @@ internal class ProcessMemberVerificationResponseHandler(
                 ),
             )
         }
-        return RegistrationHandlerResult(
-            RegistrationState(registrationId, member, mgm),
-            messages,
-        )
+        return RegistrationHandlerResult(state, messages)
     }
 
     private fun getNextRegistrationStatus(
@@ -230,6 +228,26 @@ internal class ProcessMemberVerificationResponseHandler(
             )
             throw InvalidPreAuthTokenException("Pre-auth token provided is not valid. A valid UUID is expected.")
         }
+    }
+
+    private fun isCommandPreviouslyProcessed(state: RegistrationState): Boolean =
+        state.previouslyCompletedCommands.map { it.command }.contains(commandType.simpleName)
+
+    // Continue without processing this stage again if the state has been nullified or if the command has been executed previously.
+    // This is to prevent multiple processing attempts in the case of replays at a p2p level.
+    private fun processingShouldBeSkipped(state: RegistrationState?): Boolean = if (state == null) {
+        logger.info(
+            "${ProcessMemberVerificationResponse::class.java.simpleName} command ignored. " +
+                    "Registration state is null indicating that registration processing has completed."
+        )
+        true
+    } else if(isCommandPreviouslyProcessed(state)) {
+        logger.info(
+            "${ProcessMemberVerificationResponse::class.java.simpleName} command ignored. " +
+                    "Command was processed already.")
+        true
+    } else {
+        false
     }
 
     class InvalidPreAuthTokenException(msg: String) : CordaRuntimeException(msg)
