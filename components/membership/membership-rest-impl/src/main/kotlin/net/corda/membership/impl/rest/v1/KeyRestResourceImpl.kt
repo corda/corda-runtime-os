@@ -3,6 +3,7 @@ package net.corda.membership.impl.rest.v1
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.CryptoConsts.Categories.INTEROP_SESSION
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CATEGORY_FILTER
@@ -173,7 +174,7 @@ class KeyRestResourceImpl @Activate constructor(
                 details = mapOf("alias" to "Empty alias")
             )
         }
-        if (hsmCategory == SESSION_INIT) {
+        if (hsmCategory == SESSION_INIT || hsmCategory == INTEROP_SESSION) {
             try {
                 ShortHash.parse(tenantId)
             } catch (e: ShortHashException) {

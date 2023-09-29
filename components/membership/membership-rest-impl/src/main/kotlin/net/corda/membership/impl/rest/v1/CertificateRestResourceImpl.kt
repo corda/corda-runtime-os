@@ -132,6 +132,10 @@ class CertificateRestResourceImpl @Activate constructor(
                 tenantId,
                 x500Name,
             )
+            CryptoConsts.Categories.INTEROP_SESSION -> validateSessionCertificateSubject(
+                tenantId,
+                x500Name,
+            )
             CryptoConsts.Categories.TLS -> {
                 validateNodeSessionCertificateSubject(x500Name).x500Principal
             }

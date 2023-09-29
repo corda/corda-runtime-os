@@ -18,7 +18,7 @@ class SessionKeyGenerator(
     private val hsmRegistrationClient: HSMRegistrationClient
 ) {
     companion object {
-        private const val CATEGORY = "SESSION_INIT"
+        private const val CATEGORY = "INTEROP_SESSION"
         private const val ALIAS = "alias"
         private const val SCHEME = "CORDA.ECDSA.SECP256R1"
     }

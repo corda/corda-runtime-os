@@ -17,6 +17,7 @@ object CryptoConsts {
         const val NOTARY = "NOTARY"
         const val PRE_AUTH = "PRE_AUTH"
         const val SESSION_INIT = "SESSION_INIT"
+        const val INTEROP_SESSION = "INTEROP_SESSION"
         const val TLS = "TLS"
         const val JWT_KEY = "JWT_KEY"
 
@@ -28,7 +29,8 @@ object CryptoConsts {
             PRE_AUTH,
             SESSION_INIT,
             TLS,
-            JWT_KEY
+            JWT_KEY,
+            INTEROP_SESSION
         )
     }
 
