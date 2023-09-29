@@ -15,9 +15,8 @@ import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
-import net.corda.messaging.api.mediator.taskmanager.TaskManager
-import net.corda.messaging.api.mediator.taskmanager.TaskType
 import net.corda.messaging.mediator.factory.MediatorComponentFactory
+import net.corda.taskmanager.TaskManager
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.util.UUID

@@ -34,7 +34,6 @@ dependencies {
     implementation 'net.corda:corda-topic-schema'
     implementation 'net.corda:corda-config-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "com.google.guava:guava:$guavaVersion"
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 

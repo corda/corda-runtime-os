@@ -1,24 +1,17 @@
 package net.corda.taskmanager
 
-import net.corda.taskmanager.impl.CordaExecutorServiceWrapper
-import net.corda.taskmanager.impl.TaskManagerImpl
-import net.corda.metrics.CordaMetrics
-import java.util.UUID
-import java.util.concurrent.Executors
+import net.corda.taskmanager.impl.TaskManagerFactoryImpl
 
-object TaskManagerFactory {
+interface TaskManagerFactory {
+
+    companion object {
+        val INSTANCE: TaskManagerFactory = TaskManagerFactoryImpl
+    }
+
     fun createThreadPoolTaskManager(
         name: String,
+        threadName: String,
+        metricPrefix: String,
         threads: Int,
-        metricPrefix: String = "taskmanager."
-    ): TaskManager {
-        return TaskManagerImpl(
-            CordaExecutorServiceWrapper(
-                name,
-                "corda.$metricPrefix",
-                Executors.newScheduledThreadPool(threads),
-                CordaMetrics.registry
-            )
-        )
-    }
+    ): TaskManager
 }

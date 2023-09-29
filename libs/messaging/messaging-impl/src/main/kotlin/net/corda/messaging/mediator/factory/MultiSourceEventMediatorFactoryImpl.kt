@@ -6,23 +6,34 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.mediator.factory.MultiSourceEventMediatorFactory
-import net.corda.messaging.api.mediator.taskmanager.TaskManager
 import net.corda.messaging.mediator.MultiSourceEventMediatorImpl
+import net.corda.taskmanager.TaskManagerFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 @Component(service = [MultiSourceEventMediatorFactory::class])
-class MultiSourceEventMediatorFactoryImpl @Activate constructor(
-    @Reference(service = CordaAvroSerializationFactory::class)
+class MultiSourceEventMediatorFactoryImpl(
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-    @Reference(service = TaskManager::class)
-    private val taskManager: TaskManager,
-    @Reference(service = StateManager::class)
     private val stateManager: StateManager,
-    @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    private val taskManagerFactory: TaskManagerFactory
 ): MultiSourceEventMediatorFactory {
+
+    @Activate
+    constructor(
+        @Reference(service = CordaAvroSerializationFactory::class)
+        cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+        @Reference(service = StateManager::class)
+        stateManager: StateManager,
+        @Reference(service = LifecycleCoordinatorFactory::class)
+        lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+    ) : this(
+        cordaAvroSerializationFactory,
+        stateManager,
+        lifecycleCoordinatorFactory,
+        TaskManagerFactory.INSTANCE
+    )
 
     override fun <K : Any, S : Any, E : Any> create(
         eventMediatorConfig: EventMediatorConfig<K, S, E>,
@@ -37,7 +48,12 @@ class MultiSourceEventMediatorFactoryImpl @Activate constructor(
             stateSerializer,
             stateDeserializer,
             stateManager,
-            taskManager,
+            taskManagerFactory.createThreadPoolTaskManager(
+                name = "MultiSourceEventMediator",
+                threadName = "multi-source-event-mediator",
+                metricPrefix = "mediator",
+                threads = 8
+            ),
             lifecycleCoordinatorFactory,
         )
     }
