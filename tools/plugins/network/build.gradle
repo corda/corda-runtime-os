@@ -13,6 +13,14 @@ ext {
 group 'net.corda.cli.deployment'
 
 dependencies {
+    constraints {
+        implementation('org.slf4j:slf4j-api') {
+            version {
+                strictly slf4jV2Version
+            }
+        }
+    }
+
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
 
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"

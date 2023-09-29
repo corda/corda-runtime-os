@@ -6,6 +6,14 @@ plugins {
 description 'E2E test utilities'
 
 dependencies {
+    constraints {
+        implementation('org.slf4j:slf4j-api') {
+            version {
+                strictly slf4jVersion
+            }
+        }
+    }
+
     implementation "net.corda:corda-config-schema:$cordaApiVersion"
 
     implementation "com.konghq:unirest-java:$unirestVersion"
