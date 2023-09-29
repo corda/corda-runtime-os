@@ -1,9 +1,9 @@
 package net.corda.libs.statemanager.impl.repository
 
 import net.corda.libs.statemanager.api.Operation
-import javax.persistence.EntityManager
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import java.time.Instant
+import javax.persistence.EntityManager
 
 /**
  * Repository for entity operations on state manager entities.
@@ -55,15 +55,41 @@ interface StateRepository {
      * @param start Lower bound for the time  filter.
      * @param finish Upper bound for the time filter.
      */
-    fun findUpdatedBetween(entityManager: EntityManager, start: Instant, finish: Instant): Collection<StateEntity>
+    fun updatedBetween(entityManager: EntityManager, start: Instant, finish: Instant): Collection<StateEntity>
 
     /**
      * Filter states based on a custom comparison operation to be executed against a single key within the metadata.
      *
+     * @param entityManager used to interact with the state manager persistence context.
      * @param key The name of the key in the metadata to apply the comparison on.
      * @param operation The comparison operation to perform.
      * @param value The value to compare against .
      * @return Collection of states found.
      */
-    fun filterByMetadata(entityManager: EntityManager, key: String, operation: Operation, value: Any): Collection<StateEntity>
+    fun filterByMetadata(
+        entityManager: EntityManager,
+        key: String,
+        operation: Operation,
+        value: Any
+    ): Collection<StateEntity>
+
+    /**
+     * Filter states based on a custom comparison operation to be executed against a single key within the metadata and
+     * the last updated time.
+     * Transaction should be controlled by the caller.
+     *
+     * @param entityManager used to interact with the state manager persistence context.
+     * @param start Lower bound for the time  filter.
+     * @param finish Upper bound for the time filter.
+     * @param key The name of the key in the metadata to apply the comparison on.
+     * @param operation The comparison operation to perform.
+     * @param value The value to compare against .
+     * @return Collection of states found.
+     */
+    @Suppress("LongParameterList")
+    fun filterByUpdatedBetweenAndMetadata(
+        entityManager: EntityManager,
+        start: Instant, finish: Instant,
+        key: String, operation: Operation, value: Any
+    ): Collection<StateEntity>
 }

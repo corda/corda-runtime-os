@@ -4,6 +4,7 @@ import kotlinx.coroutines.runBlocking
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.mediator.MediatorMessage
+import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_ENDPOINT
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -17,13 +18,19 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class MessageBusClientTest {
+    private companion object {
+        const val MSG_PROP_KEY = "key"
+        const val TEST_ENDPOINT = "topic"
+        const val TEST_KEY = "key"
+    }
+
     private lateinit var cordaProducer: CordaProducer
     private lateinit var messageBusClient: MessageBusClient
 
     private val defaultHeaders: List<Pair<String, String>> = emptyList()
     private val messageProps: MutableMap<String, Any> = mutableMapOf(
-        "topic" to "topic",
-        "key" to "key",
+        MSG_PROP_ENDPOINT to TEST_ENDPOINT,
+        MSG_PROP_KEY to TEST_KEY,
         "headers" to defaultHeaders
     )
     private val message: MediatorMessage<Any> = MediatorMessage("value", messageProps)
@@ -40,8 +47,8 @@ class MessageBusClientTest {
         messageBusClient.send(message)
 
         val expected = CordaProducerRecord(
-            message.getProperty<String>("topic"),
-            message.getProperty("key"),
+            TEST_ENDPOINT,
+            TEST_KEY,
             message.payload
         )
 
@@ -51,8 +58,8 @@ class MessageBusClientTest {
     @Test
     fun testSendWithError() {
         val record = CordaProducerRecord(
-            message.getProperty<String>("topic"),
-            message.getProperty("key"),
+            TEST_ENDPOINT,
+            TEST_KEY,
             message.payload
         )
 
