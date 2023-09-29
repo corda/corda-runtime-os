@@ -44,8 +44,6 @@ class TestLocallyHostedIdentitiesServiceImpl @Activate constructor(
         return identities[identity]
     }
 
-
-
     override val isRunning: Boolean
         get() = coordinator.status == LifecycleStatus.UP
 
