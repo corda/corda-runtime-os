@@ -9,7 +9,12 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation:8.0.1'
 
     implementation project(":libs:metrics")
+    implementation project(":libs:utilities")
     implementation "com.google.guava:guava:$guavaVersion"
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
 }

@@ -140,4 +140,13 @@ class InMemSubscriptionFactory @Activate constructor(
         rpcConfig: SyncRPCConfig,
         processor: SyncRPCProcessor<REQUEST, RESPONSE>
     ): RPCSubscription<REQUEST, RESPONSE> = throw NotImplementedError()
+
+    override fun <K : Any, S : Any, E : Any> createFlowStateAndEventSubscription(
+        subscriptionConfig: SubscriptionConfig,
+        processor: StateAndEventProcessor<K, S, E>,
+        messagingConfig: SmartConfig,
+        stateAndEventListener: StateAndEventListener<K, S>?
+    ): StateAndEventSubscription<K, S, E> {
+        throw IllegalStateException("In memory support for flow state and event subscription is not supported")
+    }
 }
