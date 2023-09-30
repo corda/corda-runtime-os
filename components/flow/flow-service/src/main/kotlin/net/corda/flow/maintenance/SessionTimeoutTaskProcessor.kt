@@ -37,6 +37,7 @@ class SessionTimeoutTaskProcessor(
                 emptyList()
             } else {
                 // TODO - return an avro message (schema TBC) for each checkpoint
+                // TODO - define topic to publish message on
                 logger.info("Trigger cleanup of $checkpoints")
                 emptyList()
             }

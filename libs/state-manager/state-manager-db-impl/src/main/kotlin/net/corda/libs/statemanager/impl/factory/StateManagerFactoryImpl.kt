@@ -34,18 +34,18 @@ class StateManagerFactoryImpl @Activate constructor(
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
 ) : StateManagerFactory {
 
-    override fun create(messagingConfig: SmartConfig): StateManager {
-        val user = messagingConfig.getString(JDBC_USER)
-        val pass = messagingConfig.getString(JDBC_PASS)
-        val jdbcUrl = messagingConfig.getString(JDBC_URL)
-        val jdbcDiver = messagingConfig.getString(JDBC_DRIVER)
-        val persistenceUnitName = messagingConfig.getString(JDBC_PERSISTENCE_UNIT_NAME)
-        val maxPoolSize = messagingConfig.getInt(JDBC_POOL_MAX_SIZE)
-        val minPoolSize = messagingConfig.getIntOrDefault(JDBC_POOL_MIN_SIZE, maxPoolSize)
-        val idleTimeout = messagingConfig.getInt(JDBC_POOL_IDLE_TIMEOUT_SECONDS).toLong().run(Duration::ofSeconds)
-        val maxLifetime = messagingConfig.getInt(JDBC_POOL_MAX_LIFETIME_SECONDS).toLong().run(Duration::ofSeconds)
-        val keepAliveTime = messagingConfig.getInt(JDBC_POOL_KEEP_ALIVE_TIME_SECONDS).toLong().run(Duration::ofSeconds)
-        val validationTimeout = messagingConfig.getInt(JDBC_POOL_VALIDATION_TIMEOUT_SECONDS).toLong().run(Duration::ofSeconds)
+    override fun create(config: SmartConfig): StateManager {
+        val user = config.getString(JDBC_USER)
+        val pass = config.getString(JDBC_PASS)
+        val jdbcUrl = config.getString(JDBC_URL)
+        val jdbcDiver = config.getString(JDBC_DRIVER)
+        val persistenceUnitName = config.getString(JDBC_PERSISTENCE_UNIT_NAME)
+        val maxPoolSize = config.getInt(JDBC_POOL_MAX_SIZE)
+        val minPoolSize = config.getIntOrDefault(JDBC_POOL_MIN_SIZE, maxPoolSize)
+        val idleTimeout = config.getInt(JDBC_POOL_IDLE_TIMEOUT_SECONDS).toLong().run(Duration::ofSeconds)
+        val maxLifetime = config.getInt(JDBC_POOL_MAX_LIFETIME_SECONDS).toLong().run(Duration::ofSeconds)
+        val keepAliveTime = config.getInt(JDBC_POOL_KEEP_ALIVE_TIME_SECONDS).toLong().run(Duration::ofSeconds)
+        val validationTimeout = config.getInt(JDBC_POOL_VALIDATION_TIMEOUT_SECONDS).toLong().run(Duration::ofSeconds)
 
         val dataSource = HikariDataSourceFactory().create(
             username = user,

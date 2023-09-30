@@ -1,10 +1,10 @@
 package net.corda.flow.service
 
-import java.util.stream.Stream
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.external.messaging.services.ExternalMessagingRoutingService
 import net.corda.flow.MINIMUM_SMART_CONFIG
+import net.corda.flow.maintenance.FlowMaintenance
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.test.impl.LifecycleTest
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
@@ -19,6 +19,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import java.util.stream.Stream
 
 class FlowServiceTest {
 
@@ -37,6 +38,7 @@ class FlowServiceTest {
 
     private val flowExecutor = mock<FlowExecutor>()
     private val externalMessagingRoutingService = mock<ExternalMessagingRoutingService>()
+    private val flowMaintenance = mock<FlowMaintenance>()
 
     private val exampleConfig = mapOf(
         ConfigKeys.BOOT_CONFIG to MINIMUM_SMART_CONFIG,
@@ -150,7 +152,8 @@ class FlowServiceTest {
                 coordinatorFactory,
                 configReadService,
                 flowExecutor,
-                externalMessagingRoutingService
+                externalMessagingRoutingService,
+                flowMaintenance
             )
         }
     }
