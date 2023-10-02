@@ -120,6 +120,7 @@ interface VirtualNodeRestResource : RestResource {
         targetCpiFileChecksum: String,
         @RestQueryParameter(
             description = "Whether this upgrade should be forced regardless of OperationInProgress.",
+            default = "false",
             required = false
         )
         forceUpgrade: Boolean = false

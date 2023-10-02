@@ -142,7 +142,7 @@ class VirtualNodeRestResourceImplTest {
         vnodeResource.start()
 
         assertThrows<InvalidStateChangeException> {
-            vnodeResource.upgradeVirtualNode(currentVNode.holdingIdentity.toString(), "1234567890", false)
+            vnodeResource.upgradeVirtualNode(currentVNode.holdingIdentity.toString(), "1234567890")
         }
     }
 
