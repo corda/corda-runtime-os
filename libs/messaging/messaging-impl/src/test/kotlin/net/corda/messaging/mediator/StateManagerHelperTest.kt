@@ -28,7 +28,7 @@ class StateManagerHelperTest {
     private class EventType
 
     private val stateManager = mock<StateManager>()
-    private val serializer = mock<CordaAvroSerializer<Any>>()
+    private val stateSerializer = mock<CordaAvroSerializer<StateType>>()
     private val stateDeserializer = mock<CordaAvroDeserializer<StateType>>()
 
     @Captor
@@ -39,7 +39,7 @@ class StateManagerHelperTest {
 
     @BeforeEach
     fun setup() {
-        `when`(serializer.serialize(anyOrNull())).thenAnswer { invocation ->
+        `when`(stateSerializer.serialize(anyOrNull())).thenAnswer { invocation ->
             val value = invocation.getArgument<Any>(0)
             serialized(value)
         }
@@ -50,16 +50,16 @@ class StateManagerHelperTest {
     @Test
     fun `successfully creates new state`() {
 
-        val persistedSate: State? = null
+        val persistedState: State? = null
         val newValue = StateType(1)
         val stateManagerHelper = StateManagerHelper<String, StateType, EventType>(
             stateManager,
-            serializer,
+            stateSerializer,
             stateDeserializer,
         )
 
         val state = stateManagerHelper.createOrUpdateState(
-            TEST_KEY, persistedSate, newValue
+            TEST_KEY, persistedState, newValue
         )
 
         assertNotNull(state)
@@ -72,7 +72,7 @@ class StateManagerHelperTest {
     @Test
     fun `successfully updates existing state`() {
         val stateVersion = 5
-        val persistedSate = State(
+        val persistedState = State(
             TEST_KEY,
             serialized(TEST_STATE_VALUE),
             stateVersion,
@@ -81,26 +81,26 @@ class StateManagerHelperTest {
         val updatedValue = StateType(TEST_STATE_VALUE.id + 1)
         val stateManagerHelper = StateManagerHelper<String, StateType, EventType>(
             stateManager,
-            serializer,
+            stateSerializer,
             stateDeserializer,
         )
 
         val state = stateManagerHelper.createOrUpdateState(
-            TEST_KEY, persistedSate, updatedValue
+            TEST_KEY, persistedState, updatedValue
         )
 
         assertNotNull(state)
-        assertEquals(persistedSate.key, state!!.key)
+        assertEquals(persistedState.key, state!!.key)
         assertArrayEquals(serialized(updatedValue), state.value)
-        assertEquals(persistedSate.version, state.version)
-        assertEquals(persistedSate.metadata, state.metadata)
+        assertEquals(persistedState.version, state.version)
+        assertEquals(persistedState.metadata, state.metadata)
     }
 
     @Test
     fun `successfully persists states`() {
         val stateManagerHelper = StateManagerHelper<String, StateType, EventType>(
             stateManager,
-            serializer,
+            stateSerializer,
             stateDeserializer,
         )
         val states = listOf(
@@ -127,7 +127,7 @@ class StateManagerHelperTest {
     fun `successfully deserializes state`() {
         val stateManagerHelper = StateManagerHelper<String, StateType, EventType>(
             stateManager,
-            serializer,
+            stateSerializer,
             stateDeserializer,
         )
         val serializedStateValue = "test".toByteArray()

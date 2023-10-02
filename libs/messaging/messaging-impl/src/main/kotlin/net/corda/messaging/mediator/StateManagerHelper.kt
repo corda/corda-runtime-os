@@ -11,7 +11,7 @@ import net.corda.libs.statemanager.api.StateManager
  */
 class StateManagerHelper<K : Any, S : Any, E : Any>(
     private val stateManager: StateManager,
-    private val serializer: CordaAvroSerializer<Any>,
+    private val stateSerializer: CordaAvroSerializer<S>,
     private val stateDeserializer: CordaAvroDeserializer<S>,
 ) {
 
@@ -19,7 +19,7 @@ class StateManagerHelper<K : Any, S : Any, E : Any>(
      * Creates an updated [State] or a new one if there was no previous version.
      *
      * @param key Event's key.
-     * @param persistedState State bieing updated.
+     * @param persistedState State being updated.
      * @param newValue Updated state value.
      */
     fun createOrUpdateState(
@@ -40,7 +40,7 @@ class StateManagerHelper<K : Any, S : Any, E : Any>(
      *
      * @param processorTaskResults [ProcessorTask] results with updated states.
      * @return The latest states in case persistence failed due to conflict (state being updated by another process in
-     * the meanwhile).
+     * the meantime).
      */
     fun persistStates(processorTaskResults: Collection<ProcessorTask.Result<K, S, E>>): Map<String, State?> {
         val states = processorTaskResults.mapNotNull { result ->
@@ -72,7 +72,7 @@ class StateManagerHelper<K : Any, S : Any, E : Any>(
      * @return Serialized state value.
      */
     private fun serialize(value: S?) =
-        value?.let { serializer.serialize(it) }
+        value?.let { stateSerializer.serialize(it) }
 
     /**
      * Deserializes state value.

@@ -57,27 +57,27 @@ class ProcessorTaskTest {
     @Test
     fun `successfully processes events`() {
 
-        val persistedSate: State? = null
+        val persistedState: State? = null
         val eventIds = (1..3).toList()
         val inputEvents = eventIds.map { id -> EventType("inputEvent$id") }
-        val eventRecords = inputEvents.map(EventType::toRecord)
+        val inputEventRecords = inputEvents.map(EventType::toRecord)
 
         val task = ProcessorTask(
             TEST_KEY,
-            persistedSate,
-            eventRecords,
+            persistedState,
+            inputEventRecords,
             processor,
             stateManagerHelper,
         )
 
         val result = task.call()
 
-        verify(processor, times(eventRecords.size)).onNext(stateCaptor.capture(), eventCaptor.capture())
-        val capturedStates = stateCaptor.allValues
+        verify(processor, times(inputEventRecords.size)).onNext(stateCaptor.capture(), eventCaptor.capture())
+        val capturedInputStates = stateCaptor.allValues
         val expectedInputStates = listOf(null, StateType(0), StateType(1))
-        assertEquals(expectedInputStates, capturedStates)
-        val capturedEvents = eventCaptor.allValues
-        assertEquals(eventRecords, capturedEvents)
+        assertEquals(expectedInputStates, capturedInputStates)
+        val capturedInputEventRecords = eventCaptor.allValues
+        assertEquals(inputEventRecords, capturedInputEventRecords)
         assertEquals(task, result.processorTask)
         assertEquals(listOf(0, 1, 2).map { EventType("outputEvent$it").toRecord() }, result.outputEvents)
         assertNotNull(result.updatedState)
