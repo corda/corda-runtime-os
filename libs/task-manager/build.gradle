@@ -8,6 +8,7 @@ description 'Task manager'
 dependencies {
     compileOnly 'org.osgi:osgi.annotation:8.0.1'
 
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":libs:metrics")
     implementation project(":libs:utilities")
     implementation "com.google.guava:guava:$guavaVersion"
