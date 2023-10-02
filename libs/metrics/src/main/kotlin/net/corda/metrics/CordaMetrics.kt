@@ -661,6 +661,13 @@ object CordaMetrics {
                 computation
             )
         }
+
+        object TaskManager {
+            /**
+             * Time it took to execute a task, includes time waiting to be scheduled.
+             */
+            object TaskCompletionTime : Metric<Timer>("taskmanager.completion.time", CordaMetrics::timer)
+        }
     }
 
     /**
@@ -796,6 +803,11 @@ object CordaMetrics {
          * Identifies the signature signing scheme name to create signatures during crypto signing operations.
          */
         SignatureSpec("signature.spec"),
+
+        /**
+         * Task type.
+         */
+        TaskType("task.type"),
 
         /**
          * Identifier of a tenant either a virtual node identifier or cluster level tenant id.
