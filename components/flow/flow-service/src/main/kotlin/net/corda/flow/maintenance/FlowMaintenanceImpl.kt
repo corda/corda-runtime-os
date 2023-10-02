@@ -1,6 +1,5 @@
 package net.corda.flow.maintenance
 
-import net.corda.flow.service.FlowExecutor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.statemanager.api.StateManagerFactory
@@ -35,19 +34,24 @@ class FlowMaintenanceImpl @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val coordinator = coordinatorFactory.createCoordinator<FlowExecutor>(::eventHandler)
+    private val coordinator = coordinatorFactory.createCoordinator<FlowMaintenance>(::eventHandler)
     override fun onConfigChange(config: Map<String, SmartConfig>) {
-        val messagingConfig = config.getConfig(ConfigKeys.MESSAGING_CONFIG)
         // TODO - fix config key. The state manager has nothing to do with messaging.
-        val stateManagerConfig = config.getConfig(ConfigKeys.MESSAGING_CONFIG)
-        coordinator.createManagedResource("FLOW_MAINTENANCE_SUBSCRIPTION") {
-            subscriptionFactory.createDurableSubscription(
-                SubscriptionConfig("flow.maintenance.tasks", Schemas.ScheduledTask.SCHEDULED_TASK_TOPIC_FLOW_PROCESSOR),
-                SessionTimeoutTaskProcessor(stateManagerFactory.create(stateManagerConfig)),
-                messagingConfig,
-                null
-            )
-        }.start()
+        if(config.containsKey(ConfigKeys.MESSAGING_CONFIG)) {
+            val messagingConfig = config.getConfig(ConfigKeys.MESSAGING_CONFIG)
+            val stateManagerConfig = config.getConfig(ConfigKeys.MESSAGING_CONFIG)
+            coordinator.createManagedResource("FLOW_MAINTENANCE_SUBSCRIPTION") {
+                subscriptionFactory.createDurableSubscription(
+                    SubscriptionConfig(
+                        "flow.maintenance.tasks",
+                        Schemas.ScheduledTask.SCHEDULED_TASK_TOPIC_FLOW_PROCESSOR
+                    ),
+                    SessionTimeoutTaskProcessor(stateManagerFactory.create(stateManagerConfig)),
+                    messagingConfig,
+                    null
+                )
+            }.start()
+        }
     }
 
     override val isRunning: Boolean

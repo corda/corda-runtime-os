@@ -18,6 +18,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 
 class FlowMaintenanceImplTests {
@@ -59,5 +60,12 @@ class FlowMaintenanceImplTests {
         )
         verify(stateManagerFactory).create(stateManagerConfig)
         verify(subscription).start()
+    }
+
+    @Test
+    fun `do nothing when messaging config not sent`() {
+        val m = FlowMaintenanceImpl(lifecycleCoordinatorFactory, subscriptionFactory, stateManagerFactory)
+        m.onConfigChange(mapOf("foo" to mock()))
+        verify(lifecycleCoordinator, never()).createManagedResource(any(), any<() -> Subscription<String, ScheduledTaskTrigger>>())
     }
 }

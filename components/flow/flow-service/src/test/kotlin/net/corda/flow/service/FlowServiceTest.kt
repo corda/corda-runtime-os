@@ -31,7 +31,8 @@ class FlowServiceTest {
                 Arguments.of(LifecycleCoordinatorName.forComponent<SandboxGroupContextComponent>()),
                 Arguments.of(LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>()),
                 Arguments.of(LifecycleCoordinatorName.forComponent<CpiInfoReadService>()),
-                Arguments.of(LifecycleCoordinatorName.forComponent<FlowExecutor>())
+                Arguments.of(LifecycleCoordinatorName.forComponent<FlowExecutor>()),
+                Arguments.of(LifecycleCoordinatorName.forComponent<FlowMaintenance>()),
             )
         }
     }
@@ -147,6 +148,7 @@ class FlowServiceTest {
             addDependency<VirtualNodeInfoReadService>()
             addDependency<CpiInfoReadService>()
             addDependency<FlowExecutor>()
+            addDependency<FlowMaintenance>()
 
             FlowService(
                 coordinatorFactory,
