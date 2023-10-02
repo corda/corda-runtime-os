@@ -13,6 +13,7 @@ import java.math.BigDecimal
 import java.math.BigInteger
 import net.corda.ledger.utxo.token.cache.entities.DbCachedToken
 import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
+import org.slf4j.LoggerFactory
 
 class TokenClaimQueryEventHandler(
     private val filterStrategy: TokenFilterStrategy,
@@ -20,6 +21,10 @@ class TokenClaimQueryEventHandler(
     private val availableTokenService: AvailableTokenService,
     private val serviceConfiguration: ServiceConfiguration
 ) : TokenEventHandler<ClaimQuery> {
+
+    private companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
     override fun handle(
         tokenCache: TokenCache,
@@ -30,6 +35,9 @@ class TokenClaimQueryEventHandler(
         val claimId = event.externalEventRequestId
         val claim = state.claim(claimId)
         if(claim != null) {
+
+            logger.warn("A token claim is being processed more than once. ClaimId: $claimId")
+
             return recordFactory.getSuccessfulClaimResponse(
                 event.flowId,
                 event.externalEventRequestId,
