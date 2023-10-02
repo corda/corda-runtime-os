@@ -35,7 +35,7 @@ class PoolCacheStateImpl(
 
     override fun claim(claimId: String): TokenClaim? {
         // There must only exist one claim
-        return cacheState.tokenClaims.filter { it.claimId == claimId }.firstOrNull()
+        return cacheState.tokenClaims.filter { it.claimId == claimId }.singleOrNull()
     }
 
     override fun removeClaim(claimId: String) {
