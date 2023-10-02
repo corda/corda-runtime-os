@@ -172,7 +172,7 @@ class UtxoRepositoryImpl @Activate constructor(
             .setParameter("privacySalt", privacySalt)
             .setParameter("accountId", account)
             .setParameter("createdAt", timestamp)
-            .setParameter("status", status)
+            .setParameter("status", status.value)
             .setParameter("updatedAt", timestamp)
             .executeUpdate()
             .logResult("transaction [$id]")
