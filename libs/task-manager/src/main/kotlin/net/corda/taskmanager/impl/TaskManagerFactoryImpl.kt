@@ -11,7 +11,6 @@ internal object TaskManagerFactoryImpl : TaskManagerFactory {
     override fun createThreadPoolTaskManager(
         name: String,
         threadName: String,
-        metricPrefix: String,
         threads: Int,
     ): TaskManager {
         return TaskManagerImpl(
@@ -19,7 +18,7 @@ internal object TaskManagerFactoryImpl : TaskManagerFactory {
             longRunningThreadName = "$threadName-long-running-thread",
             executorService = CordaExecutorServiceWrapper(
                 name,
-                "corda.taskmanager.$metricPrefix.",
+                "corda.taskmanager.",
                 Executors.newScheduledThreadPool(
                     threads,
                     ThreadFactoryBuilder()

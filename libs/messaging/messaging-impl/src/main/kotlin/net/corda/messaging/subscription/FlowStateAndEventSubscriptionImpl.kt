@@ -64,7 +64,6 @@ internal class FlowStateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private val taskManager = TaskManagerFactory.INSTANCE.createThreadPoolTaskManager(
         name = "Flow State and Event",
         threadName = "flow-state-and-event",
-        metricPrefix = "flow",
         threads = 8
     )
 

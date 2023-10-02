@@ -11,7 +11,6 @@ interface TaskManagerFactory {
     fun createThreadPoolTaskManager(
         name: String,
         threadName: String,
-        metricPrefix: String,
         threads: Int,
     ): TaskManager
 }
