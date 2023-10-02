@@ -23,6 +23,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.rest.response.ResponseEntity
 import net.corda.schema.Schemas.Crypto.REKEY_MESSAGE_TOPIC
 import net.corda.schema.configuration.ConfigKeys
@@ -31,7 +32,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.time.Duration
 import java.util.UUID
 
 @Component(service = [PluggableRestResource::class])
@@ -72,6 +72,9 @@ class KeyRotationRestResourceImpl @Activate constructor(
         timeToLive: Int,
         limit: Int
     ): ResponseEntity<KeyRotationResponse> {
+        if (publisher == null) {
+            throw ServiceUnavailableException("Key rotation resource has not been initialised.")
+        }
 
         // We need to create a Record that tells Crypto processor to do key rotation
         // Do we need to start the publisher? FlowRestResource is not starting its publisher for some reason
@@ -91,11 +94,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
 
         publisher!!.publish(listOf(Record(uploadTopic, requestId, keyRotationRequest)))
 
-        val processedCount: Int = 5
-        val duration: Duration = Duration.ofMinutes(5)
-        val expectedTotal: Int = 10
-
-        return ResponseEntity.accepted(KeyRotationResponse(requestId, processedCount, duration, expectedTotal))
+        return ResponseEntity.accepted(KeyRotationResponse(requestId, oldKeyAlias, newKeyAlias))
     }
 
     private var isUp = false
@@ -119,6 +118,11 @@ class KeyRotationRestResourceImpl @Activate constructor(
                     lifecycleCoordinator,
                     setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG)
                 )
+                if (event.status == LifecycleStatus.UP) {
+                    lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+                } else {
+                    lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+                }
             }
             is ConfigChangedEvent -> {
                 event.config.getConfig(ConfigKeys.MESSAGING_CONFIG).apply {
