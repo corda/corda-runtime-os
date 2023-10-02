@@ -1,28 +1,26 @@
 package net.corda.cli.plugins.network
 
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
-import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
-import net.corda.cli.plugins.packaging.CreateCpiV2
-import net.corda.v5.base.util.EncodingUtils.toBase64
-import picocli.CommandLine.Command
-import picocli.CommandLine.Option
-import java.io.File
-import java.security.MessageDigest
 import net.corda.cli.plugins.network.enums.MemberRole
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
+import net.corda.cli.plugins.packaging.CreateCpiV2
+import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
+import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_SIGNATURE_SPEC
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEYS_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
-import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEYS_ID
-import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
-import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
-import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
-import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_SIGNATURE_SPEC
-import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_ID
-import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_SIGNATURE_SPEC
+import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
+import picocli.CommandLine.Command
+import picocli.CommandLine.Option
+import java.io.File
 
 @Command(
     name = "onboard-member",
@@ -31,6 +29,10 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_SIGNATU
     ]
 )
 class OnboardMember : Runnable, BaseOnboard() {
+    private companion object {
+        const val CPI_VERSION = "1.0"
+    }
+
     @Option(
         names = ["--cpb-file", "-b"],
         description = [
@@ -54,7 +56,7 @@ class OnboardMember : Runnable, BaseOnboard() {
     var customProperties: Map<String, String> = emptyMap()
 
     @Option(
-        names = ["--group-policy-file", "-g"],
+        names = ["--group-policy-file", "-gp"],
         description = [
             "Location of a group policy file (default to ~/.corda/gp/groupPolicy.json).",
             "Relevant only if cpb-file is used"
@@ -106,75 +108,27 @@ class OnboardMember : Runnable, BaseOnboard() {
         )
     }
 
-    private fun checkIfCpiWasUploaded(cpiFileChecksum: String): Boolean {
-        val currentCpis = createRestClient(CpiUploadRestResource::class)
-            .use { client ->
-                client.start().proxy.getAllCpis().cpis
-            }
-
-        return currentCpis.any { it.cpiFileChecksum == cpiFileChecksum }
-    }
-
-    private fun uploadCpi(cpiFile: File): String {
-        val hash = listOf(cpiFile).hash()
-        val cpiHashesFile = File(cpisRoot, "$hash.shortHash")
-
-        if (cpiHashesFile.canRead()) {
-            val cpiFileChecksum = cpiHashesFile.readText()
-            if (checkIfCpiWasUploaded(cpiFileChecksum)) {
-                println("CPI was uploaded and its hash checksum is $cpiFileChecksum")
-                return cpiFileChecksum
-            }
-        }
-
-        return uploadCpi(cpiFile.inputStream(), cpiFile.name).also {
-            cpiHashesFile.writeText(it)
-            println("CPI hash checksum is $it")
-        }
-    }
-
     private fun uploadCpb(cpbFile: File): String {
-        val hash = listOf(cpbFile, groupPolicyFile).hash()
-        val cpiRoot = File(cpisRoot, hash)
-        val cpiFile = File(cpiRoot, "${cpbFile.name}.cpi")
-        val cpiHashesFile = File(cpiRoot, "$hash.shortHash")
-        if (cpiHashesFile.canRead()) {
-            val cpiFileChecksum = cpiHashesFile.readText()
-            val currentCpis = createRestClient(CpiUploadRestResource::class).use { client ->
-                client.start().proxy.getAllCpis().cpis
-            }
-            if (currentCpis.any { it.cpiFileChecksum == cpiFileChecksum }) {
-                println("CPI was already uploaded in $cpiFile. CPI hash checksum is $cpiFileChecksum")
-                return cpiFileChecksum
-            } else {
-                println("CPI $cpiFileChecksum no longer exists. Will create the CPI file again")
-                cpiHashesFile.delete()
-            }
+        val groupId = json.readTree(groupPolicyFile.inputStream()).get("groupId").asText()
+        val cpiName = "${cpbFile.name}-$groupId"
+        val cpiFile = File(cpisRoot, "$cpiName.cpi")
+        println("Creating and uploading CPI using CPB '${cpbFile.name}'")
+        val cpisFromCluster = createRestClient(CpiUploadRestResource::class).use { client ->
+            client.start().proxy.getAllCpis().cpis
+        }
+        cpisFromCluster.firstOrNull { it.id.cpiName == cpiName && it.id.cpiVersion == CPI_VERSION }?.let {
+            println("CPI already exists, using CPI ${it.id}")
+            return it.cpiFileChecksum
         }
         if (!cpiFile.canRead()) {
-            createCpi(cpbFile, cpiFile)
+            createCpi(cpbFile, cpiFile, groupId)
             println("CPI file saved as ${cpiFile.absolutePath}")
         }
         uploadSigningCertificates()
-        return uploadCpi(cpiFile).also {
-            cpiHashesFile.writeText(it)
-        }
+        return uploadCpi(cpiFile.inputStream(), cpiFile.name)
     }
 
-    private fun Collection<File>.hash(): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-        this.forEach { file ->
-            digest.update(file.readBytes())
-        }
-        return digest
-            .digest()
-            .let(::toBase64)
-            .replace('/', '.')
-            .replace('+', '-')
-            .replace('=', '_')
-    }
-
-    private fun createCpi(cpbFile: File, cpiFile: File) {
+    private fun createCpi(cpbFile: File, cpiFile: File, groupId: String) {
         println(
             "Using the cpb file is not recommended." +
                     " It is advised to create CPI using the package create-cpi command."
@@ -183,8 +137,8 @@ class OnboardMember : Runnable, BaseOnboard() {
         val creator = CreateCpiV2()
         creator.cpbFileName = cpbFile.absolutePath
         creator.groupPolicyFileName = groupPolicyFile.absolutePath
-        creator.cpiName = cpbFile.name
-        creator.cpiVersion = "1.0"
+        creator.cpiName = "${cpbFile.name}-$groupId"
+        creator.cpiVersion = CPI_VERSION
         creator.cpiUpgrade = false
         creator.outputFileName = cpiFile.absolutePath
         creator.signingOptions = createDefaultSingingOptions()
