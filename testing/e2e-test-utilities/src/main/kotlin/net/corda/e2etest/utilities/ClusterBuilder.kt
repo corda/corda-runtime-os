@@ -41,13 +41,18 @@ class ClusterBuilder {
     data class VNodeCreateBody(
         val cpiFileChecksum: String,
         val x500Name: String,
-        val cryptoDdlConnection: String?,
-        val cryptoDmlConnection: String?,
-        val uniquenessDdlConnection: String?,
-        val uniquenessDmlConnection: String?,
-        val vaultDdlConnection: String?,
-        val vaultDmlConnection: String?
+        val externalDBConnectionParams: ExternalDBConnectionParams?
     )
+
+    data class ExternalDBConnectionParams(
+        val cryptoDdlConnection: String,
+        val cryptoDmlConnection: String,
+        val uniquenessDdlConnection: String,
+        val uniquenessDmlConnection: String,
+        val vaultDdlConnection: String,
+        val vaultDmlConnection: String
+    )
+
 
     /** POST, but most useful for running flows */
     fun post(cmd: String, body: String) = client!!.post(cmd, body)
@@ -227,22 +232,12 @@ class ClusterBuilder {
     private fun vNodeBody(
         cpiHash: String,
         x500Name: String,
-        cryptoDdlConnection: String?,
-        cryptoDmlConnection: String?,
-        uniquenessDdlConnection: String?,
-        uniquenessDmlConnection: String?,
-        vaultDdlConnection: String?,
-        vaultDmlConnection: String?
+        externalDBConnectionParams: ExternalDBConnectionParams? = null
     ): String {
         val body = VNodeCreateBody(
             cpiHash,
             x500Name,
-            cryptoDdlConnection,
-            cryptoDmlConnection,
-            uniquenessDdlConnection,
-            uniquenessDmlConnection,
-            vaultDdlConnection,
-            vaultDmlConnection
+            externalDBConnectionParams
         )
         return jacksonObjectMapper().writeValueAsString(body)
     }
@@ -343,24 +338,14 @@ class ClusterBuilder {
     fun vNodeCreate(
         cpiHash: String,
         x500Name: String,
-        cryptoDdlConnection: String? = null,
-        cryptoDmlConnection: String? = null,
-        uniquenessDdlConnection: String? = null,
-        uniquenessDmlConnection: String? = null,
-        vaultDdlConnection: String? = null,
-        vaultDmlConnection: String? = null
+        externalDBConnectionParams: ExternalDBConnectionParams? = null
     ) =
         post(
             "/api/$REST_API_VERSION_PATH/virtualnode",
             vNodeBody(
                 cpiHash,
                 x500Name,
-                cryptoDdlConnection,
-                cryptoDmlConnection,
-                uniquenessDdlConnection,
-                uniquenessDmlConnection,
-                vaultDdlConnection,
-                vaultDmlConnection
+                externalDBConnectionParams
             )
         )
 
