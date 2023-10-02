@@ -65,6 +65,7 @@ dependencies {
     runtimeOnly project(':libs:messaging:db-message-bus-impl')
     runtimeOnly project(':libs:serialization:serialization-checkpoint-api')
     runtimeOnly project(':libs:serialization:serialization-kryo')
+    runtimeOnly project(":libs:state-manager:state-manager-db-impl")
     runtimeOnly project(':testing:group-policy-test-common')
     runtimeOnly project(':libs:web:web-impl')
 

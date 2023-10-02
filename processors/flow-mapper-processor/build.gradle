@@ -50,6 +50,7 @@ dependencies {
     runtimeOnly project(':libs:crypto:cipher-suite-impl')
     runtimeOnly project(":libs:crypto:crypto-serialization-impl")
     runtimeOnly project(':libs:crypto:merkle-impl')
+    runtimeOnly project(':libs:db:db-orm-impl')
     runtimeOnly project(":libs:flows:external-event-responses-impl")
     runtimeOnly project(":libs:flows:flow-api")
     runtimeOnly project(":libs:flows:session-manager-impl")

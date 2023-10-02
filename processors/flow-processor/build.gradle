@@ -58,6 +58,7 @@ dependencies {
     runtimeOnly project(":components:virtual-node:cpk-read-service-impl")
     runtimeOnly project(":components:flow:flow-mapper-impl")
     runtimeOnly project(":libs:application:application-impl")
+    runtimeOnly project(':libs:db:db-orm-impl')
     runtimeOnly project(":libs:flows:external-event-responses-impl")
     runtimeOnly project(":libs:flows:flow-api")
     runtimeOnly project(":libs:flows:session-manager-impl")
