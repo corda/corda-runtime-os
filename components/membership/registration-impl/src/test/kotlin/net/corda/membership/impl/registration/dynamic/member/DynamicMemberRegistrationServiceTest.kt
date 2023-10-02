@@ -1465,6 +1465,20 @@ class DynamicMemberRegistrationServiceTest {
         }
 
         @Test
+        fun `registration fails when ledger keys are specified for a notary vnode`() {
+            val testProperties = context + mapOf(
+                    String.format(ROLES_PREFIX, 0) to "notary",
+                    NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
+                    NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
+                    NOTARY_KEY_ID_KEY to NOTARY_KEY_ID,
+                )
+
+            assertThrows<InvalidMembershipRegistrationException> {
+                registrationService.register(registrationResultId, member, testProperties)
+            }
+        }
+
+        @Test
         fun `registration fails when notary keys has the wrong category`() {
             whenever(notaryCryptoSigningKey.category).doReturn(SESSION_INIT)
             val testProperties =

@@ -78,6 +78,7 @@ import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -86,6 +87,8 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import java.security.KeyPairGenerator
+import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
 
@@ -103,6 +106,7 @@ class StartRegistrationHandlerTest {
 
         val mgmX500Name = MemberX500Name.parse("O=TestMGM,L=London,C=GB")
         val mgmHoldingIdentity = HoldingIdentity(mgmX500Name.toString(), groupId)
+        val keyPairGenerator: KeyPairGenerator = KeyPairGenerator.getInstance("RSA")!!
 
         const val testTopic = "topic"
         const val testTopicKey = "key"
@@ -136,6 +140,9 @@ class StartRegistrationHandlerTest {
     lateinit var membershipPersistenceClient: MembershipPersistenceClient
     private lateinit var membershipQueryClient: MembershipQueryClient
 
+    val ledgerKey: PublicKey = keyPairGenerator.genKeyPair().public!!
+    var ledgerKeys = mutableListOf(ledgerKey)
+
     private val memberContextEntries = mapOf(
         "$ROLES_PREFIX.0" to "notary",
         "$CUSTOM_KEY_PREFIX.0" to "test",
@@ -168,6 +175,7 @@ class StartRegistrationHandlerTest {
         on { status } doReturn MEMBER_STATUS_PENDING
         on { serial } doReturn 1L
         on { platformVersion } doReturn 50100
+        on { ledgerKeys } doAnswer { ledgerKeys }
     }
     private val activeMemberInfo: SelfSignedMemberInfo = mock {
         on { name } doReturn aliceX500Name
@@ -634,6 +642,7 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `invoke returns follow on records when role is set to notary`() {
+        ledgerKeys.clear()
         val notaryServiceName = MemberX500Name.parse("O=NotaryService,L=London,C=GB")
         val notaryDetails = MemberNotaryDetails(
             notaryServiceName,
@@ -656,6 +665,7 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `declined if role is set to notary but notary keys are missing`() {
+        ledgerKeys.clear()
         val notaryDetails = MemberNotaryDetails(
             aliceX500Name,
             null,
@@ -670,7 +680,30 @@ class StartRegistrationHandlerTest {
     }
 
     @Test
+    fun `declined if role is set to notary and ledger key is specified`() {
+        val notaryServiceName = MemberX500Name.parse("O=NotaryService,L=London,C=GB")
+        val notaryDetails = MemberNotaryDetails(
+            notaryServiceName,
+            "Notary Plugin A",
+            listOf(1),
+            listOf(mock())
+        )
+        whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
+        whenever(
+            membershipQueryClient.queryMemberInfo(
+                mgmHoldingIdentity.toCorda(),
+                listOf(HoldingIdentity(notaryServiceName.toString(), groupId).toCorda())
+            )
+        ).thenReturn(MembershipQueryResult.Success(emptyList()))
+
+        val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
+
+        result.assertDeclinedRegistration()
+    }
+
+    @Test
     fun `declined if role is set to notary and notary service plugin type is specified but blank`() {
+        ledgerKeys.clear()
         val notaryDetails = MemberNotaryDetails(
             aliceX500Name,
             " ",
@@ -686,6 +719,7 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `declined if notary service name is the same as the virtual node name`() {
+        ledgerKeys.clear()
         val notaryDetails = MemberNotaryDetails(
             aliceX500Name,
             "pluginType",
@@ -701,6 +735,7 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `declined if registering member's name is the same as an existing notary's service name`() {
+        ledgerKeys.clear()
         val notaryDetails = MemberNotaryDetails(
             notaryX500Name,
             "Notary Protocol A",
@@ -722,6 +757,7 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `declined if role is set to notary and notary service name already exists`() {
+        ledgerKeys.clear()
         val notaryDetails = MemberNotaryDetails(
             notaryX500Name,
             "Notary Protocol A",
@@ -747,6 +783,7 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `declined if role is set to notary and group parameters cannot be read`() {
+        ledgerKeys.clear()
         val notaryDetails = MemberNotaryDetails(
             notaryX500Name,
             "Notary Plugin A",
@@ -762,6 +799,7 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `declined if notary service name is the same as an existing member's virtual node name`() {
+        ledgerKeys.clear()
         val notaryDetails = MemberNotaryDetails(
             aliceX500Name,
             "pluginType",
@@ -812,6 +850,7 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `declined if notary related properties are added during re-registration`() {
+        ledgerKeys.clear()
         val contextWithUpdates = mock<MemberContext> {
             on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
             on { entries } doReturn (memberContextEntries + mapOf(
@@ -880,6 +919,7 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `declined if notary related properties are updated during re-registration`() {
+        ledgerKeys.clear()
         val newContextEntries = memberContextEntries.toMutableMap().apply {
             put("${ROLES_PREFIX}.0", "changed")
             put(NOTARY_SERVICE_NAME, "O=ChangedNotaryService, L=London, C=GB")
@@ -1066,6 +1106,7 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `allows notary virtual node re-registration`() {
+        ledgerKeys.clear()
         val notaryDetails = MemberNotaryDetails(
             notaryX500Name,
             "Notary Protocol A",
