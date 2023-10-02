@@ -1,6 +1,7 @@
 @file:Suppress("DEPRECATION")
 package net.corda.cli.plugins.network
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.network.utils.HoldingIdentityUtils
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
@@ -92,12 +93,12 @@ class OnboardMgmTest {
             password,
             INSECURE
         )
-        val cpi = command.getExistingCpi()
+        val cpiHash = command.getExistingCpiHash()
 
         val mgm = mgmName()
         CommandLine(OnboardMgm()).execute(
             mgm,
-            "--cpi-hash=$cpi",
+            "--cpi-hash=$cpiHash",
             targetUrl,
             user,
             password,
@@ -120,11 +121,11 @@ class OnboardMgmTest {
             INSECURE
         )
 
-        assertThat(
-            File(
-                File(File(File(System.getProperty("user.home")), ".corda"), "gp"), "test.json"
-            ).exists()
-        ).isTrue
+        val groupPolicyFile = File(
+            File(File(File(System.getProperty("user.home")), ".corda"), "gp"), "test.json"
+        )
+        assertThat(groupPolicyFile.exists()).isTrue
+        assertThat(ObjectMapper().readTree(groupPolicyFile.inputStream()).get("groupId")).isNotNull
     }
 
     @Test
@@ -184,13 +185,12 @@ class OnboardMgmTest {
         assertThat(output.get("corda.endpoints.1.connectionURL")?.asText()).isEqualTo(gatewayUrl1)
     }
 
-    private fun OnboardMgm.getExistingCpi(): String? {
+    private fun OnboardMgm.getExistingCpiHash(): String {
         return createRestClient(CpiUploadRestResource::class).use { client ->
             val response = client.start().proxy.getAllCpis()
             response.cpis
-                .filter { it.groupPolicy?.contains("CREATE_ID") ?: false }
-                .map { it.cpiFileChecksum }
-                .firstOrNull()
+                .first { it.groupPolicy?.contains("CREATE_ID") == true }
+                .cpiFileChecksum
         }
     }
 
@@ -200,7 +200,7 @@ class OnboardMgmTest {
             mgmName,
             null
         )
-        CommandLine(MemberLookup(outputStub)).execute(
+        CommandLine(MemberLookup(this)).execute(
             "-h=$holdingIdentity",
             targetUrl,
             user,

@@ -16,4 +16,10 @@ internal class OutputStub : Output {
     fun getFirstPartyName(): String? {
         return printedOutput?.get(0)?.get("memberContext")?.get(MemberInfoExtension.PARTY_NAME)?.asText()
     }
+
+    fun getAllPartyNames(): Collection<String> {
+        val names = mutableSetOf<String>()
+        return printedOutput?.mapNotNullTo(names) { it.get("memberContext")?.get(MemberInfoExtension.PARTY_NAME)?.asText() }
+            ?: emptySet()
+    }
 }
