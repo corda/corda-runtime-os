@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
 internal class TaskManagerImpl(
+    private val name: String,
     private val longRunningThreadName: String,
     private val executorService: ScheduledExecutorService
 ) : TaskManager {
@@ -22,6 +23,21 @@ internal class TaskManagerImpl(
 
     @VisibleForTesting
     val liveTaskCounts = ConcurrentHashMap<Type, Int>()
+
+    private val shortRunningTaskGauge = CordaMetrics.Metric.TaskManager.LiveTasks { liveTaskCounts[Type.SHORT_RUNNING] ?: 0 }.builder()
+        .withTag(CordaMetrics.Tag.TaskManagerName, name)
+        .withTag(CordaMetrics.Tag.TaskType, Type.SHORT_RUNNING.name)
+        .build()
+
+    private val longRunningTaskGauge = CordaMetrics.Metric.TaskManager.LiveTasks { liveTaskCounts[Type.LONG_RUNNING] ?: 0 }.builder()
+        .withTag(CordaMetrics.Tag.TaskManagerName, name)
+        .withTag(CordaMetrics.Tag.TaskType, Type.LONG_RUNNING.name)
+        .build()
+
+    private val scheduledTaskGauge = CordaMetrics.Metric.TaskManager.LiveTasks { liveTaskCounts[Type.SCHEDULED] ?: 0 }.builder()
+        .withTag(CordaMetrics.Tag.TaskManagerName, name)
+        .withTag(CordaMetrics.Tag.TaskType, Type.SCHEDULED.name)
+        .build()
 
     override fun <T> executeShortRunningTask(command: () -> T): CompletableFuture<T> {
         val start = System.nanoTime()
@@ -88,6 +104,9 @@ internal class TaskManagerImpl(
 
     override fun shutdown(): CompletableFuture<Void> {
         executorService.shutdown()
+        CordaMetrics.registry.remove(shortRunningTaskGauge)
+        CordaMetrics.registry.remove(longRunningTaskGauge)
+        CordaMetrics.registry.remove(scheduledTaskGauge)
         // This [CompletableFuture] must not run on the executor service otherwise it'll never shut down.
         // [runAsync] runs this task in the fork join common pool.
         val shutdownFuture = CompletableFuture.runAsync {
@@ -106,6 +125,7 @@ internal class TaskManagerImpl(
 
     private fun taskCompletionMeter(type: Type): Timer {
         return CordaMetrics.Metric.TaskManager.TaskCompletionTime.builder()
+            .withTag(CordaMetrics.Tag.TaskManagerName, name)
             .withTag(CordaMetrics.Tag.TaskType, type.name)
             .build()
     }
