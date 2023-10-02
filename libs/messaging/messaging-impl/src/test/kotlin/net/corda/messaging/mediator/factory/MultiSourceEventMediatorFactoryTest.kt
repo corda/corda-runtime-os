@@ -8,6 +8,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.taskmanager.TaskManager
 import net.corda.taskmanager.TaskManagerFactory
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
@@ -22,16 +23,18 @@ class MultiSourceEventMediatorFactoryTest {
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory>()
     private val serializer = mock<CordaAvroSerializer<Any>>()
     private val stateDeserializer = mock<CordaAvroDeserializer<Any>>()
+    private val taskManagerFactory = mock<TaskManagerFactory>()
 
     @BeforeEach
     fun beforeEach() {
         doReturn(serializer).`when`(cordaAvroSerializationFactory).createAvroSerializer<Any>(anyOrNull())
         doReturn(stateDeserializer).`when`(cordaAvroSerializationFactory).createAvroDeserializer(any(), any<Class<Any>>())
+        doReturn(mock<TaskManager>()).`when`(taskManagerFactory).createThreadPoolTaskManager(any(), any(), any())
         multiSourceEventMediatorFactory = MultiSourceEventMediatorFactoryImpl(
             cordaAvroSerializationFactory,
             mock<StateManager>(),
             mock<LifecycleCoordinatorFactory>(),
-            mock<TaskManagerFactory>(),
+            taskManagerFactory,
         )
     }
 
