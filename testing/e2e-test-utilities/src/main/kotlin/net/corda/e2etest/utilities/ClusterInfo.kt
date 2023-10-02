@@ -104,8 +104,8 @@ object ClusterCInfo : ClusterInfo() {
 }
 
 /**
- * Default cluster info for E2E test cluster on which 5.0 deployment will run
+ * Default cluster info for E2E test cluster on which a previous major version of deployment will run
  */
-object ClusterFive0Info : ClusterInfo() {
-    override val id = "FIVE0"
+object ClusterDInfo : ClusterInfo() {
+    override val id = "D"
 }

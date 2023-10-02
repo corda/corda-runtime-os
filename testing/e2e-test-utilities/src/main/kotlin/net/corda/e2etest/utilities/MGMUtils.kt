@@ -67,7 +67,7 @@ fun ClusterInfo.onboardMgm(
         }
         importCertificate(mgmTlsCert, CERT_USAGE_P2P, CERT_ALIAS_P2P)
     }
-    val registrationId = register(mgmHoldingId, registrationContext, waitForApproval = true)
+    val registrationId = register(mgmHoldingId, registrationContext)
     if (mgmSessionCert != null) {
         configureNetworkParticipant(mgmHoldingId, sessionKeyId, mgmSessionCertAlias)
     } else {

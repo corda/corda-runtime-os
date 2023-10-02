@@ -33,6 +33,7 @@ const val CERT_ALIAS_P2P = "p2p-tls-cert"
 const val CERT_ALIAS_SESSION = "p2p-session-cert"
 const val DEFAULT_KEY_SCHEME = "CORDA.ECDSA.SECP256R1"
 const val DEFAULT_SIGNATURE_SPEC = "SHA256withECDSA"
+const val REG_PROTOCOL_VERSION = "registrationProtocolVersion"
 
 /**
  * Onboard a member by uploading a CPI if it doesn't exist, creating a vnode if it doesn't exist, configuring the
@@ -56,7 +57,7 @@ fun ClusterInfo.onboardMember(
     cpiName: String,
     groupPolicy: String,
     x500Name: String,
-    waitForApproval: Boolean = true,
+    waitForStatus: String? = REGISTRATION_APPROVED,
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null,
     tlsCertificateUploadedCallback: (String) -> Unit = {},
     useSessionCertificate: Boolean = false
@@ -105,7 +106,7 @@ fun ClusterInfo.onboardMember(
         configureNetworkParticipant(holdingId, sessionKeyId)
     }
 
-    val registrationId = register(holdingId, registrationContext, waitForApproval)
+    val registrationId = register(holdingId, registrationContext, waitForStatus)
 
     return NetworkOnboardingMetadata(holdingId, x500Name, registrationId, registrationContext, this)
 }
@@ -116,7 +117,7 @@ fun ClusterInfo.onboardMember(
  */
 fun NetworkOnboardingMetadata.reregisterMember(
     contextToMerge: Map<String, String?> = emptyMap(),
-    waitForApproval: Boolean = true
+    waitForStatus: String? = REGISTRATION_APPROVED,
 ): NetworkOnboardingMetadata {
     val newContext = registrationContext.toMutableMap()
     contextToMerge.forEach {
@@ -128,7 +129,31 @@ fun NetworkOnboardingMetadata.reregisterMember(
     }
     return copy(
         registrationContext = newContext,
-        registrationId = clusterInfo.register(holdingId, newContext, waitForApproval)
+        registrationId = clusterInfo.register(holdingId, newContext, waitForStatus)
+    )
+}
+
+fun ClusterInfo.reregisterMember(
+    holdingId: String,
+    x500Name: String,
+    previousContext: Map<String, String>,
+    contextToMerge: Map<String, String?> = emptyMap(),
+    waitForStatus: String? = REGISTRATION_APPROVED,
+): NetworkOnboardingMetadata {
+    val newContext = previousContext.toMutableMap()
+    contextToMerge.forEach {
+        if (it.value == null) {
+            newContext.remove(it.key)
+        } else {
+            newContext[it.key] = it.value!!
+        }
+    }
+    return NetworkOnboardingMetadata(
+        holdingId = holdingId,
+        x500Name = x500Name,
+        registrationContext = newContext.toMap(),
+        registrationId = register(holdingId, newContext.toMap(), waitForStatus),
+        clusterInfo = this,
     )
 }
 
@@ -142,22 +167,23 @@ fun ClusterInfo.onboardNotaryMember(
     cpiName: String,
     groupPolicy: String,
     x500Name: String,
-    wait: Boolean = true,
+    waitForStatus: String? = REGISTRATION_APPROVED,
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null,
-    tlsCertificateUploadedCallback: (String) -> Unit = {}
+    tlsCertificateUploadedCallback: (String) -> Unit = {},
+    notaryServiceName: String = "O=NotaryService, L=London, C=GB"
 ) = onboardMember(
     resourceName,
     cpiName,
     groupPolicy,
     x500Name,
-    wait,
+    waitForStatus,
     getAdditionalContext = { holdingId ->
         addSoftHsmFor(holdingId, CAT_NOTARY)
         val notaryKeyId = createKeyFor(holdingId, "$holdingId$CAT_NOTARY", CAT_NOTARY, DEFAULT_KEY_SCHEME)
 
         mapOf(
             "corda.roles.0" to "notary",
-            "corda.notary.service.name" to MemberX500Name.parse("O=NotaryService, L=London, C=GB").toString(),
+            "corda.notary.service.name" to MemberX500Name.parse(notaryServiceName).toString(),
             "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.nonvalidating",
             "corda.notary.service.flow.protocol.version.0" to "1",
             "corda.notary.keys.0.id" to notaryKeyId,
@@ -193,7 +219,7 @@ fun ClusterInfo.configureNetworkParticipant(
 fun ClusterInfo.register(
     holdingIdentityShortHash: String,
     registrationContext: Map<String, String>,
-    waitForApproval: Boolean
+    waitForStatus: String? = REGISTRATION_APPROVED,
 ) = cluster {
 
     val payload = mapOf(
@@ -210,12 +236,26 @@ fun ClusterInfo.register(
         failMessage("Failed to register to the network '$holdingIdentityShortHash'")
     }.toJson().get("registrationId")!!.textValue()
 }.also {
-    if (waitForApproval) {
+    if (waitForStatus != null) {
         waitForRegistrationStatus(
             holdingIdentityShortHash,
             it,
-            registrationStatus = REGISTRATION_APPROVED
+            registrationStatus = waitForStatus
         )
+    }
+}
+
+fun ClusterInfo.getRegistrationContext(
+    holdingIdentityShortHash: String,
+    registrationId: String,
+) = cluster {
+    assertWithRetryIgnoringExceptions {
+        timeout(15.seconds)
+        interval(5.seconds)
+        command {
+            getRegistrationStatus(holdingIdentityShortHash, registrationId)
+        }
+        condition { it.code == ResponseCode.OK.statusCode }
     }
 }
 
