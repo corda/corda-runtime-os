@@ -19,10 +19,6 @@ class LockContract : Contract {
         val command = transaction.getCommands(LockCommands::class.java).singleOrNull()
             ?: throw CordaRuntimeException("Requires a single command.")
 
-//        "There should be only one output state" using { transaction.outputContractStates.size == 1 }
-//        "There should be only one output state" using { transaction.getOutputStates(LockState::class.java).size == 1 }
-
-//        val inputState = transaction.inputContractStates.first() as LockState
         val outputState = transaction.outputContractStates.first()
 
         when (command) {
@@ -35,7 +31,6 @@ class LockContract : Contract {
             is LockCommands.Unlock -> {
                 val input = transaction.getInputStates(LockState::class.java).singleOrNull()
                     ?: throw CordaRuntimeException("Can't find lock state for verification")
-//                "When command is Unlock there should be exactly two participants." using (outputState.participants.size == 2)
                 "Unlock takes one command input of type Boolean and the value should be true." using
                         (command.bool == input.bool)
                 "There should be one input state as the lock state needs to be consumed" using
