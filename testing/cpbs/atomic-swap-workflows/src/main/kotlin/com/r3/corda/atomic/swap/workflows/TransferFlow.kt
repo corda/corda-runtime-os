@@ -70,8 +70,8 @@ class TransferFlow : ClientStartableFlow {
             }
 
             val outputState = inputState.withNewOwner(
-                newOwnerInfo.ledgerKeys[0],
-                listOf(ownerInfo.ledgerKeys[0], newOwnerInfo.ledgerKeys[0])
+                newOwnerInfo.ledgerKeys.first(),
+                listOf(ownerInfo.ledgerKeys.first(), newOwnerInfo.ledgerKeys.first())
             )
 
             val txBuilder = ledgerService.createTransactionBuilder()

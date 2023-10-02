@@ -47,15 +47,15 @@ class IssueAssetFlow : ClientStartableFlow {
         log.info("IssueFlow.call() called")
 
         try {
-//            val flowArgs = requestBody.getRequestBodyAs(jsonMarshallingService, IssueAssetFlowArgs::class.java)
+            val flowArgs = requestBody.getRequestBodyAs(jsonMarshallingService, IssueAssetFlowArgs::class.java)
 
             val myInfo = memberLookup.myInfo()
 
             val outputState = Asset(
-                myInfo.ledgerKeys[0],
-                "Gold",
+                myInfo.ledgerKeys.first(),
+                flowArgs.assetName,
                 UUID.randomUUID().toString(),
-                listOf(myInfo.ledgerKeys[0])
+                listOf(myInfo.ledgerKeys.first())
             )
 
             val notaries = notaryLookup.notaryServices

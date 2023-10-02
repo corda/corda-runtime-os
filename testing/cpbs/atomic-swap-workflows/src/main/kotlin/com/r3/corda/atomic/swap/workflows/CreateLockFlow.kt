@@ -19,6 +19,7 @@ import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.membership.MemberInfo
 import org.slf4j.LoggerFactory
+import java.security.PublicKey
 import java.time.Duration
 import java.time.Instant
 
@@ -48,9 +49,6 @@ class CreateLockFlow : ClientStartableFlow {
 
     @CordaInject
     lateinit var compositeKeyGenerator: CompositeKeyGenerator
-
-    @CordaInject
-    lateinit var signingService: SigningService
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
@@ -83,28 +81,18 @@ class CreateLockFlow : ClientStartableFlow {
 
             val lockState = LockState(
                 inputState.owner,
-                newOwnerInfo.ledgerKeys[0],
+                newOwnerInfo.ledgerKeys.first(),
                 inputState.assetName,
                 inputState.assetId,
-                listOf(inputState.owner, newOwnerInfo.ledgerKeys[0])
+                listOf(inputState.owner, newOwnerInfo.ledgerKeys.first())
             )
 
-            val assetWithCompositeKey = constructLockedAsset(inputState, newOwnerInfo)
+            val compositeKey = constructCompositeKey(inputState, newOwnerInfo)
 
             val outputState = inputState.withNewOwner(
-                assetWithCompositeKey.owner,
-                listOf(ownerInfo.ledgerKeys[0], newOwnerInfo.ledgerKeys[0])
-//                listOf(assetWithCompositeKey.owner)
+                compositeKey,
+                listOf(ownerInfo.ledgerKeys[0], newOwnerInfo.ledgerKeys.first())
             )
-
-            log.info("KEYS PLEASE lockState.participants: ${lockState.participants}")
-            log.info("KEYS PLEASE outputState.participants: ${outputState.participants}")
-            val myKeys = signingService.findMySigningKeys((lockState.participants + outputState.participants).toSet())
-                .flatMap { it.toPair().toList() }
-            log.info("KEYS PLEASE myKeys: $myKeys")
-            val keysToAddToSignatories = (lockState.participants + myKeys).filterNotNull().toSet()
-
-            log.info("KEYS PLEASE keysToAddToSignatories: $keysToAddToSignatories")
 
             val txBuilder = ledgerService.createTransactionBuilder()
 
@@ -116,7 +104,7 @@ class CreateLockFlow : ClientStartableFlow {
                 .addCommand(LockContract.LockCommands.Lock())
                 .addCommand(AssetContract.AssetCommands.Transfer())
                 .addSignatories(lockState.participants)
-                .addSignatories(assetWithCompositeKey.owner)
+                .addSignatories(compositeKey)
 
             val signedTransaction = txBuilder.toSignedTransaction()
 
@@ -137,15 +125,14 @@ class CreateLockFlow : ClientStartableFlow {
         }
     }
 
-    private fun constructLockedAsset(asset: Asset, newOwner: MemberInfo): Asset {
+    private fun constructCompositeKey(asset: Asset, newOwner: MemberInfo): PublicKey {
         // Build composite key
-        val compositeKey = compositeKeyGenerator.create(
+
+        return compositeKeyGenerator.create(
             listOf(
                 CompositeKeyNodeAndWeight(asset.owner, 1),
                 CompositeKeyNodeAndWeight(newOwner.ledgerKeys.single(), 1)
             ), 1
         )
-
-        return asset.withNewOwner(compositeKey, listOf(asset.owner, newOwner.ledgerKeys[0]))
     }
 }

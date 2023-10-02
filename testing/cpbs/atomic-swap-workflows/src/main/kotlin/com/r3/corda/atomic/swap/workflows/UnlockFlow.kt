@@ -72,13 +72,12 @@ class UnlockFlow: ClientStartableFlow {
             val stateAndRefAsset = unconsumedAssetStatesWithId.first()
             val inputAssetState = stateAndRefAsset.state.contractState
 
-//            val myInfo = memberLookup.myInfo()
             val ownerInfo = memberLookup.lookup(inputLockState.creator) ?:
             throw CordaRuntimeException("MemberLookup can't find current state owner.")
             val newOwnerInfo = memberLookup.lookup(MemberX500Name.parse(flowArgs.newOwner)) ?:
             throw CordaRuntimeException("MemberLookup can't find new state owner.")
 
-            val newState = inputAssetState.withNewOwner(newOwnerInfo.ledgerKeys[0], listOf(newOwnerInfo.ledgerKeys[0]))
+            val newState = inputAssetState.withNewOwner(newOwnerInfo.ledgerKeys.first(), listOf(newOwnerInfo.ledgerKeys.first()))
 
             val txBuilder = ledgerService.createTransactionBuilder()
 
@@ -89,8 +88,7 @@ class UnlockFlow: ClientStartableFlow {
                 .addOutputState(newState)
                 .addCommand(LockContract.LockCommands.Unlock(true))
                 .addCommand(AssetContract.AssetCommands.Transfer())
-//                .addSignatories(inputLockState.participants)// alice, bob
-                .addSignatories(newState.participants)//bob
+                .addSignatories(newState.participants)
 
             val signedTransaction = txBuilder.toSignedTransaction()
 

@@ -37,6 +37,7 @@ class LockContract : Contract {
                         (transaction.getInputStates(LockState::class.java).size == 1)
                 "There should be one output state as an unlocked asset state needs to be created" using
                         (transaction.outputContractStates.size == 1)
+                "The signer of the unlock should be the new owner of the Asset state." using (outputState.participants == transaction.signatories)
             }
 
             else -> {
@@ -47,9 +48,5 @@ class LockContract : Contract {
 
     private infix fun String.using(expr: Boolean) {
         if (!expr) throw CordaRuntimeException("Failed requirement: $this")
-    }
-
-    private infix fun String.using(expr: () -> Boolean) {
-        if (!expr.invoke()) throw CordaRuntimeException("Failed requirement: $this")
     }
 }
