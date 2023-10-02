@@ -667,6 +667,11 @@ object CordaMetrics {
              * Time it took to execute a task, includes time waiting to be scheduled.
              */
             object TaskCompletionTime : Metric<Timer>("taskmanager.completion.time", CordaMetrics::timer)
+
+            /**
+             * Time it took to execute a task, includes time waiting to be scheduled.
+             */
+            class LiveTasks(computation: Supplier<Number>) : ComputedValue<Nothing>("taskmanager.live.tasks", computation)
         }
     }
 
@@ -803,6 +808,11 @@ object CordaMetrics {
          * Identifies the signature signing scheme name to create signatures during crypto signing operations.
          */
         SignatureSpec("signature.spec"),
+
+        /**
+         * Task manager name.
+         */
+        TaskManagerName("task.manager.name"),
 
         /**
          * Task type.
