@@ -497,8 +497,6 @@ export NOTARY_SERVICE_NAME="C=GB,L=London,O=NotaryServiceA"
 export REGISTRATION_CONTEXT='{
   "corda.session.keys.0.id": "'$SESSION_KEY_ID'",
   "corda.session.keys.0.signature.spec": "SHA256withECDSA",
-  "corda.ledger.keys.0.id": "'$LEDGER_KEY_ID'",
-  "corda.ledger.keys.0.signature.spec": "SHA256withECDSA",
   "corda.endpoints.0.connectionURL": "https://'$P2P_GATEWAY_HOST':'$P2P_GATEWAY_PORT'",
   "corda.endpoints.0.protocolVersion": "1",
   "corda.roles.0" : "notary",
@@ -518,8 +516,6 @@ $NOTARY_SERVICE_NAME = "C=GB,L=London,O=NotaryServiceA"
 $REGISTRATION_CONTEXT = @{
   'corda.session.keys.0.id' =  $SESSION_KEY_ID
   'corda.session.keys.0.signature.spec' = "SHA256withECDSA"
-  'corda.ledger.keys.0.id' = $LEDGER_KEY_ID
-  'corda.ledger.keys.0.signature.spec' = "SHA256withECDSA"
   'corda.endpoints.0.connectionURL' = "https://$P2P_GATEWAY_HOST`:$P2P_GATEWAY_PORT"
   'corda.endpoints.0.protocolVersion' = "1"
   'corda.roles.0' = "notary",
