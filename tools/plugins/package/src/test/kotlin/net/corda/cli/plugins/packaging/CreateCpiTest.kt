@@ -1,7 +1,6 @@
 package net.corda.cli.plugins.packaging
 
 import net.corda.cli.plugins.packaging.TestSigningKeys.SIGNING_KEY_1
-import net.corda.cli.plugins.packaging.TestSigningKeys.SIGNING_KEY_2
 import net.corda.cli.plugins.packaging.TestSigningKeys.SIGNING_KEY_2_ALIAS
 import net.corda.cli.plugins.packaging.TestUtils.captureStdErr
 import net.corda.libs.packaging.testutils.cpb.TestCpbV2Builder
@@ -34,10 +33,8 @@ class CreateCpiTest {
     companion object {
         const val CPI_FILE_NAME = "output.cpi"
 
-        private const val CPK_SIGNER_NAME = "CPK-SIG"
         private const val CPB_SIGNER_NAME = "CORDAPP"
         private const val CPI_SIGNER_NAME = "CPI-SIG"
-        private val CPK_SIGNER = net.corda.libs.packaging.testutils.TestUtils.Signer(CPK_SIGNER_NAME, SIGNING_KEY_2)
         private val CPB_SIGNER = net.corda.libs.packaging.testutils.TestUtils.Signer(CPB_SIGNER_NAME, SIGNING_KEY_1)
     }
 
@@ -246,7 +243,7 @@ class CreateCpiTest {
         }
 
         assertEquals("""Missing required options: '--group-policy=<groupPolicyFileName>', '--cpi-name=<cpiName>', '--cpi-version=<cpiVersion>', '--keystore=<keyStoreFileName>', '--storepass=<keyStorePass>', '--key=<keyAlias>'
-Usage: create-cpi [-c=<cpbFileName>] --cpi-name=<cpiName>
+Usage: create-cpi [-hV] [-c=<cpbFileName>] --cpi-name=<cpiName>
                   --cpi-version=<cpiVersion> [-f=<outputFileName>]
                   -g=<groupPolicyFileName> -k=<keyAlias> -p=<keyStorePass>
                   -s=<keyStoreFileName> [--sig-file=<_sigFile>] [-t=<tsaUrl>]
@@ -263,6 +260,7 @@ Creates a CPI v2 from a CPB and GroupPolicy.json file.
   -g, --group-policy=<groupPolicyFileName>
                              Group policy to include in CPI
                              Use "-" to read group policy from standard input
+  -h, --help                 Show this help message and exit.
   -k, --key=<keyAlias>       Key alias
   -p, --password, --storepass=<keyStorePass>
                              Keystore password
@@ -271,6 +269,7 @@ Creates a CPI v2 from a CPB and GroupPolicy.json file.
       --sig-file=<_sigFile>  Base file name for signature related files
   -t, --tsa=<tsaUrl>         Time Stamping Authority (TSA) URL
       --upgrade=<cpiUpgrade> Allow upgrade without flow draining
+  -V, --version              Print version information and exit.
 """, errText)
     }
 

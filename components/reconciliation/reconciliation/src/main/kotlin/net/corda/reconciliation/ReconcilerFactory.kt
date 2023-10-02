@@ -11,6 +11,7 @@ interface ReconcilerFactory {
         writer: ReconcilerWriter<K, V>,
         keyClass: Class<K>,
         valueClass: Class<V>,
-        reconciliationIntervalMs: Long
+        reconciliationIntervalMs: Long,
+        forceInitialReconciliation: Boolean = false,
     ): Reconciler
 }

@@ -29,6 +29,11 @@ dependencies {
             because 'Kafka Client uses an older version of Snappy library which is exposed to CVE-2023-34455. ' +
                     'This might be resolved in the future versions of Kafka Client.'
         }
+        implementation('org.slf4j:slf4j-api') {
+            version {
+                strictly slf4jV2Version
+            }
+        }
     }
 
     testImplementation 'org.jetbrains.kotlin:kotlin-stdlib'

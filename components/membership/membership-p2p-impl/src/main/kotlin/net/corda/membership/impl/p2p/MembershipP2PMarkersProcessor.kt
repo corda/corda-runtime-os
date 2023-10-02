@@ -3,6 +3,7 @@ package net.corda.membership.impl.p2p
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.p2p.markers.AppMessageMarker
+import net.corda.membership.lib.registration.DECLINED_REASON_COMMS_ISSUE
 import net.corda.membership.p2p.helpers.TtlIdsFactory
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
@@ -26,7 +27,7 @@ internal class MembershipP2PMarkersProcessor(
                         Schemas.Membership.REGISTRATION_COMMAND_TOPIC,
                         key,
                         RegistrationCommand(
-                            DeclineRegistration("Could not send message to member.")
+                            DeclineRegistration(DECLINED_REASON_COMMS_ISSUE, DECLINED_REASON_COMMS_ISSUE)
                         )
                     )
                 )

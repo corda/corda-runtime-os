@@ -15,6 +15,7 @@ import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
+import net.corda.membership.lib.registration.DECLINED_REASON_FOR_USER_INTERNAL_ERROR
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.getTtlMinutes
 import net.corda.membership.p2p.helpers.TtlIdsFactory
@@ -84,15 +85,12 @@ internal class VerifyMemberHandler(
                     Schemas.Membership.REGISTRATION_COMMAND_TOPIC,
                     key,
                     RegistrationCommand(
-                        DeclineRegistration(e.message)
+                        DeclineRegistration(e.message, DECLINED_REASON_FOR_USER_INTERNAL_ERROR)
                     )
                 ),
             )
         }
-        return RegistrationHandlerResult(
-            RegistrationState(registrationId, member, mgm),
-            messages
-        )
+        return RegistrationHandlerResult(state, messages)
     }
 
     override fun getOwnerHoldingId(

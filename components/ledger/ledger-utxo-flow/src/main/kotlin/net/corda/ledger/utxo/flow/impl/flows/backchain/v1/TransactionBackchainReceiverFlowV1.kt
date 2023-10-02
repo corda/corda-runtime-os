@@ -6,7 +6,6 @@ import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.utxo.flow.impl.UtxoLedgerMetricRecorder
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TopologicalSort
-import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackChainResolutionVersion
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.ledger.utxo.flow.impl.persistence.TransactionExistenceStatus
@@ -26,17 +25,15 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.LoggerFactory
 
 /**
- * The V2 protocol is an extension of the V1 protocol, which can be enabled via a switch (on both sides).
- * In order to avoid huge code duplication, we kept V1 class implementing both protocols and added a switch that makes
- * it behave according to the V2 protocol.
+ * V1 changed slightly between 5.0 and 5.1. (5.1 supports distributing SignedGroupParameters.)
+ * This change is not managed through flow versioning since flow interoperability is not supported between these versions.
  */
 
 @CordaSystemFlow
 class TransactionBackchainReceiverFlowV1(
     private val initialTransactionIds: Set<SecureHash>,
     private val originalTransactionsToRetrieve: Set<SecureHash>,
-    private val session: FlowSession,
-    val version: TransactionBackChainResolutionVersion
+    private val session: FlowSession
 ) : SubFlow<TopologicalSort> {
 
     private companion object {
@@ -133,10 +130,6 @@ class TransactionBackchainReceiverFlowV1(
     private fun retrieveGroupParameters(
         retrievedTransaction: UtxoSignedTransaction
     ) {
-        if (version == TransactionBackChainResolutionVersion.V1) {
-            log.trace { "Backchain resolution of $initialTransactionIds - Group parameters retrieval is not available in V1" }
-            return
-        }
         val retrievedTransactionId = retrievedTransaction.id
         val groupParametersHash = parseSecureHash(requireNotNull(
             (retrievedTransaction.metadata as TransactionMetadataInternal).getMembershipGroupParametersHash()

@@ -69,6 +69,7 @@ internal class DeclineRegistrationHandler(
                 pendingMemberInfo.platformVersion,
                 registrationId,
                 RegistrationStatus.DECLINED.name,
+                command.reasonForUser
             )
             if (statusUpdateMessage != null) {
                 p2pRecordsFactory.createAuthenticatedMessageRecord(

@@ -1,7 +1,5 @@
 package net.corda.libs.statemanager.api
 
-import java.time.Instant
-
 /**
  * The [StateManager] provides functions to manage states within the underlying persistent storage.
  */
@@ -73,23 +71,37 @@ interface StateManager : AutoCloseable {
     fun delete(states: Collection<State>): Map<String, State>
 
     /**
-     * Retrieve all states that were updated for the last time between [start] (inclusive) and [finish] (inclusive).
+     * Retrieve all states that were updated for the last time between [IntervalFilter.start] (inclusive)
+     * and [IntervalFilter.finish] (inclusive).
      *
-     * @param start Time filter lower bound (inclusive).
-     * @param finish Time filter upper bound (inclusive).
-     * @return States that were last updated between [start] and [finish] times.
+     * @param intervalFilter Time filter to use when searching for states.
+     * @return States that were last updated between [IntervalFilter.start] and [IntervalFilter.finish] times.
      */
-    fun getUpdatedBetween(start: Instant, finish: Instant): Map<String, State>
+    fun updatedBetween(intervalFilter: IntervalFilter): Map<String, State>
 
     /**
-     * Retrieve states based on custom [operation] to be executed against a single [key] within the [State.metadata].
-     * Only states that have been successfully committed and distributed within the underlying persistent
-     * storage are returned.
+     * Retrieve all states for which the value corresponding to the [SingleKeyFilter.key] within the [State.metadata]
+     * matches the [SingleKeyFilter.value] when compared using the custom [SingleKeyFilter.operation]. Only states
+     * that have been successfully committed and distributed within the underlying persistent storage are returned.
      *
-     * @param key The name of the key in the [State.metadata] to apply the comparison on.
-     * @param operation The comparison operation to perform (">", "=", "<", "<>", etc.).
-     * @param value The value to compare against.
-     * @return states for which the [State.metadata] has [key] for which [value] matches [operation].
+     * @param singleKeyFilter Filter parameters to use when searching for states.
+     * @return states matching the specified filter.
      */
-    fun find(key: String, operation: Operation, value: Any): Map<String, State>
+    fun find(singleKeyFilter: SingleKeyFilter): Map<String, State>
+
+    /**
+     * Retrieve all states, updated for the last time between [IntervalFilter.start] (inclusive) and
+     * [IntervalFilter.finish] (inclusive), for which the value corresponding to the [SingleKeyFilter.key] within the
+     * [State.metadata] the [SingleKeyFilter.value] when compared using the custom [SingleKeyFilter.operation]. Only
+     * states that have been successfully committed and distributed within the underlying persistent storage
+     * are returned.
+     *
+     * @param intervalFilter Time filter to use when searching for states.
+     * @param singleKeyFilter Filter parameters to use when searching for states.
+     * @return states matching the specified filters.
+     */
+    fun findUpdatedBetweenWithMetadataFilter(
+        intervalFilter: IntervalFilter,
+        singleKeyFilter: SingleKeyFilter
+    ): Map<String, State>
 }

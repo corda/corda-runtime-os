@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory
 @Suppress("LongParameterList")
 internal class VirtualNodeDbImpl(
     override val isPlatformManagedDb: Boolean,
+    override val ddlConnectionProvided: Boolean,
     override val dbConnections: Map<DbPrivilege, DbConnection?>,
     override val dbType: VirtualNodeDbType,
     private val holdingIdentityShortHash: ShortHash,

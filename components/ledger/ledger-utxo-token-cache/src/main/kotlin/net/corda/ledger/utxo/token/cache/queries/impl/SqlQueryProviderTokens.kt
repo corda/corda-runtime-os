@@ -12,6 +12,7 @@ class SqlQueryProviderTokens : SqlQueryProvider {
         const val SQL_PARAMETER_SYMBOL = "symbol"
         const val SQL_PARAMETER_OWNER_HASH = "ownerHash"
         const val SQL_PARAMETER_TAG_FILTER = "tag"
+        const val SQL_PARAMETER_TOKEN_NOTARY_X500_NAME = "tokenNotaryX500Name"
     }
 
     override fun getBalanceQuery(includeTagFilter: Boolean, includeOwnerFilter: Boolean): String {
@@ -38,6 +39,7 @@ class SqlQueryProviderTokens : SqlQueryProvider {
             AND token_type = :$SQL_PARAMETER_TOKEN_TYPE
             AND token_issuer_hash = :$SQL_PARAMETER_ISSUER_HASH
             AND token_symbol = :$SQL_PARAMETER_SYMBOL
+            AND token_notary_x500_name = :$SQL_PARAMETER_TOKEN_NOTARY_X500_NAME
             $tagFilter
             $ownerFilter
         """.trimIndent()
@@ -72,6 +74,7 @@ class SqlQueryProviderTokens : SqlQueryProvider {
                 AND   t_output.token_type = :$SQL_PARAMETER_TOKEN_TYPE
                 AND   t_output.token_issuer_hash = :$SQL_PARAMETER_ISSUER_HASH
                 AND   t_output.token_symbol = :$SQL_PARAMETER_SYMBOL
+                AND   t_output.token_notary_x500_name = :$SQL_PARAMETER_TOKEN_NOTARY_X500_NAME
                 $tagFilter
                 $ownerFilter
                 ORDER BY t_output.transaction_id

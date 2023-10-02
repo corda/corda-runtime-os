@@ -13,7 +13,8 @@ import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 
 @CommandLine.Command(
     name = "group-parameters",
-    description = ["Lookup group parameters."]
+    description = ["Lookup group parameters."],
+    mixinStandardHelpOptions = true
 )
 class GroupParametersLookup(private val output: Output = ConsoleOutput()) : RestCommand(), Runnable {
 
