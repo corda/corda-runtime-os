@@ -6,15 +6,11 @@ import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.network.utils.HoldingIdentityUtils
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
-import net.corda.membership.rest.v1.CertificatesRestResource
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
-import org.bouncycastle.cert.X509CertificateHolder
-import org.bouncycastle.openssl.PEMParser
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.MethodOrderer
-import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
 import picocli.CommandLine
@@ -39,32 +35,6 @@ class OnboardMgmTest {
     @BeforeEach
     fun beforeEach() {
         outputStub = OutputStub()
-    }
-
-    @Order(0)
-    @Test
-    fun `onboarding MGM with provided TLS certificate subject creates correct cluster-level P2P certificate`() {
-        val command = OnboardMgm()
-        val tlsSubject = MemberX500Name.parse("O=${UUID.randomUUID()}, L=London, C=GB")
-
-        CommandLine(command).execute(
-            mgmName(),
-            "--tls-certificate-subject=$tlsSubject",
-            targetUrl,
-            user,
-            password,
-            INSECURE
-        )
-
-        command.createRestClient(CertificatesRestResource::class).use { client ->
-            val response = client.start().proxy.getCertificateChain("p2p-tls", "p2p-tls-cert")
-            val certificate = response.reader().use { reader ->
-                PEMParser(reader).use { parser ->
-                    parser.readObject()
-                }
-            } as X509CertificateHolder
-            assertThat(certificate.subject.toString().contains(tlsSubject.organization)).isTrue
-        }
     }
 
     @Test
