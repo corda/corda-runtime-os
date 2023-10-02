@@ -176,9 +176,9 @@ class UtxoPersistenceServiceImpl(
         // Insert outputs data
         transaction.getVisibleStates().entries.forEach { (stateIndex, stateAndRef) ->
             val utxoToken = utxoTokenMap[stateAndRef.ref]
-            if(utxoToken!=null){
-                log.info("Inserting token:'${stateAndRef.ref}")
-            }
+//            if(utxoToken!=null){
+//                log.info("Inserting token:'${stateAndRef.ref}")
+//            }
             repository.persistTransactionOutput(
                 em,
                 transactionIdString,
@@ -220,7 +220,7 @@ class UtxoPersistenceServiceImpl(
         // Mark inputs as consumed
         if (transaction.status == TransactionStatus.VERIFIED) {
             val inputStateRefs = transaction.getConsumedStateRefs()
-            log.info("marking state(s) as consumed '${inputStateRefs.joinToString (", ")}'")
+//            log.info("marking state(s) as consumed '${inputStateRefs.joinToString (", ")}'")
             if (inputStateRefs.isNotEmpty()) {
                 repository.markTransactionVisibleStatesConsumed(
                     em,

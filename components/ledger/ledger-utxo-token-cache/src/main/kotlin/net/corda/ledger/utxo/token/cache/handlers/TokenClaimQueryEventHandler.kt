@@ -11,8 +11,8 @@ import net.corda.ledger.utxo.token.cache.services.TokenFilterStrategy
 import net.corda.messaging.api.records.Record
 import java.math.BigDecimal
 import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+//import org.slf4j.Logger
+//import org.slf4j.LoggerFactory
 
 class TokenClaimQueryEventHandler(
     private val filterStrategy: TokenFilterStrategy,
@@ -21,9 +21,9 @@ class TokenClaimQueryEventHandler(
     private val serviceConfiguration: ServiceConfiguration
 ) : TokenEventHandler<ClaimQuery> {
 
-    private companion object {
-        val log: Logger = LoggerFactory.getLogger(TokenClaimQueryEventHandler::class.java)
-    }
+//    private companion object {
+//        val log: Logger = LoggerFactory.getLogger(TokenClaimQueryEventHandler::class.java)
+//    }
 
     override fun handle(
         tokenCache: TokenCache,
@@ -46,7 +46,7 @@ class TokenClaimQueryEventHandler(
             val tokens = findResult.tokens.filterNot { state.isTokenClaimed(it.stateRef) }
 
             // Replace the tokens in the cache with the ones from the query result that have not been claimed
-            log.info("Adding tokens to the cache '${tokens.map { it.stateRef }.joinToString(", ")}")
+//            log.info("Adding tokens to the cache '${tokens.map { it.stateRef }.joinToString(", ")}")
             tokenCache.add(tokens)
             selectionResult = selectTokens(tokenCache, state, event)
         }
@@ -56,7 +56,7 @@ class TokenClaimQueryEventHandler(
 
         return if (selectedAmount >= event.targetAmount) {
             // Claimed tokens should not be stored in the token cache
-            log.info("Claimed tokens : '${selectedTokens.map { it.stateRef }.joinToString(", ")}' - '${ event.flowId}' - '${   event.externalEventRequestId}'")
+//            log.info("Claimed tokens : '${selectedTokens.map { it.stateRef }.joinToString(", ")}' - '${ event.flowId}' - '${   event.externalEventRequestId}'")
             tokenCache.removeAll(selectedTokens.map { it.stateRef }.toSet())
             state.addNewClaim(event.externalEventRequestId, selectedTokens)
             recordFactory.getSuccessfulClaimResponse(
