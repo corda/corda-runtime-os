@@ -1,7 +1,7 @@
 package net.corda.libs.statemanager.impl
 
-import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.SingleKeyFilter
@@ -30,10 +30,7 @@ class StateManagerImpl(
         StateEntity(key, value, objectMapper.writeValueAsString(metadata), version, modifiedTime)
 
     private fun StateEntity.fromPersistentEntity() =
-        State(key, value, version, metadata.toMetadataMap(), modifiedTime)
-
-    private fun String.toMetadataMap() =
-        objectMapper.readValue(this, object : TypeReference<Metadata>() {})
+        State(key, value, version, objectMapper.convertToMetadata(metadata), modifiedTime)
 
     internal fun checkVersionAndPrepareEntitiesForPersistence(
         states: Collection<State>,
@@ -153,3 +150,6 @@ class StateManagerImpl(
         entityManagerFactory.close()
     }
 }
+
+fun ObjectMapper.convertToMetadata(json: String)  =
+    Metadata(this.readValue(json))
