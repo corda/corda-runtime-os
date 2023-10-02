@@ -52,6 +52,7 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
+    integrationTestRuntimeOnly project(":libs:state-manager:state-manager-db-impl")
     cpis project(path: ':testing:ledger:ledger-consensual-state-app', configuration: 'cordaCPB')
 }
 

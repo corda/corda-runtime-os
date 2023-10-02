@@ -91,6 +91,7 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
     integrationTestRuntimeOnly project(':libs:serialization:serialization-checkpoint-api')
     integrationTestRuntimeOnly project(':libs:serialization:serialization-kryo')
+    integrationTestRuntimeOnly project(":libs:state-manager:state-manager-db-impl")
     integrationTestRuntimeOnly project(':components:membership:membership-group-read-impl')
     integrationTestRuntimeOnly project(':components:virtual-node:cpk-read-service-impl')
 

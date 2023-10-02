@@ -69,6 +69,7 @@ dependencies {
     runtimeOnly project(":libs:sandbox-internal")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
     runtimeOnly project(":libs:serialization:serialization-kryo")
+    runtimeOnly project(":libs:state-manager:state-manager-db-impl")
     runtimeOnly project(":libs:web:web-impl")
 
 }

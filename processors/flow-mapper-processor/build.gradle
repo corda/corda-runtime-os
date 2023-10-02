@@ -59,5 +59,6 @@ dependencies {
     runtimeOnly project(':libs:ledger:ledger-utxo-data')
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
+    runtimeOnly project(":libs:state-manager:state-manager-db-impl")
 
 }
