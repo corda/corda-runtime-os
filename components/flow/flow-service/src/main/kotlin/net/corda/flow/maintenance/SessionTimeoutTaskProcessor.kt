@@ -1,11 +1,13 @@
 package net.corda.flow.maintenance
 
+import net.corda.data.flow.FlowTimeout
 import net.corda.data.scheduler.ScheduledTaskTrigger
 import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.SingleKeyFilter
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.schema.Schemas.Flow.FLOW_TIMEOUT_TOPIC
 import net.corda.schema.Schemas.ScheduledTask
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -16,6 +18,8 @@ class SessionTimeoutTaskProcessor(
 ) : DurableProcessor<String, ScheduledTaskTrigger> {
     companion object {
         private val logger = LoggerFactory.getLogger(SessionTimeoutTaskProcessor::class.java)
+        // TODO - this may need to move out somewhere else.
+        const val STATE_META_SESSION_EXPIRY_KEY = "session.expiry"
     }
     override val keyClass: Class<String>
         get() = String::class.java
@@ -30,16 +34,21 @@ class SessionTimeoutTaskProcessor(
             // TODO - we must be able to specify additional filters so we can limit to selecting those sessions that are still open
             // TODO - we must be able to limit by type of state
             val checkpoints = stateManager.find(
-                SingleKeyFilter("session.expiry", Operation.LesserThan, now())
+                SingleKeyFilter(STATE_META_SESSION_EXPIRY_KEY, Operation.LesserThan, now().epochSecond)
             )
             if (checkpoints.isEmpty()) {
                 logger.trace("No flows to time out")
                 emptyList()
             } else {
-                // TODO - return an avro message (schema TBC) for each checkpoint
-                // TODO - define topic to publish message on
+                // TODO - take log message out when everything plumbed in.
                 logger.info("Trigger cleanup of $checkpoints")
-                emptyList()
+                checkpoints.map { kvp ->
+                    Record(FLOW_TIMEOUT_TOPIC, kvp.key,
+                        FlowTimeout(
+                            kvp.value.key,
+                            Instant.ofEpochSecond(kvp.value.metadata[STATE_META_SESSION_EXPIRY_KEY] as Long))
+                    )
+                }
             }
         } ?: emptyList()
     }

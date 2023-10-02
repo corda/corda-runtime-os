@@ -1,13 +1,14 @@
 package net.corda.flow.maintenance
 
+import net.corda.data.flow.FlowTimeout
 import net.corda.data.scheduler.ScheduledTaskTrigger
+import net.corda.flow.maintenance.SessionTimeoutTaskProcessor.Companion.STATE_META_SESSION_EXPIRY_KEY
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.internal.verification.Times
 import org.mockito.kotlin.any
@@ -19,9 +20,15 @@ import org.mockito.kotlin.whenever
 import java.time.Instant
 
 class SessionTimeoutTaskProcessorTests {
-    private val state = State("foo", randomBytes(), 0, Metadata())
+    private val now = Instant.now()
+    private val state1 =
+        State(
+            "foo",
+            randomBytes(),
+            0,
+            Metadata(mapOf(STATE_META_SESSION_EXPIRY_KEY to now.minusSeconds(1).epochSecond)))
     private val states = mapOf(
-        "foo" to state
+        state1.key to state1,
     )
     private val stateManager = mock<StateManager> {
         on { find(any()) } doReturn (states)
@@ -30,7 +37,7 @@ class SessionTimeoutTaskProcessorTests {
         Schemas.ScheduledTask.SCHEDULED_TASK_NAME_SESSION_TIMEOUT,
         Schemas.ScheduledTask.SCHEDULED_TASK_NAME_SESSION_TIMEOUT,
         mock())
-    private val now = Instant.now()
+
     @Test
     fun `when empty list do nothing`() {
         val processor = SessionTimeoutTaskProcessor(stateManager) { now }
@@ -55,16 +62,23 @@ class SessionTimeoutTaskProcessorTests {
     }
 
     @Test
-    @Disabled
     fun `when state found return`() {
-        whenever(stateManager.find(any())).doReturn(emptyMap())
         val processor = SessionTimeoutTaskProcessor(stateManager) { now }
         val output = processor.onNext(listOf(record1))
-        assertThat(output).isNotEmpty
+        assertThat(output).containsExactly(
+            Record(
+                Schemas.Flow.FLOW_TIMEOUT_TOPIC,
+                state1.key,
+                FlowTimeout(
+                    state1.key,
+                    Instant.ofEpochSecond(state1.metadata[STATE_META_SESSION_EXPIRY_KEY] as Long))
+            )
+        )
     }
 
     @Test
     fun `when no states found return empty`() {
+        whenever(stateManager.find(any())).doReturn(emptyMap())
         val processor = SessionTimeoutTaskProcessor(stateManager) { now }
         val output = processor.onNext(listOf(record1))
         // TODO - better assertion when integrated

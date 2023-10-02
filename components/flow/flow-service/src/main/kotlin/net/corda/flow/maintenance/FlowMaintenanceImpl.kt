@@ -36,7 +36,7 @@ class FlowMaintenanceImpl @Activate constructor(
 
     private val coordinator = coordinatorFactory.createCoordinator<FlowMaintenance>(::eventHandler)
     override fun onConfigChange(config: Map<String, SmartConfig>) {
-        // TODO - fix config key. The state manager has nothing to do with messaging.
+        // TODO - fix config key (CORE-17437).
         if(config.containsKey(ConfigKeys.MESSAGING_CONFIG)) {
             val messagingConfig = config.getConfig(ConfigKeys.MESSAGING_CONFIG)
             val stateManagerConfig = config.getConfig(ConfigKeys.MESSAGING_CONFIG)
