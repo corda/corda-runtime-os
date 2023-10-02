@@ -41,16 +41,21 @@ class ClusterBuilder {
     data class VNodeCreateBody(
         val cpiFileChecksum: String,
         val x500Name: String,
-        val externalDBConnectionParams: ExternalDBConnectionParams?
+        val cryptoDdlConnection: String?,
+        val cryptoDmlConnection: String?,
+        val uniquenessDdlConnection: String?,
+        val uniquenessDmlConnection: String?,
+        val vaultDdlConnection: String?,
+        val vaultDmlConnection: String?
     )
 
     data class ExternalDBConnectionParams(
-        val cryptoDdlConnection: String,
-        val cryptoDmlConnection: String,
-        val uniquenessDdlConnection: String,
-        val uniquenessDmlConnection: String,
-        val vaultDdlConnection: String,
-        val vaultDmlConnection: String
+        val cryptoDdlConnection: String?,
+        val cryptoDmlConnection: String?,
+        val uniquenessDdlConnection: String?,
+        val uniquenessDmlConnection: String?,
+        val vaultDdlConnection: String?,
+        val vaultDmlConnection: String?
     )
 
 
@@ -232,12 +237,22 @@ class ClusterBuilder {
     private fun vNodeBody(
         cpiHash: String,
         x500Name: String,
-        externalDBConnectionParams: ExternalDBConnectionParams? = null
+        cryptoDdlConnection: String?,
+        cryptoDmlConnection: String?,
+        uniquenessDdlConnection: String?,
+        uniquenessDmlConnection: String?,
+        vaultDdlConnection: String?,
+        vaultDmlConnection: String?
     ): String {
         val body = VNodeCreateBody(
             cpiHash,
             x500Name,
-            externalDBConnectionParams
+            cryptoDdlConnection,
+            cryptoDmlConnection,
+            uniquenessDdlConnection,
+            uniquenessDmlConnection,
+            vaultDdlConnection,
+            vaultDmlConnection
         )
         return jacksonObjectMapper().writeValueAsString(body)
     }
@@ -345,7 +360,12 @@ class ClusterBuilder {
             vNodeBody(
                 cpiHash,
                 x500Name,
-                externalDBConnectionParams
+                externalDBConnectionParams?.cryptoDdlConnection,
+                externalDBConnectionParams?.cryptoDmlConnection,
+                externalDBConnectionParams?.uniquenessDdlConnection,
+                externalDBConnectionParams?.uniquenessDmlConnection,
+                externalDBConnectionParams?.vaultDdlConnection,
+                externalDBConnectionParams?.vaultDmlConnection
             )
         )
 
