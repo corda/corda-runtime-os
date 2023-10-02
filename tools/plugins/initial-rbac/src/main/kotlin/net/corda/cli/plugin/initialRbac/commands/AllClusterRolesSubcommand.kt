@@ -11,7 +11,8 @@ import kotlin.reflect.full.declaredMemberProperties
     description = ["""Creates all of the cluster-scoped roles:
         - '$CORDA_DEV_ROLE'
         - '$USER_ADMIN_ROLE'
-        - '$VNODE_CREATOR_ROLE'"""]
+        - '$VNODE_CREATOR_ROLE'"""],
+    mixinStandardHelpOptions = true
 )
 class AllClusterRolesSubcommand : RestCommand(), Callable<Int> {
 

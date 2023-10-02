@@ -11,7 +11,11 @@ import net.corda.cli.plugins.network.utils.PrintUtils.printJsonOutput
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import picocli.CommandLine
 
-@CommandLine.Command(name = "members", description = ["Shows the list of members on the network."])
+@CommandLine.Command(
+    name = "members",
+    description = ["Shows the list of members on the network."],
+    mixinStandardHelpOptions = true
+)
 class MemberLookup(private val output: Output = ConsoleOutput()) : RestCommand(), Runnable {
 
     @CommandLine.Option(

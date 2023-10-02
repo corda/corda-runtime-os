@@ -90,10 +90,7 @@ internal class VerifyMemberHandler(
                 ),
             )
         }
-        return RegistrationHandlerResult(
-            RegistrationState(registrationId, member, mgm),
-            messages
-        )
+        return RegistrationHandlerResult(state, messages)
     }
 
     override fun getOwnerHoldingId(

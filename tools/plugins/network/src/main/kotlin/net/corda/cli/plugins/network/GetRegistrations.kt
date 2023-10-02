@@ -16,7 +16,8 @@ import net.corda.rest.exception.ServiceUnavailableException
 
 @CommandLine.Command(
     name = "get-registrations",
-    description = ["Check the status of a registration request."]
+    description = ["Check the status of a registration request."],
+    mixinStandardHelpOptions = true
 )
 class GetRegistrations(private val output: Output = ConsoleOutput()) : RestCommand(),
     Runnable {

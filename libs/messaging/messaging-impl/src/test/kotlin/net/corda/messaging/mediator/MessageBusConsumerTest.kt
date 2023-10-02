@@ -56,6 +56,18 @@ class MessageBusConsumerTest {
     }
 
     @Test
+    fun testPollWithError() {
+        val timeout = Duration.ofMillis(123)
+        doThrow(CordaRuntimeException("")).whenever(cordaConsumer).poll(any())
+
+        assertThrows<CordaRuntimeException> {
+            runBlocking {
+                mediatorConsumer.poll(timeout).await()
+            }
+        }
+    }
+
+    @Test
     fun testCommitAsyncOffsets() {
         mediatorConsumer.asyncCommitOffsets()
 

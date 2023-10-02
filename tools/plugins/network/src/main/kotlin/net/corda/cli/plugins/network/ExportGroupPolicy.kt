@@ -11,7 +11,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 
 @Command(
     name = "export-group-policy",
-    description = ["Export the group policy from the MGM"]
+    description = ["Export the group policy from the MGM"],
+    mixinStandardHelpOptions = true
 )
 class ExportGroupPolicy : Runnable, RestCommand() {
     @Option(

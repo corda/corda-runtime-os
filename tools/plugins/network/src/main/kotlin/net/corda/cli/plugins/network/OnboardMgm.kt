@@ -17,7 +17,8 @@ import java.util.UUID
     name = "onboard-mgm",
     description = [
         "Onboard MGM",
-    ]
+    ],
+    mixinStandardHelpOptions = true
 )
 class OnboardMgm : Runnable, BaseOnboard() {
     @Option(

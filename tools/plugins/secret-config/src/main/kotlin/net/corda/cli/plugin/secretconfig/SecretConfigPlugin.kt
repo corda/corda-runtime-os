@@ -20,7 +20,8 @@ class SecretConfigPlugin : Plugin() {
         name = "secret-config",
         description = ["Generate secret Config values which can be inserted into your Corda Config, removing the need to " +
                 "put sensitive values in plain text. The output will depend on the type of secrets service being used. " +
-                "See 'type' for more information."]
+                "See 'type' for more information."],
+        mixinStandardHelpOptions = true
     )
     class PluginEntryPoint : CordaCliPlugin {
         enum class SecretsServiceType {
@@ -67,7 +68,8 @@ class SecretConfigPlugin : Plugin() {
 
         @Suppress("Unused")
         @Command(
-            name = "create", description = ["Create a secret config value for the appropriate 'type' of secrets service."]
+            name = "create", description = ["Create a secret config value for the appropriate 'type' of secrets service."],
+            mixinStandardHelpOptions = true
         )
         fun create() {
             val secretConfigGenerator: SecretsCreateService = when (type) {
@@ -90,7 +92,8 @@ class SecretConfigPlugin : Plugin() {
         @Command(
             name = "decrypt",
             description = ["Decrypt a CORDA secret value given salt and passphrase (takes the actual value, not the config). " +
-                    "Does not apply to VAULT type secrets which have no encrypted Config content."]
+                    "Does not apply to VAULT type secrets which have no encrypted Config content."],
+            mixinStandardHelpOptions = true
         )
         fun decrypt() {
             if (type != SecretsServiceType.CORDA) {

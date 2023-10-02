@@ -7,6 +7,8 @@ import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.libs.statemanager.impl.StateManagerImpl
 import net.corda.libs.statemanager.impl.model.v1.StateManagerEntities
+import net.corda.libs.statemanager.impl.repository.impl.PostgresQueryProvider
+import net.corda.libs.statemanager.impl.repository.impl.QueryProvider
 import net.corda.libs.statemanager.impl.repository.impl.StateRepositoryImpl
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
@@ -65,8 +67,13 @@ class StateManagerFactoryImpl @Activate constructor(
         )
 
         return StateManagerImpl(
-            StateRepositoryImpl(),
+            StateRepositoryImpl(queryProvider()),
             entityManagerFactory
         )
+    }
+
+    // TODO-[CORE-16663]: factory when multiple databases are supported at a platform level (only Postgres supported now).
+    private fun queryProvider(): QueryProvider {
+        return PostgresQueryProvider()
     }
 }

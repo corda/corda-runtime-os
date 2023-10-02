@@ -26,7 +26,8 @@ import java.io.File
     name = "onboard-member",
     description = [
         "Onboard a member"
-    ]
+    ],
+    mixinStandardHelpOptions = true
 )
 class OnboardMember : Runnable, BaseOnboard() {
     private companion object {

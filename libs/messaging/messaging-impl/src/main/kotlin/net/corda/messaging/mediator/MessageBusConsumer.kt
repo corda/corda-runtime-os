@@ -20,8 +20,14 @@ class MessageBusConsumer<K: Any, V: Any>(
     override fun subscribe() =
         consumer.subscribe(topic)
 
-    override fun poll(timeout: Duration): List<CordaConsumerRecord<K, V>> =
-        consumer.poll(timeout)
+    override fun poll(timeout: Duration): Deferred<List<CordaConsumerRecord<K, V>>> =
+        CompletableDeferred<List<CordaConsumerRecord<K, V>>>().apply {
+            try {
+                complete(consumer.poll(timeout))
+            } catch (throwable: Throwable) {
+                completeExceptionally(throwable)
+            }
+        }
 
     override fun asyncCommitOffsets(): Deferred<Map<CordaTopicPartition, Long>> =
         CompletableDeferred<Map<CordaTopicPartition, Long>>().apply {
