@@ -2,21 +2,10 @@
   "name": "hardhat-project",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^3.0.0",
-    "hardhat": "^2.17.3"
+    "hardhat": "^2.17.4"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.9.3"
-  },
-  "overrides": {
-    "@nomicfoundation/hardhat-toolbox":{
-      "hardhat-gas-reporter":{
-        "eth-gas-reporter":{
-          "mocha":{
-            "yargs-unparser": "2.0.0"
-          }
-        }
-      }
-    }
   }
 }
 
