@@ -8,7 +8,7 @@ import net.corda.rbac.schema.RbacKeys.UUID_REGEX
 import picocli.CommandLine
 import java.util.concurrent.Callable
 
-private const val USER_ADMIN_ROLE = "UserAdminRole"
+const val USER_ADMIN_ROLE = "UserAdminRole"
 
 @CommandLine.Command(
     name = "user-admin",
@@ -17,7 +17,8 @@ private const val USER_ADMIN_ROLE = "UserAdminRole"
         - creation/deletion of permissions
         - creation/deletion of roles
         - assigning/un-assigning roles to users
-        - assigning/un-assigning permissions to roles"""]
+        - assigning/un-assigning permissions to roles"""],
+    mixinStandardHelpOptions = true
 )
 class UserAdminSubcommand : RestCommand(), Callable<Int> {
 

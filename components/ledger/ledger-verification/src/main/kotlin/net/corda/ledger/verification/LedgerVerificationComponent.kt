@@ -36,20 +36,21 @@ class LedgerVerificationComponent @Activate constructor(
     @Reference(service = SandboxGroupContextComponent::class)
     private val sandboxGroupContextComponent: SandboxGroupContextComponent,
     @Reference(service = VerificationSubscriptionFactory::class)
-    private val verificationRequestSubscriptionFactory: VerificationSubscriptionFactory
+    private val verificationRequestSubscriptionFactory: VerificationSubscriptionFactory,
 ) : Lifecycle {
     private var configHandle: Resource? = null
     private var verificationProcessorSubscription: Subscription<String, TransactionVerificationRequest>? = null
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        const val RPC_SUBSCRIPTION = "RPC_SUBSCRIPTION"
     }
 
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
         ::sandboxGroupContextComponent
     )
-    private val coordinator =
+    private val lifecycleCoordinator =
         coordinatorFactory.createCoordinator<LedgerVerificationComponent>(dependentComponents, ::eventHandler)
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -65,6 +66,7 @@ class LedgerVerificationComponent @Activate constructor(
                         coordinator,
                         setOf(BOOT_CONFIG, MESSAGING_CONFIG)
                     )
+                    initialiseRpcSubscription()
                 } else {
                     coordinator.updateStatus(event.status)
                 }
@@ -86,14 +88,23 @@ class LedgerVerificationComponent @Activate constructor(
         }
     }
 
+    private fun initialiseRpcSubscription() {
+        val subscription = verificationRequestSubscriptionFactory.createRpcSubscription()
+        lifecycleCoordinator.createManagedResource(RPC_SUBSCRIPTION) {
+            subscription.also {
+                it.start()
+            }
+        }
+    }
+
     override val isRunning: Boolean
-        get() = coordinator.isRunning
+        get() = lifecycleCoordinator.isRunning
 
     override fun start() {
-        coordinator.start()
+        lifecycleCoordinator.start()
     }
 
     override fun stop() {
-        coordinator.stop()
+        lifecycleCoordinator.stop()
     }
 }

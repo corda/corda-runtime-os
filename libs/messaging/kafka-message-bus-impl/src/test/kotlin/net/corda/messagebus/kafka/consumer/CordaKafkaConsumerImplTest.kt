@@ -4,6 +4,7 @@ import io.micrometer.core.instrument.binder.kafka.KafkaClientMetrics
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import net.corda.messagebus.api.CordaTopicPartition
+import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
@@ -24,6 +25,7 @@ import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 import org.apache.kafka.clients.consumer.MockConsumer
 import org.apache.kafka.clients.consumer.OffsetAndMetadata
+import org.apache.kafka.clients.consumer.OffsetCommitCallback
 import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.errors.AuthenticationException
@@ -43,6 +45,7 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -177,11 +180,41 @@ class CordaKafkaConsumerImplTest {
     }
 
     @Test
+    fun testAsyncCommitOffsets() {
+        val callback = mock<CordaConsumer.Callback>()
+        assertThat(consumer.committed(setOf(partition))).isEmpty()
+
+        cordaKafkaConsumer.poll(Duration.ZERO)
+        cordaKafkaConsumer.asyncCommitOffsets(callback)
+
+        val committedPositionAfterPoll = consumer.committed(setOf(partition))
+        assertThat(committedPositionAfterPoll.values.first().offset()).isEqualTo(numberOfRecords)
+    }
+
+    @Test
+    fun testAsyncCommitOffsetsException() {
+        consumer = mock()
+        cordaKafkaConsumer = createConsumer(consumer)
+        val exception = CommitFailedException()
+        doAnswer {
+            val callback = it.arguments[0] as OffsetCommitCallback
+            callback.onComplete(mock(), exception)
+            null
+        }.whenever(consumer).commitAsync(any())
+        val callback = mock<CordaConsumer.Callback>()
+
+        cordaKafkaConsumer.asyncCommitOffsets(callback)
+
+        verify(consumer, times(1)).commitAsync(any())
+        verify(callback, times(1)).onCompletion(any(), eq(exception))
+    }
+
+    @Test
     fun testCommitOffsets() {
         val consumerRecord = CordaConsumerRecord(eventTopic, 1, 5L, "", "value", 0)
         assertThat(consumer.committed(setOf(partition))).isEmpty()
 
-        cordaKafkaConsumer.commitSyncOffsets(consumerRecord, "meta data")
+        cordaKafkaConsumer.syncCommitOffsets(consumerRecord, "meta data")
 
         val committedPositionAfterCommit = consumer.committed(setOf(partition))
         assertThat(committedPositionAfterCommit.values.first().offset()).isEqualTo(6)
@@ -195,7 +228,7 @@ class CordaKafkaConsumerImplTest {
         val consumerRecord = CordaConsumerRecord(eventTopic, 1, 5L, "", "value", 0)
         doThrow(CommitFailedException()).whenever(consumer).commitSync(anyMap())
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
-            cordaKafkaConsumer.commitSyncOffsets(consumerRecord, "meta data")
+            cordaKafkaConsumer.syncCommitOffsets(consumerRecord, "meta data")
         }
         verify(consumer, times(1)).commitSync(anyMap())
     }

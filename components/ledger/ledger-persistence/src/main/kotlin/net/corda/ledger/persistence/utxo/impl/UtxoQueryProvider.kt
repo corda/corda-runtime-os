@@ -26,6 +26,11 @@ interface UtxoQueryProvider {
     val findUnconsumedVisibleStatesByType: String
 
     /**
+     * @property findUnconsumedVisibleStatesByExactType SQL text for [UtxoRepositoryImpl.findUnconsumedVisibleStatesByExactType].
+     */
+    val findUnconsumedVisibleStatesByExactType: String
+
+    /**
      * @property findTransactionSignatures SQL text for [UtxoRepositoryImpl.findTransactionSignatures].
      */
     val findTransactionSignatures: String

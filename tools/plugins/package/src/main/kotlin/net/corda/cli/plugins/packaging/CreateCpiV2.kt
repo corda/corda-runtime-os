@@ -49,7 +49,8 @@ private const val READ_FROM_STDIN = "-"
  */
 @Command(
     name = "create-cpi",
-    description = ["Creates a CPI v2 from a CPB and GroupPolicy.json file."]
+    description = ["Creates a CPI v2 from a CPB and GroupPolicy.json file."],
+    mixinStandardHelpOptions = true
 )
 class CreateCpiV2 : Runnable {
 

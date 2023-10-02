@@ -13,6 +13,7 @@ import net.corda.lifecycle.TimerEvent
 import net.corda.metrics.CordaMetrics
 import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.ReconcilerWriter
+import net.corda.utilities.VisibleForTesting
 import net.corda.utilities.debug
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
@@ -26,6 +27,7 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
     keyClass: Class<K>,
     valueClass: Class<V>,
     var reconciliationIntervalMs: Long,
+    private val forceInitialReconciliation: Boolean,
 ) : LifecycleEventHandler {
 
     val name = "${ReconcilerEventHandler::class.java.name}<${keyClass.name}, ${valueClass.name}>"
@@ -105,13 +107,16 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
         }
     }
 
+    private var firstRun = true
+
     // TODO following method should be extracted to dedicated file, to be tested separately
     // TODO Must add to the below DEBUG logging reporting to be reconciled records potentially more
     /**
      * @throws [ReconciliationException] to notify an error occurred at kafka or db [ReconcilerReader.getAllVersionedRecords].
      */
     @Suppress("ComplexMethod")
-    fun reconcile(): Int {
+    @VisibleForTesting
+    internal fun reconcile(): Int {
         val kafkaRecords =
             kafkaReader.getAllVersionedRecords()?.asSequence()?.associateBy { it.key }
                 ?: throw ReconciliationException("Error occurred while retrieving kafka records")
@@ -120,10 +125,20 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
             dbReader.getAllVersionedRecords()?.filter { dbRecord ->
                 val matchedKafkaRecord = kafkaRecords[dbRecord.key]
                 val toBeReconciled = if (matchedKafkaRecord == null) {
-                    !dbRecord.isDeleted // reconcile db inserts (i.e. db column cpi.is_deleted == false)
+                    !dbRecord.isDeleted // reconcile db inserted records (i.e. db column cpi.is_deleted == false)
                 } else {
-                    dbRecord.version > matchedKafkaRecord.version // reconcile db updates
-                            || dbRecord.isDeleted // reconcile db deletes
+                    // Forced initial reconciliation is meant to fix an issue with config update and cluster upgrade.
+                    // On config section schema update, because Kafka is already populated and DB and Kafka records' versions
+                    // match for that config section it means that config section would not get reconciled.
+                    // This means newly added property(ies) to config schema will not get added to config published on Kafka.
+                    // With forcing reconciliation, all DB configs go through reconciliation again (version is overlooked) and
+                    // therefore through the defaulting config process which will add the property(ies) and subsequently
+                    // will publish them to Kafka. We only need to force the first reconciliation.
+                    if (forceInitialReconciliation && firstRun) {
+                        dbRecord.version >= matchedKafkaRecord.version // reconcile all db records again (forced reconciliation)
+                    } else {
+                        dbRecord.version > matchedKafkaRecord.version // reconcile db updated records
+                    } || dbRecord.isDeleted // reconcile db soft deleted records
                 }
 
                 if (toBeReconciled) {
@@ -145,6 +160,8 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
                 reconciledCount++
             }
         }
+
+        firstRun = false
 
         return reconciledCount
     }

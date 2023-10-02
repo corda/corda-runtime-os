@@ -7,7 +7,7 @@ import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
-import net.corda.flow.persistence.query.OffsetResultSetExecutor
+import net.corda.flow.persistence.query.StableResultSetExecutor
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.schema.Schemas
 import net.corda.virtualnode.toAvro
@@ -18,7 +18,7 @@ import java.time.Clock
 @Component(service = [ExternalEventFactory::class])
 class VaultNamedQueryExternalEventFactory(
     private val clock: Clock = Clock.systemUTC()
-) : ExternalEventFactory<VaultNamedQueryEventParams, EntityResponse, OffsetResultSetExecutor.Results> {
+) : ExternalEventFactory<VaultNamedQueryEventParams, EntityResponse, StableResultSetExecutor.Results> {
 
     override val responseType = EntityResponse::class.java
 
@@ -36,9 +36,9 @@ class VaultNamedQueryExternalEventFactory(
                     FindWithNamedQuery(
                         parameters.queryName,
                         parameters.queryParameters,
-                        parameters.offset,
+                        0,
                         parameters.limit,
-                        null
+                        parameters.resumePoint
                     )
                 )
                 .setFlowExternalEventContext(flowExternalEventContext)
@@ -47,10 +47,10 @@ class VaultNamedQueryExternalEventFactory(
         )
     }
 
-    override fun resumeWith(checkpoint: FlowCheckpoint, response: EntityResponse): OffsetResultSetExecutor.Results {
-        return OffsetResultSetExecutor.Results(
+    override fun resumeWith(checkpoint: FlowCheckpoint, response: EntityResponse): StableResultSetExecutor.Results {
+        return StableResultSetExecutor.Results(
             serializedResults = response.results,
-            numberOfRowsFromQuery = response.metadata.items.single { it.key == "numberOfRowsFromQuery" }.value.toInt()
+            resumePoint = response.resumePoint
         )
     }
 }
@@ -58,6 +58,6 @@ class VaultNamedQueryExternalEventFactory(
 data class VaultNamedQueryEventParams(
     val queryName: String,
     val queryParameters: Map<String, ByteBuffer>,
-    val offset: Int,
-    val limit: Int
+    val limit: Int,
+    val resumePoint: ByteBuffer?
 )

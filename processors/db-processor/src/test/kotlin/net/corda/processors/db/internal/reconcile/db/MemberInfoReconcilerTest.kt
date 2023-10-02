@@ -120,6 +120,7 @@ class MemberInfoReconcilerTest {
                 eq(String::class.java),
                 eq(PersistentMemberInfo::class.java),
                 any(),
+                any(),
             )
         } doReturn innerReconciler
     }

@@ -10,8 +10,8 @@ import net.corda.ledger.utxo.token.cache.converters.EntityConverter
 import net.corda.ledger.utxo.token.cache.converters.EventConverter
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenEvent
-import net.corda.ledger.utxo.token.cache.entities.internal.TokenPoolCacheImpl
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
+import net.corda.ledger.utxo.token.cache.entities.internal.TokenPoolCacheImpl
 import net.corda.ledger.utxo.token.cache.handlers.TokenEventHandler
 import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY
 import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
@@ -20,12 +20,14 @@ import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+
 
 class TokenCacheEventProcessorTest {
 
@@ -189,6 +191,36 @@ class TokenCacheEventProcessorTest {
         assertThat(result.responseEvents.first()).isSameAs(handlerResponse)
         assertThat(result.updatedState).isSameAs(outputState)
         assertThat(result.markForDLQ).isFalse
+    }
+
+    @Test
+    fun `ensure expired claims are removed before calling event handlers`() {
+        tokenPoolCacheEvent.payload = "message"
+
+        val outputState = TokenPoolCacheState()
+        val handlerResponse = Record<String, FlowEvent>("", "", null)
+
+        val stateIn = TokenPoolCacheState().apply {
+            this.poolKey = POOL_CACHE_KEY
+            this.availableTokens = listOf()
+            this.tokenClaims = listOf()
+        }
+
+        whenever(entityConverter.toPoolCacheState(stateIn)).thenReturn(cachePoolState)
+        whenever(entityConverter.toTokenPoolKey(POOL_CACHE_KEY)).thenReturn(POOL_KEY)
+        whenever(cachePoolState.toAvro()).thenReturn(outputState)
+        whenever(mockHandler.handle(any(), eq(cachePoolState), eq(event)))
+            .thenReturn(handlerResponse)
+
+        val target =
+            TokenCacheEventProcessor(eventConverter, entityConverter, tokenPoolCache, tokenCacheEventHandlerMap, mock())
+
+        target.onNext(stateIn, eventIn)
+
+        val inOrder = inOrder(cachePoolState, mockHandler)
+
+        inOrder.verify(cachePoolState).removeExpiredClaims()
+        inOrder.verify(mockHandler).handle(any(),any(),any())
     }
 
     class FakeTokenEvent : TokenEvent {

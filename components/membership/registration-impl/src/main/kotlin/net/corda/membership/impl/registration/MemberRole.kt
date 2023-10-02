@@ -48,10 +48,17 @@ internal sealed class MemberRole {
             }
         }
 
+        @Suppress("ThrowsCount")
         private fun readNotary(context: Map<String, String>): Notary {
             val serviceName = context[NOTARY_SERVICE_NAME]
             if(serviceName.isNullOrEmpty()) throw IllegalArgumentException("Notary must have a non-empty service name.")
             val protocol = context[NOTARY_SERVICE_PROTOCOL]
+            if (protocol == null) {
+                throw IllegalArgumentException("No value provided for $NOTARY_SERVICE_PROTOCOL, which is required for a notary.")
+            }
+            if (protocol.isBlank()) {
+                throw IllegalArgumentException("Value provided for $NOTARY_SERVICE_PROTOCOL was a blank string." )
+            }
             val protocolVersions = NOTARY_SERVICE_PROTOCOL_VERSIONS.format("([0-9]+)").toRegex().let { regex ->
                 context.filter { it.key.matches(regex) }.mapTo(mutableSetOf()) { it.value.toInt() }
             }
@@ -70,7 +77,7 @@ internal sealed class MemberRole {
 
     data class Notary(
         val serviceName: MemberX500Name,
-        val protocol: String?,
+        val protocol: String,
         val protocolVersions: Collection<Int>,
     ) : MemberRole() {
         override fun toMemberInfo(
@@ -92,13 +99,8 @@ internal sealed class MemberRole {
             return keys + versions + listOf(
                 "$ROLES_PREFIX.$index" to NOTARY_ROLE,
                 NOTARY_SERVICE_NAME to serviceName.toString(),
-            ) + if (protocol == null) {
-                emptyList()
-            } else {
-                listOf(
-                    NOTARY_SERVICE_PROTOCOL to protocol,
-                )
-            }
+                NOTARY_SERVICE_PROTOCOL to protocol
+            )
         }
     }
 }
