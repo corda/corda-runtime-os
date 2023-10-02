@@ -134,17 +134,16 @@ class OnboardMemberTest {
         assertThat(output.get("corda.endpoints.1.connectionURL")?.asText()).isEqualTo(gatewayUrl1)
     }
 
-    @Disabled("TODO - enable before merging")
     @Test
     fun `onboarding member with notary role succeeds`() {
         val member = memberName()
-        val notaryServiceName = "-s \"${MemberInfoExtension.NOTARY_SERVICE_NAME}\"=\"O=Notary, L=London, C=GB\""
+        val notaryServiceName = "O=Notary, L=London, C=GB"
 
         CommandLine(OnboardMember()).execute(
             member.toString(),
             "--cpb-file=$cpbLocation",
             "--role=NOTARY",
-            notaryServiceName,
+            "--set=${MemberInfoExtension.NOTARY_SERVICE_NAME}=$notaryServiceName",
             targetUrl,
             user,
             password,
@@ -176,18 +175,16 @@ class OnboardMemberTest {
         assertThat(outputStub.getAllPartyNames().contains(member.toString())).isTrue
     }
 
-    @Disabled("TODO - enable before merging")
     @Test
     fun `can onboard member to a group with custom metadata`() {
         val member = memberName()
         val customKey = "ext.member.key.0"
         val customValue = "value0"
-        val customMetadata = "-s \"$customKey\"=\"$customValue\""
 
         CommandLine(OnboardMember()).execute(
             member.toString(),
             "--cpb-file=$cpbLocation",
-            customMetadata,
+            "--set=$customKey=$customValue",
             targetUrl,
             user,
             password,
