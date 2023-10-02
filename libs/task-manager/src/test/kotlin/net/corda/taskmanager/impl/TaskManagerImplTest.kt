@@ -21,7 +21,7 @@ class TaskManagerImplTest {
 
     private val executorService = mock<ScheduledExecutorService>()
     private val captor = argumentCaptor<Runnable>()
-    private val taskManager = TaskManagerImpl("", executorService)
+    private val taskManager = TaskManagerImpl("", "", executorService)
 
     @Test
     fun `executeShortRunningTask increments the task count, runs the task and decrements the task count when finished`() {
