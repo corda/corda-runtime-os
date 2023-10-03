@@ -170,17 +170,7 @@ class FlowMapperService @Activate constructor(
         coordinator.createManagedResource(CLEANUP_TASK_PROCESSOR) {
             subscriptionFactory.createDurableSubscription(
                 SubscriptionConfig(CLEANUP_TASK_CONSUMER_GROUP, FLOW_MAPPER_CLEANUP_TOPIC),
-                object : DurableProcessor<String, ExecuteCleanup> {
-                    override fun onNext(events: List<Record<String, ExecuteCleanup>>): List<Record<*, *>> {
-                        events.mapNotNull {it.value }.forEach {
-                            cleanupProcessor.process(it)
-                        }
-                        return listOf()
-                    }
-
-                    override val keyClass = String::class.java
-                    override val valueClass = ExecuteCleanup::class.java
-                },
+                cleanupProcessor,
                 messagingConfig,
                 null
             )
