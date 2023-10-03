@@ -1,5 +1,6 @@
 package com.r3.corda.atomic.swap.contracts
 
+import com.r3.corda.atomic.swap.states.Asset
 import com.r3.corda.atomic.swap.states.LockState
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.utxo.Command
@@ -19,12 +20,13 @@ class LockContract : Contract {
         val command = transaction.getCommands(LockCommands::class.java).singleOrNull()
             ?: throw CordaRuntimeException("Requires a single command.")
 
-        val outputState = transaction.outputContractStates.first()
+        val outputState = transaction.getOutputStates(Asset::class.java).first()
 
         when (command) {
             is LockCommands.Lock -> {
                 "When command is Lock there should be exactly two participants." using (outputState.participants.size == 2)
-                "There should be no lock input states" using (transaction.getInputStates(LockState::class.java).isEmpty())
+                "There should be no lock input states" using (transaction.getInputStates(LockState::class.java)
+                    .isEmpty())
                 "There should be only one lock output state" using (transaction.getOutputStates(LockState::class.java).size == 1)
             }
 
@@ -37,7 +39,8 @@ class LockContract : Contract {
                         (transaction.getInputStates(LockState::class.java).size == 1)
                 "There should be one output state as an unlocked asset state needs to be created" using
                         (transaction.outputContractStates.size == 1)
-                "The signer of the unlock should be the new owner of the Asset state." using (outputState.participants == transaction.signatories)
+                "The signer of the unlock should be the new owner of the Asset state." using
+                        (outputState.owner == transaction.signatories)
             }
 
             else -> {
