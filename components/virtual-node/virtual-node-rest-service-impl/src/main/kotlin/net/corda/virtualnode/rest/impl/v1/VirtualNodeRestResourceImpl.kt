@@ -261,11 +261,30 @@ internal class VirtualNodeRestResourceImpl(
         return messageConverter.convert(virtualNode)
     }
 
+    @Deprecated("Deprecated in favour of upgradeVirtualNode")
+    override fun upgradeVirtualNodeDeprecated(
+        virtualNodeShortId: String,
+        targetCpiFileChecksum: String
+    ): ResponseEntity<AsyncResponse> {
+        "Deprecated, please use next version where loginName is passed as a path parameter.".let { msg ->
+            logger.warn(msg)
+            return ResponseEntity.okButDeprecated(doUpgradeVirtualNode(virtualNodeShortId, targetCpiFileChecksum, false), msg)
+        }
+    }
+
     override fun upgradeVirtualNode(
         virtualNodeShortId: String,
         targetCpiFileChecksum: String,
         forceUpgrade: Boolean
     ): ResponseEntity<AsyncResponse> {
+        return ResponseEntity.accepted(doUpgradeVirtualNode(virtualNodeShortId, targetCpiFileChecksum, forceUpgrade))
+    }
+
+    private fun doUpgradeVirtualNode(
+        virtualNodeShortId: String,
+        targetCpiFileChecksum: String,
+        forceUpgrade: Boolean
+    ): AsyncResponse {
         val currentVirtualNode = virtualNodeValidationService.validateAndGetVirtualNode(virtualNodeShortId)
         val currentCpi = requireNotNull(cpiInfoReadService.get(currentVirtualNode.cpiIdentifier)) {
             "Current CPI ${currentVirtualNode.cpiIdentifier} associated with virtual node $virtualNodeShortId was not found."
@@ -275,7 +294,7 @@ internal class VirtualNodeRestResourceImpl(
             throw InvalidStateChangeException("Virtual Node with shorthash $virtualNodeShortId already has " +
                     "CPI with file checksum $targetCpiFileChecksum")
         }
-        
+
         val targetCpi = virtualNodeValidationService.validateAndGetCpiByChecksum(targetCpiFileChecksum)
         virtualNodeValidationService.validateCpiUpgradePrerequisites(currentCpi, targetCpi)
 
@@ -290,7 +309,7 @@ internal class VirtualNodeRestResourceImpl(
             )
         }
 
-        return ResponseEntity.accepted(AsyncResponse(requestId))
+        return AsyncResponse(requestId)
     }
 
     override fun getVirtualNodeOperationStatus(requestId: String): AsyncOperationStatus {
