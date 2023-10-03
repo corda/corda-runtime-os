@@ -111,6 +111,6 @@ class VerificationRpcRequestProcessorTest {
         val results = verificationRpcRequestProcessor.process(request)
 
         assertThat(results).isNotNull
-        assertThat(results).isEqualTo(failureResponseRecord)
+        assertThat(results).isEqualTo(failureResponseRecord.value)
     }
 }
