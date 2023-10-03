@@ -159,20 +159,7 @@ class FlowMapperService @Activate constructor(
         coordinator.createManagedResource(SCHEDULED_TASK_PROCESSOR) {
             subscriptionFactory.createDurableSubscription(
                 SubscriptionConfig(SCHEDULED_TASK_CONSUMER_GROUP, SCHEDULED_TASK_TOPIC_MAPPER_PROCESSOR),
-                object : DurableProcessor<String, ScheduledTaskTrigger> {
-                    override fun onNext(events: List<Record<String, ScheduledTaskTrigger>>): List<Record<*, *>> {
-                        return if (events.any { it.value?.name == SCHEDULED_TASK_NAME_MAPPER_CLEANUP }) {
-                            scheduledTaskProcessor.process().map {
-                                Record(FLOW_MAPPER_CLEANUP_TOPIC, UUID.randomUUID(), it)
-                            }
-                        } else {
-                            listOf()
-                        }
-                    }
-
-                    override val keyClass = String::class.java
-                    override val valueClass = ScheduledTaskTrigger::class.java
-                },
+                scheduledTaskProcessor,
                 messagingConfig,
                 null
             )

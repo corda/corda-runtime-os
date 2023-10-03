@@ -49,6 +49,7 @@ internal class FlowMapperServiceTest {
                 configReadService,
                 subscriptionFactory,
                 mock(),
+                mock(),
                 mock()
             )
         }.run {
@@ -96,6 +97,7 @@ internal class FlowMapperServiceTest {
                 coordinatorFactory,
                 configReadService,
                 subscriptionFactory,
+                mock(),
                 mock(),
                 mock()
             )
@@ -148,6 +150,7 @@ internal class FlowMapperServiceTest {
                 coordinatorFactory,
                 configReadService,
                 subscriptionFactory,
+                mock(),
                 mock(),
                 mock()
             )
