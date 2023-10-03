@@ -25,7 +25,7 @@ import java.util.UUID
 @Suppress("LongParameterList")
 class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     private val config: EventMediatorConfig<K, S, E>,
-    serializer: CordaAvroSerializer<Any>,
+    stateSerializer: CordaAvroSerializer<S>,
     stateDeserializer: CordaAvroDeserializer<S>,
     private val stateManager: StateManager,
     private val taskManager: TaskManager,
@@ -41,7 +41,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         config.messageProcessor, config.consumerFactories, config.clientFactories, config.messageRouterFactory
     )
     private val stateManagerHelper = StateManagerHelper<K, S, E>(
-        stateManager, serializer, stateDeserializer
+        stateManager, stateSerializer, stateDeserializer
     )
     private val taskManagerHelper = TaskManagerHelper(
         taskManager, stateManagerHelper
