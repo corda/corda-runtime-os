@@ -1,10 +1,8 @@
 package net.corda.messaging.mediator
 
 import net.corda.libs.statemanager.api.State
-import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.messaging.utils.toRecord
 import java.util.concurrent.Callable
 
 /**
@@ -16,7 +14,7 @@ import java.util.concurrent.Callable
 data class ProcessorTask<K : Any, S : Any, E : Any>(
     val key: String,
     val persistedState: State?,
-    val events: Collection<CordaConsumerRecord<K, E>>,
+    val events: Collection<Record<K, E>>,
     private val processor: StateAndEventProcessor<K, S, E>,
     private val stateManagerHelper: StateManagerHelper<K, S, E>,
 ) : Callable<ProcessorTask.Result<K, S, E>> {
@@ -33,7 +31,7 @@ data class ProcessorTask<K : Any, S : Any, E : Any>(
         var stateValue = stateManagerHelper.deserializeValue(persistedState)
 
         val outputEvents = events.map { event ->
-            val response = processor.onNext(stateValue, event.toRecord())
+            val response = processor.onNext(stateValue, event)
             response.updatedState?.let { stateValue = it }
             response.responseEvents
         }.flatten()

@@ -2,13 +2,15 @@ package net.corda.messaging.mediator
 
 import kotlinx.coroutines.runBlocking
 import net.corda.libs.statemanager.api.State
+import net.corda.libs.statemanager.api.StateManager
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.taskmanager.TaskManager
 import net.corda.messaging.api.mediator.taskmanager.TaskType
 import net.corda.messaging.api.processor.StateAndEventProcessor
-import java.time.Instant
+import net.corda.messaging.api.records.Record
+import net.corda.messaging.utils.toRecord
 
 /**
  * Helper that creates and executes various tasks used by [MultiSourceEventMediatorImpl].
@@ -33,7 +35,7 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
     ): List<ProcessorTask<K, S, E>> {
         return messageGroups.map { msgGroup ->
             val key = msgGroup.key.toString()
-            val events = msgGroup.value.map { it }
+            val events = msgGroup.value.map { it.toRecord() }
             ProcessorTask(
                 key,
                 persistedStates[key],
@@ -58,7 +60,7 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
         return clientResults.filter { it.hasReply() }
             .groupBy { it.clientTask.processorTask.persistedState!!.key }
             .map { (_, clientTaskResults) ->
-                val messageGroup = clientTaskResults.map { it.toCordaConsumerRecord() }
+                val messageGroup = clientTaskResults.map { it.toRecord() }
                 clientTaskResults.first().clientTask.processorTask.copy(events = messageGroup)
             }
     }
@@ -141,15 +143,12 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
     }
 
     /**
-     * Converts [ClientTask.Result] to [CordaConsumerRecord].
+     * Converts [ClientTask.Result] to [Record].
      */
-    private fun ClientTask.Result<K, S, E>.toCordaConsumerRecord() =
-        (CordaConsumerRecord(
-        "",
-        -1,
-        -1,
-        clientTask.processorTask.events.first().key,
-        replyMessage!!.payload,
-        Instant.now().toEpochMilli()
-    ))
+    private fun ClientTask.Result<K, S, E>.toRecord() =
+        Record(
+            "",
+            clientTask.processorTask.events.first().key,
+            replyMessage!!.payload,
+        )
 }
