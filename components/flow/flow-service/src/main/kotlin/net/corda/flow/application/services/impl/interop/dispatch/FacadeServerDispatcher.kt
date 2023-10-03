@@ -54,7 +54,7 @@ fun Any.buildDispatcher(facade: Facade, typeConverter: TypeConverter): FacadeSer
 fun Any.buildDispatcher(facade: Facade): FacadeServerDispatcher =
     buildDispatcher(facade, TypeConverter(
         JacksonJsonMarshaller(
-        ObjectMapper().apply {
+        ObjectMapper().apply { //TODO could be removed as not used in runtime code
             registerModule(KotlinModule.Builder().build())
             registerModule(JavaTimeModule())
             enable(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY)

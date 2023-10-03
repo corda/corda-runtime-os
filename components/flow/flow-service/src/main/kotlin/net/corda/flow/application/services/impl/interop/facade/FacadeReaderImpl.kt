@@ -26,7 +26,7 @@ object FacadeReaders {
      * A [FacadeReader] that reads JSON.
      */
     @JvmStatic
-    val JSON: FacadeReader
+    val JSON: FacadeReader //TODO this is just for the spec - can be simplified
         get() = JacksonFacadeReader {
              ObjectMapper().apply {
                 registerModule(KotlinModule.Builder().build())

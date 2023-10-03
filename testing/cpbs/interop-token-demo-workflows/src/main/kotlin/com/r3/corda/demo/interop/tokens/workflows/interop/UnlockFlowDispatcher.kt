@@ -8,6 +8,7 @@ import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
+import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.interop.FacadeService
 import net.corda.v5.application.interop.InteropIdentityLookup
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -26,6 +27,7 @@ import java.util.*
 
 data class UnlockFlowArgs(val amount: String, val applicationName: String)
 
+@InitiatingFlow(protocol = "dummy-unlock-123-protocol")
 class UnlockFlowDispatcher: ClientStartableFlow {
 
     private companion object {
@@ -46,9 +48,6 @@ class UnlockFlowDispatcher: ClientStartableFlow {
 
     @CordaInject
     lateinit var facadeService: FacadeService
-
-    @CordaInject
-    lateinit var flowEngine: FlowEngine
 
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
@@ -102,7 +101,7 @@ class UnlockFlowDispatcher: ClientStartableFlow {
             return jsonMarshallingService.format(IssueFlowResult("124", outputState.linearId.toString()))
 
         } catch (e: Exception) {
-            UnlockFlowDispatcher.log.warn("Failed to process utxo flow for request body '$requestBody' because: '${e.message}'")
+            log.warn("Failed to process utxo flow for request body '$requestBody' because: '${e.message}'")
             throw e
         }
     }
