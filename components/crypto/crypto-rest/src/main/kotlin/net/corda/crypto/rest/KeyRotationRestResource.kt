@@ -26,7 +26,7 @@ interface KeyRotationRestResource : RestResource {
      * of the API.
      * @param config A config
      */
-    fun initialise(config: SmartConfig)
+    fun initialise(config: Map<String, SmartConfig>)
 
     /**
      * The [getKeyRotationStatus] gets a list of unmanaged wrapping keys [{alias, [requestIds]}] where requestIds is

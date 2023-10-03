@@ -6,11 +6,9 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.config.impl.CryptoHSMConfig
 import net.corda.crypto.config.impl.HSM
-import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.rest.KeyRotationRestResource
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.test.impl.LifecycleTest
@@ -36,7 +34,7 @@ class KeyRotationRestResourceTest {
     private lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
     private lateinit var lifecycleCoordinator: LifecycleCoordinator
     private val configurationReadService = mock<ConfigurationReadService>()
-    private lateinit var cryptoConfig: SmartConfig
+    private lateinit var config: Map<String, SmartConfig>
     private val oldKeyAlias = "oldKeyAlias"
     private val newKeyAlias = "newKeyAlias"
 
@@ -49,22 +47,24 @@ class KeyRotationRestResourceTest {
 
 
         val configEvent = ConfigChangedEvent(
-            setOf(ConfigKeys.CRYPTO_CONFIG),
+            setOf(ConfigKeys.CRYPTO_CONFIG, ConfigKeys.MESSAGING_CONFIG),
             mapOf(
                 ConfigKeys.CRYPTO_CONFIG to
                         SmartConfigFactory.createWithoutSecurityServices().create(
                             createCryptoConfig("pass", "salt")
+                        ),
+                ConfigKeys.MESSAGING_CONFIG to
+                        SmartConfigFactory.createWithoutSecurityServices().create(
+                            createMessagingConfig()
                         )
             )
         )
-        cryptoConfig = configEvent.config.toCryptoConfig()
+        config = configEvent.config
 
         whenever(publisherFactory.createPublisher(any(), any())).thenReturn(publisher)
     }
 
-
-
-    //    @Test
+//    @Test
 //    fun `get key rotation status`() {
 //        TODO("Not yet implemented")
 //    }
@@ -142,9 +142,8 @@ class KeyRotationRestResourceTest {
             lifecycleCoordinatorFactory,
             configurationReadService
         ).apply { if (initialise) {
-            initialise(SmartConfigImpl.empty())
-            initialiseUnmanagedWrappingKeyAliases(cryptoConfig)
-        }
+            initialise(config)
+            }
         }
     }
 
@@ -156,7 +155,7 @@ class KeyRotationRestResourceTest {
             KeyRotationRestResourceImpl(
                 mock(),
                 publisherFactory,
-                coordinatorFactory, // This is from test lifecycle class.
+                coordinatorFactory, // This is from the test lifecycle class.
                 configurationReadService
             )
         }
@@ -186,5 +185,12 @@ class KeyRotationRestResourceTest {
                         )
                     )
                 )
+            )
+
+    // MESSAGING_CONFIG just needs to be initialised without any particular datt
+    private fun createMessagingConfig(): SmartConfig =
+        SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty())
+            .withValue(
+                ConfigKeys.MESSAGING_CONFIG, ConfigValueFactory.fromAnyRef("random")
             )
 }
