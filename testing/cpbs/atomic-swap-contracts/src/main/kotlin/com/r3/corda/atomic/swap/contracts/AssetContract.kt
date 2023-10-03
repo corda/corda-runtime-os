@@ -37,6 +37,8 @@ class AssetContract : Contract {
 
                 val output = transaction.getOutputStates(Asset::class.java).first()
                 "Owner must change in this transaction." using (input.owner != output.owner)
+
+                "Both old and new owner must sign the transaction." using (transaction.signatories.containsAll(output.participants))
             }
 
             else -> {

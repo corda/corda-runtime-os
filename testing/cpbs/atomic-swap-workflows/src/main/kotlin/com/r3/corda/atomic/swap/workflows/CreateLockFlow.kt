@@ -5,7 +5,6 @@ import com.r3.corda.atomic.swap.contracts.LockContract
 import com.r3.corda.atomic.swap.states.Asset
 import com.r3.corda.atomic.swap.states.LockState
 import net.corda.v5.application.crypto.CompositeKeyGenerator
-import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
@@ -82,7 +81,6 @@ class CreateLockFlow : ClientStartableFlow {
             val lockState = LockState(
                 inputState.owner,
                 newOwnerInfo.ledgerKeys.first(),
-                inputState.assetName,
                 inputState.assetId,
                 listOf(inputState.owner, newOwnerInfo.ledgerKeys.first())
             )

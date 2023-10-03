@@ -6,19 +6,19 @@ import net.corda.v5.ledger.utxo.ContractState
 import java.security.PublicKey
 
 @BelongsToContract(LockContract::class)
-data class LockState (
-    val creator : PublicKey,
+data class LockState(
+    val creator: PublicKey,
     val receiver: PublicKey,
-    val assetName: String,
     val assetId: String,
     private val participants: List<PublicKey>,
-    val bool: Boolean = true) : ContractState {
+    val bool: Boolean = true
+) : ContractState {
 
     override fun getParticipants(): List<PublicKey> {
         return participants
     }
 
     fun withNewOwner(newOwner: PublicKey, newParticipants: List<PublicKey>): LockState {
-        return LockState(newOwner, receiver, assetName, assetId, newParticipants)
+        return LockState(newOwner, receiver, assetId, newParticipants)
     }
 }
