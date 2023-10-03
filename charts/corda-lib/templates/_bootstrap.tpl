@@ -258,7 +258,7 @@ spec:
             - name: DB_CRYPTO_SCHEMA
               value: {{ .Values.bootstrap.db.crypto.schema | quote }}
             - name: STATE_MANAGER_DB_SCHEMA
-              value: {{ .Values.bootstrap.db.stateManager.schema | quote }}
+              value: {{ .Values.stateManager.db.schema | quote }}
             {{- include "corda.bootstrapClusterDbEnv" . | nindent 12 }}
             {{- include "corda.configSaltAndPassphraseEnv" . | nindent 12 }}
             {{- include "corda.bootstrapCliEnv" . | nindent 12 }}
