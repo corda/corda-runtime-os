@@ -156,11 +156,21 @@ spec:
               echo 'Generating DB specification'
               mkdir /tmp/db
               java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar database spec \
-                -s "config,rbac,crypto,statemanager" \
-                -g "config:${DB_CLUSTER_SCHEMA},rbac:${DB_RBAC_SCHEMA},crypto:${DB_CRYPTO_SCHEMA},statemanager:STATE_MANAGER" \
+                -s "config,rbac,crypto" \
+                -g "config:${DB_CLUSTER_SCHEMA},rbac:${DB_RBAC_SCHEMA},crypto:${DB_CRYPTO_SCHEMA}" \
                 -u "${PGUSER}" -p "${PGPASSWORD}" \
                 --jdbc-url "${JDBC_URL}" \
                 -c -l /tmp/db
+
+              echo 'Generating State Manager DB specification'
+              STATE_MANAGER_JDBC_URL="jdbc:{{ include ".Values.stateManager.db.type"}}://{{ .Values.stateManager.db.host }}:{{ include "corda.stateManagerDbPort" . }}/{{ include "corda.stateManagerDbName" . }}"
+              mkdir /tmp/stateManager
+              java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar database spec \
+                -s "statemanager" \
+                -g "statemanager:${STATE_MANAGER_DB_SCHEMA}" \
+                -u "${STATE_MANAGER_DB_USERNAME}" -p "${STATE_MANAGER_DB_PASSWORD}" \
+                --jdbc-url "${STATE_MANAGER_JDBC_URL}" \
+                -c -l /tmp/stateManager
 
               echo 'Generating RBAC initial DB configuration'
               mkdir /tmp/rbac
@@ -257,6 +267,7 @@ spec:
             {{- include "corda.restApiAdminSecretEnv" . | nindent 12 }}
             {{- include "corda.cryptoDbUsernameEnv" . | nindent 12 }}
             {{- include "corda.cryptoDbPasswordEnv" . | nindent 12 }}
+            {{- include "corda.stateManagerDbEnv" . | nindent 12 }}
       containers:
         - name: apply
           image: {{ include "corda.bootstrapDbClientImage" . }}
@@ -289,11 +300,21 @@ spec:
                 DO \$\$ BEGIN IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${CRYPTO_DB_USER_USERNAME}') THEN RAISE NOTICE 'Role "${CRYPTO_DB_USER_USERNAME}" already exists'; ELSE CREATE USER "${CRYPTO_DB_USER_USERNAME}" WITH ENCRYPTED PASSWORD '$CRYPTO_DB_USER_PASSWORD'; END IF; END \$\$;
                 GRANT USAGE ON SCHEMA ${DB_CRYPTO_SCHEMA} TO "${CRYPTO_DB_USER_USERNAME}";
                 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${DB_CRYPTO_SCHEMA} TO "${CRYPTO_DB_USER_USERNAME}";
-                GRANT USAGE ON SCHEMA STATE_MANAGER TO "${DB_CLUSTER_USERNAME}";
-                GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA STATE_MANAGER TO "${DB_CLUSTER_USERNAME}";
               SQL
 
               echo 'DB Bootstrapped'
+
+              echo 'Applying State Manager Specification'
+              find /tmp/stateManager -iname "*.sql" | xargs printf -- ' -f %s' | xargs psql -v ON_ERROR_STOP=1 -h "${STATE_MANAGER_DB_HOST}" -p "${STATE_MANAGER_DB_PORT}" --dbname "${STATE_MANAGER_DB_NAME}"
+
+              echo 'Creating users and granting permissions for State Manager'
+              psql -v ON_ERROR_STOP=1 -h "${STATE_MANAGER_DB_HOST}" -p "${STATE_MANAGER_DB_PORT}" "${STATE_MANAGER_DB_NAME}" << SQL
+                GRANT USAGE ON SCHEMA ${STATE_MANAGER_DB_SCHEMA} TO "${STATE_MANAGER_DB_USERNAME}";
+                GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${STATE_MANAGER_DB_SCHEMA} TO "${STATE_MANAGER_DB_USERNAME}";
+                GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA ${STATE_MANAGER_DB_SCHEMA} TO "${STATE_MANAGER_DB_USERNAME}";
+              SQL
+
+              echo 'State Manager Bootstrapped'
           volumeMounts:
             - mountPath: /tmp
               name: temp
@@ -310,11 +331,20 @@ spec:
               value: {{ .Values.bootstrap.db.rbac.schema | quote }}
             - name: DB_CRYPTO_SCHEMA
               value: {{ .Values.bootstrap.db.crypto.schema | quote }}
+            - name: STATE_MANAGER_DB_HOST
+              value: {{ required "A state manager db host is required" .Values.stateManager.db.host | quote }}
+            - name: STATE_MANAGER_DB_PORT
+              value: {{ include "corda.stateManagerDbPort" . | quote }}
+            - name: STATE_MANAGER_DB_NAME
+              value: {{ include "corda.stateManagerDbName" . | quote }}
+            - name: STATE_MANAGER_DB_NAME
+              value: {{ .Values.stateManager.db.database | quote }}
             {{- include "corda.bootstrapClusterDbEnv" . | nindent 12 }}
             {{- include "corda.rbacDbUserEnv" . | nindent 12 }}
             {{- include "corda.cryptoDbUsernameEnv" . | nindent 12 }}
             {{- include "corda.cryptoDbPasswordEnv" . | nindent 12 }}
             {{- include "corda.clusterDbEnv" . | nindent 12 }}
+            {{- include "corda.stateManagerDbEnv" . | nindent 12 }}
       volumes:
         - name: temp
           emptyDir: {}

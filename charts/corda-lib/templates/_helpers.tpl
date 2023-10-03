@@ -616,6 +616,60 @@ data:
 {{- end }}
 
 {{/*
+State Manager DB type
+*/}}
+{{- define "corda.stateManagerDbType" -}}
+{{- .Values.stateManager.db.type | default "postgresql" }}
+{{- end -}}
+
+{{/*
+State Manager DB port
+*/}}
+{{- define "corda.stateManagerDbPort" -}}
+{{- .Values.stateManager.db.port | default "5432" }}
+{{- end -}}
+
+{{/*
+State Manager DB name
+*/}}
+{{- define "corda.stateManagerDbName" -}}
+{{- .Values.stateManager.db.database | default "statemanager" }}
+{{- end -}}
+
+{{/*
+Default name for State Manager DB secret
+*/}}
+{{- define "corda.stateManagerDbDefaultSecretName" -}}
+{{ printf "%s-stateManager-db" (include "corda.fullname" .) }}
+{{- end -}}
+
+{{/*
+State Manager DB credentials environment variables
+*/}}
+{{- define "corda.stateManagerDbEnv" -}}
+- name: STATE_MANAGER_DB_USERNAME
+  valueFrom:
+    secretKeyRef:
+      {{- if .Values.stateManager.db.username.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.stateManager.db.username.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify stateManager.db.username.valueFrom.secretKeyRef.key" .Values.stateManager.db.username.valueFrom.secretKeyRef.key | quote }}
+      {{- else }}
+      name: {{ include "corda.stateManagerDbDefaultSecretName" . | quote }}
+      key: "username"
+      {{- end }}
+- name: STATE_MANAGER_DB_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      {{- if .Values.stateManager.db.password.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.stateManager.db.password.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify stateManager.db.password.valueFrom.secretKeyRef.key" .Values.stateManager.db.password.valueFrom.secretKeyRef.key | quote }}
+      {{- else }}
+      name: {{ include "corda.stateManagerDbDefaultSecretName" . | quote }}
+      key: "password"
+      {{- end }}
+{{- end -}}
+
+{{/*
 The port which should be used to connect to Corda worker instances
 */}}
 {{- define "corda.workerServicePort" -}}

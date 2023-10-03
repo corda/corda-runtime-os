@@ -91,7 +91,7 @@ class Spec(private val config: SpecConfig = SpecConfig()) : Runnable {
         private const val DEFAULT_CHANGELOG_PATH = "./databasechangelog.csv"
 
         // These should match the schema sub directory from the LIQUIBASEFILES list
-        private const val SCHEMA_OPTIONS = "config, messagebus, rbac, crypto"
+        private const val SCHEMA_OPTIONS = "config, messagebus, rbac, crypto, statemanager"
 
         // messagebus deliberately excluded as it's not used in Corda Clusters
         private val DEFAULT_SCHEMA_OPTIONS = listOf("config", "rbac", "crypto")
