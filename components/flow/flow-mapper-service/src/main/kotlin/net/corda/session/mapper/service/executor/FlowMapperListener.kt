@@ -39,7 +39,7 @@ class FlowMapperListener(
                         listOf(
                             Record(
                                 FLOW_MAPPER_EVENT_TOPIC, key, FlowMapperEvent(
-                                    ExecuteCleanup()
+                                    ExecuteCleanup(listOf())
                                 )
                             )
                         )
@@ -81,7 +81,7 @@ class FlowMapperListener(
             executorService.schedule(
                 {
                     log.debug { "Clearing up mapper state for key $eventKey" }
-                    publisher?.publish(listOf(Record(FLOW_MAPPER_EVENT_TOPIC, eventKey, FlowMapperEvent(ExecuteCleanup()))))
+                    publisher?.publish(listOf(Record(FLOW_MAPPER_EVENT_TOPIC, eventKey, FlowMapperEvent(ExecuteCleanup(listOf())))))
                 },
                 expiryTime - clock.millis(),
                 TimeUnit.MILLISECONDS

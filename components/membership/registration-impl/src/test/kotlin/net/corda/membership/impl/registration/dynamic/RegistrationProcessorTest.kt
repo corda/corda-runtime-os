@@ -157,7 +157,7 @@ class  RegistrationProcessorTest {
 
         val verifyMemberCommand = RegistrationCommand(VerifyMember())
 
-        val state = RegistrationState(registrationId, holdingIdentity, mgmHoldingIdentity)
+        val state = RegistrationState(registrationId, holdingIdentity, mgmHoldingIdentity, emptyList())
     }
 
     // Class under test
@@ -279,7 +279,7 @@ class  RegistrationProcessorTest {
     fun `Bad command - onNext called returns no follow on records and an unchanged state`() {
         listOf(
             null,
-            RegistrationState(registrationId, holdingIdentity, mgmHoldingIdentity)
+            RegistrationState(registrationId, holdingIdentity, mgmHoldingIdentity, emptyList())
         ).forEach { state ->
             with(processor.onNext(state, Record(testTopic, testTopicKey, RegistrationCommand(Any())))) {
                 assertThat(updatedState).isEqualTo(state)
@@ -311,7 +311,7 @@ class  RegistrationProcessorTest {
     @Test
     fun `start registration command - onNext can be called for start registration command`() {
         val result = processor.onNext(
-            RegistrationState(registrationId, holdingIdentity, mgmHoldingIdentity),
+            RegistrationState(registrationId, holdingIdentity, mgmHoldingIdentity, emptyList()),
             Record(testTopic, testTopicKey, startRegistrationCommand)
         )
         assertThat(result.updatedState).isNotNull

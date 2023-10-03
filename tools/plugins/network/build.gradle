@@ -10,41 +10,17 @@ ext {
     releasable = false
 }
 
-sourceSets {
-    smokeTest {
-        java {
-            srcDirs += [ 'src/smokeTest/java' ]
-        }
-        kotlin {
-            srcDirs += [ 'src/smokeTest/kotlin' ]
-        }
-        resources {
-            srcDirs = [ 'src/smokeTest/resources' ]
-        }
-        compileClasspath += main.output + test.output
-        runtimeClasspath += main.output + test.output
-    }
-}
-
-kotlin {
-    target {
-        java
-        compilations.smokeTest {
-            associateWith compilations.main
-            associateWith compilations.test
-
-            configurations {
-                smokeTestApi.extendsFrom testApi
-                smokeTestImplementation.extendsFrom testImplementation
-                smokeTestRuntimeOnly.extendsFrom testRuntimeOnly
-            }
-        }
-    }
-}
-
 group 'net.corda.cli.deployment'
 
 dependencies {
+    constraints {
+        implementation('org.slf4j:slf4j-api') {
+            version {
+                strictly slf4jV2Version
+            }
+        }
+    }
+
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
 
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
@@ -70,7 +46,7 @@ dependencies {
     testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
     testImplementation "com.github.stefanbirkner:system-lambda:1.2.1"
 
-    smokeTestImplementation project(':testing:e2e-test-utilities')
+    pluginSmokeTestImplementation project(':testing:e2e-test-utilities')
 }
 
 cliPlugin {

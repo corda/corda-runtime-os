@@ -20,7 +20,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.processors.scheduler.SchedulerProcessor
-import net.corda.schema.Schemas.ScheduledTask.SCHEDULED_TASK_DB_PROCESSOR
+import net.corda.schema.Schemas.ScheduledTask
 import net.corda.schema.configuration.BootConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -51,8 +51,6 @@ class SchedulerProcessorImpl @Activate constructor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-
-        private const val DEDUPLICATION_TABLE_CLEAN_UP_TASK = "deduplication-table-clean-up-task"
     }
 
     private val dependentComponents = DependentComponents.of(
@@ -66,7 +64,11 @@ class SchedulerProcessorImpl @Activate constructor(
 
     // now just hardcoding schedulers here until CORE-16331 is picked up, when we should take this from config
     private val schedules = listOf<Schedule>(
-        Schedule(DEDUPLICATION_TABLE_CLEAN_UP_TASK, 120, SCHEDULED_TASK_DB_PROCESSOR)
+        Schedule(ScheduledTask.SCHEDULED_TASK_NAME_DB_PROCESSOR,
+            120, ScheduledTask.SCHEDULED_TASK_TOPIC_DB_PROCESSOR),
+        Schedule(
+            ScheduledTask.SCHEDULED_TASK_NAME_SESSION_TIMEOUT,
+            60, ScheduledTask.SCHEDULED_TASK_TOPIC_FLOW_PROCESSOR),
     )
     private var schedulers: Schedulers? = null
 

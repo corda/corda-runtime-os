@@ -2,10 +2,12 @@ package net.corda.ledger.persistence
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.data.flow.event.FlowEvent
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.ledger.persistence.processor.LedgerPersistenceRequestSubscriptionFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.test.impl.LifecycleTest
+import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.schema.configuration.ConfigKeys
@@ -15,6 +17,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.util.stream.Stream
@@ -36,11 +39,15 @@ class LedgerPersistenceServiceTest {
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
     private val cpiInfoReadService = mock<CpiInfoReadService>()
 
-    private val subscription1 = mock<Subscription<String, LedgerPersistenceRequest>>()
-    private val subscription2 = mock<Subscription<String, LedgerPersistenceRequest>>()
-    private val ledgerPersistenceRequestSubscriptionFactory = mock<LedgerPersistenceRequestSubscriptionFactory>().apply {
-        whenever(this.create(MINIMUM_SMART_CONFIG)).thenReturn(subscription1, subscription2)
-    }
+    private val kafkaSubscription1 = mock<Subscription<String, LedgerPersistenceRequest>>()
+    private val kafkaSubscription2 = mock<Subscription<String, LedgerPersistenceRequest>>()
+    private val rpcSubscription = mock<RPCSubscription<LedgerPersistenceRequest, FlowEvent>>()
+
+    private val ledgerPersistenceRequestSubscriptionFactory =
+        mock<LedgerPersistenceRequestSubscriptionFactory>().apply {
+            whenever(this.create(MINIMUM_SMART_CONFIG)).thenReturn(kafkaSubscription1, kafkaSubscription2)
+            whenever(this.createRpcSubscription()).thenReturn(rpcSubscription)
+        }
 
     private val exampleConfig = mapOf(
         ConfigKeys.MESSAGING_CONFIG to MINIMUM_SMART_CONFIG,
@@ -49,17 +56,23 @@ class LedgerPersistenceServiceTest {
 
     @Test
     fun `on configuration event creates and starts subscription`() {
-        val subscription = mock<Subscription<String, LedgerPersistenceRequest>>()
-        whenever(ledgerPersistenceRequestSubscriptionFactory.create(MINIMUM_SMART_CONFIG)).thenReturn(subscription)
-
         getTokenCacheComponentTestContext().run {
+            val subscription = mock<Subscription<String, LedgerPersistenceRequest>>()
+            whenever(ledgerPersistenceRequestSubscriptionFactory.create(MINIMUM_SMART_CONFIG)).thenReturn(subscription)
+
+            val rpcSubscription = mock<RPCSubscription<LedgerPersistenceRequest, FlowEvent>>()
+            whenever(ledgerPersistenceRequestSubscriptionFactory.createRpcSubscription()).thenReturn(rpcSubscription)
+
             testClass.start()
             bringDependenciesUp()
 
             sendConfigUpdate<LedgerPersistenceService>(exampleConfig)
 
             verify(ledgerPersistenceRequestSubscriptionFactory).create(MINIMUM_SMART_CONFIG)
+            verify(ledgerPersistenceRequestSubscriptionFactory).createRpcSubscription()
+
             verify(subscription).start()
+            verify(rpcSubscription).start()
         }
     }
 
@@ -68,15 +81,17 @@ class LedgerPersistenceServiceTest {
         getTokenCacheComponentTestContext().run {
             testClass.start()
             bringDependenciesUp()
+            verify(ledgerPersistenceRequestSubscriptionFactory).createRpcSubscription()
+            verify(rpcSubscription).start()
 
             sendConfigUpdate<LedgerPersistenceService>(exampleConfig)
-
             verify(ledgerPersistenceRequestSubscriptionFactory).create(MINIMUM_SMART_CONFIG)
-            verify(subscription1).start()
+            verify(kafkaSubscription1).start()
 
             sendConfigUpdate<LedgerPersistenceService>(exampleConfig)
-            verify(subscription1).close()
-            verify(subscription2).start()
+            verify(kafkaSubscription1).close()
+            verify(ledgerPersistenceRequestSubscriptionFactory, times(2)).create(MINIMUM_SMART_CONFIG)
+            verify(kafkaSubscription2).start()
         }
     }
 

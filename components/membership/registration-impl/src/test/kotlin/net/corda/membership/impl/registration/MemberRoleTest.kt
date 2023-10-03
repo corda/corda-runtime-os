@@ -67,22 +67,28 @@ class MemberRoleTest {
     }
 
     @Test
-    fun `accept context when notary protocol is missing`() {
-        val roles = extractRolesFromContext(
-            mapOf(
-                "${ROLES_PREFIX}.0" to "notary",
-                NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
+    fun `throws exception if notary protocol is missing`() {
+        assertThrows<IllegalArgumentException> {
+            extractRolesFromContext(
+                mapOf(
+                    "${ROLES_PREFIX}.0" to "notary",
+                    NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
+                )
             )
-        )
+        }
+    }
 
-        assertThat(roles.toList())
-            .hasSize(1)
-            .allSatisfy {
-                it is MemberRole.Notary
-            }
-            .allSatisfy {
-                assertThat((it as? MemberRole.Notary)?.protocol).isNull()
-            }
+    @Test
+    fun `throws exception if notary protocol is blank string`() {
+        assertThrows<IllegalArgumentException> {
+            extractRolesFromContext(
+                mapOf(
+                    "${ROLES_PREFIX}.0" to "notary",
+                    NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
+                    NOTARY_SERVICE_PROTOCOL to "  ",
+                )
+            )
+        }
     }
 
     @Test
@@ -91,6 +97,7 @@ class MemberRoleTest {
             mapOf(
                 "${ROLES_PREFIX}.0" to "notary",
                 NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
+                NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService"
             )
         )
 
