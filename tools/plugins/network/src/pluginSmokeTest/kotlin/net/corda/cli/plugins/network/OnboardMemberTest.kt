@@ -2,7 +2,7 @@ package net.corda.cli.plugins.network
 
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.network.utils.HoldingIdentityUtils
-import net.corda.cli.plugins.network.utils.hash
+import net.corda.cli.plugins.network.utils.inferCpiName
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.membership.lib.MemberInfoExtension
@@ -204,12 +204,10 @@ class OnboardMemberTest {
     }
 
     private fun OnboardMgm.getExistingCpiHash(): String {
-        val cpbFile = File(cpbLocation)
-        val groupPolicyFile = File(defaulGroupPolicyLocation)
-        val combinedHash = setOf(cpbFile, groupPolicyFile).hash()
+        val cpiName = inferCpiName(File(cpbLocation), File(defaulGroupPolicyLocation))
         return createRestClient(CpiUploadRestResource::class).use { client ->
             val response = client.start().proxy.getAllCpis()
-            response.cpis.first { it.id.cpiName == "$CPB_FILE-$combinedHash" }.cpiFileChecksum
+            response.cpis.first { it.id.cpiName == cpiName }.cpiFileChecksum
         }
     }
 

@@ -3,7 +3,7 @@ package net.corda.cli.plugins.network
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.network.enums.MemberRole
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
-import net.corda.cli.plugins.network.utils.hash
+import net.corda.cli.plugins.network.utils.inferCpiName
 import net.corda.cli.plugins.packaging.CreateCpiV2
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
@@ -111,8 +111,7 @@ class OnboardMember : Runnable, BaseOnboard() {
     }
 
     private fun uploadCpb(cpbFile: File): String {
-        val combinedHash = setOf(cpbFile, groupPolicyFile).hash()
-        val cpiName = "${cpbFile.name}-$combinedHash"
+        val cpiName = inferCpiName(cpbFile, groupPolicyFile)
         val cpiFile = File(cpisRoot, "$cpiName.cpi")
         println("Creating and uploading CPI using CPB '${cpbFile.name}'")
         val cpisFromCluster = createRestClient(CpiUploadRestResource::class).use { client ->
@@ -123,14 +122,14 @@ class OnboardMember : Runnable, BaseOnboard() {
             return it.cpiFileChecksum
         }
         if (!cpiFile.exists()) {
-            createCpi(cpbFile, cpiFile, combinedHash)
+            createCpi(cpbFile, cpiFile)
             println("CPI file saved as ${cpiFile.absolutePath}")
         }
         uploadSigningCertificates()
         return uploadCpi(cpiFile.inputStream(), cpiFile.name)
     }
 
-    private fun createCpi(cpbFile: File, cpiFile: File, combinedHash: String) {
+    private fun createCpi(cpbFile: File, cpiFile: File) {
         println(
             "Using the cpb file is not recommended." +
                     " It is advised to create CPI using the package create-cpi command."
@@ -139,7 +138,7 @@ class OnboardMember : Runnable, BaseOnboard() {
         val creator = CreateCpiV2()
         creator.cpbFileName = cpbFile.absolutePath
         creator.groupPolicyFileName = groupPolicyFile.absolutePath
-        creator.cpiName = "${cpbFile.name}-$combinedHash"
+        creator.cpiName = cpiFile.nameWithoutExtension
         creator.cpiVersion = CPI_VERSION
         creator.cpiUpgrade = false
         creator.outputFileName = cpiFile.absolutePath
