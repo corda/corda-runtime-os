@@ -72,11 +72,12 @@ db:
       value: "user"
 
 stateManager:
-  host: "prereqs-postgresql"
-  password:
-    valueFrom:
-      secretKeyRef:
-        name: "prereqs-postgresql"
-        key: "password"
-  username:
-    value: "user"
+  db:
+    host: "prereqs-postgresql"
+    password:
+      valueFrom:
+        secretKeyRef:
+          name: "prereqs-postgresql"
+          key: "password"
+    username:
+      value: "user"
