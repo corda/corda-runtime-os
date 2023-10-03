@@ -23,7 +23,7 @@ class Verify : Runnable {
         description = ["Package type (CPK/CPB/CPI)", "Detected from file name extension if not specified"])
     var type: PackageType? = null
 
-    @CommandLine.Option(names = ["--version", "-v"],
+    @CommandLine.Option(names = ["--package-format-version", "-o"],
         description = ["Package format version", "Detected from Manifest if not specified"])
     var format: String? = null
 

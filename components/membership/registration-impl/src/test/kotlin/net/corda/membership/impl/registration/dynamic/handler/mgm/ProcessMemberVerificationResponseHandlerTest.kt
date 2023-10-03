@@ -16,13 +16,13 @@ import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.p2p.v2.SetOwnRegistrationStatus
 import net.corda.data.membership.p2p.VerificationResponse
 import net.corda.data.membership.preauth.PreAuthToken
+import net.corda.data.membership.state.CompletedCommandMetadata
 import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.impl.registration.VerificationResponseKeys
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
-import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
@@ -50,7 +50,7 @@ import org.apache.avro.specific.SpecificRecordBase
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -95,7 +95,8 @@ class ProcessMemberVerificationResponseHandlerTest {
     private val state = RegistrationState(
         REGISTRATION_ID,
         member,
-        mgm
+        mgm,
+        emptyList()
     )
     private val setRegistrationRequestStatusCommands = listOf(
         Record(
@@ -278,10 +279,27 @@ class ProcessMemberVerificationResponseHandlerTest {
     }
 
     @Test
-    fun `exception is thrown when RegistrationState is null`() {
-        assertThrows<MissingRegistrationStateException> {
+    fun `processing is skipped when RegistrationState is null`() {
+        val result = assertDoesNotThrow {
             invokeTestFunction(null)
         }
+        assertThat(result.updatedState).isNull()
+        assertThat(result.outputStates).isEmpty()
+    }
+
+    @Test
+    fun `processing is skipped when command has been processed previously`() {
+        val inputState = RegistrationState(
+            state.registrationId,
+            state.registeringMember,
+            state.mgm,
+            listOf(CompletedCommandMetadata(1, processMemberVerificationResponseHandler.commandType.simpleName))
+        )
+        val result = assertDoesNotThrow {
+            invokeTestFunction(inputState)
+        }
+        assertThat(result.updatedState).isEqualTo(inputState)
+        assertThat(result.outputStates).isEmpty()
     }
 
     @Nested

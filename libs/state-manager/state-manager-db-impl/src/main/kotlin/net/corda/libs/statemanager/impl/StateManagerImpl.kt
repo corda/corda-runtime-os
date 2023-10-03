@@ -2,20 +2,20 @@ package net.corda.libs.statemanager.impl
 
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
-import net.corda.libs.statemanager.api.Operation
+import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.Metadata
+import net.corda.libs.statemanager.api.SingleKeyFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.repository.StateRepository
 import net.corda.orm.utils.transaction
 import org.slf4j.LoggerFactory
-import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
-// TODO-[CORE-17025]: remove Hibernate
-// TODO-[CORE-16323]: remove current "hack" and implement proper optimistic locking
+// TODO-[CORE-17025]: remove Hibernate.
+// TODO-[CORE-16323]: check whether the optimistic locking can be improved / merged into single SQL statement.
 class StateManagerImpl(
     private val stateRepository: StateRepository,
     private val entityManagerFactory: EntityManagerFactory,
@@ -113,17 +113,35 @@ class StateManagerImpl(
         }
     }
 
-    override fun getUpdatedBetween(start: Instant, finish: Instant): Map<String, State> {
+    override fun updatedBetween(intervalFilter: IntervalFilter): Map<String, State> {
         return entityManagerFactory.transaction { em ->
-            stateRepository.findUpdatedBetween(em, start, finish)
+            stateRepository.updatedBetween(em, intervalFilter.start, intervalFilter.finish)
         }
             .map { it.fromPersistentEntity() }
             .associateBy { it.key }
     }
 
-    override fun find(key: String, operation: Operation, value: Any): Map<String, State> {
+    override fun find(singleKeyFilter: SingleKeyFilter): Map<String, State> {
         return entityManagerFactory.transaction { em ->
-            stateRepository.filterByMetadata(em, key, operation, value)
+            stateRepository.filterByMetadata(em, singleKeyFilter.key, singleKeyFilter.operation, singleKeyFilter.value)
+        }.map {
+            it.fromPersistentEntity()
+        }.associateBy {
+            it.key
+        }
+
+    }
+
+    override fun findUpdatedBetweenWithMetadataFilter(
+        intervalFilter: IntervalFilter,
+        singleKeyFilter: SingleKeyFilter
+    ): Map<String, State> {
+        return entityManagerFactory.transaction { em ->
+            stateRepository.filterByUpdatedBetweenAndMetadata(
+                em,
+                intervalFilter.start, intervalFilter.finish,
+                singleKeyFilter.key, singleKeyFilter.operation, singleKeyFilter.value
+            )
         }.map {
             it.fromPersistentEntity()
         }.associateBy {

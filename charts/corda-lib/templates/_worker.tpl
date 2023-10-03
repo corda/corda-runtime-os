@@ -294,6 +294,10 @@ spec:
           - "--stateManager"
           - "database.jdbc.directory=/opt/jdbc-driver"
           - "--stateManager"
+          - "database.jdbc.driver=org.postgresql.Driver"
+          - "--stateManager"
+          - "database.jdbc.persistenceUnitName=corda-state-manager"
+          - "--stateManager"
           - "database.pool.maxSize={{ .stateManagerDbConnectionPool.maxSize }}"
           {{- if .stateManagerDbConnectionPool.minSize }}
           - "--stateManager"
