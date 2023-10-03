@@ -60,7 +60,7 @@
       ]
     },
     {
-      "facade-id": "org.corda.interop/platform/lock",
+      "facade-id": "org.corda.interop/platform/lock/v1.0",
       "facade-method-mapping": [
         {
           "facade-method": "unlock",

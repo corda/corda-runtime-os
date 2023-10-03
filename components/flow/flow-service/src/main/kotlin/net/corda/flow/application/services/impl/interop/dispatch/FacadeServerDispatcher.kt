@@ -1,7 +1,11 @@
 package net.corda.flow.application.services.impl.interop.dispatch
 
+import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.module.kotlin.KotlinModule
+import net.corda.common.json.serializers.standardTypesModule
 import net.corda.flow.application.services.impl.interop.ProofOfActionSerialisationModule
 import net.corda.flow.application.services.impl.interop.binding.FacadeInterfaceBinding
 import net.corda.flow.application.services.impl.interop.binding.FacadeMethodBinding
@@ -19,6 +23,7 @@ import net.corda.v5.application.interop.facade.FacadeResponse
 import net.corda.v5.application.interop.parameters.TypedParameter
 import net.corda.v5.application.interop.parameters.TypedParameterValue
 import net.corda.v5.base.annotations.Suspendable
+import java.util.*
 
 object FacadeServerDispatchers {
 
@@ -49,7 +54,15 @@ fun Any.buildDispatcher(facade: Facade, typeConverter: TypeConverter): FacadeSer
 fun Any.buildDispatcher(facade: Facade): FacadeServerDispatcher =
     buildDispatcher(facade, TypeConverter(
         JacksonJsonMarshaller(
-        ObjectMapper().registerKotlinModule().registerModule(ProofOfActionSerialisationModule.module))
+        ObjectMapper().apply {
+            registerModule(KotlinModule.Builder().build())
+            registerModule(JavaTimeModule())
+            enable(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY)
+            setTimeZone(TimeZone.getTimeZone("UTC"))
+            disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+            registerModule(ProofOfActionSerialisationModule.module)
+            registerModule(standardTypesModule())
+        })
     ))
 
 fun Any.buildDispatcher(facade: Facade, marshaller: JsonMarshaller): FacadeServerDispatcher =

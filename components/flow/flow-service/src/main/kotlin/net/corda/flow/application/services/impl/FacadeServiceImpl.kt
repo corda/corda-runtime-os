@@ -1,10 +1,17 @@
 package net.corda.flow.application.services.impl
 
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.module.kotlin.KotlinModule
+import net.corda.common.json.serializers.standardTypesModule
+import net.corda.flow.application.services.impl.interop.ProofOfActionSerialisationModule
 import net.corda.flow.application.services.impl.interop.dispatch.buildDispatcher
 import net.corda.flow.application.services.impl.interop.facade.FacadeReaders
 import net.corda.flow.application.services.impl.interop.facade.FacadeRequestImpl
 import net.corda.flow.application.services.impl.interop.facade.FacadeResponseImpl
-import net.corda.flow.application.services.impl.interop.proxies.JacksonJsonMarshallerAdaptor
+import net.corda.flow.application.services.impl.interop.proxies.JacksonJsonMarshaller
 import net.corda.flow.application.services.impl.interop.proxies.getClientProxy
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.interop.FacadeService
@@ -24,6 +31,7 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import org.slf4j.LoggerFactory
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
+import java.util.*
 
 @Component(service = [FacadeService::class, UsedByFlow::class], scope = PROTOTYPE)
 class FacadeServiceImpl @Activate constructor(
@@ -49,7 +57,19 @@ class FacadeServiceImpl @Activate constructor(
         val facade = facadeLookup(facadeId)
         val x500Name = MemberX500Name.parse(interOpIdentity.x500Name)
         val groupId = interOpIdentity.groupId
-        val marshaller = JacksonJsonMarshallerAdaptor(jsonMarshallingService)
+
+        //Marshaller must be InterOp Specific
+        val marshaller = JacksonJsonMarshaller(
+            ObjectMapper().apply{
+                registerModule(KotlinModule.Builder().build())
+                registerModule(JavaTimeModule())
+                enable(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY)
+                setTimeZone(TimeZone.getTimeZone("UTC"))
+                disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                registerModule(ProofOfActionSerialisationModule.module)
+                registerModule(standardTypesModule())
+            })
+
         val transportLayer = MessagingDispatcher(flowMessaging, jsonMarshallingService, x500Name , groupId)
         return facade.getClientProxy(marshaller, expectedType, transportLayer)
     }
@@ -61,7 +81,18 @@ class FacadeServiceImpl @Activate constructor(
         require(request != null)
         val facadeRequest = jsonMarshallingService.parse(request, FacadeRequestImpl::class.java)
         val facade = facadeLookup(facadeRequest.facadeId.toString())
-        val marshaller = JacksonJsonMarshallerAdaptor(jsonMarshallingService)
+
+        val marshaller = JacksonJsonMarshaller(
+            ObjectMapper().apply{
+                registerModule(KotlinModule.Builder().build())
+                registerModule(JavaTimeModule())
+                enable(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY)
+                setTimeZone(TimeZone.getTimeZone("UTC"))
+                disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                registerModule(ProofOfActionSerialisationModule.module)
+                registerModule(standardTypesModule())
+            })
+
         val dispatcher = target.buildDispatcher(facade, marshaller) //TODO return dispatcher which can be reused
         val facadeResponse = dispatcher.invoke(facadeRequest)
         return jsonMarshallingService.format(facadeResponse)
@@ -75,7 +106,8 @@ class FacadeServiceImpl @Activate constructor(
         mapOf(
             "org.corda.interop/platform/tokens/v1.0" to "/tokens-v1.0.json",
             "org.corda.interop/platform/tokens/v2.0" to "/tokens-v2.0.json",
-            "org.corda.interop/platform/tokens/v3.0" to "/tokens-v3.0.json"
+            "org.corda.interop/platform/tokens/v3.0" to "/tokens-v3.0.json",
+            "org.corda.interop/platform/lock/v1.0" to "/locking-facade.json"
         ).mapValues { (_, value) -> this::class.java.getResource(value)?.readText().toString().trimIndent() }
             .mapValues { (_, value) ->
                 try {

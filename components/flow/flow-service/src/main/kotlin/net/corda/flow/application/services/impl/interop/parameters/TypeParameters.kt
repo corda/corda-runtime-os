@@ -1,5 +1,6 @@
 package net.corda.flow.application.services.impl.interop.parameters
 
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.interop.parameters.ParameterType
 import net.corda.v5.application.interop.parameters.ParameterTypeLabel
 import net.corda.v5.application.interop.parameters.TypeQualifier
@@ -70,6 +71,7 @@ class TypeParameters {
                 ParameterTypeLabel.TIMESTAMP.name -> RawParameterType<ZonedDateTime>(ParameterTypeLabel.TIMESTAMP)
                 ParameterTypeLabel.BYTES.name -> RawParameterType<ByteBuffer>(ParameterTypeLabel.BYTES)
                 ParameterTypeLabel.JSON.name -> RawParameterType<String>(ParameterTypeLabel.JSON)
+                ParameterTypeLabel.SIGNED_TX.name -> RawParameterType<DigitalSignatureAndMetadata>(ParameterTypeLabel.SIGNED_TX)
 
                 else -> throw IllegalArgumentException(
                     "Invalid raw parameter type: $typeName - " +

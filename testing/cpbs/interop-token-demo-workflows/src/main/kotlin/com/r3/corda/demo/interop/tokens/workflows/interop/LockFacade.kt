@@ -7,6 +7,7 @@ import net.corda.v5.application.interop.binding.BindsFacadeParameter
 import net.corda.v5.application.interop.binding.FacadeVersions
 import net.corda.v5.base.annotations.Suspendable
 import java.math.BigDecimal
+import java.nio.ByteBuffer
 import java.util.*
 
 @BindsFacade("org.corda.interop/platform/lock")
@@ -20,7 +21,7 @@ interface LockFacade {
     fun createLock(@Denomination denomination: String,
                    amount: BigDecimal,
                    @BindsFacadeParameter("notary-keys") notaryKeys: String,
-                   draftTxId: String): UUID
+                   @BindsFacadeParameter("draft") draft: String): UUID
 
     @FacadeVersions("v1.0")
     @BindsFacadeMethod("unlock")
@@ -28,7 +29,7 @@ interface LockFacade {
     fun unlock(
         reservationRef: UUID,
         @BindsFacadeParameter("signed-tx") proof: DigitalSignatureAndMetadata,
-        key: ByteArray
+        key: ByteBuffer
     ):BigDecimal
 
 }

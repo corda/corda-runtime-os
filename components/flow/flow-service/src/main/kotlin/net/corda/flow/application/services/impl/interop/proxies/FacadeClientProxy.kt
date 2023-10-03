@@ -1,7 +1,11 @@
 package net.corda.flow.application.services.impl.interop.proxies
 
+import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.module.kotlin.KotlinModule
+import net.corda.common.json.serializers.standardTypesModule
 import net.corda.flow.application.services.impl.interop.ProofOfActionSerialisationModule
 import net.corda.flow.application.services.impl.interop.binding.FacadeInterfaceBinding
 import net.corda.flow.application.services.impl.interop.binding.FacadeMethodBinding
@@ -19,6 +23,7 @@ import java.lang.reflect.Method
 import java.lang.reflect.Proxy
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
+import java.util.*
 
 object FacadeProxies {
 
@@ -55,9 +60,15 @@ object FacadeProxies {
 inline fun <reified T : Any> Facade.getClientProxy(noinline requestProcessor: (FacadeRequest) -> FacadeResponse) =
     getClientProxy<T>(
         JacksonJsonMarshaller(
-            ObjectMapper()
-                .registerKotlinModule()
-                .registerModule(ProofOfActionSerialisationModule.module)),
+            ObjectMapper().apply{
+                registerModule(KotlinModule.Builder().build())
+                registerModule(JavaTimeModule())
+                enable(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY)
+                setTimeZone(TimeZone.getTimeZone("UTC"))
+                disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                registerModule(ProofOfActionSerialisationModule.module)
+                registerModule(standardTypesModule())
+            }),
         requestProcessor)
 
 /**

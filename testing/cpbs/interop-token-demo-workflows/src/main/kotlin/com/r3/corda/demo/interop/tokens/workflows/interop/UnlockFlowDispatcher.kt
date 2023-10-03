@@ -13,17 +13,18 @@ import net.corda.v5.application.interop.InteropIdentityLookup
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
+import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
 import java.time.Duration
 import java.time.Instant
 import java.util.*
 
 data class UnlockFlowArgs(val amount: String, val applicationName: String)
-
 
 class UnlockFlowDispatcher: ClientStartableFlow {
 
@@ -55,6 +56,7 @@ class UnlockFlowDispatcher: ClientStartableFlow {
     @CordaInject
     lateinit var interopIdentityLookUp: InteropIdentityLookup
 
+    @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
         val facadeId = "org.corda.interop/platform/lock/v1.0"
         try {
@@ -84,7 +86,7 @@ class UnlockFlowDispatcher: ClientStartableFlow {
 
             val signedTransaction = txBuilder.toSignedTransaction()
 
-            val notarySig = finalizeTx(signedTransaction, listOf())
+            val notarySig: DigitalSignatureAndMetadata = finalizeTx(signedTransaction, listOf())
 
             val interopIdentity = checkNotNull(interopIdentityLookUp.lookup(flowArgs.applicationName)) {
                 "No interop identity found with application name '${flowArgs.applicationName}'"
@@ -93,11 +95,11 @@ class UnlockFlowDispatcher: ClientStartableFlow {
             val lockFacade: LockFacade =
                 facadeService.getProxy(facadeId, LockFacade::class.java, interopIdentity)
 
-            lockFacade.unlock( UUID.randomUUID(), notarySig, notary.publicKey.encoded)
+            val byteArrayKey :ByteArray =  notary.publicKey.encoded
+            val byteBuffer:ByteBuffer = ByteBuffer.wrap(byteArrayKey)
+            lockFacade.unlock( UUID.randomUUID(), notarySig,byteBuffer)
 
             return jsonMarshallingService.format(IssueFlowResult("124", outputState.linearId.toString()))
-
-
 
         } catch (e: Exception) {
             UnlockFlowDispatcher.log.warn("Failed to process utxo flow for request body '$requestBody' because: '${e.message}'")
@@ -105,7 +107,7 @@ class UnlockFlowDispatcher: ClientStartableFlow {
         }
     }
 
-
+    @Suspendable
     private fun finalizeTx(signedTransaction: UtxoSignedTransaction,otherMember: List<MemberX500Name>): DigitalSignatureAndMetadata {
 
         val sessions = otherMember.map { flowMessaging.initiateFlow(it) }

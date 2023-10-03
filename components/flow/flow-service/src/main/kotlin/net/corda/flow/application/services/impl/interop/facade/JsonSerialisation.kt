@@ -43,8 +43,8 @@ private val jsonMapper =
         enable(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY)
         setTimeZone(TimeZone.getTimeZone("UTC"))
         disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-        registerModule(standardTypesModule())
         registerModule(ProofOfActionSerialisationModule.module)
+        registerModule(standardTypesModule())
     }
 
 private fun serialize(
