@@ -18,7 +18,7 @@ import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 
-class ScheduledTaskHandler(
+class ScheduledTaskProcessor(
     private val stateManager: StateManager,
     private val clock: Clock,
     private val cleanupWindow: Long,

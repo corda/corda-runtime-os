@@ -24,7 +24,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 
-class ScheduledTaskHandlerTest {
+class ScheduledTaskProcessorTest {
 
     private val clock = Clock.fixed(Instant.now(), ZoneId.systemDefault())
     private val window = 1000L
@@ -42,12 +42,12 @@ class ScheduledTaskHandlerTest {
     fun `when scheduled task handler generates new records, ID of each retrieved state is present in output events`() {
         val stateManager = mock<StateManager>()
         whenever(stateManager.findUpdatedBetweenWithMetadataFilter(any(), any())).thenReturn(states)
-        val scheduledTaskHandler = ScheduledTaskHandler(
+        val scheduledTaskProcessor = ScheduledTaskProcessor(
             stateManager,
             clock,
             window
         )
-        val output = scheduledTaskHandler.onNext(listOf(inputEvent))
+        val output = scheduledTaskProcessor.onNext(listOf(inputEvent))
         val ids = output.flatMap { (it.value as ExecuteCleanup).ids }
         assertThat(ids).contains("key1", "key4")
         verify(stateManager).findUpdatedBetweenWithMetadataFilter(
@@ -60,13 +60,13 @@ class ScheduledTaskHandlerTest {
     fun `when batch size is set to one, a record per id is present in output events`() {
         val stateManager = mock<StateManager>()
         whenever(stateManager.findUpdatedBetweenWithMetadataFilter(any(), any())).thenReturn(states)
-        val scheduledTaskHandler = ScheduledTaskHandler(
+        val scheduledTaskProcessor = ScheduledTaskProcessor(
             stateManager,
             clock,
             window,
             1
         )
-        val output = scheduledTaskHandler.onNext(listOf(inputEvent))
+        val output = scheduledTaskProcessor.onNext(listOf(inputEvent))
         assertThat(output.size).isEqualTo(2)
     }
 
@@ -74,12 +74,12 @@ class ScheduledTaskHandlerTest {
     fun `when the last updated time is far enough in the past, no records are returned`() {
         val stateManager = mock<StateManager>()
         whenever(stateManager.findUpdatedBetweenWithMetadataFilter(any(), any())).thenReturn(mapOf())
-        val scheduledTaskHandler = ScheduledTaskHandler(
+        val scheduledTaskProcessor = ScheduledTaskProcessor(
             stateManager,
             clock,
             window * 5
         )
-        val output = scheduledTaskHandler.onNext(listOf(inputEvent))
+        val output = scheduledTaskProcessor.onNext(listOf(inputEvent))
         assertThat(output).isEmpty()
         verify(stateManager).findUpdatedBetweenWithMetadataFilter(
             IntervalFilter(Instant.MIN, clock.instant() - Duration.ofMillis(window * 5)),
@@ -90,7 +90,7 @@ class ScheduledTaskHandlerTest {
     @Test
     fun `when the input record does not have the correct task name, no processing is attempted`() {
         val stateManager = mock<StateManager>()
-        val scheduledTaskHandler = ScheduledTaskHandler(
+        val scheduledTaskProcessor = ScheduledTaskProcessor(
             stateManager,
             clock,
             window
@@ -100,7 +100,7 @@ class ScheduledTaskHandlerTest {
             "foo",
             ScheduledTaskTrigger("wrong-name", clock.instant())
         )
-        val output = scheduledTaskHandler.onNext(listOf(input))
+        val output = scheduledTaskProcessor.onNext(listOf(input))
         assertThat(output).isEmpty()
         verify(stateManager, never()).findUpdatedBetweenWithMetadataFilter(any(), any())
     }

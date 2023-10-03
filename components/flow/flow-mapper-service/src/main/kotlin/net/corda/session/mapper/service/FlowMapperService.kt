@@ -2,8 +2,6 @@ package net.corda.session.mapper.service
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.flow.event.mapper.ExecuteCleanup
-import net.corda.data.scheduler.ScheduledTaskTrigger
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
@@ -17,16 +15,12 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.messaging.api.records.Record
-import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_CLEANUP_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
-import net.corda.schema.Schemas.ScheduledTask.SCHEDULED_TASK_NAME_MAPPER_CLEANUP
 import net.corda.schema.Schemas.ScheduledTask.SCHEDULED_TASK_TOPIC_MAPPER_PROCESSOR
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
@@ -34,7 +28,7 @@ import net.corda.schema.configuration.FlowConfig
 import net.corda.session.mapper.service.executor.CleanupProcessor
 import net.corda.session.mapper.service.executor.FlowMapperListener
 import net.corda.session.mapper.service.executor.FlowMapperMessageProcessor
-import net.corda.session.mapper.service.executor.ScheduledTaskHandler
+import net.corda.session.mapper.service.executor.ScheduledTaskProcessor
 import net.corda.session.mapper.service.executor.ScheduledTaskState
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.osgi.service.component.annotations.Activate
@@ -43,7 +37,6 @@ import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.time.Clock
-import java.util.UUID
 import java.util.concurrent.Executors
 
 @Component(service = [FlowMapperService::class])
@@ -150,7 +143,7 @@ class FlowMapperService @Activate constructor(
 
     private fun setupCleanupTasks(messagingConfig: SmartConfig, flowConfig: SmartConfig) {
         val window = flowConfig.getLong(FlowConfig.PROCESSING_FLOW_CLEANUP_TIME)
-        val scheduledTaskProcessor = ScheduledTaskHandler(
+        val scheduledTaskProcessor = ScheduledTaskProcessor(
             stateManager,
             Clock.systemUTC(),
             window
