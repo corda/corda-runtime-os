@@ -175,7 +175,7 @@ class TransactionBackchainReceiverFlowV1Test {
         whenever(utxoLedgerPersistenceService.findSignedLedgerTransactionWithStatus(eq(TX_ID_3), eq(UNVERIFIED)))
             .thenReturn(Pair(retrievedTransaction3, UNVERIFIED))
 
-        whenever(retrievedTransaction3.id).thenReturn(TX_ID_1)
+        whenever(retrievedTransaction3.id).thenReturn(TX_ID_3)
         whenever(retrievedTransaction3.inputStateRefs).thenReturn(emptyList())
         whenever(retrievedTransaction3.referenceStateRefs).thenReturn(emptyList())
         whenever(retrievedTransaction3.metadata).thenReturn(tx1Metadata)
@@ -779,9 +779,6 @@ class TransactionBackchainReceiverFlowV1Test {
             .thenReturn(mapOf(
                 TX_ID_1 to UNVERIFIED,
             ))
-            .thenReturn(mapOf(
-                TX_ID_1 to VERIFIED
-            ))
 
         whenever(session.sendAndReceive(eq(SignedGroupParameters::class.java), any())).thenReturn(
             groupParameters,
@@ -799,6 +796,65 @@ class TransactionBackchainReceiverFlowV1Test {
 
         verify(utxoLedgerPersistenceService, times(1))
             .findTransactionIdsAndStatuses(eq(listOf(TX_ID_1)))
+
+        verify(session, never())
+            .sendAndReceive(eq(List::class.java), any())
+    }
+
+    /**
+     * This test is simulating a scenario where a dependency's status was originally UNVERIFIED in the database,
+     * but then it changed to VERIFIED while the flow was in flight.
+     */
+    @Test
+    fun `if transaction's dependency status changed to verified from unverified it will not be retrieved`() {
+        whenever(utxoLedgerPersistenceService.findTransactionIdsAndStatuses(any()))
+            .thenReturn(mapOf(
+                TX_ID_1 to UNVERIFIED,
+                TX_ID_2 to UNVERIFIED
+            ))
+
+        whenever(session.sendAndReceive(eq(SignedGroupParameters::class.java), any())).thenReturn(
+            groupParameters,
+        )
+        whenever(groupParameters.hash).thenReturn(groupParametersHash1)
+        whenever(tx1Metadata.getMembershipGroupParametersHash()).thenReturn(groupParametersHash1.toString())
+
+        whenever(utxoLedgerPersistenceService.findSignedLedgerTransactionWithStatus(eq(TX_ID_1), eq(UNVERIFIED)))
+            .thenReturn(Pair(retrievedTransaction1, UNVERIFIED))
+
+        whenever(retrievedTransaction1.id)
+            .thenReturn(TX_ID_1)
+        whenever(retrievedTransaction1.inputStateRefs)
+            .thenReturn(listOf(StateRef(TX_ID_2, 0)))
+        whenever(retrievedTransaction1.referenceStateRefs)
+            .thenReturn(emptyList())
+        whenever(retrievedTransaction1.metadata)
+            .thenReturn(tx1Metadata)
+
+        // TX_ID_2 changed to VERIFIED here
+        whenever(utxoLedgerPersistenceService.findSignedLedgerTransactionWithStatus(eq(TX_ID_2), eq(UNVERIFIED)))
+            .thenReturn(Pair(retrievedTransaction2, VERIFIED))
+
+        whenever(retrievedTransaction2.id)
+            .thenReturn(TX_ID_2)
+        whenever(retrievedTransaction2.inputStateRefs)
+            .thenReturn(emptyList())
+        whenever(retrievedTransaction2.referenceStateRefs)
+            .thenReturn(emptyList())
+        whenever(retrievedTransaction2.metadata)
+            .thenReturn(tx1Metadata)
+
+        whenever(utxoLedgerGroupParametersPersistenceService.find(groupParametersHash1))
+            .thenReturn(groupParameters)
+
+        assertThat(callTransactionBackchainReceiverFlow(setOf(TX_ID_1)).complete())
+            .containsExactly(TX_ID_1) // TX_ID_2 will not be in the topological sort as it turned into VERIFIED
+
+        verify(utxoLedgerPersistenceService, times(1))
+            .findSignedLedgerTransactionWithStatus(eq(TX_ID_1), eq(UNVERIFIED))
+
+        verify(utxoLedgerPersistenceService, times(1))
+            .findSignedLedgerTransactionWithStatus(eq(TX_ID_2), eq(UNVERIFIED))
 
         verify(session, never())
             .sendAndReceive(eq(List::class.java), any())
