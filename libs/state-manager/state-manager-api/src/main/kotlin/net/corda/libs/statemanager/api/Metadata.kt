@@ -1,7 +1,7 @@
 package net.corda.libs.statemanager.api
 
 /**
- * Mutable map that allows only primitive types to be used as values.
+ * Map that allows only primitive types to be used as values.
  */
 class Metadata(
     private val map: Map<String, Any> = emptyMap()

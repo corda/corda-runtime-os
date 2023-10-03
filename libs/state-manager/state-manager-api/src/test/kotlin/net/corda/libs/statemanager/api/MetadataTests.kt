@@ -42,5 +42,12 @@ class MetadataTests {
         assertThat(meta2).isNotSameAs(meta1)
     }
 
+    @Test
+    fun `new meta with additional elements`() {
+        val meta1 = Metadata(mapOf("foo" to "bar"))
+        assertThat(meta1.plus("batman" to "joker"))
+            .containsExactlyInAnyOrderEntriesOf(mapOf("foo" to "bar", "batman" to "joker"))
+    }
+
     data class Superman(val kudos: Int)
 }
