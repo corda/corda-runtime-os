@@ -1,7 +1,11 @@
 package net.corda.crypto.rest.impl
 
+import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.config.impl.ALIAS
+import net.corda.crypto.config.impl.HSM
+import net.corda.crypto.config.impl.WRAPPING_KEYS
 import net.corda.crypto.rest.KeyRotationRestResource
 import net.corda.crypto.rest.response.KeyRotationResponse
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
@@ -23,10 +27,12 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.rest.response.ResponseEntity
 import net.corda.schema.Schemas.Crypto.REKEY_MESSAGE_TOPIC
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -51,6 +57,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
 
     private val uploadTopic = REKEY_MESSAGE_TOPIC
     private var publisher: Publisher? = null
+    private lateinit var unmanagedWrappingKeyAliases: Set<String>
 
     override val targetInterface: Class<KeyRotationRestResource> = KeyRotationRestResource::class.java
     override val protocolVersion: Int = platformInfoProvider.localWorkerPlatformVersion
@@ -59,6 +66,14 @@ class KeyRotationRestResourceImpl @Activate constructor(
     override fun initialise(config: SmartConfig) {
         publisher?.close()
         publisher = publisherFactory.createPublisher(PublisherConfig(requestId), config)
+    }
+
+    fun initialiseUnmanagedWrappingKeyAliases(config: SmartConfig) {
+        val keysList: List<Config> = config.getConfig(HSM).getConfigList(WRAPPING_KEYS)
+        unmanagedWrappingKeyAliases =
+            keysList.map {
+                it.getString(ALIAS)
+            }.toSet()
     }
 
     override fun getKeyRotationStatus(): List<Pair<String, List<String>>> {
@@ -75,6 +90,12 @@ class KeyRotationRestResourceImpl @Activate constructor(
         if (publisher == null) {
             throw ServiceUnavailableException("Key rotation resource has not been initialised.")
         }
+
+        if (oldKeyAlias !in unmanagedWrappingKeyAliases)
+            throw InvalidInputDataException("Old key alias is not part of the configuration.")
+
+        if (newKeyAlias !in unmanagedWrappingKeyAliases)
+            throw InvalidInputDataException("New key alias is not part of the configuration.")
 
         // We need to create a Record that tells Crypto processor to do key rotation
         // Do we need to start the publisher? FlowRestResource is not starting its publisher for some reason
@@ -99,7 +120,8 @@ class KeyRotationRestResourceImpl @Activate constructor(
 
     private var isUp = false
     override val isRunning get() = publisher != null && isUp
-    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator<KeyRotationRestResource>(::eventHandler)
+    private val lifecycleCoordinator =
+        lifecycleCoordinatorFactory.createCoordinator<KeyRotationRestResource>(::eventHandler)
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
     )
@@ -108,8 +130,8 @@ class KeyRotationRestResourceImpl @Activate constructor(
         when (event) {
             is StartEvent -> {
                 dependentComponents.registerAndStartAll(coordinator)
-                if(!isUp){
-                    isUp=true
+                if (!isUp) {
+                    isUp = true
                     signalUpStatus()
                 }
             }
@@ -124,10 +146,12 @@ class KeyRotationRestResourceImpl @Activate constructor(
                     lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
                 }
             }
+
             is ConfigChangedEvent -> {
                 event.config.getConfig(ConfigKeys.MESSAGING_CONFIG).apply {
                     initialise(this)
                 }
+                initialiseUnmanagedWrappingKeyAliases(event.config.getConfig(CRYPTO_CONFIG))
             }
             else -> {
                 log.error("Unexpected event $event!")
@@ -136,7 +160,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
     }
 
     private fun signalUpStatus() {
-        if(isRunning){
+        if (isRunning) {
             lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
         }
     }

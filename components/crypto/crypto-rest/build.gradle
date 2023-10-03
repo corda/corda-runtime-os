@@ -12,6 +12,8 @@ dependencies {
     implementation project(':libs:messaging:messaging')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':components:configuration:configuration-read-service')
+    implementation project(':libs:crypto:crypto-core')
+    implementation project(':libs:crypto:crypto-config-impl')
 
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "org.osgi:osgi.annotation"
