@@ -780,6 +780,102 @@
                 }
             }]
         },
+        "stateManager": {
+            "type": "object",
+            "default": {},
+            "title": "State Manager configuration",
+            "additionalProperties": true,
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "default": "DATABASE",
+                    "title": "The type of State Manager",
+                    "examples": [
+                        "DATABASE"
+                    ],
+                    "enum": ["DATABASE"]
+                },
+                "db": {
+                    "type": "object",
+                    "default": {},
+                    "title": "State Manager database configuration",
+                    "required": [
+                        "host",
+                        "type",
+                        "port",
+                        "username",
+                        "database",
+                        "schema"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "username": {
+                            "$ref": "#/$defs/config"
+                        },
+                        "password": {
+                            "$ref": "#/$defs/config"
+                        },
+                        "host": {
+                            "type": "string",
+                            "format": "hostname",
+                            "default": "",
+                            "title": "the State Manager database host",
+                            "examples": [
+                                "postgresql.example.com"
+                            ]
+                        },
+                        "type": {
+                            "type": "string",
+                            "default": "postgresql",
+                            "title": "the State Manager database type",
+                            "examples": [
+                                "postgresql"
+                            ],
+                            "enum": ["postgresql"]
+                        },
+                        "port": {
+                            "type": "integer",
+                            "default": 5432,
+                            "title": "the State Manager database port",
+                            "examples": [
+                                5432
+                            ]
+                        },
+                        "database": {
+                            "type": "string",
+                            "default": "statemanager",
+                            "title": "the name of the State Manager database",
+                            "examples": [
+                                "statemanager"
+                            ],
+                            "minLength": 1
+                        },
+                        "schema": {
+                            "type": "string",
+                            "default": "STATE_MANAGER",
+                            "title": "the schema in which the State Manager database config entities will be stored, passed to workers on startup",
+                            "examples": [
+                                "STATE_MANAGER"
+                            ],
+                            "minLength": 1
+                        }
+                    },
+                    "examples": [{
+                        "host": "postgresql.example.com",
+                        "type": "postgresql",
+                        "port": 5432,
+                        "username": {
+                            "value": "user"
+                        },
+                        "password": {
+                            "value": "password"
+                        },
+                        "database": "statemanager",
+                        "schema": "STATE_MANAGER"
+                    }]
+                }
+            }
+        },
         "kafka": {
             "type": "object",
             "default": {},

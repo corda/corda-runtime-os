@@ -143,6 +143,47 @@ db:
     # -- the schema in which the cluster database config entities will be stored, passed to workers on startup
     schema: CONFIG
 
+# State Manager configuration
+stateManager:
+  # Type of State Manager
+  type: DATABASE
+  # State Manager database configuration
+  db:
+    # -- the State Manager database host (required)
+    host: ""
+    # -- the State Manager database type
+    type: "postgresql"
+    # -- the State Manager database port
+    port: 5432
+    # the State Manager database user configuration
+    username:
+      # -- the State Manager database user
+      value: ""
+      # the State Manager database user secret configuration; used in preference to value if name is set
+      valueFrom:
+        # the State Manager database user secret key reference
+        secretKeyRef:
+          # -- the State Manager database user secret name
+          name: ""
+          # -- the State Manager database user secret key
+          key: ""
+    # the State Manager database password configuration
+    password:
+      # -- the State Manager database password
+      value: ""
+      # the State Manager database password secret configuration; used in preference to value if name is set
+      valueFrom:
+        # the State Manager database password secret key reference
+        secretKeyRef:
+          # -- the State Manager database password secret name
+          name: ""
+          # -- the State Manager database password secret key
+          key: ""
+    # -- the State Manager database name
+    database: statemanager
+    # -- the State Manager schema name
+    schema: STATE_MANAGER
+
 # Kafka configuration
 kafka:
   # -- comma-separated list of Kafka bootstrap servers (required); for example: "broker1.example.com:9092,broker2.example.com:9092,broker3.example.com:9092"
@@ -366,8 +407,8 @@ bootstrap:
 
     # State Manager DB Bootstrap Configuration
     stateManager:
-      # -- the schema in which the state-manager entities will be stored
-      schema: state_manager
+      # -- the State Manager schema name
+      schema: STATE_MANAGER
       # JDBC connection pool configuration for state-manager DB
       dbConnectionPool:
         # -- maximum JDBC connection pool size for state-manager DB
