@@ -181,10 +181,7 @@ class RecordFactoryImpl @Activate constructor(
         sessionEvent: SessionEvent
     ): Boolean {
         val destinationIdentity = getSourceAndDestinationIdentity(sessionEvent).destinationIdentity
-        return when (locallyHostedIdentitiesService.getIdentityInfo(destinationIdentity.toCorda())) {
-            null -> false
-            else -> true
-        }
+        return locallyHostedIdentitiesService.isHostedLocally(destinationIdentity.toCorda())
     }
 
     /**
