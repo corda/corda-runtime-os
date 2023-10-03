@@ -162,7 +162,7 @@ spec:
                 -c -l /tmp/db
 
               echo 'Generating State Manager DB specification'
-              STATE_MANAGER_JDBC_URL="jdbc:{{ include ".Values.stateManager.db.type"}}://{{ .Values.stateManager.db.host }}:{{ include "corda.stateManagerDbPort" . }}/{{ include "corda.stateManagerDbName" . }}"
+              STATE_MANAGER_JDBC_URL="jdbc:{{ .Values.stateManager.db.type }}://{{ .Values.stateManager.db.host }}:{{ .Values.stateManager.db.port }}/{{ .Values.stateManager.db.schema }}"
               mkdir /tmp/stateManager
               java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar database spec \
                 -g "statemanager:${STATE_MANAGER_DB_SCHEMA}" \
@@ -334,13 +334,11 @@ spec:
             - name: STATE_MANAGER_DB_HOST
               value: {{ required "A state manager db host is required" .Values.stateManager.db.host | quote }}
             - name: STATE_MANAGER_DB_PORT
-              value: {{ include "corda.stateManagerDbPort" . | quote }}
-            - name: STATE_MANAGER_DB_NAME
-              value: {{ include "corda.stateManagerDbName" . | quote }}
-            - name: STATE_MANAGER_DB_SCHEMA
-              value: {{ .Values.stateManager.db.schema | quote }}
+              value: {{ .Values.stateManager.db.port | quote }}
             - name: STATE_MANAGER_DB_NAME
               value: {{ .Values.stateManager.db.database | quote }}
+            - name: STATE_MANAGER_DB_SCHEMA
+              value: {{ .Values.stateManager.db.schema | quote }}
             {{- include "corda.bootstrapClusterDbEnv" . | nindent 12 }}
             {{- include "corda.rbacDbUserEnv" . | nindent 12 }}
             {{- include "corda.cryptoDbUsernameEnv" . | nindent 12 }}

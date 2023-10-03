@@ -616,27 +616,6 @@ data:
 {{- end }}
 
 {{/*
-State Manager DB type
-*/}}
-{{- define "corda.stateManagerDbType" -}}
-{{- .Values.stateManager.db.type | default "postgresql" }}
-{{- end -}}
-
-{{/*
-State Manager DB port
-*/}}
-{{- define "corda.stateManagerDbPort" -}}
-{{- .Values.stateManager.db.port | default "5432" }}
-{{- end -}}
-
-{{/*
-State Manager DB name
-*/}}
-{{- define "corda.stateManagerDbName" -}}
-{{- .Values.stateManager.db.database | default "statemanager" }}
-{{- end -}}
-
-{{/*
 Default name for State Manager DB secret
 */}}
 {{- define "corda.stateManagerDbDefaultSecretName" -}}
