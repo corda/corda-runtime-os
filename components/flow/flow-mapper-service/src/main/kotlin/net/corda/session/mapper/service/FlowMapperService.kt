@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory
 import java.time.Clock
 import java.util.concurrent.Executors
 
+@Suppress("LongParameterList", "ForbiddenComment")
 @Component(service = [FlowMapperService::class])
 class FlowMapperService @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -111,6 +112,8 @@ class FlowMapperService @Activate constructor(
             val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
             val flowConfig = event.config.getConfig(FLOW_CONFIG)
 
+            // TODO: This can be removed once the state manager is integrated into the flow mapper and the new cleanup
+            // tasks work correctly.
             val newScheduledTaskState = coordinator.createManagedResource(CLEANUP_TASK) {
                 ScheduledTaskState(
                     Executors.newSingleThreadScheduledExecutor(),
