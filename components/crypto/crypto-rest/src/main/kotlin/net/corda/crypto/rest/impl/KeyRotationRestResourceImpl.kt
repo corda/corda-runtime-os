@@ -32,7 +32,6 @@ import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.rest.response.ResponseEntity
 import net.corda.schema.Schemas.Crypto.REKEY_MESSAGE_TOPIC
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -63,18 +62,22 @@ class KeyRotationRestResourceImpl @Activate constructor(
     override val protocolVersion: Int = platformInfoProvider.localWorkerPlatformVersion
 
     private val requestId = UUID.randomUUID().toString()
-    override fun initialise(config: SmartConfig) {
-        publisher?.close()
-        publisher = publisherFactory.createPublisher(PublisherConfig(requestId), config)
-    }
+    override fun initialise(config: Map<String, SmartConfig>) {
+        val messagingConfig = config.getConfig(ConfigKeys.MESSAGING_CONFIG)
+        val cryptoConfig = config.getConfig(ConfigKeys.CRYPTO_CONFIG)
 
-    fun initialiseUnmanagedWrappingKeyAliases(config: SmartConfig) {
-        val keysList: List<Config> = config.getConfig(HSM).getConfigList(WRAPPING_KEYS)
+        // Initialise publisher with messaging config
+        publisher?.close()
+        publisher = publisherFactory.createPublisher(PublisherConfig(requestId), messagingConfig)
+
+        // Initialise unmanaged wrapping keys from the crypto config
+        val keysList: List<Config> = cryptoConfig.getConfig(HSM).getConfigList(WRAPPING_KEYS)
         unmanagedWrappingKeyAliases =
             keysList.map {
                 it.getString(ALIAS)
             }.toSet()
     }
+
 
     override fun getKeyRotationStatus(): List<Pair<String, List<String>>> {
         TODO("Not yet implemented")
@@ -146,12 +149,8 @@ class KeyRotationRestResourceImpl @Activate constructor(
                     lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
                 }
             }
-
             is ConfigChangedEvent -> {
-                event.config.getConfig(ConfigKeys.MESSAGING_CONFIG).apply {
-                    initialise(this)
-                }
-                initialiseUnmanagedWrappingKeyAliases(event.config.getConfig(CRYPTO_CONFIG))
+                initialise(event.config)
             }
             else -> {
                 log.error("Unexpected event $event!")
