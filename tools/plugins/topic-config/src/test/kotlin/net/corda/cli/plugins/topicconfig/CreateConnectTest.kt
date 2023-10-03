@@ -12,7 +12,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.io.ByteArrayOutputStream
-import java.io.File
 import java.io.FileDescriptor
 import java.io.FileOutputStream
 import java.io.PrintStream
@@ -83,13 +82,8 @@ class CreateConnectTest {
     }
 
     private fun getCommandWithConfigFile() = CreateConnect().apply {
-        val configFileURL = this::class.java.classLoader.getResource("short_generated_topic_config.yaml")
-        configFilePath = configFileURL?.path
-        println("URL from getResource $configFileURL")
-        println("URI to path ${configFileURL?.toURI()?.path}")
-        println("URL to path ${configFilePath!!}")
-        println("Paths from URI ${Paths.get(configFileURL?.toURI()!!)}")
-        println("File to Path from URI ${File(configFileURL.toURI()).path}")
+        val configFile = this::class.java.classLoader.getResource("short_generated_topic_config.yaml")!!.toURI()
+        configFilePath = Paths.get(configFile).toString()
         create = Create()
         create!!.topic = TopicPlugin.Topic()
     }
