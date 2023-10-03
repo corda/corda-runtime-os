@@ -9,6 +9,8 @@ import net.corda.rest.annotations.HttpPOST
 import net.corda.rest.annotations.HttpRestResource
 import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.annotations.RestPathParameter
+import net.corda.rest.exception.InvalidInputDataException
+import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.rest.response.ResponseEntity
 
 /**
@@ -53,9 +55,11 @@ interface KeyRotationRestResource : RestResource {
      *
      * @return Key rotation response where
      *  - requestId is the unique ID for the key rotation start request.
-     *  - processedCount is the number of keys that finished rotating.
-     *  - duration is the time it took to rotate the keys in processedCount.
-     *  - expectedTotal is the number of keys yet to be rotated.
+     *  - oldKeyAlias is the alias of the key to be rotated.
+     *  - newKeyAlias is the alias of the new key the oldKeyAlias key will be rotated with.
+     *
+     * @throws ServiceUnavailableException If the underlying service for sending messages is not available.
+     * @throws InvalidInputDataException If the [oldKeyAlias] or [newKeyAlias] are not part of the supplied configuration.
      */
 
     @HttpPOST(
