@@ -431,6 +431,9 @@ class FlowMapperServiceIntegrationTest {
             session {
                 p2pTTL = 500000
             }
+            processing {
+                cleanupTime = 10000
+            }
         """
 
     private val messagingConf = """
