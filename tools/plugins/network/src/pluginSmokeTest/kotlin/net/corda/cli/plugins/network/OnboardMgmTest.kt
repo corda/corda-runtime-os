@@ -10,14 +10,11 @@ import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestMethodOrder
 import picocli.CommandLine
 import java.io.File
 import java.util.UUID
 
-@TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class OnboardMgmTest {
     companion object {
         private lateinit var outputStub: OutputStub

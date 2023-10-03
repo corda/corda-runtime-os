@@ -3,6 +3,7 @@ package net.corda.cli.plugins.network
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.network.enums.MemberRole
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
+import net.corda.cli.plugins.network.utils.hash
 import net.corda.cli.plugins.packaging.CreateCpiV2
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
@@ -37,8 +38,8 @@ class OnboardMember : Runnable, BaseOnboard() {
     @Option(
         names = ["--cpb-file", "-b"],
         description = [
-            "Location of a CPB file (Use either --cpb-file or --cpi-hash).",
-            "The plugin will generate a CPI signed with default options."
+            "Location of a CPB file. The plugin will generate a CPI signed with default options when a CPB is " +
+                    "provided. Use either --cpb-file or --cpi-hash.",
         ]
     )
     var cpbFile: File? = null
@@ -110,8 +111,8 @@ class OnboardMember : Runnable, BaseOnboard() {
     }
 
     private fun uploadCpb(cpbFile: File): String {
-        val groupId = json.readTree(groupPolicyFile.inputStream()).get("groupId").asText()
-        val cpiName = "${cpbFile.name}-$groupId"
+        val combinedHash = setOf(cpbFile, groupPolicyFile).hash()
+        val cpiName = "${cpbFile.name}-$combinedHash"
         val cpiFile = File(cpisRoot, "$cpiName.cpi")
         println("Creating and uploading CPI using CPB '${cpbFile.name}'")
         val cpisFromCluster = createRestClient(CpiUploadRestResource::class).use { client ->
@@ -121,15 +122,15 @@ class OnboardMember : Runnable, BaseOnboard() {
             println("CPI already exists, using CPI ${it.id}")
             return it.cpiFileChecksum
         }
-        if (!cpiFile.canRead()) {
-            createCpi(cpbFile, cpiFile, groupId)
+        if (!cpiFile.exists()) {
+            createCpi(cpbFile, cpiFile, combinedHash)
             println("CPI file saved as ${cpiFile.absolutePath}")
         }
         uploadSigningCertificates()
         return uploadCpi(cpiFile.inputStream(), cpiFile.name)
     }
 
-    private fun createCpi(cpbFile: File, cpiFile: File, groupId: String) {
+    private fun createCpi(cpbFile: File, cpiFile: File, combinedHash: String) {
         println(
             "Using the cpb file is not recommended." +
                     " It is advised to create CPI using the package create-cpi command."
@@ -138,7 +139,7 @@ class OnboardMember : Runnable, BaseOnboard() {
         val creator = CreateCpiV2()
         creator.cpbFileName = cpbFile.absolutePath
         creator.groupPolicyFileName = groupPolicyFile.absolutePath
-        creator.cpiName = "${cpbFile.name}-$groupId"
+        creator.cpiName = "${cpbFile.name}-$combinedHash"
         creator.cpiVersion = CPI_VERSION
         creator.cpiUpgrade = false
         creator.outputFileName = cpiFile.absolutePath
