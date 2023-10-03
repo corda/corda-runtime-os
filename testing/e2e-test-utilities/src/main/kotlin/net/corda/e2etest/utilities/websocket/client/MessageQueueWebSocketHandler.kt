@@ -1,4 +1,4 @@
-package net.corda.applications.workers.smoketest.websocket.client
+package net.corda.e2etest.utilities.websocket.client
 
 import org.eclipse.jetty.websocket.api.Session
 import org.eclipse.jetty.websocket.client.NoOpEndpoint

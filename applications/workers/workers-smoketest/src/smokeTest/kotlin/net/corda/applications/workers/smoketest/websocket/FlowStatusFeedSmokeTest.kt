@@ -2,7 +2,7 @@ package net.corda.applications.workers.smoketest.websocket
 
 import net.corda.applications.workers.smoketest.utils.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.utils.TEST_CPI_NAME
-import net.corda.applications.workers.smoketest.websocket.client.useWebsocketConnection
+import net.corda.e2etest.utilities.websocket.client.useWebsocketConnection
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT_ALIAS
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT_USAGE
