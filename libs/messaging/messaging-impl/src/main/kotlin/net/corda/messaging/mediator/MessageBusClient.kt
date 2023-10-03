@@ -6,6 +6,7 @@ import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessagingClient
+import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_ENDPOINT
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -42,7 +43,7 @@ class MessageBusClient(
 
 private fun MediatorMessage<*>.toCordaProducerRecord() : CordaProducerRecord<*, *> {
     return CordaProducerRecord(
-        topic = this.getProperty<String>("topic"),
+        topic = this.getProperty<String>(MSG_PROP_ENDPOINT),
         key = this.getProperty("key"),
         value = this.payload,
         headers = this.getProperty<Headers>("headers"),

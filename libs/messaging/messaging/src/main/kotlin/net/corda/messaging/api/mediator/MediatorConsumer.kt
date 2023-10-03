@@ -20,7 +20,7 @@ interface MediatorConsumer<K : Any, V : Any> : AutoCloseable {
      *
      * @param timeout - The maximum time to block if there are no available messages.
      */
-    fun poll(timeout: Duration): List<CordaConsumerRecord<K, V>>
+    fun poll(timeout: Duration): Deferred<List<CordaConsumerRecord<K, V>>>
 
     /**
      * Asynchronously commit the consumer offsets. This function should be called only after `poll` was called.

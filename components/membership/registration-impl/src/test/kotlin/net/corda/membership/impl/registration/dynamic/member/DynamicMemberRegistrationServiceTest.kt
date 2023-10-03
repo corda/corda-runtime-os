@@ -60,6 +60,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_ID
@@ -1178,6 +1179,7 @@ class DynamicMemberRegistrationServiceTest {
             val newContext = mock<MemberContext> {
                 on { entries } doReturn context.entries + mapOf(
                     String.format(ROLES_PREFIX, 0) to "notary",
+                    NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
                     NOTARY_SERVICE_NAME to "O=ChangedNotaryService, L=London, C=GB",
                     NOTARY_KEY_ID_KEY to NOTARY_KEY_ID,
                 ).entries
@@ -1289,6 +1291,7 @@ class DynamicMemberRegistrationServiceTest {
             }
             val newContextEntries = context.toMutableMap().apply {
                 put(String.format(ROLES_PREFIX, 0), "notary")
+                put(NOTARY_SERVICE_PROTOCOL, "net.corda.notary.MyNotaryService")
                 put(NOTARY_SERVICE_NAME, "O=MyNotaryService, L=London, C=GB")
                 put(NOTARY_KEY_ID_KEY, NOTARY_KEY_ID)
             }.entries
@@ -1449,6 +1452,7 @@ class DynamicMemberRegistrationServiceTest {
             val testProperties =
                 context + mapOf(
                     String.format(ROLES_PREFIX, 0) to "notary",
+                    NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
                     NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
                     NOTARY_KEY_ID_KEY to NOTARY_KEY_ID,
                 )
@@ -1480,6 +1484,7 @@ class DynamicMemberRegistrationServiceTest {
             val testProperties =
                 context + mapOf(
                     String.format(ROLES_PREFIX, 0) to "notary",
+                    NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
                     NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
                     NOTARY_KEY_ID_KEY to NOTARY_KEY_ID,
                 )
@@ -1538,6 +1543,7 @@ class DynamicMemberRegistrationServiceTest {
             val testProperties =
                 context + mapOf(
                     String.format(ROLES_PREFIX, 0) to "notary",
+                    NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
                     NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
                     NOTARY_KEY_ID_KEY to NOTARY_KEY_ID,
                 )
@@ -1583,6 +1589,7 @@ class DynamicMemberRegistrationServiceTest {
             val testProperties =
                 context.filterNot { it.key.startsWith("corda.ledger") } + mapOf(
                     String.format(ROLES_PREFIX, 0) to "notary",
+                    NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
                     NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
                     NOTARY_KEY_ID_KEY to NOTARY_KEY_ID,
                 )

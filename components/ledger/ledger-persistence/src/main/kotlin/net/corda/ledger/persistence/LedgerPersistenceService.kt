@@ -49,6 +49,7 @@ class LedgerPersistenceService @Activate constructor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        const val RPC_SUBSCRIPTION = "RPC_SUBSCRIPTION"
     }
 
     private val dependentComponents = DependentComponents.of(
@@ -57,7 +58,7 @@ class LedgerPersistenceService @Activate constructor(
         ::virtualNodeInfoReadService,
         ::cpiInfoReadService,
     )
-    private val coordinator =
+    private val lifecycleCoordinator =
         coordinatorFactory.createCoordinator<LedgerPersistenceService>(dependentComponents, ::eventHandler)
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -73,6 +74,7 @@ class LedgerPersistenceService @Activate constructor(
                         coordinator,
                         setOf(BOOT_CONFIG, MESSAGING_CONFIG)
                     )
+                    initialiseRpcSubscription()
                 } else {
                     coordinator.updateStatus(event.status)
                 }
@@ -94,14 +96,23 @@ class LedgerPersistenceService @Activate constructor(
         }
     }
 
+    private fun initialiseRpcSubscription() {
+        val subscription = ledgerPersistenceRequestSubscriptionFactory.createRpcSubscription()
+        lifecycleCoordinator.createManagedResource(RPC_SUBSCRIPTION) {
+            subscription.also {
+                it.start()
+            }
+        }
+    }
+
     override val isRunning: Boolean
-        get() = coordinator.isRunning
+        get() = lifecycleCoordinator.isRunning
 
     override fun start() {
-        coordinator.start()
+        lifecycleCoordinator.start()
     }
 
     override fun stop() {
-        coordinator.stop()
+        lifecycleCoordinator.stop()
     }
 }

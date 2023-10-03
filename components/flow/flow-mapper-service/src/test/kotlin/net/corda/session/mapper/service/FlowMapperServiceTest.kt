@@ -32,8 +32,7 @@ internal class FlowMapperServiceTest {
 
     private val messagingConfig = configFactory.create(
         ConfigFactory.parseString(
-            """
-                    """.trimIndent()
+            ""
         )
     )
 
