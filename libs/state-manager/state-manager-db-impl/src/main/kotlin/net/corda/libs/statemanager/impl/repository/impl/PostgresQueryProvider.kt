@@ -2,6 +2,7 @@ package net.corda.libs.statemanager.impl.repository.impl
 
 import net.corda.libs.statemanager.api.Operation
 import net.corda.db.schema.DbSchema.STATE_MANAGER_TABLE
+import net.corda.libs.statemanager.api.MetadataFilter
 
 class PostgresQueryProvider : AbstractQueryProvider() {
     override val createState: String
@@ -17,24 +18,33 @@ class PostgresQueryProvider : AbstractQueryProvider() {
             WHERE key = :$KEY_PARAMETER_NAME
         """.trimIndent()
 
-    override fun statesFilteredByMetadataKey(key: String, operation: Operation, value: Any): String {
+    override fun findStatesByMetadataMatchingAll(filters: Collection<MetadataFilter>) =
+        """
+            SELECT s.key, s.value, s.metadata, s.version, s.modified_time 
+            FROM $STATE_MANAGER_TABLE s
+            WHERE ${metadataKeyFilters(filters).joinToString(" AND ")}
+        """.trimIndent()
+
+    override fun findStatesByMetadataMatchingAny(filters: Collection<MetadataFilter>) =
+        """
+            SELECT s.key, s.value, s.metadata, s.version, s.modified_time 
+            FROM $STATE_MANAGER_TABLE s
+            WHERE ${metadataKeyFilters(filters).joinToString(" OR ")}
+        """.trimIndent()
+
+    override fun findStatesUpdatedBetweenAndFilteredByMetadataKey(filter: MetadataFilter): String {
         return """
             SELECT s.key, s.value, s.metadata, s.version, s.modified_time
             FROM $STATE_MANAGER_TABLE s
-            WHERE (${metadataKeyFilter(key, operation, value)})
+            WHERE (${metadataKeyFilter(filter)}) AND (${updatedBetweenFilter()})
         """.trimIndent()
     }
 
-    override fun statesUpdatedBetweenAndFilteredByMetadataKey(key: String, operation: Operation, value: Any): String {
-        return """
-            SELECT s.key, s.value, s.metadata, s.version, s.modified_time
-            FROM $STATE_MANAGER_TABLE s
-            WHERE (${metadataKeyFilter(key, operation, value)}) AND (${updatedBetweenFilter()})
-        """.trimIndent()
-    }
+    fun metadataKeyFilters(filters: Collection<MetadataFilter>) =
+        filters.map { "(${metadataKeyFilter(it)})" }
 
-    fun metadataKeyFilter(key: String, operation: Operation, value: Any) =
-        "(s.metadata->>'$key')::::${value.toNativeType()} ${operation.toNativeOperator()} '$value'"
+    fun metadataKeyFilter(filter: MetadataFilter) =
+        "(s.metadata->>'${filter.key}')::::${filter.value.toNativeType()} ${filter.operation.toNativeOperator()} '${filter.value}'"
 
     private fun Any.toNativeType() = when (this) {
         is String -> "text"

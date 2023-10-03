@@ -4,7 +4,7 @@ import net.corda.data.flow.event.mapper.ExecuteCleanup
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.Operation
-import net.corda.libs.statemanager.api.SingleKeyFilter
+import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.session.mapper.service.state.StateMetadataKeys.FLOW_MAPPER_STATUS
 import net.corda.utilities.debug
@@ -38,7 +38,7 @@ class ScheduledTaskHandler(
         val windowExpiry = clock.instant() - Duration.ofMillis(cleanupWindow)
         val states = stateManager.findUpdatedBetweenWithMetadataFilter(
             IntervalFilter(Instant.MIN, windowExpiry),
-            SingleKeyFilter(FLOW_MAPPER_STATUS, Operation.Equals, FlowMapperStateType.CLOSING.toString())
+            MetadataFilter(FLOW_MAPPER_STATUS, Operation.Equals, FlowMapperStateType.CLOSING.toString())
         )
         return states.map {
             it.key
