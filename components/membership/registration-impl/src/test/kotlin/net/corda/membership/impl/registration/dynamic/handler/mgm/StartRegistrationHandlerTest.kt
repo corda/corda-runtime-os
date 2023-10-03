@@ -125,7 +125,7 @@ class StartRegistrationHandlerTest {
         val registrationState = getRegistrationState(registrationId, aliceHoldingIdentity, mgmHoldingIdentity)
 
         fun getRegistrationState(registrationId: String, member: HoldingIdentity, mgm: HoldingIdentity) =
-            RegistrationState(registrationId, member, mgm)
+            RegistrationState(registrationId, member, mgm, emptyList())
     }
 
     // Class under test
@@ -499,7 +499,7 @@ class StartRegistrationHandlerTest {
         val badHoldingIdentity = HoldingIdentity(MemberX500Name.parse("O=BadName,L=London,C=GB").toString(), groupId)
         with(
             handler.invoke(
-                RegistrationState(registrationId, badHoldingIdentity, mgmHoldingIdentity),
+                RegistrationState(registrationId, badHoldingIdentity, mgmHoldingIdentity, emptyList()),
                 Record(testTopic, testTopicKey, startRegistrationCommand)
             )
         ) {
@@ -714,7 +714,7 @@ class StartRegistrationHandlerTest {
 
         val memberStartRegistrationCommand = startRegistrationCommand
         val memberResult = handler.invoke(
-            RegistrationState(registrationId, HoldingIdentity(notaryX500Name.toString(), groupId), mgmHoldingIdentity),
+            RegistrationState(registrationId, HoldingIdentity(notaryX500Name.toString(), groupId), mgmHoldingIdentity, emptyList()),
             Record(testTopic, testTopicKey, memberStartRegistrationCommand)
         )
         memberResult.assertDeclinedRegistration()
@@ -785,7 +785,7 @@ class StartRegistrationHandlerTest {
 
         val registrationCommand = startRegistrationCommand
         val result = handler.invoke(RegistrationState(
-            registrationId, bobHoldingIdentity, mgmHoldingIdentity),
+            registrationId, bobHoldingIdentity, mgmHoldingIdentity, emptyList()),
             Record(testTopic, testTopicKey, registrationCommand)
         )
         result.assertDeclinedRegistration()
