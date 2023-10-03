@@ -1,7 +1,7 @@
 package com.r3.corda.atomic.swap.contracts
 
-import com.r3.corda.atomic.swap.states.Asset
 import com.r3.corda.atomic.swap.states.LockState
+import com.r3.corda.ledger.utxo.ownable.OwnableState
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.Contract
@@ -20,7 +20,7 @@ class LockContract : Contract {
         val command = transaction.getCommands(LockCommands::class.java).singleOrNull()
             ?: throw CordaRuntimeException("Requires a single command.")
 
-        val outputState = transaction.getOutputStates(Asset::class.java).first()
+        val outputState = transaction.getOutputStates(OwnableState::class.java).first()
 
         when (command) {
             is LockCommands.Lock -> {
@@ -39,8 +39,11 @@ class LockContract : Contract {
                         (transaction.getInputStates(LockState::class.java).size == 1)
                 "There should be one output state as an unlocked asset state needs to be created" using
                         (transaction.outputContractStates.size == 1)
+                "The new owner should not be the old owner" using (outputState.owner != input.creator)
+                "The new owner should be the same as the receiver of the lock state" using
+                        (outputState.owner == input.receiver)
                 "The signer of the unlock should be the new owner of the Asset state." using
-                        (outputState.owner == transaction.signatories)
+                        (outputState.owner == transaction.signatories.first())
             }
 
             else -> {

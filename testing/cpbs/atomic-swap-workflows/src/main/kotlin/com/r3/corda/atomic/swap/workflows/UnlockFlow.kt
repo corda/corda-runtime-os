@@ -78,6 +78,8 @@ class UnlockFlow: ClientStartableFlow {
             throw CordaRuntimeException("MemberLookup can't find new state owner.")
 
             val newState = inputAssetState.withNewOwner(newOwnerInfo.ledgerKeys.first(), listOf(newOwnerInfo.ledgerKeys.first()))
+            log.info("The new owner of the asset is: ${newState.owner}")
+            log.info("The expected signer is: ${newState.participants}")
 
             val txBuilder = ledgerService.createTransactionBuilder()
 
@@ -88,9 +90,10 @@ class UnlockFlow: ClientStartableFlow {
                 .addOutputState(newState)
                 .addCommand(LockContract.LockCommands.Unlock(true))
                 .addCommand(AssetContract.AssetCommands.Transfer())
-                .addSignatories(newState.participants)
+                .addSignatories(newState.owner)
 
             val signedTransaction = txBuilder.toSignedTransaction()
+            log.info("The signatories on unlock transaction are: ${signedTransaction.signatories}")
 
             val transactionId = flowEngine.subFlow(FinalizeFlow(signedTransaction, listOf(ownerInfo.name, newOwnerInfo.name)))
 
