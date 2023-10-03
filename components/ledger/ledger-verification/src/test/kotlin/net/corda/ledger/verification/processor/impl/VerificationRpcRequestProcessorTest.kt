@@ -1,6 +1,5 @@
 package net.corda.ledger.verification.processor.impl
 
-import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
@@ -8,7 +7,6 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.utxo.verification.CordaPackageSummary
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
-import net.corda.ledger.utxo.verification.TransactionVerificationResponse
 import net.corda.ledger.verification.processor.VerificationRequestHandler
 import net.corda.ledger.verification.sandbox.VerificationSandboxService
 import net.corda.messaging.api.records.Record
@@ -19,10 +17,7 @@ import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
 
@@ -45,14 +40,7 @@ class VerificationRpcRequestProcessorTest {
     private val sandbox = mock<SandboxGroupContext>()
     private val virtualNodeContext = mock<VirtualNodeContext>()
     private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
-
-    private val externalEventContext = mock<ExternalEventContext>()
     private val flowEvent = mock<FlowEvent>()
-    private val response = mock<TransactionVerificationResponse>()
-    private val externalEventResponseFactory = mock<ExternalEventResponseFactory> {
-        on { success(any(), any()) } doReturn (Record("batman", "mobile", flowEvent))
-        on { platformError(any(), any<ExceptionEnvelope>()) } doReturn (Record("joker", "face", flowEvent))
-    }
     private val requestClass = TransactionVerificationRequest::class.java
     private val responseClass = FlowEvent::class.java
 
@@ -86,16 +74,13 @@ class VerificationRpcRequestProcessorTest {
     @Test
     fun `successful response messages`() {
         val request = createRequest("r1")
-        val responseRecord = Record("", "1", "")
+        val responseRecord = Record("", "1", flowEvent)
         whenever(verificationRequestHandler.handleRequest(sandbox, request)).thenReturn(responseRecord)
 
         val results = verificationRpcRequestProcessor.process(request)
 
         assertThat(results).isNotNull
         assertThat(results).isEqualTo(flowEvent)
-        assertThat(results).isEqualTo(responseRecord)
-
-        verify(externalEventResponseFactory).success(externalEventContext, response)
     }
 
     @Test
