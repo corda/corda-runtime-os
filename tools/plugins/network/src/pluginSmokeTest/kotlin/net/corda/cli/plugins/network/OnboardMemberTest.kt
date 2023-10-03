@@ -2,6 +2,7 @@ package net.corda.cli.plugins.network
 
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
 import net.corda.cli.plugins.network.utils.HoldingIdentityUtils
+import net.corda.cli.plugins.network.utils.hash
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.membership.lib.MemberInfoExtension
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import picocli.CommandLine
+import java.io.File
 import java.util.UUID
 
 class OnboardMemberTest {
@@ -31,6 +33,7 @@ class OnboardMemberTest {
         private lateinit var outputStub: OutputStub
         private lateinit var command: OnboardMgm
         private lateinit var cpbLocation: String
+        private lateinit var defaulGroupPolicyLocation: String
 
         @BeforeAll
         @JvmStatic
@@ -38,6 +41,7 @@ class OnboardMemberTest {
             command = OnboardMgm()
             outputStub = OutputStub()
             cpbLocation = this::class.java.classLoader.getResource(CPB_FILE)!!.path
+            defaulGroupPolicyLocation = "${System.getProperty("user.home")}/.corda/gp/groupPolicy.json"
 
             CommandLine(command).execute(
                 mgmName,
@@ -66,12 +70,11 @@ class OnboardMemberTest {
     fun `onboarding member with CPB and group policy succeeds`() {
         val member = memberName()
         val cpbLocation = this::class.java.classLoader.getResource("OnboardMemberTest/single-use.cpb")!!.path
-        val groupPolicyLocation = "${System.getProperty("user.home")}/.corda/gp/groupPolicy.json"
 
         CommandLine(OnboardMember()).execute(
             member.toString(),
             "--cpb-file=$cpbLocation",
-            "--group-policy-file=$groupPolicyLocation",
+            "--group-policy-file=$defaulGroupPolicyLocation",
             targetUrl,
             user,
             password,
@@ -200,13 +203,15 @@ class OnboardMemberTest {
         assertThat(output!!.get(customKey)?.asText()).isEqualTo(customValue)
     }
 
-    private fun OnboardMgm.getExistingCpiHash(): String =
-        createRestClient(CpiUploadRestResource::class).use { client ->
+    private fun OnboardMgm.getExistingCpiHash(): String {
+        val cpbFile = File(cpbLocation)
+        val groupPolicyFile = File(defaulGroupPolicyLocation)
+        val combinedHash = setOf(cpbFile, groupPolicyFile).hash()
+        return createRestClient(CpiUploadRestResource::class).use { client ->
             val response = client.start().proxy.getAllCpis()
-            response.cpis
-                .first { it.id.cpiName.startsWith(CPB_FILE) }
-                .cpiFileChecksum
+            response.cpis.first { it.id.cpiName == "$CPB_FILE-$combinedHash" }.cpiFileChecksum
         }
+    }
 
     private fun OnboardMgm.createPreAuthToken(member: String): String {
         val holdingIdentity = HoldingIdentityUtils.getHoldingIdentity(
