@@ -1,9 +1,9 @@
 package net.corda.libs.statemanager.api
 
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import java.util.stream.Stream
@@ -29,10 +29,9 @@ class MetadataTests {
     @Test
     fun `fail all non-primitive types`() {
         val list = listOf("Na Na Na Na Na Na Na Na", "Batman")
-        val ex = assertThrows<IllegalArgumentException> {
-            Metadata(mapOf("joker" to Superman(1000), "batman" to list))
-        }
-        assertThat(ex).hasMessageContainingAll("joker", "batman", Superman::class.java.name, list.javaClass.name)
+        assertThatThrownBy { Metadata(mapOf("joker" to Superman(1000), "batman" to list)) }
+            .isExactlyInstanceOf(IllegalArgumentException::class.java)
+            .hasMessageContainingAll("joker", "batman", Superman::class.java.name, list.javaClass.name)
     }
 
     @Test
