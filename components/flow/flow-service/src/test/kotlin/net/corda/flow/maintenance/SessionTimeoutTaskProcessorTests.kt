@@ -31,7 +31,7 @@ class SessionTimeoutTaskProcessorTests {
         state1.key to state1,
     )
     private val stateManager = mock<StateManager> {
-        on { find(any()) } doReturn (states)
+        on { findByMetadata(any()) } doReturn (states)
     }
     private val record1 = Record<String, ScheduledTaskTrigger>(
         Schemas.ScheduledTask.SCHEDULED_TASK_NAME_SESSION_TIMEOUT,
@@ -43,14 +43,14 @@ class SessionTimeoutTaskProcessorTests {
         val processor = SessionTimeoutTaskProcessor(stateManager) { now }
         val output = processor.onNext(emptyList())
         assertThat(output).isEmpty()
-        verify(stateManager, never()).find(any())
+        verify(stateManager, never()).findByMetadata(any())
     }
 
     @Test
     fun `when multiple in list do only process one`() {
         val processor = SessionTimeoutTaskProcessor(stateManager) { now }
         processor.onNext(listOf(record1, record1.copy(value = mock())))
-        verify(stateManager, Times(1)).find(any())
+        verify(stateManager, Times(1)).findByMetadata(any())
     }
 
     @Test
@@ -58,7 +58,7 @@ class SessionTimeoutTaskProcessorTests {
         val processor = SessionTimeoutTaskProcessor(stateManager) { now }
         val output = processor.onNext(listOf(record1.copy(key = "foo")))
         assertThat(output).isEmpty()
-        verify(stateManager, never()).find(any())
+        verify(stateManager, never()).findByMetadata(any())
     }
 
     @Test
@@ -78,7 +78,7 @@ class SessionTimeoutTaskProcessorTests {
 
     @Test
     fun `when no states found return empty`() {
-        whenever(stateManager.find(any())).doReturn(emptyMap())
+        whenever(stateManager.findByMetadata(any())).doReturn(emptyMap())
         val processor = SessionTimeoutTaskProcessor(stateManager) { now }
         val output = processor.onNext(listOf(record1))
         // TODO - better assertion when integrated

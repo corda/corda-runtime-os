@@ -1,9 +1,9 @@
 package net.corda.libs.statemanager.api
 
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatCode
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import java.util.stream.Stream
@@ -21,9 +21,9 @@ class MetadataTests {
     @ParameterizedTest
     @MethodSource("acceptedTypes")
     fun `accept primitive types`(value: Any) {
-        assertDoesNotThrow {
+        assertThatCode {
             Metadata(mapOf("foo" to value))
-        }
+        }.doesNotThrowAnyException()
     }
 
     @Test

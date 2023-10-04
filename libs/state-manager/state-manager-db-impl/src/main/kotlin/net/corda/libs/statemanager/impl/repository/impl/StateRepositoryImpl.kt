@@ -1,10 +1,10 @@
 package net.corda.libs.statemanager.impl.repository.impl
 
-import net.corda.libs.statemanager.api.Operation
+import net.corda.libs.statemanager.api.IntervalFilter
+import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.repository.StateRepository
 import org.slf4j.LoggerFactory
-import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.Query
 
@@ -17,16 +17,6 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
     @Suppress("UNCHECKED_CAST")
     private fun Query.resultListAsStateEntityCollection() = resultList as Collection<StateEntity>
 
-    private fun findByKeys(
-        entityManager: EntityManager,
-        keys: Collection<String>
-    ): Collection<StateEntity> {
-        return entityManager
-            .createNativeQuery(queryProvider.findStatesByKey, StateEntity::class.java)
-            .setParameter(KEYS_PARAMETER_NAME, keys)
-            .resultListAsStateEntityCollection()
-    }
-
     override fun create(entityManager: EntityManager, state: StateEntity) {
         entityManager
             .createNativeQuery(queryProvider.createState)
@@ -37,11 +27,13 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
             .executeUpdate()
     }
 
-    override fun get(entityManager: EntityManager, keys: Collection<String>): Collection<StateEntity> {
-        return findByKeys(entityManager, keys)
-    }
+    override fun get(entityManager: EntityManager, keys: Collection<String>) =
+        entityManager
+            .createNativeQuery(queryProvider.findStatesByKey, StateEntity::class.java)
+            .setParameter(KEYS_PARAMETER_NAME, keys)
+            .resultListAsStateEntityCollection()
 
-    override fun update(entityManager: EntityManager, states: Collection<StateEntity>) {
+    override fun update(entityManager: EntityManager, states: Collection<StateEntity>) =
         try {
             states.forEach {
                 entityManager
@@ -55,7 +47,6 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
             logger.warn("Failed to updated batch of states - ${states.joinToString { it.key }}", e)
             throw e
         }
-    }
 
     override fun delete(entityManager: EntityManager, keys: Collection<String>) {
         try {
@@ -69,45 +60,33 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
         }
     }
 
-    override fun updatedBetween(
-        entityManager: EntityManager,
-        start: Instant,
-        finish: Instant
-    ): Collection<StateEntity> {
-        return entityManager
+    override fun updatedBetween(entityManager: EntityManager, interval: IntervalFilter): Collection<StateEntity> =
+        entityManager
             .createNativeQuery(queryProvider.findStatesUpdatedBetween, StateEntity::class.java)
-            .setParameter(START_TIMESTAMP_PARAMETER_NAME, start)
-            .setParameter(FINISH_TIMESTAMP_PARAMETER_NAME, finish)
+            .setParameter(START_TIMESTAMP_PARAMETER_NAME, interval.start)
+            .setParameter(FINISH_TIMESTAMP_PARAMETER_NAME, interval.finish)
             .resultListAsStateEntityCollection()
-    }
 
-    override fun filterByMetadata(
-        entityManager: EntityManager,
-        key: String, operation: Operation, value: Any
-    ): Collection<StateEntity> {
-        return entityManager
-            .createNativeQuery(
-                queryProvider.statesFilteredByMetadataKey(key, operation, value),
-                StateEntity::class.java
-            )
+    override fun filterByAll(entityManager: EntityManager, filters: Collection<MetadataFilter>) =
+        entityManager
+            .createNativeQuery(queryProvider.findStatesByMetadataMatchingAll(filters), StateEntity::class.java)
             .resultListAsStateEntityCollection()
-    }
+
+    override fun filterByAny(entityManager: EntityManager, filters: Collection<MetadataFilter>) =
+        entityManager
+            .createNativeQuery(queryProvider.findStatesByMetadataMatchingAny(filters), StateEntity::class.java)
+            .resultListAsStateEntityCollection()
 
     override fun filterByUpdatedBetweenAndMetadata(
         entityManager: EntityManager,
-        start: Instant,
-        finish: Instant,
-        key: String,
-        operation: Operation,
-        value: Any
-    ): Collection<StateEntity> {
-        return entityManager
-            .createNativeQuery(
-                queryProvider.statesUpdatedBetweenAndFilteredByMetadataKey(key, operation, value),
-                StateEntity::class.java
-            )
-            .setParameter(START_TIMESTAMP_PARAMETER_NAME, start)
-            .setParameter(FINISH_TIMESTAMP_PARAMETER_NAME, finish)
-            .resultListAsStateEntityCollection()
-    }
+        interval: IntervalFilter,
+        filter: MetadataFilter
+    ) = entityManager
+        .createNativeQuery(
+            queryProvider.findStatesUpdatedBetweenAndFilteredByMetadataKey(filter),
+            StateEntity::class.java
+        )
+        .setParameter(START_TIMESTAMP_PARAMETER_NAME, interval.start)
+        .setParameter(FINISH_TIMESTAMP_PARAMETER_NAME, interval.finish)
+        .resultListAsStateEntityCollection()
 }
