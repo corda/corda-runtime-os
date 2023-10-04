@@ -44,7 +44,7 @@ class CryptoRekeyBusProcessorTests {
     private lateinit var config: Map<String, SmartConfig>
     private val oldKeyAlias = "oldKeyAlias"
     private val newKeyAlias = "newKeyAlias"
-    
+
     @BeforeEach
     fun setup() {
         val configEvent = ConfigChangedEvent(
@@ -93,25 +93,7 @@ class CryptoRekeyBusProcessorTests {
         val virtualNodes = getStubVirtualNodes(listOf("Bob"))
         whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
 
-        cryptoRekeyBusProcessor.onNext(
-            listOf(
-                Record(
-                    "TBC",
-                    UUID.randomUUID().toString(),
-                    KeyRotationRequest(
-                        UUID.randomUUID().toString(),
-                        KeyType.UNMANAGED,
-                        "",
-                        "",
-                        null,
-                        tenantId,
-                        false,
-                        0,
-                        null
-                    )
-                )
-            )
-        )
+        cryptoRekeyBusProcessor.onNext(listOf(getKafkaRecord("", null)))
 
         verify(publisher, times(1)).publish(any())
     }
@@ -121,25 +103,8 @@ class CryptoRekeyBusProcessorTests {
         val virtualNodes = getStubVirtualNodes(listOf("Alice", "Bob", "Charlie"))
         whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
 
-        cryptoRekeyBusProcessor.onNext(
-            listOf(
-                Record(
-                    "TBC",
-                    UUID.randomUUID().toString(),
-                    KeyRotationRequest(
-                        UUID.randomUUID().toString(),
-                        KeyType.UNMANAGED,
-                        "",
-                        "",
-                        null,
-                        tenantId,
-                        false,
-                        0,
-                        null
-                    )
-                )
-            )
-        )
+        cryptoRekeyBusProcessor.onNext(listOf(getKafkaRecord("", null)))
+
         verify(publisher, times(3)).publish(any())
     }
 
@@ -148,25 +113,8 @@ class CryptoRekeyBusProcessorTests {
         val virtualNodes = getStubVirtualNodes(listOf("Alice", "Bob", "Charlie", "David", "Erin"))
         whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
 
-        cryptoRekeyBusProcessor.onNext(
-            listOf(
-                Record(
-                    "TBC",
-                    UUID.randomUUID().toString(),
-                    KeyRotationRequest(
-                        UUID.randomUUID().toString(),
-                        KeyType.UNMANAGED,
-                        "",
-                        "",
-                        null,
-                        tenantId,
-                        false,
-                        0,
-                        2
-                    )
-                )
-            )
-        )
+        cryptoRekeyBusProcessor.onNext(listOf(getKafkaRecord("", 2)))
+
         verify(publisher, times(2)).publish(any())
     }
 
@@ -231,4 +179,20 @@ class CryptoRekeyBusProcessorTests {
         }
         return virtualNodesInfos
     }
+
+    private fun getKafkaRecord(oldKeyAlias: String, limit: Int?): Record<String, KeyRotationRequest> = Record(
+        "TBC",
+        UUID.randomUUID().toString(),
+        KeyRotationRequest(
+            UUID.randomUUID().toString(),
+            KeyType.UNMANAGED,
+            oldKeyAlias,
+            "",
+            null,
+            tenantId,
+            false,
+            0,
+            limit
+        )
+    )
 }
