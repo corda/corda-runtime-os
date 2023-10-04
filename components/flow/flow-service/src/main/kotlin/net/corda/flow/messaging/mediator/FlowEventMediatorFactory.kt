@@ -12,8 +12,9 @@ interface FlowEventMediatorFactory {
     /**
      * Creates a Multi-Source Event Mediator for flow engine.
      *
-     * @param configs Map of configurations.
+     * @param configs Map of configurations (keys are API defined configuration keys).
      * @param messagingConfig Messaging configuration.
+     * @see net.corda.schema.configuration.ConfigKeys
      */
     fun create(
         configs: Map<String, SmartConfig>,
