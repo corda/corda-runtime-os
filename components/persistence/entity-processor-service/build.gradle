@@ -11,4 +11,6 @@ dependencies {
     api project(':libs:configuration:configuration-core')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(':libs:messaging:messaging')
+
 }

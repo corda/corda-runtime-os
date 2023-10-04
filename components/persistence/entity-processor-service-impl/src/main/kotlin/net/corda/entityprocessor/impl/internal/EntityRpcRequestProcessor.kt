@@ -50,14 +50,14 @@ import javax.persistence.PersistenceException
  *
  * [payloadCheck] is called against each AMQP payload in the result (not the entire Avro array of results)
  */
-class EntityRPCMessageProcessor(
+class EntityRpcRequestProcessor(
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     private val entitySandboxService: EntitySandboxService,
     private val responseFactory: ResponseFactory,
     private val payloadCheck: (bytes: ByteBuffer) -> ByteBuffer,
-    private val requestsIdsRepository: RequestsIdsRepository = RequestsIdsRepositoryImpl(),
     override val requestClass: Class<EntityRequest>,
-    override val responseClass: Class<FlowEvent>
+    override val responseClass: Class<FlowEvent>,
+    private val requestsIdsRepository: RequestsIdsRepository = RequestsIdsRepositoryImpl()
 ) : SyncRPCProcessor<EntityRequest, FlowEvent> {
 
     private companion object {
@@ -66,8 +66,6 @@ class EntityRPCMessageProcessor(
 
     override fun process(request: EntityRequest): FlowEvent {
         //TODO - include null filter? See EntityMessageProcessor
-        // We received a [null] external event therefore we do not know the flow id to respond to.
-
         //TODO fix timestamp here
 /*        CordaMetrics.Metric.Db.EntityPersistenceRequestLag.builder()
             .withTag(CordaMetrics.Tag.OperationName, request::class.java.name)

@@ -22,7 +22,7 @@ import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.createDog
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getDogClass
 import net.corda.db.schema.DbSchema
-import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
+import net.corda.entityprocessor.impl.internal.EntityRequestProcessor
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
 import net.corda.flow.utils.toKeyValuePairList
@@ -105,7 +105,7 @@ class PersistenceExceptionTests {
     private lateinit var dbConnectionManager: FakeDbConnectionManager
 
     private lateinit var entitySandboxService: EntitySandboxService
-    private lateinit var processor: EntityMessageProcessor
+    private lateinit var processor: EntityRequestProcessor
 
     private lateinit var virtualNodeInfo: VirtualNodeInfo
     private lateinit var cpkFileHashes: Set<SecureHash>
@@ -157,7 +157,7 @@ class PersistenceExceptionTests {
                     virtualNodeInfoReadService,
                     dbConnectionManager
                 )
-            processor = EntityMessageProcessor(
+            processor = EntityRequestProcessor(
                 currentSandboxGroupContext,
                 entitySandboxService,
                 responseFactory,
@@ -217,7 +217,7 @@ class PersistenceExceptionTests {
                 dbConnectionManager
             )
 
-        val processor = EntityMessageProcessor(
+        val processor = EntityRequestProcessor(
             currentSandboxGroupContext,
             brokenEntitySandboxService,
             responseFactory,
