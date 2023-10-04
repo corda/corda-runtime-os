@@ -603,7 +603,7 @@ class DynamicMemberRegistrationServiceTest {
             val identityInfo = mock<IdentityInfo> {
                 on { tlsCertificates } doReturn listOf(certificate)
             }
-            whenever(locallyHostedIdentitiesService.getIdentityInfo(member)).doReturn(identityInfo)
+            whenever(locallyHostedIdentitiesService.pollForIdentityInfo(member)).doReturn(identityInfo)
 
             registrationService.register(registrationResultId, member, context)
 
@@ -1065,7 +1065,7 @@ class DynamicMemberRegistrationServiceTest {
             val identityInfo = mock<IdentityInfo> {
                 on { tlsCertificates } doReturn emptyList()
             }
-            whenever(locallyHostedIdentitiesService.getIdentityInfo(member)).doReturn(identityInfo)
+            whenever(locallyHostedIdentitiesService.pollForIdentityInfo(member)).doReturn(identityInfo)
             postConfigChangedEvent()
             registrationService.start()
 

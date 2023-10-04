@@ -12,12 +12,12 @@ class PreviewTest {
     fun `validate topic configuration is generated correctly`() {
         val command = command()
 
-        val expectedConfigYamlFile = this::class.java.classLoader.getResource("preview_config.yaml")?.file
+        val expectedConfigYamlFile = this::class.java.classLoader.getResource("preview_config.yaml")?.toURI()
         val expectedConfigString = Files.readString(File(expectedConfigYamlFile!!).toPath())
         val expectedConfig: Create.PreviewTopicConfigurations = command.create!!.mapper.readValue(expectedConfigString)
 
 
-        val topicDefinitionsFile = this::class.java.classLoader.getResource("config.yaml")?.file
+        val topicDefinitionsFile = this::class.java.classLoader.getResource("config.yaml")?.toURI()
         val topicDefinitionsString = Files.readString(File(topicDefinitionsFile!!).toPath())
         val topicDefinitions: Create.TopicDefinitions = command.create!!.mapper.readValue(topicDefinitionsString)
         val actualConfig = command.create!!.getTopicConfigsForPreview(topicDefinitions.topics.values.toList())
