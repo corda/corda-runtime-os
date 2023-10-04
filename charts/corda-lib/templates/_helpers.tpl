@@ -671,6 +671,51 @@ State Manager DB credentials environment variables
 {{- end -}}
 
 {{/*
+Default name for bootstrap State Manager DB secret
+*/}}
+{{- define "corda.bootstrapStateManagerDbDefaultSecretName" -}}
+{{ printf "%s-bootstrap-state-manager-db" (include "corda.fullname" .) }}
+{{- end -}}
+
+{{/*
+Bootstrap State Manager DB credentials environment variables
+*/}}
+{{- define "corda.bootstrapStateManagerDbEnv" -}}
+- name: PGUSER
+  valueFrom:
+    secretKeyRef:
+      {{- if .Values.bootstrap.db.stateManager.username.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.bootstrap.db.stateManager.username.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify bootstrap.db.stateManager.username.valueFrom.secretKeyRef.key" .Values.bootstrap.db.stateManager.username.valueFrom.secretKeyRef.key | quote }}
+      {{- else if .Values.bootstrap.db.stateManager.username.value }}
+      name: {{ include "corda.bootstrapStateManagerDbDefaultSecretName" . | quote }}
+      key: "username"
+      {{- else if .Values.stateManager.db.username.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.stateManager.db.username.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify stateManager.db.username.valueFrom.secretKeyRef.key" .Values.stateManager.db.username.valueFrom.secretKeyRef.key | quote }}
+      {{- else }}
+      name: {{ include "corda.stateManagerDbDefaultSecretName" . | quote }}
+      key: "username"
+      {{- end }}
+- name: PGPASSWORD
+  valueFrom:
+    secretKeyRef:
+      {{- if .Values.bootstrap.db.stateManager.password.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.bootstrap.db.stateManager.password.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify bootstrap.db.stateManager.password.valueFrom.secretKeyRef.key" .Values.bootstrap.db.stateManager.password.valueFrom.secretKeyRef.key | quote }}
+      {{- else if .Values.bootstrap.db.stateManager.password.value }}
+      name: {{ include "corda.bootstrapStateManagerDbDefaultSecretName" . | quote }}
+      key: "password"
+      {{- else if .Values.stateManager.db.password.valueFrom.secretKeyRef.name }}
+      name: {{ .Values.stateManager.db.password.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify stateManager.db.password.valueFrom.secretKeyRef.key" .Values.stateManager.db.password.valueFrom.secretKeyRef.key | quote }}
+      {{- else}}
+      name: {{ include "corda.stateManagerDbDefaultSecretName" . | quote }}
+      key: "password"
+      {{- end }}
+{{- end -}}
+
+{{/*
 The port which should be used to connect to Corda worker instances
 */}}
 {{- define "corda.workerServicePort" -}}
