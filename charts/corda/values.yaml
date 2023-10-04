@@ -425,8 +425,6 @@ bootstrap:
   kafka:
     # -- Indicates whether Kafka bootstrap is enabled as part of installation
     enabled: true
-    # -- Specifies whether existing topics with the given prefix should be deleted before trying to create new ones (deletes all existing topics if no prefix is given)
-    cleanup: false
     # -- Kafka topic partitions
     partitions: 10
     # -- Kafka topic replicas

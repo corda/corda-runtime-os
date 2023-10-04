@@ -1437,15 +1437,6 @@
                                 false
                             ]
                         },
-                        "cleanup": {
-                            "type": "boolean",
-                            "default": false,
-                            "title": "specifies whether existing topics with the given prefix should be deleted before trying to create new ones (deletes all existing topics if no prefix is given)",
-                            "examples": [
-                                false,
-                                true
-                            ]
-                        },
                         "partitions": {
                             "type": "integer",
                             "default": 10,
