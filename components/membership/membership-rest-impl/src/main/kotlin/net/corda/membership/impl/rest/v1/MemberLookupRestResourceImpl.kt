@@ -52,6 +52,7 @@ class MemberLookupRestResourceImpl @Activate constructor(
             state: String?,
             country: String?,
             statuses: Set<String>,
+            canViewItselfInAnyStatus: Boolean
         ): RestMemberInfoList
 
         fun viewGroupParameters(holdingIdentityShortHash: ShortHash): RestGroupParameters
@@ -107,6 +108,28 @@ class MemberLookupRestResourceImpl @Activate constructor(
         state,
         country,
         statuses.toSet(),
+        false
+    )
+
+    override fun lookupV51(
+        holdingIdentityShortHash: String,
+        commonName: String?,
+        organization: String?,
+        organizationUnit: String?,
+        locality: String?,
+        state: String?,
+        country: String?,
+        statuses: List<String>
+    ) = impl.lookup(
+        ShortHash.parseOrThrow(holdingIdentityShortHash),
+        commonName,
+        organization,
+        organizationUnit,
+        locality,
+        state,
+        country,
+        statuses.toSet(),
+        true
     )
 
     override fun viewGroupParameters(holdingIdentityShortHash: String): RestGroupParameters =
@@ -132,6 +155,7 @@ class MemberLookupRestResourceImpl @Activate constructor(
             state: String?,
             country: String?,
             statuses: Set<String>,
+            canViewItselfInAnyStatus: Boolean
         ) = throw ServiceUnavailableException(
             "${MemberLookupRestResourceImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
         )
@@ -153,6 +177,7 @@ class MemberLookupRestResourceImpl @Activate constructor(
             state: String?,
             country: String?,
             statuses: Set<String>,
+            canViewItselfInAnyStatus: Boolean
         ): RestMemberInfoList {
             val holdingIdentity = virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(
                 holdingIdentityShortHash
@@ -168,7 +193,7 @@ class MemberLookupRestResourceImpl @Activate constructor(
                 locality?.let { memberName.locality.equals(it, true) } ?: true &&
                 state?.let { memberName.state.equals(it, true) } ?: true &&
                 country?.let { memberName.country.equals(it, true) } ?: true &&
-                statusFilter.contains(member.status)
+                (statusFilter.contains(member.status) || (canViewItselfInAnyStatus && member.name == holdingIdentity.x500Name))
             }
 
             return RestMemberInfoList(
