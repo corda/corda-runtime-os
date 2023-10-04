@@ -56,7 +56,7 @@ import net.corda.permissions.storage.writer.PermissionStorageWriterService
 import net.corda.processors.db.DBProcessor
 import net.corda.processors.db.internal.schedule.DeduplicationTableCleanUpProcessor
 import net.corda.reconciliation.ReconcilerFactory
-import net.corda.schema.Schemas.ScheduledTask.SCHEDULED_TASK_DB_PROCESSOR
+import net.corda.schema.Schemas.ScheduledTask.SCHEDULED_TASK_TOPIC_DB_PROCESSOR
 import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys
@@ -291,7 +291,7 @@ class DBProcessorImpl @Activate constructor(
         val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
         coordinator.createManagedResource(DEDUPLICATION_TABLE_MANAGED_RESOURCE) {
             subscriptionFactory.createDurableSubscription(
-                SubscriptionConfig(DEDUPLICATION_TABLE_CLEAN_UP_GROUP, SCHEDULED_TASK_DB_PROCESSOR),
+                SubscriptionConfig(DEDUPLICATION_TABLE_CLEAN_UP_GROUP, SCHEDULED_TASK_TOPIC_DB_PROCESSOR),
                 DeduplicationTableCleanUpProcessor(
                     dbConnectionManager,
                     virtualNodeInfoReadService,

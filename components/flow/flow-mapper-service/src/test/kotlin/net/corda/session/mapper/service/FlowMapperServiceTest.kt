@@ -9,6 +9,7 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.test.impl.LifecycleTest
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.messaging.api.exception.CordaMessageAPIConfigException
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -43,6 +44,7 @@ internal class FlowMapperServiceTest {
         }
         LifecycleTest {
             addDependency<ConfigurationReadService>()
+            addDependency<LocallyHostedIdentitiesService>()
 
             FlowMapperService(
                 coordinatorFactory,
@@ -90,6 +92,7 @@ internal class FlowMapperServiceTest {
 
         LifecycleTest {
             addDependency<ConfigurationReadService>()
+            addDependency<LocallyHostedIdentitiesService>()
             addDependency(subName)
 
             FlowMapperService(
@@ -142,6 +145,7 @@ internal class FlowMapperServiceTest {
 
         LifecycleTest {
             addDependency<ConfigurationReadService>()
+            addDependency<LocallyHostedIdentitiesService>()
             addDependency(subName)
 
             FlowMapperService(

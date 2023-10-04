@@ -3,7 +3,7 @@ package net.corda.session.mapper.service.executor
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.Operation
-import net.corda.libs.statemanager.api.SingleKeyFilter
+import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.metadata
@@ -42,7 +42,7 @@ class ScheduledTaskHandlerTest {
         assertThat(ids).contains("key1", "key4")
         verify(stateManager).findUpdatedBetweenWithMetadataFilter(
             IntervalFilter(Instant.MIN, clock.instant() - Duration.ofMillis(window)),
-            SingleKeyFilter(FLOW_MAPPER_STATUS, Operation.Equals, FlowMapperStateType.CLOSING.toString())
+            MetadataFilter(FLOW_MAPPER_STATUS, Operation.Equals, FlowMapperStateType.CLOSING.toString())
         )
     }
 
@@ -73,23 +73,19 @@ class ScheduledTaskHandlerTest {
         assertThat(output).isEmpty()
         verify(stateManager).findUpdatedBetweenWithMetadataFilter(
             IntervalFilter(Instant.MIN, clock.instant() - Duration.ofMillis(window * 5)),
-            SingleKeyFilter(FLOW_MAPPER_STATUS, Operation.Equals, FlowMapperStateType.CLOSING.toString())
+            MetadataFilter(FLOW_MAPPER_STATUS, Operation.Equals, FlowMapperStateType.CLOSING.toString())
         )
     }
 
     private fun createStateEntry(
         key: String,
         lastUpdated: Instant,
-        mapperState: FlowMapperStateType?
+        mapperState: FlowMapperStateType
     ): Pair<String, State> {
-        val metadata = metadata()
-        mapperState?.let {
-            metadata.put(FLOW_MAPPER_STATUS, it.toString())
-        }
         val state = State(
             key,
             byteArrayOf(),
-            metadata = metadata,
+            metadata = metadata(FLOW_MAPPER_STATUS to mapperState.toString()),
             modifiedTime = lastUpdated
         )
         return Pair(key, state)

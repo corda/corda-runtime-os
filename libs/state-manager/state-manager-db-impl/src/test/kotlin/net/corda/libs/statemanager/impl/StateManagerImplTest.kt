@@ -1,5 +1,6 @@
 package net.corda.libs.statemanager.impl
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.metadata
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
@@ -143,5 +144,19 @@ class StateManagerImplTest {
         )
         verify(stateRepository).delete(entityManager, listOf(persistentStateOne.key, persistentStateFour.key))
         verifyNoMoreInteractions(stateRepository)
+    }
+
+    @Test
+    fun convertJson() {
+        val str = """
+            {
+             "foo": "bar",
+             "hello": 123
+            }
+        """.trimIndent()
+
+        val meta = ObjectMapper().convertToMetadata(str)
+        assertThat(meta["foo"]).isEqualTo("bar")
+        assertThat(meta["hello"]).isEqualTo(123)
     }
 }

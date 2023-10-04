@@ -15,6 +15,7 @@ import java.io.ByteArrayOutputStream
 import java.io.FileDescriptor
 import java.io.FileOutputStream
 import java.io.PrintStream
+import java.nio.file.Paths
 
 class CreateConnectTest {
 
@@ -81,7 +82,8 @@ class CreateConnectTest {
     }
 
     private fun getCommandWithConfigFile() = CreateConnect().apply {
-        configFilePath = this::class.java.classLoader.getResource("short_generated_topic_config.yaml")?.path
+        val configFile = this::class.java.classLoader.getResource("short_generated_topic_config.yaml")!!.toURI()
+        configFilePath = Paths.get(configFile).toString()
         create = Create()
         create!!.topic = TopicPlugin.Topic()
     }
