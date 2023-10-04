@@ -2,6 +2,7 @@ package net.corda.flow.maintenance
 
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
+import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -35,18 +36,28 @@ class FlowMaintenanceImpl @Activate constructor(
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<FlowMaintenance>(::eventHandler)
+    private var stateManagerConfig: SmartConfig? = null
+    private var stateManager: StateManager? = null
+
     override fun onConfigChange(config: Map<String, SmartConfig>) {
         // TODO - fix config key (CORE-17437).
         if(config.containsKey(ConfigKeys.MESSAGING_CONFIG)) {
             val messagingConfig = config.getConfig(ConfigKeys.MESSAGING_CONFIG)
-            val stateManagerConfig = config.getConfig(ConfigKeys.MESSAGING_CONFIG)
+            val newStateManagerConfig = config.getConfig(ConfigKeys.MESSAGING_CONFIG)
+            // Only re-configure the state manager if the config has changes.
+            // This should not be needed anymore once it's a separate key.
+            if(newStateManagerConfig != stateManagerConfig) {
+                stateManager?.close()
+                stateManager = stateManagerFactory.create(newStateManagerConfig)
+                stateManagerConfig = newStateManagerConfig
+            }
             coordinator.createManagedResource("FLOW_MAINTENANCE_SUBSCRIPTION") {
                 subscriptionFactory.createDurableSubscription(
                     SubscriptionConfig(
                         "flow.maintenance.tasks",
                         Schemas.ScheduledTask.SCHEDULED_TASK_TOPIC_FLOW_PROCESSOR
                     ),
-                    SessionTimeoutTaskProcessor(stateManagerFactory.create(stateManagerConfig)),
+                    SessionTimeoutTaskProcessor(stateManager!!),
                     messagingConfig,
                     null
                 )
@@ -62,6 +73,8 @@ class FlowMaintenanceImpl @Activate constructor(
     }
 
     override fun stop() {
+        stateManager?.close()
+        stateManager = null
         coordinator.stop()
     }
 
