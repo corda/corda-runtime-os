@@ -80,16 +80,12 @@ class ScheduledTaskHandlerTest {
     private fun createStateEntry(
         key: String,
         lastUpdated: Instant,
-        mapperState: FlowMapperStateType?
+        mapperState: FlowMapperStateType
     ): Pair<String, State> {
-        val metadata = metadata()
-        mapperState?.let {
-            metadata.put(FLOW_MAPPER_STATUS, it.toString())
-        }
         val state = State(
             key,
             byteArrayOf(),
-            metadata = metadata,
+            metadata = metadata(FLOW_MAPPER_STATUS to mapperState.toString()),
             modifiedTime = lastUpdated
         )
         return Pair(key, state)

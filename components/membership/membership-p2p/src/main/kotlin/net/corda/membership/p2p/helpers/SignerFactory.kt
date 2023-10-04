@@ -14,7 +14,7 @@ class SignerFactory(
         mgm: MemberInfo,
     ): Signer {
         val holdingId = mgm.holdingIdentity
-        val hostingMapData = locallyHostedIdentitiesService.getIdentityInfo(holdingId)
+        val hostingMapData = locallyHostedIdentitiesService.pollForIdentityInfo(holdingId)
             ?: throw IllegalStateException("Can not find preferred key of MGM (${mgm.holdingIdentity})")
         return Signer(
             mgm.id,

@@ -11,4 +11,4 @@ corda-api.
 * Corda CLI plugins: Plugins for Corda CLI Plugin Host e.g. package, network.
 
 ## Plugin Smoke Tests
-Smoke tests in individual Corda CLI plugin directories under `pluginSmokeTest` are intended to be run against the Combined Worker. There is a separate Jenkins job that runs these tests, which is currently set up to be triggered manually during development. In the future, it may be run on a schedule and/or included as a PR-gate.
+Smoke tests in individual Corda CLI plugin directories under `pluginSmokeTest` are run against the Combined Worker, intended to be triggered manually during development. There is also a nightly Jenkins job that runs these tests on the release branch. In the future, it may be included as a PR-gate.
