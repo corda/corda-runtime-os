@@ -128,7 +128,7 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
 
     override val updateTransactionStatus: String
         get() = """
-            UPDATE {h-schema}utxo_transaction ut SET ut.status = :newStatus, ut.updated = :updatedAt
+            UPDATE {h-schema}utxo_transaction AS ut SET ut.status = :newStatus, ut.updated = :updatedAt
             WHERE ut.id = :transactionId 
             AND (ut.status = :newStatus OR ut.status = '$UNVERIFIED')"""
             .trimIndent()
