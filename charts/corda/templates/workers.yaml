@@ -4,8 +4,16 @@
 {{- include "corda.worker" ( list $ .Values.workers.db "db"
   ( dict "clusterDbAccess" true )
 ) }}
+
+{{- $args := list }}
+{{- $servicesAccessed := list "crypto" "verification" "uniqueness" "persistence" }}
+{{- range $worker := $servicesAccessed }}
+{{- $endpoint := include "corda.getWorkerEndpoint" (dict "context" $ "worker" $worker) }}
+{{- $args = append $args (printf "--endpoint=%s" $endpoint) }}
+{{- end }}
+
 {{- include "corda.worker" ( list $ .Values.workers.flow "flow"
-  ( dict "stateManagerDbAccess" true )
+  ( dict "stateManagerDbAccess" true "additionalWorkerArgs" $args )
 ) }}
 {{- include "corda.worker" ( list $ .Values.workers.flowMapper "flowMapper" ) }}
 {{- include "corda.worker" ( list $ .Values.workers.verification "verification" ) }}
