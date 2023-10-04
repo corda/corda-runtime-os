@@ -13,7 +13,6 @@ import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationNotFoundE
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.rest.ResponseCode
 import net.corda.rest.asynchronous.v1.AsyncOperationStatus
 import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.InvalidStateChangeException
@@ -147,28 +146,6 @@ class VirtualNodeRestResourceImplTest {
     }
 
     @Test
-    fun `upgradeVirtualNode succeeds trying to upgrade to same CPI as current one if forceUpgrade is true`() {
-        val currentVNode = mockVnode(operationInProgress = "Upgrade vNode")
-        val currentCpi = mock<CpiMetadata>().apply {
-            whenever(fileChecksum).thenReturn(parseSecureHash("SHA-256:1234567890"))
-        }
-        whenever(virtualNodeValidationService.validateAndGetVirtualNode(any())).thenReturn(currentVNode)
-        whenever(cpiInfoReadService.get(currentVNode.cpiIdentifier)).thenReturn(currentCpi)
-        whenever(virtualNodeValidationService.validateAndGetCpiByChecksum(any())).thenReturn(currentCpi)
-
-        val vnodeResource = createVirtualNodeRestResourceImpl(mockCoordinatorFactory)
-        vnodeResource.start()
-
-        val upgradeResponse = vnodeResource.upgradeVirtualNode(
-            currentVNode.holdingIdentity.toString(),
-            "1234567890",
-            true
-        )
-
-        assertThat(upgradeResponse.responseCode).isEqualTo(ResponseCode.ACCEPTED)
-    }
-
-    @Test
     fun `get virtual node status for missing holding id returns 404`() {
         val holdingId = "0123456789AB"
         val target = createVirtualNodeRestResourceImpl(mockCoordinatorFactory)
@@ -243,7 +220,7 @@ class VirtualNodeRestResourceImplTest {
         )
     }
 
-    private fun mockVnode(operational: OperationalStatus = OperationalStatus.ACTIVE, operationInProgress: String? = null): VirtualNodeInfo {
+    private fun mockVnode(operational: OperationalStatus = OperationalStatus.ACTIVE): VirtualNodeInfo {
         return VirtualNodeInfo(
             HoldingIdentity(MemberX500Name("test", "IE", "IE"), "group"),
             CpiIdentifier("cpi", "1", parseSecureHash("SHA-256:1234567890")),
@@ -258,7 +235,7 @@ class VirtualNodeRestResourceImplTest {
             operational,
             operational,
             operational,
-            operationInProgress,
+            null,
             null,
             -1,
             mock(),

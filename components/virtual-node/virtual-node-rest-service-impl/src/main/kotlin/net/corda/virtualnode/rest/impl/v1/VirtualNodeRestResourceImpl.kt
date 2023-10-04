@@ -290,7 +290,7 @@ internal class VirtualNodeRestResourceImpl(
             "Current CPI ${currentVirtualNode.cpiIdentifier} associated with virtual node $virtualNodeShortId was not found."
         }
 
-        if (!forceUpgrade && currentCpi.fileChecksum.toHexString().slice(targetCpiFileChecksum.indices) == targetCpiFileChecksum) {
+        if (currentCpi.fileChecksum.toHexString().slice(targetCpiFileChecksum.indices) == targetCpiFileChecksum) {
             throw InvalidStateChangeException("Virtual Node with shorthash $virtualNodeShortId already has " +
                     "CPI with file checksum $targetCpiFileChecksum")
         }
