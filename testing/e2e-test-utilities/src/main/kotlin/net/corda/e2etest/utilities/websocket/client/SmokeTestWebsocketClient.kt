@@ -1,4 +1,4 @@
-package net.corda.applications.workers.smoketest.websocket.client
+package net.corda.e2etest.utilities.websocket.client
 
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.e2etest.utilities.PASSWORD
