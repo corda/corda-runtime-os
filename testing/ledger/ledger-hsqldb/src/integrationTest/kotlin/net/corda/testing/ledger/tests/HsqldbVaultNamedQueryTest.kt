@@ -7,8 +7,6 @@ import com.example.ledger.testing.datamodel.utxo.UtxoVisibleTransactionOutputEnt
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionOutputEntityId
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionSignatureEntity
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionSignatureEntityId
-import com.example.ledger.testing.datamodel.utxo.UtxoTransactionSourceEntity
-import com.example.ledger.testing.datamodel.utxo.UtxoTransactionSourceEntityId
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
@@ -84,9 +82,7 @@ class HsqldbVaultNamedQueryTest {
             UtxoVisibleTransactionOutputEntity::class.java,
             UtxoTransactionOutputEntityId::class.java,
             UtxoTransactionSignatureEntity::class.java,
-            UtxoTransactionSignatureEntityId::class.java,
-            UtxoTransactionSourceEntity::class.java,
-            UtxoTransactionSourceEntityId::class.java
+            UtxoTransactionSignatureEntityId::class.java
         ))
         entityManagerFactory = dbConnectionManager.createEntityManagerFactory(dbConnectionId, entities)
     }

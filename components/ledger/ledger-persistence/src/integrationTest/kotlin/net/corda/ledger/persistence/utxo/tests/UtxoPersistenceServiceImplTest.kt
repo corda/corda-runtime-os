@@ -256,39 +256,42 @@ class UtxoPersistenceServiceImplTest {
         val transaction2 = createSignedTransaction(createdTs)
         entityManagerFactory.transaction { em ->
 
-            em.createNativeQuery("DELETE FROM {h-schema}utxo_visible_transaction_state").executeUpdate()
+            em.createNativeQuery("DELETE FROM {h-schema}utxo_visible_transaction_output").executeUpdate()
 
             createTransactionEntity(entityFactory, transaction1, status = VERIFIED).also { em.persist(it) }
             createTransactionEntity(entityFactory, transaction2, status = VERIFIED).also { em.persist(it) }
 
-            repository.persistTransactionVisibleStates(
+            repository.persistTransactionOutput(
                 em,
                 transaction1.id.toString(),
                 UtxoComponentGroup.OUTPUTS.ordinal,
                 1,
-                false,
-                CustomRepresentation("{}"),
-                createdTs
+                ContractState::class.java.name,
+                timestamp = createdTs,
+                consumed = false,
+                customRepresentation = CustomRepresentation("{}")
             )
 
-            repository.persistTransactionVisibleStates(
+            repository.persistTransactionOutput(
                 em,
                 transaction2.id.toString(),
                 UtxoComponentGroup.OUTPUTS.ordinal,
                 0,
-                false,
-                CustomRepresentation("{}"),
-                createdTs
+                ContractState::class.java.name,
+                timestamp = createdTs,
+                consumed = false,
+                customRepresentation = CustomRepresentation("{}")
             )
 
-            repository.persistTransactionVisibleStates(
+            repository.persistTransactionOutput(
                 em,
                 transaction2.id.toString(),
                 UtxoComponentGroup.OUTPUTS.ordinal,
                 1,
-                true,
-                CustomRepresentation("{}"),
-                createdTs
+                ContractState::class.java.name,
+                timestamp = createdTs,
+                consumed = true,
+                customRepresentation = CustomRepresentation("{}")
             )
         }
 
@@ -431,31 +434,11 @@ class UtxoPersistenceServiceImplTest {
                             assertThat(dbComponent.field<String>("hash")).isEqualTo(
                                 digest("SHA-256", component).toString()
                             )
-                            assertThat(dbComponent.field<Instant>("created")).isEqualTo(txCreatedTs)
                         }
                 }
 
-            val dbTransactionSources = em.createNamedQuery(
-                "UtxoTransactionSourceEntity.findByTransactionId",
-                entityFactory.utxoTransactionSource
-            )
-                .setParameter("transactionId", signedTransaction.id.toString())
-                .resultList
-            assertThat(dbTransactionSources).isNotNull
-                .hasSameSizeAs(defaultInputStateRefs)
-            dbTransactionSources
-                .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
-                .zip(defaultInputStateRefs)
-                .forEachIndexed { leafIndex, (dbInput, transactionInput) ->
-                    assertThat(dbInput.field<Int>("groupIndex")).isEqualTo(UtxoComponentGroup.INPUTS.ordinal)
-                    assertThat(dbInput.field<Int>("leafIndex")).isEqualTo(leafIndex)
-                    assertThat(dbInput.field<String>("refTransactionId")).isEqualTo(transactionInput.transactionId.toString())
-                    assertThat(dbInput.field<Int>("refLeafIndex")).isEqualTo(transactionInput.index)
-                    assertThat(dbInput.field<Boolean>("isRefInput")).isEqualTo(false)
-                }
-
             val dbTransactionOutputs = em.createNamedQuery(
-                "UtxoTransactionOutputEntity.findByTransactionId",
+                "UtxoVisibleTransactionOutputEntity.findByTransactionId",
                 entityFactory.utxoTransactionOutput
             )
                 .setParameter("transactionId", signedTransaction.id.toString())
@@ -476,25 +459,9 @@ class UtxoPersistenceServiceImplTest {
                     assertThat(dbInput.field<String>("tokenTag")).isEqualTo(tokenTag)
                     assertThat(dbInput.field<String>("tokenOwnerHash")).isEqualTo(ownerHash.toString())
                     assertThat(dbInput.field<BigDecimal>("tokenAmount")).isEqualTo(tokenAmount)
-                }
-
-            val dbRelevancyData = em.createNamedQuery(
-                "UtxoVisibleTransactionStateEntity.findByTransactionId",
-                entityFactory.utxoVisibleTransactionState
-            )
-                .setParameter("transactionId", signedTransaction.id.toString())
-                .resultList
-            assertThat(dbRelevancyData).isNotNull
-                .hasSameSizeAs(visibleStatesIndexes)
-            dbRelevancyData
-                .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
-                .zip(visibleStatesIndexes)
-                .forEach { (dbRelevancy, visibleStateIndex) ->
-                    assertThat(dbRelevancy.field<Int>("groupIndex")).isEqualTo(UtxoComponentGroup.OUTPUTS.ordinal)
-                    assertThat(dbRelevancy.field<Int>("leafIndex")).isEqualTo(visibleStateIndex)
-                    assertThat(dbRelevancy.field<String>("customRepresentation").replace("\\s".toRegex(), ""))
-                        .isEqualTo("{\"net.corda.v5.ledger.utxo.ContractState\":{\"stateRef\":\"${signedTransaction.id}:0\"}}")
-                    assertThat(dbRelevancy.field<Instant>("consumed")).isNull()
+                    assertThat(dbInput.field<String>("customRepresentation").replace("\\s".toRegex(), ""))
+                        .isEqualTo("{\"net.corda.v5.ledger.utxo.ContractState\":{\"stateRef\":\"${signedTransaction.id}:$leafIndex\"}}")
+                    assertThat(dbInput.field<Instant>("consumed")).isNull()
                 }
 
             val signatures = signedTransaction.signatures
@@ -518,13 +485,8 @@ class UtxoPersistenceServiceImplTest {
                     assertThat(dbSignature.field<Instant>("created")).isEqualTo(txCreatedTs)
                 }
 
-            val txStatuses = dbTransaction.field<Collection<Any>?>("statuses")
-            assertThat(txStatuses)
-                .isNotNull
-                .hasSize(1)
-            val dbStatus = txStatuses!!.first()
-            assertThat(dbStatus.field<String>("status")).isEqualTo(transactionStatus.value)
-            assertThat(dbStatus.field<Instant>("updated")).isEqualTo(txCreatedTs)
+            assertThat(dbTransaction.field<String>("status")).isEqualTo(transactionStatus.value)
+            assertThat(dbTransaction.field<Instant>("updated")).isEqualTo(txCreatedTs)
         }
     }
 
@@ -598,6 +560,8 @@ class UtxoPersistenceServiceImplTest {
             signedTransaction.id.toString(),
             signedTransaction.wireTransaction.privacySalt.bytes,
             account,
+            createdTs,
+            status.value,
             createdTs
         ).also { transaction ->
             transaction.field<MutableCollection<Any>>("components").addAll(
@@ -608,8 +572,7 @@ class UtxoPersistenceServiceImplTest {
                             groupIndex,
                             leafIndex,
                             component,
-                            digest("SHA-256", component).toString(),
-                            createdTs
+                            digest("SHA-256", component).toString()
                         )
                     }
                 }
@@ -624,11 +587,6 @@ class UtxoPersistenceServiceImplTest {
                         createdTs
                     )
                 }
-            )
-            transaction.field<MutableCollection<Any>>("statuses").addAll(
-                listOf(
-                    entityFactory.createUtxoTransactionStatusEntity(transaction, status.value, createdTs)
-                )
             )
         }
     }
@@ -645,16 +603,10 @@ class UtxoPersistenceServiceImplTest {
     ) {
         entityManagerFactory.transaction { em ->
             val dbTransaction = em.find(entityFactory.utxoTransaction, transactionId)
-            val statuses = dbTransaction.field<Collection<Any>?>("statuses")
-            assertThat(statuses)
-                .isNotNull
-                .hasSize(1)
-            with(statuses?.single()!!) {
-                assertAll(
-                    { assertThat(field<String>("status")).isEqualTo(status.value) },
-                    { assertThat(field<Instant>("updated")).isAfterOrEqualTo(floorDateTime) }
-                )
-            }
+            assertAll(
+                { assertThat(dbTransaction.field<String>("status")).isEqualTo(status.value) },
+                { assertThat(dbTransaction.field<Instant>("updated")).isAfterOrEqualTo(floorDateTime) }
+            )
         }
     }
 

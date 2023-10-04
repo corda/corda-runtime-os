@@ -184,8 +184,7 @@ class UtxoRepositoryImpl @Activate constructor(
         groupIndex: Int,
         leafIndex: Int,
         data: ByteArray,
-        hash: String,
-        timestamp: Instant
+        hash: String
     ) {
         entityManager.createNativeQuery(queryProvider.persistTransactionComponentLeaf)
             .setParameter("transactionId", transactionId)
@@ -193,7 +192,6 @@ class UtxoRepositoryImpl @Activate constructor(
             .setParameter("leafIndex", leafIndex)
             .setParameter("data", data)
             .setParameter("hash", hash)
-            .setParameter("createdAt", timestamp)
             .executeUpdate()
             .logResult("transaction component [$transactionId, $groupIndex, $leafIndex]")
     }
@@ -216,16 +214,16 @@ class UtxoRepositoryImpl @Activate constructor(
         groupIndex: Int,
         leafIndex: Int,
         type: String,
+        timestamp: Instant,
+        consumed: Boolean,
+        customRepresentation: CustomRepresentation,
         tokenType: String?,
         tokenIssuerHash: String?,
         tokenNotaryX500Name: String?,
         tokenSymbol: String?,
         tokenTag: String?,
         tokenOwnerHash: String?,
-        tokenAmount: BigDecimal?,
-        timestamp: Instant,
-        consumed: Boolean,
-        customRepresentation: CustomRepresentation
+        tokenAmount: BigDecimal?
     ) {
         entityManager.createNativeQuery(queryProvider.persistTransactionOutput(consumed))
             .setParameter("transactionId", transactionId)
@@ -266,41 +264,18 @@ class UtxoRepositoryImpl @Activate constructor(
             .logResult("transaction signature [$transactionId, $index]")
     }
 
-    override fun persistTransactionSource(
-        entityManager: EntityManager,
-        transactionId: String,
-        groupIndex: Int,
-        leafIndex: Int,
-        refTransactionId: String,
-        refLeafIndex: Int,
-        isRefInput: Boolean,
-        timestamp: Instant
-    ) {
-        entityManager.createNativeQuery(queryProvider.persistTransactionSource)
-            .setParameter("transactionId", transactionId)
-            .setParameter("groupIndex", groupIndex)
-            .setParameter("leafIndex", leafIndex)
-            .setParameter("refTransactionId", refTransactionId)
-            .setParameter("refLeafIndex", refLeafIndex)
-            .setParameter("isRefInput", isRefInput)
-            .setParameter("createdAt", timestamp)
-            .executeUpdate()
-            .logResult("transaction source [$transactionId, $groupIndex, $leafIndex]")
-    }
-
     override fun updateTransactionStatus(
         entityManager: EntityManager,
         transactionId: String,
         transactionStatus: TransactionStatus,
         timestamp: Instant
     ) {
-        // Insert/update status. Update ignored unless: UNVERIFIED -> * | VERIFIED -> VERIFIED | INVALID -> INVALID
+        // Update status. Update ignored unless: UNVERIFIED -> * | VERIFIED -> VERIFIED | INVALID -> INVALID
         val rowsUpdated = entityManager.createNativeQuery(queryProvider.updateTransactionStatus)
             .setParameter("transactionId", transactionId)
-            .setParameter("status", transactionStatus.value)
+            .setParameter("newStatus", transactionStatus.value)
             .setParameter("updatedAt", timestamp)
             .executeUpdate()
-            .logResult("transaction status [$transactionId, ${transactionStatus.value}]")
 
         check(rowsUpdated == 1 || transactionStatus == TransactionStatus.UNVERIFIED) {
             // VERIFIED -> INVALID or INVALID -> VERIFIED is a system error as verify should always be consistent and deterministic

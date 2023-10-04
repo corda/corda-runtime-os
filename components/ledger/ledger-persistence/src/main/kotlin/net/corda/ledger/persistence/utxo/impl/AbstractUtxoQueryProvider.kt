@@ -52,7 +52,7 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
             tc_output.leaf_idx, 
             tc_output_info.data as output_info_data,
             tc_output.data AS output_data 
-            FROM {h-schema}utxo_visible_transaction_state AS rts
+            FROM {h-schema}utxo_visible_transaction_output AS rts
             JOIN {h-schema}utxo_transaction_component AS tc_output_info
                 ON tc_output_info.transaction_id = rts.transaction_id
                 AND tc_output_info.leaf_idx = rts.leaf_idx
@@ -128,7 +128,8 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
 
     override val updateTransactionStatus: String
         get() = """
-            UPDATE {h-schema}utxo_transaction ut SET ut.status = :status, updated = :updatedAt
-            WHERE ut.id = :transactionId AND ut.status = :status OR ut.status = '$UNVERIFIED'"""
+            UPDATE {h-schema}utxo_transaction ut SET ut.status = :newStatus, updated = :updatedAt
+            WHERE ut.id = :transactionId 
+            AND (ut.status = :newStatus OR ut.status = '$UNVERIFIED')"""
             .trimIndent()
 }

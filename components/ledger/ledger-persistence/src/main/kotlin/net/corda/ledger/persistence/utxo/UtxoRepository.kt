@@ -79,8 +79,7 @@ interface UtxoRepository {
         groupIndex: Int,
         leafIndex: Int,
         data: ByteArray,
-        hash: String,
-        timestamp: Instant
+        hash: String
     )
 
     /** Persists transaction CPK (operation is idempotent) */
@@ -98,16 +97,16 @@ interface UtxoRepository {
         groupIndex: Int,
         leafIndex: Int,
         type: String,
+        timestamp: Instant,
+        consumed: Boolean,
+        customRepresentation: CustomRepresentation,
         tokenType: String? = null,
         tokenIssuerHash: String? = null,
         tokenNotaryX500Name: String? = null,
         tokenSymbol: String? = null,
         tokenTag: String? = null,
         tokenOwnerHash: String? = null,
-        tokenAmount: BigDecimal? = null,
-        timestamp: Instant,
-        consumed: Boolean,
-        customRepresentation: CustomRepresentation
+        tokenAmount: BigDecimal? = null
     )
 
     /** Persists transaction [signature] (operation is idempotent) */
@@ -116,19 +115,6 @@ interface UtxoRepository {
         transactionId: String,
         index: Int,
         signature: DigitalSignatureAndMetadata,
-        timestamp: Instant
-    )
-
-    /** Persists transaction source (operation is idempotent) */
-    @Suppress("LongParameterList")
-    fun persistTransactionSource(
-        entityManager: EntityManager,
-        transactionId: String,
-        groupIndex: Int,
-        leafIndex: Int,
-        refTransactionId: String,
-        refLeafIndex: Int,
-        isRefInput: Boolean,
         timestamp: Instant
     )
 

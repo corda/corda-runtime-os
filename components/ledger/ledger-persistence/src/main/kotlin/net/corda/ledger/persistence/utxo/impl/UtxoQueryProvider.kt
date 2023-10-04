@@ -83,11 +83,6 @@ interface UtxoQueryProvider {
     val persistTransactionSignature: String
 
     /**
-     * @property persistTransactionSource SQL text for [UtxoRepositoryImpl.persistTransactionSource].
-     */
-    val persistTransactionSource: String
-
-    /**
      * @property updateTransactionStatus SQL text for [UtxoRepositoryImpl.updateTransactionStatus].
      */
     val updateTransactionStatus: String

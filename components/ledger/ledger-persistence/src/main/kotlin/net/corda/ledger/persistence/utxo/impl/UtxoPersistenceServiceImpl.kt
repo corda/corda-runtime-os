@@ -153,25 +153,9 @@ class UtxoPersistenceServiceImpl(
                     groupIndex,
                     leafIndex,
                     data,
-                    sandboxDigestService.hash(data, DigestAlgorithmName.SHA2_256).toString(),
-                    nowUtc
+                    sandboxDigestService.hash(data, DigestAlgorithmName.SHA2_256).toString()
                 )
             }
-        }
-
-        // Insert inputs data
-        val inputs = transaction.getConsumedStateRefs()
-        inputs.forEachIndexed { index, input ->
-            repository.persistTransactionSource(
-                em,
-                transactionIdString,
-                UtxoComponentGroup.INPUTS.ordinal,
-                index,
-                input.transactionId.toString(),
-                input.index,
-                false,
-                nowUtc
-            )
         }
 
         // Insert outputs data
@@ -183,16 +167,16 @@ class UtxoPersistenceServiceImpl(
                 UtxoComponentGroup.OUTPUTS.ordinal,
                 stateIndex,
                 stateAndRef.state.contractState::class.java.canonicalName,
+                nowUtc,
+                consumed = false,
+                CustomRepresentation(extractJsonDataFromState(stateAndRef)),
                 utxoToken?.poolKey?.tokenType,
                 utxoToken?.poolKey?.issuerHash?.toString(),
                 stateAndRef.state.notaryName.toString(),
                 utxoToken?.poolKey?.symbol,
                 utxoToken?.filterFields?.tag,
                 utxoToken?.filterFields?.ownerHash?.toString(),
-                utxoToken?.amount,
-                nowUtc,
-                consumed = false,
-                CustomRepresentation(extractJsonDataFromState(stateAndRef))
+                utxoToken?.amount
             )
         }
 
