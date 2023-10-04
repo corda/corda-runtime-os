@@ -13,7 +13,7 @@ bootstrap:
       password:
         valueFrom:
           secretKeyRef:
-            key: "state-manager-password"
+            key: "postgres-password"
   kafka:
     sasl:
       username:
@@ -44,7 +44,7 @@ stateManager:
     password:
       valueFrom:
         secretKeyRef:
-          key: "state-manager-password"
+          key: "postgres-password"
 
 kafka:
   bootstrapServers: "prereqs-kafka:9092"
