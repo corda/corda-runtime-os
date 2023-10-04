@@ -65,7 +65,7 @@ class EntityRpcRequestProcessor(
     }
 
     override fun process(request: EntityRequest): FlowEvent {
-        //TODO - include null filter? See EntityMessageProcessor
+        //TODO - include null filter? See EntityRequestProcessor
         //TODO fix timestamp here
 /*        CordaMetrics.Metric.Db.EntityPersistenceRequestLag.builder()
             .withTag(CordaMetrics.Tag.OperationName, request::class.java.name)
