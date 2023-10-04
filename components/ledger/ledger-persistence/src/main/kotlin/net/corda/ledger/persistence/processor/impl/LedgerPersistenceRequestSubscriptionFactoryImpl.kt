@@ -36,8 +36,8 @@ class LedgerPersistenceRequestSubscriptionFactoryImpl @Activate constructor(
 ) : LedgerPersistenceRequestSubscriptionFactory {
     companion object {
         internal const val GROUP_NAME = "persistence.ledger.processor"
-        const val SUBSCRIPTION_NAME = "Persistence"
-        const val PERSISTENCE_PATH = "/persistence"
+        const val SUBSCRIPTION_NAME = "Ledger"
+        const val PERSISTENCE_PATH = "/ledger"
     }
 
     override fun create(config: SmartConfig): Subscription<String, LedgerPersistenceRequest> {
