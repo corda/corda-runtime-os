@@ -98,7 +98,7 @@ class CreateLockFlow : ClientStartableFlow {
                 .setTimeWindowBetween(Instant.now(), Instant.now().plusMillis(Duration.ofDays(1).toMillis()))
                 .addInputState(stateAndRef.ref)
                 .addEncumberedOutputStates(
-                    "lock",
+                    "Locked Asset",
                     lockState,
                     outputState
                 )
