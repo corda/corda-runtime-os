@@ -60,18 +60,13 @@ class TransferFlow : ClientStartableFlow {
             val inputState = stateAndRef.state.contractState
 
             val myInfo = memberLookup.myInfo()
-            val ownerInfo = memberLookup.lookup(inputState.owner)
-                ?: throw CordaRuntimeException("MemberLookup can't find current state owner.")
+
             val newOwnerInfo = memberLookup.lookup(MemberX500Name.parse(flowArgs.newOwner))
                 ?: throw CordaRuntimeException("MemberLookup can't find new state owner.")
 
-            if (myInfo.name != ownerInfo.name) {
-                throw CordaRuntimeException("Only the owner of a state can transfer it to a new owner.")
-            }
-
             val outputState = inputState.withNewOwner(
                 newOwnerInfo.ledgerKeys.first(),
-                listOf(ownerInfo.ledgerKeys.first(), newOwnerInfo.ledgerKeys.first())
+                listOf(myInfo.ledgerKeys.first(), newOwnerInfo.ledgerKeys.first())
             )
 
             val txBuilder = ledgerService.createTransactionBuilder()
@@ -86,7 +81,7 @@ class TransferFlow : ClientStartableFlow {
             val signedTransaction = txBuilder.toSignedTransaction()
 
             val transactionId =
-                flowEngine.subFlow(FinalizeFlow(signedTransaction, listOf(ownerInfo.name, newOwnerInfo.name)))
+                flowEngine.subFlow(FinalizeFlow(signedTransaction, listOf(myInfo.name, newOwnerInfo.name)))
 
             return jsonMarshallingService.format(
                 TransferFlowResult(

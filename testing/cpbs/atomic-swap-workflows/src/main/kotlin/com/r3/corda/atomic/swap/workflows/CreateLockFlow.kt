@@ -97,8 +97,11 @@ class CreateLockFlow : ClientStartableFlow {
                 .setNotary(stateAndRef.state.notaryName)
                 .setTimeWindowBetween(Instant.now(), Instant.now().plusMillis(Duration.ofDays(1).toMillis()))
                 .addInputState(stateAndRef.ref)
-                .addOutputState(lockState)
-                .addOutputState(outputState)
+                .addEncumberedOutputStates(
+                    "lock",
+                    lockState,
+                    outputState
+                )
                 .addCommand(LockContract.LockCommands.Lock())
                 .addCommand(AssetContract.AssetCommands.Transfer())
                 .addSignatories(lockState.participants)
