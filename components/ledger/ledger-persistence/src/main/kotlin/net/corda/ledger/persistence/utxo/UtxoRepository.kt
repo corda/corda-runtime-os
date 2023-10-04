@@ -62,6 +62,7 @@ interface UtxoRepository {
     )
 
     /** Persists transaction (operation is idempotent) */
+    @Suppress("LongParameterList")
     fun persistTransaction(
         entityManager: EntityManager,
         id: String,
