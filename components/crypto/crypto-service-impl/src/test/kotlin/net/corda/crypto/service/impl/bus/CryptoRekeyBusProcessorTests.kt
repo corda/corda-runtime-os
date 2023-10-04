@@ -25,6 +25,7 @@ import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito.never
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.kotlin.any
@@ -79,14 +80,11 @@ class CryptoRekeyBusProcessorTests {
         publisher = mock()
         whenever(publisherFactory.createPublisher(any(), any())).thenReturn(publisher)
 
-
         cryptoRekeyBusProcessor = CryptoRekeyBusProcessor(
             cryptoService, virtualNodeInfoReadService,
             wrappingRepositoryFactory, publisherFactory, config.getConfig(ConfigKeys.MESSAGING_CONFIG)
         )
-
     }
-
 
     @Test
     fun `do a mocked key rotation`() {
@@ -109,6 +107,16 @@ class CryptoRekeyBusProcessorTests {
     }
 
     @Test
+    fun `zero limit for key rotation operations is reflected`() {
+        val virtualNodes = getStubVirtualNodes(listOf("Alice", "Bob", "Charlie", "David", "Erin"))
+        whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
+
+        cryptoRekeyBusProcessor.onNext(listOf(getKafkaRecord("", 0)))
+
+        verify(publisher, never()).publish(any())
+    }
+
+    @Test
     fun `limit for key rotation operations is reflected`() {
         val virtualNodes = getStubVirtualNodes(listOf("Alice", "Bob", "Charlie", "David", "Erin"))
         whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
@@ -119,7 +127,7 @@ class CryptoRekeyBusProcessorTests {
     }
 
     @Test
-    fun `key rotation posts new Kafka message only for those tenantIds that has key with oldKeyAlias alias`() {
+    fun `key rotation posts new Kafka message only for those tenantIds that contains key with oldKeyAlias alias in the wrapping repo`() {
         // to be implemented
     }
 
