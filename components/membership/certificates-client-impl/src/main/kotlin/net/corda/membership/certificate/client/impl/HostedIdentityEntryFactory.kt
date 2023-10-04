@@ -259,7 +259,7 @@ internal class HostedIdentityEntryFactory(
         if (certificateType.trustRoots.isEmpty()) {
             throw CordaRuntimeException("The group ${holdingIdentity.groupId} P2P parameters ${certificateType.parameterName} is empty")
         }
-        certificateType.trustRoots
+        val trustRoot = certificateType.trustRoots
             .asSequence()
             .map { rootCertificateStr ->
                 CertificateFactory.getInstance("X.509")
@@ -274,8 +274,11 @@ internal class HostedIdentityEntryFactory(
                     false
                 }
             }.firstOrNull()
-            ?: throw CordaRuntimeException(
-                "The ${CertificateType::class.java.simpleName} was not signed by the correct certificate authority"
-            )
+            if (trustRoot == null) {
+                val type = certificateType as? CertificateType.TlsCertificate ?: certificateType as CertificateType.SessionCertificate
+                throw CordaRuntimeException(
+                    "The ${type::class.java.simpleName} was not signed by the correct certificate authority"
+                )
+            }
     }
 }
