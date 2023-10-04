@@ -15,7 +15,7 @@ import net.corda.data.persistence.PersistEntities
 import net.corda.flow.utils.toMap
 import net.corda.libs.virtualnode.datamodel.repository.RequestsIdsRepository
 import net.corda.libs.virtualnode.datamodel.repository.RequestsIdsRepositoryImpl
-import net.corda.messaging.api.processor.DurableProcessor
+import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
 import net.corda.orm.utils.transaction
@@ -25,10 +25,8 @@ import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.tracing.traceEventProcessingNullableSingle
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
-import net.corda.utilities.debug
 import net.corda.utilities.translateFlowContextToMDC
 import net.corda.utilities.withMDC
 import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
@@ -37,11 +35,9 @@ import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Duration
-import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.PersistenceException
-
 
 
 /**
@@ -54,82 +50,71 @@ import javax.persistence.PersistenceException
  *
  * [payloadCheck] is called against each AMQP payload in the result (not the entire Avro array of results)
  */
-class EntityMessageProcessor(
+class EntityRPCMessageProcessor(
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     private val entitySandboxService: EntitySandboxService,
     private val responseFactory: ResponseFactory,
     private val payloadCheck: (bytes: ByteBuffer) -> ByteBuffer,
-    private val requestsIdsRepository: RequestsIdsRepository = RequestsIdsRepositoryImpl()
-) : DurableProcessor<String, EntityRequest> {
+    private val requestsIdsRepository: RequestsIdsRepository = RequestsIdsRepositoryImpl(),
+    override val requestClass: Class<EntityRequest>,
+    override val responseClass: Class<FlowEvent>
+) : SyncRPCProcessor<EntityRequest, FlowEvent> {
+
     private companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override val keyClass = String::class.java
+    override fun process(request: EntityRequest): FlowEvent {
+        //TODO - include null filter? See EntityMessageProcessor
+        // We received a [null] external event therefore we do not know the flow id to respond to.
 
-    override val valueClass = EntityRequest::class.java
+        //TODO fix timestamp here
+/*        CordaMetrics.Metric.Db.EntityPersistenceRequestLag.builder()
+            .withTag(CordaMetrics.Tag.OperationName, request::class.java.name)
+            .build()
+            .record(
+                Duration.ofMillis(Instant.now().toEpochMilli() - timestamp)
+            )*/
 
-    override fun onNext(events: List<Record<String, EntityRequest>>): List<Record<*, *>> {
-        logger.debug { "onNext processing messages ${events.joinToString(",") { it.key }}" }
-
-        return events.mapNotNull { event ->
-            val request = event.value
-            if (request == null) {
-                // We received a [null] external event therefore we do not know the flow id to respond to.
-                null
-            } else {
-                val eventType = request.request?.javaClass?.simpleName ?: "Unknown"
-                traceEventProcessingNullableSingle(event, "Crypto Event - $eventType") {
-                    CordaMetrics.Metric.Db.EntityPersistenceRequestLag.builder()
-                        .withTag(CordaMetrics.Tag.OperationName, request.request::class.java.name)
-                        .build()
-                        .record(
-                            Duration.ofMillis(Instant.now().toEpochMilli() - event.timestamp)
-                        )
-                    processEvent(request)
-                }
-            }
-        }
-    }
-
-    private fun processEvent(request: EntityRequest): Record<*, *> {
+        val startTime = System.nanoTime()
         val clientRequestId =
             request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
+        val holdingIdentity = request.holdingIdentity.toCorda()
 
-        return withMDC(
-            mapOf(
-                MDC_CLIENT_ID to clientRequestId,
-                MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
-            ) + translateFlowContextToMDC(request.flowExternalEventContext.contextProperties.toMap())
-        ) {
-            val startTime = System.nanoTime()
-            var requestOutcome = "FAILED"
-            try {
-                val holdingIdentity = request.holdingIdentity.toCorda()
-                logger.info("Handling ${request.request::class.java.name} for holdingIdentity ${holdingIdentity.shortHash.value}")
+        val result =
+            withMDC(
+                mapOf(
+                    MDC_CLIENT_ID to clientRequestId,
+                    MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
+                ) + translateFlowContextToMDC(request.flowExternalEventContext.contextProperties.toMap())
+            ) {
+                var requestOutcome = "FAILED"
+                try {
+                    logger.info("Handling ${request.request::class.java.name} for holdingIdentity ${holdingIdentity.shortHash.value}")
 
-                val cpkFileHashes = request.flowExternalEventContext.contextProperties.items
-                    .filter { it.key.startsWith(CPK_FILE_CHECKSUM) }
-                    .map { it.value.toSecureHash() }
-                    .toSet()
+                    val cpkFileHashes = request.flowExternalEventContext.contextProperties.items
+                        .filter { it.key.startsWith(CPK_FILE_CHECKSUM) }
+                        .map { it.value.toSecureHash() }
+                        .toSet()
 
-                val sandbox = entitySandboxService.get(holdingIdentity, cpkFileHashes)
+                    val sandbox = entitySandboxService.get(holdingIdentity, cpkFileHashes)
 
-                currentSandboxGroupContext.set(sandbox)
+                    currentSandboxGroupContext.set(sandbox)
 
-                processRequestWithSandbox(sandbox, request).also { requestOutcome = "SUCCEEDED" }
-            } catch (e: Exception) {
-                responseFactory.errorResponse(request.flowExternalEventContext, e)
-            } finally {
-                CordaMetrics.Metric.Db.EntityPersistenceRequestTime.builder()
-                    .withTag(CordaMetrics.Tag.OperationName, request.request::class.java.name)
-                    .withTag(CordaMetrics.Tag.OperationStatus, requestOutcome)
-                    .build()
-                    .record(Duration.ofNanos(System.nanoTime() - startTime))
-
-                currentSandboxGroupContext.remove()
+                    processRequestWithSandbox(sandbox, request).also { requestOutcome = "SUCCEEDED" }
+                } catch (e: Exception) {
+                    responseFactory.errorResponse(request.flowExternalEventContext, e)
+                } finally {
+                    currentSandboxGroupContext.remove()
+                }.also {
+                    CordaMetrics.Metric.Db.EntityPersistenceRequestTime.builder()
+                        .withTag(CordaMetrics.Tag.OperationName, request.request::class.java.name)
+                        .withTag(CordaMetrics.Tag.OperationStatus, requestOutcome)
+                        .build()
+                        .record(Duration.ofNanos(System.nanoTime() - startTime))
+                }
             }
-        }
+        return result.value as FlowEvent
     }
 
     @Suppress("ComplexMethod")
