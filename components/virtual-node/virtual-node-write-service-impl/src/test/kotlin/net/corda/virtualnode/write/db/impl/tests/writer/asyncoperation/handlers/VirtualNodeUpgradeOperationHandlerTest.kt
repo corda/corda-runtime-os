@@ -171,7 +171,8 @@ class VirtualNodeUpgradeOperationHandlerTest {
     private val vaultDmlConnectionId = UUID.randomUUID()
     private val vaultDdlConnectionId = UUID.randomUUID()
     private val requestId = "req1"
-    private val request = VirtualNodeUpgradeRequest(vnodeId, targetCpiChecksum, null)
+    private val request = VirtualNodeUpgradeRequest(vnodeId, targetCpiChecksum, null, false)
+    private val forceUpgradeRequest = VirtualNodeUpgradeRequest(vnodeId, targetCpiChecksum, null, true)
 
     private val inProgressVnodeInfoWithoutVaultDdl = VirtualNodeInfo(
         mockHoldingIdentity,
@@ -264,7 +265,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
                 Instant.now(),
                 requestId,
                 VirtualNodeUpgradeRequest(
-                    null, "aaaa", null
+                    null, "aaaa", null, false
                 )
             )
         }
@@ -277,7 +278,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
                 Instant.now(),
                 requestId,
                 VirtualNodeUpgradeRequest(
-                    vnodeId, null, null
+                    vnodeId, null, null, false
                 )
             )
         }
@@ -334,6 +335,40 @@ class VirtualNodeUpgradeOperationHandlerTest {
             )
         }
     }
+
+    @Test
+    fun `upgrade handler allows upgrade to proceed with operation in progress if forceUpgrade is specified`() {
+        val vNode = VirtualNodeInfo(
+            holdingIdentity,
+            currentCpiId,
+            vaultDmlConnectionId = UUID.randomUUID(),
+            cryptoDmlConnectionId = UUID.randomUUID(),
+            flowP2pOperationalStatus = OperationalStatus.INACTIVE,
+            flowStartOperationalStatus = OperationalStatus.INACTIVE,
+            flowOperationalStatus = OperationalStatus.INACTIVE,
+            vaultDbOperationalStatus = OperationalStatus.INACTIVE,
+            timestamp = Instant.now(),
+            operationInProgress = "Upgrade vNode"
+        )
+
+        whenever(virtualNodeRepository.find(em, ShortHash.of(vnodeId))).thenReturn(vNode)
+        whenever(
+            virtualNodeRepository.upgradeVirtualNodeCpi(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(),
+            )
+        ).thenReturn(vNode)
+        whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
+        whenever(oldVirtualNodeEntityRepository.getCPIMetadataById(any(), any())).thenReturn(currentCpiMetadata)
+        whenever(virtualNodeInfoPublisher.publish(any())).thenReturn(emptyList())
+
+        handler.handle(
+            Instant.now(),
+            requestId,
+            forceUpgradeRequest
+        )
+
+        verify(virtualNodeRepository, times(1)).upgradeVirtualNodeCpi(any(), any(), any(), any(), any(), any(), any(), any(), any())
+}
 
     @Test
     fun `upgrade handler can't find target CPI throws`() {
