@@ -1,0 +1,30 @@
+{
+  "id": "org.corda.interop/platform/lock/v1.0",
+  "aliases": {
+    "denomination": "string (org.corda.interop/platform/tokens/types/denomination/1.0)"
+  },
+  "queries": {},
+  "commands": {
+    "create-lock": {
+      "in": {
+        "denomination": "denomination",
+        "amount": "decimal",
+        "notary-keys": "string",
+        "draft" : "string"
+      },
+      "out": {
+        "reservation-ref": "uuid"
+      }
+    },
+    "unlock": {
+      "in": {
+        "reservation-ref": "uuid",
+        "signed-tx": "signed_tx",
+        "key" : "bytes"
+      },
+      "out": {
+        "amount": "decimal"
+      }
+    }
+  }
+}

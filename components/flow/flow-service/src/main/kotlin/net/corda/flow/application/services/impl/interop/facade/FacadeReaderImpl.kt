@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.common.json.serializers.standardTypesModule
-import net.corda.flow.application.services.impl.interop.ProofOfActionSerialisationModule
 import net.corda.flow.application.services.impl.interop.parameters.TypeParameters
 import net.corda.flow.application.services.impl.interop.parameters.TypedParameterImpl
 import net.corda.v5.application.interop.facade.Facade
@@ -26,7 +25,7 @@ object FacadeReaders {
      * A [FacadeReader] that reads JSON.
      */
     @JvmStatic
-    val JSON: FacadeReader //TODO this is just for the spec - can be simplified
+    val JSON: FacadeReader
         get() = JacksonFacadeReader {
              ObjectMapper().apply {
                 registerModule(KotlinModule.Builder().build())
@@ -34,7 +33,6 @@ object FacadeReaders {
                 enable(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY)
                 setTimeZone(TimeZone.getTimeZone("UTC"))
                 disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-                registerModule(ProofOfActionSerialisationModule.module)
                 registerModule(standardTypesModule())
             }.readValue(it, FacadeDefinition::class.java)
         }

@@ -70,10 +70,20 @@ class JsonMarshallingServiceImpl : JsonMarshallingService,
         val module = SimpleModule()
         module.addSerializer(SecureHash::class.java, SecureHashSerializer)
         module.addDeserializer(SecureHash::class.java, SecureHashDeserializer)
+
+        // Interoperability
+        module.addDeserializer(DigitalSignatureAndMetadata::class.java, DigitalSignatureAndMetadataDeserializer())
+        module.addDeserializer(DigitalSignature.WithKeyId::class.java, DigitalSignatureWithKeyIdDeserializer())
+        module.addDeserializer(DigitalSignatureMetadata::class.java, DigitalSignatureMetadataDeserializer())
+        module.addDeserializer(SignatureSpec::class.java, SignatureSpecDeserializer())
+        module.addSerializer(DigitalSignatureMetadata::class.java, DigitalSignatureMetadataSerializer())
+        module.addDeserializer(IndexedMerkleLeaf::class.java, IndexedMerkleLeafDeserializer())
+        module.addDeserializer(MerkleProof::class.java, MerkleProofDeserializer())
+        registerModule(JavaTimeModule())
+
         // Register Kotlin after resetting the AnnotationIntrospector.
         registerModule(KotlinModule.Builder().build())
         registerModule(module)
-        registerModule(JavaTimeModule())
     }
 
     private val customSerializableClasses = mutableSetOf<Class<*>>()
@@ -152,13 +162,6 @@ class JsonMarshallingServiceImpl : JsonMarshallingService,
         // knowing anything about these types except via typeless Class objects once the code is compiled.
         @Suppress("unchecked_cast")
         module.addDeserializer(jsonDeserializerAdaptor.deserializingType as Class<Any>, jsonDeserializerAdaptor)
-        module.addDeserializer(DigitalSignatureAndMetadata::class.java, DigitalSignatureAndMetadataDeserializer())
-        module.addDeserializer(DigitalSignature.WithKeyId::class.java, DigitalSignatureWithKeyIdDeserializer())
-        module.addDeserializer(DigitalSignatureMetadata::class.java, DigitalSignatureMetadataDeserializer())
-        module.addDeserializer(SignatureSpec::class.java, SignatureSpecDeserializer())
-        module.addSerializer(DigitalSignatureMetadata::class.java, DigitalSignatureMetadataSerializer())
-        module.addDeserializer(IndexedMerkleLeaf::class.java, IndexedMerkleLeafDeserializer())
-        module.addDeserializer(MerkleProof::class.java, MerkleProofDeserializer())
         mapper.registerModule(module)
 
         return true

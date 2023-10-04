@@ -42,6 +42,22 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":libs:flows:flow-utils")
 
+    // Dependencies for ProofOfActionSerializationTests from UTXO:
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation project(':testing:test-serialization')
+    testImplementation project(':testing:kryo-serialization-testkit')
+    testImplementation project(':libs:serialization:serialization-internal')
+    testImplementation project(':libs:serialization:serialization-amqp')
+    testImplementation project(':libs:serialization:serialization-kryo')
+    testImplementation project(':testing:ledger:ledger-utxo-base-test')
+    testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    testImplementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    testImplementation project(':components:ledger:ledger-utxo-flow')
+    // Dependencies for ProofOfActionSerializationTests from flow-service:
+    testImplementation project(':components:flow:flow-service')
+
     integrationTestImplementation project(":testing:db-message-bus-testkit")
 
     integrationTestRuntimeOnly project(":libs:crypto:cipher-suite-impl")
