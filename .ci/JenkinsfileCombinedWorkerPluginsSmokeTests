@@ -31,6 +31,10 @@ pipeline {
         }
     }
 
+    triggers {
+        cron(gitUtils.isReleaseBranch() ? 'H 00 * * *' : '')
+    }
+
     environment {
         ARTIFACTORY_CREDENTIALS = credentials('artifactory-credentials')
         BUILD_CACHE_CREDENTIALS = credentials('gradle-ent-cache-credentials')
@@ -130,6 +134,9 @@ pipeline {
             }
             archiveArtifacts artifacts: 'forward.txt, workerLogs.txt, podLogs.txt', allowEmptyArchive: true
             sh 'rm -f forward.txt workerLogs.txt podLogs.txt'
+        }
+        failure {
+            sendSlackNotifications("danger", "BUILD FAILURE - Combined Worker CLI Plugins Smoke Tests", true, "#corda-corda5-build-notifications")
         }
     }
 }

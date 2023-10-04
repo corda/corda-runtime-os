@@ -42,7 +42,7 @@ class VerificationRpcRequestProcessor(
         val startTime = System.nanoTime()
         val clientRequestId = request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
         val holdingIdentity = request.holdingIdentity.toCorda()
-        val result = {
+        val result =
             withMDC(
                 mapOf(
                     MDC_CLIENT_ID to clientRequestId,
@@ -65,8 +65,7 @@ class VerificationRpcRequestProcessor(
                         .record(Duration.ofNanos(System.nanoTime() - startTime))
                 }
             }
-        }
-        return result as FlowEvent
+        return result.value as FlowEvent
     }
 
 

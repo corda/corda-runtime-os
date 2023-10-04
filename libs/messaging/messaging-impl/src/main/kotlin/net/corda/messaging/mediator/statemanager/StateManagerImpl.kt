@@ -1,7 +1,7 @@
 package net.corda.messaging.mediator.statemanager
 
 import net.corda.libs.statemanager.api.IntervalFilter
-import net.corda.libs.statemanager.api.SingleKeyFilter
+import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import org.osgi.service.component.annotations.Activate
@@ -38,17 +38,21 @@ class StateManagerImpl @Activate constructor() : StateManager {
         TODO("Not yet implemented")
     }
 
-    override fun updatedBetween(intervalFilter: IntervalFilter): Map<String, State> {
+    override fun updatedBetween(interval: IntervalFilter): Map<String, State> {
         TODO("Not yet implemented")
     }
 
-    override fun find(singleKeyFilter: SingleKeyFilter): Map<String, State> {
+    override fun findByMetadataMatchingAll(filters: Collection<MetadataFilter>): Map<String, State> {
+        TODO("Not yet implemented")
+    }
+
+    override fun findByMetadataMatchingAny(filters: Collection<MetadataFilter>): Map<String, State> {
         TODO("Not yet implemented")
     }
 
     override fun findUpdatedBetweenWithMetadataFilter(
         intervalFilter: IntervalFilter,
-        singleKeyFilter: SingleKeyFilter
+        metadataFilter: MetadataFilter
     ): Map<String, State> {
         TODO("Not yet implemented")
     }
