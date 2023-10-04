@@ -619,7 +619,7 @@ data:
 Default name for State Manager DB secret
 */}}
 {{- define "corda.stateManagerDbDefaultSecretName" -}}
-{{ printf "%s-stateManager-db" (include "corda.fullname" .) }}
+{{ printf "%s-statemanager-db" (include "corda.fullname" .) }}
 {{- end -}}
 
 {{/*
@@ -674,7 +674,7 @@ State Manager DB credentials environment variables
 Default name for bootstrap State Manager DB secret
 */}}
 {{- define "corda.bootstrapStateManagerDbDefaultSecretName" -}}
-{{ printf "%s-bootstrap-state-manager-db" (include "corda.fullname" .) }}
+{{ printf "%s-bootstrap-statemanager-db" (include "corda.fullname" .) }}
 {{- end -}}
 
 {{/*
