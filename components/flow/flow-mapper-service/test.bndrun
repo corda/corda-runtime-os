@@ -33,7 +33,6 @@
     bnd.identity;id='net.corda.db-message-bus-impl',\
     bnd.identity;id='net.corda.db-orm-impl',\
     bnd.identity;id='net.corda.schema-registry-impl',\
-    bnd.identity;id='net.corda.state-manager-db-impl',\
     bnd.identity;id='net.bytebuddy.byte-buddy',\
     bnd.identity;id='org.hsqldb.hsqldb',\
     bnd.identity;id='org.osgi.service.jdbc',\
