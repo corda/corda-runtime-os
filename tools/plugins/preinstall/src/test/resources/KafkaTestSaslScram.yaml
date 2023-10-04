@@ -35,6 +35,12 @@ workers:
               name: "kafka-sasl"
               key: "kafka-sasl-password"
 
+  evm:
+    kafka:
+      sasl:
+        username:
+          value: "alice"
+
   flow:
     kafka:
       sasl:
