@@ -13,6 +13,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Crypto.REWRAP_MESSAGE_TOPIC
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import org.slf4j.LoggerFactory
 import java.time.Instant
 
 /**
@@ -26,10 +27,14 @@ class CryptoRekeyBusProcessor(
     private val publisherFactory: PublisherFactory,
     private val messagingConfig: SmartConfig,
 ) : DurableProcessor<String, KeyRotationRequest> {
+    companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
     override val keyClass: Class<String> = String::class.java
     override val valueClass = KeyRotationRequest::class.java
     private val uploadTopic = REWRAP_MESSAGE_TOPIC
+
     override fun onNext(events: List<Record<String, KeyRotationRequest>>): List<Record<*, *>> {
         events.forEach {
             // we want to compute how many keys we need to rotate
@@ -45,22 +50,28 @@ class CryptoRekeyBusProcessor(
             // Plus we need to query somehow the cluster DB to find out if the root key is used there
 
             val request = it.value
+            if (request == null) {
+                logger.error("Unexpected null payload for event with the key={} in topic={}", it.key, it.topic)
+                return emptyList() // cannot send any error back as have no idea where to send to
+            }
 
             var tenantIdsWithKeysToRotate = mutableListOf<String>()
             var keysToRotate: Int = 0
 
             // Get all the virtual nodes, and check if the wrapping repository contains the key that needs to be rotated.
+            // We need to calculate the total amount of the keys that need to be rotated regardless the limit being set,
+            // as we need to report the status with this total amount.
             val virtualNodeInfo = virtualNodeInfoReadService.getAll()
             virtualNodeInfo.forEach { virtualNode ->
                 val wrappingRepo = wrappingRepositoryFactory.create(virtualNode.holdingIdentity.toString())
-                if (wrappingRepo.findKey(request!!.oldKeyAlias) != null) {
+                if (wrappingRepo.findKey(request.oldKeyAlias) != null) {
                     keysToRotate++
                     tenantIdsWithKeysToRotate.add(virtualNode.holdingIdentity.toString())
                 }
             }
 
             val publisher = publisherFactory.createPublisher(
-                PublisherConfig(request!!.requestId),
+                PublisherConfig(request.requestId),
                 messagingConfig
             )
 
@@ -94,7 +105,7 @@ class CryptoRekeyBusProcessor(
         return emptyList()
     }
 
-    private fun createResponseContext(
+    private fun createKeyRotationStatus(
         request: KeyRotationRequest,
         numberOfKeysToBeRotated: Int,
         alreadyRotatedKeys: Int
