@@ -21,6 +21,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.rest.v1.types.RestGroupParameters
+import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.read.rest.extensions.getByHoldingIdentityShortHashOrThrow
@@ -184,7 +185,6 @@ class MemberLookupRestResourceImpl @Activate constructor(
             ) { "Could not find holding identity '$holdingIdentityShortHash' associated with member." }.holdingIdentity
 
             val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
-            val statusFilter = statuses.getStatusFilter(reader.isMgm(holdingIdentity))
             val filteredMembers = reader.lookup(MembershipStatusFilter.ACTIVE_OR_SUSPENDED).filter { member ->
                 val memberName = member.name
                 commonName?.let { memberName.commonName.equals(it, true) } ?: true &&
@@ -193,7 +193,7 @@ class MemberLookupRestResourceImpl @Activate constructor(
                 locality?.let { memberName.locality.equals(it, true) } ?: true &&
                 state?.let { memberName.state.equals(it, true) } ?: true &&
                 country?.let { memberName.country.equals(it, true) } ?: true &&
-                (statusFilter.contains(member.status) || (canViewItselfInAnyStatus && member.name == holdingIdentity.x500Name))
+                hasMatchingStatus(holdingIdentity, member, statuses, reader, canViewItselfInAnyStatus)
             }
 
             return RestMemberInfoList(
@@ -206,6 +206,7 @@ class MemberLookupRestResourceImpl @Activate constructor(
             )
         }
 
+
         override fun viewGroupParameters(holdingIdentityShortHash: ShortHash): RestGroupParameters {
             val holdingIdentity = virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(
                 holdingIdentityShortHash
@@ -217,6 +218,15 @@ class MemberLookupRestResourceImpl @Activate constructor(
                 ?.toMap() ?: throw ResourceNotFoundException("Could not find group parameters for holding identity " +
                     "'$holdingIdentityShortHash'.")
             return RestGroupParameters(parameters)
+        }
+
+        private fun hasMatchingStatus(viewerHoldingIdentity: HoldingIdentity, resultMemberInfo: MemberInfo, statuses: Set<String>,
+                                      reader: MembershipGroupReader, canViewItselfInAnyStatus: Boolean): Boolean {
+            val statusFilter = statuses.getStatusFilter(reader.isMgm(viewerHoldingIdentity))
+            val generalRulesMatched = statusFilter.contains(resultMemberInfo.status)
+            val sameMemberRulesMatched = canViewItselfInAnyStatus && resultMemberInfo.name == viewerHoldingIdentity.x500Name &&
+                    statuses.contains(resultMemberInfo.status)
+            return generalRulesMatched || sameMemberRulesMatched
         }
 
         private fun Set<String>.getStatusFilter(isMgm: Boolean): Set<String> {

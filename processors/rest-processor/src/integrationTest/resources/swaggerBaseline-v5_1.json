@@ -1777,7 +1777,7 @@
         }, {
           "name" : "statuses",
           "in" : "query",
-          "description" : "List of statuses (\"ACTIVE\", \"SUSPENDED\") to filter members by. By default, only ACTIVE members are filtered. Only an MGM can view suspended members.",
+          "description" : "List of statuses (\"ACTIVE\", \"SUSPENDED\") to filter members by. By default, only ACTIVE members are filtered. An MGM can view all suspended members. A regular member cannot view other suspended members, but can view itself in any status (e.g. even if it's suspended).",
           "required" : false,
           "schema" : {
             "uniqueItems" : false,

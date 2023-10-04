@@ -43,6 +43,7 @@ interface MemberLookupRestResource : RestResource {
      * @param country Optional. Country (C) attribute of the X.500 name to filter members by.
      * @param statuses Optional. List of statuses ("ACTIVE", "SUSPENDED") to filter members by.
      * By default, only ACTIVE members are filtered. Only an MGM can view suspended members.
+     * The v5_1 version of the API allows members to view themselves regardless of their status (e.g. even if they are suspended).
      *
      * @return List of active and pending members matching the criteria as [RestMemberInfoList].
      */
@@ -94,7 +95,9 @@ interface MemberLookupRestResource : RestResource {
         country: String? = null,
         @RestQueryParameter(
             description = "List of statuses (\"ACTIVE\", \"SUSPENDED\") to filter members by. " +
-                    "By default, only ACTIVE members are filtered. Only an MGM can view suspended members.",
+                    "By default, only ACTIVE members are filtered. Only an MGM can view suspended members. " +
+                    "The v5_1 version of the API allows members to view themselves regardless of their status " +
+                    "(e.g. even if they are suspended).",
             required = false,
         )
         statuses: List<String> = listOf(MemberInfoExtension.MEMBER_STATUS_ACTIVE),
@@ -175,7 +178,9 @@ interface MemberLookupRestResource : RestResource {
         country: String? = null,
         @RestQueryParameter(
             description = "List of statuses (\"ACTIVE\", \"SUSPENDED\") to filter members by. " +
-                    "By default, only ACTIVE members are filtered. Only an MGM can view suspended members.",
+                    "By default, only ACTIVE members are filtered. An MGM can view all suspended members. " +
+                    "A regular member cannot view other suspended members, but can view itself in any status " +
+                    "(e.g. even if it's suspended).",
             required = false,
         )
         statuses: List<String> = listOf(MemberInfoExtension.MEMBER_STATUS_ACTIVE),
