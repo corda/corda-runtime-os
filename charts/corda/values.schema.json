@@ -1482,14 +1482,12 @@
                     },
                     "then": {
                         "required": [
-                            "cleanup",
                             "partitions",
                             "replicas"
                         ]
                     },
                     "examples": [{
                         "enabled": true,
-                        "cleanup": false,
                         "partitions": 10,
                         "replicas": 3
                     }]
