@@ -405,6 +405,35 @@ bootstrap:
             # -- the password secret key
             key: ""
 
+    # State Manager DB Bootstrap Configuration
+    stateManager:
+      # -- the schema in which the state-manager entities will be stored
+      schema: state_manager
+      # the username configuration
+      username:
+        # -- the username, defaults to this value
+        value: "state_manager_user"
+        # the username secret configuration; used in preference to value if name is set
+        valueFrom:
+          # the username secret key reference
+          secretKeyRef:
+            # -- the username secret name
+            name: ""
+            # -- the username secret key
+            key: ""
+      # password configuration
+      password:
+        # -- the password, defaults to a value randomly-generated on install
+        value: ""
+        # the password secret configuration
+        valueFrom:
+          # the password secret key reference
+          secretKeyRef:
+            # -- the password secret name
+            name: ""
+            # -- the password secret key
+            key: ""
+
     # Image containing DB client, used to set up the DB
     clientImage:
       # -- registry for image containing a db client, used to set up the db

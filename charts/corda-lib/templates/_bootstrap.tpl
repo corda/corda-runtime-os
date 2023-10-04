@@ -153,7 +153,7 @@ spec:
 
               JDBC_URL="jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}"
 
-              echo 'Generating DB specification'
+              echo 'Generating Cluster DB specification'
               mkdir /tmp/db
               java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar database spec \
                 -g "config:${DB_CLUSTER_SCHEMA},rbac:${DB_RBAC_SCHEMA},crypto:${DB_CRYPTO_SCHEMA}" \
@@ -162,10 +162,10 @@ spec:
                 -c -l /tmp/db
 
               echo 'Generating State Manager DB specification'
-              STATE_MANAGER_JDBC_URL="jdbc:{{ .Values.stateManager.db.type }}://{{ .Values.stateManager.db.host }}:{{ .Values.stateManager.db.port }}/{{ .Values.stateManager.db.schema }}"
+              STATE_MANAGER_JDBC_URL="jdbc:{{ include "corda.stateManagerDbType" . }}://{{ required "A State Manager host is required" .Values.stateManager.db.host }}:{{ include "corda.stateManagerDbPort" . }}/{{ include "corda.stateManagerDbName" . }}"
               mkdir /tmp/stateManager
               java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar database spec \
-                -g "statemanager:${STATE_MANAGER_DB_SCHEMA}" \
+                -s "statemanager" -g "statemanager:${STATE_MANAGER_DB_SCHEMA}" \
                 -u "${STATE_MANAGER_DB_USERNAME}" -p "${STATE_MANAGER_DB_PASSWORD}" \
                 --jdbc-url "${STATE_MANAGER_JDBC_URL}" \
                 -c -l /tmp/stateManager
@@ -258,7 +258,7 @@ spec:
             - name: DB_CRYPTO_SCHEMA
               value: {{ .Values.bootstrap.db.crypto.schema | quote }}
             - name: STATE_MANAGER_DB_SCHEMA
-              value: {{ .Values.stateManager.db.schema | quote }}
+              value: {{ .Values.bootstrap.db.stateManager.schema | quote }}
             {{- include "corda.bootstrapClusterDbEnv" . | nindent 12 }}
             {{- include "corda.configSaltAndPassphraseEnv" . | nindent 12 }}
             {{- include "corda.bootstrapCliEnv" . | nindent 12 }}
