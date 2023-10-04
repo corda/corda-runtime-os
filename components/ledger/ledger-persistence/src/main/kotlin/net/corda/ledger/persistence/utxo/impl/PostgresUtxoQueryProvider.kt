@@ -46,8 +46,10 @@ class PostgresUtxoQueryProvider @Activate constructor(
                 token_symbol, token_tag, token_owner_hash, token_amount, created, consumed, custom_representation)
             VALUES(
                 :transactionId, :groupIndex, :leafIndex, :type, :tokenType, :tokenIssuerHash, :tokenNotaryX500Name,
-                :tokenSymbol, :tokenTag, :tokenOwnerHash, :tokenAmount, :createdAt, :consumedAt, :customRepresentation)
-            ON CONFLICT DO NOTHING"""
+                :tokenSymbol, :tokenTag, :tokenOwnerHash, :tokenAmount, :createdAt, 
+                ${if (consumed) ":consumedAt" else "null"}, 
+                :customRepresentation
+            ) ON CONFLICT DO NOTHING"""
             .trimIndent()
     }
 
