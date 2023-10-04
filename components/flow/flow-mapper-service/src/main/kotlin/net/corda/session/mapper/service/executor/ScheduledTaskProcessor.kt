@@ -5,7 +5,7 @@ import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.data.scheduler.ScheduledTaskTrigger
 import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.Operation
-import net.corda.libs.statemanager.api.SingleKeyFilter
+import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
@@ -53,7 +53,7 @@ class ScheduledTaskProcessor(
         val windowExpiry = clock.instant() - Duration.ofMillis(cleanupWindow)
         val states = stateManager.findUpdatedBetweenWithMetadataFilter(
             IntervalFilter(Instant.MIN, windowExpiry),
-            SingleKeyFilter(FLOW_MAPPER_STATUS, Operation.Equals, FlowMapperStateType.CLOSING.toString())
+            MetadataFilter(FLOW_MAPPER_STATUS, Operation.Equals, FlowMapperStateType.CLOSING.toString())
         )
         return states.map {
             it.key

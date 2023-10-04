@@ -38,6 +38,7 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.time.Clock
 import java.util.concurrent.Executors
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 
 @Suppress("LongParameterList", "ForbiddenComment")
 @Component(service = [FlowMapperService::class])
@@ -78,7 +79,8 @@ class FlowMapperService @Activate constructor(
                 coordinator.createManagedResource(REGISTRATION) {
                     coordinator.followStatusChangesByName(
                         setOf(
-                            LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+                            LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                            LifecycleCoordinatorName.forComponent<LocallyHostedIdentitiesService>()
                         )
                     )
                 }

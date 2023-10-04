@@ -1,7 +1,9 @@
 package net.corda.libs.statemanager.impl.repository.impl
 
 import net.corda.libs.statemanager.api.Operation
+import net.corda.libs.statemanager.api.MetadataFilter
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
@@ -39,17 +41,36 @@ class PostgresQueryProviderTest {
     fun metadataKeyFilterUsesCorrectOperation(operation: Pair<Operation, String>) {
         val key = "key1"
         val value = "value1"
-        val sqlQuery = queryProvider.metadataKeyFilter(key, operation.first, value)
+        val sqlQuery = queryProvider.metadataKeyFilter(MetadataFilter(key, operation.first, value))
 
-        assertThat(sqlQuery).isEqualToNormalizingWhitespace("(s.metadata->>'$key')::::text ${operation.second} '$value'")
+        assertThat(sqlQuery)
+            .isEqualToNormalizingWhitespace("(s.metadata->>'$key')::::text ${operation.second} '$value'")
     }
 
     @ParameterizedTest
     @MethodSource("types")
     fun metadataKeyFilterUsesCorrectType(type: Pair<Any, String>) {
         val key = "key1"
-        val sqlQuery = queryProvider.metadataKeyFilter(key, Operation.Equals, type.first)
+        val sqlQuery = queryProvider.metadataKeyFilter(MetadataFilter(key, Operation.Equals, type.first))
 
-        assertThat(sqlQuery).isEqualToNormalizingWhitespace("(s.metadata->>'$key')::::${type.second} = '${type.first}'")
+        assertThat(sqlQuery)
+            .isEqualToNormalizingWhitespace("(s.metadata->>'$key')::::${type.second} = '${type.first}'")
+    }
+
+    @Test
+    fun metadataKeyFiltersBuildsCorrectExpressions() {
+        val sqlQuery = queryProvider.metadataKeyFilters(
+            listOf(
+                MetadataFilter("key1", Operation.Equals, "text"),
+                MetadataFilter("key2", Operation.GreaterThan, 10),
+                MetadataFilter("key3", Operation.NotEquals, true),
+            )
+        )
+
+        assertThat(sqlQuery).containsExactly(
+            "((s.metadata->>'key1')::::text = 'text')",
+            "((s.metadata->>'key2')::::numeric > '10')",
+            "((s.metadata->>'key3')::::boolean <> 'true')",
+        )
     }
 }

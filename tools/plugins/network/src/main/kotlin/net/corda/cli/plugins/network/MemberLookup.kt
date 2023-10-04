@@ -21,7 +21,7 @@ class MemberLookup(private val output: Output = ConsoleOutput()) : RestCommand()
     @CommandLine.Option(
         names = ["-h", "--holding-identity-short-hash"],
         arity = "1",
-        description = ["Short hash of the holding identity to be checked."]
+        description = ["Short hash of the holding identity performing the lookup."]
     )
     var holdingIdentityShortHash: String? = null
 

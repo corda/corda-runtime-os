@@ -27,7 +27,7 @@ class GetRegistrations(private val output: Output = ConsoleOutput()) : RestComma
         arity = "1",
         description = [
             "Short hash of the holding identity whose view of the registration progress is to be checked.",
-            "Alternatively, you can use --name (optionally with --group) instead of this option."
+            "Alternatively, you can use --name (optionally with --group)."
         ]
     )
     var holdingIdentityShortHash: String? = null
