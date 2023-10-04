@@ -1,31 +1,29 @@
 package net.corda.libs.statemanager.api
 
 /**
- * Mutable map that allows only primitive types to be used as values.
+ * Map that allows only primitive types to be used as values.
  */
 class Metadata(
-    private val map: MutableMap<String, Any> = mutableMapOf()
-) : MutableMap<String, Any> by map {
-
-    private val supportedType = listOf(
-        String::class.java,
-        java.lang.String::class.java,
-        Number::class.java,
-        java.lang.Number::class.java,
-        Boolean::class.java,
-        java.lang.Boolean::class.java,
-    )
-
-    private fun isPrimitiveOrBoxedValue(value: Any): Boolean {
-        return supportedType.any { it.isAssignableFrom(value.javaClass) }
-    }
-
-    override fun put(key: String, value: Any): Any? {
-        if (!isPrimitiveOrBoxedValue(value)) {
-            throw IllegalArgumentException("Type not supported: ${value::class}")
+    private val map: Map<String, Any> = emptyMap()
+) : Map<String, Any> by map {
+    companion object {
+        private val supportedType = listOf(
+            String::class.java,
+            java.lang.String::class.java,
+            Number::class.java,
+            java.lang.Number::class.java,
+            Boolean::class.java,
+            java.lang.Boolean::class.java,
+        )
+        private fun isPrimitiveOrBoxedValue(value: Any): Boolean {
+            return supportedType.any { it.isAssignableFrom(value.javaClass) }
         }
-
-        return map.put(key, value)
+    }
+    init {
+        map.filter { kvp -> !isPrimitiveOrBoxedValue(kvp.value) }.takeIf { it.isNotEmpty() }?.also { kvp ->
+            val invalidPairs = kvp.entries.joinToString { "${it.key}/${it.value::class.java.name}" }
+            throw IllegalArgumentException("Type(s) not supported: $invalidPairs")
+        }
     }
 
     override fun equals(other: Any?): Boolean {
@@ -35,18 +33,15 @@ class Metadata(
         other as Metadata
 
         if (map != other.map) return false
-        if (supportedType != other.supportedType) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = map.hashCode()
-        result = 31 * result + supportedType.hashCode()
-        return result
+        return map.hashCode()
     }
 }
 
 fun metadata(): Metadata = Metadata()
 
-fun metadata(vararg pairs: Pair<String, Any>): Metadata = Metadata(mutableMapOf(*pairs))
+fun metadata(vararg pairs: Pair<String, Any>): Metadata = Metadata(mapOf(*pairs))
