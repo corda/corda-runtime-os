@@ -38,6 +38,14 @@ bootstrap:
             key: "postgres-password"
       username:
         value: "postgres"
+    stateManager:
+      password:
+        valueFrom:
+          secretKeyRef:
+            name: "statemanager-postgresql"
+            key: "statemanager-password"
+      username:
+        value: "statemanager-user"
   kafka:
     replicas: 1
 
@@ -73,11 +81,11 @@ db:
 
 stateManager:
   db:
-    host: "prereqs-postgresql"
+    host: "statemanager-postgresql"
     password:
       valueFrom:
         secretKeyRef:
-          name: "prereqs-postgresql"
+          name: "statemanager-postgresql"
           key: "password"
     username:
-      value: "user"
+      value: "statemanager-user"
