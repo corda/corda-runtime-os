@@ -180,6 +180,34 @@ abstract class BaseOnboard : Runnable, RestCommand() {
 
     protected abstract val registrationContext: Map<String, Any?>
 
+    private fun createVirtualNode(): String {
+        val request = CreateVirtualNodeRequest(
+            x500Name = name,
+            cpiFileChecksum = cpiFileChecksum,
+            vaultDdlConnection = null,
+            vaultDmlConnection = null,
+            cryptoDdlConnection = null,
+            cryptoDmlConnection = null,
+            uniquenessDdlConnection = null,
+            uniquenessDmlConnection = null
+        )
+        return createRestClient(VirtualNodeRestResource::class).use { client ->
+            checkInvariant(
+                maxAttempts = MAX_ATTEMPTS,
+                waitInterval = WAIT_INTERVAL,
+                errorMessage = "Failed to create virtual node after $MAX_ATTEMPTS attempts."
+            ) {
+                try {
+                    client.start().proxy.createVirtualNode(request)
+                } catch (e: RequestErrorException) {
+                    // This exception can be thrown while a request to create a virtual node is being made, so we
+                    // catch it and re-try.
+                    null
+                }
+            }
+        }.responseBody.requestId
+    }
+
     private fun waitForVirtualNode(shortHashId: String) {
         createRestClient(VirtualNodeRestResource::class).use { client ->
             checkInvariant(
@@ -199,25 +227,10 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     }
 
     protected val holdingId: String by lazy {
-        val request = CreateVirtualNodeRequest(
-            x500Name = name,
-            cpiFileChecksum = cpiFileChecksum,
-            vaultDdlConnection = null,
-            vaultDmlConnection = null,
-            cryptoDdlConnection = null,
-            cryptoDmlConnection = null,
-            uniquenessDdlConnection = null,
-            uniquenessDmlConnection = null
-        )
-
-        val response = createRestClient(VirtualNodeRestResource::class).use { client ->
-            client.start().proxy.createVirtualNode(request)
-        }
-
-        val shortHashId = response.responseBody.requestId
+        val shortHashId = createVirtualNode()
 
         waitForVirtualNode(shortHashId)
-        println("Onboarded member holding identity is: $shortHashId")
+        println("Holding identity short hash of '$name' is: '$shortHashId'")
 
         shortHashId
     }
@@ -368,10 +381,10 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         val submissionStatus = response.registrationStatus
 
         if (submissionStatus != "SUBMITTED") {
-            throw OnboardException("Could not submit MGM registration: ${response.memberInfoSubmitted}")
+            throw OnboardException("Could not submit registration request: ${response.memberInfoSubmitted}")
         }
 
-        println("Registration ID of $name is $registrationId")
+        println("Registration ID for '$name' is '$registrationId'")
 
         if (waitForFinalStatus) {
             waitForFinalStatus(registrationId)

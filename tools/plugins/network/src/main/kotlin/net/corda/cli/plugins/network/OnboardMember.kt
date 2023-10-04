@@ -225,8 +225,8 @@ class OnboardMember : Runnable, BaseOnboard() {
                 println("Member '$name' was onboarded.")
             } else {
                 println(
-                    "Registration request has been submitted. Wait for MGM approval to finalize registration. " +
-                            "MGM may need to approve your request manually."
+                    "Registration request has been submitted. Wait for MGM approval for registration to be finalised." +
+                            " MGM may need to approve your request manually."
                 )
             }
         }
