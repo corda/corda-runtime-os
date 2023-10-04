@@ -17,8 +17,4 @@ data class LockState(
     override fun getParticipants(): List<PublicKey> {
         return participants
     }
-
-    fun withNewOwner(newOwner: PublicKey, newParticipants: List<PublicKey>): LockState {
-        return LockState(newOwner, receiver, assetId, newParticipants)
-    }
 }
