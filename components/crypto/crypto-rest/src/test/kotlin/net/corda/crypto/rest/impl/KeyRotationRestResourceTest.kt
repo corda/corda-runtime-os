@@ -45,7 +45,6 @@ class KeyRotationRestResourceTest {
         lifecycleCoordinatorFactory = mock()
         lifecycleCoordinator = mock()
 
-
         val configEvent = ConfigChangedEvent(
             setOf(ConfigKeys.CRYPTO_CONFIG, ConfigKeys.MESSAGING_CONFIG),
             mapOf(
@@ -161,6 +160,7 @@ class KeyRotationRestResourceTest {
         }
     }
 
+    // We need two wrapping key aliases - oldKeyAlias and newKeyAlias
     private fun createCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any): SmartConfig =
         SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty())
             .withValue(
