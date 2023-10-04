@@ -29,6 +29,8 @@ class EntityProcessorFactoryImpl @Activate constructor(
 ) : EntityProcessorFactory {
     companion object {
         internal const val GROUP_NAME = "persistence.entity.processor"
+        const val SUBSCRIPTION_NAME = "Persistence"
+        const val PERSISTENCE_PATH = "/persistence"
     }
 
     override fun create(config: SmartConfig): EntityProcessor {
