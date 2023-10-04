@@ -166,7 +166,7 @@ spec:
               mkdir /tmp/stateManager
               java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar database spec \
                 -s "statemanager" -g "statemanager:${STATE_MANAGER_DB_SCHEMA}" \
-                -u "${STATE_MANAGER_DB_USERNAME}" -p "${STATE_MANAGER_DB_PASSWORD}" \
+                -u "${STATE_MANAGER_PGUSER}" -p "${STATE_MANAGER_PGPASSWORD}" \
                 --jdbc-url "${STATE_MANAGER_JDBC_URL}" \
                 -c -l /tmp/stateManager
 
@@ -267,7 +267,7 @@ spec:
             {{- include "corda.restApiAdminSecretEnv" . | nindent 12 }}
             {{- include "corda.cryptoDbUsernameEnv" . | nindent 12 }}
             {{- include "corda.cryptoDbPasswordEnv" . | nindent 12 }}
-            {{- include "corda.stateManagerDbEnv" . | nindent 12 }}
+            {{- include "corda.bootstrapStateManagerDbEnv" . | nindent 12 }}
       containers:
         - name: apply
           image: {{ include "corda.bootstrapDbClientImage" . }}

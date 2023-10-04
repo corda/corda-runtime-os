@@ -681,7 +681,7 @@ Default name for bootstrap State Manager DB secret
 Bootstrap State Manager DB credentials environment variables
 */}}
 {{- define "corda.bootstrapStateManagerDbEnv" -}}
-- name: PGUSER
+- name: STATE_MANAGER_PGUSER
   valueFrom:
     secretKeyRef:
       {{- if .Values.bootstrap.db.stateManager.username.valueFrom.secretKeyRef.name }}
@@ -697,7 +697,7 @@ Bootstrap State Manager DB credentials environment variables
       name: {{ include "corda.stateManagerDbDefaultSecretName" . | quote }}
       key: "username"
       {{- end }}
-- name: PGPASSWORD
+- name: STATE_MANAGER_PGPASSWORD
   valueFrom:
     secretKeyRef:
       {{- if .Values.bootstrap.db.stateManager.password.valueFrom.secretKeyRef.name }}
