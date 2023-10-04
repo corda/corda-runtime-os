@@ -48,7 +48,7 @@ class PostgresUtxoQueryProvider @Activate constructor(
                 :transactionId, :groupIndex, :leafIndex, :type, :tokenType, :tokenIssuerHash, :tokenNotaryX500Name,
                 :tokenSymbol, :tokenTag, :tokenOwnerHash, :tokenAmount, :createdAt, 
                 ${if (consumed) ":consumedAt" else "null"}, 
-                :customRepresentation
+                CAST(:customRepresentation as JSONB)
             ) ON CONFLICT DO NOTHING"""
             .trimIndent()
     }
