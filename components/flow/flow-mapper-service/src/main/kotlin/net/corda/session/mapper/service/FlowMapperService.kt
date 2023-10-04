@@ -5,7 +5,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
-import net.corda.libs.statemanager.api.StateManager
+import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -53,8 +53,8 @@ class FlowMapperService @Activate constructor(
     private val publisherFactory: PublisherFactory,
     @Reference(service = FlowMapperEventExecutorFactory::class)
     private val flowMapperEventExecutorFactory: FlowMapperEventExecutorFactory,
-    @Reference(service = StateManager::class)
-    private val stateManager: StateManager
+    @Reference(service = StateManagerFactory::class)
+    private val stateManagerFactory: StateManagerFactory
 ) : Lifecycle {
 
     private companion object {
@@ -68,6 +68,7 @@ class FlowMapperService @Activate constructor(
         private const val CONFIG_HANDLE = "CONFIG_HANDLE"
         private const val SCHEDULED_TASK_PROCESSOR = "flow.mapper.scheduled.task.processor"
         private const val CLEANUP_TASK_PROCESSOR = "flow.mapper.cleanup.processor"
+        private const val STATE_MANAGER = "flow.mapper.state.manager"
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<FlowMapperService>(::eventHandler)
@@ -113,6 +114,8 @@ class FlowMapperService @Activate constructor(
         try {
             val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
             val flowConfig = event.config.getConfig(FLOW_CONFIG)
+            // TODO: config key is incorrect
+            val stateManagerConfig = event.config.getConfig(MESSAGING_CONFIG)
 
             // TODO: This can be removed once the state manager is integrated into the flow mapper and the new cleanup
             // tasks work correctly.
@@ -137,7 +140,7 @@ class FlowMapperService @Activate constructor(
             }.also {
                 it.start()
             }
-            setupCleanupTasks(messagingConfig, flowConfig)
+            setupCleanupTasks(messagingConfig, flowConfig, stateManagerConfig)
             coordinator.updateStatus(LifecycleStatus.UP)
         } catch (e: CordaRuntimeException) {
             val errorMsg = "Error restarting flow mapper from config change"
@@ -146,8 +149,15 @@ class FlowMapperService @Activate constructor(
         }
     }
 
-    private fun setupCleanupTasks(messagingConfig: SmartConfig, flowConfig: SmartConfig) {
+    private fun setupCleanupTasks(
+        messagingConfig: SmartConfig,
+        flowConfig: SmartConfig,
+        stateManagerConfig: SmartConfig
+    ) {
         val window = flowConfig.getLong(FlowConfig.PROCESSING_FLOW_CLEANUP_TIME)
+        val stateManager = coordinator.createManagedResource(STATE_MANAGER) {
+            stateManagerFactory.create(stateManagerConfig)
+        }
         val scheduledTaskProcessor = ScheduledTaskProcessor(
             stateManager,
             Clock.systemUTC(),

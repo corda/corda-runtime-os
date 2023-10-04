@@ -9,6 +9,8 @@ import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.scheduler.ScheduledTaskTrigger
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.statemanager.api.StateManager
+import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.test.impl.LifecycleTest
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
@@ -49,6 +51,9 @@ internal class FlowMapperServiceTest {
             doAnswer { mock<Subscription<String, String>>() }
                 .whenever(it).createDurableSubscription<String, String>(any(), any(), any(), anyOrNull())
         }
+        val stateManagerFactory = mock<StateManagerFactory>().also {
+            doAnswer { mock<StateManager>() }.whenever(it).create(any())
+        }
         LifecycleTest {
             addDependency<ConfigurationReadService>()
             addDependency<LocallyHostedIdentitiesService>()
@@ -59,7 +64,7 @@ internal class FlowMapperServiceTest {
                 subscriptionFactory,
                 mock(),
                 mock(),
-                mock()
+                stateManagerFactory
             )
         }.run {
 
@@ -109,6 +114,9 @@ internal class FlowMapperServiceTest {
             whenever(createDurableSubscription<String, ExecuteCleanup>(any(), any(), any(), anyOrNull()))
                 .thenReturn(cleanupSubscription)
         }
+        val stateManagerFactory = mock<StateManagerFactory>().also {
+            doAnswer { mock<StateManager>() }.whenever(it).create(any())
+        }
 
         LifecycleTest {
             addDependency<ConfigurationReadService>()
@@ -121,7 +129,7 @@ internal class FlowMapperServiceTest {
                 subscriptionFactory,
                 mock(),
                 mock(),
-                mock()
+                stateManagerFactory
             )
         }.run {
             testClass.start()
@@ -163,6 +171,9 @@ internal class FlowMapperServiceTest {
             whenever(createStateAndEventSubscription<String, FlowMapperState, FlowMapperEvent>(any(), any(), any(), any()))
                 .thenThrow(CordaMessageAPIConfigException("Bad config!"))
         }
+        val stateManagerFactory = mock<StateManagerFactory>().also {
+            doAnswer { mock<StateManager>() }.whenever(it).create(any())
+        }
 
         LifecycleTest {
             addDependency<ConfigurationReadService>()
@@ -175,7 +186,7 @@ internal class FlowMapperServiceTest {
                 subscriptionFactory,
                 mock(),
                 mock(),
-                mock()
+                stateManagerFactory
             )
         }.run {
             testClass.start()

@@ -1,9 +1,11 @@
 package net.corda.libs.statemanager.api
 
+import net.corda.lifecycle.Resource
+
 /**
  * The [StateManager] provides functions to manage states within the underlying persistent storage.
  */
-interface StateManager : AutoCloseable {
+interface StateManager : Resource {
 
     /**
      * Persist new [states].
