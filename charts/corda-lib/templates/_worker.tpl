@@ -77,6 +77,19 @@ spec:
     targetPort: http
 {{- end }}
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "corda.workerInternalServiceName" $workerName }}
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ $workerName }}
+  ports:
+      - protocol: TCP
+        port: {{ include "worker.port" . }}
+        targetPort: {{ include "worker.port" . }}
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -354,8 +367,8 @@ spec:
           - name: http
             containerPort: {{ $optionalArgs.httpPort }}
         {{- end }}
-          - name: monitor
-            containerPort: 7000
+          - name: worker
+            containerPort: {{ include "worker.port" . }}
         {{- if .profiling.enabled }}
           - name: profiling
             containerPort: 10045
