@@ -1,5 +1,6 @@
 //catch all job for flaky tests
-@Library('corda-shared-build-pipeline-steps@5.1') _
+//@Library('corda-shared-build-pipeline-steps@5.1') _
+@Library('corda-shared-build-pipeline-steps@rfowler/CORE-12786-evm-worker') _
 
 cordaPipelineKubernetesAgent(
     runIntegrationTests: true,

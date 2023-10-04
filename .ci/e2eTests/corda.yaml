@@ -85,6 +85,16 @@ workers:
             secretKeyRef:
               name: "kafka-credentials"
               key: "db"
+  evm:
+    kafka:
+      sasl:
+        username:
+          value: "evm"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "kafka-credentials"
+              key: "evm"
   flow:
     kafka:
       sasl:

@@ -738,6 +738,72 @@ workers:
               # -- the DB worker SASL password secret key for client connection to Kafka
               key: ""
 
+  # evm worker configuration
+  evm:
+    # evm worker image configuration
+    image:
+      # -- evm worker image registry, defaults to image.registry
+      registry: ""
+      # -- evm worker image repository
+      repository: "corda-os-evm-worker"
+      # -- evm worker image tag, defaults to image.tag
+      tag: ""
+    # -- evm worker replica count
+    replicaCount: 1
+    # -- evm worker extra annotations
+    annotations: {}
+    # -- additional Java options for the evm worker
+    javaOptions: "-XX:MaxRAMPercentage=75"
+    # evm worker debug configuration
+    debug:
+      # -- run evm worker with debug enabled
+      enabled: false
+      # -- if debug is enabled, suspend the evm worker until the debugger is attached
+      suspend: false
+    # logging configuration
+    logging:
+      # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
+      level: null
+      # -- additional Log4j 2 XML configuration
+      override: ""
+    profiling:
+      # -- run evm worker with profiling enabled
+      enabled: false
+    # resource limits and requests configuration for the evm worker containers.
+    resources:
+      # -- the CPU/memory resource requests for the evm worker containers
+      requests: {}
+      # -- the CPU/memory resource limits for the evm worker containers
+      limits: {}
+    # evm worker Kafka configuration
+    kafka:
+      # if kafka.sasl.enabled, the credentials to connect to Kafka with for the evm worker
+      sasl:
+        # evm worker SASL username configuration for client connection to Kafka; defaults to kafka.sasl.username
+        username:
+          # -- the evm worker SASL username for client connection to Kafka
+          value: ""
+          # the boostrap SASL username secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the evm worker SASL username secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the evm worker SASL username secret name for client connection to Kafka
+              name: ""
+              # -- the evm worker SASL username secret key for client connection to Kafka
+              key: ""
+        # evm worker SASL password configuration for client connection to Kafka; defaults to kafka.sasl.password
+        password:
+          # -- the evm worker SASL password for client connection to Kafka
+          value: ""
+          # the evm worker SASL password secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the evm worker SASL password secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the evm worker SASL password secret name for client connection to Kafka
+              name: ""
+              # -- the evm worker SASL password secret key for client connection to Kafka
+              key: ""
+
   # flow worker configuration
   flow:
     # flow worker image configuration

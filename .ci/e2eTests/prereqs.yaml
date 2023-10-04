@@ -6,6 +6,7 @@ kafka:
           - "bootstrap"
           - "crypto"
           - "db"
+          - "evm"
           - "flow"
           - "flowMapper"
           - "verification"

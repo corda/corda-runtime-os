@@ -144,7 +144,10 @@ tasks.register('smokeTest', Test) {
     def dbWorkerUrl = project.getProperties().getOrDefault("dbWorkerUrl", combinedWorker ? combinedWorkerUrl : "http://localhost:7006/")
     systemProperty "dbWorkerUrl", dbWorkerUrl
     println "DB worker url: $dbWorkerUrl"
-    def persistenceWorkerUrl = project.getProperties().getOrDefault("persistenceWorkerUrl", combinedWorker ? combinedWorkerUrl : "http://localhost:7007/")
+    def evmWorkerUrl = project.getProperties().getOrDefault("evmWorkerUrl", combinedWorker ? combinedWorkerUrl : "http://localhost:7007/")
+    systemProperty "evmWorkerUrl", evmWorkerUrl
+    println "Evm worker url: $evmWorkerUrl"
+    def persistenceWorkerUrl = project.getProperties().getOrDefault("persistenceWorkerUrl", combinedWorker ? combinedWorkerUrl : "http://localhost:7008/")
     systemProperty "persistenceWorkerUrl", persistenceWorkerUrl
     def tokenSelectionWorkerUrl = project.getProperties().getOrDefault("tokenSelectionWorkerUrl", combinedWorker ? combinedWorkerUrl : "http://localhost:7008/")
     systemProperty "tokenSelectionWorkerUrl", tokenSelectionWorkerUrl

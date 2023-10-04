@@ -1624,6 +1624,7 @@
             "required": [
                 "crypto",
                 "db",
+                "evm",
                 "flow",
                 "flowMapper",
                 "verification",
@@ -1825,6 +1826,56 @@
                                         "memory": "2048Mi"
                                     }
                                 }
+                            }]
+                        }
+                    ]
+                },
+                "evm": {
+                    "allOf": [
+                        {
+                            "$ref": "#/$defs/worker"
+                        },
+                        {
+                            "required": [],
+                            "properties": {
+                                "image": {},
+                                "javaOptions": {},
+                                "annotations": {},
+                                "replicaCount": {},
+                                "debug": {},
+                                "logging": {},
+                                "profiling": {},
+                                "resources": {},
+                                "kafka": {}
+                            },
+                            "examples": [{
+                                "image": {
+                                    "registry": "corda-os-docker.software.r3.com",
+                                    "repository": "corda-os-flow-worker",
+                                    "tag": ""
+                                },
+                                "replicaCount": 1,
+                                "debug": {
+                                    "enabled": false,
+                                    "suspend": false
+                                },
+                                "logging": {
+                                    "level": "warn"
+                                },
+                                "profiling": {
+                                    "enabled": false
+                                },
+                                "resources": {
+                                    "requests": {
+                                        "cpu": "1",
+                                        "memory": "2048Mi"
+                                    },
+                                    "limits": {
+                                        "cpu": "1",
+                                        "memory": "2048Mi"
+                                    }
+                                },
+                                "verifyInstrumentation": false
                             }]
                         }
                     ]
