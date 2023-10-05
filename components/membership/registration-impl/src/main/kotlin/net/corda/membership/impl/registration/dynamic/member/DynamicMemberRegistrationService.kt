@@ -514,7 +514,11 @@ class DynamicMemberRegistrationService @Activate constructor(
             p2pEndpointVerifier.verifyContext(context)
             val isNotary = context.entries.any { it.key.startsWith(ROLES_PREFIX) && it.value == NOTARY_ROLE }
             context.keys.filter { ledgerIdRegex.matches(it) }.apply {
-                if (!isNotary) require(isNotEmpty()) { "No ledger key ID was provided." }
+                if (!isNotary) {
+                    require(isNotEmpty()) { "No ledger key ID was provided." }
+                } else {
+                    require(isEmpty()) { "A ledger key ID was provided for a notary virtual node." }
+                }
                 require(orderVerifier.isOrdered(this, 3)) { "Provided ledger key IDs are incorrectly numbered." }
                 this.forEach {
                     validateKey(it, context[it]!!)

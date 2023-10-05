@@ -467,6 +467,14 @@ class StaticMemberRegistrationService(
 
         hsmRegistrationClient.assignSoftHSM(memberId, LEDGER)
         val ledgerKey = keysFactory.getOrGenerateKeyPair(LEDGER)
+        val ledgerKeyEntries = if (roles.any { it is MemberRole.Notary }) {
+            emptyMap()
+        } else {
+            mapOf(
+                LEDGER_KEYS_KEY.format(0) to ledgerKey.pem,
+                LEDGER_KEY_HASHES_KEY.format(0) to ledgerKey.hash.toString(),
+            )
+        }
 
         val sessionKey = when (groupPolicy.protocolParameters.sessionKeyPolicy) {
             SessionKeyPolicy.DISTINCT -> {
@@ -490,15 +498,13 @@ class StaticMemberRegistrationService(
             String.format(PARTY_SESSION_KEYS_PEM, 0) to sessionKey.pem,
             String.format(SESSION_KEYS_HASH, 0) to sessionKey.hash.toString(),
             GROUP_ID to groupPolicy.groupId,
-            LEDGER_KEYS_KEY.format(0) to ledgerKey.pem,
-            LEDGER_KEY_HASHES_KEY.format(0) to ledgerKey.hash.toString(),
             *convertEndpoints(staticMemberInfo).toTypedArray(),
             *notaryInfo.toTypedArray(),
             SOFTWARE_VERSION to platformInfoProvider.localWorkerSoftwareVersion,
             PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
             MEMBER_CPI_NAME to cpi.name,
             MEMBER_CPI_VERSION to cpi.version,
-        ) + optionalContext + customFields
+        ) + ledgerKeyEntries + optionalContext + customFields
 
         val memberInfo = memberInfoFactory.createMemberInfo(
             memberContext.toSortedMap(),
