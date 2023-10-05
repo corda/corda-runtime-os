@@ -63,11 +63,13 @@ class CryptoRekeyBusProcessor(
             // as we need to report the status with this total amount.
             val virtualNodeInfo = virtualNodeInfoReadService.getAll()
             virtualNodeInfo.forEach { virtualNode ->
-                val wrappingRepo = wrappingRepositoryFactory.create(virtualNode.holdingIdentity.toString())
+                val tenantId = virtualNode.holdingIdentity.x500Name.commonName.toString()
+                val wrappingRepo = wrappingRepositoryFactory.create(tenantId)
                 if (wrappingRepo.findKey(request.oldKeyAlias) != null) {
                     keysToRotate++
-                    tenantIdsWithKeysToRotate.add(virtualNode.holdingIdentity.toString())
+                    tenantIdsWithKeysToRotate.add(tenantId)
                 }
+                wrappingRepo.close()
             }
 
             val publisher = publisherFactory.createPublisher(
@@ -85,7 +87,7 @@ class CryptoRekeyBusProcessor(
                 tenantIdsWithKeysToRotate = tenantIdsWithKeysToRotate.take(request.limit).toMutableList()
             }
 
-            tenantIdsWithKeysToRotate.forEach { tenant ->
+            tenantIdsWithKeysToRotate.forEach { tenantId ->
                 publisher.publish(
                     listOf(
                         Record(
@@ -93,7 +95,7 @@ class CryptoRekeyBusProcessor(
                             request.requestId,
                             createIndividualKeyRotationRequest(
                                 request.requestId,
-                                tenant,
+                                tenantId,
                                 request.oldKeyAlias,
                                 request.newKeyAlias
                             )
@@ -101,6 +103,7 @@ class CryptoRekeyBusProcessor(
                     )
                 )
             }
+            publisher.close()
         }
         return emptyList()
     }
