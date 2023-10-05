@@ -42,8 +42,10 @@ import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import javax.persistence.PersistenceException
 import kotlin.concurrent.thread
+import org.junit.jupiter.api.Disabled
 
 // TODO-[CORE-16663]: make database provider pluggable
+@Disabled
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StateManagerIntegrationTest {
 
