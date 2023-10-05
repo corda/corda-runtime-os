@@ -8,6 +8,7 @@ import picocli.CommandLine.Command
         MemberLookup::class,
         GroupParametersLookup::class,
     ],
-    description = ["Lookup members or group parameters."]
+    mixinStandardHelpOptions = true,
+    description = ["Look up members or group parameters."]
 )
 class Lookup

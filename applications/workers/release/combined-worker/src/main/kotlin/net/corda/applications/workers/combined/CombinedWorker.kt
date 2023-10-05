@@ -7,20 +7,20 @@ import net.corda.application.dbsetup.PostgresDbSetup
 import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.BusType
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
+import net.corda.applications.workers.workercommon.Health
 import net.corda.applications.workers.workercommon.JavaSerialisationFilter
+import net.corda.applications.workers.workercommon.Metrics
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.createConfigFromParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
-import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupMonitor
-import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupWebserver
-import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.libs.platform.PlatformInfoProvider
+import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.crypto.CryptoProcessor
@@ -94,8 +94,8 @@ class CombinedWorker @Activate constructor(
     private val gatewayProcessor: GatewayProcessor,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
-    @Reference(service = WorkerMonitor::class)
-    private val workerMonitor: WorkerMonitor,
+    @Reference(service = LifecycleRegistry::class)
+    private val lifecycleRegistry: LifecycleRegistry,
     @Reference(service = WebServer::class)
     private val webServer: WebServer,
     @Reference(service = ConfigurationValidatorFactory::class)
@@ -193,15 +193,15 @@ class CombinedWorker @Activate constructor(
             config.factory,
         ).run()
 
-        webServer.setupWebserver(params.defaultParams)
-        setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
-
+        Metrics.configure(webServer, this.javaClass.simpleName)
+        Health.configure(webServer, lifecycleRegistry)
         configureTracing("Combined Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
 
         JavaSerialisationFilter.install()
 
         logger.info("CONFIG = $config")
 
+        webServer.start(params.defaultParams.workerServerPort)
         cryptoProcessor.start(config)
         dbProcessor.start(config)
         persistenceProcessor.start(config)

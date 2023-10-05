@@ -18,7 +18,8 @@ import picocli.CommandLine
 
 @Command(
     name = "create-cpb",
-    description = ["Creates a CPB from passed in CPK archives."]
+    description = ["Creates a CPB from passed in CPK archives."],
+    mixinStandardHelpOptions = true
 )
 class CreateCpb : Runnable {
 

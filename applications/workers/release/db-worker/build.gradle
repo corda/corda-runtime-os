@@ -20,6 +20,7 @@ dependencies {
     implementation project(":components:security-manager")
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-validation')
+    implementation project(":libs:lifecycle:registry")
     implementation project(':libs:platform-info')
     implementation project(':libs:tracing')
     implementation project(':libs:messaging:messaging')
@@ -48,6 +49,7 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(':libs:application:addon')
     testImplementation project(':libs:application:banner')
+    testImplementation project(":libs:lifecycle:lifecycle")
 
     runtimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
         exclude group: 'org.apache.felix'

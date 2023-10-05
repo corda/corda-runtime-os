@@ -64,7 +64,7 @@ class CheckForPendingRegistrationHandlerTest {
 
     @Test
     fun `do nothing when there is a registration in-progress for member`() {
-        with(handler.invoke(RegistrationState(registrationId, member, mgm), Record(TOPIC, KEY, inputCommand))) {
+        with(handler.invoke(RegistrationState(registrationId, member, mgm, emptyList()), Record(TOPIC, KEY, inputCommand))) {
             assertThat(updatedState).isNotNull
             assertThat(outputStates).isEmpty()
         }

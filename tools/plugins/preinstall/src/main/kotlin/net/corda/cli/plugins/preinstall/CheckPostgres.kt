@@ -9,7 +9,10 @@ import net.corda.cli.plugins.preinstall.PreInstallPlugin.DB
 import net.corda.cli.plugins.preinstall.PreInstallPlugin.PluginContext
 import java.util.concurrent.Callable
 
-@CommandLine.Command(name = "check-postgres", description = ["Check that the PostgreSQL DB is up and that the credentials work."]
+@CommandLine.Command(
+    name = "check-postgres",
+    description = ["Check that the PostgreSQL DB is up and that the credentials work."],
+    mixinStandardHelpOptions = true
 )
 class CheckPostgres : Callable<Int>, PluginContext() {
 

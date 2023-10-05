@@ -487,7 +487,7 @@ class DynamicMemberRegistrationService @Activate constructor(
         private fun getTlsSubject(member: HoldingIdentity): Map<String, String> {
             return if (TlsType.getClusterType(configurationGetService::getSmartConfig) == TlsType.MUTUAL) {
                 val info =
-                    locallyHostedIdentitiesService.getIdentityInfo(member)
+                    locallyHostedIdentitiesService.pollForIdentityInfo(member)
                         ?: throw CordaRuntimeException(
                             "Member $member is not locally hosted. " +
                                     "If it had been configured, please retry the registration in a few seconds. " +
