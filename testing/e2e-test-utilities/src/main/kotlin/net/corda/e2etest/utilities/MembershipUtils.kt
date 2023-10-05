@@ -61,7 +61,7 @@ fun ClusterInfo.onboardMember(
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null,
     tlsCertificateUploadedCallback: (String) -> Unit = {},
     useSessionCertificate: Boolean = false,
-    useLedgerKey: Boolean = true
+    useLedgerKey: Boolean = true,
 ): NetworkOnboardingMetadata {
     conditionallyUploadCpiSigningCertificate()
     conditionallyUploadCordaPackage(cpiName, cpb, groupPolicy)
@@ -325,22 +325,24 @@ fun ClusterInfo.registerStaticMember(
 fun ClusterInfo.createRegistrationContext(
     sessionKeyId: String,
     ledgerKeyId: String?
-) = if (ledgerKeyId != null) {
-    mapOf(
-        "corda.session.keys.0.id" to sessionKeyId,
-        "corda.session.keys.0.signature.spec" to DEFAULT_SIGNATURE_SPEC,
-        "corda.ledger.keys.0.id" to ledgerKeyId,
-        "corda.ledger.keys.0.signature.spec" to DEFAULT_SIGNATURE_SPEC,
-        "corda.endpoints.0.connectionURL" to p2p.uri.toString(),
-        "corda.endpoints.0.protocolVersion" to p2p.protocol
-    )
-} else {
-    mapOf(
+): Map<String, String> {
+    val baseMap = mapOf(
         "corda.session.keys.0.id" to sessionKeyId,
         "corda.session.keys.0.signature.spec" to DEFAULT_SIGNATURE_SPEC,
         "corda.endpoints.0.connectionURL" to p2p.uri.toString(),
         "corda.endpoints.0.protocolVersion" to p2p.protocol
     )
+
+    val ledgerKeysMap = if (ledgerKeyId == null) {
+        emptyMap()
+    } else {
+        mapOf(
+            "corda.ledger.keys.0.id" to ledgerKeyId,
+            "corda.ledger.keys.0.signature.spec" to DEFAULT_SIGNATURE_SPEC
+        )
+    }
+
+    return baseMap + ledgerKeysMap
 }
 
 

@@ -876,9 +876,9 @@ class StaticMemberRegistrationServiceTest {
 
             verify(memberInfoFactory, times(3))
                 .createMgmOrStaticPersistentMemberInfo(any(), capturedMemberInfos.capture(), any(), any())
-            val notaryMemberInfo = capturedMemberInfos.allValues.firstOrNull {
+            val notaryMemberInfo = capturedMemberInfos.allValues.first {
                 it.notaryDetails != null
-            }!!
+            }
             val notaryDetails = notaryMemberInfo.notaryDetails!!
             assertSoftly {
                 assertThat(capturedPublishedList.firstValue.firstOrNull()?.value)
