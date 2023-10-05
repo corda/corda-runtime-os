@@ -291,8 +291,8 @@ spec:
                 DO \$\$ BEGIN IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${CRYPTO_DB_USER_USERNAME}') THEN RAISE NOTICE 'Role "${CRYPTO_DB_USER_USERNAME}" already exists'; ELSE CREATE USER "${CRYPTO_DB_USER_USERNAME}" WITH ENCRYPTED PASSWORD '$CRYPTO_DB_USER_PASSWORD'; END IF; END \$\$;
                 GRANT USAGE ON SCHEMA ${DB_CRYPTO_SCHEMA} TO "${CRYPTO_DB_USER_USERNAME}";
                 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${DB_CRYPTO_SCHEMA} TO "${CRYPTO_DB_USER_USERNAME}";
-                GRANT USAGE ON SCHEMA ${DB_STATE_MANAGER_SCHEMA} TO "${STATE_MANAGER_DB_USER_USERNAME}";
-                GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${DB_STATE_MANAGER_SCHEMA} TO "${STATE_MANAGER_DB_USER_USERNAME}";
+                GRANT USAGE ON SCHEMA ${DB_STATE_MANAGER_SCHEMA} TO "${DB_CLUSTER_USERNAME}";
+                GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${DB_STATE_MANAGER_SCHEMA} TO "${DB_CLUSTER_USERNAME}";
               SQL
 
               echo 'DB Bootstrapped'
@@ -319,7 +319,6 @@ spec:
             {{- include "corda.cryptoDbUsernameEnv" . | nindent 12 }}
             {{- include "corda.cryptoDbPasswordEnv" . | nindent 12 }}
             {{- include "corda.clusterDbEnv" . | nindent 12 }}
-            {{- include "corda.stateManagerDbUsernameEnv" . | nindent 12 }}
       volumes:
         - name: temp
           emptyDir: {}

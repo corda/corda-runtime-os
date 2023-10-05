@@ -639,19 +639,3 @@ Get the endpoint argument for a given worker
 {{- $workerServiceName := include "corda.workerInternalServiceName" $workerName }}
 {{- printf "worker.http.endpoint.%s=%s:%s" $worker $workerServiceName (include "corda.workerServicePort" $) }}
 {{- end }}
-
-{{/*
-State Manager Db environment variable
-*/}}
-{{- define "corda.stateManagerDbUsernameEnv" -}}
-- name: STATE_MANAGER_DB_USER_USERNAME
-  valueFrom:
-    secretKeyRef:
-      {{- if .Values.bootstrap.db.stateManager.username.valueFrom.secretKeyRef.name }}
-      name: {{ .Values.bootstrap.db.stateManager.username.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required "Must specify bootstrap.db.stateManager.username.valueFrom.secretKeyRef.key" .Values.bootstrap.db.stateManager.username.valueFrom.secretKeyRef.key | quote }}
-      {{- else }}
-      name: {{ include "corda.clusterDbDefaultSecretName" . | quote }}
-      key: "username"
-      {{- end }}
-{{- end }}
