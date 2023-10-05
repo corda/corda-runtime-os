@@ -618,7 +618,7 @@ data:
 {{/*
 The port which should be used to connect to Corda worker instances
 */}}
-{{- define "worker.port" -}}
+{{- define "corda.workerServicePort" -}}
 7000
 {{- end -}}
 
@@ -637,5 +637,5 @@ Get the endpoint argument for a given worker
 {{- $worker := .worker }}
 {{- $workerName := printf "%s-%s-worker" (include "corda.fullname" $context) (include "corda.workerTypeKebabCase" $worker) }}
 {{- $workerServiceName := include "corda.workerInternalServiceName" $workerName }}
-{{- printf "worker.rpc.endpoint.%s=%s:%s" $worker $workerServiceName (include "worker.port" $) }}
+{{- printf "worker.http.endpoint.%s=%s:%s" $worker $workerServiceName (include "corda.workerServicePort" $) }}
 {{- end }}

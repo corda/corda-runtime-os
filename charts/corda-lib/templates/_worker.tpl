@@ -87,8 +87,8 @@ spec:
     app: {{ $workerName }}
   ports:
       - protocol: TCP
-        port: {{ include "worker.port" . }}
-        targetPort: {{ include "worker.port" . }}
+        port: {{ include "corda.workerServicePort" . }}
+        targetPort: "worker"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -331,6 +331,12 @@ spec:
           {{- if $.Values.tracing.samplesPerSecond }}
           - "--trace-samples-per-second={{ $.Values.tracing.samplesPerSecond }}"
           {{- end }}
+          {{- if $optionalArgs.servicesAccessed }}
+          {{- range $worker := $optionalArgs.servicesAccessed }}
+          {{- $endpoint := include "corda.getWorkerEndpoint" (dict "context" $ "worker" $worker) }}
+          - --endpoint={{ $endpoint }}
+          {{- end }}
+          {{- end }}
           {{- range $i, $arg := $optionalArgs.additionalWorkerArgs }}
           - {{ $arg | quote }}
           {{- end }}
@@ -368,7 +374,7 @@ spec:
             containerPort: {{ $optionalArgs.httpPort }}
         {{- end }}
           - name: worker
-            containerPort: {{ include "worker.port" . }}
+            containerPort: 7000
         {{- if .profiling.enabled }}
           - name: profiling
             containerPort: 10045
