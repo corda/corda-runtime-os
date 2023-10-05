@@ -640,7 +640,7 @@ State Manager DB port
 State Manager DB name
 */}}
 {{- define "corda.stateManagerDbName" -}}
-{{- .Values.stateManager.db.database | default "statemanager" }}
+{{- .Values.stateManager.db.database | default "state-manager" }}
 {{- end -}}
 
 

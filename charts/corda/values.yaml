@@ -180,7 +180,7 @@ stateManager:
           # -- the State Manager database password secret key
           key: ""
     # -- the State Manager database name
-    database: statemanager
+    database: state-manager
     # -- the State Manager schema name
     schema: STATE_MANAGER
 
