@@ -94,6 +94,6 @@ private class FlowWorkerParams {
     @Mixin
     var defaultParams = DefaultWorkerParams()
 
-    @Option(names = ["--endpoint"], description = ["Internal RPC endpoints for Corda workers"], required = true)
+    @Option(names = ["--endpoint"], description = ["Internal REST endpoints for Corda workers"], required = true)
     val workerEndpoints: Map<String, String> = emptyMap()
 }
