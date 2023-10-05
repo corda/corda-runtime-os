@@ -8,8 +8,11 @@ import net.corda.crypto.config.impl.HSM
 import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.persistence.WrappingKeyInfo
+import net.corda.crypto.persistence.db.model.WrappingKeyEntity
 import net.corda.crypto.softhsm.WrappingRepository
 import net.corda.crypto.softhsm.WrappingRepositoryFactory
+import net.corda.crypto.softhsm.impl.WrappingRepositoryImpl
+import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.rotation.KeyType
 import net.corda.libs.configuration.SmartConfig
@@ -29,11 +32,14 @@ import org.mockito.Mockito.never
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.UUID
+import javax.persistence.EntityManager
 
 class CryptoRekeyBusProcessorTests {
     private lateinit var tenantId: String
@@ -128,9 +134,118 @@ class CryptoRekeyBusProcessorTests {
 
     @Test
     fun `key rotation posts new Kafka message only for those tenantIds that contains key with oldKeyAlias alias in the wrapping repo`() {
-        // to be implemented
+
+        val oldKeyAlias = "Eris"
+
+        val tenantId1 = UUID.randomUUID().toString()
+        val tenantId2 = UUID.randomUUID().toString()
+        val tenantId3 = UUID.randomUUID().toString()
+        val newId1 = UUID.randomUUID()
+       // val newId2 = UUID.randomUUID()
+        val newId3 = UUID.randomUUID()
+        val wrappingKeyInfo1 = WrappingKeyInfo(
+            1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch")
+
+        //val wrappingKeyInfo2 = WrappingKeyInfo(
+        //    1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch")
+
+        val wrappingKeyInfo3 = WrappingKeyInfo(
+            1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch")
+
+        val savedWrappingKey1 = makeWrappingKeyEntity(newId1, oldKeyAlias, wrappingKeyInfo1)
+        //val savedWrappingKey2 = makeWrappingKeyEntity(newId2, "randomAlias", wrappingKeyInfo2)
+        val savedWrappingKey3 = makeWrappingKeyEntity(newId3, oldKeyAlias, wrappingKeyInfo3)
+
+        val em1 = mock<EntityManager> {
+            on { createQuery(any(), eq(WrappingKeyEntity::class.java)) } doAnswer {
+                mock {
+                    on { setParameter(any<String>(), any()) } doReturn it
+                    on { setMaxResults(any()) } doReturn it
+                    on { resultList } doReturn listOf(savedWrappingKey1)
+                }
+            }
+        }
+
+        val repo1 = WrappingRepositoryImpl(
+            mock {
+                on { createEntityManager() } doReturn em1
+            },
+            tenantId1
+        )
+
+        val em2 = mock<EntityManager> {
+            on { createQuery(any(), eq(WrappingKeyEntity::class.java)) } doAnswer {
+                mock {
+                    on { setParameter(any<String>(), any()) } doReturn it
+                    on { setMaxResults(any()) } doReturn it
+                    on { resultList } doReturn listOf()
+                }
+            }
+        }
+
+        val repo2 = WrappingRepositoryImpl(
+            mock {
+                on { createEntityManager() } doReturn em2
+            },
+            tenantId2
+        )
+
+        val em3 = mock<EntityManager> {
+            on { createQuery(any(), eq(WrappingKeyEntity::class.java)) } doAnswer {
+                mock {
+                    on { setParameter(any<String>(), any()) } doReturn it
+                    on { setMaxResults(any()) } doReturn it
+                    on { resultList } doReturn listOf(savedWrappingKey3)
+                }
+            }
+        }
+
+        val repo3 = WrappingRepositoryImpl(
+            mock {
+                on { createEntityManager() } doReturn em3
+            },
+            tenantId3
+        )
+
+        val virtualNodes = getStubVirtualNodes(listOf(tenantId1, tenantId2, tenantId3))
+        whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
+
+
+        val wrappingRepositoryFactory = mock<WrappingRepositoryFactory> {
+            on { create(virtualNodes[0].holdingIdentity.x500Name.commonName.toString()) } doReturn repo1
+            on { create(virtualNodes[1].holdingIdentity.x500Name.commonName.toString()) } doReturn repo2
+            on { create(virtualNodes[2].holdingIdentity.x500Name.commonName.toString()) } doReturn repo3
+        }
+
+        val cryptoService: CryptoService = mock<CryptoService> { }
+        cryptoRekeyBusProcessor = CryptoRekeyBusProcessor(
+            cryptoService, virtualNodeInfoReadService,
+            wrappingRepositoryFactory, publisherFactory, config.getConfig(ConfigKeys.MESSAGING_CONFIG)
+        )
+
+        cryptoRekeyBusProcessor.onNext(listOf(getKafkaRecord(oldKeyAlias, null)))
+
+        verify(publisher, times(2)).publish(any())
     }
 
+    private fun makeWrappingKeyEntity(
+        newId: UUID,
+        alias: String,
+        wrappingKeyInfo: WrappingKeyInfo,
+    ): WrappingKeyEntity = WrappingKeyEntity(
+        newId,
+        alias,
+        wrappingKeyInfo.generation,
+        mock(),
+        wrappingKeyInfo.encodingVersion,
+        wrappingKeyInfo.algorithmName,
+        wrappingKeyInfo.keyMaterial,
+        mock(),
+        false,
+        wrappingKeyInfo.parentKeyAlias
+    )
+
+    // TO-DO: clean this as we need only messaging config in this test class
     private fun createCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any): SmartConfig =
         SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty())
             .withValue(
