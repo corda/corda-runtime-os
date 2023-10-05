@@ -263,7 +263,7 @@ Default name for bootstrap cluster DB secret
 Bootstrap cluster DB credentials environment variables
 */}}
 {{- define "corda.bootstrapClusterDbEnv" -}}
-- name: PGUSER
+- name: CLUSTER_PGUSER
   valueFrom:
     secretKeyRef:
       {{- if .Values.bootstrap.db.cluster.username.valueFrom.secretKeyRef.name }}
@@ -279,7 +279,7 @@ Bootstrap cluster DB credentials environment variables
       name: {{ include "corda.clusterDbDefaultSecretName" . | quote }}
       key: "username"
       {{- end }}
-- name: PGPASSWORD
+- name: CLUSTER_PGPASSWORD
   valueFrom:
     secretKeyRef:
       {{- if .Values.bootstrap.db.cluster.password.valueFrom.secretKeyRef.name }}

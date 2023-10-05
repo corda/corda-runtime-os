@@ -45,7 +45,7 @@ bootstrap:
             name: "statemanager-postgresql"
             key: "statemanager-password"
       username:
-        value: "statemanager-user"
+        value: "state-manager-user"
   kafka:
     replicas: 1
 
