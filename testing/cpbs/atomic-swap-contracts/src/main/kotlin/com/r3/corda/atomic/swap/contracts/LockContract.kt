@@ -13,6 +13,7 @@ class LockContract : Contract {
     interface LockCommands : Command {
         class Lock : LockCommands
         class Unlock(val bool: Boolean) : LockCommands
+        class Reclaim : LockCommands
     }
 
     override fun verify(transaction: UtxoLedgerTransaction) {
@@ -48,6 +49,13 @@ class LockContract : Contract {
                         (transaction.signatories.size == 1)
                 "The signer of the unlock should be the new owner of the Asset state." using
                         (transaction.signatories.containsAll(outputState.participants))
+            }
+
+            is LockCommands.Reclaim -> {
+                "There should be one lock input state as the lock state needs to be consumed" using
+                        (transaction.getInputStates(LockState::class.java).size == 1)
+                "There should be one output state as an unlocked asset state needs to be created" using
+                        (transaction.getOutputStates(OwnableState::class.java).size == 1)
             }
 
             else -> {

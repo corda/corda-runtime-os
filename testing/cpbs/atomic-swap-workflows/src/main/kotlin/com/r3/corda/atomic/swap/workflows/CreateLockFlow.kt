@@ -15,6 +15,7 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.CompositeKeyNodeAndWeight
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.membership.MemberInfo
 import org.slf4j.LoggerFactory
@@ -25,7 +26,7 @@ import java.time.Instant
 
 data class CreateLockFlowArgs(val newOwner: String, val stateId: String)
 
-data class CreateLockFlowResult(val transactionId: String, val stateId: String, val ownerPublicKey: String)
+data class CreateLockFlowResult(val transactionId: String, val signedTransactionId: SecureHash, val stateId: String, val ownerPublicKey: String)
 
 
 class CreateLockFlow : ClientStartableFlow {
@@ -115,6 +116,7 @@ class CreateLockFlow : ClientStartableFlow {
             return jsonMarshallingService.format(
                 CreateLockFlowResult(
                     transactionId,
+                    signedTransaction.id,
                     outputState.assetId,
                     outputState.owner.toString()
                 )
