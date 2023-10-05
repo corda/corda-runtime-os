@@ -2466,68 +2466,24 @@
                                 "service": {
                                     "type": "object",
                                     "default": {},
-                                    "title": "P2P gateway worker service configuration",
+                                    "title": "p2p-gateway worker worker service configuration",
                                     "required": [
-                                        "type",
-                                        "externalTrafficPolicy",
-                                        "loadBalancerSourceRanges",
-                                        "annotations"
+                                        "port"
                                     ],
                                     "additionalProperties": false,
                                     "properties": {
-                                        "type": {
-                                            "type": "string",
-                                            "default": "",
-                                            "title": "the type for the P2P gateway worker service",
-                                            "examples": [
-                                                "ClusterIP"
-                                            ]
-                                        },
                                         "port": {
                                             "type": "integer",
-                                            "default": 443,
-                                            "title": "the HTTP port for the P2P gateway worker service",
+                                            "default": 8080,
+                                            "title": "the Gateway HTTP port",
                                             "examples": [
-                                                443
-                                            ]
-                                        },
-                                        "externalTrafficPolicy": {
-                                            "type": "string",
-                                            "default": "",
-                                            "title": "the traffic policy for the P2P gateway worker service",
-                                            "examples": [
-                                                ""
-                                            ]
-                                        },
-                                        "loadBalancerSourceRanges": {
-                                            "type": "array",
-                                            "default": [],
-                                            "title": "the LoadBalancer source ranges to limit access to the P2P gateway worker service",
-                                            "items": {},
-                                            "examples": [
-                                                []
-                                            ]
-                                        },
-                                        "annotations": {
-                                            "type": "object",
-                                            "default": {},
-                                            "title": "the annotations for P2P gateway worker service",
-                                            "required": [],
-                                            "properties": {},
-                                            "examples": [
-                                                {}
+                                                8080
                                             ]
                                         }
                                     },
-                                    "examples": [
-                                        {
-                                            "type": "ClusterIP",
-                                            "port": 443,
-                                            "externalTrafficPolicy": "",
-                                            "loadBalancerSourceRanges": [],
-                                            "annotations": {}
-                                        }
-                                    ]
+                                    "examples": [{
+                                        "port": 8080
+                                    }]
                                 },
                                 "ingress": {
                                     "type": "object",
@@ -3114,6 +3070,9 @@
                             "cpu": "1",
                             "memory": "2048Mi"
                         }
+                    },
+                    "service": {
+                        "port": 8080
                     }
                 },
                 "persistence": {

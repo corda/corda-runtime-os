@@ -1170,16 +1170,8 @@ workers:
       limits: {}
     # P2P gateway worker service configuration
     service:
-      # -- the type for the P2P gateway worker service
-      type: ClusterIP
       # -- The P2P gateway HTTP port
-      port: 443
-      # -- the traffic policy for the P2P gateway worker service
-      externalTrafficPolicy: ""
-      # -- the LoadBalancer source ranges to limit access to the P2P gateway worker service
-      loadBalancerSourceRanges: []
-      # -- the annotations for P2P gateway worker service
-      annotations: {}
+      port: 8080
     # P2P gateway worker ingress configuration
     ingress:
       # -- the annotations for the P2P gateway worker ingress
