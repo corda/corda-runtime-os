@@ -41,6 +41,8 @@ interface UtxoPersistenceService {
 
     fun <T: ContractState> findUnconsumedVisibleStatesByType(stateClass: Class<out T>): List<UtxoTransactionOutputDto>
 
+    fun <T: ContractState> findUnconsumedVisibleStatesByExactType(stateClass: Class<out T>): List<UtxoTransactionOutputDto>
+
     fun resolveStateRefs(stateRefs: List<StateRef>): List<UtxoTransactionOutputDto>
 
     fun persistTransaction(

@@ -487,7 +487,7 @@ class DynamicMemberRegistrationService @Activate constructor(
         private fun getTlsSubject(member: HoldingIdentity): Map<String, String> {
             return if (TlsType.getClusterType(configurationGetService::getSmartConfig) == TlsType.MUTUAL) {
                 val info =
-                    locallyHostedIdentitiesService.getIdentityInfo(member)
+                    locallyHostedIdentitiesService.pollForIdentityInfo(member)
                         ?: throw CordaRuntimeException(
                             "Member $member is not locally hosted. " +
                                     "If it had been configured, please retry the registration in a few seconds. " +
@@ -514,7 +514,11 @@ class DynamicMemberRegistrationService @Activate constructor(
             p2pEndpointVerifier.verifyContext(context)
             val isNotary = context.entries.any { it.key.startsWith(ROLES_PREFIX) && it.value == NOTARY_ROLE }
             context.keys.filter { ledgerIdRegex.matches(it) }.apply {
-                if (!isNotary) require(isNotEmpty()) { "No ledger key ID was provided." }
+                if (!isNotary) {
+                    require(isNotEmpty()) { "No ledger key ID was provided." }
+                } else {
+                    require(isEmpty()) { "A ledger key ID was provided for a notary virtual node." }
+                }
                 require(orderVerifier.isOrdered(this, 3)) { "Provided ledger key IDs are incorrectly numbered." }
                 this.forEach {
                     validateKey(it, context[it]!!)

@@ -16,12 +16,13 @@ import java.util.UUID
 @Command(
     name = "onboard-mgm",
     description = [
-        "Onboard MGM member.",
-    ]
+        "Onboard MGM",
+    ],
+    mixinStandardHelpOptions = true
 )
 class OnboardMgm : Runnable, BaseOnboard() {
     @Option(
-        names = ["--cpi-hash"],
+        names = ["--cpi-hash", "-h"],
         description = ["The CPI hash of a previously uploaded CPI. " +
                 "If not specified, an auto-generated MGM CPI will be used."]
     )
@@ -81,7 +82,10 @@ class OnboardMgm : Runnable, BaseOnboard() {
             val groupId = json.readTree(groupPolicyResponse).get("groupId").asText()
 
             // write the groupId to the file
-            groupIdFile.writeText(groupId)
+            groupIdFile.apply {
+                parentFile.mkdirs()
+                writeText(groupId)
+            }
         }
     }
 
@@ -172,7 +176,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
 
     override fun run() {
         verifyAndPrintError {
-            println("On-boarding MGM member $name")
+            println("Onboarding MGM '$name'.")
 
             configureGateway()
 
@@ -182,15 +186,15 @@ class OnboardMgm : Runnable, BaseOnboard() {
 
             setupNetwork()
 
-            println("MGM Member $name was onboarded")
+            println("MGM '$name' was onboarded.")
 
             saveGroupPolicy()
 
             if (mtls) {
                 println(
                     "To onboard members to this group on other clusters, please add those members' " +
-                            "client certificates subjects to this MGM's allow list. " +
-                            "You can do that using the allowClientCertificate command."
+                            "client certificates subjects to this MGM's allowed list. " +
+                            "See command: 'allowClientCertificate'."
                 )
             }
         }

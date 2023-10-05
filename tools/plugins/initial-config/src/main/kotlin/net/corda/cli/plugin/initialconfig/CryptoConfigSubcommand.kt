@@ -22,7 +22,8 @@ import java.util.*
         "Creates and saves to the database the initial crypto configuration." +
                 "The operation must be done after the cluster database is initialised" +
                 "but before the cluster is started."
-    ]
+    ],
+    mixinStandardHelpOptions = true
 )
 class CryptoConfigSubcommand : Runnable {
     enum class SecretsServiceType {

@@ -4,8 +4,10 @@ import io.micrometer.core.instrument.Timer
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.fiber.metrics.recordSuspendable
 import net.corda.ledger.utxo.flow.impl.cache.StateAndRefCache
+import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindUnconsumedStatesByExactType
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindUnconsumedStatesByType
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.ResolveStateRefs
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindUnconsumedStatesByExactTypeExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindUnconsumedStatesByTypeExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindUnconsumedStatesByTypeParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.ResolveStateRefsExternalEventFactory
@@ -46,6 +48,18 @@ class UtxoLedgerStateQueryServiceImpl @Activate constructor(
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
                     FindUnconsumedStatesByTypeExternalEventFactory::class.java,
+                    FindUnconsumedStatesByTypeParameters(stateClass)
+                )
+            }.map { it.toStateAndRef(serializationService) }
+        }
+    }
+
+    @Suspendable
+    override fun <T : ContractState> findUnconsumedStatesByExactType(stateClass: Class<out T>): List<StateAndRef<T>> {
+        return recordSuspendable({ ledgerPersistenceFlowTimer(FindUnconsumedStatesByExactType) }) @Suspendable {
+            wrapWithPersistenceException {
+                externalEventExecutor.execute(
+                    FindUnconsumedStatesByExactTypeExternalEventFactory::class.java,
                     FindUnconsumedStatesByTypeParameters(stateClass)
                 )
             }.map { it.toStateAndRef(serializationService) }

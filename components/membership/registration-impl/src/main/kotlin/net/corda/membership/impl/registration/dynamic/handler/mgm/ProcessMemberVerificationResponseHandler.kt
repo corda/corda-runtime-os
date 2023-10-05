@@ -15,7 +15,6 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.impl.registration.VerificationResponseKeys.FAILURE_REASONS
 import net.corda.membership.impl.registration.VerificationResponseKeys.VERIFIED
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
-import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
@@ -25,6 +24,7 @@ import net.corda.membership.lib.approval.RegistrationRulesEngine
 import net.corda.membership.lib.registration.PRE_AUTH_TOKEN
 import net.corda.membership.lib.VersionedMessageBuilder.retrieveRegistrationStatusMessage
 import net.corda.membership.lib.deserializeContext
+import net.corda.membership.lib.registration.DECLINED_REASON_FOR_USER_INTERNAL_ERROR
 import net.corda.membership.lib.toMap
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.getTtlMinutes
@@ -75,8 +75,10 @@ internal class ProcessMemberVerificationResponseHandler(
         key: String,
         command: ProcessMemberVerificationResponse
     ): RegistrationHandlerResult {
-        if (state == null) throw MissingRegistrationStateException
-        val registrationId = state.registrationId
+        if(processingShouldBeSkipped(state)) {
+            return RegistrationHandlerResult(state, emptyList(), skipped = true)
+        }
+        val registrationId = state!!.registrationId
         val mgm = state.mgm
         val member = state.registeringMember
         val messages = try {
@@ -112,7 +114,7 @@ internal class ProcessMemberVerificationResponseHandler(
                 status
             ).createAsyncCommands()
             val statusUpdateMessage = retrieveRegistrationStatusMessage(
-                pendingInfo.platformVersion, registrationId, status.name
+                pendingInfo.platformVersion, registrationId, status.name, null
             )
             val persistStatusMessage = if (statusUpdateMessage != null) {
                 p2pRecordsFactory.createAuthenticatedMessageRecord(
@@ -142,15 +144,12 @@ internal class ProcessMemberVerificationResponseHandler(
                     REGISTRATION_COMMAND_TOPIC,
                     key,
                     RegistrationCommand(
-                        DeclineRegistration(e.message)
+                        DeclineRegistration(e.message, DECLINED_REASON_FOR_USER_INTERNAL_ERROR)
                     )
                 ),
             )
         }
-        return RegistrationHandlerResult(
-            RegistrationState(registrationId, member, mgm),
-            messages,
-        )
+        return RegistrationHandlerResult(state, messages)
     }
 
     private fun getNextRegistrationStatus(
@@ -229,6 +228,26 @@ internal class ProcessMemberVerificationResponseHandler(
             )
             throw InvalidPreAuthTokenException("Pre-auth token provided is not valid. A valid UUID is expected.")
         }
+    }
+
+    private fun isCommandPreviouslyProcessed(state: RegistrationState): Boolean =
+        state.previouslyCompletedCommands.map { it.command }.contains(commandType.simpleName)
+
+    // Continue without processing this stage again if the state has been nullified or if the command has been executed previously.
+    // This is to prevent multiple processing attempts in the case of replays at a p2p level.
+    private fun processingShouldBeSkipped(state: RegistrationState?): Boolean = if (state == null) {
+        logger.info(
+            "${ProcessMemberVerificationResponse::class.java.simpleName} command ignored. " +
+                    "Registration state is null indicating that registration processing has completed."
+        )
+        true
+    } else if(isCommandPreviouslyProcessed(state)) {
+        logger.info(
+            "${ProcessMemberVerificationResponse::class.java.simpleName} command ignored. " +
+                    "Command was processed already.")
+        true
+    } else {
+        false
     }
 
     class InvalidPreAuthTokenException(msg: String) : CordaRuntimeException(msg)

@@ -69,7 +69,6 @@ dependencies {
     upgradeTestingCpiV2 project(path: ':testing:cpbs:test-cordapp-for-vnode-upgrade-testing-v2', configuration: 'cordaCPB')
 
     smokeTestImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    smokeTestImplementation "org.eclipse.jetty.websocket:websocket-client:$jettyVersion"
     smokeTestImplementation "org.slf4j:slf4j-api:$slf4jVersion"
 
     smokeTestImplementation project(':components:flow:flow-rest-resource-service')
@@ -84,7 +83,6 @@ dependencies {
     smokeTestImplementation project(":testing:packaging-test-utilities")
     smokeTestImplementation project(':testing:test-utilities')
     smokeTestImplementation project(":testing:uniqueness:uniqueness-utilities")
-
     smokeTestRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
     smokeTestRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 }

@@ -78,7 +78,7 @@ class CheckForPendingRegistrationHandler(
                     "group `${command.member.groupId}` " +
                     "with ID `${nextRequest.registrationId}` from the database. Proceeding with registration.")
             // create state to make sure we process one registration at the same time
-            Pair(RegistrationState(nextRequest.registrationId, command.member, command.mgm), StartRegistration())
+            Pair(RegistrationState(nextRequest.registrationId, command.member, command.mgm, emptyList()), StartRegistration())
         } else {
             logger.info("There are no registration requests queued " +
                     "for member ${command.member.x500Name} from group `${command.member.groupId}`.")
