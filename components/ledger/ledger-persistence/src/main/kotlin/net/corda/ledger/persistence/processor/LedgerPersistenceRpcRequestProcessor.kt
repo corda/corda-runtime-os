@@ -45,7 +45,8 @@ class LedgerPersistenceRpcRequestProcessor(
             request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
         val holdingIdentity = request.holdingIdentity.toCorda()
 
-        val result = withMDC(
+        val result =
+            withMDC(
             mapOf(
                 MDC_CLIENT_ID to clientRequestId,
                 MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
@@ -89,7 +90,7 @@ class LedgerPersistenceRpcRequestProcessor(
                     .record(Duration.ofNanos(System.nanoTime() - startTime))
             }
         }
-        return result as FlowEvent
+        return result.single().value as FlowEvent
     }
 }
 

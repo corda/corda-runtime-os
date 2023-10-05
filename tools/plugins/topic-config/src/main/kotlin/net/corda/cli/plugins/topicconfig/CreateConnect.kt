@@ -17,8 +17,8 @@ import org.apache.kafka.clients.admin.AlterConfigOp
 import org.apache.kafka.clients.admin.ConfigEntry
 import org.apache.kafka.common.config.ConfigResource
 import picocli.CommandLine
-import java.io.File
 import java.nio.file.Files
+import java.nio.file.Paths
 import java.time.LocalDateTime
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
@@ -166,6 +166,6 @@ class CreateConnect : Runnable {
         create!!.getTopicConfigsForPreview()
     } else {
         // Simply read the info from provided file
-        create!!.mapper.readValue(Files.readString(File(configFilePath!!).toPath()))
+        create!!.mapper.readValue(Files.readString(Paths.get(configFilePath!!)))
     }
 }

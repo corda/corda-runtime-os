@@ -72,36 +72,55 @@ interface StateManager : AutoCloseable {
 
     /**
      * Retrieve all states that were updated for the last time between [IntervalFilter.start] (inclusive)
-     * and [IntervalFilter.finish] (inclusive).
+     * and [IntervalFilter.finish] (inclusive). Only states that have been successfully committed and distributed
+     * within the underlying persistent storage are returned.
      *
-     * @param intervalFilter Time filter to use when searching for states.
+     * @param interval Time filter to use when searching for states.
      * @return States that were last updated between [IntervalFilter.start] and [IntervalFilter.finish] times.
      */
-    fun updatedBetween(intervalFilter: IntervalFilter): Map<String, State>
+    fun updatedBetween(interval: IntervalFilter): Map<String, State>
 
     /**
-     * Retrieve all states for which the value corresponding to the [SingleKeyFilter.key] within the [State.metadata]
-     * matches the [SingleKeyFilter.value] when compared using the custom [SingleKeyFilter.operation]. Only states
-     * that have been successfully committed and distributed within the underlying persistent storage are returned.
+     *  Retrieve all states that have a value associated with [MetadataFilter.key] in their [State.metadata] matching
+     *  the provided [MetadataFilter.value] when evaluated through [MetadataFilter.operation]. Only states that have
+     *  been successfully committed and distributed within the underlying persistent storage are returned.
      *
-     * @param singleKeyFilter Filter parameters to use when searching for states.
+     * @param filter Filter parameters to use when searching for states.
      * @return states matching the specified filter.
      */
-    fun find(singleKeyFilter: SingleKeyFilter): Map<String, State>
+    fun findByMetadata(filter: MetadataFilter) = findByMetadataMatchingAll(listOf(filter))
+
+    /**
+     * Retrieve all states exclusively matching all specified [filters]. Only states that have been successfully
+     * committed and distributed within the underlying persistent storage are returned.
+     *
+     * @param filters Filter parameters to use when searching for states.
+     * @return states matching the specified filter.
+     */
+    fun findByMetadataMatchingAll(filters: Collection<MetadataFilter>): Map<String, State>
+
+    /**
+     * Retrieve all states matching any of the [filters]. Only states that have been successfully committed
+     * and distributed within the underlying persistent storage are returned.
+     *
+     * @param filters Filter parameters to use when searching for states.
+     * @return states matching the specified filter.
+     */
+    fun findByMetadataMatchingAny(filters: Collection<MetadataFilter>): Map<String, State>
 
     /**
      * Retrieve all states, updated for the last time between [IntervalFilter.start] (inclusive) and
-     * [IntervalFilter.finish] (inclusive), for which the value corresponding to the [SingleKeyFilter.key] within the
-     * [State.metadata] the [SingleKeyFilter.value] when compared using the custom [SingleKeyFilter.operation]. Only
-     * states that have been successfully committed and distributed within the underlying persistent storage
-     * are returned.
+     * [IntervalFilter.finish] (inclusive), that have a value associated with [MetadataFilter.key] in their
+     * [State.metadata] matching the provided [MetadataFilter.value] when evaluated through [MetadataFilter.operation].
+     * Only states that have been successfully committed and distributed within the underlying
+     * persistent storage are returned.
      *
      * @param intervalFilter Time filter to use when searching for states.
-     * @param singleKeyFilter Filter parameters to use when searching for states.
+     * @param metadataFilter Filter parameters to use when searching for states.
      * @return states matching the specified filters.
      */
     fun findUpdatedBetweenWithMetadataFilter(
         intervalFilter: IntervalFilter,
-        singleKeyFilter: SingleKeyFilter
+        metadataFilter: MetadataFilter
     ): Map<String, State>
 }

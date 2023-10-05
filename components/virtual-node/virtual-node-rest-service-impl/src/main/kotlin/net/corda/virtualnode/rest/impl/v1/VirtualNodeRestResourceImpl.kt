@@ -261,10 +261,30 @@ internal class VirtualNodeRestResourceImpl(
         return messageConverter.convert(virtualNode)
     }
 
-    override fun upgradeVirtualNode(
+    @Deprecated("Deprecated in favour of upgradeVirtualNode")
+    override fun upgradeVirtualNodeDeprecated(
         virtualNodeShortId: String,
         targetCpiFileChecksum: String
     ): ResponseEntity<AsyncResponse> {
+        "Deprecated, please use next version where loginName is passed as a path parameter.".let { msg ->
+            logger.warn(msg)
+            return ResponseEntity.okButDeprecated(doUpgradeVirtualNode(virtualNodeShortId, targetCpiFileChecksum, false), msg)
+        }
+    }
+
+    override fun upgradeVirtualNode(
+        virtualNodeShortId: String,
+        targetCpiFileChecksum: String,
+        forceUpgrade: Boolean
+    ): ResponseEntity<AsyncResponse> {
+        return ResponseEntity.accepted(doUpgradeVirtualNode(virtualNodeShortId, targetCpiFileChecksum, forceUpgrade))
+    }
+
+    private fun doUpgradeVirtualNode(
+        virtualNodeShortId: String,
+        targetCpiFileChecksum: String,
+        forceUpgrade: Boolean
+    ): AsyncResponse {
         val currentVirtualNode = virtualNodeValidationService.validateAndGetVirtualNode(virtualNodeShortId)
         val currentCpi = requireNotNull(cpiInfoReadService.get(currentVirtualNode.cpiIdentifier)) {
             "Current CPI ${currentVirtualNode.cpiIdentifier} associated with virtual node $virtualNodeShortId was not found."
@@ -274,7 +294,7 @@ internal class VirtualNodeRestResourceImpl(
             throw InvalidStateChangeException("Virtual Node with shorthash $virtualNodeShortId already has " +
                     "CPI with file checksum $targetCpiFileChecksum")
         }
-        
+
         val targetCpi = virtualNodeValidationService.validateAndGetCpiByChecksum(targetCpiFileChecksum)
         virtualNodeValidationService.validateCpiUpgradePrerequisites(currentCpi, targetCpi)
 
@@ -284,11 +304,12 @@ internal class VirtualNodeRestResourceImpl(
                 virtualNodeShortId,
                 currentCpi.fileChecksum.toHexString(),
                 targetCpi.fileChecksum.toHexString(),
-                restContextProvider.principal
+                restContextProvider.principal,
+                forceUpgrade
             )
         }
 
-        return ResponseEntity.accepted(AsyncResponse(requestId))
+        return AsyncResponse(requestId)
     }
 
     override fun getVirtualNodeOperationStatus(requestId: String): AsyncOperationStatus {
@@ -338,14 +359,15 @@ internal class VirtualNodeRestResourceImpl(
         virtualNodeShortId: String,
         currentCpiFileChecksum: String,
         targetCpiFileChecksum: String,
-        actor: String
+        actor: String,
+        forceUpgrade: Boolean
     ): String {
         val requestId = generateUpgradeRequestId(virtualNodeShortId, currentCpiFileChecksum, targetCpiFileChecksum)
 
         sendAsync(
             virtualNodeShortId,
             VirtualNodeAsynchronousRequest(
-                requestTime, requestId, VirtualNodeUpgradeRequest(virtualNodeShortId, targetCpiFileChecksum, actor)
+                requestTime, requestId, VirtualNodeUpgradeRequest(virtualNodeShortId, targetCpiFileChecksum, actor, forceUpgrade)
             )
         )
 
@@ -375,7 +397,7 @@ internal class VirtualNodeRestResourceImpl(
     /**
      * Publishes a virtual node create request onto the message bus.
      *
-     * @property CreateVirtualNodeRequest is contains the data we want to use to construct our virtual node
+     * @property CreateVirtualNodeRequest contains the data we want to use to construct our virtual node
      * @throws InvalidInputDataException if the request in invalid.
      * @throws InternalServerException if the requested CPI has invalid metadata.
      * @throws ServiceUnavailableException is thrown if the component isn't running.
