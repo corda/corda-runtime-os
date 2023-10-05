@@ -397,7 +397,7 @@ internal class VirtualNodeRestResourceImpl(
     /**
      * Publishes a virtual node create request onto the message bus.
      *
-     * @property CreateVirtualNodeRequest is contains the data we want to use to construct our virtual node
+     * @property CreateVirtualNodeRequest contains the data we want to use to construct our virtual node
      * @throws InvalidInputDataException if the request in invalid.
      * @throws InternalServerException if the requested CPI has invalid metadata.
      * @throws ServiceUnavailableException is thrown if the component isn't running.
