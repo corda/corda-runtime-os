@@ -101,7 +101,7 @@ class Spec(private val config: SpecConfig = SpecConfig()) : Runnable {
             "net/corda/db/schema/messagebus/db.changelog-master.xml",
             "net/corda/db/schema/rbac/db.changelog-master.xml",
             "net/corda/db/schema/crypto/db.changelog-master.xml",
-            "net/corda/db/schema/statemanager/db.changelog-master.xml"
+            "net/corda/db/schema/state-manager/db.changelog-master.xml"
         )
     }
 

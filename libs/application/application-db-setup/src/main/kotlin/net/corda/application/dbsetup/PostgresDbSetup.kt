@@ -37,7 +37,7 @@ class PostgresDbSetup(
             "net/corda/db/schema/messagebus/db.changelog-master.xml" to "MESSAGEBUS",
             "net/corda/db/schema/rbac/db.changelog-master.xml" to "RBAC",
             "net/corda/db/schema/crypto/db.changelog-master.xml" to "CRYPTO",
-            "net/corda/db/schema/statemanager/db.changelog-master.xml" to "STATE_MANAGER",
+            "net/corda/db/schema/state-manager/db.changelog-master.xml" to "STATE_MANAGER",
         )
 
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)

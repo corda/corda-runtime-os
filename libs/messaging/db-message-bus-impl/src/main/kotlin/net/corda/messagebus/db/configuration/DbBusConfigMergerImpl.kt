@@ -4,13 +4,11 @@ import com.typesafe.config.ConfigValueFactory.fromAnyRef
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messagebus.api.configuration.BusConfigMerger
-import net.corda.messagebus.api.configuration.getConfigOrEmpty
 import net.corda.messagebus.api.configuration.getStringOrDefault
 import net.corda.messagebus.api.configuration.getStringOrNull
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
-import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.Bus
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import org.osgi.service.component.annotations.Component
@@ -19,14 +17,7 @@ import org.osgi.service.component.annotations.Component
 class DbBusConfigMergerImpl : BusConfigMerger {
 
     override fun getMessagingConfig(bootConfig: SmartConfig, messagingConfig: SmartConfig?): SmartConfig {
-        var updatedMessagingConfig = messagingConfig ?: SmartConfigImpl.empty()
-
-        bootConfig.getConfigOrEmpty(BootConfig.BOOT_STATE_MANAGER).entrySet().forEach { entry ->
-            updatedMessagingConfig = updatedMessagingConfig.withValue(
-                "${MessagingConfig.StateManager.STATE_MANAGER}.${entry.key}",
-                fromAnyRef(bootConfig.getString("${BootConfig.BOOT_STATE_MANAGER}.${entry.key}"))
-            )
-        }
+        val updatedMessagingConfig = messagingConfig ?: SmartConfigImpl.empty()
 
         return updatedMessagingConfig
             .withValue(INSTANCE_ID, fromAnyRef(bootConfig.getString(INSTANCE_ID)))
