@@ -229,6 +229,10 @@ $HOLDING_ID = $VIRTUAL_NODE_RESPONSE.holdingIdentity.shortHash
 </details>
 
 ## Assign HSM and generate key pairs
+
+### Session initiation key
+You can use the following commands to assign an HSM for session initiation keys and generate a session initiation key pair.
+
 <details>
 <summary>Bash</summary>
 
@@ -253,6 +257,11 @@ $SESSION_KEY_ID = $SESSION_KEY_RESPONSE.id
 
 Note it is possible to use a certificate in addition to the session initiation key pair (see [Session-Certificates](../wiki/Session-Certificates)).
 
+### Ledger key
+You can use the following commands to assign an HSM for ledger keys and generate a ledger key pair.
+
+**Note**: a ledger key is needed when registering a regular member, but it's not needed when registering a notary member.
+
 <details>
 <summary>Bash</summary>
 
@@ -275,8 +284,10 @@ $LEDGER_KEY_ID = $LEDGER_KEY_RESPONSE.id
 ```
 </details>
 
-### Optional: Notary key
-If you are onboarding a member as a notary, you will need to generate notary keys in a similar way as done for other key types. First create a HSM, then generate the key and store the ID.
+### Notary key
+You can use the following commands to assign an HSM for notary keys and generate a notary key pair.
+
+**Note**: a notary key is needed only when registering a notary member.
 
 <details>
 <summary>Bash</summary>
