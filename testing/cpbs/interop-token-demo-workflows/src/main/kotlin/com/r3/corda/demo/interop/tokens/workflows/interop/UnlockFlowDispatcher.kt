@@ -93,9 +93,9 @@ class UnlockFlowDispatcher: ClientStartableFlow {
             val lockFacade: LockFacade =
                 facadeService.getProxy(facadeId, LockFacade::class.java, interopIdentity)
 
-            val byteArrayKey :ByteArray =  notary.publicKey.encoded
-            val byteBuffer:ByteBuffer = ByteBuffer.wrap(byteArrayKey)
-            lockFacade.unlock( UUID.randomUUID(), notarySig,byteBuffer)
+            val byteArrayKey: ByteArray = notary.publicKey.encoded
+            val byteBuffer: ByteBuffer = ByteBuffer.wrap(byteArrayKey)
+            lockFacade.unlock(UUID.randomUUID(), notarySig, byteBuffer)
 
             return jsonMarshallingService.format(IssueFlowResult("124", outputState.linearId.toString()))
 

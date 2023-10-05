@@ -29,12 +29,12 @@ class LockFlow: FacadeDispatcherFlow(), LockFacade{
     @Suspendable
     override fun unlock(reservationRef: UUID, proof: DigitalSignatureAndMetadata, key: ByteBuffer): BigDecimal {
         log.info("Here is the secure hash" + proof.by.toString())
-        val keyAsByteArray = ByteArray(key.remaining())
-        val x509publicKey = X509EncodedKeySpec(keyAsByteArray)
+        val x509publicKey = X509EncodedKeySpec(key.array())
         val kf: KeyFactory = KeyFactory.getInstance("EC")
+        val publicKey = kf.generatePublic(x509publicKey)
         log.info(proof.toString())
 
-        transactionSignatureVerificationService.verifySignature(proof.by,proof,kf.generatePublic(x509publicKey))
-        return BigDecimal(1)
+        transactionSignatureVerificationService.verifySignature(proof.by, proof, publicKey)
+        return BigDecimal.ONE
     }
 }
