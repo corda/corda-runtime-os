@@ -2,20 +2,11 @@ package net.corda.flow.application.services.impl.interop.facade
 
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
-import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.MapperFeature
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.databind.json.JsonMapper
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.KotlinModule
-import net.corda.common.json.serializers.standardTypesModule
-import net.corda.flow.application.services.impl.interop.ProofOfActionSerialisationModule
 import net.corda.flow.application.services.impl.interop.parameters.TypeParameters
 import net.corda.flow.application.services.impl.interop.parameters.TypedParameterImpl
 import net.corda.flow.application.services.impl.interop.parameters.TypedParameterValueImpl
-import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.interop.facade.FacadeId
 import net.corda.v5.application.interop.facade.FacadeRequest
 import net.corda.v5.application.interop.parameters.ParameterType
@@ -29,7 +20,6 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.util.UUID
 import java.util.Base64
-import java.util.TimeZone
 
 class FacadeRequestDeserializer : JsonDeserializer<FacadeRequest>() {
 
@@ -45,16 +35,6 @@ class FacadeResponseDeserializer : JsonDeserializer<FacadeResponseImpl>() {
 
 }
 
-private val jsonMapper =
-    JsonMapper.builder().enable(MapperFeature.BLOCK_UNSAFE_POLYMORPHIC_BASE_TYPES).build().apply {
-        registerModule(KotlinModule.Builder().build())
-        registerModule(JavaTimeModule())
-        enable(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY)
-        setTimeZone(TimeZone.getTimeZone("UTC"))
-        disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-        registerModule(ProofOfActionSerialisationModule.module)
-        registerModule(standardTypesModule())
-    }
 @Suppress("ThrowsCount")
 private fun <T> deserialize(
     parser: JsonParser,
@@ -137,10 +117,8 @@ fun ParameterType<*>.readValue(name: String, node: JsonNode, parser: JsonParser)
                 writer.toString()
             }
 
-            //TODO THIS MUST BE WRONG
             ParameterTypeLabel.SIGNED_TX -> {
-                jsonMapper.readValues(parser, DigitalSignatureAndMetadata::class.java)
-
+                node.textValue()
             }
         }
     }

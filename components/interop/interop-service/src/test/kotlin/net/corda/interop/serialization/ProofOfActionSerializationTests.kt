@@ -159,51 +159,71 @@ class ProofOfActionSerializationTests : UtxoLedgerTest() {
         val batchSignatures = realSingingService.signBatch(listOf(signedTransaction), listOf(publicKeyExample))
         val signature: DigitalSignatureAndMetadata = batchSignatures.first().first()
 
-        val facade = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/locking-facade.json")!!)
+        val facade =
+            FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/locking-facade.json")!!)
         val jsonMapper = object : JsonMarshaller {
             override fun serialize(value: Any): String = jsonMarshallingService.format(value)
-            override fun <T : Any> deserialize(value: String, type: Class<T>): T = jsonMarshallingService.parse(value, type)
+            override fun <T : Any> deserialize(value: String, type: Class<T>): T =
+                jsonMarshallingService.parse(value, type)
         }
         val dispatcher = TestLockServer().buildDispatcher(facade, jsonMapper)
-        val client = facade.getClientProxy<LockFacade>(jsonMapper, dispatcher)
+        val client = facade.getClientProxy<LockFacade>(jsonMapper, MessagingWithoutWebIntermediary(dispatcher))
         val result = client.unlock(UUID.randomUUID(), signature, ByteBuffer.wrap(byteArrayOf(65, 66, 67, 68)))
 
-         assertEquals(result, BigDecimal.ONE)
+        assertEquals(result, BigDecimal.ONE)
     }
 
     @Test
-    fun facadeTestWithMessagingLayer() {
+    fun facadeTestMessagingLayer() {
 
-        val batchSignatures = realSingingService.signBatch(listOf(signedTransaction), listOf(publicKeyExample))
+        val batchSignatures = realSingingService.signBatch(
+            listOf(signedTransaction),
+            listOf(publicKeyExample)
+        )
         val signature: DigitalSignatureAndMetadata = batchSignatures.first().first()
 
         val facade = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/locking-facade.json")!!)
         val jsonMapper = object : JsonMarshaller {
             override fun serialize(value: Any): String = jsonMarshallingService.format(value)
-            override fun <T : Any> deserialize(value: String, type: Class<T>): T = jsonMarshallingService.parse(value, type)
+            override fun <T : Any> deserialize(value: String, type: Class<T>): T =
+                jsonMarshallingService.parse(value, type)
         }
         val dispatcher = TestLockServer().buildDispatcher(facade, jsonMapper)
-        val client = facade.getClientProxy<LockFacade>(jsonMapper, MessagingDispatcher(dispatcher, jsonMarshallingService))
+        val webServer = WebServer(dispatcher,jsonMarshallingService)
+        val webClient = WebClient(webServer, jsonMarshallingService)
+        val client = facade.getClientProxy<LockFacade>(jsonMapper, webClient)
         val result = client.unlock(UUID.randomUUID(), signature, ByteBuffer.wrap(byteArrayOf(65, 66, 67, 68)))
 
         assertEquals(result, BigDecimal.ONE)
     }
 }
 
-private class MessagingDispatcher(private val inner: (FacadeRequest) -> FacadeResponse,
-                                  private val jsonMarshallingService: JsonMarshallingService) : (FacadeRequest) -> FacadeResponse {
-    override fun invoke(request: FacadeRequest): FacadeResponse {
-        val payload = jsonMarshallingService.format(request)
-
-        val facadeRequest = jsonMarshallingService.parse(payload, FacadeRequestImpl::class.java)
-
-        val innerResponse = inner.invoke(facadeRequest)
-        val response = jsonMarshallingService.format(innerResponse)
-
-        return jsonMarshallingService.parse(response, FacadeResponseImpl::class.java)
+private class MessagingWithoutWebIntermediary(private val inner: (FacadeRequest) -> FacadeResponse) : (FacadeRequest) -> FacadeResponse {
+    override fun invoke(facadeRequest: FacadeRequest): FacadeResponse {
+        val facadeResponse = inner.invoke(facadeRequest)
+        return facadeResponse
     }
 }
 
+private class WebClient(private val webClient: (String) -> String,
+                                  private val jsonMarshallingService: JsonMarshallingService) : (FacadeRequest) -> FacadeResponse {
+    override fun invoke(facadeRequest: FacadeRequest): FacadeResponse {
+        val request = jsonMarshallingService.format(facadeRequest)
+        val response = webClient.invoke(request)
+        val facadeResponse = jsonMarshallingService.parse(response, FacadeResponseImpl::class.java)
+        return facadeResponse
+    }
+}
+
+private class WebServer(private val facadeServer: (FacadeRequest) -> FacadeResponse,
+                                        private val jsonMarshallingService: JsonMarshallingService) : (String) -> String {
+    override fun invoke(request: String): String {
+        val facadeRequest = jsonMarshallingService.parse(request, FacadeRequestImpl::class.java)
+        val facadeResponse = facadeServer.invoke(facadeRequest)
+        val response = jsonMarshallingService.format(facadeResponse)
+        return response
+    }
+}
 
 @Retention(AnnotationRetention.RUNTIME) @Target(AnnotationTarget.VALUE_PARAMETER)
 @QualifiedWith("org.corda.interop/platform/tokens/types/denomination/1.0")
@@ -230,11 +250,8 @@ interface LockFacade {
 
 class TestLockServer : LockFacade {
 
-    override fun createLock(denomination: String, amount: BigDecimal, notaryKeys: String, draft: String): UUID {
-        return UUID.randomUUID()
-    }
+    override fun createLock(denomination: String, amount: BigDecimal, notaryKeys: String, draft: String): UUID  = UUID.randomUUID()
 
-    override fun unlock(reservationRef: UUID, proof: DigitalSignatureAndMetadata, key: ByteBuffer): BigDecimal {
-        return BigDecimal.ONE
-    }
+    override fun unlock(reservationRef: UUID, proof: DigitalSignatureAndMetadata, key: ByteBuffer): BigDecimal = BigDecimal.ONE
+
 }
