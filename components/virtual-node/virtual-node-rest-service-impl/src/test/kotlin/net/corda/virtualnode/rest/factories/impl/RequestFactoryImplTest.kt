@@ -48,7 +48,7 @@ class RequestFactoryImplTest {
     fun `create virtual node async request is returned`() {
         val alice = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
         val groupId = "g1"
-        val cpiChecksum = "cpics"
+        val cpiChecksum = "CPICS"
         val vaultDdlConnection = "vddl"
         val vaultDmlConnection = "vdml"
         val cryptoDdlConnection = "cddl"

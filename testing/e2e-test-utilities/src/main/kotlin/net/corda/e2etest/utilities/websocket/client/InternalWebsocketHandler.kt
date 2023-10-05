@@ -1,4 +1,4 @@
-package net.corda.applications.workers.smoketest.websocket.client
+package net.corda.e2etest.utilities.websocket.client
 
 interface InternalWebsocketHandler {
     val messageQueueSnapshot: List<String>

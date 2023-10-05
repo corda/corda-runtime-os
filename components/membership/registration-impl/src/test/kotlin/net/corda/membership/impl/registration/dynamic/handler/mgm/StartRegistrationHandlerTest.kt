@@ -78,6 +78,7 @@ import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -86,6 +87,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
 
@@ -94,12 +96,14 @@ class StartRegistrationHandlerTest {
     private companion object {
         val clock = TestClock(Instant.ofEpochSecond(0))
         val registrationId = UUID(0, 1).toString()
+        val notaryRegistrationId = UUID(0, 2).toString()
         val aliceX500Name = MemberX500Name.parse("O=Alice,L=London,C=GB")
         val bobX500Name = MemberX500Name.parse("O=Bob,L=London,C=GB")
         val groupId = UUID(0, 1).toString()
         val aliceHoldingIdentity = HoldingIdentity(aliceX500Name.toString(), groupId)
-        val bobHoldingIdentity = HoldingIdentity(bobX500Name.toString(), groupId)
         val notaryX500Name = MemberX500Name.parse("O=Notary,L=London,C=GB")
+        val notaryServiceName = MemberX500Name.parse("O=NotaryService,L=London,C=GB")
+        val notaryHoldingIdentity = HoldingIdentity(notaryX500Name.toString(), groupId)
 
         val mgmX500Name = MemberX500Name.parse("O=TestMGM,L=London,C=GB")
         val mgmHoldingIdentity = HoldingIdentity(mgmX500Name.toString(), groupId)
@@ -118,6 +122,7 @@ class StartRegistrationHandlerTest {
         val registrationContext = KeyValuePairList(emptyList())
         val emptyMemberContextBytes = "empty-member-context".toByteArray()
         val memberContextBytes = "non-empty-member-context".toByteArray()
+        val notaryMemberContextBytes = "notary-member-context".toByteArray()
         val registrationContextBytes = "registration-context".toByteArray()
 
         val startRegistrationCommand = RegistrationCommand(StartRegistration())
@@ -135,6 +140,8 @@ class StartRegistrationHandlerTest {
     private lateinit var memberInfoFactory: MemberInfoFactory
     lateinit var membershipPersistenceClient: MembershipPersistenceClient
     private lateinit var membershipQueryClient: MembershipQueryClient
+
+    var ledgerKeys = mutableListOf(mock<PublicKey>())
 
     private val memberContextEntries = mapOf(
         "$ROLES_PREFIX.0" to "notary",
@@ -162,6 +169,16 @@ class StartRegistrationHandlerTest {
     }
     private val pendingMemberInfo: SelfSignedMemberInfo = mock {
         on { name } doReturn aliceX500Name
+        on { isActive } doReturn true
+        on { memberProvidedContext } doReturn memberMemberContext
+        on { mgmProvidedContext } doReturn pendingMemberMgmContext
+        on { status } doReturn MEMBER_STATUS_PENDING
+        on { serial } doReturn 1L
+        on { platformVersion } doReturn 50100
+        on { ledgerKeys } doAnswer { ledgerKeys }
+    }
+    private val notaryPendingMemberInfo: SelfSignedMemberInfo = mock {
+        on { name } doReturn notaryX500Name
         on { isActive } doReturn true
         on { memberProvidedContext } doReturn memberMemberContext
         on { mgmProvidedContext } doReturn pendingMemberMgmContext
@@ -217,12 +234,14 @@ class StartRegistrationHandlerTest {
     }
 
     private val registrationRequest = createRegistrationRequest()
+    private val notaryRegistrationRequest = createRegistrationRequest(notaryHoldingIdentity, notaryMemberContextBytes)
 
     private val serializer: CordaAvroSerializer<KeyValuePairList> = mock {
         on { serialize(any()) } doReturn "serialized-bytes".toByteArray()
     }
     private val deserializer = mock<CordaAvroDeserializer<KeyValuePairList>> {
         on { deserialize(eq(emptyMemberContextBytes)) } doReturn KeyValuePairList(emptyList())
+        on { deserialize(eq(notaryMemberContextBytes)) } doReturn memberContext
         on { deserialize(eq(memberContextBytes)) } doReturn memberContext
         on { deserialize(eq(registrationContextBytes)) } doReturn registrationContext
     }
@@ -265,7 +284,12 @@ class StartRegistrationHandlerTest {
     @BeforeEach
     fun setUp() {
         memberInfoFactory = mock {
-            on { createSelfSignedMemberInfo(any(), any(), any(), any()) } doReturn pendingMemberInfo
+            on {
+                createSelfSignedMemberInfo(eq(registrationRequest.memberProvidedContext.data.array()), any(), any(), any())
+            } doReturn pendingMemberInfo
+            on {
+                createSelfSignedMemberInfo(eq(notaryRegistrationRequest.memberProvidedContext.data.array()), any(), any(), any())
+            } doReturn notaryPendingMemberInfo
             on {
                 createPersistentMemberInfo(
                     eq(mgmHoldingIdentity),
@@ -291,6 +315,9 @@ class StartRegistrationHandlerTest {
             on {
                 queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId))
             } doReturn MembershipQueryResult.Success(registrationRequest)
+            on {
+                queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(notaryRegistrationId))
+            } doReturn MembershipQueryResult.Success(notaryRegistrationRequest)
         }
 
         handler = StartRegistrationHandler(
@@ -634,7 +661,6 @@ class StartRegistrationHandlerTest {
 
     @Test
     fun `invoke returns follow on records when role is set to notary`() {
-        val notaryServiceName = MemberX500Name.parse("O=NotaryService,L=London,C=GB")
         val notaryDetails = MemberNotaryDetails(
             notaryServiceName,
             "Notary Plugin A",
@@ -649,6 +675,7 @@ class StartRegistrationHandlerTest {
             )
         ).thenReturn(MembershipQueryResult.Success(emptyList()))
 
+        val registrationState = getRegistrationState(notaryRegistrationId, notaryHoldingIdentity, mgmHoldingIdentity)
         val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
         result.assertRegistrationStarted()
@@ -657,13 +684,37 @@ class StartRegistrationHandlerTest {
     @Test
     fun `declined if role is set to notary but notary keys are missing`() {
         val notaryDetails = MemberNotaryDetails(
-            aliceX500Name,
+            notaryServiceName,
             null,
             emptyList(),
             emptyList()
         )
         whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
 
+        val registrationState = getRegistrationState(notaryRegistrationId, notaryHoldingIdentity, mgmHoldingIdentity)
+        val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
+
+        result.assertDeclinedRegistration()
+    }
+
+    @Test
+    fun `declined if role is set to notary and ledger key is specified`() {
+        whenever(notaryPendingMemberInfo.ledgerKeys).thenReturn(ledgerKeys)
+        val notaryDetails = MemberNotaryDetails(
+            notaryServiceName,
+            "Notary Plugin A",
+            listOf(1),
+            listOf(mock())
+        )
+        whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
+        whenever(
+            membershipQueryClient.queryMemberInfo(
+                mgmHoldingIdentity.toCorda(),
+                listOf(HoldingIdentity(notaryServiceName.toString(), groupId).toCorda())
+            )
+        ).thenReturn(MembershipQueryResult.Success(emptyList()))
+
+        val registrationState = getRegistrationState(notaryRegistrationId, notaryHoldingIdentity, mgmHoldingIdentity)
         val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
         result.assertDeclinedRegistration()
@@ -672,13 +723,14 @@ class StartRegistrationHandlerTest {
     @Test
     fun `declined if role is set to notary and notary service plugin type is specified but blank`() {
         val notaryDetails = MemberNotaryDetails(
-            aliceX500Name,
+            notaryServiceName,
             " ",
             listOf(1),
             listOf(mock())
         )
         whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
 
+        val registrationState = getRegistrationState(notaryRegistrationId, notaryHoldingIdentity, mgmHoldingIdentity)
         val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
         result.assertDeclinedRegistration()
@@ -687,37 +739,17 @@ class StartRegistrationHandlerTest {
     @Test
     fun `declined if notary service name is the same as the virtual node name`() {
         val notaryDetails = MemberNotaryDetails(
-            aliceX500Name,
+            notaryX500Name,
             "pluginType",
             listOf(1),
             listOf(mock())
         )
         whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
 
+        val registrationState = getRegistrationState(notaryRegistrationId, notaryHoldingIdentity, mgmHoldingIdentity)
         val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
         result.assertDeclinedRegistration()
-    }
-
-    @Test
-    fun `declined if registering member's name is the same as an existing notary's service name`() {
-        val notaryDetails = MemberNotaryDetails(
-            notaryX500Name,
-            "Notary Protocol A",
-            listOf(1),
-            listOf(mock())
-        )
-        whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
-
-        val notaryResult = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
-        notaryResult.assertRegistrationStarted()
-
-        val memberStartRegistrationCommand = startRegistrationCommand
-        val memberResult = handler.invoke(
-            RegistrationState(registrationId, HoldingIdentity(notaryX500Name.toString(), groupId), mgmHoldingIdentity, emptyList()),
-            Record(testTopic, testTopicKey, memberStartRegistrationCommand)
-        )
-        memberResult.assertDeclinedRegistration()
     }
 
     @Test
@@ -740,6 +772,7 @@ class StartRegistrationHandlerTest {
         }
         whenever(groupReader.lookup()).thenReturn(setOf(existingNotary))
 
+        val registrationState = getRegistrationState(notaryRegistrationId, notaryHoldingIdentity, mgmHoldingIdentity)
         val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
         result.assertDeclinedRegistration()
@@ -748,7 +781,7 @@ class StartRegistrationHandlerTest {
     @Test
     fun `declined if role is set to notary and group parameters cannot be read`() {
         val notaryDetails = MemberNotaryDetails(
-            notaryX500Name,
+            notaryServiceName,
             "Notary Plugin A",
             listOf(1),
             listOf(mock())
@@ -756,6 +789,7 @@ class StartRegistrationHandlerTest {
         whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
         whenever(groupReader.groupParameters).thenReturn(null)
 
+        val registrationState = getRegistrationState(notaryRegistrationId, notaryHoldingIdentity, mgmHoldingIdentity)
         val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
         result.assertDeclinedRegistration()
     }
@@ -783,10 +817,10 @@ class StartRegistrationHandlerTest {
             )
         ).thenReturn(MembershipQueryResult.Success(listOf(pendingMemberInfo)))
 
-        val registrationCommand = startRegistrationCommand
-        val result = handler.invoke(RegistrationState(
-            registrationId, bobHoldingIdentity, mgmHoldingIdentity, emptyList()),
-            Record(testTopic, testTopicKey, registrationCommand)
+        val registrationState = getRegistrationState(notaryRegistrationId, notaryHoldingIdentity, mgmHoldingIdentity)
+        val result = handler.invoke(
+            registrationState,
+            Record(testTopic, testTopicKey, startRegistrationCommand)
         )
         result.assertDeclinedRegistration()
     }
@@ -820,11 +854,12 @@ class StartRegistrationHandlerTest {
                 NOTARY_KEYS_ID.format(1) to TEST_KEY_ID
             )).entries
         }
-        whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
+        whenever(notaryPendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
         whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any(), any()))
             .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
         whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
             .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
+        val registrationState = getRegistrationState(notaryRegistrationId, notaryHoldingIdentity, mgmHoldingIdentity)
         val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
         result.assertDeclinedRegistration()
     }
@@ -892,8 +927,9 @@ class StartRegistrationHandlerTest {
         whenever(pendingMemberInfo.memberProvidedContext).doReturn(contextWithUpdates)
         whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any(), any()))
             .doReturn(MembershipQueryResult.Success(listOf(activeMemberInfo)))
-        whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(registrationId)))
+        whenever(membershipQueryClient.queryRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), eq(notaryRegistrationId)))
             .doReturn(MembershipQueryResult.Success(createRegistrationRequest(serial = 2L)))
+        val registrationState = getRegistrationState(notaryRegistrationId, notaryHoldingIdentity, mgmHoldingIdentity)
         val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
         result.assertDeclinedRegistration()
     }
@@ -1067,7 +1103,7 @@ class StartRegistrationHandlerTest {
     @Test
     fun `allows notary virtual node re-registration`() {
         val notaryDetails = MemberNotaryDetails(
-            notaryX500Name,
+            notaryServiceName,
             "Notary Protocol A",
             listOf(1),
             listOf(mock())
@@ -1078,12 +1114,13 @@ class StartRegistrationHandlerTest {
         }
         whenever(existingNotaryContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
         val existingNotary = mock<MemberInfo> {
-            on { name } doReturn aliceX500Name
+            on { name } doReturn notaryX500Name
             on { memberProvidedContext } doReturn existingNotaryContext
             on { mgmProvidedContext } doReturn mock()
         }
         whenever(groupReader.lookup()).thenReturn(setOf(existingNotary))
 
+        val registrationState = getRegistrationState(notaryRegistrationId, notaryHoldingIdentity, mgmHoldingIdentity)
         val result = handler.invoke(registrationState, Record(testTopic, testTopicKey, startRegistrationCommand))
 
         result.assertRegistrationStarted()
