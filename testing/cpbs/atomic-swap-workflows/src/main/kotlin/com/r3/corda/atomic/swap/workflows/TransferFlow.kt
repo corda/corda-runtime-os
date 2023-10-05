@@ -96,5 +96,4 @@ class TransferFlow : ClientStartableFlow {
             throw e
         }
     }
-
 }

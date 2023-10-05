@@ -14,7 +14,6 @@ class AssetContract : Contract {
         class Transfer : AssetCommands
     }
 
-
     override fun verify(transaction: UtxoLedgerTransaction) {
         val command = transaction.getCommands(AssetCommands::class.java).singleOrNull() ?: throw CordaRuntimeException(
             "Requires a single command."

@@ -39,13 +39,15 @@ class LockContract : Contract {
                         (transaction.getInputStates(LockState::class.java).size == 1)
                 "There should be one output state as an unlocked asset state needs to be created" using
                         (transaction.outputContractStates.size == 1)
+                "There should be no output lock output states" using
+                        (transaction.getOutputStates(LockState::class.java).size == 0)
                 "The new owner should not be the old owner" using (outputState.owner != input.creator)
                 "The new owner should be the same as the receiver of the lock state" using
                         (outputState.owner == input.receiver)
                 "There should be one signer for the unlock command." using
                         (transaction.signatories.size == 1)
                 "The signer of the unlock should be the new owner of the Asset state." using
-                        (outputState.owner == transaction.signatories.first())
+                        (transaction.signatories.containsAll(outputState.participants))
             }
 
             else -> {

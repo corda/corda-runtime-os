@@ -126,14 +126,10 @@ class CreateLockFlow : ClientStartableFlow {
         }
     }
 
-    private fun constructCompositeKey(asset: Asset, newOwner: MemberInfo): PublicKey {
-        // Build composite key
-
-        return compositeKeyGenerator.create(
-            listOf(
-                CompositeKeyNodeAndWeight(asset.owner, 1),
-                CompositeKeyNodeAndWeight(newOwner.ledgerKeys.single(), 1)
-            ), 1
-        )
-    }
+    private fun constructCompositeKey(asset: Asset, newOwner: MemberInfo): PublicKey = compositeKeyGenerator.create(
+        listOf(
+            CompositeKeyNodeAndWeight(asset.owner, 1),
+            CompositeKeyNodeAndWeight(newOwner.ledgerKeys.single(), 1)
+        ), 1
+    )
 }

@@ -24,7 +24,7 @@ data class UnlockFlowArgs(val newOwner: String, val stateId: String)
 data class UnlockFlowResult(val transactionId: String, val stateId: String, val ownerPublicKey: String)
 
 
-class UnlockFlow: ClientStartableFlow {
+class UnlockFlow : ClientStartableFlow {
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -72,12 +72,13 @@ class UnlockFlow: ClientStartableFlow {
             val stateAndRefAsset = unconsumedAssetStatesWithId.first()
             val inputAssetState = stateAndRefAsset.state.contractState
 
-            val ownerInfo = memberLookup.lookup(inputLockState.creator) ?:
-            throw CordaRuntimeException("MemberLookup can't find current state owner.")
-            val newOwnerInfo = memberLookup.lookup(MemberX500Name.parse(flowArgs.newOwner)) ?:
-            throw CordaRuntimeException("MemberLookup can't find new state owner.")
+            val ownerInfo = memberLookup.lookup(inputLockState.creator)
+                ?: throw CordaRuntimeException("MemberLookup can't find current state owner.")
+            val newOwnerInfo = memberLookup.lookup(MemberX500Name.parse(flowArgs.newOwner))
+                ?: throw CordaRuntimeException("MemberLookup can't find new state owner.")
 
-            val newState = inputAssetState.withNewOwner(newOwnerInfo.ledgerKeys.first(), listOf(newOwnerInfo.ledgerKeys.first()))
+            val newState =
+                inputAssetState.withNewOwner(newOwnerInfo.ledgerKeys.first(), listOf(newOwnerInfo.ledgerKeys.first()))
 
             val txBuilder = ledgerService.createTransactionBuilder()
 
@@ -93,9 +94,16 @@ class UnlockFlow: ClientStartableFlow {
             val signedTransaction = txBuilder.toSignedTransaction()
             log.info("The signatories on unlock transaction are: ${signedTransaction.signatories}")
 
-            val transactionId = flowEngine.subFlow(FinalizeFlow(signedTransaction, listOf(ownerInfo.name, newOwnerInfo.name)))
+            val transactionId =
+                flowEngine.subFlow(FinalizeFlow(signedTransaction, listOf(ownerInfo.name, newOwnerInfo.name)))
 
-            return jsonMarshallingService.format(UnlockFlowResult(transactionId, newState.assetId, newState.owner.toString()))
+            return jsonMarshallingService.format(
+                UnlockFlowResult(
+                    transactionId,
+                    newState.assetId,
+                    newState.owner.toString()
+                )
+            )
 
         } catch (e: Exception) {
             log.warn("Failed to process utxo flow for request body '$requestBody' because: '${e.message}'")

@@ -17,7 +17,10 @@ import org.slf4j.LoggerFactory
 
 
 @InitiatingFlow(protocol = "finalize-payment-protocol")
-class FinalizeFlow(private val signedTransaction: UtxoSignedTransaction, private val otherMember: List<MemberX500Name>):
+class FinalizeFlow(
+    private val signedTransaction: UtxoSignedTransaction,
+    private val otherMember: List<MemberX500Name>
+) :
     SubFlow<String> {
 
     private companion object {
@@ -53,7 +56,7 @@ class FinalizeFlow(private val signedTransaction: UtxoSignedTransaction, private
 
 
 @InitiatedBy(protocol = "finalize-payment-protocol")
-class FinalizeResponderFlow: ResponderFlow {
+class FinalizeResponderFlow : ResponderFlow {
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -68,8 +71,8 @@ class FinalizeResponderFlow: ResponderFlow {
 
         try {
             val finalizedSignedTransaction = ledgerService.receiveFinality(session) { ledgerTransaction ->
-                val state = ledgerTransaction.getOutputStates(Asset::class.java).singleOrNull() ?:
-                throw CordaRuntimeException("Failed verification - transaction did not have exactly one output state.")
+                val state = ledgerTransaction.getOutputStates(Asset::class.java).singleOrNull()
+                    ?: throw CordaRuntimeException("Failed verification - transaction did not have exactly one output state.")
                 log.info("Output state id - ${state.assetId}") // Temporally added to suppress compilation warning
                 log.info("Verified the transaction - ${ledgerTransaction.id}")
             }

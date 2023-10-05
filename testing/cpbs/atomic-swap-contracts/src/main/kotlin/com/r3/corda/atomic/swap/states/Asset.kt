@@ -6,12 +6,12 @@ import net.corda.v5.ledger.utxo.BelongsToContract
 import java.security.PublicKey
 
 @BelongsToContract(AssetContract::class)
-
-data class Asset (
-    private val owner : PublicKey,
+data class Asset(
+    private val owner: PublicKey,
     val assetName: String,
     val assetId: String,
-    private val participants: List<PublicKey>) : OwnableState {
+    private val participants: List<PublicKey>
+) : OwnableState {
 
     override fun getParticipants(): List<PublicKey> {
         return participants
@@ -24,5 +24,4 @@ data class Asset (
     fun withNewOwner(newOwner: PublicKey, newParticipants: List<PublicKey>): Asset {
         return Asset(newOwner, assetName, assetId, newParticipants)
     }
-
 }
