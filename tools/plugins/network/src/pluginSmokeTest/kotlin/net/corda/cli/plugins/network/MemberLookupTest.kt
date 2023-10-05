@@ -1,20 +1,17 @@
 package net.corda.cli.plugins.network
 
-import com.fasterxml.jackson.databind.JsonNode
-import net.corda.cli.plugins.network.output.Output
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Test
-import net.corda.e2etest.utilities.DEFAULT_CLUSTER
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import net.corda.cli.plugins.network.utils.HoldingIdentityUtils
+import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
-import org.junit.jupiter.api.BeforeAll
-import picocli.CommandLine
 import net.corda.v5.base.types.MemberX500Name
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import picocli.CommandLine
 import java.io.File
 
 class MemberLookupTest {
@@ -214,18 +211,5 @@ class MemberLookupTest {
         )
 
         assertEquals(onboardMgm.name, outputStub.getFirstPartyName())
-    }
-
-    private fun OutputStub.getFirstPartyName(): String? {
-        return printedOutput?.get(0)?.get("memberContext")?.get(MemberInfoExtension.PARTY_NAME)?.asText()
-    }
-
-    private class OutputStub : Output {
-        private val objectMapper = ObjectMapper()
-        var printedOutput: JsonNode? = null
-
-        override fun generateOutput(content: String) {
-            printedOutput = objectMapper.readTree(content)
-        }
     }
 }

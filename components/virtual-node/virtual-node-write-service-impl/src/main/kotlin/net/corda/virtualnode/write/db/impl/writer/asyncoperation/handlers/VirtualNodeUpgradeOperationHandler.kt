@@ -161,7 +161,8 @@ internal class VirtualNodeUpgradeOperationHandler(
     private fun validateUpgradeRequest(
         em: EntityManager,
         request: VirtualNodeUpgradeRequest,
-        requestId: String
+        requestId: String,
+        forceUpgrade: Boolean
     ): Pair<VirtualNodeInfo, CpiMetadata> {
         val currentVirtualNode = virtualNodeRepository.find(em, ShortHash.Companion.of(request.virtualNodeShortHash))
             ?: throw VirtualNodeUpgradeRejectedException(
@@ -169,7 +170,7 @@ internal class VirtualNodeUpgradeOperationHandler(
                 requestId
             )
 
-        if (currentVirtualNode.operationInProgress != null) {
+        if (!forceUpgrade && currentVirtualNode.operationInProgress != null) {
             throw VirtualNodeUpgradeRejectedException(
                 "Operation ${currentVirtualNode.operationInProgress} already in progress",
                 requestId
@@ -258,7 +259,7 @@ internal class VirtualNodeUpgradeOperationHandler(
         request: VirtualNodeUpgradeRequest
     ): Pair<VirtualNodeInfo, List<CpkDbChangeLog>> {
         val (upgradedVNodeInfo, cpkChangelogs) = entityManagerFactory.createEntityManager().transaction { em ->
-            val (virtualNode, targetCpi) = validateUpgradeRequest(em, request, requestId)
+            val (virtualNode, targetCpi) = validateUpgradeRequest(em, request, requestId, request.forceUpgrade)
 
             val externalMessagingRouteConfig = externalMessagingRouteConfigGenerator.generateUpgradeConfig(
                 virtualNode,
