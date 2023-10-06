@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.external.messaging.services.ExternalMessagingRoutingService
+import net.corda.flow.maintenance.FlowMaintenance
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -36,8 +37,8 @@ class FlowService @Activate constructor(
     private val flowExecutor: FlowExecutor,
     @Reference(service = ExternalMessagingRoutingService::class)
     private val externalMessagingRoutingService: ExternalMessagingRoutingService,
-//    @Reference(service = FlowMaintenance::class)
-//    private val flowMaintenance: FlowMaintenance,
+    @Reference(service = FlowMaintenance::class)
+    private val flowMaintenance: FlowMaintenance,
     ) : Lifecycle {
 
     companion object {
@@ -60,10 +61,10 @@ class FlowService @Activate constructor(
                             LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
                             LifecycleCoordinatorName.forComponent<CpiInfoReadService>(),
                             LifecycleCoordinatorName.forComponent<FlowExecutor>(),
-//                            LifecycleCoordinatorName.forComponent<FlowMaintenance>(),
+                            LifecycleCoordinatorName.forComponent<FlowMaintenance>(),
                         )
                     )
-//                flowMaintenance.start()
+                flowMaintenance.start()
                 flowExecutor.start()
             }
 
@@ -87,14 +88,14 @@ class FlowService @Activate constructor(
                  * is configured before we configure the executor to prevent a race between receiving the first
                  * state events and scheduler creating a publisher.
                  */
-//                flowMaintenance.onConfigChange(config)
+                flowMaintenance.onConfigChange(config)
                 flowExecutor.onConfigChange(config)
                 externalMessagingRoutingService.onConfigChange(config)
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
 
             is StopEvent -> {
-//                flowMaintenance.stop()
+                flowMaintenance.stop()
                 flowExecutor.stop()
                 registration?.close()
                 registration = null
