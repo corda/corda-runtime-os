@@ -127,7 +127,7 @@ class CryptoProcessorImpl @Activate constructor(
 
         const val RPC_SUBSCRIPTION = "RPC_SUBSCRIPTION"
         const val SUBSCRIPTION_NAME = "Crypto"
-        const val VERIFICATION_PATH = "/crypto"
+        const val CRYPTO_PATH = "/crypto"
     }
 
     init {
@@ -327,7 +327,7 @@ class CryptoProcessorImpl @Activate constructor(
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         val flowGroupName = "crypto.ops.flow"
 
-        val rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, VERIFICATION_PATH)
+        val rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, CRYPTO_PATH)
         coordinator.createManagedResource(RPC_SUBSCRIPTION) {
             subscriptionFactory.createHttpRPCSubscription(
                 rpcConfig = rpcConfig,
