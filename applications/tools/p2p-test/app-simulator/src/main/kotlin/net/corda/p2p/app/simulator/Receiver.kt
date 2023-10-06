@@ -40,10 +40,10 @@ class Receiver(private val subscriptionFactory: SubscriptionFactory,
 
     fun start() {
         AppSimulatorTopicCreator(commonConfig.bootConfig, topicAdmin, topicCreationParams).createTopic()
-        (1..commonConfig.clients).forEach { client ->
+        for (i in 1..commonConfig.clients) {
             val subscriptionConfig = SubscriptionConfig("app-simulator-receiver", commonConfig.parameters.receiveTopic,)
             val configWithInstanceId = commonConfig.bootConfig
-                .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef("${commonConfig.parameters.instanceId}-$client".hashCode()))
+                .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef("${commonConfig.parameters.instanceId}-$i".hashCode()))
                 .withValue(MessagingConfig.MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(10000000))
             val messagingConfig = configMerger.getMessagingConfig(configWithInstanceId)
 
