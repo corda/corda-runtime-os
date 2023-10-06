@@ -47,11 +47,7 @@ import kotlin.concurrent.thread
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StateManagerIntegrationTest {
 
-    private val dbConfig: EntityManagerConfiguration = DbUtils.getEntityManagerConfiguration(
-        inMemoryDbName = "state_manager_db",
-        schemaName = "state_manager",
-        createSchema = true
-    )
+    private val dbConfig: EntityManagerConfiguration = DbUtils.getEntityManagerConfiguration("state_manager_db")
 
     init {
         val dbChange = ClassloaderChangeLog(
