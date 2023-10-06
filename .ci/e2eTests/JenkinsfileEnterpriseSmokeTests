@@ -4,7 +4,7 @@ endToEndPipeline(
     helmVersion: '^5.1.0-beta',
     helmRepoSuffix: 'release/ent/5.1',
     helmRepo: 'corda-ent-docker',
-    assembleAndCompile: true,
+    assembleAndCompile: false,
     multiCluster: false,
     gradleTestTargetsToExecute: ['smokeTest'],
     usePackagedCordaHelmChart: true,
