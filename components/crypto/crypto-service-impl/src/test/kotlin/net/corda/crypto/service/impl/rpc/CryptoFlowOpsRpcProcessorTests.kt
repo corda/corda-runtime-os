@@ -352,13 +352,13 @@ import kotlin.test.assertTrue
 
          val results = doFlowOperations<ByIdsFlowQuery, CryptoSigningKeys, List<PublicKey>>(
              myPublicKeys,
-             listOf({ transformer, flowExternalEventContext ->
+             listOf { transformer, flowExternalEventContext ->
                  transformer.createFilterMyKeys(
                      tenantId,
                      listOf(myPublicKeys[0], myPublicKeys[1], notMyKey),
                      flowExternalEventContext
                  )
-             })
+             }
          )
          assertEquals(1, results.lookedUpSigningKeys.size)
          val passedSecureHashes = results.lookedUpSigningKeys.first()
@@ -389,7 +389,7 @@ import kotlin.test.assertTrue
          val data = UUID.randomUUID().toString().toByteArray()
 
          doFlowOperations<SignFlowCommand, CryptoSignatureWithKey, DigitalSignatureWithKey>(
-             listOf(publicKey), listOf({ transformer, flowExternalEventContext ->
+             listOf(publicKey), listOf { transformer, flowExternalEventContext ->
                  transformer.createSign(
                      UUID.randomUUID().toString(),
                      tenantId,
@@ -399,7 +399,7 @@ import kotlin.test.assertTrue
                      mapOf("key1" to "value1"),
                      flowExternalEventContext
                  )
-             })
+             }
          )
     }
 
