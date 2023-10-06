@@ -81,7 +81,7 @@ class WrappedUtxoWireTransaction(
             wireTransaction
                 .getComponentGroupList(UtxoComponentGroup.OUTPUTS.ordinal).size
         ) { index ->
-            UtxoTransactionOutputDto(
+            UtxoVisibleTransactionOutputDto(
                 id.toString(), index,
                 wireTransaction
                     .getComponentGroupList(UtxoComponentGroup.OUTPUTS_INFO.ordinal)[index],

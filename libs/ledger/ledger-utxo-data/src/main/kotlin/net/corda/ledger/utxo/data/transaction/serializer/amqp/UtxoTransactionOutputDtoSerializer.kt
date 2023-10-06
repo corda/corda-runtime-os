@@ -1,6 +1,6 @@
 package net.corda.ledger.utxo.data.transaction.serializer.amqp
 
-import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
+import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -8,13 +8,13 @@ import org.osgi.service.component.annotations.Component
 import java.util.Objects
 
 @Component(service = [ InternalCustomSerializer::class ])
-class UtxoTransactionOutputDtoSerializer : BaseProxySerializer<UtxoTransactionOutputDto, UtxoTransactionOutputDtoProxy>() {
+class UtxoTransactionOutputDtoSerializer : BaseProxySerializer<UtxoVisibleTransactionOutputDto, UtxoTransactionOutputDtoProxy>() {
     private companion object {
         private const val VERSION_1 = 1
     }
 
     override val type
-        get() = UtxoTransactionOutputDto::class.java
+        get() = UtxoVisibleTransactionOutputDto::class.java
 
     override val proxyType
         get() = UtxoTransactionOutputDtoProxy::class.java
@@ -23,7 +23,7 @@ class UtxoTransactionOutputDtoSerializer : BaseProxySerializer<UtxoTransactionOu
         // UtxoTransactionOutputDto is a final class.
         get() = false
 
-    override fun toProxy(obj: UtxoTransactionOutputDto): UtxoTransactionOutputDtoProxy {
+    override fun toProxy(obj: UtxoVisibleTransactionOutputDto): UtxoTransactionOutputDtoProxy {
         return UtxoTransactionOutputDtoProxy(
             VERSION_1,
             obj.transactionId,
@@ -33,10 +33,10 @@ class UtxoTransactionOutputDtoSerializer : BaseProxySerializer<UtxoTransactionOu
         )
     }
 
-    override fun fromProxy(proxy: UtxoTransactionOutputDtoProxy): UtxoTransactionOutputDto {
+    override fun fromProxy(proxy: UtxoTransactionOutputDtoProxy): UtxoVisibleTransactionOutputDto {
         return when (proxy.version) {
             VERSION_1 ->
-                UtxoTransactionOutputDto(
+                UtxoVisibleTransactionOutputDto(
                     proxy.transactionId,
                     proxy.leafIndex,
                     proxy.info,
@@ -58,7 +58,7 @@ data class UtxoTransactionOutputDtoProxy(
     val version: Int,
 
     /**
-     * Properties for [UtxoTransactionOutputDto] serialisation.
+     * Properties for [UtxoVisibleTransactionOutputDto] serialisation.
      */
     val transactionId: String,
     val leafIndex: Int,

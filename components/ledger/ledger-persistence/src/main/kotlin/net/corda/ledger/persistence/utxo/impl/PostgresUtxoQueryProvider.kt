@@ -40,7 +40,7 @@ class PostgresUtxoQueryProvider @Activate constructor(
             ON CONFLICT DO NOTHING"""
             .trimIndent()
 
-    override fun persistTransactionOutput(consumed: Boolean): String {
+    override fun persistVisibleTransactionOutput(consumed: Boolean): String {
         return """INSERT INTO {h-schema}utxo_visible_transaction_output(
                 transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash, token_notary_x500_name,
                 token_symbol, token_tag, token_owner_hash, token_amount, created, consumed, custom_representation)

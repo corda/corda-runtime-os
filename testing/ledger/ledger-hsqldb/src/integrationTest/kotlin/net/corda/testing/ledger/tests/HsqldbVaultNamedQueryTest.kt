@@ -4,7 +4,7 @@ import com.example.ledger.testing.datamodel.utxo.UtxoTransactionComponentEntity
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionComponentEntityId
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionEntity
 import com.example.ledger.testing.datamodel.utxo.UtxoVisibleTransactionOutputEntity
-import com.example.ledger.testing.datamodel.utxo.UtxoTransactionOutputEntityId
+import com.example.ledger.testing.datamodel.utxo.UtxoVisibleTransactionOutputEntityId
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionSignatureEntity
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionSignatureEntityId
 import java.time.Instant
@@ -38,6 +38,7 @@ class HsqldbVaultNamedQueryTest {
         private const val UTXO_VISIBLE_TX_STATE = "utxo_visible_transaction_output"
         private const val BASE_QUERY = "SELECT * FROM $UTXO_VISIBLE_TX_STATE AS visible_state WHERE "
         private const val TIMEOUT_MILLIS = 10000L
+        private const val TRANSACTION_VERIFIED_STRING = "V"
 
         private val ACCOUNT_ID = UUID.randomUUID()
     }
@@ -80,7 +81,7 @@ class HsqldbVaultNamedQueryTest {
             UtxoTransactionComponentEntity::class.java,
             UtxoTransactionComponentEntityId::class.java,
             UtxoVisibleTransactionOutputEntity::class.java,
-            UtxoTransactionOutputEntityId::class.java,
+            UtxoVisibleTransactionOutputEntityId::class.java,
             UtxoTransactionSignatureEntity::class.java,
             UtxoTransactionSignatureEntityId::class.java
         ))
@@ -96,7 +97,7 @@ class HsqldbVaultNamedQueryTest {
                 privacySalt = byteArrayOf(),
                 accountId = ACCOUNT_ID.toString(),
                 created = timestamp,
-                status = "V",
+                status = TRANSACTION_VERIFIED_STRING,
                 updated = timestamp
             )
 
@@ -276,6 +277,7 @@ class HsqldbVaultNamedQueryTest {
 
         assertAll(
             { assertEquals(txId.toString(), visibleState.transaction.id) },
+            { assertEquals(10, visibleState.groupIndex) },
             { assertEquals(20, visibleState.leafIndex) }
         )
     }

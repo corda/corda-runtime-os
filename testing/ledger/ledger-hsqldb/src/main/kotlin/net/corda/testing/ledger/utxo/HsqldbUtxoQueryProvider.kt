@@ -53,7 +53,7 @@ class HsqldbUtxoQueryProvider @Activate constructor(
                 VALUES (x.transaction_id, x.file_checksum)"""
             .trimIndent()
 
-    override fun persistTransactionOutput(consumed: Boolean): String {
+    override fun persistVisibleTransactionOutput(consumed: Boolean): String {
         return """
             MERGE INTO {h-schema}utxo_visible_transaction_output AS uto
             USING (VALUES :transactionId, CAST(:groupIndex AS INT), CAST(:leafIndex AS INT), :type, :tokenType, :tokenIssuerHash,

@@ -14,7 +14,7 @@ import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
-import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
+import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.libs.packaging.hash
 import net.corda.orm.utils.transaction
@@ -99,7 +99,7 @@ class UtxoPersistenceServiceImpl(
         }
     }
 
-    override fun <T: ContractState> findUnconsumedVisibleStatesByType(stateClass: Class<out T>): List<UtxoTransactionOutputDto> {
+    override fun <T: ContractState> findUnconsumedVisibleStatesByType(stateClass: Class<out T>): List<UtxoVisibleTransactionOutputDto> {
         return entityManagerFactory.transaction { em ->
             repository.findUnconsumedVisibleStatesByType(em)
         }.filter {
@@ -108,13 +108,13 @@ class UtxoPersistenceServiceImpl(
         }
     }
 
-    override fun <T: ContractState> findUnconsumedVisibleStatesByExactType(stateClass: Class<out T>): List<UtxoTransactionOutputDto> {
+    override fun <T: ContractState> findUnconsumedVisibleStatesByExactType(stateClass: Class<out T>): List<UtxoVisibleTransactionOutputDto> {
         return entityManagerFactory.transaction { em ->
             repository.findUnconsumedVisibleStatesByExactType(em, stateClass.canonicalName)
         }
     }
 
-    override fun resolveStateRefs(stateRefs: List<StateRef>): List<UtxoTransactionOutputDto> {
+    override fun resolveStateRefs(stateRefs: List<StateRef>): List<UtxoVisibleTransactionOutputDto> {
         return entityManagerFactory.transaction { em ->
             repository.resolveStateRefs(em, stateRefs)
         }
@@ -161,7 +161,7 @@ class UtxoPersistenceServiceImpl(
         // Insert outputs data
         transaction.getVisibleStates().entries.forEach { (stateIndex, stateAndRef) ->
             val utxoToken = utxoTokenMap[stateAndRef.ref]
-            repository.persistTransactionOutput(
+            repository.persistVisibleTransactionOutput(
                 em,
                 transactionIdString,
                 UtxoComponentGroup.OUTPUTS.ordinal,

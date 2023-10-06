@@ -1,7 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.state.serializer.kryo
 
 import net.corda.ledger.utxo.data.state.LazyStateAndRefImpl
-import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
+import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.serialization.checkpoint.CheckpointInput
@@ -47,7 +47,7 @@ class LazyStateAndRefImplKryoSerializer @Activate constructor(
     }
 
     override fun read(input: CheckpointInput, type: Class<out LazyStateAndRefImpl<*>>): LazyStateAndRefImpl<*> {
-        val serializedStateAndRef = input.readClassAndObject() as UtxoTransactionOutputDto
+        val serializedStateAndRef = input.readClassAndObject() as UtxoVisibleTransactionOutputDto
         val deserializedStateAndRef = when (input.readInt()) {
             0 -> null
             1 -> input.readClassAndObject() as StateAndRef<*>

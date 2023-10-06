@@ -21,7 +21,7 @@ import javax.persistence.Table
 )
 @Entity
 @Table(name = "utxo_visible_transaction_output")
-@IdClass(UtxoTransactionOutputEntityId::class)
+@IdClass(UtxoVisibleTransactionOutputEntityId::class)
 data class UtxoVisibleTransactionOutputEntity(
     @get:Id
     @get:ManyToOne
@@ -71,7 +71,7 @@ data class UtxoVisibleTransactionOutputEntity(
 )
 
 @Embeddable
-data class UtxoTransactionOutputEntityId(
+data class UtxoVisibleTransactionOutputEntityId(
     var transaction: UtxoTransactionEntity,
     var groupIndex: Int,
     var leafIndex: Int

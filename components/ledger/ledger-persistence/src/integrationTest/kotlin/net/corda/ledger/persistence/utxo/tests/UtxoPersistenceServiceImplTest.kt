@@ -134,7 +134,7 @@ class UtxoPersistenceServiceImplTest {
         private val notaryExampleKey = publicKeyExample
         private val defaultInputStateRefs = listOf(StateRef(SecureHashImpl("SHA-256", ByteArray(12)), 1))
         private val defaultReferenceStateRefs = listOf(StateRef(SecureHashImpl("SHA-256", ByteArray(34)), 2))
-        private val defaultTransactionOutputs = listOf(TestContractState1(), TestContractState2())
+        private val defaultVisibleTransactionOutputs = listOf(TestContractState1(), TestContractState2())
     }
 
     @BeforeAll
@@ -261,7 +261,7 @@ class UtxoPersistenceServiceImplTest {
             createTransactionEntity(entityFactory, transaction1, status = VERIFIED).also { em.persist(it) }
             createTransactionEntity(entityFactory, transaction2, status = VERIFIED).also { em.persist(it) }
 
-            repository.persistTransactionOutput(
+            repository.persistVisibleTransactionOutput(
                 em,
                 transaction1.id.toString(),
                 UtxoComponentGroup.OUTPUTS.ordinal,
@@ -272,7 +272,7 @@ class UtxoPersistenceServiceImplTest {
                 customRepresentation = CustomRepresentation("{}")
             )
 
-            repository.persistTransactionOutput(
+            repository.persistVisibleTransactionOutput(
                 em,
                 transaction2.id.toString(),
                 UtxoComponentGroup.OUTPUTS.ordinal,
@@ -283,7 +283,7 @@ class UtxoPersistenceServiceImplTest {
                 customRepresentation = CustomRepresentation("{}")
             )
 
-            repository.persistTransactionOutput(
+            repository.persistVisibleTransactionOutput(
                 em,
                 transaction2.id.toString(),
                 UtxoComponentGroup.OUTPUTS.ordinal,
@@ -299,11 +299,11 @@ class UtxoPersistenceServiceImplTest {
         val unconsumedStates = persistenceService.findUnconsumedVisibleStatesByType(stateClass)
         assertThat(unconsumedStates).isNotNull
         assertThat(unconsumedStates.size).isEqualTo(1)
-        val transactionOutput = unconsumedStates.first()
-        assertThat(transactionOutput.transactionId).isEqualTo(transaction1.id.toString())
-        assertThat(transactionOutput.leafIndex).isEqualTo(1)
-        assertThat(transactionOutput.info).isEqualTo(transaction1.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal][1])
-        assertThat(transactionOutput.data).isEqualTo(transaction1.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal][1])
+        val visibleTransactionOutput = unconsumedStates.first()
+        assertThat(visibleTransactionOutput.transactionId).isEqualTo(transaction1.id.toString())
+        assertThat(visibleTransactionOutput.leafIndex).isEqualTo(1)
+        assertThat(visibleTransactionOutput.info).isEqualTo(transaction1.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal][1])
+        assertThat(visibleTransactionOutput.data).isEqualTo(transaction1.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal][1])
     }
 
     @Test
@@ -323,12 +323,12 @@ class UtxoPersistenceServiceImplTest {
         assertThat(stateAndRefs.size).isEqualTo(2)
 
         for (i in 0..1) {
-            val transactionOutput = stateAndRefs[i]
+            val visibleTransactionOutput = stateAndRefs[i]
 
-            assertThat(transactionOutput.transactionId).isEqualTo(transactions[i].id.toString())
-            assertThat(transactionOutput.leafIndex).isEqualTo(i)
-            assertThat(transactionOutput.info).isEqualTo(transactions[i].wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal][i])
-            assertThat(transactionOutput.data).isEqualTo(transactions[i].wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal][i])
+            assertThat(visibleTransactionOutput.transactionId).isEqualTo(transactions[i].id.toString())
+            assertThat(visibleTransactionOutput.leafIndex).isEqualTo(i)
+            assertThat(visibleTransactionOutput.info).isEqualTo(transactions[i].wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal][i])
+            assertThat(visibleTransactionOutput.data).isEqualTo(transactions[i].wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal][i])
         }
     }
 
@@ -439,7 +439,7 @@ class UtxoPersistenceServiceImplTest {
 
             val dbTransactionOutputs = em.createNamedQuery(
                 "UtxoVisibleTransactionOutputEntity.findByTransactionId",
-                entityFactory.utxoTransactionOutput
+                entityFactory.utxoVisibleTransactionOutput
             )
                 .setParameter("transactionId", signedTransaction.id.toString())
                 .resultList
@@ -447,7 +447,7 @@ class UtxoPersistenceServiceImplTest {
                 .hasSameSizeAs(componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal])
             dbTransactionOutputs
                 .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
-                .zip(defaultTransactionOutputs)
+                .zip(defaultVisibleTransactionOutputs)
                 .forEachIndexed { leafIndex, (dbInput, transactionOutput) ->
                     assertThat(dbInput.field<Int>("groupIndex")).isEqualTo(UtxoComponentGroup.OUTPUTS.ordinal)
                     assertThat(dbInput.field<Int>("leafIndex")).isEqualTo(leafIndex)
@@ -633,7 +633,7 @@ class UtxoPersistenceServiceImplTest {
             listOf("group5_component1".toByteArray()),
             inputStateRefs.map { it.toBytes() },
             referenceStateRefs.map { it.toBytes() },
-            defaultTransactionOutputs.map { it.toBytes() },
+            defaultVisibleTransactionOutputs.map { it.toBytes() },
             listOf("group9_component1".toByteArray())
 
         )

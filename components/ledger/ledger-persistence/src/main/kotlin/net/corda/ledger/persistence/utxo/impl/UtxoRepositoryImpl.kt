@@ -10,7 +10,7 @@ import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.persistence.common.mapToComponentGroups
 import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoRepository
-import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
+import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.utilities.debug
@@ -94,7 +94,7 @@ class UtxoRepositoryImpl @Activate constructor(
         entityManager: EntityManager,
         query: String,
         stateClassType: String?
-    ): List<UtxoTransactionOutputDto> {
+    ): List<UtxoVisibleTransactionOutputDto> {
         val queryObj = entityManager.createNativeQuery(query, Tuple::class.java)
             .setParameter("verified", TransactionStatus.VERIFIED.value)
 
@@ -102,31 +102,31 @@ class UtxoRepositoryImpl @Activate constructor(
             queryObj.setParameter("type", stateClassType)
         }
 
-        return queryObj.mapToUtxoTransactionOutputDto()
+        return queryObj.mapToUtxoVisibleTransactionOutputDto()
     }
 
     override fun findUnconsumedVisibleStatesByType(
         entityManager: EntityManager
-    ): List<UtxoTransactionOutputDto> {
+    ): List<UtxoVisibleTransactionOutputDto> {
         return findUnconsumedVisibleStates(entityManager, queryProvider.findUnconsumedVisibleStatesByType, null)
     }
 
     override fun findUnconsumedVisibleStatesByExactType(
         entityManager: EntityManager,
         stateClassType: String
-    ): List<UtxoTransactionOutputDto> {
+    ): List<UtxoVisibleTransactionOutputDto> {
         return findUnconsumedVisibleStates(entityManager, queryProvider.findUnconsumedVisibleStatesByExactType, stateClassType)
     }
 
     override fun resolveStateRefs(
         entityManager: EntityManager,
         stateRefs: List<StateRef>
-    ): List<UtxoTransactionOutputDto> {
+    ): List<UtxoVisibleTransactionOutputDto> {
         return entityManager.createNativeQuery(queryProvider.resolveStateRefs, Tuple::class.java)
             .setParameter("transactionIds", stateRefs.map { it.transactionId.toString() })
             .setParameter("stateRefs", stateRefs.map { it.toString() })
             .setParameter("verified", TransactionStatus.VERIFIED.value)
-            .mapToUtxoTransactionOutputDto()
+            .mapToUtxoVisibleTransactionOutputDto()
     }
 
     override fun findTransactionSignatures(
@@ -208,7 +208,7 @@ class UtxoRepositoryImpl @Activate constructor(
             .logResult("transaction CPK [$transactionId, $fileChecksums]")
     }
 
-    override fun persistTransactionOutput(
+    override fun persistVisibleTransactionOutput(
         entityManager: EntityManager,
         transactionId: String,
         groupIndex: Int,
@@ -225,7 +225,7 @@ class UtxoRepositoryImpl @Activate constructor(
         tokenOwnerHash: String?,
         tokenAmount: BigDecimal?
     ) {
-        entityManager.createNativeQuery(queryProvider.persistTransactionOutput(consumed))
+        entityManager.createNativeQuery(queryProvider.persistVisibleTransactionOutput(consumed))
             .setParameter("transactionId", transactionId)
             .setParameter("groupIndex", groupIndex)
             .setParameter("leafIndex", leafIndex)
@@ -329,10 +329,10 @@ class UtxoRepositoryImpl @Activate constructor(
     @Suppress("UNCHECKED_CAST")
     private fun Query.resultListAsTuples() = resultList as List<Tuple>
 
-    private fun Query.mapToUtxoTransactionOutputDto(): List<UtxoTransactionOutputDto> {
+    private fun Query.mapToUtxoVisibleTransactionOutputDto(): List<UtxoVisibleTransactionOutputDto> {
         return resultListAsTuples()
             .map { t ->
-                UtxoTransactionOutputDto(
+                UtxoVisibleTransactionOutputDto(
                     t[0] as String, // transactionId
                     t[1] as Int,    // leaf ID
                     t[2] as ByteArray, // outputs info data

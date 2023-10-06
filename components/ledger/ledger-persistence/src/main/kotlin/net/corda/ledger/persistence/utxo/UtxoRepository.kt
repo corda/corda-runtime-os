@@ -3,7 +3,7 @@ package net.corda.ledger.persistence.utxo
 import net.corda.data.membership.SignedGroupParameters
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
-import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
+import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.ledger.utxo.StateRef
 import java.math.BigDecimal
@@ -28,19 +28,19 @@ interface UtxoRepository {
     /** Retrieves transaction component leaves related to visible unspent states and subclass states.*/
     fun findUnconsumedVisibleStatesByType(
         entityManager: EntityManager
-    ):  List<UtxoTransactionOutputDto>
+    ):  List<UtxoVisibleTransactionOutputDto>
 
     /** Retrieves transaction component leaves related to visible unspent states */
     fun findUnconsumedVisibleStatesByExactType(
         entityManager: EntityManager,
         stateClassType: String
-    ):  List<UtxoTransactionOutputDto>
+    ):  List<UtxoVisibleTransactionOutputDto>
 
     /** Retrieves transaction component leafs related to specific StateRefs */
     fun resolveStateRefs(
         entityManager: EntityManager,
         stateRefs: List<StateRef>
-    ):  List<UtxoTransactionOutputDto>
+    ):  List<UtxoVisibleTransactionOutputDto>
 
     /** Retrieves transaction signatures */
     fun findTransactionSignatures(
@@ -92,7 +92,7 @@ interface UtxoRepository {
 
     /** Persists transaction output (operation is idempotent) */
     @Suppress("LongParameterList")
-    fun persistTransactionOutput(
+    fun persistVisibleTransactionOutput(
         entityManager: EntityManager,
         transactionId: String,
         groupIndex: Int,

@@ -44,7 +44,7 @@ class UtxoPersistenceServiceImplTest {
     private val persistedJsonStrings = mutableMapOf<String, CustomRepresentation>()
 
     private val mockRepository = mock<UtxoRepository> {
-        on { persistTransactionOutput(
+        on { persistVisibleTransactionOutput(
             any(), any(), any(), any(), any(), any(), any(), any(),
             anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()
         ) } doAnswer {

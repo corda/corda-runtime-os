@@ -7,7 +7,7 @@ import net.corda.ledger.persistence.query.data.VaultNamedQuery
 import net.corda.ledger.persistence.query.execution.VaultNamedQueryExecutor
 import net.corda.ledger.persistence.query.registration.VaultNamedQueryRegistry
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
-import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
+import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.orm.utils.transaction
 import net.corda.persistence.common.exceptions.NullParameterException
 import net.corda.utilities.debug
@@ -77,7 +77,7 @@ class VaultNamedQueryExecutorImpl(
         private val created = (sqlRow[4] as Timestamp).toInstant()
 
         val stateAndRef: StateAndRef<ContractState> by lazy {
-            UtxoTransactionOutputDto(txId, leafIdx, outputInfoData, outputData)
+            UtxoVisibleTransactionOutputDto(txId, leafIdx, outputInfoData, outputData)
                 .toStateAndRef(serializationService)
         }
 
