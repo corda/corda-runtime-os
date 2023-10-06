@@ -224,7 +224,7 @@ internal class VirtualNodeUpgradeOperationHandler(
                     try {
                         val registrationRequestDetails = registrationRequest.payload.first()
 
-                        val updatedSerial = registrationRequestDetails.serial + 1
+                        val updatedSerial = membershipGroupReaderProvider.getGroupReader(holdingIdentity).lookup(x500Name)!!.serial
                         val registrationContext = registrationRequestDetails
                             .memberProvidedContext.data.array()
                             .deserializeContext(keyValuePairListDeserializer)
