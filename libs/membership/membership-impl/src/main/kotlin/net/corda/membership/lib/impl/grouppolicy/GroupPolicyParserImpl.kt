@@ -1,5 +1,6 @@
 package net.corda.membership.lib.impl.grouppolicy
 
+import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
@@ -37,7 +38,7 @@ class GroupPolicyParserImpl @Activate constructor(
         const val FAILED_PARSING = "GroupPolicy file is incorrectly formatted and parsing failed."
     }
 
-    private val objectMapper = ObjectMapper()
+    private val objectMapper = ObjectMapper().enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
     private val clock = UTCClock()
 
     private val mgmVersions = mapOf(
