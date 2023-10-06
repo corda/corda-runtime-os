@@ -132,17 +132,17 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
             try {
                 processEvents()
                 keepProcessing = false
-            } catch (ex: Exception) {
-                when (ex) {
+            } catch (exception: Exception) {
+                when (exception) {
                     is CordaMessageAPIIntermittentException -> {
                         attempts++
-                        handleProcessEventRetries(attempts, ex)
+                        handleProcessEventRetries(attempts, exception)
                     }
 
                     else -> {
                         throw CordaMessageAPIFatalException(
                             "Multi-source event mediator ${config.name} failed to process messages, " +
-                                    "Fatal error occurred.", ex
+                                    "Fatal error occurred.", exception
                         )
                     }
                 }
