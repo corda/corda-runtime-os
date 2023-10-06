@@ -162,6 +162,7 @@ class HsqldbVaultNamedQueryTest {
         }.single()
         assertAll(
             { assertEquals(txId.toString(), numberResult.transaction.id) },
+            { assertEquals(30, numberResult.groupIndex) },
             { assertEquals(50, numberResult.leafIndex) }
         )
 
@@ -170,6 +171,7 @@ class HsqldbVaultNamedQueryTest {
         }.single()
         assertAll(
             { assertEquals(txId.toString(), stringResult.transaction.id) },
+            { assertEquals(10, stringResult.groupIndex) },
             { assertEquals(20, stringResult.leafIndex) }
         )
     }
@@ -193,6 +195,7 @@ class HsqldbVaultNamedQueryTest {
         }.single()
         assertAll(
             { assertEquals(txId.toString(), numberResult.transaction.id) },
+            { assertEquals(15, numberResult.groupIndex) },
             { assertEquals(25, numberResult.leafIndex) }
         )
 
@@ -202,6 +205,7 @@ class HsqldbVaultNamedQueryTest {
         }.single()
         assertAll(
             { assertEquals(txId.toString(), stringResult.transaction.id) },
+            { assertEquals(0, stringResult.groupIndex) },
             { assertEquals(1, stringResult.leafIndex) }
         )
     }
@@ -225,6 +229,7 @@ class HsqldbVaultNamedQueryTest {
         }.single()
         assertAll(
             { assertEquals(txId.toString(), numberResult.transaction.id) },
+            { assertEquals(25, numberResult.groupIndex) },
             { assertEquals(35, numberResult.leafIndex) }
         )
 
@@ -234,6 +239,7 @@ class HsqldbVaultNamedQueryTest {
         }.single()
         assertAll(
             { assertEquals(txId.toString(), stringResult.transaction.id) },
+            { assertEquals(10, stringResult.groupIndex) },
             { assertEquals(11, stringResult.leafIndex) }
         )
     }
@@ -254,6 +260,7 @@ class HsqldbVaultNamedQueryTest {
         val visibleState = executeQuery(sqlText, txId) {}.single()
         assertAll(
             { assertEquals(txId.toString(), visibleState.transaction.id) },
+            { assertEquals(30, visibleState.groupIndex) },
             { assertEquals(50, visibleState.leafIndex) }
         )
     }
