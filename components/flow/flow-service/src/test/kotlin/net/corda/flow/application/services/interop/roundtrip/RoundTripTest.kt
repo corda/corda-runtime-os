@@ -22,7 +22,7 @@ class RoundTripTest {
 
     val v1Dispatcher = server.buildDispatcher(facadeV1, JacksonJsonMarshaller(ObjectMapper()))
 
-    val v1Client = facadeV1.getClientProxy<TokensFacade>(v1Dispatcher)
+    val v1Client = facadeV1.getClientProxy<TokensFacade>(JacksonJsonMarshaller(ObjectMapper()),v1Dispatcher)
 
     @Test
     fun roundtripClientProxyToServerDispatcher() {

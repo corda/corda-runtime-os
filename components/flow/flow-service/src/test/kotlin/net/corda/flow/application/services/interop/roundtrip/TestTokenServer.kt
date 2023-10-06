@@ -22,7 +22,7 @@ class TestTokenServer(initialBalances: Map<String, BigDecimal>, private val time
 
     override fun getBalance(denomination: String): Double {
         val totalBalance = balances[denomination] ?: BigDecimal(0)
-        var now = timeserver()
+        val now = timeserver()
 
         val reserved = reservations.values.filter {
             it.denomination == denomination && it.expires.isAfter(now)

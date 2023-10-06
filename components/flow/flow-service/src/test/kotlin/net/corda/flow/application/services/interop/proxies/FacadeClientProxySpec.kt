@@ -1,6 +1,8 @@
 package net.corda.flow.application.services.interop.proxies
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.flow.application.services.impl.interop.facade.FacadeReaders
+import net.corda.flow.application.services.impl.interop.proxies.JacksonJsonMarshaller
 import net.corda.flow.application.services.impl.interop.proxies.getClientProxy
 import net.corda.flow.application.services.interop.example.TokenReservation
 import net.corda.flow.application.services.interop.example.TokensFacade
@@ -19,7 +21,7 @@ class FacadeClientProxySpec {
         val denomination = getBalance.inParameter("denomination", String::class.java)
         val balance = getBalance.outParameter("balance", BigDecimal::class.java)
 
-        val proxy = facade.getClientProxy<TokensFacade> { request ->
+        val proxy = facade.getClientProxy<TokensFacade>(JacksonJsonMarshaller(ObjectMapper())){ request ->
             assertEquals(facade.facadeId, request.facadeId)
             assertEquals(getBalance.name, request.methodName)
             assertEquals("USD", request[denomination])
@@ -43,7 +45,7 @@ class FacadeClientProxySpec {
         val ref = UUID.randomUUID()
         val expiration = ZonedDateTime.now()
 
-        val proxy = facade.getClientProxy<TokensFacade> { request ->
+        val proxy = facade.getClientProxy<TokensFacade>(JacksonJsonMarshaller(ObjectMapper())) { request ->
             assertEquals(facade.facadeId, request.facadeId)
             assertEquals(reserveTokens.name, request.methodName)
             assertEquals("USD", request[denomination])
