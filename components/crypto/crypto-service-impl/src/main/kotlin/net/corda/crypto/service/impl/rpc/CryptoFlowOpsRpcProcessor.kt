@@ -37,7 +37,7 @@ import java.nio.ByteBuffer
 import java.time.Duration
 import java.time.Instant
 
-@Suppress("Unused")
+@Suppress("LongParameterList")
 class CryptoFlowOpsRpcProcessor(
     private val cryptoService: CryptoService,
     private val externalEventResponseFactory: ExternalEventResponseFactory,
