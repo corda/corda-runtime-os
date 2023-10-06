@@ -14,7 +14,6 @@ import java.util.*
 @FacadeVersions("v1.0")
 interface LockFacade {
 
-
     @FacadeVersions("v1.0")
     @BindsFacadeMethod("create-lock")
     @Suspendable

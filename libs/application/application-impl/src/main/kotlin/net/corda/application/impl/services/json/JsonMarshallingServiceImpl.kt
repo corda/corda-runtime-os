@@ -72,6 +72,7 @@ class JsonMarshallingServiceImpl : JsonMarshallingService,
         module.addDeserializer(SecureHash::class.java, SecureHashDeserializer)
 
         // Interoperability
+        //TODO move to new service interface or new service implementation
         module.addDeserializer(DigitalSignatureAndMetadata::class.java, DigitalSignatureAndMetadataDeserializer())
         module.addDeserializer(DigitalSignature.WithKeyId::class.java, DigitalSignatureWithKeyIdDeserializer())
         module.addDeserializer(DigitalSignatureMetadata::class.java, DigitalSignatureMetadataDeserializer())
@@ -238,7 +239,7 @@ class SignatureSpecDeserializer : com.fasterxml.jackson.databind.JsonDeserialize
         parser: JsonParser,
         ctxt: DeserializationContext
     ): SignatureSpec {
-        val signatureName = "SHA256withECDSA" //parser.text
+        val signatureName = "SHA256withECDSA" //TODO use parser.text
         return SignatureSpecImpl(signatureName)
     }
 }
@@ -263,7 +264,7 @@ class MerkleProofDeserializer : com.fasterxml.jackson.databind.JsonDeserializer<
             val hash = parser.codec.treeToValue(hashNode, SecureHash::class.java)
             hashes.add(hash)
         }
-        return MerkleProofImpl(proofType, treeSize, leaves, hashes)
+        return MerkleProofImpl(proofType, treeSize, leaves, hashes) //TODO use service to decouple from having an impl dependency
 
     }
 }

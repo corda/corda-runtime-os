@@ -50,9 +50,7 @@ class FacadeServiceImpl @Activate constructor(
         val facade = facadeLookup(facadeId)
         val x500Name = MemberX500Name.parse(interOpIdentity.x500Name)
         val groupId = interOpIdentity.groupId
-
         val marshaller = JacksonJsonMarshallerAdaptor(jsonMarshallingService)
-
         val transportLayer = MessagingDispatcher(flowMessaging, jsonMarshallingService, x500Name , groupId)
         return facade.getClientProxy(marshaller, expectedType, transportLayer)
     }
@@ -64,9 +62,7 @@ class FacadeServiceImpl @Activate constructor(
         require(request != null)
         val facadeRequest = jsonMarshallingService.parse(request, FacadeRequestImpl::class.java)
         val facade = facadeLookup(facadeRequest.facadeId.toString())
-
         val marshaller = JacksonJsonMarshallerAdaptor(jsonMarshallingService)
-
         val dispatcher = target.buildDispatcher(facade, marshaller) //TODO return dispatcher which can be reused
         val facadeResponse = dispatcher.invoke(facadeRequest)
         return jsonMarshallingService.format(facadeResponse)
