@@ -7,4 +7,3 @@ data class ClaimRelease(
     val usedTokens: Set<String>,
     override val poolKey: TokenPoolKey
 ) : TokenEvent
-
