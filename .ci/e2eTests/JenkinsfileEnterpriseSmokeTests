@@ -1,8 +1,10 @@
 @Library('corda-shared-build-pipeline-steps@5.1') _
 
 endToEndPipeline(
+    helmVersion: '^5.1.0-beta',
+    helmRepoSuffix: 'release/ent/5.1',
     assembleAndCompile: true,
-    multiCluster: true,
+    multiCluster: false,
     gradleTestTargetsToExecute: ['smokeTest'],
     usePackagedCordaHelmChart: true,
     gradleAdditionalArgs : '-Dscan.tag.EnterpriseSmokeTest',
