@@ -181,8 +181,6 @@ stateManager:
           key: ""
     # -- the State Manager database name
     database: state-manager
-    # -- the State Manager schema name
-    schema: STATE_MANAGER
 
 # Kafka configuration
 kafka:
@@ -407,8 +405,6 @@ bootstrap:
 
     # State Manager DB Bootstrap Configuration
     stateManager:
-      # -- the schema in which the state-manager entities will be stored
-      schema: state_manager
       # the username configuration
       username:
         # -- the username, defaults to this value
