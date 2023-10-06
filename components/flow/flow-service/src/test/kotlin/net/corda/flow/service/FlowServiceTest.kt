@@ -4,7 +4,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.external.messaging.services.ExternalMessagingRoutingService
 import net.corda.flow.MINIMUM_SMART_CONFIG
-//import net.corda.flow.maintenance.FlowMaintenance
+import net.corda.flow.maintenance.FlowMaintenance
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.test.impl.LifecycleTest
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
@@ -32,14 +32,14 @@ class FlowServiceTest {
                 Arguments.of(LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>()),
                 Arguments.of(LifecycleCoordinatorName.forComponent<CpiInfoReadService>()),
                 Arguments.of(LifecycleCoordinatorName.forComponent<FlowExecutor>()),
-//                Arguments.of(LifecycleCoordinatorName.forComponent<FlowMaintenance>()),
+                Arguments.of(LifecycleCoordinatorName.forComponent<FlowMaintenance>()),
             )
         }
     }
 
     private val flowExecutor = mock<FlowExecutor>()
     private val externalMessagingRoutingService = mock<ExternalMessagingRoutingService>()
-//    private val flowMaintenance = mock<FlowMaintenance>()
+    private val flowMaintenance = mock<FlowMaintenance>()
 
     private val exampleConfig = mapOf(
         ConfigKeys.BOOT_CONFIG to MINIMUM_SMART_CONFIG,
@@ -148,14 +148,14 @@ class FlowServiceTest {
             addDependency<VirtualNodeInfoReadService>()
             addDependency<CpiInfoReadService>()
             addDependency<FlowExecutor>()
-//            addDependency<FlowMaintenance>()
+            addDependency<FlowMaintenance>()
 
             FlowService(
                 coordinatorFactory,
                 configReadService,
                 flowExecutor,
                 externalMessagingRoutingService,
-//                flowMaintenance
+                flowMaintenance
             )
         }
     }
