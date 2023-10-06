@@ -1,20 +1,15 @@
 package net.corda.flow.application.services.impl.interop.facade
 
-import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.KotlinModule
-import net.corda.common.json.serializers.standardTypesModule
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import net.corda.flow.application.services.impl.interop.parameters.TypeParameters
 import net.corda.flow.application.services.impl.interop.parameters.TypedParameterImpl
 import net.corda.v5.application.interop.facade.Facade
 import net.corda.v5.application.interop.facade.FacadeId
 import net.corda.v5.application.interop.facade.FacadeMethod
 import net.corda.v5.application.interop.facade.FacadeReader
-import net.corda.v5.application.interop.parameters.ParameterType
 import java.io.Reader
-import java.util.*
+import net.corda.v5.application.interop.parameters.ParameterType
 
 /**
  * Provides [FacadeReader]s from various formats. (This is a lie: it only does JSON).
@@ -27,16 +22,8 @@ object FacadeReaders {
     @JvmStatic
     val JSON: FacadeReader
         get() = JacksonFacadeReader {
-             ObjectMapper().apply {
-                registerModule(KotlinModule.Builder().build())
-                registerModule(JavaTimeModule())
-                enable(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY)
-                setTimeZone(TimeZone.getTimeZone("UTC"))
-                disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-                registerModule(standardTypesModule())
-            }.readValue(it, FacadeDefinition::class.java)
+            ObjectMapper().registerKotlinModule().readValue(it, FacadeDefinition::class.java)
         }
-
 }
 
 

@@ -40,11 +40,11 @@ class LockFlow: FacadeDispatcherFlow(), LockFacade{
         try {
             transactionSignatureVerificationService.verifySignature(proof.by, proof, publicKey)
         } catch (e: Exception) {
-            log.error("Transaction id $${proof.by} doesn't match the proof $proof signed by" +
+            log.error("Transaction id ${proof.by} doesn't match the proof $proof signed by" +
                     " ${Base64.getEncoder().encodeToString(publicKey.encoded)}, reason: ${e.message}")
             throw e
         }
-        log.info("Transaction id $${proof.by} is matching the proof $proof signed by " +
+        log.info("Transaction id ${proof.by} is matching the proof $proof signed by " +
                 Base64.getEncoder().encodeToString(publicKey.encoded)
         )
         return BigDecimal.ONE
@@ -59,11 +59,11 @@ class LockFlow: FacadeDispatcherFlow(), LockFacade{
         try {
             transactionSignatureVerificationService.verifySignature(secureHash, proof, publicKey)
         } catch (e: Exception) {
-            log.error("Transaction id $$secureHash doesn't match the proof $proof signed by" +
+            log.error("Transaction id $secureHash doesn't match the proof $proof signed by" +
                     " ${Base64.getEncoder().encodeToString(publicKey.encoded)}, reason: ${e.message}")
             throw e
         }
-        log.info("Transaction id $$secureHash is matching the proof $proof signed by " +
+        log.info("Transaction id $secureHash is matching the proof $proof signed by " +
                 Base64.getEncoder().encodeToString(publicKey.encoded)
         )
         return BigDecimal.ONE
