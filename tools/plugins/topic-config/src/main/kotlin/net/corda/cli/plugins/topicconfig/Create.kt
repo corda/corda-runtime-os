@@ -99,6 +99,7 @@ class Create(
         "gateway" to listOf("p2pGateway", "combined"),
         "link-manager" to listOf("p2pLinkManager", "combined"),
         "persistence" to listOf("persistence", "combined"),
+        "tokenSelection" to listOf("tokenSelection", "combined"),
         "rest" to listOf("rest", "combined"),
         "uniqueness" to listOf("uniqueness", "combined")
     )
