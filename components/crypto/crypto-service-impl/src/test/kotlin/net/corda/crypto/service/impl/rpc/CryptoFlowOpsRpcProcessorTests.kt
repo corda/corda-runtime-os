@@ -1,4 +1,4 @@
- package net.corda.crypto.service.impl.rpc
+package net.corda.crypto.service.impl.rpc
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
