@@ -95,21 +95,25 @@ class MembershipInfoProducer(private val publisher: AtomicReference<Publisher?>)
         ownedInteropIdentity: InteropIdentity,
         newInteropIdentities: List<InteropIdentity>
     ) {
-        if (publisher.get() == null) {
+        val pub = publisher.get()
+
+        if (pub == null) {
             log.error("Member info publisher is null, not publishing.")
             return
         }
 
         val memberInfoList = createInteropIdentityMemberInfo(realHoldingIdentity, ownedInteropIdentity, newInteropIdentities)
 
-        publisher.get()!!.publish(memberInfoList)
+        pub.publish(memberInfoList)
     }
 
     fun clearMemberInfo(
         ownedInteropIdentity: InteropIdentity,
         identityToRemove: InteropIdentity
     ) {
-        if (publisher.get() == null) {
+        val pub = publisher.get()
+
+        if (pub == null) {
             log.error("Member info publisher is null, not deleting.")
             return
         }
@@ -120,7 +124,7 @@ class MembershipInfoProducer(private val publisher: AtomicReference<Publisher?>)
             null
         )
 
-        publisher.get()!!.publish(listOf(record))
+        pub.publish(listOf(record))
 
         log.info("Cleared member info for interop identity '${identityToRemove.shortHash}'")
     }
