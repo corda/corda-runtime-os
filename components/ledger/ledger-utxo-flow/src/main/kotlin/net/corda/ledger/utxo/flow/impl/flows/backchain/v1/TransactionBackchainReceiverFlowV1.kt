@@ -72,9 +72,8 @@ class TransactionBackchainReceiverFlowV1(
 
         val sortedTransactionIds = TopologicalSort()
 
-        val ledgerConfig = flowConfigService.getConfig(UTXO_LEDGER_CONFIG)
+        val batchSize = flowConfigService.getConfig(UTXO_LEDGER_CONFIG).getInt(BACKCHAIN_BATCH_CONFIG_PATH)
 
-        val batchSize = ledgerConfig.getInt(BACKCHAIN_BATCH_CONFIG_PATH)
         val existingTransactionIdsInDb = mutableMapOf<SecureHash, TransactionStatus>()
 
         while (transactionsToRetrieve.isNotEmpty()) {
