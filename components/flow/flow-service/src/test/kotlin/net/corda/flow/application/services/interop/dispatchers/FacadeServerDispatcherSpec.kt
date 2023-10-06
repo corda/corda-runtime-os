@@ -1,7 +1,9 @@
 package net.corda.flow.application.services.interop.dispatchers
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.flow.application.services.impl.interop.dispatch.buildDispatcher
 import net.corda.flow.application.services.impl.interop.facade.FacadeReaders
+import net.corda.flow.application.services.impl.interop.proxies.JacksonJsonMarshaller
 import net.corda.flow.application.services.interop.example.TokenReservation
 import net.corda.flow.application.services.interop.example.TokensFacade
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -27,8 +29,8 @@ class FacadeServerDispatcherSpec {
                 TokenReservation(reservationRef, expirationTimestamp)
     }
 
-    val v1Dispatcher = mockServer.buildDispatcher(facadeV1)
-    val v2Dispatcher = mockServer.buildDispatcher(facadeV2)
+    val v1Dispatcher = mockServer.buildDispatcher(facadeV1, JacksonJsonMarshaller(ObjectMapper()))
+    val v2Dispatcher = mockServer.buildDispatcher(facadeV2, JacksonJsonMarshaller(ObjectMapper()))
 
     @Test
     fun `should dispatch a request to the matching method on the server object`() {
