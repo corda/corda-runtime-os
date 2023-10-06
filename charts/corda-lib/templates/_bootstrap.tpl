@@ -157,7 +157,7 @@ spec:
               mkdir /tmp/db
               java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar database spec \
                 -g "config:${DB_CLUSTER_SCHEMA},rbac:${DB_RBAC_SCHEMA},crypto:${DB_CRYPTO_SCHEMA}" \
-                -u "${PGUSER}" -p "${PGPASSWORD}" \
+                -u "${CLUSTER_PGUSER}" -p "${CLUSTER_PGPASSWORD}" \
                 --jdbc-url "${JDBC_URL}" \
                 -c -l /tmp/db
 
