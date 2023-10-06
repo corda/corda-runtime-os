@@ -340,7 +340,6 @@ import kotlin.test.assertTrue
          )
      }
 
-     @Suppress("UNCHECKED_CAST")
      @Test
      fun `Should process filter my keys query`() {
          val myPublicKeys = listOf(
@@ -403,8 +402,6 @@ import kotlin.test.assertTrue
          )
     }
 
-
-     //    @Suppress("UNCHECKED_CAST")
      @Test
      fun `Should process list with valid event and skip event without value`() {
          val myPublicKeys = listOf(
@@ -422,7 +419,7 @@ import kotlin.test.assertTrue
          assertEquals(listOf(tenantId), r.capturedTenantIds)
          assertEquals(3, r.lookedUpSigningKeys.first().size)
 
-         // CryptoFlowOpsBusProcessor filters out null requests, since there's no information to send a response
+         // CryptoFlowOpsBusProcessor filters out null requests, since there's no information to send a response,
          // so we should expect 1 output not 2 in this case
          assertEquals(1, r.transformedResponses.size)
          val transformed = r.transformedResponses.first()
@@ -432,7 +429,6 @@ import kotlin.test.assertTrue
          assertTrue(transformed.any { it.encoded.contentEquals(myPublicKeys[1].encoded) })
      }
 
-     @Suppress("UNCHECKED_CAST")
      @Test
      fun `Should process list with valid event and return error for stale event`() {
          val myPublicKeys = listOf(
