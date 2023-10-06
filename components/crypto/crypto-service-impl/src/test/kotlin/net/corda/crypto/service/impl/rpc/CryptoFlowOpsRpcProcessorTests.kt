@@ -510,7 +510,7 @@ import kotlin.test.assertTrue
              ))
          assertEquals(2, r.rawActResult.value?.size?:0)
 
-         r.rawFlowOpsResponses.get(1).let { flowOpsResponse ->
+         r.rawFlowOpsResponses[1].let { flowOpsResponse ->
              assertInstanceOf(CryptoSigningKeys::class.java, flowOpsResponse.response)
              val context1 = flowOpsResponse.context
              val response1 = flowOpsResponse.response as CryptoSigningKeys
