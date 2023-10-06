@@ -77,6 +77,19 @@ spec:
     targetPort: http
 {{- end }}
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "corda.workerInternalServiceName" $workerName }}
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ $workerName }}
+  ports:
+      - protocol: TCP
+        port: {{ include "corda.workerServicePort" . }}
+        targetPort: "monitor"
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -317,6 +330,12 @@ spec:
           {{- end }}
           {{- if $.Values.tracing.samplesPerSecond }}
           - "--trace-samples-per-second={{ $.Values.tracing.samplesPerSecond }}"
+          {{- end }}
+          {{- if $optionalArgs.servicesAccessed }}
+          {{- range $worker := $optionalArgs.servicesAccessed }}
+          {{- $endpoint := include "corda.getWorkerEndpoint" (dict "context" $ "worker" $worker) }}
+          - --endpoint={{ $endpoint }}
+          {{- end }}
           {{- end }}
           {{- range $i, $arg := $optionalArgs.additionalWorkerArgs }}
           - {{ $arg | quote }}
