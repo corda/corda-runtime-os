@@ -30,6 +30,7 @@ import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.crypto.persistence.getEntityManagerFactory
 import net.corda.crypto.service.impl.TenantInfoServiceImpl
 import net.corda.crypto.service.impl.bus.CryptoFlowOpsBusProcessor
+import net.corda.crypto.service.impl.rpc.CryptoFlowOpsRpcProcessor
 import net.corda.crypto.service.impl.bus.CryptoOpsBusProcessor
 import net.corda.crypto.service.impl.bus.HSMRegistrationBusProcessor
 import net.corda.crypto.softhsm.TenantInfoService
@@ -40,8 +41,10 @@ import net.corda.crypto.softhsm.impl.SoftCryptoService
 import net.corda.crypto.softhsm.impl.WrappingRepositoryImpl
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationRequest
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationResponse
+import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
+import net.corda.data.flow.event.FlowEvent
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
@@ -61,6 +64,7 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.SubscriptionBase
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.config.SyncRPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.processors.crypto.CryptoProcessor
@@ -120,6 +124,10 @@ class CryptoProcessorImpl @Activate constructor(
         const val FLOW_OPS_SUBSCRIPTION = "FLOW_OPS_SUBSCRIPTION"
         const val RPC_OPS_SUBSCRIPTION = "RPC_OPS_SUBSCRIPTION"
         const val HSM_REG_SUBSCRIPTION = "HSM_REG_SUBSCRIPTION"
+
+        internal const val GROUP_NAME = "verification.crypto.processor"
+        const val SUBSCRIPTION_NAME = "Crypto"
+        const val VERIFICATION_PATH = "/crypto"
     }
 
 
@@ -199,7 +207,8 @@ class CryptoProcessorImpl @Activate constructor(
                         logger.trace("Assigned SOFT HSM for $tenantId:$category")
                     }
                 }
-                startBusProcessors(event, coordinator)
+                startBusProcessors(event, coordinator) // to be removed when Event Mediator is fully implemented
+                startProcessors(event, coordinator)
                 setStatus(LifecycleStatus.UP, coordinator)
             }
         }
@@ -299,28 +308,31 @@ class CryptoProcessorImpl @Activate constructor(
             )
         )
     })
-    
-    
-    private fun startBusProcessors(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        val cryptoConfig = event.config.getConfig(CRYPTO_CONFIG)
 
+    private fun startProcessors(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
+        val cryptoConfig = event.config.getConfig(CRYPTO_CONFIG)
 
         // make the processors
         val retryingConfig = cryptoConfig.retrying()
-        val flowOpsProcessor =
-            CryptoFlowOpsBusProcessor(cryptoService, externalEventResponseFactory, retryingConfig, keyEncodingService)
+        val flowOpsProcessor = CryptoFlowOpsRpcProcessor(
+            cryptoService,
+            externalEventResponseFactory,
+            retryingConfig, keyEncodingService,
+            FlowOpsRequest::class.java,
+            FlowEvent::class.java
+        )
         val rpcOpsProcessor = CryptoOpsBusProcessor(cryptoService, retryingConfig, keyEncodingService)
         val hsmRegistrationProcessor = HSMRegistrationBusProcessor(tenantInfoService, cryptoService, retryingConfig)
 
         // now make and start the subscriptions
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         val flowGroupName = "crypto.ops.flow"
+
+        val rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, VERIFICATION_PATH)
         coordinator.createManagedResource(FLOW_OPS_SUBSCRIPTION) {
-            subscriptionFactory.createDurableSubscription(
-                subscriptionConfig = SubscriptionConfig(flowGroupName, Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC),
-                processor = flowOpsProcessor,
-                messagingConfig = messagingConfig,
-                partitionAssignmentListener = null
+            subscriptionFactory.createHttpRPCSubscription(
+                rpcConfig = rpcConfig,
+                processor = flowOpsProcessor
             )
         }
         logger.trace("Starting processing on $flowGroupName ${Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC}")
@@ -361,6 +373,28 @@ class CryptoProcessorImpl @Activate constructor(
         }
         logger.trace("Starting processing on $hsmRegGroupName ${Schemas.Crypto.RPC_HSM_REGISTRATION_MESSAGE_TOPIC}")
         coordinator.getManagedResource<SubscriptionBase>(HSM_REG_SUBSCRIPTION)!!.start()
+    }
+    
+    private fun startBusProcessors(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
+        val cryptoConfig = event.config.getConfig(CRYPTO_CONFIG)
+
+        // make the processors
+        val retryingConfig = cryptoConfig.retrying()
+        val flowOpsProcessor = CryptoFlowOpsBusProcessor(cryptoService, externalEventResponseFactory, retryingConfig, keyEncodingService)
+
+        // now make and start the subscriptions
+        val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+        val flowGroupName = "crypto.ops.flow"
+        coordinator.createManagedResource(FLOW_OPS_SUBSCRIPTION) {
+            subscriptionFactory.createDurableSubscription(
+                subscriptionConfig = SubscriptionConfig(flowGroupName, Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC),
+                processor = flowOpsProcessor,
+                messagingConfig = messagingConfig,
+                partitionAssignmentListener = null
+            )
+        }
+        logger.trace("Starting processing on $flowGroupName ${Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC}")
+        coordinator.getManagedResource<SubscriptionBase>(FLOW_OPS_SUBSCRIPTION)!!.start()
     }
 
     private fun setStatus(status: LifecycleStatus, coordinator: LifecycleCoordinator) {
