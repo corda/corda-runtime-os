@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.cpk.read.CpkReadService
 import net.corda.flow.service.FlowService
+import net.corda.interop.group.policy.read.InteropGroupPolicyReadService
 import net.corda.interop.identity.registry.InteropIdentityRegistryService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.DependentComponents
@@ -54,7 +55,9 @@ class FlowProcessorImpl @Activate constructor(
     @Reference(service = MembershipQueryClient::class)
     private val membershipQueryClient: MembershipQueryClient,
     @Reference(service = InteropIdentityRegistryService::class)
-    private val interopIdentityRegistryService: InteropIdentityRegistryService
+    private val interopIdentityRegistryService: InteropIdentityRegistryService,
+    @Reference(service = InteropGroupPolicyReadService::class)
+    private val interopGroupPolicyReadService: InteropGroupPolicyReadService
 ) : FlowProcessor {
 
     private companion object {
@@ -72,7 +75,8 @@ class FlowProcessorImpl @Activate constructor(
         ::cpkReadService,
         ::groupPolicyProvider,
         ::interopIdentityRegistryService,
-        ::membershipQueryClient
+        ::membershipQueryClient,
+        ::interopGroupPolicyReadService
     )
 
     private val lifecycleCoordinator =

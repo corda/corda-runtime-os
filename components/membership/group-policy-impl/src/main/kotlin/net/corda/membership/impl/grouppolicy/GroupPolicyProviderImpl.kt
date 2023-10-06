@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.interop.group.policy.read.InteropGroupPolicyReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -22,7 +23,6 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
-import net.corda.membership.lib.grouppolicy.InteropGroupPolicyReader
 import net.corda.membership.lib.grouppolicy.MGMGroupPolicy
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
@@ -66,8 +66,8 @@ class GroupPolicyProviderImpl @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = MemberInfoFactory::class)
     private val memberInfoFactory: MemberInfoFactory,
-    @Reference(service = InteropGroupPolicyReader::class)
-    private val interopGroupPolicyReader: InteropGroupPolicyReader
+    @Reference(service = InteropGroupPolicyReadService::class)
+    private val interopGroupPolicyReadService: InteropGroupPolicyReadService
 ) : GroupPolicyProvider {
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
@@ -103,7 +103,20 @@ class GroupPolicyProviderImpl @Activate constructor(
         listeners.put(name, listener)?.stop()
     }
 
-    override fun getP2PParameters(holdingIdentity: HoldingIdentity) = getGroupPolicy(holdingIdentity)?.p2pParameters
+    override fun getP2PParameters(holdingIdentity: HoldingIdentity) : GroupPolicy.P2PParameters? {
+        val mgmGroupPolicy = getGroupPolicy(holdingIdentity)
+        return if (mgmGroupPolicy == null) {
+            val groupPolicyJson = interopGroupPolicyReadService.getGroupPolicy(holdingIdentity.groupId)
+            if (groupPolicyJson != null) {
+                groupPolicyParser.parseInteropGroupPolicy(groupPolicyJson).p2pParameters
+            } else {
+                logger.warn("Could not get interop group policy for holding identity with Id : [${holdingIdentity.shortHash}].")
+                null
+            }
+        } else {
+            mgmGroupPolicy.p2pParameters
+        }
+    }
 
     override fun start() = coordinator.start()
 
@@ -127,6 +140,7 @@ class GroupPolicyProviderImpl @Activate constructor(
                         LifecycleCoordinatorName.forComponent<CpiInfoReadService>(),
                         LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
                         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                        LifecycleCoordinatorName.forComponent<InteropGroupPolicyReadService>(),
                     )
                 )
             }
@@ -280,10 +294,6 @@ class GroupPolicyProviderImpl @Activate constructor(
                 "Could not get CPI metadata for holding identity [${holdingIdentity}] and CPI with identifier " +
                         "[${vNodeInfo?.cpiIdentifier.toString()}]. Any updates to the group policy will be processed later."
             )
-        }
-        val groupPolicy: String? = metadata?.groupPolicy ?: interopGroupPolicyReader.getGroupPolicy(holdingIdentity)
-        if (groupPolicy == null) {
-            logger.warn("Could not get interop group policy for holding identity [${holdingIdentity}].")
             return null
         }
 
@@ -296,7 +306,7 @@ class GroupPolicyProviderImpl @Activate constructor(
         return try {
             groupPolicyParser.parse(
                 holdingIdentity,
-                groupPolicy,
+                metadata.groupPolicy,
                 ::persistedPropertyQuery
             )
         } catch (e: BadGroupPolicyException) {

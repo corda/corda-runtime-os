@@ -3,6 +3,7 @@ package net.corda.processors.flow.mapper.internal
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.flow.p2p.filter.FlowP2PFilterService
+import net.corda.interop.group.policy.read.InteropGroupPolicyReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
@@ -51,7 +52,9 @@ class FlowMapperProcessorImpl @Activate constructor(
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = LocallyHostedIdentitiesService::class)
-    private val locallyHostedIdentitiesService: LocallyHostedIdentitiesService
+    private val locallyHostedIdentitiesService: LocallyHostedIdentitiesService,
+    @Reference(service = InteropGroupPolicyReadService::class)
+    private val interopGroupPolicyReadService: InteropGroupPolicyReadService
 ) : FlowMapperProcessor {
 
     private companion object {
@@ -68,7 +71,8 @@ class FlowMapperProcessorImpl @Activate constructor(
         ::membershipGroupReaderProvider,
         ::membershipQueryClient,
         ::virtualNodeInfoReadService,
-        ::locallyHostedIdentitiesService
+        ::locallyHostedIdentitiesService,
+        ::interopGroupPolicyReadService
     )
 
     private val lifecycleCoordinator =
