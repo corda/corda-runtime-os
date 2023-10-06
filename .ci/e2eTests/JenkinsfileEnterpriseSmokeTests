@@ -1,8 +1,9 @@
-@Library('corda-shared-build-pipeline-steps@5.1') _
+@Library('corda-shared-build-pipeline-steps@ronanb/ES-1447/enterprise-smoke-tests') _
 
 endToEndPipeline(
     helmVersion: '^5.1.0-beta',
     helmRepoSuffix: 'release/ent/5.1',
+    helmRepo: 'corda-ent-docker'
     assembleAndCompile: true,
     multiCluster: false,
     gradleTestTargetsToExecute: ['smokeTest'],
