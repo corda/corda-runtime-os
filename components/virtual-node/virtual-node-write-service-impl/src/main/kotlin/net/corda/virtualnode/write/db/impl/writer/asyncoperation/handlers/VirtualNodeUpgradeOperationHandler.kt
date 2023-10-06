@@ -223,9 +223,7 @@ internal class VirtualNodeUpgradeOperationHandler(
                 is MembershipQueryResult.Success ->
                     try {
                         // Get the latest registration request
-                        val registrationRequestDetails = registrationRequest.payload.sortedByDescending {
-                            it.registrationLastModified
-                        }.first()
+                        val registrationRequestDetails = registrationRequest.payload.last()
 
                         val updatedSerial = registrationRequestDetails.serial + 1
                         val registrationContext = registrationRequestDetails
