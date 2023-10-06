@@ -24,6 +24,7 @@ object FacadeReaders {
         get() = JacksonFacadeReader {
             ObjectMapper().registerKotlinModule().readValue(it, FacadeDefinition::class.java)
         }
+
 }
 
 
