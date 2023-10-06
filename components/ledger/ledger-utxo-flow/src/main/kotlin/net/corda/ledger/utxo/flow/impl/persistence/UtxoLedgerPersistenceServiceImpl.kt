@@ -98,9 +98,8 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
                 )
             }
         }.firstOrNull()?.let {
-            serializationService.deserialize<Map<String, TransactionStatus>>(it.array()).mapKeys { entry ->
-                parseSecureHash(entry.key)
-            }
+            serializationService.deserialize<Map<SecureHash, String>>(it.array())
+                .mapValues { (_, status) -> status.toTransactionStatus() }
         } ?: emptyMap()
     }
 
