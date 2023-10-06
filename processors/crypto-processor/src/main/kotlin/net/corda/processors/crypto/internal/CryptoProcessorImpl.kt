@@ -332,7 +332,9 @@ class CryptoProcessorImpl @Activate constructor(
             subscriptionFactory.createHttpRPCSubscription(
                 rpcConfig = rpcConfig,
                 processor = flowOpsProcessor
-            )
+            ).also {
+                it.start()
+            }
         }
         logger.trace("Starting processing on $flowGroupName ${Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC}")
         coordinator.getManagedResource<SubscriptionBase>(FLOW_OPS_SUBSCRIPTION)!!.start()
@@ -350,9 +352,7 @@ class CryptoProcessorImpl @Activate constructor(
                 ),
                 responderProcessor = rpcOpsProcessor,
                 messagingConfig = messagingConfig
-            ).also {
-                it.start()
-            }
+            )
         }
         logger.trace("Starting processing on $rpcGroupName ${Schemas.Crypto.RPC_OPS_MESSAGE_TOPIC}")
         coordinator.getManagedResource<SubscriptionBase>(RPC_OPS_SUBSCRIPTION)!!.start()
