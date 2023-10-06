@@ -1,0 +1,12 @@
+@Library('corda-shared-build-pipeline-steps@5.1') _
+
+endToEndPipeline(
+    assembleAndCompile: true,
+    multiCluster: true,
+    gradleTestTargetsToExecute: ['smokeTest'],
+    usePackagedCordaHelmChart: true,
+    gradleAdditionalArgs : '-Dscan.tag.EnterpriseSmokeTest',
+    pipelineTimeoutMinutes: 75,
+    testTimeoutMinutes : 60,
+    javaVersion: '17'
+)
