@@ -18,7 +18,7 @@ interface UtxoRepository {
     fun findTransactionIdsAndStatuses(
         entityManager: EntityManager,
         transactionIds: List<String>
-    ): Map<SecureHash, TransactionStatus>
+    ): Map<SecureHash, String>
 
     /** Retrieves transaction by [id] */
     fun findTransaction(

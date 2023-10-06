@@ -70,7 +70,7 @@ class UtxoPersistenceServiceImpl(
 
     override fun findTransactionIdsAndStatuses(
         transactionIds: List<String>
-    ): Map<SecureHash, TransactionStatus> {
+    ): Map<SecureHash, String> {
         return entityManagerFactory.transaction { em ->
             repository.findTransactionIdsAndStatuses(em, transactionIds)
         }
