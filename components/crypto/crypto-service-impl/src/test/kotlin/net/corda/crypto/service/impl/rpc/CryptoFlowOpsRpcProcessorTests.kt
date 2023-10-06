@@ -551,13 +551,13 @@ import kotlin.test.assertTrue
 
     private fun mockSigningKeyInfo(key0: PublicKey) = mock<SigningKeyInfo> {
         on { id } doAnswer {
-            mock() {
+            mock {
                 on { value } doAnswer { "id1" }
             }
         }
         on { timestamp } doAnswer { Instant.now() }
         on { publicKey } doAnswer { key0 }
-        on { toCryptoSigningKey(any()) } doAnswer { mock<CryptoSigningKey>() {
+        on { toCryptoSigningKey(any()) } doAnswer { mock<CryptoSigningKey> {
             on { publicKey } doAnswer  { ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(key0)) }
         } }
     }
