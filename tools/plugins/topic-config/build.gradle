@@ -48,7 +48,7 @@ dependencies {
 
 cliPlugin {
     cliPluginClass = 'net.corda.cli.plugins.topicconfig.TopicPlugin'
-    cliPluginDescription = 'Plugin for creating and deleting topics and ACLs.'
+    cliPluginDescription = 'Plugin for creating, and updating topics and ACLs.'
 }
 
 tasks.named("installDist") {
