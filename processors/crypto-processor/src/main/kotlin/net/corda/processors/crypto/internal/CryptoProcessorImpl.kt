@@ -125,11 +125,9 @@ class CryptoProcessorImpl @Activate constructor(
         const val RPC_OPS_SUBSCRIPTION = "RPC_OPS_SUBSCRIPTION"
         const val HSM_REG_SUBSCRIPTION = "HSM_REG_SUBSCRIPTION"
 
-        internal const val GROUP_NAME = "verification.crypto.processor"
         const val SUBSCRIPTION_NAME = "Crypto"
         const val VERIFICATION_PATH = "/crypto"
     }
-
 
     init {
         jpaEntitiesRegistry.register(CordaDb.Crypto.persistenceUnitName, CryptoEntities.classes)
