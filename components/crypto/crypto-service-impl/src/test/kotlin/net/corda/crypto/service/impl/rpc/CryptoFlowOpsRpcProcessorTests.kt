@@ -258,37 +258,37 @@ import kotlin.test.assertTrue
          indices.map {
              whenever(
                  externalEventResponseFactory.success(
-                     eq(flowExternalEventContexts.get(it)),
+                     eq(flowExternalEventContexts[it]),
                      flowOpsResponseArgumentCaptor.capture()
                  )
              ).thenReturn(
                  Record(
                      Schemas.Flow.FLOW_EVENT_TOPIC,
-                     flowExternalEventContexts.get(it).flowId,
+                     flowExternalEventContexts[it].flowId,
                      FlowEvent()
                  )
              )
              whenever(
                  externalEventResponseFactory.platformError(
-                     eq(flowExternalEventContexts.get(it)),
+                     eq(flowExternalEventContexts[it]),
                      any<Throwable>()
                  )
              ).thenReturn(
                  Record(
                      Schemas.Flow.FLOW_EVENT_TOPIC,
-                     flowExternalEventContexts.get(it).flowId,
+                     flowExternalEventContexts[it].flowId,
                      FlowEvent()
                  )
              )
              whenever(
                  externalEventResponseFactory.transientError(
-                     eq(flowExternalEventContexts.get(it)),
+                     eq(flowExternalEventContexts[it]),
                      any<ExceptionEnvelope>()
                  )
              ).thenReturn(
                  Record(
                      Schemas.Flow.FLOW_EVENT_TOPIC,
-                     flowExternalEventContexts.get(it).flowId,
+                     flowExternalEventContexts[it].flowId,
                      FlowEvent()
                  )
              )
@@ -306,7 +306,7 @@ import kotlin.test.assertTrue
          }.whenever(cryptoService).sign(any(), any(), any(), any(), any())
 
          val transformer = buildTransformer()
-         val flowOps = indices.map { flowOpCallbacks.get(it)(transformer, flowExternalEventContexts.get(it)) }
+         val flowOps = indices.map { flowOpCallbacks[it](transformer, flowExternalEventContexts[it]) }
 
          val requests = indices.map {
              flowOps[it]
