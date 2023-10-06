@@ -245,7 +245,7 @@ import kotlin.test.assertTrue
          flowOpCallbacks: List<(CryptoFlowOpsTransformerImpl, ExternalEventContext) -> FlowOpsRequest?>,
 
          ): Results<R, S> {
-         val indices = 0..(flowOpCallbacks.size - 1)
+         val indices = flowOpCallbacks.indices
          val capturedTenantIds: MutableList<String> = mutableListOf()
          val lookedUpSigningKeys = mutableListOf<List<String>>() // the secure hashes passed into the signing service
          val recordKeys = flowOpCallbacks.map {
