@@ -25,6 +25,16 @@
       "out": {
         "amount": "decimal"
       }
+    },
+    "send-proof": {
+      "in": {
+        "signable-data": "string",
+        "signed-tx": "signed_tx",
+        "key" : "bytes"
+      },
+      "out": {
+        "amount": "decimal"
+      }
     }
   }
 }

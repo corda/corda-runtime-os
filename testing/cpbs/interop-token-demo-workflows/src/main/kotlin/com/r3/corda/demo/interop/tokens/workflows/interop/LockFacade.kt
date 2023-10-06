@@ -32,4 +32,13 @@ interface LockFacade {
         key: ByteBuffer
     ):BigDecimal
 
+    @FacadeVersions("v1.0")
+    @BindsFacadeMethod("send-proof")
+    @Suspendable
+    fun sendProof(
+        @BindsFacadeParameter("signable-data") signableData: String,
+        @BindsFacadeParameter("signed-tx") proof: DigitalSignatureAndMetadata,
+        key: ByteBuffer
+    ):BigDecimal
+
 }

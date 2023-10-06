@@ -1,5 +1,6 @@
 package com.r3.corda.demo.interop.tokens.workflows.interop
 
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatingFlow
@@ -18,6 +19,9 @@ class LockFlow: FacadeDispatcherFlow(), LockFacade{
     @CordaInject
     lateinit var transactionSignatureVerificationService: TransactionSignatureVerificationService
 
+    @CordaInject
+    lateinit var digestService: DigestService
+
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -32,9 +36,36 @@ class LockFlow: FacadeDispatcherFlow(), LockFacade{
         val x509publicKey = X509EncodedKeySpec(key.array())
         val kf: KeyFactory = KeyFactory.getInstance("EC")
         val publicKey = kf.generatePublic(x509publicKey)
-        log.info(proof.toString())
 
-        transactionSignatureVerificationService.verifySignature(proof.by, proof, publicKey)
+        try {
+            transactionSignatureVerificationService.verifySignature(proof.by, proof, publicKey)
+        } catch (e: Exception) {
+            log.error("Transaction id $${proof.by} doesn't match the proof $proof signed by" +
+                    " ${Base64.getEncoder().encodeToString(publicKey.encoded)}, reason: ${e.message}")
+            throw e
+        }
+        log.info("Transaction id $${proof.by} is matching the proof $proof signed by " +
+                Base64.getEncoder().encodeToString(publicKey.encoded)
+        )
+        return BigDecimal.ONE
+    }
+
+    @Suspendable
+    override fun sendProof(signableData: String, proof: DigitalSignatureAndMetadata, key: ByteBuffer): BigDecimal {
+        val secureHash = digestService.parseSecureHash(signableData)
+        val x509publicKey = X509EncodedKeySpec(key.array())
+        val kf: KeyFactory = KeyFactory.getInstance("EC")
+        val publicKey = kf.generatePublic(x509publicKey)
+        try {
+            transactionSignatureVerificationService.verifySignature(secureHash, proof, publicKey)
+        } catch (e: Exception) {
+            log.error("Transaction id $$secureHash doesn't match the proof $proof signed by" +
+                    " ${Base64.getEncoder().encodeToString(publicKey.encoded)}, reason: ${e.message}")
+            throw e
+        }
+        log.info("Transaction id $$secureHash is matching the proof $proof signed by " +
+                Base64.getEncoder().encodeToString(publicKey.encoded)
+        )
         return BigDecimal.ONE
     }
 }

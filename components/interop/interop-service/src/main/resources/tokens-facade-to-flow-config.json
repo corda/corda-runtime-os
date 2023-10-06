@@ -69,6 +69,10 @@
         {
           "facade-method": "createLock",
           "flow-name": "com.r3.corda.demo.interop.tokens.workflows.interop.LockFlow"
+        },
+        {
+          "facade-method": "send-proof",
+          "flow-name": "com.r3.corda.demo.interop.tokens.workflows.interop.LockFlow"
         }
       ]
     }
