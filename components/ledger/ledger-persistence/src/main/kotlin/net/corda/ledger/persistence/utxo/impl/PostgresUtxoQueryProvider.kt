@@ -33,15 +33,6 @@ class PostgresUtxoQueryProvider @Activate constructor(
             ON CONFLICT DO NOTHING"""
             .trimIndent()
 
-    override val persistTransactionCpk: String
-        get() = """
-            INSERT INTO {h-schema}utxo_transaction_cpk
-            SELECT :transactionId, file_checksum
-            FROM {h-schema}utxo_cpk
-            WHERE file_checksum in (:fileChecksums)
-            ON CONFLICT DO NOTHING"""
-            .trimIndent()
-
     override fun persistVisibleTransactionOutput(consumed: Boolean): String {
         return """INSERT INTO {h-schema}utxo_visible_transaction_output(
                 transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash, token_notary_x500_name,

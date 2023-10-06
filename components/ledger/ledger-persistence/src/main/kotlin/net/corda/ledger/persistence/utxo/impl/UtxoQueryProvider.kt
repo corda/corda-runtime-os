@@ -67,11 +67,6 @@ interface UtxoQueryProvider {
     val persistTransactionComponentLeaf: String
 
     /**
-     * @property persistTransactionCpk SQL text for [UtxoRepositoryImpl.persistTransactionCpk].
-     */
-    val persistTransactionCpk: String
-
-    /**
      * @param consumed Whether the persisted states have been consumed.
      * @property persistVisibleTransactionOutput SQL text for [UtxoRepositoryImpl.persistVisibleTransactionOutput].
      */

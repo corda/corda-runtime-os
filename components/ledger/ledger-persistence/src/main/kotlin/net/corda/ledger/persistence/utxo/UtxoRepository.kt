@@ -83,13 +83,6 @@ interface UtxoRepository {
         hash: String
     )
 
-    /** Persists transaction CPK (operation is idempotent) */
-    fun persistTransactionCpk(
-        entityManager: EntityManager,
-        transactionId: String,
-        fileChecksums: Collection<String>
-    )
-
     /** Persists transaction output (operation is idempotent) */
     @Suppress("LongParameterList")
     fun persistVisibleTransactionOutput(

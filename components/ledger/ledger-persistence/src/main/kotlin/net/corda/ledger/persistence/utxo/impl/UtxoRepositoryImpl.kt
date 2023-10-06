@@ -196,18 +196,6 @@ class UtxoRepositoryImpl @Activate constructor(
             .logResult("transaction component [$transactionId, $groupIndex, $leafIndex]")
     }
 
-    override fun persistTransactionCpk(
-        entityManager: EntityManager,
-        transactionId: String,
-        fileChecksums: Collection<String>
-    ) {
-        entityManager.createNativeQuery(queryProvider.persistTransactionCpk)
-            .setParameter("transactionId", transactionId)
-            .setParameter("fileChecksums", fileChecksums)
-            .executeUpdate()
-            .logResult("transaction CPK [$transactionId, $fileChecksums]")
-    }
-
     override fun persistVisibleTransactionOutput(
         entityManager: EntityManager,
         transactionId: String,

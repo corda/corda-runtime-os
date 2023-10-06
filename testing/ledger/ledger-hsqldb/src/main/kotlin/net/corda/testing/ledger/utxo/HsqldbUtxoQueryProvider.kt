@@ -41,18 +41,6 @@ class HsqldbUtxoQueryProvider @Activate constructor(
                 VALUES (x.transaction_id, x.group_idx, x.leaf_idx, x.data, x.hash)"""
             .trimIndent()
 
-    override val persistTransactionCpk: String
-        get() = """
-            MERGE INTO {h-schema}utxo_transaction_cpk AS utc
-            USING (SELECT :transactionId, file_checksum
-                   FROM {h-schema}utxo_cpk
-                   WHERE file_checksum IN (:fileChecksums)) AS x(transaction_id, file_checksum)
-            ON x.transaction_id = utc.transaction_id AND x.file_checksum = utc.file_checksum
-            WHEN NOT MATCHED THEN
-                INSERT (transaction_id, file_checksum)
-                VALUES (x.transaction_id, x.file_checksum)"""
-            .trimIndent()
-
     override fun persistVisibleTransactionOutput(consumed: Boolean): String {
         return """
             MERGE INTO {h-schema}utxo_visible_transaction_output AS uto
