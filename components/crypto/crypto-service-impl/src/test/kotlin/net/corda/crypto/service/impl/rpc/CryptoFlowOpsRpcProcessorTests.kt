@@ -339,7 +339,7 @@ import kotlin.test.assertTrue
              flowExternalEventContexts = flowExternalEventContexts
          )
      }
-
+     @Suppress("UNCHECKED_CAST")
      @Test
      fun `Should process filter my keys query`() {
          val myPublicKeys = listOf(
@@ -488,6 +488,7 @@ import kotlin.test.assertTrue
          assertTrue(r.transformedResponses.first().any { it.encoded.contentEquals(myPublicKeys[1].encoded) })
      }
 
+     @Suppress("UNCHECKED_CAST")
      @Test
      fun `Should process list with valid event and return error for failed event`() {
          val failingTenantId = UUID.randomUUID().toString()
