@@ -88,7 +88,7 @@ spec:
   ports:
       - protocol: TCP
         port: {{ include "corda.workerServicePort" . }}
-        targetPort: "worker"
+        targetPort: "monitor"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -373,7 +373,7 @@ spec:
           - name: http
             containerPort: {{ $optionalArgs.httpPort }}
         {{- end }}
-          - name: worker
+          - name: monitor
             containerPort: 7000
         {{- if .profiling.enabled }}
           - name: profiling
