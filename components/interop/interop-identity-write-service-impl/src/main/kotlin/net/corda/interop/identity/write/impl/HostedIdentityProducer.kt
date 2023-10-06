@@ -24,14 +24,16 @@ class HostedIdentityProducer(private val publisher: AtomicReference<Publisher?>)
     }
 
     fun clearHostedInteropIdentity(interopIdentityShortHash: ShortHash) {
-        if (publisher.get() == null) {
+        val pub = publisher.get()
+
+        if (pub == null) {
             logger.error("Interop hosted identity publisher is null, not clearing.")
             return
         }
 
         val record = createHostedIdentityRecord(interopIdentityShortHash, null)
 
-        val futures = publisher.get()!!.publish(listOf(record))
+        val futures = pub.publish(listOf(record))
 
         try {
             futures.single().get()
@@ -44,14 +46,16 @@ class HostedIdentityProducer(private val publisher: AtomicReference<Publisher?>)
     }
 
     fun publishHostedInteropIdentity(identity: InteropIdentity) {
-        if (publisher.get() == null) {
+        val pub = publisher.get()
+
+        if (pub == null) {
             logger.error("Interop hosted identity publisher is null, not publishing.")
             return
         }
 
         val record = createHostedIdentityRecord(identity.shortHash, identity)
 
-        val futures = publisher.get()!!.publish(listOf(record))
+        val futures = pub.publish(listOf(record))
 
         try {
             futures.single().get()
