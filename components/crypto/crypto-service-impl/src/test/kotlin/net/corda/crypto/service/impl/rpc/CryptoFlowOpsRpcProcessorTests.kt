@@ -309,7 +309,7 @@ import kotlin.test.assertTrue
          val flowOps = indices.map { flowOpCallbacks.get(it)(transformer, flowExternalEventContexts.get(it)) }
 
          val requests = indices.map {
-             flowOps.get(it)
+             flowOps[it]
          }
 
          // run the flows ops processor
