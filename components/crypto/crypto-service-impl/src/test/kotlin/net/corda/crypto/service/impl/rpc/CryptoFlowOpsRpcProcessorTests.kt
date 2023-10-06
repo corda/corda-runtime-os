@@ -212,7 +212,7 @@ import kotlin.test.assertTrue
       * @param lookedUpSigningKeys - string form of signing keys looked up in each invocation
       * @param successfulFlowOpsResponses - flow ops responses which were successful
       * @param transformedResponse - transformed DTO form of the first successful response
-      * @param capturedTenantIds - tenant IDs stored in flow resposnes
+      * @param capturedTenantIds - tenant IDs stored in flow responses
       * @param rawActResult - timing information and a list of raw records
       * @param recordKeys - the UUIds of each flow op request
       * @param rawFlowOpsResponses - uncast records for flow ops response capture
@@ -236,7 +236,7 @@ import kotlin.test.assertTrue
       * @param R - type parameter for the flow ops responses
       * @param S - type parameter for transformed flow ops responses
       * @param myPublicKeys - the set of public keys available from the underlying signing service
-      * @param flowOpCallbacks - a list of callback to create the flow signing opeeration required, given a transformer and an event context
+      * @param flowOpCallbacks - a list of callback to create the flow signing operation required, given a transformer and an event context
       *
       * @returns Results instance capturing data recorded during the flow operations
       */
