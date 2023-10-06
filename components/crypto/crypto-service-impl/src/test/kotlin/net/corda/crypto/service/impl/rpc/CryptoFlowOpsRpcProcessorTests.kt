@@ -324,7 +324,7 @@ import kotlin.test.assertTrue
 
          val transformedResponses = flowOpsResponseArgumentCaptor.allValues.map {
              val x = transformer.transform(it)
-             if (!(x is S)) throw IllegalArgumentException()
+             if (x !is S) throw IllegalArgumentException()
              x
          }
 
