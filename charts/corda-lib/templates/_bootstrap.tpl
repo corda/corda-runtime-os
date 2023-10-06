@@ -348,6 +348,7 @@ spec:
             {{- include "corda.cryptoDbUsernameEnv" . | nindent 12 }}
             {{- include "corda.cryptoDbPasswordEnv" . | nindent 12 }}
             {{- include "corda.clusterDbEnv" . | nindent 12 }}
+            {{- include "corda.bootstrapStateManagerDbEnv" . | nindent 12 }}
             {{- include "corda.stateManagerDbEnv" . | nindent 12 }}
       volumes:
         - name: temp
