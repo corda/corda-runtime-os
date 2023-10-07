@@ -17,8 +17,14 @@ import net.corda.messaging.utils.toRecord
  */
 internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
     private val taskManager: TaskManager,
-    private val stateManager: StateManagerHelper<K, S, E>,
+    private val stateManagerHelper: StateManagerHelper<K, S, E>,
 ) {
+
+    /** Same as [Callable] but with suspend function call. */
+    fun interface SuspendCallable<V> {
+        @Throws(Exception::class)
+        suspend fun call(): V
+    }
 
     /**
      * Creates [ProcessorTask]s for given events and states.
@@ -28,10 +34,10 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
      * @param messageProcessor State and event processor.
      * @return Created [ProcessorTask]s.
      */
-    fun createMsgProcessorTasks(
+    fun createMessageProcessorTasks(
         messageGroups: Map<K, List<CordaConsumerRecord<K, E>>>,
         persistedStates: Map<String, State>,
-        messageProcessor:StateAndEventProcessor<K, S, E>,
+        messageProcessor: StateAndEventProcessor<K, S, E>,
     ): List<ProcessorTask<K, S, E>> {
         return messageGroups.map { msgGroup ->
             val key = msgGroup.key.toString()
@@ -41,32 +47,37 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
                 persistedStates[key],
                 events,
                 messageProcessor,
-                stateManager,
+                stateManagerHelper,
             )
         }
     }
 
     /**
-     * Creates [ProcessorTask]s from [ClientTask.Result]s that have reply message set. Reply messages are
-     * grouped by message keys. The latest updated state from related [ProcessorTask] is used as the input state to
-     * state and event processor.
+     * Creates [ProcessorTask]s from [ClientTask.Result]s that have reply message set. Reply messages are grouped by
+     * message keys. The latest updated state from related [ProcessorTask], and reply from the messaging client are used
+     * as the inputs to state and event processor.
      *
      * @param clientResults List of results of [ClientTask]s.
      * @return Created [ProcessorTask]s.
      */
-    fun createMsgProcessorTasks(
+    fun createMessageProcessorTasks(
         clientResults: List<ClientTask.Result<K, S, E>>,
     ): List<ProcessorTask<K, S, E>> {
-        return clientResults.filter { it.hasReply() }
-            .groupBy { it.clientTask.processorTask.persistedState!!.key }
+        return clientResults.filter { it.hasReply }
+            .groupBy { it.key }
             .map { (_, clientTaskResults) ->
-                val messageGroup = clientTaskResults.map { it.toRecord() }
-                clientTaskResults.first().clientTask.processorTask.copy(events = messageGroup)
+                val groupedEvents = clientTaskResults.map { it.toRecord() }
+                with(clientTaskResults.first()) {
+                    processorTask.copy(
+                        persistedState = processorTaskResult.updatedState,
+                        events = groupedEvents
+                    )
+                }
             }
     }
 
     /**
-     * Creates [ProcessorTask]s from [ProcessorTask.Result]s of [ProcessorTask] that failed to update state via
+     * Creates [ProcessorTask]s from failed [ProcessorTask.Result]s of [ProcessorTask] that failed to update state via
      * [StateManager] due to conflicts.
      *
      * @param invalidResults [ProcessorTask.Result]s of [ProcessorTask] that failed to update state via
@@ -74,7 +85,7 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
      * @param persistedStates The latest states from [StateManager].
      * @return Created [ProcessorTask]s.
      */
-    fun createMsgProcessorTasks(
+    fun createMessageProcessorTasks(
         invalidResults: List<ProcessorTask.Result<K, S, E>>,
         persistedStates: Map<String, State?>,
     ): List<ProcessorTask<K, S, E>> {
@@ -107,7 +118,7 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
      * @param messageRouter Message router.
      * @return Created [ClientTask]s.
      */
-    fun createProducerTasks(
+    fun createClientTasks(
         processorTaskResults: List<ProcessorTask.Result<K, S, E>>,
         messageRouter: MessageRouter,
     ): List<ClientTask<K, S, E>> {
@@ -117,26 +128,21 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
                 ClientTask(
                     message,
                     messageRouter,
-                    result.processorTask
+                    result,
                 )
             }
         }.flatten()
     }
 
     /**
-     * Executes given [ClientTask]s using [TaskManager] and waits for all to finish.
+     * Executes given [ClientTask]s and waits for all to finish.
      *
      * @param clientTasks Tasks to execute.
      * @return Result of task executions.
      */
-    fun executeProducerTasks(
+    fun executeClientTasks(
         clientTasks: Collection<ClientTask<K, S, E>>
     ): List<ClientTask.Result<K, S, E>> {
-//        return producerTasks.map { producerTask ->
-//            taskManager.execute(TaskType.SHORT_RUNNING, producerTask::call)
-//        }.map {
-//            it.join()
-//        }
         return runBlocking {
             clientTasks.map { it.call() }
         }
@@ -148,7 +154,7 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
     private fun ClientTask.Result<K, S, E>.toRecord() =
         Record(
             "",
-            clientTask.processorTask.events.first().key,
+            processorTask.events.first().key,
             replyMessage!!.payload,
         )
 }

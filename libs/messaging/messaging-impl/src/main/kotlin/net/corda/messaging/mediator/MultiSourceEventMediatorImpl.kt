@@ -62,15 +62,12 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         taskManager.execute(TaskType.LONG_RUNNING, ::run)
     }
 
-    private fun stop() =
-        Thread.currentThread().interrupt()
+    private fun stop() = Thread.currentThread().interrupt()
 
     private val stopped get() = Thread.currentThread().isInterrupted
 
-    /**
-     * This method is for closing the loop/thread externally. From inside the loop use the private [stopConsumeLoop].
-     */
     override fun close() {
+        stop()
         lifecycleCoordinator.close()
     }
 
@@ -91,23 +88,24 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                     processEventsWithRetries()
                 }
 
-            } catch (ex: Exception) {
-                when (ex) {
+            } catch (exception: Exception) {
+                when (exception) {
                     is InterruptedException -> {
-                        // Stopped
+                        log.info("Multi-Source Event Mediator is stopped. Closing consumers and clients.")
                     }
 
                     is CordaMessageAPIIntermittentException -> {
                         log.warn(
-                            "${ex.message} Attempts: $attempts. Recreating consumers/clients and Retrying.", ex
+                            "${exception.message} Attempts: $attempts. Recreating consumers and clients and retrying.",
+                            exception
                         )
                     }
 
                     else -> {
                         log.error(
-                            "${ex.message} Attempts: $attempts. Closing subscription.", ex
+                            "${exception.message} Attempts: $attempts. Closing Multi-Source Event Mediator.", exception
                         )
-                        lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, "Error: ${ex.message}")
+                        lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, "Error: ${exception.message}")
                         stop()
                     }
                 }
@@ -115,12 +113,11 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                 closeConsumersAndProducers()
             }
         }
-        closeConsumersAndProducers()
     }
 
     private fun onSerializationError(event: ByteArray) {
-        log.info("Error serializing [$event]")
-        TODO()
+        log.debug { "Error serializing [$event] "}
+        TODO("Not yet implemented")
     }
 
     private fun closeConsumersAndProducers() {
@@ -135,17 +132,17 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
             try {
                 processEvents()
                 keepProcessing = false
-            } catch (ex: Exception) {
-                when (ex) {
+            } catch (exception: Exception) {
+                when (exception) {
                     is CordaMessageAPIIntermittentException -> {
                         attempts++
-                        handleProcessEventRetries(attempts, ex)
+                        handleProcessEventRetries(attempts, exception)
                     }
 
                     else -> {
                         throw CordaMessageAPIFatalException(
                             "Multi-source event mediator ${config.name} failed to process messages, " +
-                                    "Fatal error occurred.", ex
+                                    "Fatal error occurred.", exception
                         )
                     }
                 }
@@ -159,20 +156,20 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         if (messages.isNotEmpty()) {
             val msgGroups = messages.groupBy { it.key }
             val persistedStates = stateManager.get(msgGroups.keys.map { it.toString() })
-            var msgProcessorTasks = taskManagerHelper.createMsgProcessorTasks(
+            var msgProcessorTasks = taskManagerHelper.createMessageProcessorTasks(
                 msgGroups, persistedStates, config.messageProcessor
             )
             do {
                 val processingResults = taskManagerHelper.executeProcessorTasks(msgProcessorTasks)
                 val conflictingStates = stateManagerHelper.persistStates(processingResults)
-                val (validResults, invalidResults) = processingResults.partition {
+                val (successResults, failResults) = processingResults.partition {
                     !conflictingStates.contains(it.key)
                 }
-                val clientTasks = taskManagerHelper.createProducerTasks(validResults, messageRouter)
-                val clientResults = taskManagerHelper.executeProducerTasks(clientTasks)
+                val clientTasks = taskManagerHelper.createClientTasks(successResults, messageRouter)
+                val clientResults = taskManagerHelper.executeClientTasks(clientTasks)
                 msgProcessorTasks =
-                    taskManagerHelper.createMsgProcessorTasks(clientResults) +
-                            taskManagerHelper.createMsgProcessorTasks(invalidResults, conflictingStates)
+                    taskManagerHelper.createMessageProcessorTasks(clientResults) +
+                            taskManagerHelper.createMessageProcessorTasks(failResults, conflictingStates)
             } while (msgProcessorTasks.isNotEmpty())
             commitOffsets()
         }
@@ -206,7 +203,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
      */
     private fun handleProcessEventRetries(
         attempts: Int,
-        ex: Exception
+        exception: Exception,
     ) {
         if (attempts <= config.processorRetries) {
             log.warn(
@@ -217,22 +214,8 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         } else {
             val message = "Multi-source event mediator ${config.name} failed to process records, " +
                     "Attempts: $attempts. Max reties exceeded."
-            log.warn(message, ex)
-            throw CordaMessageAPIIntermittentException(message, ex)
+            log.warn(message, exception)
+            throw CordaMessageAPIIntermittentException(message, exception)
         }
     }
-
-
-//    private fun generateDeadLetterRecord(event: CordaConsumerRecord<K, E>, state: S?): Record<*, *> {
-//        val keyBytes = ByteBuffer.wrap(cordaAvroSerializer.serialize(event.key))
-//        val stateBytes =
-//            if (state != null) ByteBuffer.wrap(cordaAvroSerializer.serialize(state)) else null
-//        val eventValue = event.value
-//        val eventBytes =
-//            if (eventValue != null) ByteBuffer.wrap(cordaAvroSerializer.serialize(eventValue)) else null
-//        return Record(
-//            Schemas.getDLQTopic(eventTopic), event.key,
-//            StateAndEventDeadLetterRecord(clock.instant(), keyBytes, stateBytes, eventBytes)
-//        )
-//    }
 }
