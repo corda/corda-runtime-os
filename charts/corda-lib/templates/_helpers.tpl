@@ -614,3 +614,28 @@ data:
   {{ $keySecretKey }}: {{ $keySecretValue }}
   {{ $caSecretKey }}: {{ $caSecretValue }}
 {{- end }}
+
+{{/*
+The port which should be used to connect to Corda worker instances
+*/}}
+{{- define "corda.workerServicePort" -}}
+7000
+{{- end -}}
+
+{{/*
+Cluster IP service name
+*/}}
+{{- define "corda.workerInternalServiceName" -}}
+{{- printf "%s-internal-service" . -}}
+{{- end -}}
+
+{{/*
+Get the endpoint argument for a given worker
+*/}}
+{{- define "corda.getWorkerEndpoint" }}
+{{- $context := .context }}
+{{- $worker := .worker }}
+{{- $workerName := printf "%s-%s-worker" (include "corda.fullname" $context) (include "corda.workerTypeKebabCase" $worker) }}
+{{- $workerServiceName := include "corda.workerInternalServiceName" $workerName }}
+{{- printf "worker.http.endpoint.%s=%s:%s" $worker $workerServiceName (include "corda.workerServicePort" $) }}
+{{- end }}

@@ -63,12 +63,18 @@ class SchedulerProcessorImpl @Activate constructor(
         coordinatorFactory.createCoordinator<SchedulerProcessorImpl>(dependentComponents, ::eventHandler)
 
     // now just hardcoding schedulers here until CORE-16331 is picked up, when we should take this from config
-    private val schedules = listOf<Schedule>(
+    private val schedules = listOf(
         Schedule(ScheduledTask.SCHEDULED_TASK_NAME_DB_PROCESSOR,
-            120, ScheduledTask.SCHEDULED_TASK_TOPIC_DB_PROCESSOR),
+            120, ScheduledTask.SCHEDULED_TASK_TOPIC_DB_PROCESSOR
+        ),
         Schedule(
             ScheduledTask.SCHEDULED_TASK_NAME_SESSION_TIMEOUT,
-            60, ScheduledTask.SCHEDULED_TASK_TOPIC_FLOW_PROCESSOR),
+            60, ScheduledTask.SCHEDULED_TASK_TOPIC_FLOW_PROCESSOR
+        ),
+        Schedule(
+            ScheduledTask.SCHEDULED_TASK_NAME_MAPPER_CLEANUP,
+            60, ScheduledTask.SCHEDULED_TASK_TOPIC_MAPPER_PROCESSOR
+        )
     )
     private var schedulers: Schedulers? = null
 

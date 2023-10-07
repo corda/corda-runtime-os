@@ -228,11 +228,19 @@ internal class HostedIdentityEntryFactory(
         return tlsCertificates
     }
 
-    private sealed class CertificateType(val parameterName: String, val trustRoots: Collection<String>?) {
+    private sealed class CertificateType(
+        val parameterName: String,
+        val trustRoots: Collection<String>?,
+        val type: Type
+    ) {
         data class TlsCertificate(val p2PParameters: GroupPolicy.P2PParameters) :
-            CertificateType("tlsTrustRoots", p2PParameters.tlsTrustRoots)
+            CertificateType("tlsTrustRoots", p2PParameters.tlsTrustRoots, Type.TLS)
         data class SessionCertificate(val p2PParameters: GroupPolicy.P2PParameters) :
-            CertificateType("sessionTrustRoots", p2PParameters.sessionTrustRoots)
+            CertificateType("sessionTrustRoots", p2PParameters.sessionTrustRoots, Type.SESSION)
+        enum class Type(val label: String) {
+            TLS("TLS"),
+            SESSION("Session")
+        }
     }
 
     @Suppress("ThrowsCount")
@@ -273,9 +281,8 @@ internal class HostedIdentityEntryFactory(
                 } catch (e: SignatureException) {
                     false
                 }
-            }.firstOrNull()
-            ?: throw CordaRuntimeException(
-                "The ${CertificateType::class.java.simpleName} was not signed by the correct certificate authority"
-            )
+            }.firstOrNull() ?: throw CordaRuntimeException(
+            "The ${certificateType.type.label} certificate was not signed by the correct certificate authority"
+        )
     }
 }

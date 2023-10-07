@@ -1,6 +1,5 @@
 package net.corda.libs.statemanager.impl.tests
 
-import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
@@ -9,11 +8,12 @@ import net.corda.db.testkit.DbUtils
 import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.Operation
-import net.corda.libs.statemanager.api.SingleKeyFilter
+import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.metadata
 import net.corda.libs.statemanager.impl.StateManagerImpl
+import net.corda.libs.statemanager.impl.convertToMetadata
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.model.v1.StateManagerEntities
 import net.corda.libs.statemanager.impl.repository.impl.KEY_PARAMETER_NAME
@@ -76,9 +76,6 @@ class StateManagerIntegrationTest {
     private val stateManager: StateManager =
         StateManagerImpl(StateRepositoryImpl(queryProvider), entityManagerFactoryFactory)
 
-    private fun ObjectMapper.toMetadata(metadata: String) =
-        this.readValue(metadata, object : TypeReference<Metadata>() {})
-
     private fun cleanStates() = entityManagerFactoryFactory.createEntityManager().transaction {
         it.createNativeQuery("DELETE FROM state s WHERE s.key LIKE '%$testUniqueId%'").executeUpdate()
         it.flush()
@@ -129,7 +126,7 @@ class StateManagerIntegrationTest {
                 it.assertThat(loadedEntity.modifiedTime).isNotNull
                 it.assertThat(loadedEntity.version).isEqualTo(version(i, key))
                 it.assertThat(loadedEntity.value).isEqualTo((stateContent(i, key).toByteArray()))
-                it.assertThat(objectMapper.toMetadata(loadedEntity.metadata))
+                it.assertThat(objectMapper.convertToMetadata(loadedEntity.metadata))
                     .containsExactlyInAnyOrderEntriesOf(metadataContent(i, key))
             }
         }
@@ -486,22 +483,96 @@ class StateManagerIntegrationTest {
         )
 
         // Numeric
-        assertThat(stateManager.find(SingleKeyFilter("number", Operation.Equals, count))).hasSize(1)
-        assertThat(stateManager.find(SingleKeyFilter("number", Operation.NotEquals, count))).hasSize(count - 1)
-        assertThat(stateManager.find(SingleKeyFilter("number", Operation.GreaterThan, count))).isEmpty()
-        assertThat(stateManager.find(SingleKeyFilter("number", Operation.LesserThan, count))).hasSize(count - 1)
+        assertThat(stateManager.findByMetadata(MetadataFilter("number", Operation.Equals, count))).hasSize(1)
+        assertThat(stateManager.findByMetadata(MetadataFilter("number", Operation.NotEquals, count))).hasSize(count - 1)
+        assertThat(stateManager.findByMetadata(MetadataFilter("number", Operation.GreaterThan, count))).isEmpty()
+        assertThat(stateManager.findByMetadata(MetadataFilter("number", Operation.LesserThan, count))).hasSize(count - 1)
 
         // String
-        assertThat(stateManager.find(SingleKeyFilter("string", Operation.Equals, "random_$count"))).hasSize(1)
-        assertThat(stateManager.find(SingleKeyFilter("string", Operation.NotEquals, "random"))).hasSize(count)
-        assertThat(stateManager.find(SingleKeyFilter("string", Operation.GreaterThan, "random_1"))).hasSize(count - 1)
-        assertThat(stateManager.find(SingleKeyFilter("string", Operation.LesserThan, "random_1"))).isEmpty()
+        assertThat(stateManager.findByMetadata(MetadataFilter("string", Operation.Equals, "random_$count"))).hasSize(1)
+        assertThat(stateManager.findByMetadata(MetadataFilter("string", Operation.NotEquals, "random"))).hasSize(count)
+        assertThat(stateManager.findByMetadata(MetadataFilter("string", Operation.GreaterThan, "random_1"))).hasSize(count - 1)
+        assertThat(stateManager.findByMetadata(MetadataFilter("string", Operation.LesserThan, "random_1"))).isEmpty()
 
         // Booleans
-        assertThat(stateManager.find(SingleKeyFilter("boolean", Operation.Equals, true))).hasSize(count / 2)
-        assertThat(stateManager.find(SingleKeyFilter("boolean", Operation.NotEquals, true))).hasSize(count / 2)
-        assertThat(stateManager.find(SingleKeyFilter("boolean", Operation.GreaterThan, false))).hasSize(count / 2)
-        assertThat(stateManager.find(SingleKeyFilter("boolean", Operation.LesserThan, false))).isEmpty()
+        assertThat(stateManager.findByMetadata(MetadataFilter("boolean", Operation.Equals, true))).hasSize(count / 2)
+        assertThat(stateManager.findByMetadata(MetadataFilter("boolean", Operation.NotEquals, true))).hasSize(count / 2)
+        assertThat(stateManager.findByMetadata(MetadataFilter("boolean", Operation.GreaterThan, false))).hasSize(count / 2)
+        assertThat(stateManager.findByMetadata(MetadataFilter("boolean", Operation.LesserThan, false))).isEmpty()
+    }
+
+    @Test
+    @DisplayName(value = "can filter states using multiple conjunctive comparisons on metadata values")
+    fun canFilterStatesUsingMultipleConjunctiveComparisonsOnMetadataValues() {
+        val count = 20
+        persistStateEntities(
+            (1..count),
+            { _, _ -> State.VERSION_INITIAL_VALUE },
+            { i, _ -> "state_$i" },
+            { i, _ -> """{ "number": $i, "boolean": ${i % 2 == 0}, "string": "random_$i" }""" }
+        )
+
+        assertThat(stateManager.findByMetadataMatchingAll(listOf(
+            MetadataFilter("number", Operation.GreaterThan, 5),
+            MetadataFilter("number", Operation.LesserThan, 7),
+            MetadataFilter("boolean", Operation.Equals, true),
+            MetadataFilter("string", Operation.Equals, "random_6"),
+        ))).hasSize(1)
+
+        assertThat(stateManager.findByMetadataMatchingAll(listOf(
+            MetadataFilter("number", Operation.GreaterThan, 5),
+            MetadataFilter("number", Operation.LesserThan, 7),
+            MetadataFilter("boolean", Operation.Equals, true),
+            MetadataFilter("string", Operation.Equals, "non_existing_value"),
+        ))).isEmpty()
+
+        assertThat(stateManager.findByMetadataMatchingAll(listOf(
+            MetadataFilter("number", Operation.GreaterThan, 0),
+            MetadataFilter("boolean", Operation.Equals, true),
+        ))).hasSize(count / 2)
+
+        assertThat(stateManager.findByMetadataMatchingAll(listOf(
+            MetadataFilter("number", Operation.NotEquals, 0),
+            MetadataFilter("string", Operation.Equals, "non_existing_key"),
+        ))).isEmpty()
+    }
+
+    @Test
+    @DisplayName(value = "can filter states using multiple disjunctive comparisons on metadata values")
+    fun canFilterStatesUsingMultipleDisjunctiveComparisonsOnMetadataValues() {
+        val count = 20
+        persistStateEntities(
+            (1..count),
+            { _, _ -> State.VERSION_INITIAL_VALUE },
+            { i, _ -> "state_$i" },
+            { i, _ -> """{ "number": $i, "boolean": ${i % 2 == 0}, "string": "random_$i" }""" }
+        )
+
+        assertThat(stateManager.findByMetadataMatchingAny(listOf(
+            MetadataFilter("number", Operation.Equals, 5),
+            MetadataFilter("number", Operation.Equals, 7),
+            MetadataFilter("string", Operation.Equals, "random_6"),
+        ))).hasSize(3)
+
+        assertThat(stateManager.findByMetadataMatchingAny(listOf(
+            MetadataFilter("number", Operation.GreaterThan, 5),
+            MetadataFilter("number", Operation.LesserThan, 7),
+        ))).hasSize(count)
+
+        assertThat(stateManager.findByMetadataMatchingAny(listOf(
+            MetadataFilter("boolean", Operation.Equals, false),
+            MetadataFilter("boolean", Operation.Equals, true),
+        ))).hasSize(count)
+
+        assertThat(stateManager.findByMetadataMatchingAny(listOf(
+            MetadataFilter("number", Operation.GreaterThan, 20),
+            MetadataFilter("boolean", Operation.Equals, true),
+        ))).hasSize(count / 2)
+
+        assertThat(stateManager.findByMetadataMatchingAny(listOf(
+            MetadataFilter("number", Operation.Equals, 0),
+            MetadataFilter("string", Operation.Equals, "non_existing_key"),
+        ))).isEmpty()
     }
 
     @Test
@@ -524,31 +595,31 @@ class StateManagerIntegrationTest {
         assertThat(
             stateManager.findUpdatedBetweenWithMetadataFilter(
                 IntervalFilter(halfTime, finishTime),
-                SingleKeyFilter("number", Operation.Equals, 1)
+                MetadataFilter("number", Operation.Equals, 1)
             )
         ).hasSize(0)
         assertThat(
             stateManager.findUpdatedBetweenWithMetadataFilter(
                 IntervalFilter(halfTime, finishTime),
-                SingleKeyFilter("number", Operation.NotEquals, 1)
+                MetadataFilter("number", Operation.NotEquals, 1)
             )
         ).hasSize(half)
         assertThat(
             stateManager.findUpdatedBetweenWithMetadataFilter(
                 IntervalFilter(halfTime, finishTime),
-                SingleKeyFilter("number", Operation.GreaterThan, half)
+                MetadataFilter("number", Operation.GreaterThan, half)
             )
         ).hasSize(half)
         assertThat(
             stateManager.findUpdatedBetweenWithMetadataFilter(
                 IntervalFilter(halfTime, finishTime),
-                SingleKeyFilter("number", Operation.LesserThan, count)
+                MetadataFilter("number", Operation.LesserThan, count)
             )
         ).hasSize(half - 1)
         assertThat(
             stateManager.findUpdatedBetweenWithMetadataFilter(
                 IntervalFilter(finishTime, finishTime.plusSeconds(30)),
-                SingleKeyFilter("number", Operation.LesserThan, count)
+                MetadataFilter("number", Operation.LesserThan, count)
             )
         ).isEmpty()
     }

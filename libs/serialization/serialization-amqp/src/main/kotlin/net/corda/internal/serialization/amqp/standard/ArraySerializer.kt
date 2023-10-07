@@ -116,7 +116,7 @@ open class ArraySerializer(override val type: Type, factory: LocalSerializerFact
         val elementType = type.asClass()
         val list = this
         return java.lang.reflect.Array.newInstance(elementType, this.size).apply {
-            (0..lastIndex).forEach { java.lang.reflect.Array.set(this, it, list[it]) }
+            for (i in 0..lastIndex) { java.lang.reflect.Array.set(this, i, list[i]) }
         }
     }
 }
@@ -129,7 +129,7 @@ class CharArraySerializer(factory: LocalSerializerFactory) : ArraySerializer(Arr
         val elementType = type.asClass()
         val list = this
         return java.lang.reflect.Array.newInstance(elementType, this.size).apply {
-            (0..lastIndex).forEach { java.lang.reflect.Array.set(this, it, list[it]) }
+            for (i in 0..lastIndex) { java.lang.reflect.Array.set(this, i, list[i]) }
         }
     }
 }
@@ -184,7 +184,7 @@ class PrimCharArraySerializer(factory: LocalSerializerFactory) : PrimArraySerial
         val list = this
         return java.lang.reflect.Array.newInstance(elementType, this.size).apply {
             val array = this
-            (0..lastIndex).forEach { java.lang.reflect.Array.set(array, it, (list[it] as Int).toChar()) }
+            for (i in 0..lastIndex) { java.lang.reflect.Array.set(array, i, (list[i] as Int).toChar()) }
         }
     }
 }

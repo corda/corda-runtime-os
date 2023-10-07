@@ -1,28 +1,27 @@
 package net.corda.cli.plugins.network
 
 import net.corda.cli.plugins.common.RestClientUtils.createRestClient
-import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
-import net.corda.cli.plugins.packaging.CreateCpiV2
-import net.corda.v5.base.util.EncodingUtils.toBase64
-import picocli.CommandLine.Command
-import picocli.CommandLine.Option
-import java.io.File
-import java.security.MessageDigest
 import net.corda.cli.plugins.network.enums.MemberRole
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
+import net.corda.cli.plugins.network.utils.inferCpiName
+import net.corda.cli.plugins.packaging.CreateCpiV2
+import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
+import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_SIGNATURE_SPEC
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEYS_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
-import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEYS_ID
-import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
-import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
-import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
-import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_SIGNATURE_SPEC
-import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_ID
-import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_SIGNATURE_SPEC
+import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
+import picocli.CommandLine.Command
+import picocli.CommandLine.Option
+import java.io.File
 
 @Command(
     name = "onboard-member",
@@ -31,19 +30,23 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_SIGNATU
     ],
     mixinStandardHelpOptions = true
 )
-class OnBoardMember : Runnable, BaseOnboard() {
+class OnboardMember : Runnable, BaseOnboard() {
+    private companion object {
+        const val CPI_VERSION = "1.0"
+    }
+
     @Option(
-        names = ["--cpb-file"],
+        names = ["--cpb-file", "-b"],
         description = [
-            "Location of a CPB file (Use either cpb-file or cpi-hash).",
-            "The CPI will be signed with default options."
+            "Location of a CPB file. The plugin will generate a CPI signed with default options when a CPB is " +
+                    "provided. Use either --cpb-file or --cpi-hash.",
         ]
     )
     var cpbFile: File? = null
 
     @Option(
         names = ["--role", "-r"],
-        description = ["Member role, if any. It is not mandatory to provide a role. Multiple roles can be specified"],
+        description = ["Member role, if any. Multiple roles may be specified"],
     )
     var roles: Set<MemberRole> = emptySet()
 
@@ -55,7 +58,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
     var customProperties: Map<String, String> = emptyMap()
 
     @Option(
-        names = ["--group-policy-file"],
+        names = ["--group-policy-file", "-gp"],
         description = [
             "Location of a group policy file (default to ~/.corda/gp/groupPolicy.json).",
             "Relevant only if cpb-file is used"
@@ -65,19 +68,19 @@ class OnBoardMember : Runnable, BaseOnboard() {
         File(File(File(File(System.getProperty("user.home")), ".corda"), "gp"), "groupPolicy.json")
 
     @Option(
-        names = ["--cpi-hash"],
-        description = ["The CPI hash (Use either cpb-file or cpi-hash)."]
+        names = ["--cpi-hash", "-h"],
+        description = ["The CPI hash of a previously uploaded CPI (use either --cpb-file or --cpi-hash)."]
     )
     var cpiHash: String? = null
 
     @Option(
-        names = ["--pre-auth-token"],
+        names = ["--pre-auth-token", "-a"],
         description = ["Pre-auth token to use for registration."]
     )
     var preAuthToken: String? = null
 
     @Option(
-        names = ["--wait"],
+        names = ["--wait", "-w"],
         description = ["Wait until member gets approved/declined. False, by default."]
     )
     var waitForFinalStatus: Boolean = false
@@ -107,72 +110,23 @@ class OnBoardMember : Runnable, BaseOnboard() {
         )
     }
 
-    private fun checkIfCpiWasUploaded(cpiFileChecksum: String): Boolean {
-        val currentCpis = createRestClient(CpiUploadRestResource::class)
-            .use { client ->
-                client.start().proxy.getAllCpis().cpis
-            }
-
-        return currentCpis.any { it.cpiFileChecksum == cpiFileChecksum }
-    }
-
-    private fun uploadCpi(cpiFile: File): String {
-        val hash = listOf(cpiFile).hash()
-        val cpiHashesFile = File(cpisRoot, "$hash.shortHash")
-
-        if (cpiHashesFile.canRead()) {
-            val cpiFileChecksum = cpiHashesFile.readText()
-            if (checkIfCpiWasUploaded(cpiFileChecksum)) {
-                println("CPI was uploaded and its hash checksum is $cpiFileChecksum")
-                return cpiFileChecksum
-            }
-        }
-
-        return uploadCpi(cpiFile.inputStream(), cpiFile.name).also {
-            cpiHashesFile.writeText(it)
-            println("CPI hash checksum is $it")
-        }
-    }
-
     private fun uploadCpb(cpbFile: File): String {
-        val hash = listOf(cpbFile, groupPolicyFile).hash()
-        val cpiRoot = File(cpisRoot, hash)
-        val cpiFile = File(cpiRoot, "${cpbFile.name}.cpi")
-        val cpiHashesFile = File(cpiRoot, "$hash.shortHash")
-        if (cpiHashesFile.canRead()) {
-            val cpiFileChecksum = cpiHashesFile.readText()
-            val currentCpis = createRestClient(CpiUploadRestResource::class).use { client ->
-                client.start().proxy.getAllCpis().cpis
-            }
-            if (currentCpis.any { it.cpiFileChecksum == cpiFileChecksum }) {
-                println("CPI was already uploaded in $cpiFile. CPI hash checksum is $cpiFileChecksum")
-                return cpiFileChecksum
-            } else {
-                println("CPI $cpiFileChecksum no longer exists. Will create the CPI file again")
-                cpiHashesFile.delete()
-            }
+        val cpiName = inferCpiName(cpbFile, groupPolicyFile)
+        val cpiFile = File(cpisRoot, "$cpiName.cpi")
+        println("Creating and uploading CPI using CPB '${cpbFile.name}'")
+        val cpisFromCluster = createRestClient(CpiUploadRestResource::class).use { client ->
+            client.start().proxy.getAllCpis().cpis
         }
-        if (!cpiFile.canRead()) {
+        cpisFromCluster.firstOrNull { it.id.cpiName == cpiName && it.id.cpiVersion == CPI_VERSION }?.let {
+            println("CPI already exists, using CPI ${it.id}")
+            return it.cpiFileChecksum
+        }
+        if (!cpiFile.exists()) {
             createCpi(cpbFile, cpiFile)
             println("CPI file saved as ${cpiFile.absolutePath}")
         }
         uploadSigningCertificates()
-        return uploadCpi(cpiFile).also {
-            cpiHashesFile.writeText(it)
-        }
-    }
-
-    private fun Collection<File>.hash(): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-        this.forEach { file ->
-            digest.update(file.readBytes())
-        }
-        return digest
-            .digest()
-            .let(::toBase64)
-            .replace('/', '.')
-            .replace('+', '-')
-            .replace('=', '_')
+        return uploadCpi(cpiFile.inputStream(), cpiFile.name)
     }
 
     private fun createCpi(cpbFile: File, cpiFile: File) {
@@ -184,8 +138,8 @@ class OnBoardMember : Runnable, BaseOnboard() {
         val creator = CreateCpiV2()
         creator.cpbFileName = cpbFile.absolutePath
         creator.groupPolicyFileName = groupPolicyFile.absolutePath
-        creator.cpiName = cpbFile.name
-        creator.cpiVersion = "1.0"
+        creator.cpiName = cpiFile.nameWithoutExtension
+        creator.cpiVersion = CPI_VERSION
         creator.cpiUpgrade = false
         creator.outputFileName = cpiFile.absolutePath
         creator.signingOptions = createDefaultSingingOptions()
@@ -236,17 +190,21 @@ class OnBoardMember : Runnable, BaseOnboard() {
             PARTY_SESSION_KEYS_ID.format(0) to sessionKeyId,
             SESSION_KEYS_SIGNATURE_SPEC.format(0) to "SHA256withECDSA"
         )
-        val ledgerKeys = mapOf(
-            LEDGER_KEYS_ID.format(0) to ledgerKeyId,
-            LEDGER_KEY_SIGNATURE_SPEC.format(0) to "SHA256withECDSA"
-        )
+        val ledgerKeys = if (roles.contains(MemberRole.NOTARY)) {
+            emptyMap()
+        } else {
+            mapOf(
+                LEDGER_KEYS_ID.format(0) to ledgerKeyId,
+                LEDGER_KEY_SIGNATURE_SPEC.format(0) to "SHA256withECDSA"
+            )
+        }
 
         sessionKeys + ledgerKeys + endpoints + preAuth + roleProperty + notaryProperties + extProperties
     }
 
     override fun run() {
         verifyAndPrintError {
-            println("On-boarding member $name")
+            println("Onboarding member '$name'.")
 
             configureGateway()
 
@@ -254,9 +212,9 @@ class OnBoardMember : Runnable, BaseOnboard() {
 
             if (mtls) {
                 println(
-                    "Using $certificateSubject as client certificate. " +
-                            "The onboarding will fail until the the subject is added to the MGM's allow list. " +
-                            "You can do that using the allowClientCertificate command."
+                    "Using '$certificateSubject' as client certificate. " +
+                            "Onboarding will fail until the the subject is added to the MGM's allowed list. " +
+                            "See command: 'allowClientCertificate'."
                 )
             }
 
@@ -268,11 +226,11 @@ class OnBoardMember : Runnable, BaseOnboard() {
             register(waitForFinalStatus)
 
             if (waitForFinalStatus) {
-                println("Member $name was onboarded.")
+                println("Member '$name' was onboarded.")
             } else {
                 println(
-                    "Registration request has been submitted. Wait for MGM approval to finalize registration. " +
-                            "MGM may need to approve your request manually."
+                    "Registration request has been submitted. Wait for MGM approval for registration to be finalised." +
+                            " MGM may need to approve your request manually."
                 )
             }
         }

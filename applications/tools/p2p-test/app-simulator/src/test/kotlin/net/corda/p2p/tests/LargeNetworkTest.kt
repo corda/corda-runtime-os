@@ -226,10 +226,10 @@ class LargeNetworkTest {
     }
 
     private fun deployMembers() {
-        (1..memberCount).forEach { index ->
+        for (i in 1..memberCount) {
             clusters.forEach { cluster ->
-                logDuration("onboarding member $index into ${cluster.id} out of $memberCount") {
-                    val memberX500Name = MemberX500Name("Member-$index-${cluster.id}", testName, "London", "GB")
+                logDuration("onboarding member $i into ${cluster.id} out of $memberCount") {
+                    val memberX500Name = MemberX500Name("Member-$i-${cluster.id}", testName, "London", "GB")
                     val holdingId = cluster.onboardMember(
                         null,
                         testName,
@@ -244,7 +244,7 @@ class LargeNetworkTest {
                     )
                 }
             }
-            if (index % 5 == 0) {
+            if (i % 5 == 0) {
                 eventually(
                     waitBefore = Duration.ofMinutes(0),
                     duration = Duration.ofMinutes(10),

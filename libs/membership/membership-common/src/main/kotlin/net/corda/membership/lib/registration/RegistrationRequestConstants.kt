@@ -31,3 +31,4 @@ const val DECLINED_REASON_NO_ENDPOINTS_SPECIFIED = "Registering member has not s
 const val DECLINED_REASON_NOTARY_MISSING_NOTARY_DETAILS = "Registering member has role set to 'notary', but has missing notary key details."
 const val DECLINED_REASON_INVALID_NOTARY_SERVICE_PLUGIN_TYPE = "Registering member has specified an invalid notary service plugin type."
 const val DECLINED_REASON_COMMS_ISSUE = "MGM could not establish communication back to registering member."
+const val DECLINED_REASON_NOTARY_LEDGER_KEY = "A notary virtual node cannot be registered with a ledger key."

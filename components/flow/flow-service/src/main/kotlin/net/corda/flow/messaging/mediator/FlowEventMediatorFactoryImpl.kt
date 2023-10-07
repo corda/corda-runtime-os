@@ -105,7 +105,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
     }
 
     /**
-     * Deserialized message payload if it is a [ByteArray] (seems to be the case for external events).
+     * Deserializes message payload if it is a [ByteArray] (seems to be the case for external events).
      */
     private fun MediatorMessage<Any>.event(): Any? {
         val event = payload
