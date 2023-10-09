@@ -77,9 +77,9 @@ class UtxoRepositoryImpl @Activate constructor(
     ): Map<SecureHash, String> {
         return entityManager.createNativeQuery(
             """
-                SELECT transaction_id, status 
-                FROM {h-schema}utxo_transaction_status 
-                WHERE transaction_id IN (:transactionIds)""",
+                SELECT id, status 
+                FROM {h-schema}utxo_transaction 
+                WHERE id IN (:transactionIds)""",
             Tuple::class.java
         )
             .setParameter("transactionIds", transactionIds)
