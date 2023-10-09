@@ -190,10 +190,14 @@ class OnboardMember : Runnable, BaseOnboard() {
             PARTY_SESSION_KEYS_ID.format(0) to sessionKeyId,
             SESSION_KEYS_SIGNATURE_SPEC.format(0) to "SHA256withECDSA"
         )
-        val ledgerKeys = mapOf(
-            LEDGER_KEYS_ID.format(0) to ledgerKeyId,
-            LEDGER_KEY_SIGNATURE_SPEC.format(0) to "SHA256withECDSA"
-        )
+        val ledgerKeys = if (roles.contains(MemberRole.NOTARY)) {
+            emptyMap()
+        } else {
+            mapOf(
+                LEDGER_KEYS_ID.format(0) to ledgerKeyId,
+                LEDGER_KEY_SIGNATURE_SPEC.format(0) to "SHA256withECDSA"
+            )
+        }
 
         sessionKeys + ledgerKeys + endpoints + preAuth + roleProperty + notaryProperties + extProperties
     }

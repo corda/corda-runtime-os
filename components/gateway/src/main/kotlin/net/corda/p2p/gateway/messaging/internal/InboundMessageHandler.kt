@@ -32,6 +32,7 @@ import net.corda.p2p.gateway.messaging.session.SessionPartitionMapperImpl
 import net.corda.schema.Schemas.P2P.LINK_IN_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize
+import org.apache.avro.SystemLimitException
 import org.slf4j.LoggerFactory
 import java.net.InetSocketAddress
 import java.net.SocketAddress
@@ -55,8 +56,15 @@ internal class InboundMessageHandler(
 
     init {
         // Setting max limits for variable-length fields to prevent malicious clients from trying to trigger large memory allocations.
-        System.setProperty("org.apache.avro.limits.bytes.maxLength", AVRO_LIMIT.toString())
-        System.setProperty("org.apache.avro.limits.string.maxLength", AVRO_LIMIT.toString())
+        System.setProperty(SystemLimitException.MAX_BYTES_LENGTH_PROPERTY, AVRO_LIMIT.toString())
+        System.setProperty(SystemLimitException.MAX_STRING_LENGTH_PROPERTY, AVRO_LIMIT.toString())
+        
+        // Need to call package private method for changes to have effect
+        // The fact that [SystemLimitException] is using static initializer is not nice, especially given that is class 
+        // loaded when [AvroSchemaRegistry] is created.
+        val declaredMethod = SystemLimitException::class.java.getDeclaredMethod("resetLimits")
+        declaredMethod.setAccessible(true)
+        declaredMethod.invoke(null)
     }
 
     companion object {

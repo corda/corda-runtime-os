@@ -49,6 +49,7 @@ const val DEFAULT_SIGNATURE_SPEC = "SHA256withECDSA"
  * @param getAdditionalContext Optional function which can be passed in to add additional properties on top of the
  *  default to the registration context during registration. The function accepts the members holding ID which might be
  *  required if making API calls.
+ * @param useLedgerKey whether the member should be onboarded with a ledger key or not.
  */
 @Suppress("LongParameterList")
 fun ClusterInfo.onboardMember(
@@ -59,7 +60,8 @@ fun ClusterInfo.onboardMember(
     waitForApproval: Boolean = true,
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null,
     tlsCertificateUploadedCallback: (String) -> Unit = {},
-    useSessionCertificate: Boolean = false
+    useSessionCertificate: Boolean = false,
+    useLedgerKey: Boolean = true,
 ): NetworkOnboardingMetadata {
     conditionallyUploadCpiSigningCertificate()
     conditionallyUploadCordaPackage(cpiName, cpb, groupPolicy)
@@ -80,7 +82,11 @@ fun ClusterInfo.onboardMember(
     }
 
     addSoftHsmFor(holdingId, CAT_LEDGER)
-    val ledgerKeyId = createKeyFor(holdingId, "$holdingId$CAT_LEDGER", CAT_LEDGER, DEFAULT_KEY_SCHEME)
+    val ledgerKeyId = if (useLedgerKey) {
+        createKeyFor(holdingId, "$holdingId$CAT_LEDGER", CAT_LEDGER, DEFAULT_KEY_SCHEME)
+    } else {
+        null
+    }
 
     if (!keyExists(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS)) {
         disableCertificateRevocationChecks()
@@ -165,7 +171,8 @@ fun ClusterInfo.onboardNotaryMember(
             "corda.notary.keys.0.signature.spec" to DEFAULT_SIGNATURE_SPEC
         ) + (getAdditionalContext?.let { it(holdingId) } ?: emptyMap())
     },
-    tlsCertificateUploadedCallback = tlsCertificateUploadedCallback
+    tlsCertificateUploadedCallback = tlsCertificateUploadedCallback,
+    useLedgerKey = false
 )
 
 /**
@@ -317,15 +324,28 @@ fun ClusterInfo.registerStaticMember(
  */
 fun ClusterInfo.createRegistrationContext(
     sessionKeyId: String,
-    ledgerKeyId: String
-) = mapOf(
-    "corda.session.keys.0.id" to sessionKeyId,
-    "corda.session.keys.0.signature.spec" to DEFAULT_SIGNATURE_SPEC,
-    "corda.ledger.keys.0.id" to ledgerKeyId,
-    "corda.ledger.keys.0.signature.spec" to DEFAULT_SIGNATURE_SPEC,
-    "corda.endpoints.0.connectionURL" to p2p.uri.toString(),
-    "corda.endpoints.0.protocolVersion" to p2p.protocol
-)
+    ledgerKeyId: String?
+): Map<String, String> {
+    val baseMap = mapOf(
+        "corda.session.keys.0.id" to sessionKeyId,
+        "corda.session.keys.0.signature.spec" to DEFAULT_SIGNATURE_SPEC,
+        "corda.endpoints.0.connectionURL" to p2p.uri.toString(),
+        "corda.endpoints.0.protocolVersion" to p2p.protocol
+    )
+
+    val ledgerKeysMap = if (ledgerKeyId == null) {
+        emptyMap()
+    } else {
+        mapOf(
+            "corda.ledger.keys.0.id" to ledgerKeyId,
+            "corda.ledger.keys.0.signature.spec" to DEFAULT_SIGNATURE_SPEC
+        )
+    }
+
+    return baseMap + ledgerKeysMap
+}
+
+
 
 /**
  * Look up the current member list as viewed on a specific cluster by a specific holding ID.
