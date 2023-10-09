@@ -11,6 +11,7 @@ import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
+import net.corda.flow.pipeline.handlers.FlowPostProcessingHandler
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
@@ -23,13 +24,14 @@ import net.corda.utilities.trace
 import net.corda.utilities.withMDC
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
-
+@Suppress("LongParameterList")
 class FlowEventProcessorImpl(
     private val flowEventPipelineFactory: FlowEventPipelineFactory,
     private val flowEventExceptionProcessor: FlowEventExceptionProcessor,
     private val flowEventContextConverter: FlowEventContextConverter,
     private val configs: Map<String, SmartConfig>,
-    private val flowMDCService: FlowMDCService
+    private val flowMDCService: FlowMDCService,
+    private val postProcessingHandlers: List<FlowPostProcessingHandler>
 ) : StateAndEventProcessor<String, Checkpoint, FlowEvent> {
 
     private companion object {
@@ -77,25 +79,27 @@ class FlowEventProcessorImpl(
 
         val pipeline = try {
             log.trace { "Flow [${event.key}] Received event: ${flowEvent.payload::class.java} / ${flowEvent.payload}" }
-            flowEventPipelineFactory.create(state, flowEvent, configs, mdcProperties,traceContext, event.timestamp)
+            flowEventPipelineFactory.create(state, flowEvent, configs, mdcProperties, traceContext, event.timestamp)
         } catch (t: Throwable) {
             traceContext.error(CordaRuntimeException(t.message, t))
             // Without a pipeline there's a limit to what can be processed.
-            return flowEventExceptionProcessor.process(t)
+            return StateAndEventProcessor.Response(
+                updatedState = null,
+                responseEvents = listOf(),
+                markForDLQ = true
+            )
         }
 
         // flow result timeout must be lower than the processor timeout as the processor thread will be killed by the subscription consumer
         // thread after this period and so this timeout would never be reached and given a chance to return otherwise.
         val flowTimeout = (flowConfig.getLong(PROCESSOR_TIMEOUT) * 0.75).toLong()
-        return try {
-            flowEventContextConverter.convert(
-                pipeline
-                    .eventPreProcessing()
-                    .virtualNodeFlowOperationalChecks()
-                    .executeFlow(flowTimeout)
-                    .globalPostProcessing()
-                    .context
-            )
+        val result = try {
+            pipeline
+                .eventPreProcessing()
+                .virtualNodeFlowOperationalChecks()
+                .executeFlow(flowTimeout)
+                .globalPostProcessing()
+                .context
         } catch (e: FlowTransientException) {
             flowEventExceptionProcessor.process(e, pipeline.context)
         } catch (e: FlowEventException) {
@@ -107,7 +111,24 @@ class FlowEventProcessorImpl(
         } catch (e: FlowMarkedForKillException) {
             flowEventExceptionProcessor.process(e, pipeline.context)
         } catch (t: Throwable) {
-            flowEventExceptionProcessor.process(t)
+            flowEventExceptionProcessor.process(t, pipeline.context)
         }
+
+        val cleanupEvents = mutableListOf<Record<*, *>>()
+
+        for (postProcessingHandler in postProcessingHandlers) {
+            try {
+                cleanupEvents.addAll(postProcessingHandler.postProcess(pipeline.context))
+            } catch (e: Exception) {
+                log.error(
+                    "The flow event post processing handler '${postProcessingHandler::javaClass}' failed and will be ignored.",
+                    e
+                )
+            }
+        }
+
+        return flowEventContextConverter.convert(
+            result.copy(outputRecords = result.outputRecords + cleanupEvents)
+        )
     }
 }

@@ -217,12 +217,13 @@ internal class VirtualNodeUpgradeOperationHandler(
         ) {
             val x500Name = membershipGroupReaderProvider.getGroupReader(holdingIdentity).owningMember
             val registrationRequest = membershipQueryClient
-                .queryRegistrationRequests(holdingIdentity, x500Name, listOf(APPROVED), 1)
+                .queryRegistrationRequests(holdingIdentity, x500Name, listOf(APPROVED))
 
             when (registrationRequest) {
                 is MembershipQueryResult.Success ->
                     try {
-                        val registrationRequestDetails = registrationRequest.payload.first()
+                        // Get the latest registration request
+                        val registrationRequestDetails = registrationRequest.payload.last()
 
                         val updatedSerial = registrationRequestDetails.serial + 1
                         val registrationContext = registrationRequestDetails

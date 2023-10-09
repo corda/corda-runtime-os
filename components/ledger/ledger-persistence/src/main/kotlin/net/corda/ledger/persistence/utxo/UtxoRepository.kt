@@ -3,7 +3,7 @@ package net.corda.ledger.persistence.utxo
 import net.corda.data.membership.SignedGroupParameters
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
-import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
+import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateRef
@@ -35,19 +35,19 @@ interface UtxoRepository {
     /** Retrieves transaction component leaves related to visible unspent states and subclass states.*/
     fun findUnconsumedVisibleStatesByType(
         entityManager: EntityManager
-    ):  List<UtxoTransactionOutputDto>
+    ):  List<UtxoVisibleTransactionOutputDto>
 
     /** Retrieves transaction component leaves related to visible unspent states */
     fun findUnconsumedVisibleStatesByExactType(
         entityManager: EntityManager,
         stateClassType: String
-    ):  List<UtxoTransactionOutputDto>
+    ):  List<UtxoVisibleTransactionOutputDto>
 
     /** Retrieves transaction component leafs related to specific StateRefs */
     fun resolveStateRefs(
         entityManager: EntityManager,
         stateRefs: List<StateRef>
-    ):  List<UtxoTransactionOutputDto>
+    ):  List<UtxoVisibleTransactionOutputDto>
 
     /** Retrieves transaction signatures */
     fun findTransactionSignatures(
@@ -69,12 +69,14 @@ interface UtxoRepository {
     )
 
     /** Persists transaction (operation is idempotent) */
+    @Suppress("LongParameterList")
     fun persistTransaction(
         entityManager: EntityManager,
         id: String,
         privacySalt: ByteArray,
         account: String,
-        timestamp: Instant
+        timestamp: Instant,
+        status: TransactionStatus
     )
 
     /** Persists transaction component leaf [data] (operation is idempotent) */
@@ -85,45 +87,27 @@ interface UtxoRepository {
         groupIndex: Int,
         leafIndex: Int,
         data: ByteArray,
-        hash: String,
-        timestamp: Instant
-    )
-
-    /** Persists transaction CPK (operation is idempotent) */
-    fun persistTransactionCpk(
-        entityManager: EntityManager,
-        transactionId: String,
-        fileChecksums: Collection<String>
+        hash: String
     )
 
     /** Persists transaction output (operation is idempotent) */
     @Suppress("LongParameterList")
-    fun persistTransactionOutput(
+    fun persistVisibleTransactionOutput(
         entityManager: EntityManager,
         transactionId: String,
         groupIndex: Int,
         leafIndex: Int,
         type: String,
+        timestamp: Instant,
+        consumed: Boolean,
+        customRepresentation: CustomRepresentation,
         tokenType: String? = null,
         tokenIssuerHash: String? = null,
         tokenNotaryX500Name: String? = null,
         tokenSymbol: String? = null,
         tokenTag: String? = null,
         tokenOwnerHash: String? = null,
-        tokenAmount: BigDecimal? = null,
-        timestamp: Instant
-    )
-
-    /** Persists visible transaction states (operation is idempotent) */
-    @Suppress("LongParameterList")
-    fun persistTransactionVisibleStates(
-        entityManager: EntityManager,
-        transactionId: String,
-        groupIndex: Int,
-        leafIndex: Int,
-        consumed: Boolean,
-        customRepresentation: CustomRepresentation,
-        timestamp: Instant
+        tokenAmount: BigDecimal? = null
     )
 
     /** Persists transaction [signature] (operation is idempotent) */
@@ -135,27 +119,14 @@ interface UtxoRepository {
         timestamp: Instant
     )
 
-    /** Persists transaction source (operation is idempotent) */
-    @Suppress("LongParameterList")
-    fun persistTransactionSource(
-        entityManager: EntityManager,
-        transactionId: String,
-        groupIndex: Int,
-        leafIndex: Int,
-        refTransactionId: String,
-        refLeafIndex: Int,
-        isRefInput: Boolean,
-        timestamp: Instant
-    )
-
     /**
-     * Persists or updates transaction [transactionStatus]. There is only one status per transaction. In case that status already
+     * Updates transaction [transactionStatus]. There is only one status per transaction. In case that status already
      * exists, it will be updated only if old and new statuses are one of the following combinations (and ignored otherwise):
      * - UNVERIFIED -> *
      * - VERIFIED -> VERIFIED
      * - INVALID -> INVALID
      */
-    fun persistTransactionStatus(
+    fun updateTransactionStatus(
         entityManager: EntityManager,
         transactionId: String,
         transactionStatus: TransactionStatus,

@@ -2,10 +2,12 @@ package net.corda.ledger.utxo.token.cache.impl.handlers
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.ledger.utxo.token.cache.entities.ClaimRelease
+import net.corda.ledger.utxo.token.cache.entities.ForceClaimRelease
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.factories.RecordFactory
 import net.corda.ledger.utxo.token.cache.handlers.TokenClaimReleaseEventHandler
+import net.corda.ledger.utxo.token.cache.handlers.TokenForceClaimReleaseEventHandler
 import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
 import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions
@@ -75,6 +77,41 @@ class TokenClaimReleaseEventHandlerTest {
     }
 
     private fun createClaimRelease(): ClaimRelease {
-        return ClaimRelease(claimId, externalEventRequestId,flowId, setOf(tokenRef1), POOL_KEY)
+        return ClaimRelease(claimId, externalEventRequestId, flowId, setOf(tokenRef1), POOL_KEY)
+    }
+}
+
+class TokenForceClaimReleaseEventHandlerTest {
+
+    private val tokenCache: TokenCache = mock()
+    private val poolCacheState: PoolCacheState = mock()
+    private val claimId = "r1"
+
+    @Test
+    fun `when claim not found do nothing`() {
+        val target = TokenForceClaimReleaseEventHandler()
+        val claimRelease = createForceClaimRelease()
+        whenever(poolCacheState.claimExists(claimId)).thenReturn(false)
+
+        val result = target.handle(tokenCache, poolCacheState, claimRelease)
+
+        Assertions.assertThat(result).isNull()
+        verify(poolCacheState, never()).removeClaim(any())
+    }
+
+    @Test
+    fun `when claim found remove it from the state`() {
+        val target = TokenForceClaimReleaseEventHandler()
+        val claimRelease = createForceClaimRelease()
+        whenever(poolCacheState.claimExists(claimId)).thenReturn(true)
+
+        val result = target.handle(tokenCache, poolCacheState, claimRelease)
+
+        Assertions.assertThat(result).isNull()
+        verify(poolCacheState).removeClaim(claimId)
+    }
+
+    private fun createForceClaimRelease(): ForceClaimRelease {
+        return ForceClaimRelease(claimId, POOL_KEY)
     }
 }

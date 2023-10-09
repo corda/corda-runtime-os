@@ -2,6 +2,8 @@ package net.corda.applications.workers.smoketest.websocket
 
 import net.corda.applications.workers.smoketest.utils.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.utils.TEST_CPI_NAME
+import net.corda.applications.workers.smoketest.utils.retryInterval
+import net.corda.applications.workers.smoketest.utils.retryTimeout
 import net.corda.e2etest.utilities.websocket.client.useWebsocketConnection
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT_ALIAS
@@ -60,6 +62,22 @@ class FlowStatusFeedSmokeTest {
             // Make sure Virtual Nodes are created
             val bobActualHoldingId = getOrCreateVirtualNodeFor(bobX500, cpiName)
             assertThat(bobActualHoldingId).isEqualTo(bobHoldingId)
+
+            // VNode creation is asynchronous, double check that the node is created and ready to start new flows.
+            cluster {
+                assertWithRetryIgnoringExceptions {
+                    timeout(retryTimeout)
+                    interval(retryInterval)
+                    command { getVNode(bobHoldingId) }
+                    condition { response ->
+                        val responseJson = response.toJson()
+                        response.code == 200 &&
+                                responseJson["holdingIdentity"]["x500Name"].textValue()
+                                    .contains(bobX500) &&
+                                responseJson["flowStartOperationalStatus"].textValue() == "ACTIVE"
+                    }
+                }
+            }
         }
     }
 
