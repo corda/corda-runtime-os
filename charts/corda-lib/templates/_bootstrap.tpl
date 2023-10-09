@@ -156,8 +156,8 @@ spec:
               echo 'Generating DB specification'
               mkdir /tmp/db
               java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar database spec \
-                -s "config,rbac,crypto,state-manager" \
-                -g "config:${DB_CLUSTER_SCHEMA},rbac:${DB_RBAC_SCHEMA},crypto:${DB_CRYPTO_SCHEMA},state-manager:${DB_STATE_MANAGER_SCHEMA}" \
+                -s "config,rbac,crypto,statemanager" \
+                -g "config:${DB_CLUSTER_SCHEMA},rbac:${DB_RBAC_SCHEMA},crypto:${DB_CRYPTO_SCHEMA},statemanager:${DB_STATE_MANAGER_SCHEMA}" \
                 -u "${PGUSER}" -p "${PGPASSWORD}" \
                 --jdbc-url "${JDBC_URL}" \
                 -c -l /tmp/db

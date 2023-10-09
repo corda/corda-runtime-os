@@ -54,7 +54,7 @@ class StateManagerIntegrationTest {
             linkedSetOf(
                 ClassloaderChangeLog.ChangeLogResourceFiles(
                     DbSchema::class.java.packageName,
-                    listOf("net/corda/db/schema/state-manager/db.changelog-master.xml"),
+                    listOf("net/corda/db/schema/statemanager/db.changelog-master.xml"),
                     DbSchema::class.java.classLoader
                 )
             )
