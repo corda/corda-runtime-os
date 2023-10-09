@@ -14,42 +14,12 @@ import net.corda.persistence.common.exceptions.InvalidPaginationException
 import net.corda.persistence.common.exceptions.NullParameterException
 import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import javax.persistence.EntityManager
 import javax.persistence.Query
 import javax.persistence.criteria.Selection
 
-
-/**
- * This the final set of calls that originated from the flow worker [net.corda.v5.application.persistence.PersistenceService], i.e.
- *
- * Flow worker:
- *
- *    persistenceService.persist(someEntity)
- *
- * Kafka -> EntityRequest
- *
- * This (pseudo) code:
- *
- *    val entityResponse
- *      = persistenceServiceInternal.persist(ss, emf, someEntityWrappedBytes)
- *    publisher.publish(FLOW_WORKER_EVENT_TOPIC, entityResponse)
- *
- * Kafka -> EntityResponse
- *
- * Flow worker:
- *
- *    // resumes processing
- *
- * If the [EntityResponse] contains an exception, the flow-worker is expected to treat that
- * as an error and handle it appropriately (such as retrying).
- *
- * @param classProvider a lambda that returns the class _type_ for the given fully qualified name and
- * a given holding identity.  The supplied lambda should look up the class type in a context appropriate
- * to the given [HoldingIdentity]
- * */
 class PersistenceServiceRpcInternal(
     private val classProvider: (fullyQualifiedClassName: String) -> Class<*>,
 ) {
@@ -58,7 +28,6 @@ class PersistenceServiceRpcInternal(
     }
 
     private fun SerializationService.toBytes(obj: Any) = ByteBuffer.wrap(serialize(obj).bytes)
-
 
     fun persist(
         serializationService: SerializationService,
@@ -177,7 +146,7 @@ class PersistenceServiceRpcInternal(
             logger.error(msg)
             throw NullParameterException(msg)
         }
-        payload.parameters.filter { it.value != null}.forEach { rec ->
+        payload.parameters.filter { it.value != null }.forEach { rec ->
             val bytes = rec.value.array()
             query.setParameter(rec.key, serializationService.deserialize(bytes))
         }
@@ -204,10 +173,14 @@ class PersistenceServiceRpcInternal(
         }
 
         val results = query.resultList
-        val result = when (results ) {
+        val result = when (results) {
             null -> emptyList()
             else -> results.filterNotNull().map { item -> (serializationService.toBytes(item)) }
         }
-        return EntityResponse(result, KeyValuePairList(listOf(KeyValuePair("numberOfRowsFromQuery", results.size.toString()))), null)
+        return EntityResponse(
+            result,
+            KeyValuePairList(listOf(KeyValuePair("numberOfRowsFromQuery", results.size.toString()))),
+            null
+        )
     }
 }

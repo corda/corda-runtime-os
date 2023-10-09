@@ -7,14 +7,6 @@ internal class EntityRequestProcessorTest {
     //TODO - find or create this test class
 
     @Test
-    fun getKeyClass() {
-    }
-
-    @Test
-    fun getValueClass() {
-    }
-
-    @Test
     fun onNext() {
     }
 }

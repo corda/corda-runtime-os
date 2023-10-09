@@ -80,16 +80,6 @@ import java.time.ZoneOffset
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
 
-/**
- * To use Postgres rather than in-memory (HSQL):
- *
- *     docker run --rm --name test-instance -e POSTGRES_PASSWORD=password -p 5432:5432 postgres
- *
- *     gradlew integrationTest -PpostgresPort=5432
- *
- * Rather than creating a new serializer in these tests from scratch,
- * we grab a reference to the one in the sandbox and use that to serialize and de-serialize.
- */
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PersistenceServiceRpcInternalTests {
