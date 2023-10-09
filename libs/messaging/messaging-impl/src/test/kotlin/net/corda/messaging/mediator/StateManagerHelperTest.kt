@@ -104,23 +104,26 @@ class StateManagerHelperTest {
             stateDeserializer,
         )
         val states = listOf(
-            State("1", "1".toByteArray(), 2),
-            State("2", "2".toByteArray(), State.VERSION_INITIAL_VALUE),
-            State("3", "3".toByteArray(), 3),
+            mock<State>() to State("1", "1".toByteArray(), 2),
+            null to State("2", "2".toByteArray(), State.VERSION_INITIAL_VALUE),
+            mock<State>() to State("3", "3".toByteArray(), State.VERSION_INITIAL_VALUE),
         )
 
         stateManagerHelper.persistStates(
-            states.map { state ->
-                ProcessorTask.Result(mock(), mock(), state)
+            states.map { (persistedState, updatedState) ->
+                val task = ProcessorTask<String, StateType, EventType>(
+                    updatedState.key, persistedState, mock(), mock(), mock()
+                )
+                ProcessorTask.Result(task, mock(), updatedState)
             }
         )
 
         verify(stateManager).create(newStatesCaptor.capture())
         val capturedNewStates = newStatesCaptor.firstValue
-        assertEquals(listOf(states[1]), capturedNewStates)
+        assertEquals(listOf(states[1]).map { it.second }, capturedNewStates)
         verify(stateManager).update(updatedStatesCaptor.capture())
         val capturedUpdatedStates = updatedStatesCaptor.firstValue
-        assertEquals(listOf(states[0], states[2]), capturedUpdatedStates)
+        assertEquals(listOf(states[0], states[2]).map { it.second }, capturedUpdatedStates)
     }
 
     @Test
