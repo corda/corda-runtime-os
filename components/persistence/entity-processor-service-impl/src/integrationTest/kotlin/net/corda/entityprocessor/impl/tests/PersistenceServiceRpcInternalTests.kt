@@ -41,7 +41,6 @@ import net.corda.entityprocessor.impl.tests.helpers.AnimalCreator.createCats
 import net.corda.entityprocessor.impl.tests.helpers.AnimalCreator.createDogs
 import net.corda.entityprocessor.impl.tests.helpers.QuerySetup
 import net.corda.flow.utils.toKeyValuePairList
-import net.corda.messaging.api.records.Record
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
@@ -309,8 +308,7 @@ class PersistenceServiceRpcInternalTests {
         val dog = sandbox.createDog("Pluto")
         val cat = sandbox.createCat("Larry")
 
-        val responses = assertPersistEntities(dog.instance, cat.instance)
-        assertThat(responses.size).isEqualTo(1) // did we get everything we expected?
+        assertPersistEntities(dog.instance, cat.instance)
 
         val findDog = findDogDirectInDb(dog.id)
 
@@ -886,7 +884,7 @@ class PersistenceServiceRpcInternalTests {
             )
         )
 
-        val response = deserializer.deserialize((flowEvent.payload as ExternalEventResponse).payload.array())!!
+        val response = deserializer.deserialize((result.payload as ExternalEventResponse).payload.array())!!
 
         return response.results.map { sandbox.deserialize(it) }
     }
@@ -894,31 +892,23 @@ class PersistenceServiceRpcInternalTests {
     /** Persist an entity and do some asserting
      * @return the list of successful responses
      */
-    private fun assertPersistEntities(vararg entities: Any): List<Record<*, *>> {
+    private fun assertPersistEntities(vararg entities: Any): ExternalEventResponse {
         val processor = getMessageProcessor()
 
         val requestId = UUID.randomUUID().toString()
-        val responses = assertSuccessResponses(
+        val result = assertSuccessResponses(
             processor.process(
-                listOf(
-                    Record(
-                        TOPIC,
-                        requestId,
-                        createRequest(
-                            virtualNodeInfo.holdingIdentity,
-                            PersistEntities(entities.map { sandbox.serialize(it) }),
-                            EXTERNAL_EVENT_CONTEXT.apply { this.requestId = requestId }
-                        )
-                    )
+                createRequest(
+                    virtualNodeInfo.holdingIdentity,
+                    PersistEntities(entities.map { sandbox.serialize(it) }),
+                    EXTERNAL_EVENT_CONTEXT.apply { this.requestId = requestId }
                 )
             )
         )
-        assertThat(responses.size).isEqualTo(1)
-        val flowEvent = responses.first().value as FlowEvent
-        val response = flowEvent.payload as ExternalEventResponse
+        val response = result.payload as ExternalEventResponse
         assertThat(response.requestId).isEqualTo(requestId)
         assertThat(response.error).isNull()
-        return responses
+        return response
     }
 
     /** Merge an entity and do some asserting
@@ -927,7 +917,7 @@ class PersistenceServiceRpcInternalTests {
     private fun assertMergeEntities(vararg objs: Any): List<Any> {
         val processor = getMessageProcessor()
 
-        val responses = assertSuccessResponses(
+        val result = assertSuccessResponses(
             processor.process(
                 createRequest(
                     virtualNodeInfo.holdingIdentity,
@@ -936,9 +926,7 @@ class PersistenceServiceRpcInternalTests {
             )
         )
 
-        assertThat(responses.size).isEqualTo(1)
-        val flowEvent = responses.first().value as FlowEvent
-        val response = flowEvent.payload as ExternalEventResponse
+        val response = result.payload as ExternalEventResponse
         assertThat(response.error).isNull()
         val entityResponse = deserializer.deserialize(response.payload.array())!!
         val bytes = entityResponse.results as List<ByteBuffer>
