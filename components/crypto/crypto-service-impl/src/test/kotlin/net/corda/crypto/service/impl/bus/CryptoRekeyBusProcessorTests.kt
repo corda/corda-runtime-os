@@ -132,84 +132,34 @@ class CryptoRekeyBusProcessorTests {
         verify(publisher, times(2)).publish(any())
     }
 
+    /**
+     * The test checks the wrapping repo for a tenant and if it finds the key with oldKeyAlias, it publishes Kafka message
+     * for that tenant to do the actual key rotation.
+     */
     @Test
-    fun `key rotation posts new Kafka message only for those tenantIds that contains key with oldKeyAlias alias in the wrapping repo`() {
-
+    fun `key rotation posts new Kafka message only for keys with oldKeyAlias alias in the wrapping repo`() {
         val oldKeyAlias = "Eris"
-
         val tenantId1 = UUID.randomUUID().toString()
         val tenantId2 = UUID.randomUUID().toString()
         val tenantId3 = UUID.randomUUID().toString()
-        val newId1 = UUID.randomUUID()
-       // val newId2 = UUID.randomUUID()
-        val newId3 = UUID.randomUUID()
-        val wrappingKeyInfo1 = WrappingKeyInfo(
-            1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch")
-
-        //val wrappingKeyInfo2 = WrappingKeyInfo(
-        //    1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch")
-
-        val wrappingKeyInfo3 = WrappingKeyInfo(
-            1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch")
-
-        val savedWrappingKey1 = makeWrappingKeyEntity(newId1, oldKeyAlias, wrappingKeyInfo1)
-        //val savedWrappingKey2 = makeWrappingKeyEntity(newId2, "randomAlias", wrappingKeyInfo2)
-        val savedWrappingKey3 = makeWrappingKeyEntity(newId3, oldKeyAlias, wrappingKeyInfo3)
-
-        val em1 = mock<EntityManager> {
-            on { createQuery(any(), eq(WrappingKeyEntity::class.java)) } doAnswer {
-                mock {
-                    on { setParameter(any<String>(), any()) } doReturn it
-                    on { setMaxResults(any()) } doReturn it
-                    on { resultList } doReturn listOf(savedWrappingKey1)
-                }
-            }
-        }
-
-        val repo1 = WrappingRepositoryImpl(
-            mock {
-                on { createEntityManager() } doReturn em1
-            },
-            tenantId1
+        val newId = UUID.randomUUID()
+        val wrappingKeyInfo = WrappingKeyInfo(
+            1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch"
         )
+        val savedWrappingKey = makeWrappingKeyEntity(newId, oldKeyAlias, wrappingKeyInfo)
+        val em1 = createEntityManager(listOf(savedWrappingKey))
+        val repo1 = createWrappingRepo(em1, tenantId1)
 
-        val em2 = mock<EntityManager> {
-            on { createQuery(any(), eq(WrappingKeyEntity::class.java)) } doAnswer {
-                mock {
-                    on { setParameter(any<String>(), any()) } doReturn it
-                    on { setMaxResults(any()) } doReturn it
-                    on { resultList } doReturn listOf()
-                }
-            }
-        }
+        // We pass empty entity manager, so the request for a key with oldKeyAlias will return null
+        val em2 = createEntityManager(listOf())
 
-        val repo2 = WrappingRepositoryImpl(
-            mock {
-                on { createEntityManager() } doReturn em2
-            },
-            tenantId2
-        )
-
-        val em3 = mock<EntityManager> {
-            on { createQuery(any(), eq(WrappingKeyEntity::class.java)) } doAnswer {
-                mock {
-                    on { setParameter(any<String>(), any()) } doReturn it
-                    on { setMaxResults(any()) } doReturn it
-                    on { resultList } doReturn listOf(savedWrappingKey3)
-                }
-            }
-        }
-
-        val repo3 = WrappingRepositoryImpl(
-            mock {
-                on { createEntityManager() } doReturn em3
-            },
-            tenantId3
-        )
+        // Repo2 returns empty list when requested if the wrapping repo contains the key with oldKeyAlias.
+        val repo2 = createWrappingRepo(em2, tenantId2)
+        // Repo3 uses the entity manager for the repo1 as we want to get return some value.
+        val repo3 = createWrappingRepo(em1, tenantId3)
 
         val virtualNodes = getStubVirtualNodes(listOf(tenantId1, tenantId2, tenantId3))
         whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
-
 
         val wrappingRepositoryFactory = mock<WrappingRepositoryFactory> {
             on { create(virtualNodes[0].holdingIdentity.x500Name.commonName.toString()) } doReturn repo1
@@ -244,6 +194,23 @@ class CryptoRekeyBusProcessorTests {
         false,
         wrappingKeyInfo.parentKeyAlias
     )
+
+    private fun createEntityManager(wrappingKeyEntity: List<WrappingKeyEntity>): EntityManager = mock<EntityManager> {
+        on { createQuery(any(), eq(WrappingKeyEntity::class.java)) } doAnswer {
+            mock {
+                on { setParameter(any<String>(), any()) } doReturn it
+                on { setMaxResults(any()) } doReturn it
+                // Here we set the empty list on a check, if the tenant's wrapping repo contains the key with oldKeyAlias alias.
+                on { resultList } doReturn wrappingKeyEntity
+            }
+        }
+    }
+
+    private fun createWrappingRepo(entityManager: EntityManager, tenantId: String): WrappingRepository =
+        WrappingRepositoryImpl(
+            mock { on { createEntityManager() } doReturn entityManager },
+            tenantId
+        )
 
     // TO-DO: clean this as we need only messaging config in this test class
     private fun createCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any): SmartConfig =
