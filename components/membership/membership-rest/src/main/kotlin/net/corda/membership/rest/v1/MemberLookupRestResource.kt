@@ -53,6 +53,7 @@ interface MemberLookupRestResource : RestResource {
         maxVersion = RestApiVersion.C5_0
     )
     @Suppress("LongParameterList")
+    @Deprecated("Deprecated in favour of lookupV51")
     fun lookup(
         @RestPathParameter(description = "Holding identity ID of the requesting member. The result only contains" +
                 " members that are visible to this member")
