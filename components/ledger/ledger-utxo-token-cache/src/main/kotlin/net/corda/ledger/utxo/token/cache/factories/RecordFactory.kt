@@ -39,7 +39,7 @@ interface RecordFactory {
      *
      * @return A [FlowEvent] response record for the claim
      */
-    fun getSuccessfulClaimResponse(
+    fun getSuccessfulClaimResponseWithListTokens(
         flowId: String,
         externalEventRequestId: String,
         poolKey: TokenPoolKey,

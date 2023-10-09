@@ -38,7 +38,7 @@ class TokenClaimQueryEventHandler(
 
             logger.warn("A token claim is being processed more than once. ClaimId: $claimId")
 
-            return recordFactory.getSuccessfulClaimResponse(
+            return recordFactory.getSuccessfulClaimResponseWithListTokens(
                 event.flowId,
                 event.externalEventRequestId,
                 event.poolKey,

@@ -23,10 +23,10 @@ class RecordFactoryImpl(private val externalEventResponseFactory: ExternalEventR
         poolKey: TokenPoolKey,
         selectedTokens: List<CachedToken>
     ): Record<String, FlowEvent> {
-        return getSuccessfulClaimResponse(flowId, externalEventRequestId, poolKey, selectedTokens.map { it.toAvro() })
+        return getSuccessfulClaimResponseWithListTokens(flowId, externalEventRequestId, poolKey, selectedTokens.map { it.toAvro() })
     }
 
-    override fun getSuccessfulClaimResponse(
+    override fun getSuccessfulClaimResponseWithListTokens(
         flowId: String,
         externalEventRequestId: String,
         poolKey: TokenPoolKey,
