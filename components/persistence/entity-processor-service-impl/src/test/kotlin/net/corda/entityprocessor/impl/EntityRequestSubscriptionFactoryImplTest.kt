@@ -15,4 +15,15 @@ internal class EntityRequestSubscriptionFactoryImplTest {
     }
 
     //TODO - add test for create and createRpcSubscription
+
+    @Test
+    fun `create`() {
+
+    }
+
+    @Test
+    fun `createRpcSubscription`() {
+
+    }
+
 }

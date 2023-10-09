@@ -17,7 +17,7 @@ interface EntityRequestSubscriptionFactory {
      * @param config Configuration for the subscription
      * @return A new subscription for [EntityRequest] messages
      */
-    //TODO need imports for build.gradle
+
     fun create(config: SmartConfig): Subscription<String, EntityRequest>
 
     fun createRpcSubscription(): RPCSubscription<EntityRequest, FlowEvent>

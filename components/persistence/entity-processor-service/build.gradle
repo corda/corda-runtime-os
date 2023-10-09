@@ -13,4 +13,5 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':libs:messaging:messaging')
 
+    api "net.corda:corda-avro-schema"
 }
