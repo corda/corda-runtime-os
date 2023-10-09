@@ -5,6 +5,7 @@ import net.corda.libs.statemanager.api.State
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
+import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_KEY
 import net.corda.messaging.api.mediator.taskmanager.TaskManager
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -67,7 +68,9 @@ class TaskManagerHelperTest {
 
     @Test
     fun `successfully creates message processor tasks from client tasks results`() {
-        val updateState = mock<State>()
+        val updateState = State(
+            KEY2, ByteArray(0), version = 1, mock(), mock()
+        )
 
         fun clientTaskResult(
             key: String,
@@ -101,7 +104,7 @@ class TaskManagerHelperTest {
         val expectedProcessorTasks = listOf(
             ProcessorTask(
                 KEY2,
-                updateState,
+                updateState.copy(version = updateState.version + 1),
                 listOf(replyMessage.payload!!).toRecords(KEY2),
                 messageProcessor,
                 stateManagerHelper
@@ -195,17 +198,17 @@ class TaskManagerHelperTest {
 
         val expectedClientTasks = listOf(
             ClientTask(
-                MediatorMessage(EVENT1),
+                MediatorMessage(EVENT1, mutableMapOf(MSG_PROP_KEY to KEY1)),
                 messageRouter,
                 processorTaskResult1,
             ),
             ClientTask(
-                MediatorMessage(EVENT2),
+                MediatorMessage(EVENT2, mutableMapOf(MSG_PROP_KEY to KEY2)),
                 messageRouter,
                 processorTaskResult2,
             ),
             ClientTask(
-                MediatorMessage(EVENT3),
+                MediatorMessage(EVENT3, mutableMapOf(MSG_PROP_KEY to KEY2)),
                 messageRouter,
                 processorTaskResult2,
             ),

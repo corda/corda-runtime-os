@@ -42,7 +42,7 @@ class MessageBusClient(
     }
 }
 
-private fun MediatorMessage<*>.toCordaProducerRecord() : CordaProducerRecord<*, *> {
+private fun MediatorMessage<*>.toCordaProducerRecord(): CordaProducerRecord<*, *> {
     return CordaProducerRecord(
         topic = this.getProperty<String>(MSG_PROP_ENDPOINT),
         key = this.getProperty(MSG_PROP_KEY),
@@ -52,4 +52,4 @@ private fun MediatorMessage<*>.toCordaProducerRecord() : CordaProducerRecord<*, 
 }
 
 private fun Map<String, Any>.toHeaders() =
-    map { (key, value) -> (key to value.toString())}
+    map { (key, value) -> (key to value.toString()) }
