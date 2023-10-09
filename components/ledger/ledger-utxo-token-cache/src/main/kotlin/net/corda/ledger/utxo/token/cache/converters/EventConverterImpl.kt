@@ -3,6 +3,7 @@ package net.corda.ledger.utxo.token.cache.converters
 import net.corda.data.ledger.utxo.token.selection.data.TokenBalanceQuery
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimQuery
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimRelease
+import net.corda.data.ledger.utxo.token.selection.data.TokenForceClaimRelease
 import net.corda.data.ledger.utxo.token.selection.data.TokenLedgerChange
 import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.ledger.utxo.token.cache.entities.TokenEvent
@@ -21,6 +22,10 @@ class EventConverterImpl(private val entityConverter: EntityConverter) : EventCo
 
             is TokenClaimRelease -> {
                 entityConverter.toClaimRelease(key, payload)
+            }
+
+            is TokenForceClaimRelease -> {
+                entityConverter.toForceClaimRelease(key, payload)
             }
 
             is TokenBalanceQuery -> {
