@@ -167,15 +167,15 @@ class ConsumerGroupTest {
             }
         }
 
-        (1..20).map { index -> Definitions(index) }
-            .forEach {
-                group.createConsumption(it)
-            }
+        for (i in 1..20) {
+            group.createConsumption(Definitions(i))
+        }
 
         verify(listener, atLeast(1)).onPartitionsUnassigned(any())
     }
 
     @Test
+    @Suppress("ForEachOnRange")
     fun `createConsumption more consumer than partitions will not assign any partition to the last consumer`() {
         val partitionsPerConsumer = mutableMapOf<Int, MutableSet<Int>>()
         (1..20).map { consumerId ->

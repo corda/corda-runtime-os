@@ -3,8 +3,12 @@ package net.corda.ledger.utxo.flow.impl.flows.backchain.v1
 import net.corda.flow.application.services.FlowConfigService
 import net.corda.crypto.core.parseSecureHash
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
+import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.common.data.transaction.TransactionStatus.INVALID
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
+import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.utxo.flow.impl.UtxoLedgerMetricRecorder
+import net.corda.ledger.utxo.flow.impl.flows.backchain.InvalidBackchainException
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TopologicalSort
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
@@ -27,6 +31,9 @@ import org.slf4j.LoggerFactory
 /**
  * V1 changed slightly between 5.0 and 5.1. (5.1 supports distributing SignedGroupParameters.)
  * This change is not managed through flow versioning since flow interoperability is not supported between these versions.
+ *
+ * This flow will throw a [InvalidBackchainException] if we found any transactions in the database with an [INVALID] status
+ * during the back-chain resolution.
  */
 
 @CordaSystemFlow
@@ -65,12 +72,20 @@ class TransactionBackchainReceiverFlowV1(
 
         val sortedTransactionIds = TopologicalSort()
 
-        val ledgerConfig = flowConfigService.getConfig(UTXO_LEDGER_CONFIG)
+        val batchSize = flowConfigService.getConfig(UTXO_LEDGER_CONFIG).getInt(BACKCHAIN_BATCH_CONFIG_PATH)
 
-        val batchSize = ledgerConfig.getInt(BACKCHAIN_BATCH_CONFIG_PATH)
+        val existingTransactionIdsInDb = mutableMapOf<SecureHash, TransactionStatus>()
 
         while (transactionsToRetrieve.isNotEmpty()) {
+
+            handleExistingTransactionsAndTheirDependencies(existingTransactionIdsInDb, transactionsToRetrieve, sortedTransactionIds)
+
             val batch = transactionsToRetrieve.take(batchSize)
+
+            if (batch.isEmpty()) {
+                log.trace { "Backchain batch is empty, will stop receiving transactions now." }
+                break
+            }
 
             log.trace {
                 "Backchain resolution of $initialTransactionIds - Requesting the content of transactions $batch from transaction backchain"
@@ -130,19 +145,15 @@ class TransactionBackchainReceiverFlowV1(
     private fun retrieveGroupParameters(
         retrievedTransaction: UtxoSignedTransaction
     ) {
-        val retrievedTransactionId = retrievedTransaction.id
-        val groupParametersHash = parseSecureHash(requireNotNull(
-            (retrievedTransaction.metadata as TransactionMetadataInternal).getMembershipGroupParametersHash()
-        ) {
-            "Received transaction does not have group parameters in its metadata."
-        })
+        val (groupParametersHash, groupParameters) = fetchGroupParametersAndHashForTransaction(retrievedTransaction)
 
-        if (utxoLedgerGroupParametersPersistenceService.find(groupParametersHash) != null) {
+        if (groupParameters != null) {
             return
         }
+
         log.trace {
             "Backchain resolution of $initialTransactionIds - Retrieving group parameters ($groupParametersHash) " +
-                    "for transaction ($retrievedTransactionId)"
+                    "for transaction (${retrievedTransaction.id})"
         }
         val retrievedSignedGroupParameters = session.sendAndReceive(
             SignedGroupParameters::class.java,
@@ -180,6 +191,109 @@ class TransactionBackchainReceiverFlowV1(
                 transactionsToRetrieve.addAll(unseenDependencies)
             }
         }
+    }
+
+    @Suppress("NestedBlockDepth")
+    @Suspendable
+    private fun handleExistingTransactionsAndTheirDependencies(
+        existingTransactionIdsInDb: MutableMap<SecureHash, TransactionStatus>,
+        transactionsToRetrieve: LinkedHashSet<SecureHash>,
+        sortedTransactionIds: TopologicalSort
+    ) {
+        var transactionsToCheck = transactionsToRetrieve.toMutableList()
+
+        while (transactionsToCheck.isNotEmpty()) {
+            val transactionsFromDb = utxoLedgerPersistenceService.findTransactionIdsAndStatuses(transactionsToCheck)
+
+            // Check if we have any invalid transactions. If yes, we can't continue the back-chain resolution.
+            val invalidTransactions = transactionsFromDb.filterValues { it == INVALID }.keys
+            if (invalidTransactions.isNotEmpty()) {
+                throw InvalidBackchainException(
+                    "Found the following invalid transaction(s) during back-chain resolution: " +
+                            "$invalidTransactions. Back-chain resolution cannot be continued."
+                )
+            }
+
+            // Store the Verified/Unverified transactions from the database
+            existingTransactionIdsInDb.putAll(transactionsFromDb)
+
+            // Remove the transaction from the "to retrieve" and "to check" collections if they are in our DB,
+            // and they are verified
+            transactionsToCheck.removeIf { existingTransactionIdsInDb[it] == VERIFIED }
+            transactionsToRetrieve.removeIf { existingTransactionIdsInDb[it] == VERIFIED }
+
+            val newTransactionsToCheck = mutableListOf<SecureHash>()
+            transactionsToCheck.forEach { transactionId ->
+                if (existingTransactionIdsInDb[transactionId] != null) {
+                    // Fetch the transaction object from the database, so we can get the dependencies
+                    // Also fetch its status because it might have changed since the last time
+                    val (transactionFromDb, status) = utxoLedgerPersistenceService.findSignedLedgerTransactionWithStatus(
+                        transactionId,
+                        UNVERIFIED
+                    )
+                        // If we can't fetch the transaction from the DB we skip it
+                        // and just keep it in the "to retrieve" set, so it will be fetched later
+                        ?: return@forEach
+
+                    when (status) {
+                        VERIFIED -> {
+                            // If the status changed from UNVERIFIED -> VERIFIED we just remove it from the "to retrieve" set
+                            // as we don't need to fetch it anymore
+                            log.trace {
+                                "Transaction with ID $transactionId had an unverified status originally it is verified. Skipping."
+                            }
+                            transactionsToRetrieve.remove(transactionId)
+                        }
+
+                        INVALID -> {
+                            // If the status changed from UNVERIFIED -> INVALID we cannot go on with the resolution
+                            throw InvalidBackchainException(
+                                "Found the following invalid transaction during back-chain resolution: " +
+                                        "$transactionId. Backchain resolution cannot be continued."
+                            )
+                        }
+
+                        UNVERIFIED -> {
+                            // If the status is still UNVERIFIED we can continue as expected
+                            if (transactionFromDb != null) {
+                                // Add the dependencies we haven't seen yet to the "to retrieve" and "to check" sets.
+                                // They might be removed later on from the "to retrieve" set if they are in the DB.
+                                // Also add them to the topological sort, so it can be verified later on
+                                if (transactionId !in sortedTransactionIds.transactionIds) {
+                                    transactionFromDb.dependencies.let { dependencies ->
+                                        val unseenDependencies = dependencies - sortedTransactionIds.transactionIds
+                                        sortedTransactionIds.add(transactionId, dependencies)
+                                        transactionsToRetrieve.addAll(unseenDependencies)
+                                        newTransactionsToCheck.addAll(unseenDependencies)
+                                    }
+                                }
+
+                                // Once we added the unverified transactions' dependencies into the "to retrieve" set
+                                // we can remove the parent transaction from the set as we don't need to get that from
+                                // the initiator but only if we know its group parameters
+                                if (fetchGroupParametersAndHashForTransaction(transactionFromDb).second != null) {
+                                    transactionsToRetrieve.remove(transactionId)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            transactionsToCheck = newTransactionsToCheck
+        }
+    }
+
+    @Suspendable
+    private fun fetchGroupParametersAndHashForTransaction(
+        transaction: UtxoSignedTransaction
+    ): Pair<SecureHash, SignedGroupParameters?> {
+        val groupParametersHash = parseSecureHash(requireNotNull(
+            (transaction.metadata as TransactionMetadataInternal).getMembershipGroupParametersHash()
+        ) {
+            "Transaction with ID ${transaction.id} does not have group parameters in its metadata."
+        })
+
+        return Pair(groupParametersHash, utxoLedgerGroupParametersPersistenceService.find(groupParametersHash))
     }
 
     override fun equals(other: Any?): Boolean {

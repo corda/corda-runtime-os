@@ -13,7 +13,14 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "info.picocli:picocli:$picocliVersion"
+    
     implementation "org.apache.avro:avro:$avroVersion"
+    constraints {
+        implementation("org.apache.commons:commons-compress:$commonsCompressVersion") {
+            because "CVE-2023-42503, current version of Avro uses an outdated version"
+        }
+    }
+    
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:configuration:configuration-merger")
     implementation project(":libs:messaging:messaging")
