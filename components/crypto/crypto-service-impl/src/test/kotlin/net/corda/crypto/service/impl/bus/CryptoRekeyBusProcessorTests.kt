@@ -3,8 +3,6 @@ package net.corda.crypto.service.impl.bus
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigChangedEvent
-import net.corda.crypto.config.impl.CryptoHSMConfig
-import net.corda.crypto.config.impl.HSM
 import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.persistence.WrappingKeyInfo
@@ -50,17 +48,12 @@ class CryptoRekeyBusProcessorTests {
     private lateinit var publisher: Publisher
     private lateinit var config: Map<String, SmartConfig>
     private val oldKeyAlias = "oldKeyAlias"
-    private val newKeyAlias = "newKeyAlias"
 
     @BeforeEach
     fun setup() {
         val configEvent = ConfigChangedEvent(
-            setOf(ConfigKeys.CRYPTO_CONFIG, ConfigKeys.MESSAGING_CONFIG),
+            setOf(ConfigKeys.MESSAGING_CONFIG),
             mapOf(
-                ConfigKeys.CRYPTO_CONFIG to
-                        SmartConfigFactory.createWithoutSecurityServices().create(
-                            createCryptoConfig("pass", "salt")
-                        ),
                 ConfigKeys.MESSAGING_CONFIG to
                         SmartConfigFactory.createWithoutSecurityServices().create(
                             createMessagingConfig()
@@ -74,11 +67,11 @@ class CryptoRekeyBusProcessorTests {
         tenantId = UUID.randomUUID().toString()
         virtualNodeInfoReadService = mock()
 
-        val wrappingRepository: WrappingRepository = mock() {
+        val wrappingRepository: WrappingRepository = mock {
             on { findKey(any()) } doReturn WrappingKeyInfo(0, "", byteArrayOf(), 0, oldKeyAlias)
         }
 
-        wrappingRepositoryFactory = mock() {
+        wrappingRepositoryFactory = mock {
             on { create(any()) } doReturn wrappingRepository
         }
 
@@ -211,33 +204,6 @@ class CryptoRekeyBusProcessorTests {
             mock { on { createEntityManager() } doReturn entityManager },
             tenantId
         )
-
-    // TO-DO: clean this as we need only messaging config in this test class
-    private fun createCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any): SmartConfig =
-        SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty())
-            .withValue(
-                HSM, ConfigValueFactory.fromMap(
-                    mapOf(
-                        CryptoHSMConfig::defaultWrappingKey.name to ConfigValueFactory.fromAnyRef(oldKeyAlias),
-                        CryptoHSMConfig::wrappingKeys.name to listOf(
-                            ConfigValueFactory.fromAnyRef(
-                                mapOf(
-                                    "alias" to oldKeyAlias,
-                                    "salt" to wrappingKeySalt,
-                                    "passphrase" to wrappingKeyPassphrase,
-                                )
-                            ),
-                            ConfigValueFactory.fromAnyRef(
-                                mapOf(
-                                    "alias" to newKeyAlias,
-                                    "salt" to wrappingKeySalt,
-                                    "passphrase" to wrappingKeyPassphrase,
-                                )
-                            )
-                        )
-                    )
-                )
-            )
 
     private fun createMessagingConfig(): SmartConfig =
         SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty())
