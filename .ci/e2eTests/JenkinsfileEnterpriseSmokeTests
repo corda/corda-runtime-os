@@ -8,6 +8,8 @@ endToEndPipeline(
     helmVersion: '^5.1.0-beta',
     helmRepoSuffix: 'release/ent/5.1',
     helmRepo: 'corda-ent-docker',
+    dailyBuildCron: '',
+    enableNotifications: false, 
     assembleAndCompile: false,
     multiCluster: false,
     gradleTestTargetsToExecute: ['smokeTest'],
