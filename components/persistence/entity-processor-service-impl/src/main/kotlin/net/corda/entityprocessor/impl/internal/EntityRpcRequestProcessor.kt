@@ -49,6 +49,8 @@ import javax.persistence.PersistenceException
  *
  * [payloadCheck] is called against each AMQP payload in the result (not the entire Avro array of results)
  */
+
+@Suppress("LongParameterList")
 class EntityRpcRequestProcessor(
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     private val entitySandboxService: EntitySandboxService,
