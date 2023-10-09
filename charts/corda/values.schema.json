@@ -804,8 +804,7 @@
                         "type",
                         "port",
                         "username",
-                        "database",
-                        "schema"
+                        "database"
                     ],
                     "additionalProperties": false,
                     "properties": {
@@ -849,15 +848,6 @@
                                 "statemanager"
                             ],
                             "minLength": 1
-                        },
-                        "schema": {
-                            "type": "string",
-                            "default": "STATE_MANAGER",
-                            "title": "the schema in which the State Manager database config entities will be stored, passed to workers on startup",
-                            "examples": [
-                                "STATE_MANAGER"
-                            ],
-                            "minLength": 1
                         }
                     },
                     "examples": [{
@@ -870,8 +860,7 @@
                         "password": {
                             "value": "password"
                         },
-                        "database": "statemanager",
-                        "schema": "STATE_MANAGER"
+                        "database": "statemanager"
                     }]
                 }
             }
@@ -1358,19 +1347,7 @@
                             "type": "object",
                             "default": {},
                             "title": "State Manager db configuration",
-                            "required": [
-                                "schema"
-                            ],
                             "properties": {
-                                "schema": {
-                                    "type": "string",
-                                    "default": "STATE_MANAGER",
-                                    "title": "the schema in which the State Manager entities will be stored",
-                                    "examples": [
-                                        "STATE_MANAGER"
-                                    ],
-                                    "minLength": 1
-                                },
                                 "username": {
                                     "$ref": "#/$defs/config"
                                 },
@@ -1379,7 +1356,6 @@
                                 }
                             },
                             "examples": [{
-                                "schema": "STATE_MANAGER",
                                 "password": {
                                     "value": "password"
                                 },
