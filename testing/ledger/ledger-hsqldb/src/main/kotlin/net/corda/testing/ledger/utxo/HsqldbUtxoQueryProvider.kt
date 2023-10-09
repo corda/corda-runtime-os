@@ -22,62 +22,39 @@ class HsqldbUtxoQueryProvider @Activate constructor(
     override val persistTransaction: String
         get() = """
             MERGE INTO {h-schema}utxo_transaction AS ut
-            USING (VALUES :id, CAST(:privacySalt AS VARBINARY(64)), :accountId, CAST(:createdAt AS TIMESTAMP))
-                AS x(id, privacy_salt, account_id, created)
+            USING (VALUES :id, CAST(:privacySalt AS VARBINARY(64)), :accountId, CAST(:createdAt AS TIMESTAMP), :status, CAST(:updatedAt AS TIMESTAMP))
+                AS x(id, privacy_salt, account_id, created, status, updated)
             ON x.id = ut.id
             WHEN NOT MATCHED THEN
-                INSERT (id, privacy_salt, account_id, created)
-                VALUES (x.id, x.privacy_salt, x.account_id, x.created)"""
+                INSERT (id, privacy_salt, account_id, created, status, updated)
+                VALUES (x.id, x.privacy_salt, x.account_id, x.created, x.status, x.updated)"""
             .trimIndent()
 
     override val persistTransactionComponentLeaf: String
         get() = """
             MERGE INTO {h-schema}utxo_transaction_component AS utc
-            USING (VALUES :transactionId, CAST(:groupIndex AS INT), CAST(:leafIndex AS INT), CAST(:data AS VARBINARY(1048576)), :hash, CAST(:createdAt AS TIMESTAMP))
-                AS x(transaction_id, group_idx, leaf_idx, data, hash, created)
+            USING (VALUES :transactionId, CAST(:groupIndex AS INT), CAST(:leafIndex AS INT), CAST(:data AS VARBINARY(1048576)), :hash)
+                AS x(transaction_id, group_idx, leaf_idx, data, hash)
             ON x.transaction_id = utc.transaction_id AND x.group_idx = utc.group_idx AND x.leaf_idx = utc.leaf_idx
             WHEN NOT MATCHED THEN
-                INSERT (transaction_id, group_idx, leaf_idx, data, hash, created)
-                VALUES (x.transaction_id, x.group_idx, x.leaf_idx, x.data, x.hash, x.created)"""
+                INSERT (transaction_id, group_idx, leaf_idx, data, hash)
+                VALUES (x.transaction_id, x.group_idx, x.leaf_idx, x.data, x.hash)"""
             .trimIndent()
 
-    override val persistTransactionCpk: String
-        get() = """
-            MERGE INTO {h-schema}utxo_transaction_cpk AS utc
-            USING (SELECT :transactionId, file_checksum
-                   FROM {h-schema}utxo_cpk
-                   WHERE file_checksum IN (:fileChecksums)) AS x(transaction_id, file_checksum)
-            ON x.transaction_id = utc.transaction_id AND x.file_checksum = utc.file_checksum
-            WHEN NOT MATCHED THEN
-                INSERT (transaction_id, file_checksum)
-                VALUES (x.transaction_id, x.file_checksum)"""
-            .trimIndent()
-
-    override val persistTransactionOutput: String
-        get() = """
-            MERGE INTO {h-schema}utxo_transaction_output AS uto
+    override fun persistVisibleTransactionOutput(consumed: Boolean): String {
+        return """
+            MERGE INTO {h-schema}utxo_visible_transaction_output AS uto
             USING (VALUES :transactionId, CAST(:groupIndex AS INT), CAST(:leafIndex AS INT), :type, :tokenType, :tokenIssuerHash,
-                          :tokenNotaryX500Name, :tokenSymbol, :tokenTag, :tokenOwnerHash, :tokenAmount, CAST(:createdAt AS TIMESTAMP))
+                          :tokenNotaryX500Name, :tokenSymbol, :tokenTag, :tokenOwnerHash, :tokenAmount, CAST(:createdAt AS TIMESTAMP), 
+                          ${if (consumed) "CAST(:consumedAt AS TIMESTAMP)" else "null"}, :customRepresentation)
                 AS x(transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash, token_notary_x500_name,
-                     token_symbol, token_tag, token_owner_hash, token_amount, created)
+                     token_symbol, token_tag, token_owner_hash, token_amount, created, consumed, custom_representation)
             ON uto.transaction_id = x.transaction_id AND uto.group_idx = x.group_idx AND uto.leaf_idx = x.leaf_idx
             WHEN NOT MATCHED THEN
                 INSERT (transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash, token_notary_x500_name,
-                        token_symbol, token_tag, token_owner_hash, token_amount, created)
+                        token_symbol, token_tag, token_owner_hash, token_amount, created, consumed, custom_representation)
                 VALUES (x.transaction_id, x.group_idx, x.leaf_idx, x.type, x.token_type, x.token_issuer_hash, x.token_notary_x500_name,
-                        x.token_symbol, x.token_tag, x.token_owner_hash, x.token_amount, x.created)"""
-            .trimIndent()
-
-    override fun persistTransactionVisibleStates(consumed: Boolean): String {
-        return """
-            MERGE INTO {h-schema}utxo_visible_transaction_state AS uvts
-            USING (VALUES :transactionId, CAST(:groupIndex AS INT), CAST(:leafIndex AS INT), :custom_representation,
-                          CAST(:createdAt AS TIMESTAMP), ${if (consumed) "CAST(:consumedAt AS TIMESTAMP)" else "null"})
-                AS x(transaction_id, group_idx, leaf_idx, custom_representation, created, consumed)
-            ON uvts.transaction_id = x.transaction_id AND uvts.group_idx = x.group_idx AND uvts.leaf_idx = x.leaf_idx
-            WHEN NOT MATCHED THEN
-                INSERT (transaction_id, group_idx, leaf_idx, custom_representation, created, consumed)
-                VALUES (x.transaction_id, x.group_idx, x.leaf_idx, x.custom_representation, x.created, x.consumed)"""
+                        x.token_symbol, x.token_tag, x.token_owner_hash, x.token_amount, x.created, x.consumed, x.custom_representation)"""
             .trimIndent()
     }
 
@@ -91,30 +68,6 @@ class HsqldbUtxoQueryProvider @Activate constructor(
             WHEN NOT MATCHED THEN
                 INSERT (transaction_id, signature_idx, signature, pub_key_hash, created)
                 VALUES (x.transaction_id, x.signature_idx, x.signature, x.pub_key_hash, x.created)"""
-            .trimIndent()
-
-    override val persistTransactionSource: String
-        get() = """
-            MERGE INTO {h-schema}utxo_transaction_sources AS uts
-            USING (VALUES :transactionId, CAST(:groupIndex AS INT), CAST(:leafIndex AS INT),
-                          :refTransactionId, CAST(:refLeafIndex AS INT), CAST(:isRefInput AS BOOLEAN), CAST(:createdAt AS TIMESTAMP))
-                AS x(transaction_id, group_idx, leaf_idx, ref_transaction_id, ref_leaf_idx, is_ref_input, created)
-            ON uts.transaction_id = x.transaction_id AND uts.group_idx = x.group_idx AND uts.leaf_idx = x.leaf_idx
-            WHEN NOT MATCHED THEN
-                INSERT (transaction_id, group_idx, leaf_idx, ref_transaction_id, ref_leaf_idx, is_ref_input, created)
-                VALUES (x.transaction_id, x.group_idx, x.leaf_idx, x.ref_transaction_id, x.ref_leaf_idx, x.is_ref_input, x.created)"""
-            .trimIndent()
-
-    override val persistTransactionStatus: String
-        get() = """
-            MERGE INTO {h-schema}utxo_transaction_status AS uts
-            USING (VALUES :transactionId, :status, CAST(:updatedAt AS TIMESTAMP)) AS x(transaction_id, status, updated)
-            ON uts.transaction_id = x.transaction_id
-            WHEN NOT MATCHED THEN
-                INSERT (transaction_id, status, updated)
-                VALUES (x.transaction_id, x.status, x.updated)
-            WHEN MATCHED AND (uts.status = x.status OR uts.status = '$UNVERIFIED') THEN
-                UPDATE SET status = x.status, updated = x.updated"""
             .trimIndent()
 
     override val persistSignedGroupParameters: String

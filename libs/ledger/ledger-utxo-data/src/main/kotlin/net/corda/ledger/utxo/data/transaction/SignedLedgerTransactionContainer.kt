@@ -8,8 +8,8 @@ import net.corda.v5.crypto.SecureHash
 @CordaSerializable
 data class SignedLedgerTransactionContainer(
     val wireTransaction: WireTransaction,
-    val serializedInputStateAndRefs: List<UtxoTransactionOutputDto>,
-    val serializedReferenceStateAndRefs: List<UtxoTransactionOutputDto>,
+    val serializedInputStateAndRefs: List<UtxoVisibleTransactionOutputDto>,
+    val serializedReferenceStateAndRefs: List<UtxoVisibleTransactionOutputDto>,
     val signatures: List<DigitalSignatureAndMetadata>
 ) {
     val id: SecureHash

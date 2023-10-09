@@ -16,13 +16,13 @@ import javax.persistence.Table
 
 @CordaSerializable
 @NamedQuery(
-    name = "UtxoTransactionOutputEntity.findByTransactionId",
-    query = "from UtxoTransactionOutputEntity where transaction.id = :transactionId"
+    name = "UtxoVisibleTransactionOutputEntity.findByTransactionId",
+    query = "from UtxoVisibleTransactionOutputEntity where transaction.id = :transactionId"
 )
 @Entity
-@Table(name = "utxo_transaction_output")
-@IdClass(UtxoTransactionOutputEntityId::class)
-data class UtxoTransactionOutputEntity(
+@Table(name = "utxo_visible_transaction_output")
+@IdClass(UtxoVisibleTransactionOutputEntityId::class)
+data class UtxoVisibleTransactionOutputEntity(
     @get:Id
     @get:ManyToOne
     @get:JoinColumn(name = "transaction_id", nullable = false, updatable = false)
@@ -36,8 +36,8 @@ data class UtxoTransactionOutputEntity(
     @get:Column(name = "leaf_idx", nullable = false)
     var leafIndex: Int,
 
-    @get:Column(name = "type", nullable = true)
-    var type: String?,
+    @get:Column(name = "type", nullable = false)
+    var type: String,
 
     @get:Column(name = "token_type", nullable = true)
     var tokenType: String?,
@@ -61,11 +61,17 @@ data class UtxoTransactionOutputEntity(
     var tokenAmount: BigDecimal?,
 
     @get:Column(name = "created", nullable = false)
-    var created: Instant
+    var created: Instant,
+
+    @get:Column(name = "consumed", nullable = true)
+    var consumed: Instant?,
+
+    @get:Column(name = "custom_representation", nullable = false)
+    var customRepresentation: String
 )
 
 @Embeddable
-data class UtxoTransactionOutputEntityId(
+data class UtxoVisibleTransactionOutputEntityId(
     var transaction: UtxoTransactionEntity,
     var groupIndex: Int,
     var leafIndex: Int

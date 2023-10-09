@@ -6,7 +6,7 @@ import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
-import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
+import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.messaging.api.records.Record
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.observer.UtxoToken
@@ -32,7 +32,7 @@ interface UtxoOutputRecordFactory {
     ): Record<String, FlowEvent>
 
     fun getStatesSuccessRecord(
-        states: List<UtxoTransactionOutputDto>,
+        states: List<UtxoVisibleTransactionOutputDto>,
         externalEventContext: ExternalEventContext,
     ): Record<String, FlowEvent>
 
