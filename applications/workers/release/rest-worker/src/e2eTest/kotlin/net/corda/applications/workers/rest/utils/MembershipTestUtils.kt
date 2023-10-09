@@ -193,7 +193,7 @@ fun E2eCluster.lookupMembers(
 ): List<RestMemberInfo> {
     return clusterHttpClientFor(MemberLookupRestResource::class.java)
         .use { client ->
-            client.start().proxy.lookup(holdingId).members
+            client.start().proxy.lookupV51(holdingId).members
         }
 }
 

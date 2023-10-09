@@ -95,7 +95,7 @@ class MemberLookup(private val output: Output = ConsoleOutput()) : RestCommand()
         val holdingIdentity = getHoldingIdentity(holdingIdentityShortHash, name, group)
         val result: List<RestMemberInfo> = createRestClient(MemberLookupRestResource::class).use { client ->
             val memberLookupProxy = client.start().proxy
-            memberLookupProxy.lookup(
+            memberLookupProxy.lookupV51(
                 holdingIdentity,
                 commonName,
                 organization,

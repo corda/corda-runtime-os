@@ -59,6 +59,7 @@ import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
 
+@Suppress("deprecation") // supressing in order to be able to unit test deprecated methods
 class MemberLookupRestResourceTest {
     private companion object {
         const val KNOWN_KEY = "12345"
@@ -651,7 +652,7 @@ class MemberLookupRestResourceTest {
 
         @Test
         fun `lookupv5_1 filtered by statuses is case-insensitive`() {
-            val result1 = memberLookupRestResource.lookup(
+            val result1 = memberLookupRestResource.lookupV51(
                 HOLDING_IDENTITY_STRING,
                 statuses = listOf(MEMBER_STATUS_ACTIVE.lowercase())
             )
