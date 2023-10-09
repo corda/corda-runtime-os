@@ -65,15 +65,6 @@ class EntityRpcRequestProcessor(
     }
 
     override fun process(request: EntityRequest): FlowEvent {
-        //TODO - include null filter? See EntityRequestProcessor
-        //TODO fix timestamp here
-/*        CordaMetrics.Metric.Db.EntityPersistenceRequestLag.builder()
-            .withTag(CordaMetrics.Tag.OperationName, request::class.java.name)
-            .build()
-            .record(
-                Duration.ofMillis(Instant.now().toEpochMilli() - timestamp)
-            )*/
-
         val startTime = System.nanoTime()
         val clientRequestId =
             request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
