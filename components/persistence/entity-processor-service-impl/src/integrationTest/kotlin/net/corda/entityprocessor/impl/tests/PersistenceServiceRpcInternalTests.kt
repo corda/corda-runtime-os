@@ -551,13 +551,11 @@ class PersistenceServiceRpcInternalTests {
         persistDogs()
 
         val processor = getMessageProcessor()
-        val request = createRequest(virtualNodeInfo.holdingIdentity, FindAll(DOG_CLASS_NAME, 0, Int.MAX_VALUE))
 
         val result =
-            assertFailureResponses(processor.process(request))
+            assertFailureResponses(processor.process(createRequest(virtualNodeInfo.holdingIdentity, FindAll(DOG_CLASS_NAME, 0, Int.MAX_VALUE))))
 
-        val response = result.payload as ExternalEventResponse
-        assertThat(response.error.exception.errorType).contains("KafkaMessageSizeException")
+        assertThat(result.error.exception.errorType).contains("KafkaMessageSizeException")
     }
 
     @Test
@@ -566,16 +564,14 @@ class PersistenceServiceRpcInternalTests {
         persistDirectInDb(dog.instance)
 
         val processor = getMessageProcessor()
-        val request = createRequest(
-            virtualNodeInfo.holdingIdentity,
-            FindEntities(DOG_CLASS_NAME, listOf(sandbox.serialize(dog.id)))
-        )
 
         val result =
-            assertFailureResponses(processor.process(request))
+            assertFailureResponses(processor.process(createRequest(
+                virtualNodeInfo.holdingIdentity,
+                FindEntities(DOG_CLASS_NAME, listOf(sandbox.serialize(dog.id)))
+            )))
 
-        val response = result.payload as ExternalEventResponse
-        assertThat(response.error.exception.errorType).contains("KafkaMessageSizeException")
+        assertThat(result.error.exception.errorType).contains("KafkaMessageSizeException")
     }
 
     @Test
@@ -587,16 +583,13 @@ class PersistenceServiceRpcInternalTests {
 
         val processor = getMessageProcessor()
 
-        val request = createRequest(
-            virtualNodeInfo.holdingIdentity,
-            MergeEntities(listOf(sandbox.serialize(modifiedDog.instance)))
-        )
-
         val result =
-            assertFailureResponses(processor.process(request))
+            assertFailureResponses(processor.process(createRequest(
+                virtualNodeInfo.holdingIdentity,
+                MergeEntities(listOf(sandbox.serialize(modifiedDog.instance)))
+            )))
 
-        val response = result.payload as ExternalEventResponse
-        assertThat(response.error.exception.errorType).contains("KafkaMessageSizeException")
+        assertThat(result.error.exception.errorType).contains("KafkaMessageSizeException")
     }
 
     /** Cat class has composite key, so also check we find those ok */
@@ -855,9 +848,8 @@ class PersistenceServiceRpcInternalTests {
                 )
             )
         )
-        val response = result.payload as ExternalEventResponse
-        assertThat(response.error).isNull()
-        return response
+        assertThat(result.error).isNull()
+        return result
     }
 
     /** Delete entity by primary key and do some asserting
@@ -884,7 +876,7 @@ class PersistenceServiceRpcInternalTests {
             )
         )
 
-        val response = deserializer.deserialize((result.payload as ExternalEventResponse).payload.array())!!
+        val response = deserializer.deserialize(result.payload.array())!!
 
         return response.results.map { sandbox.deserialize(it) }
     }
@@ -905,10 +897,9 @@ class PersistenceServiceRpcInternalTests {
                 )
             )
         )
-        val response = result.payload as ExternalEventResponse
-        assertThat(response.requestId).isEqualTo(requestId)
-        assertThat(response.error).isNull()
-        return response
+        assertThat(result.requestId).isEqualTo(requestId)
+        assertThat(result.error).isNull()
+        return result
     }
 
     /** Merge an entity and do some asserting
@@ -926,9 +917,8 @@ class PersistenceServiceRpcInternalTests {
             )
         )
 
-        val response = result.payload as ExternalEventResponse
-        assertThat(response.error).isNull()
-        val entityResponse = deserializer.deserialize(response.payload.array())!!
+        assertThat(result.error).isNull()
+        val entityResponse = deserializer.deserialize(result.payload.array())!!
         val bytes = entityResponse.results as List<ByteBuffer>
         return bytes.map { sandbox.deserialize(it) }
     }
