@@ -62,7 +62,6 @@ class EntityRequestSubscriptionFactoryImpl @Activate constructor(
             entitySandboxService,
             responseFactory,
             //TODO - what to do about config payload below?
-            PayloadChecker(config)::checkSize,
             EntityRequest::class.java,
             FlowEvent::class.java
         )

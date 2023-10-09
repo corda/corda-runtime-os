@@ -33,7 +33,6 @@ import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
 import java.time.Duration
 import java.util.UUID
 import javax.persistence.EntityManager
@@ -54,7 +53,6 @@ class EntityRpcRequestProcessor(
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     private val entitySandboxService: EntitySandboxService,
     private val responseFactory: ResponseFactory,
-    private val payloadCheck: (bytes: ByteBuffer) -> ByteBuffer,
     override val requestClass: Class<EntityRequest>,
     override val responseClass: Class<FlowEvent>,
     private val requestsIdsRepository: RequestsIdsRepository = RequestsIdsRepositoryImpl()
@@ -115,7 +113,7 @@ class EntityRpcRequestProcessor(
         val entityManagerFactory = sandbox.getEntityManagerFactory()
         val serializationService = sandbox.getSerializationService()
 
-        val persistenceServiceInternal = PersistenceServiceInternal(sandbox::getClass, payloadCheck)
+        val persistenceServiceInternal = PersistenceServiceRpcInternal(sandbox::getClass)
 
         val em = entityManagerFactory.createEntityManager()
         return when (val entityRequest = request.request) {
