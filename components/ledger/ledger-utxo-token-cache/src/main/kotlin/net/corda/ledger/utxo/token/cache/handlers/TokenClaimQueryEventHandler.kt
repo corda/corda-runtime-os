@@ -42,19 +42,7 @@ class TokenClaimQueryEventHandler(
                 event.flowId,
                 event.externalEventRequestId,
                 event.poolKey,
-                claim.claimedTokens.map {
-                    DbCachedToken(it.stateRef,
-                        BigDecimal(
-                            BigInteger(
-                                ByteArray(it.amount.unscaledValue.remaining())
-                                    .apply { it.amount.unscaledValue.get(this) }
-                            ),
-                            it.amount.scale
-                        ),
-                        it.tag,
-                        it.ownerHash
-                    )
-                }
+                claim.claimedTokens
             )
         }
 
