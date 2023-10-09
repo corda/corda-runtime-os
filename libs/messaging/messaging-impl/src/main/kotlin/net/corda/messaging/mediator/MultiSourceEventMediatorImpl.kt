@@ -163,7 +163,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                 val processingResults = taskManagerHelper.executeProcessorTasks(msgProcessorTasks)
                 val conflictingStates = stateManagerHelper.persistStates(processingResults)
                 val (successResults, failResults) = processingResults.partition {
-                    !conflictingStates.contains(it.key)
+                    !conflictingStates.contains(it.key.toString())
                 }
                 val clientTasks = taskManagerHelper.createClientTasks(successResults, messageRouter)
                 val clientResults = taskManagerHelper.executeClientTasks(clientTasks)
