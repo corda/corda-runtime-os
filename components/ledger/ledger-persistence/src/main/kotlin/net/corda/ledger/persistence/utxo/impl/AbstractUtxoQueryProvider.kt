@@ -69,7 +69,7 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
             WHERE tx_o.type = :type    
                 AND vto.consumed IS NULL
                 AND tx.status = :verified
-            ORDER BY tc_output.created, tc_output.transaction_id, tc_output.leaf_idx"""
+            ORDER BY tx.created, tc_output.transaction_id, tc_output.leaf_idx"""
             .trimIndent()
 
     override val findTransactionSignatures: String
