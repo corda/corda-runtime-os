@@ -227,7 +227,7 @@ class TransactionBackchainReceiverFlowV1(
                 if (existingTransactionIdsInDb[transactionId] != null) {
                     // Fetch the transaction object from the database, so we can get the dependencies
                     // Also fetch its status because it might have changed since the last time
-                    val (transactionFromDb, status) = utxoLedgerPersistenceService.findSignedLedgerTransactionWithStatus(
+                    val (transactionFromDb, status) = utxoLedgerPersistenceService.findSignedTransactionWithStatus(
                         transactionId,
                         UNVERIFIED
                     )

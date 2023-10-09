@@ -71,6 +71,14 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun findSignedTransaction(id: SecureHash, transactionStatus: TransactionStatus): UtxoSignedTransaction? {
+        return findSignedTransactionWithStatus(id, transactionStatus)?.first
+    }
+
+    @Suspendable
+    override fun findSignedTransactionWithStatus(
+        id: SecureHash,
+        transactionStatus: TransactionStatus
+    ): Pair<UtxoSignedTransaction?, TransactionStatus>? {
         return recordSuspendable({ ledgerPersistenceFlowTimer(FindTransactionWithStatus) }) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
@@ -78,10 +86,10 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
                     FindTransactionParameters(id.toString(), transactionStatus)
                 )
             }.firstOrNull()?.let {
-                // Ignore the status returned from the database request. `FindTransaction` is an existing avro schema and discarding the
-                // returned status allows us to continue using it without upgrading issues.
-                val (transaction, _) = serializationService.deserialize<Pair<SignedTransactionContainer?, String?>>(it.array())
-                transaction?.toSignedTransaction()
+                val (transaction, status) = serializationService.deserialize<Pair<SignedTransactionContainer?, String?>>(it.array())
+                if (status == null)
+                    return@let null
+                transaction?.toSignedTransaction() to status.toTransactionStatus()
             }
         }
     }
@@ -119,8 +127,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
                     FindSignedLedgerTransactionExternalEventFactory::class.java,
                     FindSignedLedgerTransactionParameters(id.toString(), transactionStatus)
                 )
-            }.firstOrNull().let {
-                if (it == null) return@let null
+            }.firstOrNull()?.let {
                 val (transaction, status) = serializationService.deserialize<Pair<SignedLedgerTransactionContainer?, String?>>(it.array())
                 if (status == null)
                     return@let null
