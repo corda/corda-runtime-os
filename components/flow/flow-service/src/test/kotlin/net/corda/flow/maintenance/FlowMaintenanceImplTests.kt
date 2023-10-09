@@ -11,6 +11,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import org.junit.jupiter.api.Test
+import org.mockito.internal.verification.Times
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
@@ -60,6 +61,32 @@ class FlowMaintenanceImplTests {
         )
         verify(stateManagerFactory).create(stateManagerConfig)
         verify(subscription).start()
+    }
+
+    @Test
+    fun `when same state manager config pushed do not create another StateManager`() {
+        val m = FlowMaintenanceImpl(lifecycleCoordinatorFactory, subscriptionFactory, stateManagerFactory)
+        m.onConfigChange(config)
+        m.onConfigChange(config)
+        verify(stateManagerFactory, Times(1)).create(stateManagerConfig)
+    }
+
+    @Test
+    fun `when new state manager config pushed create another StateManager and close old`() {
+        val m = FlowMaintenanceImpl(lifecycleCoordinatorFactory, subscriptionFactory, stateManagerFactory)
+        m.onConfigChange(config)
+        val newConfig = mock<SmartConfig>()
+        m.onConfigChange(mapOf(ConfigKeys.MESSAGING_CONFIG to newConfig))
+        verify(stateManagerFactory).create(newConfig)
+        verify(stateManager).close()
+    }
+
+    @Test
+    fun `when stop close StateManager`() {
+        val m = FlowMaintenanceImpl(lifecycleCoordinatorFactory, subscriptionFactory, stateManagerFactory)
+        m.onConfigChange(config)
+        m.stop()
+        verify(stateManager).close()
     }
 
     @Test

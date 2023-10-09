@@ -11,6 +11,11 @@ dependencies {
     implementation "net.corda:corda-base"
 
     implementation "org.apache.avro:avro:$avroVersion"
+    constraints {
+        implementation("org.apache.commons:commons-compress:$commonsCompressVersion") {
+            because "CVE-2023-42503, current version of Avro uses an outdated version"
+        }
+    }
 
     implementation "net.corda:corda-avro-schema"
     implementation project(":libs:schema-registry:schema-registry")

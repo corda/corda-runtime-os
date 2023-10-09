@@ -58,9 +58,9 @@ class ManagedSecretTests {
 
     @Test
     fun `Should fail to derive for size less than defined limit`() {
-        (0 until SECRET_MINIMAL_LENGTH).forEach {
+        for (i in 0 until SECRET_MINIMAL_LENGTH) {
             assertThrows<IllegalArgumentException> {
-                ManagedSecret.derive(UUID.randomUUID().toString(), UUID.randomUUID().toString(), it, 536)
+                ManagedSecret.derive(UUID.randomUUID().toString(), UUID.randomUUID().toString(), i, 536)
             }
         }
     }
@@ -99,9 +99,9 @@ class ManagedSecretTests {
 
     @Test
     fun `Should fail to generate for size less than defined limit`() {
-        (0 until SECRET_MINIMAL_LENGTH).forEach {
+        for (i in 0 until SECRET_MINIMAL_LENGTH) {
             assertThrows<IllegalArgumentException> {
-                ManagedSecret.generate(it)
+                ManagedSecret.generate(i)
             }
         }
     }
