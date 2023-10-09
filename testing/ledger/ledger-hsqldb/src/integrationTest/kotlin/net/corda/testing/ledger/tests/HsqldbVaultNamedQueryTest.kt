@@ -17,6 +17,7 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.hsqldb.json.HsqldbJsonExtension.JSON_SQL_TYPE
 import net.corda.db.persistence.testkit.components.DataSourceAdmin
 import net.corda.db.schema.DbSchema
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.query.parsing.VaultNamedQueryParser
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.utils.transaction
@@ -38,7 +39,6 @@ class HsqldbVaultNamedQueryTest {
         private const val UTXO_VISIBLE_TX_STATE = "utxo_visible_transaction_output"
         private const val BASE_QUERY = "SELECT * FROM $UTXO_VISIBLE_TX_STATE AS visible_state WHERE "
         private const val TIMEOUT_MILLIS = 10000L
-        private const val TRANSACTION_VERIFIED_STRING = "V"
 
         private val ACCOUNT_ID = UUID.randomUUID()
     }
@@ -97,7 +97,7 @@ class HsqldbVaultNamedQueryTest {
                 privacySalt = byteArrayOf(),
                 accountId = ACCOUNT_ID.toString(),
                 created = timestamp,
-                status = TRANSACTION_VERIFIED_STRING,
+                status = TransactionStatus.VERIFIED.value,
                 updated = timestamp
             )
 
