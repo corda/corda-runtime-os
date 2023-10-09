@@ -24,6 +24,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import picocli.CommandLine.Mixin
+import picocli.CommandLine.Option
 
 /** The worker for handling flows. */
 @Suppress("Unused", "LongParameterList")
@@ -92,4 +93,7 @@ class FlowWorker @Activate constructor(
 private class FlowWorkerParams {
     @Mixin
     var defaultParams = DefaultWorkerParams()
+
+    @Option(names = ["--endpoint"], description = ["Internal REST endpoints for Corda workers"], required = true)
+    val workerEndpoints: Map<String, String> = emptyMap()
 }

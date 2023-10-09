@@ -8,10 +8,10 @@ import net.corda.libs.configuration.SmartConfig
 interface StateManagerFactory {
 
     /**
-     * Create a state manager from the given [messagingConfig].
+     * Create a state manager from the given [config].
      *
-     * @param messagingConfig containing the state manager to connect to underlying storage mechanism.
-     * @return a state manager created from the given [messagingConfig].
+     * @param config containing the state manager to connect to underlying storage mechanism.
+     * @return a state manager created from the given [config].
      */
-    fun create(messagingConfig: SmartConfig): StateManager
+    fun create(config: SmartConfig): StateManager
 }

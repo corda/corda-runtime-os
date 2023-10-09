@@ -3951,6 +3951,17 @@
             "nullable" : false,
             "example" : "string"
           }
+        }, {
+          "name" : "forceupgrade",
+          "in" : "query",
+          "description" : "Whether this upgrade should be forced regardless of OperationInProgress.",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "description" : "Whether this upgrade should be forced regardless of OperationInProgress.",
+            "nullable" : false,
+            "example" : true
+          }
         } ],
         "responses" : {
           "200" : {

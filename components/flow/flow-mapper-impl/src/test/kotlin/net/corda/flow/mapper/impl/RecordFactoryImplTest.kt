@@ -25,7 +25,6 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.lang.IllegalArgumentException
@@ -58,10 +57,10 @@ internal class RecordFactoryImplTest {
         val byteArray = "SessionEventSerialized".toByteArray()
 
         whenever(cordaAvroSerializer.serialize(any<SessionEvent>())).thenReturn(byteArray)
-        whenever(locallyHostedIdentitiesServiceSameCluster.getIdentityInfo(any())).thenReturn(mock())
+        whenever(locallyHostedIdentitiesServiceSameCluster.isHostedLocally(any())).thenReturn(true)
 
         val locallyHostedIdentitiesServiceDifferentCluster: LocallyHostedIdentitiesService = mock()
-        whenever(locallyHostedIdentitiesServiceDifferentCluster.getIdentityInfo(any())).thenReturn(null)
+        whenever(locallyHostedIdentitiesServiceDifferentCluster.isHostedLocally(any())).thenReturn(false)
 
         recordFactoryImplSameCluster = RecordFactoryImpl(cordaAvroSerializationFactory, locallyHostedIdentitiesServiceSameCluster)
         recordFactoryImplDifferentCluster = RecordFactoryImpl(cordaAvroSerializationFactory, locallyHostedIdentitiesServiceDifferentCluster)
@@ -101,7 +100,7 @@ internal class RecordFactoryImplTest {
         assertThat(record).isNotNull
         assertThat(record.topic).isEqualTo(Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC)
         assertThat(record.value!!::class).isEqualTo(FlowMapperEvent::class)
-        verify(locallyHostedIdentitiesServiceSameCluster).getIdentityInfo(bobId.toCorda())
+        verify(locallyHostedIdentitiesServiceSameCluster).isHostedLocally(bobId.toCorda())
         val sessionOutput = (record.value as FlowMapperEvent).payload as SessionEvent
         assertThat(sessionOutput.messageDirection).isEqualTo(MessageDirection.INBOUND)
         assertThat(sessionOutput.sessionId).isEqualTo("$SESSION_ID-INITIATED")

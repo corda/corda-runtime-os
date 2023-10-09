@@ -1,0 +1,21 @@
+/**
+ * Pipeline to take a packaged helm chart, deploy it and subsequently run the smoke test target
+ * in this repo against these images - Can be used to exercise the C5 Ent images against smoke tests in corda-runtime-os
+ */
+@Library('corda-shared-build-pipeline-steps@5.1') _
+
+endToEndPipeline(
+    helmVersion: '^5.1.0-beta',
+    helmRepoSuffix: 'release/ent/5.1',
+    helmRepo: 'corda-ent-docker',
+    dailyBuildCron: '',
+    enableNotifications: false, 
+    assembleAndCompile: false,
+    multiCluster: false,
+    gradleTestTargetsToExecute: ['smokeTest'],
+    usePackagedCordaHelmChart: true,
+    gradleAdditionalArgs : '-Dscan.tag.EnterpriseSmokeTest',
+    pipelineTimeoutMinutes: 75,
+    testTimeoutMinutes : 60,
+    javaVersion: '17'
+)

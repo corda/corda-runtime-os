@@ -69,6 +69,7 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import kotlin.test.assertFailsWith
 
 class MgmSynchronisationServiceImplTest {
@@ -84,6 +85,7 @@ class MgmSynchronisationServiceImplTest {
         LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
         LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
         LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
+        LifecycleCoordinatorName.forComponent<LocallyHostedIdentitiesService>(),
     )
     private var coordinatorIsRunning = false
     private var coordinatorStatus: KArgumentCaptor<LifecycleStatus> = argumentCaptor()

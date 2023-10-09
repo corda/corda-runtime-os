@@ -43,7 +43,7 @@ open class InternalUtilsTest {
         logger.warnOnce("b")
 
         // This should cause the eviction of "a".
-        (1..maxSize).forEach { logger.warnOnce("$it") }
+        for(i in 1..maxSize) { logger.warnOnce("$i") }
         logger.warnOnce("a")
 
         // "a" should be logged twice because it was evicted.

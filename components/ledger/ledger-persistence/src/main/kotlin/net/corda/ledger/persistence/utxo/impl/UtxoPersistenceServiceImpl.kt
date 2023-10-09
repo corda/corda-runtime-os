@@ -25,6 +25,7 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
@@ -64,6 +65,14 @@ class UtxoPersistenceServiceImpl(
             } else {
                 null
             } to status
+        }
+    }
+
+    override fun findTransactionIdsAndStatuses(
+        transactionIds: List<String>
+    ): Map<SecureHash, String> {
+        return entityManagerFactory.transaction { em ->
+            repository.findTransactionIdsAndStatuses(em, transactionIds)
         }
     }
 
