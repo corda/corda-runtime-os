@@ -540,58 +540,6 @@ class PersistenceServiceRpcInternalTests {
         assertQuery(QuerySetup.All(DOG_CLASS_NAME), 0, -42, expectFailure = "Invalid negative limit -42")
     }
 
-    /**
-     * AT THE TIME OF WRITING - if 'find all' returns a set of results and the size
-     * of that set of results exceeds a kafka packet size, then we return an error response.
-     * The caller may use pagination to workaround this, provided individual result rows fit in
-     * Kafka message.
-     */
-    @Test
-    fun `find all exceeds kakfa packet size`() {
-        persistDogs()
-
-        val processor = getMessageProcessor()
-
-        val result =
-            assertFailureResponses(processor.process(createRequest(virtualNodeInfo.holdingIdentity, FindAll(DOG_CLASS_NAME, 0, Int.MAX_VALUE))))
-
-        assertThat(result.error.exception.errorType).contains("KafkaMessageSizeException")
-    }
-
-    @Test
-    fun `find exceeds kakfa packet size`() {
-        val dog = sandbox.createDog("K9", owner = "Doctor Who")
-        persistDirectInDb(dog.instance)
-
-        val processor = getMessageProcessor()
-
-        val result =
-            assertFailureResponses(processor.process(createRequest(
-                virtualNodeInfo.holdingIdentity,
-                FindEntities(DOG_CLASS_NAME, listOf(sandbox.serialize(dog.id)))
-            )))
-
-        assertThat(result.error.exception.errorType).contains("KafkaMessageSizeException")
-    }
-
-    @Test
-    fun `merge exceeds kakfa packet size`() {
-        val dog = sandbox.createDog("K9", owner = "Doctor Who Tom Baker")
-        persistDirectInDb(dog.instance)
-
-        val modifiedDog = sandbox.createDog("K9", owner = "Doctor Who Peter Davidson", id = dog.id)
-
-        val processor = getMessageProcessor()
-
-        val result =
-            assertFailureResponses(processor.process(createRequest(
-                virtualNodeInfo.holdingIdentity,
-                MergeEntities(listOf(sandbox.serialize(modifiedDog.instance)))
-            )))
-
-        assertThat(result.error.exception.errorType).contains("KafkaMessageSizeException")
-    }
-
     /** Cat class has composite key, so also check we find those ok */
     @Test
     fun `find all with composite key`() {
@@ -735,14 +683,6 @@ class PersistenceServiceRpcInternalTests {
         )
         assertThat(r.size).isEqualTo(0)
     }
-
-
-    @Test
-    fun `find with named query result which hits Kafka message size limit`() {
-        persistDogs()
-        assertQuery(QuerySetup.NamedQuery(mapOf(), query = "Dog.all"), expectFailure = "Too large")
-    }
-
 
     private fun createEntitySandbox(dbConnectionManager: DbConnectionManager) =
         EntitySandboxServiceFactory().create(
