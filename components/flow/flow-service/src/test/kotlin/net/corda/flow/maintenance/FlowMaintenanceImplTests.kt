@@ -67,9 +67,17 @@ class FlowMaintenanceImplTests {
     }
 
     @Test
-    fun `when no state manager config pushed do not create another StateManager`() {
+    fun `when no state manager config pushed and messaging config pushed do not create another StateManager`() {
         flowMaintenance.onConfigChange(config)
         flowMaintenance.onConfigChange(mapOf(ConfigKeys.MESSAGING_CONFIG to messagingConfig))
+
+        verify(stateManagerFactory, Times(1)).create(stateManagerConfig)
+    }
+
+    @Test
+    fun `when no messaging config pushed and no state manager config pushed do not create another StateManager`() {
+        flowMaintenance.onConfigChange(config)
+        flowMaintenance.onConfigChange(mapOf(ConfigKeys.STATE_MANAGER_CONFIG to mock<SmartConfig>()))
 
         verify(stateManagerFactory, Times(1)).create(stateManagerConfig)
     }
