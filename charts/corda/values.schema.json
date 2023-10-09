@@ -1881,9 +1881,6 @@
                             "$ref": "#/$defs/worker"
                         },                        
                         {
-                            "$ref": "#/$defs/stateManagerDbConnectionPool"
-                        },
-                        {
                             "required": [
                                 "verifyInstrumentation",
                                 "stateManagerDbConnectionPool"
@@ -1898,6 +1895,9 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
+                                "stateManagerDbConnectionPool": {
+                                    "$ref": "#/$defs/stateManagerDbConnectionPool"
+                                },
                                 "verifyInstrumentation": {
                                     "type": "boolean",
                                     "default": false,
@@ -1945,9 +1945,6 @@
                             "$ref": "#/$defs/worker"
                         },
                         {
-                            "$ref": "#/$defs/stateManagerDbConnectionPool"
-                        },
-                        {
                             "required": [
                                 "verifyInstrumentation",
                                 "stateManagerDbConnectionPool"
@@ -1962,6 +1959,9 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
+                                "stateManagerDbConnectionPool" : {
+                                    "$ref": "#/$defs/stateManagerDbConnectionPool"
+                                },
                                 "verifyInstrumentation": {
                                     "type": "boolean",
                                     "default": false,
