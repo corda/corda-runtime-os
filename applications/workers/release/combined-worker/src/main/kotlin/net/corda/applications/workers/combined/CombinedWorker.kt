@@ -224,14 +224,13 @@ class CombinedWorker @Activate constructor(
      */
     private fun prepareStateManagerConfig(stateManagerConfig: Config): Config {
         val defaultConfig = ConfigFactory.empty()
-            .withValue(StateManagerConfig.DataBase.JDBC_DRIVER, fromAnyRef("org.postgresql.Driver"))
-            .withValue(StateManagerConfig.DataBase.JDBC_PERSISTENCE_UNIT_NAME, fromAnyRef("corda-state-manager"))
-            .withValue(StateManagerConfig.DataBase.JDBC_POOL_MIN_SIZE, fromAnyRef(1))
-            .withValue(StateManagerConfig.DataBase.JDBC_POOL_MAX_SIZE, fromAnyRef(5))
-            .withValue(StateManagerConfig.DataBase.JDBC_POOL_IDLE_TIMEOUT_SECONDS, fromAnyRef(Duration.ofMinutes(2).toSeconds()))
-            .withValue(StateManagerConfig.DataBase.JDBC_POOL_MAX_LIFETIME_SECONDS, fromAnyRef(Duration.ofMinutes(30).toSeconds()))
-            .withValue(StateManagerConfig.DataBase.JDBC_POOL_KEEP_ALIVE_TIME_SECONDS, fromAnyRef(Duration.ZERO.toSeconds()))
-            .withValue(StateManagerConfig.DataBase.JDBC_POOL_VALIDATION_TIMEOUT_SECONDS, fromAnyRef(Duration.ofSeconds(5).toSeconds()))
+            .withValue(StateManagerConfig.Database.JDBC_DRIVER, fromAnyRef("org.postgresql.Driver"))
+            .withValue(StateManagerConfig.Database.JDBC_POOL_MIN_SIZE, fromAnyRef(1))
+            .withValue(StateManagerConfig.Database.JDBC_POOL_MAX_SIZE, fromAnyRef(5))
+            .withValue(StateManagerConfig.Database.JDBC_POOL_IDLE_TIMEOUT_SECONDS, fromAnyRef(Duration.ofMinutes(2).toSeconds()))
+            .withValue(StateManagerConfig.Database.JDBC_POOL_MAX_LIFETIME_SECONDS, fromAnyRef(Duration.ofMinutes(30).toSeconds()))
+            .withValue(StateManagerConfig.Database.JDBC_POOL_KEEP_ALIVE_TIME_SECONDS, fromAnyRef(Duration.ZERO.toSeconds()))
+            .withValue(StateManagerConfig.Database.JDBC_POOL_VALIDATION_TIMEOUT_SECONDS, fromAnyRef(Duration.ofSeconds(5).toSeconds()))
         val stateManagerConfigWithFallback = stateManagerConfig.withFallback(
             ConfigFactory.empty().withValue(StateManagerConfig.STATE_MANAGER, defaultConfig.root())
         )

@@ -60,7 +60,7 @@ class ConfigurationReadServiceImplTest {
 
         private const val STATE_MANAGER_CONFIG_STRING = """
             ${StateManagerConfig.TYPE} = "DATABASE"
-            ${StateManagerConfig.DataBase.JDBC_URL} = $STATE_MANAGER_JDBC_URL_DATA
+            ${StateManagerConfig.Database.JDBC_URL} = $STATE_MANAGER_JDBC_URL_DATA
         """
 
         private const val TIMEOUT = 10000L
