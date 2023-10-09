@@ -80,12 +80,11 @@ class FlowPersistenceServiceImpl  @Activate constructor(
             }
             is ConfigChangedEvent -> {
                 entityProcessorSubscription?.close()
-                val newEntityProcessorSubscription = entityRequestSubscriptionFactory.create(
+                entityProcessorSubscription = entityRequestSubscriptionFactory.create(
                     event.config.getConfig(MESSAGING_CONFIG)
                 )
                 logger.debug("Starting EntityProcessor.")
-                newEntityProcessorSubscription.start()
-                entityProcessorSubscription = newEntityProcessorSubscription
+                start()
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
             is StopEvent -> {
