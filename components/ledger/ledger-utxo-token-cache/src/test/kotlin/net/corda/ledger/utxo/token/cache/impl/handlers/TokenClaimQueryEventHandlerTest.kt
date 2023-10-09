@@ -22,6 +22,11 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.math.BigDecimal
+import net.corda.data.ledger.utxo.token.selection.data.TokenClaim
+import net.corda.ledger.utxo.token.cache.entities.internal.PoolCacheStateImpl
+import net.corda.ledger.utxo.token.cache.entities.internal.TokenCacheImpl
+import net.corda.ledger.utxo.token.cache.services.SimpleTokenFilterStrategy
+import org.mockito.kotlin.eq
 
 class TokenClaimQueryEventHandlerTest {
 
@@ -35,16 +40,22 @@ class TokenClaimQueryEventHandlerTest {
     private val token99 = mock<CachedToken>().apply {
         whenever(amount).thenReturn(BigDecimal(99))
         whenever(stateRef).thenReturn(token99Ref)
+        whenever(tag).thenReturn(null)
+        whenever(ownerHash).thenReturn(null)
     }
     private val token100Ref = "r2"
     private val token100 = mock<CachedToken>().apply {
         whenever(amount).thenReturn(BigDecimal(100))
         whenever(stateRef).thenReturn(token100Ref)
+        whenever(tag).thenReturn(null)
+        whenever(ownerHash).thenReturn(null)
     }
     private val token101Ref = "r3"
     private val token101 = mock<CachedToken>().apply {
         whenever(amount).thenReturn(BigDecimal(101))
         whenever(stateRef).thenReturn(token101Ref)
+        whenever(tag).thenReturn(null)
+        whenever(ownerHash).thenReturn(null)
     }
 
     private val cachedTokens = mutableListOf<CachedToken>()
@@ -188,8 +199,27 @@ class TokenClaimQueryEventHandlerTest {
         )
     }
 
-    private fun createClaimQuery(targetAmount: Int): ClaimQuery {
-        return ClaimQuery(claimId, flowId, BigDecimal(targetAmount), "", "", POOL_KEY)
+    @Test
+    fun `ensure the same token set is returned if a claim request is processed more than once`() {
+        val target =
+            TokenClaimQueryEventHandler(SimpleTokenFilterStrategy(), recordFactory, availableTokenService, mock())
+        val claimQuery = createClaimQuery(100, null, null)
+        val tokenClaim = TokenClaim.newBuilder().setClaimId(claimQuery.externalEventRequestId).build()
+        whenever(recordFactory.getSuccessfulClaimResponseWithListTokens(any(), any(), any(), any())).thenReturn(claimQueryResult)
+        whenever(poolCacheState.claim(claimQuery.externalEventRequestId)).thenReturn(tokenClaim)
+
+        val result = target.handle(tokenCache, poolCacheState, claimQuery)
+
+        assertThat(result).isSameAs(claimQueryResult)
+        verify(recordFactory).getSuccessfulClaimResponseWithListTokens(
+            flowId, claimId,
+            POOL_KEY,
+            tokenClaim.claimedTokens
+        )
+    }
+
+    private fun createClaimQuery(targetAmount: Int, tag: String? = null, ownerHash: String? = null): ClaimQuery {
+        return ClaimQuery(claimId, flowId, BigDecimal(targetAmount), tag, ownerHash, POOL_KEY)
     }
 }
 
