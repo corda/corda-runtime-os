@@ -280,7 +280,6 @@ spec:
 
               echo 'Applying DB specification'
               export PGPASSWORD="${CLUSTER_PGPASSWORD}"
-              echo $PGPASSWORD
               find /tmp/db -iname "*.sql" | xargs printf -- ' -f %s' | xargs psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -U "${CLUSTER_PGUSER}" --dbname "${DB_CLUSTER_NAME}"
 
               echo 'Applying initial configurations'
@@ -306,7 +305,6 @@ spec:
 
               echo 'Applying State Manager Specification'
               export PGPASSWORD="${STATE_MANAGER_PGPASSWORD}"
-              echo $PGPASSWORD
               find /tmp/stateManager -iname "*.sql" | xargs printf -- ' -f %s' | xargs psql -v ON_ERROR_STOP=1 -h "${STATE_MANAGER_DB_HOST}" -p "${STATE_MANAGER_DB_PORT}" -U "${STATE_MANAGER_PGUSER}" --dbname "${STATE_MANAGER_DB_NAME}"
 
               echo 'Creating users and granting permissions for State Manager'
