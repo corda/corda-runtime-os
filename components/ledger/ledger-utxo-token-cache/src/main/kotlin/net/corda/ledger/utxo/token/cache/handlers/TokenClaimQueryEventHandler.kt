@@ -10,8 +10,6 @@ import net.corda.ledger.utxo.token.cache.services.AvailableTokenService
 import net.corda.ledger.utxo.token.cache.services.TokenFilterStrategy
 import net.corda.messaging.api.records.Record
 import java.math.BigDecimal
-import java.math.BigInteger
-import net.corda.ledger.utxo.token.cache.entities.DbCachedToken
 import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
 import org.slf4j.LoggerFactory
 
@@ -24,6 +22,7 @@ class TokenClaimQueryEventHandler(
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        var claimIdSeen: String? = null
     }
 
     override fun handle(

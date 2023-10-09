@@ -23,10 +23,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.math.BigDecimal
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaim
-import net.corda.ledger.utxo.token.cache.entities.internal.PoolCacheStateImpl
-import net.corda.ledger.utxo.token.cache.entities.internal.TokenCacheImpl
 import net.corda.ledger.utxo.token.cache.services.SimpleTokenFilterStrategy
-import org.mockito.kotlin.eq
 
 class TokenClaimQueryEventHandlerTest {
 
