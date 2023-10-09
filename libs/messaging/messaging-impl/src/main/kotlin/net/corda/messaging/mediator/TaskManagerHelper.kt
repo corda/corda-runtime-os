@@ -1,6 +1,5 @@
 package net.corda.messaging.mediator
 
-import kotlinx.coroutines.runBlocking
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
@@ -20,12 +19,6 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
     private val taskManager: TaskManager,
     private val stateManagerHelper: StateManagerHelper<K, S, E>,
 ) {
-
-    /** Same as [Callable] but with suspend function call. */
-    fun interface SuspendCallable<V> {
-        @Throws(Exception::class)
-        suspend fun call(): V
-    }
 
     /**
      * Creates [ProcessorTask]s for given events and states.
@@ -144,8 +137,10 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
     fun executeClientTasks(
         clientTasks: Collection<ClientTask<K, S, E>>
     ): List<ClientTask.Result<K, S, E>> {
-        return runBlocking {
-            clientTasks.map { it.call() }
+        return clientTasks.map { clientTask ->
+            taskManager.execute(TaskType.SHORT_RUNNING, clientTask::call)
+        }.map {
+            it.join()
         }
     }
 
