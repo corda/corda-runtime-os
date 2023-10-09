@@ -136,7 +136,7 @@ class TokenCacheEventProcessorTest {
         tokenPoolCacheEvent.payload = "message"
 
         val outputState = TokenPoolCacheState()
-        val handlerResponse = Record<String, FlowEvent>("", "", null)
+        val handlerResponse = Record<String, FlowEvent>("test", "key1", null)
 
         val stateIn = TokenPoolCacheState().apply {
             this.poolKey = POOL_CACHE_KEY
@@ -156,7 +156,7 @@ class TokenCacheEventProcessorTest {
         val result = target.onNext(stateIn, eventIn)
 
         assertThat(result.responseEvents).hasSize(1)
-        assertThat(result.responseEvents.first()).isSameAs(handlerResponse)
+        assertThat(result.responseEvents.first()).isEqualTo(handlerResponse)
         assertThat(result.updatedState).isSameAs(outputState)
         assertThat(result.markForDLQ).isFalse
     }
@@ -166,7 +166,7 @@ class TokenCacheEventProcessorTest {
         tokenPoolCacheEvent.payload = "message"
 
         val outputState = TokenPoolCacheState()
-        val handlerResponse = Record<String, FlowEvent>("", "", null)
+        val handlerResponse = Record<String, FlowEvent>("test", "key1", null)
 
         whenever(entityConverter.toPoolCacheState(any())).thenReturn(cachePoolState)
         whenever(cachePoolState.toAvro()).thenReturn(outputState)
@@ -188,7 +188,7 @@ class TokenCacheEventProcessorTest {
         verify(entityConverter).toPoolCacheState(expected)
 
         assertThat(result.responseEvents).hasSize(1)
-        assertThat(result.responseEvents.first()).isSameAs(handlerResponse)
+        assertThat(result.responseEvents.first()).isEqualTo(handlerResponse)
         assertThat(result.updatedState).isSameAs(outputState)
         assertThat(result.markForDLQ).isFalse
     }
