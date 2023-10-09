@@ -94,7 +94,6 @@ import javax.persistence.EntityManagerFactory
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PersistenceServiceRpcInternalTests {
     private companion object {
-        const val TOPIC = "pretend-topic"
         private const val TIMEOUT_MILLIS = 10000L
         private val EXTERNAL_EVENT_CONTEXT =
             ExternalEventContext(
