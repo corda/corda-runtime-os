@@ -1,9 +1,6 @@
 package net.corda.applications.workers.workercommon
 
 import io.javalin.core.util.Header
-import io.micrometer.cloudwatch2.CloudWatchConfig
-import io.micrometer.cloudwatch2.CloudWatchMeterRegistry
-import io.micrometer.core.instrument.Clock
 import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmHeapPressureMetrics
@@ -20,8 +17,6 @@ import net.corda.web.api.HTTPMethod
 import net.corda.web.api.WebHandler
 import net.corda.web.api.WebServer
 import org.slf4j.LoggerFactory
-import software.amazon.awssdk.auth.credentials.WebIdentityTokenFileCredentialsProvider
-import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient
 
 object Metrics {
     private val logger = LoggerFactory.getLogger(Metrics::class.java)
