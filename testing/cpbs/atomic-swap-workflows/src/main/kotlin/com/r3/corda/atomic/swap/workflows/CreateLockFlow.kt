@@ -15,15 +15,21 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.CompositeKeyNodeAndWeight
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.membership.MemberInfo
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
+import java.security.KeyFactory
 import java.security.PublicKey
+import java.security.spec.X509EncodedKeySpec
 import java.time.Duration
 import java.time.Instant
 
 
-data class CreateLockFlowArgs(val newOwner: String, val stateId: String)
+data class CreateLockFlowArgs(val newOwner: String, val stateId: String, val transactionId: SecureHash,
+                              val publickKey: ByteBuffer
+)
 
 data class CreateLockFlowResult(val transactionId: String, val stateId: String, val ownerPublicKey: String)
 
@@ -78,11 +84,17 @@ class CreateLockFlow : ClientStartableFlow {
                 throw CordaRuntimeException("Only the owner of a state can transfer it to a new owner.")
             }
 
+            val x509publicKey = X509EncodedKeySpec(flowArgs.publickKey.array())
+            val kf: KeyFactory = KeyFactory.getInstance("EC")
+            val publicKey = kf.generatePublic(x509publicKey)
+
             val lockState = LockState(
                 inputState.owner,
                 newOwnerInfo.ledgerKeys.first(),
                 inputState.assetId,
-                listOf(inputState.owner, newOwnerInfo.ledgerKeys.first())
+                listOf(inputState.owner, newOwnerInfo.ledgerKeys.first()),
+                flowArgs.transactionId,
+                publicKey
             )
 
             val compositeKey = constructCompositeKey(inputState, newOwnerInfo)

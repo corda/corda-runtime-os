@@ -4,6 +4,7 @@ import com.r3.corda.atomic.swap.contracts.AssetContract
 import com.r3.corda.atomic.swap.contracts.LockContract
 import com.r3.corda.atomic.swap.states.Asset
 import com.r3.corda.atomic.swap.states.LockState
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
@@ -19,7 +20,7 @@ import java.time.Duration
 import java.time.Instant
 
 
-data class UnlockFlowArgs(val newOwner: String, val stateId: String)
+data class UnlockFlowArgs(val newOwner: String, val stateId: String, val signature: DigitalSignatureAndMetadata)
 
 data class UnlockFlowResult(val transactionId: String, val stateId: String, val ownerPublicKey: String)
 
@@ -87,7 +88,7 @@ class UnlockFlow : ClientStartableFlow {
                 .addInputState(stateAndRefLock.ref)
                 .addInputState(stateAndRefAsset.ref)
                 .addOutputState(newState)
-                .addCommand(LockContract.LockCommands.Unlock(true))
+                .addCommand(LockContract.LockCommands.Unlock(flowArgs.signature))
                 .addCommand(AssetContract.AssetCommands.Transfer())
                 .addSignatories(newState.owner)
 

@@ -47,6 +47,7 @@ class RpcTransferFlow: ClientStartableFlow {
 
     @CordaInject
     lateinit var flowEngine: FlowEngine
+
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
         log.info("RpcTransferFlow.call() called")
@@ -87,7 +88,6 @@ class RpcTransferFlow: ClientStartableFlow {
                 .addSignatories(outputState.participants)
 
             val signedTransaction = txBuilder.toSignedTransaction()
-
 
             val notarySignature: DigitalSignatureAndMetadata = flowEngine.subFlow(
                 RpcFinalizeFlow(signedTransaction, listOf(ownerInfo.name, newOwnerInfo.name)))
