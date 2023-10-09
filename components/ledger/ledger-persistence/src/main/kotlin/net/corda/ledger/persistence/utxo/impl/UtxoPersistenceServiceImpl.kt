@@ -117,7 +117,9 @@ class UtxoPersistenceServiceImpl(
         }
     }
 
-    override fun <T: ContractState> findUnconsumedVisibleStatesByExactType(stateClass: Class<out T>): List<UtxoVisibleTransactionOutputDto> {
+    override fun <T: ContractState> findUnconsumedVisibleStatesByExactType(
+        stateClass: Class<out T>
+    ): List<UtxoVisibleTransactionOutputDto> {
         return entityManagerFactory.transaction { em ->
             repository.findUnconsumedVisibleStatesByExactType(em, stateClass.canonicalName)
         }
