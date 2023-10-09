@@ -49,7 +49,6 @@ dependencies {
     }
     implementation "io.micrometer:micrometer-registry-prometheus:$micrometerVersion"
     implementation "io.micrometer:micrometer-registry-cloudwatch2:$micrometerVersion"
-    implementation project(':libs:awssdk')
 
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
     runtimeOnly project(':libs:web:web-impl')
