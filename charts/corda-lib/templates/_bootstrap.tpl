@@ -156,7 +156,8 @@ spec:
               echo 'Generating DB specification'
               mkdir /tmp/db
               java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar database spec \
-                -g "config:${DB_CLUSTER_SCHEMA},rbac:${DB_RBAC_SCHEMA},crypto:${DB_CRYPTO_SCHEMA},stateManager:${DB_STATE_MANAGER_SCHEMA}" \
+                -s "config,rbac,crypto,statemanager" \
+                -g "config:${DB_CLUSTER_SCHEMA},rbac:${DB_RBAC_SCHEMA},crypto:${DB_CRYPTO_SCHEMA},statemanager:${DB_STATE_MANAGER_SCHEMA}" \
                 -u "${PGUSER}" -p "${PGPASSWORD}" \
                 --jdbc-url "${JDBC_URL}" \
                 -c -l /tmp/db
@@ -290,6 +291,8 @@ spec:
                 DO \$\$ BEGIN IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${CRYPTO_DB_USER_USERNAME}') THEN RAISE NOTICE 'Role "${CRYPTO_DB_USER_USERNAME}" already exists'; ELSE CREATE USER "${CRYPTO_DB_USER_USERNAME}" WITH ENCRYPTED PASSWORD '$CRYPTO_DB_USER_PASSWORD'; END IF; END \$\$;
                 GRANT USAGE ON SCHEMA ${DB_CRYPTO_SCHEMA} TO "${CRYPTO_DB_USER_USERNAME}";
                 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${DB_CRYPTO_SCHEMA} TO "${CRYPTO_DB_USER_USERNAME}";
+                GRANT USAGE ON SCHEMA ${DB_STATE_MANAGER_SCHEMA} TO "${DB_CLUSTER_USERNAME}";
+                GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${DB_STATE_MANAGER_SCHEMA} TO "${DB_CLUSTER_USERNAME}";
               SQL
 
               echo 'DB Bootstrapped'
@@ -309,6 +312,8 @@ spec:
               value: {{ .Values.bootstrap.db.rbac.schema | quote }}
             - name: DB_CRYPTO_SCHEMA
               value: {{ .Values.bootstrap.db.crypto.schema | quote }}
+            - name: DB_STATE_MANAGER_SCHEMA
+              value: {{ .Values.bootstrap.db.stateManager.schema | quote }}
             {{- include "corda.bootstrapClusterDbEnv" . | nindent 12 }}
             {{- include "corda.rbacDbUserEnv" . | nindent 12 }}
             {{- include "corda.cryptoDbUsernameEnv" . | nindent 12 }}
