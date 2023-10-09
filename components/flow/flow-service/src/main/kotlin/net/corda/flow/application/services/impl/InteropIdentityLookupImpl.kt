@@ -25,6 +25,9 @@ class InteropIdentityLookupImpl @Activate constructor(
     @Suspendable
     override fun lookup(applicationName: String): InterOpIdentityInfo? {
         val identityInfo = getInteropRegistry().getIdentityWithApplicationName(applicationName) ?: return null
+        if (!identityInfo.enabled) {
+            return null
+        }
         return InteropIdentityInfoImpl(
             identityInfo.applicationName,
             identityInfo.facadeIds,

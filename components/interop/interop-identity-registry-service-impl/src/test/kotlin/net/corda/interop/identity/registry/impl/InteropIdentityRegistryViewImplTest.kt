@@ -26,7 +26,8 @@ class InteropIdentityRegistryViewImplTest {
             facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
-            endpointProtocol = "https://alice.corda5.r3.com:10000"
+            endpointProtocol = "https://alice.corda5.r3.com:10000",
+            enabled = true
         )
 
         testView.putInteropIdentity(testInteropIdentity)
@@ -38,7 +39,8 @@ class InteropIdentityRegistryViewImplTest {
             facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
-            endpointProtocol = "https://alice.corda5.r3.com:10000"
+            endpointProtocol = "https://alice.corda5.r3.com:10000",
+            enabled = true
         )
 
         testView.putInteropIdentity(identicalInteropIdentity)
@@ -53,7 +55,8 @@ class InteropIdentityRegistryViewImplTest {
             facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
-            endpointProtocol = "https://bob.corda5.r3.com:10000"
+            endpointProtocol = "https://bob.corda5.r3.com:10000",
+            enabled = true
         )
 
         testView.putInteropIdentity(nonIdenticalInteropIdentity)
@@ -71,7 +74,8 @@ class InteropIdentityRegistryViewImplTest {
             facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
-            endpointProtocol = "https://alice.corda5.r3.com:10000"
+            endpointProtocol = "https://alice.corda5.r3.com:10000",
+            enabled = true
         )
 
         testView.putInteropIdentity(testInteropIdentity)
@@ -86,7 +90,8 @@ class InteropIdentityRegistryViewImplTest {
             facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
-            endpointProtocol = "https://alice.corda5.r3.com:10000"
+            endpointProtocol = "https://alice.corda5.r3.com:10000",
+            enabled = true
         )
 
         testView.removeInteropIdentity(identicalInteropIdentity)
@@ -103,7 +108,8 @@ class InteropIdentityRegistryViewImplTest {
             facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
-            endpointProtocol = "https://alice.corda5.r3.com:10000"
+            endpointProtocol = "https://alice.corda5.r3.com:10000",
+            enabled = true
         )
 
         testView.putInteropIdentity(testInteropIdentity)
@@ -131,7 +137,8 @@ class InteropIdentityRegistryViewImplTest {
             facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
-            endpointProtocol = "https://alice.corda5.r3.com:10000"
+            endpointProtocol = "https://alice.corda5.r3.com:10000",
+            enabled = true
         )
 
         val notOwnedIdentity = InteropIdentity(
@@ -141,7 +148,8 @@ class InteropIdentityRegistryViewImplTest {
             facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
-            endpointProtocol = "https://bob.corda5.r3.com:10000"
+            endpointProtocol = "https://bob.corda5.r3.com:10000",
+            enabled = true
         )
 
         testView.putInteropIdentity(ownedIdentity)
@@ -170,7 +178,8 @@ class InteropIdentityRegistryViewImplTest {
             facadeIds = listOf(facadeId1),
             applicationName = "Gold",
             endpointUrl = "1",
-            endpointProtocol = "https://alice.corda5.r3.com:10000"
+            endpointProtocol = "https://alice.corda5.r3.com:10000",
+            enabled = true
         )
 
         val facadeId2 = FacadeId.of("org.corda.interop/platform/tokens/v3.0")
@@ -181,7 +190,8 @@ class InteropIdentityRegistryViewImplTest {
             facadeIds = listOf(facadeId1, facadeId2),
             applicationName = "Gold",
             endpointUrl = "1",
-            endpointProtocol = "https://alice.corda5.r3.com:10000"
+            endpointProtocol = "https://alice.corda5.r3.com:10000",
+            enabled = true
         )
 
         testView.putInteropIdentity(testInteropIdentity)
@@ -217,7 +227,8 @@ class InteropIdentityRegistryViewImplTest {
             facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
-            endpointProtocol = "https://alice.corda5.r3.com:10000"
+            endpointProtocol = "https://alice.corda5.r3.com:10000",
+            enabled = true
         )
 
         testView.putInteropIdentity(testInteropIdentity)
@@ -238,7 +249,8 @@ class InteropIdentityRegistryViewImplTest {
             facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = applicationName,
             endpointUrl = "1",
-            endpointProtocol = "https://alice.corda5.r3.com:10000"
+            endpointProtocol = "https://alice.corda5.r3.com:10000",
+            enabled = true
         )
 
         val testInteropIdentity2 = InteropIdentity(
@@ -248,7 +260,8 @@ class InteropIdentityRegistryViewImplTest {
             facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = applicationName,
             endpointUrl = "1",
-            endpointProtocol = "https://alice.corda5.r3.com:10000"
+            endpointProtocol = "https://alice.corda5.r3.com:10000",
+            enabled = true
         )
 
         testView.putInteropIdentity(testInteropIdentity1)
@@ -280,7 +293,8 @@ class InteropIdentityRegistryViewImplTest {
             facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
-            endpointProtocol = "https://alice1.corda5.r3.com:10000"
+            endpointProtocol = "https://alice1.corda5.r3.com:10000",
+            enabled = true
         )
 
         val ownedIdentity2 = InteropIdentity(
@@ -290,7 +304,8 @@ class InteropIdentityRegistryViewImplTest {
             facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
             applicationName = "Gold",
             endpointUrl = "1",
-            endpointProtocol = "https://alice2.corda5.r3.com:10000"
+            endpointProtocol = "https://alice2.corda5.r3.com:10000",
+            enabled = true
         )
 
         testView.putInteropIdentity(ownedIdentity1)

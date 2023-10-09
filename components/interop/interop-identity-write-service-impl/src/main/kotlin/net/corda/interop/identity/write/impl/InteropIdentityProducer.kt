@@ -19,7 +19,9 @@ class InteropIdentityProducer(
     }
 
     fun publishInteropIdentity(holdingIdentityShortHash: ShortHash, identity: InteropIdentity) {
-        if (publisher.get() == null) {
+        val pub = publisher.get()
+
+        if (pub == null) {
             logger.error("Interop identity publisher is null, not publishing.")
             return
         }
@@ -40,13 +42,37 @@ class InteropIdentityProducer(
             listOfFacades,
             identity.applicationName,
             identity.endpointUrl,
-            identity.endpointProtocol
+            identity.endpointProtocol,
+            identity.enabled
         )
 
-        val futures = publisher.get()!!.publish(listOf(Record(INTEROP_IDENTITY_TOPIC, key, recordValue)))
+        val futures = pub.publish(listOf(Record(INTEROP_IDENTITY_TOPIC, key, recordValue)))
 
         futures.forEach { it.get() }
 
         logger.info("Interop identity published with key : $key and value : $identity")
+    }
+
+    fun clearInteropIdentity(holdingIdentityShortHash: ShortHash, interopIdentityShortHash: ShortHash) {
+        val pub = publisher.get()
+
+        if (pub == null) {
+            logger.error("Interop identity publisher is null, not publishing.")
+            return
+        }
+
+        val key = "$holdingIdentityShortHash:$interopIdentityShortHash"
+
+        val record = Record(
+            INTEROP_IDENTITY_TOPIC,
+            key,
+            null
+        )
+
+        val futures = pub.publish(listOf(record))
+
+        futures.forEach { it.get() }
+
+        logger.info("Interop identity with key : $key cleared from interop identity topic.")
     }
 }

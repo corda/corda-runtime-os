@@ -44,8 +44,9 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
+import net.corda.rest.ResponseCode
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 @Component(service = [PluggableRestResource::class])
 internal class InteropRestResourceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -234,7 +235,8 @@ internal class InteropRestResourceImpl @Activate constructor(
                 facadeIds = facadeIds(),
                 applicationName = createInteropIdentityRestRequest.applicationName,
                 endpointUrl = endpointUrl,
-                endpointProtocol = endpointProtocol
+                endpointProtocol = endpointProtocol,
+                enabled = true
             )
         )
 
@@ -250,6 +252,7 @@ internal class InteropRestResourceImpl @Activate constructor(
                     applicationName = MemberX500Name.parse(member.x500Name).organization,
                     endpointUrl = member.endpointUrl,
                     endpointProtocol = member.endpointProtocol,
+                    enabled = true
                 )
             )
         }
@@ -259,6 +262,76 @@ internal class InteropRestResourceImpl @Activate constructor(
         return CreateInteropIdentityRest.Response(
             Utils.computeShortHash(ownedInteropIdentityX500, interopGroupId).toString()
         )
+    }
+
+    private fun updateInteropIdentityEnablement(
+        holdingIdentityShortHash: String,
+        interopIdentityShortHash: String,
+        newState: Boolean
+    ) {
+        val validHoldingIdentityShortHash = validateShortHash(holdingIdentityShortHash)
+        val validInteropIdentityShortHash = validateShortHash(interopIdentityShortHash)
+
+        val vNodeInfo = getAndValidateVirtualNodeInfoByShortHash(validHoldingIdentityShortHash)
+        val vNodeShortHash = vNodeInfo.getVNodeShortHash()
+
+        val registryView = interopIdentityRegistryService.getVirtualNodeRegistryView(vNodeShortHash)
+
+        val identityToDisable = registryView.getIdentityWithShortHash(validInteropIdentityShortHash) ?:
+        throw InvalidInputDataException(
+            "No interop identity with short hash '$validInteropIdentityShortHash' found for holding " +
+                    "identity '$validHoldingIdentityShortHash'."
+        )
+
+        if (identityToDisable.enabled != newState) {
+            interopIdentityWriteService.updateInteropIdentityEnablement(vNodeShortHash, identityToDisable, newState)
+        }
+    }
+
+    override fun suspendInteropIdentity(
+        holdingIdentityShortHash: String,
+        interopIdentityShortHash: String
+    ): ResponseEntity<String> {
+        updateInteropIdentityEnablement(holdingIdentityShortHash, interopIdentityShortHash, false)
+        return ResponseEntity(ResponseCode.OK, "OK")
+    }
+
+    override fun enableInteropIdentity(
+        holdingIdentityShortHash: String,
+        interopIdentityShortHash: String
+    ): ResponseEntity<String> {
+        updateInteropIdentityEnablement(holdingIdentityShortHash, interopIdentityShortHash, true)
+        return ResponseEntity(ResponseCode.OK, "OK")
+    }
+
+    override fun deleteInteropIdentity(
+        holdingIdentityShortHash: String,
+        interopIdentityShortHash: String
+    ): ResponseEntity<String> {
+        val validHoldingIdentityShortHash = validateShortHash(holdingIdentityShortHash)
+        val validInteropIdentityShortHash = validateShortHash(interopIdentityShortHash)
+
+        val vNodeInfo = getAndValidateVirtualNodeInfoByShortHash(validHoldingIdentityShortHash)
+        val vNodeShortHash = vNodeInfo.getVNodeShortHash()
+
+        val registryView = interopIdentityRegistryService.getVirtualNodeRegistryView(vNodeShortHash)
+        val identityToRemove = registryView.getIdentityWithShortHash(validInteropIdentityShortHash) ?:
+            throw InvalidInputDataException(
+                "No interop identity with short hash '$validInteropIdentityShortHash' found for holding " +
+                        "identity '$validHoldingIdentityShortHash'."
+            )
+
+        if (identityToRemove.enabled) {
+            throw InvalidInputDataException(
+                "Interop identity '$interopIdentityShortHash' must be disabled prior to deletion. " +
+                "Note: Deleting an interop identity will disrupt any active flow sessions which are using that identity. " +
+                "Ensure that the identity is not in use attempting to delete it."
+            )
+        }
+
+        interopIdentityWriteService.removeInteropIdentity(vNodeShortHash, identityToRemove)
+
+        return ResponseEntity(ResponseCode.OK, "OK")
     }
 
     private fun facadeIds() = listOf(
@@ -281,7 +354,8 @@ internal class InteropRestResourceImpl @Activate constructor(
                 interopIdentity.facadeIds,
                 MemberX500Name.parse(interopIdentity.x500Name).organization,
                 interopIdentity.endpointUrl,
-                interopIdentity.endpointProtocol
+                interopIdentity.endpointProtocol,
+                interopIdentity.enabled
             )
         }.toList()
     }
@@ -306,6 +380,9 @@ internal class InteropRestResourceImpl @Activate constructor(
                         "Interop identity ${interopIdentityToExport.owningVirtualNodeShortHash}" +
                         "& yours is $vNodeShortHash"
             )
+        }
+        if (!interopIdentityToExport.enabled) {
+            throw InvalidInputDataException("Cannot export a suspended identity.")
         }
         val groupPolicy = checkNotNull(interopGroupPolicyReadService.getGroupPolicy(interopIdentityToExport.groupId)) {
             "Could not find group policy info for interop identity $validInteropIdentityShortHash"
@@ -388,7 +465,8 @@ internal class InteropRestResourceImpl @Activate constructor(
                     owningVirtualNodeShortHash = ShortHash.of(member.owningIdentityShortHash),
                     applicationName = MemberX500Name.parse(member.x500Name).organization,
                     endpointUrl = member.endpointUrl,
-                    endpointProtocol = member.endpointProtocol
+                    endpointProtocol = member.endpointProtocol,
+                    enabled = true
                 )
             )
         }

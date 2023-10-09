@@ -34,7 +34,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import java.util.UUID
 
 
-@Suppress("ForbiddenComment")
+@Suppress("ForbiddenComment", "TooManyFunctions")
 @Component(service = [InteropIdentityWriteService::class])
 class InteropIdentityWriteServiceImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
@@ -76,6 +76,34 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
 
         if (vNodeShortHash == identity.owningVirtualNodeShortHash) {
             writeHostedIdentitiesTopic(identity)
+        }
+    }
+
+    override fun updateInteropIdentityEnablement(
+        vNodeShortHash: ShortHash,
+        identity: InteropIdentity,
+        enablementState: Boolean
+    ) {
+        val updatedIdentity = InteropIdentity(
+            x500Name = identity.x500Name,
+            groupId = identity.groupId,
+            owningVirtualNodeShortHash = identity.owningVirtualNodeShortHash,
+            facadeIds = identity.facadeIds,
+            applicationName = identity.applicationName,
+            endpointUrl = identity.endpointUrl,
+            endpointProtocol = identity.endpointProtocol,
+            enabled = enablementState
+        )
+
+        writeInteropIdentityTopic(vNodeShortHash, updatedIdentity)
+    }
+
+    override fun removeInteropIdentity(vNodeShortHash: ShortHash, identity: InteropIdentity) {
+        clearMemberInfoTopic(vNodeShortHash, identity.shortHash)
+        clearInteropIdentityTopic(vNodeShortHash, identity.shortHash)
+
+        if (vNodeShortHash == identity.owningVirtualNodeShortHash) {
+            clearHostedIdentitiesTopic(identity.shortHash)
         }
     }
 
@@ -133,12 +161,34 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
         membershipInfoProducer.publishMemberInfo(realHoldingIdentity, ownedInteropIdentity, listOf(identity))
     }
 
+    private fun clearMemberInfoTopic(vNodeShortHash: ShortHash, interopIdentityShortHash: ShortHash) {
+        val cacheView = interopIdentityRegistryService.getVirtualNodeRegistryView(vNodeShortHash)
+
+        val identityToRemove = checkNotNull(cacheView.getIdentityWithShortHash(interopIdentityShortHash)) {
+            "No interop identity with short hash $interopIdentityShortHash"
+        }
+
+        val owningIdentity = checkNotNull(cacheView.getOwnedIdentity(identityToRemove.groupId)) {
+            "No identity owned by virtual node $vNodeShortHash in group ${identityToRemove.groupId}"
+        }
+
+        membershipInfoProducer.clearMemberInfo(owningIdentity, identityToRemove)
+    }
+
     private fun writeInteropIdentityTopic(vNodeShortHash: ShortHash, identity: InteropIdentity) {
         interopIdentityProducer.publishInteropIdentity(vNodeShortHash, identity)
     }
 
+    private fun clearInteropIdentityTopic(vNodeShortHash: ShortHash, interopIdentityShortHash: ShortHash) {
+        interopIdentityProducer.clearInteropIdentity(vNodeShortHash, interopIdentityShortHash)
+    }
+
     private fun writeHostedIdentitiesTopic(identity: InteropIdentity) {
         hostedIdentityProducer.publishHostedInteropIdentity(identity)
+    }
+
+    private fun clearHostedIdentitiesTopic(interopIdentityShortHash: ShortHash) {
+        hostedIdentityProducer.clearHostedInteropIdentity(interopIdentityShortHash)
     }
 
     override fun start() {
