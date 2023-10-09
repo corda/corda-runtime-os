@@ -7,6 +7,7 @@ import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.ledger.utxo.impl.token.selection.impl.PoolKey
 import net.corda.ledger.utxo.impl.token.selection.impl.toStateRef
+import net.corda.ledger.utxo.impl.token.selection.services.TokenClaimCheckpointService
 import net.corda.schema.Schemas.Services.TOKEN_CACHE_EVENT
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -20,10 +21,11 @@ class ClaimReleaseExternalEventFactoryTest {
         val poolKey = PoolKey("", "", "", "", "")
         val avroPoolKey = poolKey.toTokenPoolCacheKey()
         val checkpoint = mock<FlowCheckpoint>()
+        val tokenClaimCheckpointService= mock<TokenClaimCheckpointService>()
         val flowExternalEventContext = ExternalEventContext()
         val parameters = ClaimReleaseParameters("c1", poolKey, listOf(stateRef))
 
-        val result = ClaimReleaseExternalEventFactory().createExternalEvent(
+        val result = ClaimReleaseExternalEventFactory(tokenClaimCheckpointService).createExternalEvent(
             checkpoint,
             flowExternalEventContext,
             parameters
@@ -45,5 +47,6 @@ class ClaimReleaseExternalEventFactoryTest {
         assertThat(result.topic).isEqualTo(TOKEN_CACHE_EVENT)
         assertThat(result.key).isEqualTo(avroPoolKey)
         assertThat(result).isEqualTo(expectedRecord)
+        assertThat(tokenClaimCheckpointService.removeClaimFromCheckpoint(checkpoint,"c1" ))
     }
 }

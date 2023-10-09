@@ -326,6 +326,17 @@ class FlowCheckpointImplTest {
     }
 
     @Test
+    fun `mark delete sets isComplete to true`() {
+        val checkpoint = setupAvroCheckpoint()
+
+        val flowCheckpoint = createFlowCheckpoint(checkpoint)
+
+        assertThat(flowCheckpoint.isCompleted).isFalse
+        flowCheckpoint.markDeleted()
+        assertThat(flowCheckpoint.isCompleted).isTrue
+    }
+
+    @Test
     fun `flow stack - peek first throws if stack empty`() {
         val checkpoint = setupAvroCheckpoint()
         val flowCheckpoint = createFlowCheckpoint(checkpoint)
@@ -807,7 +818,7 @@ class FlowCheckpointImplTest {
     fun `existing checkpoint - write new custom state updates avro`() {
         val checkpoint = setupAvroCheckpoint()
         val flowCheckpoint = createFlowCheckpoint(checkpoint)
-        flowCheckpoint.writeCustomState(ExampleCustomState().apply { name = "test" })
+        flowCheckpoint.writeCustomState(ExampleCustomState("test"))
 
         val expectedAvroCustomState = KeyValuePairList.newBuilder()
             .setItems(
@@ -837,7 +848,7 @@ class FlowCheckpointImplTest {
             .setItems(listOf(existingAvroCustomState))
             .build()
 
-        flowCheckpoint.writeCustomState(ExampleCustomState().apply { name = "test2" })
+        flowCheckpoint.writeCustomState(ExampleCustomState("test2" ))
 
         val expectedAvroCustomState = KeyValuePairList.newBuilder()
             .setItems(
@@ -855,9 +866,7 @@ class FlowCheckpointImplTest {
     }
 }
 
-class ExampleCustomState {
-    var name: String? = null
-}
+data class ExampleCustomState(var name: String)
 
 @InitiatingFlow(protocol = "valid-example")
 class InitiatingFlowExample : SubFlow<Unit> {

@@ -59,6 +59,8 @@ interface FlowCheckpoint : NonSerializable {
 
     val initialPlatformVersion: Int
 
+    val isCompleted: Boolean
+
     fun initFlowState(flowStartContext: FlowStartContext, cpkFileHashes: Set<SecureHash>)
 
     fun getSessionState(sessionId: String): SessionState?
@@ -81,9 +83,9 @@ interface FlowCheckpoint : NonSerializable {
 
     fun setPendingPlatformError(type: String, message: String)
 
-    fun <T> readCustomState(clazz:Class<T>): T?
+    fun <T> readCustomState(clazz: Class<T>): T?
 
-    fun writeCustomState(state:Any)
+    fun writeCustomState(state: Any)
 
     fun toAvro(): Checkpoint?
 }

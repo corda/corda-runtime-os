@@ -1,7 +1,6 @@
 package net.corda.flow.pipeline
 
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
@@ -9,7 +8,6 @@ import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.libs.configuration.SmartConfig
-import net.corda.messaging.api.processor.StateAndEventProcessor
 
 /**
  * The [FlowEventExceptionProcessor] is responsible for handling any exceptions thrown while processing a [FlowEvent]
@@ -30,10 +28,11 @@ interface FlowEventExceptionProcessor {
      * are thrown from this function.
      *
      * @param throwable The [Throwable] thrown during processing.
+     * @param context The [FlowEventContext] at the point of failure.
      *
-     * @return The updated response.
+     * @return The updated context.
      */
-    fun process(throwable: Throwable): StateAndEventProcessor.Response<Checkpoint>
+    fun process(throwable: Throwable, context: FlowEventContext<*>): FlowEventContext<*>
 
     /**
      * Processes a [FlowTransientException] and provides the pipeline response.
@@ -43,9 +42,9 @@ interface FlowEventExceptionProcessor {
      * @param exception The [FlowTransientException] thrown during processing
      * @param context The [FlowEventContext] at the point of failure.
      *
-     * @return The updated response.
+     * @return The updated context.
      */
-    fun process(exception: FlowTransientException, context: FlowEventContext<*>): StateAndEventProcessor.Response<Checkpoint>
+    fun process(exception: FlowTransientException, context: FlowEventContext<*>): FlowEventContext<*>
 
     /**
      * Processes a [FlowFatalException] and provides the pipeline response.
@@ -55,9 +54,9 @@ interface FlowEventExceptionProcessor {
      *
      * @param exception The [FlowFatalException] thrown during processing.
      *
-     * @return The updated response.
+     * @return The updated context.
      */
-    fun process(exception: FlowFatalException, context: FlowEventContext<*>): StateAndEventProcessor.Response<Checkpoint>
+    fun process(exception: FlowFatalException, context: FlowEventContext<*>): FlowEventContext<*>
 
     /**
      * Processes a [FlowEventException] and provides the pipeline response.
@@ -66,9 +65,9 @@ interface FlowEventExceptionProcessor {
      *
      * @param exception The [FlowEventException] thrown during processing
      *
-     * @return The updated response.
+     * @return The updated context.
      */
-    fun process(exception: FlowEventException, context: FlowEventContext<*>): StateAndEventProcessor.Response<Checkpoint>
+    fun process(exception: FlowEventException, context: FlowEventContext<*>): FlowEventContext<*>
 
     /**
      * Processes a [FlowPlatformException] and provides the pipeline response.
@@ -78,9 +77,9 @@ interface FlowEventExceptionProcessor {
      *
      * @param exception The [FlowPlatformException] thrown during processing
      *
-     * @return The updated response.
+     * @return The updated context.
      */
-    fun process(exception: FlowPlatformException, context: FlowEventContext<*>): StateAndEventProcessor.Response<Checkpoint>
+    fun process(exception: FlowPlatformException, context: FlowEventContext<*>): FlowEventContext<*>
 
     /**
      * Processes a [FlowMarkedForKillException] and provides the pipeline response for killing the flow and erroring all sessions.
@@ -92,5 +91,5 @@ interface FlowEventExceptionProcessor {
      *
      * @return The context updated to kill the flow
      */
-    fun process(exception: FlowMarkedForKillException, context: FlowEventContext<*>): StateAndEventProcessor.Response<Checkpoint>
+    fun process(exception: FlowMarkedForKillException, context: FlowEventContext<*>): FlowEventContext<*>
 }
