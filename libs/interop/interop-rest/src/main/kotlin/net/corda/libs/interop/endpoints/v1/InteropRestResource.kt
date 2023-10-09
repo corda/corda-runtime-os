@@ -12,12 +12,14 @@ import net.corda.rest.annotations.RestPathParameter
 import net.corda.rest.response.ResponseEntity
 import java.util.UUID
 import net.corda.rest.annotations.HttpDELETE
+import net.corda.rest.annotations.RestApiVersion
 
 /** Rest operations for interop management. */
 @HttpRestResource(
     name = "Interop API",
     description = "The interop API is used to administrate interop identities and interop groups.",
-    path = "interop"
+    path = "interop",
+    minVersion = RestApiVersion.C5_1
 )
 interface InteropRestResource : RestResource {
     /**
