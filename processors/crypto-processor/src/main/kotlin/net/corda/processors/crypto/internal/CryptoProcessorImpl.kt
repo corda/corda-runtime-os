@@ -412,7 +412,7 @@ class CryptoProcessorImpl @Activate constructor(
         logger.trace("Starting processing on $rewrapGroupName ${Schemas.Crypto.REWRAP_MESSAGE_TOPIC}")
         coordinator.getManagedResource<SubscriptionBase>(REWRAP_SUBSCRIPTION)!!.start()
 
-        val rekeyGroupName = "crypto.key.rotations.ops"
+        val rekeyGroupName = "crypto.key.rotation.ops"
         coordinator.createManagedResource(REKEY_SUBSCRIPTION) {
             subscriptionFactory.createDurableSubscription(
                 subscriptionConfig = SubscriptionConfig(
