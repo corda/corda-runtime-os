@@ -876,18 +876,19 @@ class StaticMemberRegistrationServiceTest {
 
             verify(memberInfoFactory, times(3))
                 .createMgmOrStaticPersistentMemberInfo(any(), capturedMemberInfos.capture(), any(), any())
-            val notaryDetails = capturedMemberInfos.allValues.firstOrNull {
+            val notaryMemberInfo = capturedMemberInfos.allValues.first {
                 it.notaryDetails != null
-            }?.notaryDetails
+            }
+            val notaryDetails = notaryMemberInfo.notaryDetails!!
             assertSoftly {
                 assertThat(capturedPublishedList.firstValue.firstOrNull()?.value)
                     .isInstanceOf(PersistentMemberInfo::class.java)
-                assertThat(notaryDetails?.serviceName)
+                assertThat(notaryDetails.serviceName)
                     .isEqualTo(MemberX500Name.parse(notary.toString()))
-                assertThat(notaryDetails?.serviceProtocol).isEqualTo("net.corda.notary.MyNotaryService")
-                assertThat(notaryDetails?.serviceProtocolVersions).containsExactlyInAnyOrder(1)
+                assertThat(notaryDetails.serviceProtocol).isEqualTo("net.corda.notary.MyNotaryService")
+                assertThat(notaryDetails.serviceProtocolVersions).containsExactlyInAnyOrder(1)
 
-                assertThat(notaryDetails?.keys?.toList())
+                assertThat(notaryDetails.keys.toList())
                     .hasSize(1)
                     .allMatch {
                         it.publicKey == defaultKey
@@ -898,6 +899,8 @@ class StaticMemberRegistrationServiceTest {
                     .allMatch {
                         it.spec.signatureName == SignatureSpecs.RSA_SHA512.signatureName
                     }
+
+                assertThat(notaryMemberInfo.ledgerKeys).isEmpty()
             }
         }
 

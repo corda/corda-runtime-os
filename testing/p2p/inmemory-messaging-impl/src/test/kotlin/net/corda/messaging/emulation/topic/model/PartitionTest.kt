@@ -23,10 +23,8 @@ class PartitionTest {
     @Test
     fun `addRecord will increase the offset`() {
         partition.lock.write {
-            (1..4).map {
-                Record("topic", it, it + 1)
-            }.forEach {
-                partition.addRecord(it)
+            for (i in 1..4) {
+                partition.addRecord(Record("topic", i, i + 1))
             }
         }
 
@@ -37,10 +35,8 @@ class PartitionTest {
     @Test
     fun `addRecord will remove records from the end`() {
         partition.lock.write {
-            (1..20).map {
-                Record("topic", it, it + 1)
-            }.forEach {
-                partition.addRecord(it)
+            for (i in 1..20) {
+                partition.addRecord(Record("topic", i, i + 1))
             }
         }
 
@@ -51,10 +47,8 @@ class PartitionTest {
     @Test
     fun `addRecord will throw an exception if partition is not locked`() {
         assertThrows<ConcurrentModificationException> {
-            (1..3).map {
-                Record("topic", it, it + 1)
-            }.forEach {
-                partition.addRecord(it)
+            for (i in 1..3) {
+                partition.addRecord(Record("topic", i, i + 1))
             }
         }
     }
@@ -62,10 +56,8 @@ class PartitionTest {
     @Test
     fun `getRecordsFrom will return the correct list of records`() {
         partition.lock.write {
-            (1..20).map {
-                Record("topic", it, it + 1)
-            }.forEach {
-                partition.addRecord(it)
+            for (i in 1..20) {
+                partition.addRecord(Record("topic", i, i + 1))
             }
         }
 
@@ -76,10 +68,8 @@ class PartitionTest {
     @Test
     fun `latestOffset will return the correct list of records`() {
         partition.lock.write {
-            (10..40).map {
-                Record("topic", it, it + 1)
-            }.forEach {
-                partition.addRecord(it)
+            for (i in 10..40) {
+                partition.addRecord(Record("topic", i, i + 1))
             }
         }
 

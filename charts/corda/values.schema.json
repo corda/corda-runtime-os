@@ -1437,15 +1437,6 @@
                                 false
                             ]
                         },
-                        "cleanup": {
-                            "type": "boolean",
-                            "default": false,
-                            "title": "specifies whether existing topics with the given prefix should be deleted before trying to create new ones (deletes all existing topics if no prefix is given)",
-                            "examples": [
-                                false,
-                                true
-                            ]
-                        },
                         "partitions": {
                             "type": "integer",
                             "default": 10,
@@ -1491,14 +1482,12 @@
                     },
                     "then": {
                         "required": [
-                            "cleanup",
                             "partitions",
                             "replicas"
                         ]
                     },
                     "examples": [{
                         "enabled": true,
-                        "cleanup": false,
                         "partitions": 10,
                         "replicas": 3
                     }]
@@ -2484,6 +2473,60 @@
                                     "examples": [{
                                         "port": 8080
                                     }]
+                                },
+                                "ingress": {
+                                    "type": "object",
+                                    "default": {},
+                                    "title": "P2P gateway worker ingress configuration",
+                                    "required": [
+                                        "annotations",
+                                        "hosts"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "annotations": {
+                                            "type": "object",
+                                            "default": {},
+                                            "title": "the annotations for P2P gateway worker ingress",
+                                            "required": [],
+                                            "properties": {},
+                                            "examples": [
+                                                {
+                                                    "cert-manager.io/cluster-issuer": "production",
+                                                    "nginx.ingress.kubernetes.io/backend-protocol": "HTTPS"
+                                                }
+                                            ]
+                                        },
+                                        "className": {
+                                            "type": "string",
+                                            "default": "",
+                                            "title": "the className for the P2P gateway worker ingress",
+                                            "examples": [
+                                                "nginx"
+                                            ]
+                                        },
+                                        "hosts": {
+                                            "type": "array",
+                                            "default": [],
+                                            "title": "the hosts for P2P gateway worker ingress",
+                                            "items": {},
+                                            "examples": [
+                                                ["p2p-gateway-worker-1234.dev.corda.cloud"]
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "annotations": {
+                                                "cert-manager.io/cluster-issuer": "production",
+                                                "nginx.ingress.kubernetes.io/backend-protocol": "HTTPS"
+                                            },
+                                            "className": "nginx",
+                                            "hosts": [
+                                                "p2p-gateway-worker-1234.dev.corda.cloud"
+                                            ]
+                                        }
+                                    ]
                                 }
                             },
                             "examples": [{
