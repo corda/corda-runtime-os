@@ -425,8 +425,6 @@ bootstrap:
   kafka:
     # -- Indicates whether Kafka bootstrap is enabled as part of installation
     enabled: true
-    # -- Specifies whether existing topics with the given prefix should be deleted before trying to create new ones (deletes all existing topics if no prefix is given)
-    cleanup: false
     # -- Kafka topic partitions
     partitions: 10
     # -- Kafka topic replicas
@@ -1172,6 +1170,14 @@ workers:
     service:
       # -- The P2P gateway HTTP port
       port: 8080
+    # P2P gateway worker ingress configuration
+    ingress:
+      # -- the annotations for the P2P gateway worker ingress
+      annotations: {}
+      # -- the className for the P2P gateway worker ingress
+      className: ""
+      # -- the hosts for the P2P gateway worker ingress
+      hosts: []
     # P2P gateway worker Kafka configuration
     kafka:
       # if kafka.sasl.enabled, the credentials to connect to Kafka with for the P2P gateway worker

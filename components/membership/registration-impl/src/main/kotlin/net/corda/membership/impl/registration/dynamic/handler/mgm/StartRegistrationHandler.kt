@@ -43,6 +43,7 @@ import net.corda.membership.lib.registration.DECLINED_REASON_GROUP_ID_IN_REQUEST
 import net.corda.membership.lib.registration.DECLINED_REASON_INVALID_NOTARY_SERVICE_PLUGIN_TYPE
 import net.corda.membership.lib.registration.DECLINED_REASON_NAME_IN_REQUEST_NOT_MATCHING_NAME_IN_P2P_MSG
 import net.corda.membership.lib.registration.DECLINED_REASON_NOTARY_MISSING_NOTARY_DETAILS
+import net.corda.membership.lib.registration.DECLINED_REASON_NOTARY_LEDGER_KEY
 import net.corda.membership.lib.registration.DECLINED_REASON_NOT_MGM_IDENTITY
 import net.corda.membership.lib.registration.DECLINED_REASON_NO_ENDPOINTS_SPECIFIED
 import net.corda.membership.lib.registration.DECLINED_REASON_RESISTRANT_IS_MGM
@@ -324,6 +325,10 @@ internal class StartRegistrationHandler(
                 groupReader.lookup().none {
                     it.notaryDetails?.serviceName == notary.serviceName && it.name != member.name
                 }, notaryServiceExistsFn, { DECLINED_REASON_FOR_USER_GENERAL_INVALID_REASON })
+
+            if (member.ledgerKeys.isNotEmpty()) {
+                  throw InvalidRegistrationRequestException(DECLINED_REASON_NOTARY_LEDGER_KEY, DECLINED_REASON_NOTARY_LEDGER_KEY)
+            }
         }
 
         validateRegistrationRequest(groupParameters.notaries.none { it.name == member.name }, {

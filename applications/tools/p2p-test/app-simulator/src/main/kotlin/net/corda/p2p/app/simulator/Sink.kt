@@ -34,10 +34,10 @@ class Sink(
     private val resources = mutableListOf<AutoCloseable>()
 
     fun start() {
-        (1..commonConfig.clients).forEach { client ->
+        for (i in 1..commonConfig.clients) {
             val subscriptionConfig = SubscriptionConfig("app-simulator-sink", APP_RECEIVED_MESSAGES_TOPIC)
             val configWithInstanceId = commonConfig.bootConfig
-                .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef("${commonConfig.parameters.instanceId}-$client".hashCode()))
+                .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef("${commonConfig.parameters.instanceId}-$i".hashCode()))
                 .withValue(MessagingConfig.MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(10000000))
             val messagingConfig = configMerger.getMessagingConfig(configWithInstanceId)
             val processor = DBSinkProcessor()

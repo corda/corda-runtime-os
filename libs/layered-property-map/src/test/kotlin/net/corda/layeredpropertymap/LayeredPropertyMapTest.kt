@@ -470,7 +470,7 @@ class LayeredPropertyMapTest {
         val threadCount = 20
         val propertyMaps = mutableListOf<LayeredPropertyMap>()
         val results = ConcurrentHashMap<Pair<Int,LayeredPropertyMap>, Set<Int>>()
-        (0 until mapCount).forEach { _ ->
+        for (i in 0 until mapCount) {
             propertyMaps.add(createLayeredPropertyMapImpl())
         }
         (0 until threadCount).createTestCase {
@@ -494,7 +494,7 @@ class LayeredPropertyMapTest {
         val threadCount = 20
         val propertyMaps = mutableListOf<LayeredPropertyMap>()
         val results = ConcurrentHashMap<Pair<Int,LayeredPropertyMap>, List<Int>>()
-        (0 until mapCount).forEach { _ ->
+        for (i in 0 until mapCount) {
             propertyMaps.add(createLayeredPropertyMapImpl())
         }
         (0 until threadCount).createTestCase {
@@ -518,7 +518,7 @@ class LayeredPropertyMapTest {
         val threadCount = 20
         val propertyMaps = mutableListOf<LayeredPropertyMap>()
         val results = ConcurrentHashMap<Pair<Int,LayeredPropertyMap>, Instant>()
-        (0 until mapCount).forEach { _ ->
+        for (i in 0 until mapCount) {
             propertyMaps.add(createLayeredPropertyMapImpl())
         }
         (0 until threadCount).createTestCase {
@@ -542,7 +542,7 @@ class LayeredPropertyMapTest {
         val threadCount = 20
         val propertyMaps = mutableListOf<LayeredPropertyMap>()
         val results = ConcurrentHashMap<Pair<Int,LayeredPropertyMap>, Instant?>()
-        (0 until mapCount).forEach { _ ->
+        for (i in 0 until mapCount) {
             propertyMaps.add(createLayeredPropertyMapImpl())
         }
         (0 until threadCount).createTestCase {
