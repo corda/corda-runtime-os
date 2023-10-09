@@ -174,13 +174,6 @@ spec:
               fieldRef:
                 apiVersion: v1
                 fieldPath: metadata.namespace
-          - name: ENABLE_CLOUDWATCH
-            value:
-              {{- if eq $.Values.serviceAccount.name "cloudwatch-writer" }}
-                "true"
-              {{- else }}
-                "false"
-              {{- end }}
           - name: JAVA_TOOL_OPTIONS
             value:
               {{ .javaOptions }}
