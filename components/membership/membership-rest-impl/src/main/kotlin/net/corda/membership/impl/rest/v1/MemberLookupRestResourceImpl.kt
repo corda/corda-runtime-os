@@ -91,6 +91,7 @@ class MemberLookupRestResourceImpl @Activate constructor(
         coordinator.stop()
     }
 
+    @Deprecated("Deprecated in favour of lookupV51")
     override fun lookup(
         holdingIdentityShortHash: String,
         commonName: String?,
