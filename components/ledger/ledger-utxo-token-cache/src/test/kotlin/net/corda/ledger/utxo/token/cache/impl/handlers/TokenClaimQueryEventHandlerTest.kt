@@ -222,4 +222,3 @@ class TokenClaimQueryEventHandlerTest {
         return ClaimQuery(claimId, flowId, BigDecimal(targetAmount), tag, ownerHash, POOL_KEY)
     }
 }
-
