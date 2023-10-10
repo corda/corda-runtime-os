@@ -71,6 +71,7 @@ class TokenSelectionFlow : ClientStartableFlow {
 
         // release the tokens we have spent
         log.info("Releasing token claim...")
+        @Suppress("DEPRECATION")
         claimResult.useAndRelease(spentTokenRefs)
         log.info("Token claim released.")
         return spentTokenAmounts
