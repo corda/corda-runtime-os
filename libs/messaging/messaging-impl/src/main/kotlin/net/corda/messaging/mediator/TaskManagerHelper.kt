@@ -137,7 +137,7 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
         clientTasks: Collection<ClientTask<K, S, E>>
     ): List<ClientTask.Result<K, S, E>> {
         return clientTasks.map { clientTask ->
-            taskManager.execute(TaskType.SHORT_RUNNING, clientTask::call)
+            taskManager.executeShortRunningTask(clientTask::call)
         }.map {
             it.join()
         }
