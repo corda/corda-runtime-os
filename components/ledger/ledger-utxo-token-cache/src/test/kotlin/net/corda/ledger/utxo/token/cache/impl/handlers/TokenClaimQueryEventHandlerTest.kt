@@ -27,9 +27,7 @@ class TokenClaimQueryEventHandlerTest {
 
     private val recordFactory: RecordFactory = mock()
     private val availableTokenService: AvailableTokenService = mock()
-    private val tokenCache: TokenCache = mock<TokenCache>().apply {
-        whenever(this.iterator()).thenReturn(listOf<CachedToken>().iterator())
-    }
+    private val tokenCache: TokenCache = mock()
     private val filterStrategy = mock<TokenFilterStrategy>()
     private val poolCacheState: PoolCacheState = mock()
 
