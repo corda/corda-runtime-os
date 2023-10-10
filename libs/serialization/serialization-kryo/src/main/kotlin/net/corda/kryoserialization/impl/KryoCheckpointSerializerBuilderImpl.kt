@@ -82,7 +82,6 @@ class KryoCheckpointSerializerBuilderImpl(
 
         val pool = object : Pool<Kryo>(true, false, 8) {
             override fun create(): Kryo {
-                this.peak
                 val classResolver = CordaClassResolver(sandboxGroup)
                 val classSerializer = ClassSerializer(sandboxGroup)
                 return DefaultKryoCustomizer.customize(
