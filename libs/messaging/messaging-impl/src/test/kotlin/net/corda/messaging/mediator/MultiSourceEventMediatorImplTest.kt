@@ -26,7 +26,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.test.util.waitWhile
 import org.junit.jupiter.api.BeforeEach
-// import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.atLeast
