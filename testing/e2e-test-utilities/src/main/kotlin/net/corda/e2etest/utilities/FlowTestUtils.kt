@@ -4,13 +4,14 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.NullNode
+import net.corda.utilities.minutes
 import org.apache.commons.text.StringEscapeUtils.escapeJson
-import java.time.Duration
 import java.util.UUID
 
 const val SMOKE_TEST_CLASS_NAME = "com.r3.corda.testing.smoketests.flow.RpcSmokeTestFlow"
 const val RPC_FLOW_STATUS_SUCCESS = "COMPLETED"
 const val RPC_FLOW_STATUS_FAILED = "FAILED"
+private val RETRY_TIMEOUT = 6.minutes
 
 fun startRpcFlow(
     holdingId: String,
@@ -21,6 +22,7 @@ fun startRpcFlow(
 
     return DEFAULT_CLUSTER.cluster {
         assertWithRetry {
+            timeout(RETRY_TIMEOUT)
             command {
                 flowStart(
                     holdingId,
@@ -48,6 +50,7 @@ fun ClusterInfo.startRpcFlow(holdingId: String, args: Map<String, Any>, flowName
         val requestId = UUID.randomUUID().toString()
 
         assertWithRetry {
+            timeout(RETRY_TIMEOUT)
             command {
                 flowStart(
                     holdingId,
@@ -74,7 +77,7 @@ fun ClusterInfo.awaitRpcFlowFinished(holdingId: String, requestId: String): Flow
             assertWithRetryIgnoringExceptions {
                 command { flowStatus(holdingId, requestId) }
                 //CORE-6118 - tmp increase this timeout to a large number to allow tests to pass while slow flow sessions are investigated
-                timeout(Duration.ofMinutes(6))
+                timeout(RETRY_TIMEOUT)
                 condition {
                     it.code == 200 &&
                             (it.toJson()["flowStatus"].textValue() == RPC_FLOW_STATUS_SUCCESS ||
@@ -94,7 +97,7 @@ fun ClusterInfo.awaitRestFlowResult(holdingId: String, requestId: String): FlowR
         val jsonNode = ObjectMapper().readTree(
             assertWithRetryIgnoringExceptions {
                 command { flowResult(holdingId, requestId) }
-                timeout(Duration.ofMinutes(6))
+                timeout(RETRY_TIMEOUT)
                 condition {
                     it.code == 200 &&
                             (it.toJson()["flowStatus"].textValue() == RPC_FLOW_STATUS_SUCCESS ||
@@ -128,7 +131,7 @@ fun ClusterInfo.getFlowStatus(holdingId: String, requestId: String, expectedCode
         ObjectMapper().readValue(
             assertWithRetryIgnoringExceptions {
                 command { flowStatus(holdingId, requestId) }
-                timeout(Duration.ofMinutes(6))
+                timeout(RETRY_TIMEOUT)
                 condition {
                     it.code == expectedCode
                 }
@@ -148,7 +151,7 @@ fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
     return DEFAULT_CLUSTER.cluster {
         assertWithRetryIgnoringExceptions {
             command { multipleFlowStatus(holdingId) }
-            timeout(Duration.ofSeconds(20))
+            timeout(RETRY_TIMEOUT)
             condition {
                 val json = it.toJson()
                 val flowStatuses = json["flowStatusResponses"]
@@ -169,6 +172,7 @@ fun getFlowClasses(
 fun ClusterInfo.getFlowClasses(holdingId: String): List<String> {
     return cluster {
         val vNodeJson = assertWithRetryIgnoringExceptions {
+            timeout(RETRY_TIMEOUT)
             command { runnableFlowClasses(holdingId) }
             condition { it.code == 200 }
             failMessage("Failed to get flows for holdingId '$holdingId'")
