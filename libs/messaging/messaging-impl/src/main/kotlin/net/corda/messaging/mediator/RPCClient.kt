@@ -16,6 +16,7 @@ import net.corda.messaging.api.exception.CordaHTTPClientErrorException
 import net.corda.messaging.api.exception.CordaHTTPServerErrorException
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessagingClient
+import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_ENDPOINT
 import net.corda.messaging.api.records.Record
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -57,9 +58,10 @@ class RPCClient(
 
     private fun processMessage(message: MediatorMessage<*>): MediatorMessage<*> {
         val payload = serializePayload(message)
+        val endpoint = "http://${message.getProperty<String>(MSG_PROP_ENDPOINT)}"
 
         val request = HttpRequest.newBuilder()
-            .uri(URI("http://corda-flow-mapper-worker-internal-service:7000"))
+            .uri(URI(endpoint))
             .PUT(HttpRequest.BodyPublishers.ofByteArray(payload))
             .build()
 
