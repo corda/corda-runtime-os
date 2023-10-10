@@ -5,11 +5,12 @@ import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_KEY
-import net.corda.messaging.api.mediator.taskmanager.TaskManager
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import net.corda.messaging.api.records.Record
+import net.corda.taskmanager.TaskManager
 import org.mockito.Mockito.`when`
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -164,14 +165,14 @@ class TaskManagerHelperTest {
         val processorTask1 = mock<ProcessorTask<String, String, String>>()
         val processorTask2 = mock<ProcessorTask<String, String, String>>()
 
-        `when`(taskManager.execute(any(), any<() -> ProcessorTask.Result<String, String, String>>())).thenReturn(mock())
+        `when`(taskManager.executeShortRunningTask(any<() -> ProcessorTask.Result<String, String, String>>())).thenReturn(mock())
 
         taskManagerHelper.executeProcessorTasks(
             listOf(processorTask1, processorTask2)
         )
 
         val commandCaptor = argumentCaptor<() -> ProcessorTask.Result<String, String, String>>()
-        verify(taskManager, times(2)).execute(any(), commandCaptor.capture())
+        verify(taskManager, times(2)).executeShortRunningTask(commandCaptor.capture())
         assertEquals(processorTask1::call, commandCaptor.firstValue)
         assertEquals(processorTask2::call, commandCaptor.secondValue)
     }
