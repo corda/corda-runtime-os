@@ -1,6 +1,5 @@
 package net.corda.reconciliation.impl
 
-import kotlin.streams.asSequence
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
@@ -15,9 +14,11 @@ import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.ReconcilerWriter
 import net.corda.utilities.VisibleForTesting
 import net.corda.utilities.debug
+import net.corda.utilities.trace
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
 import java.time.Duration
+import kotlin.streams.asSequence
 
 @Suppress("LongParameterList")
 internal class ReconcilerEventHandler<K : Any, V : Any>(
@@ -92,7 +93,7 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
             coordinator.updateStatus(LifecycleStatus.DOWN)
         } finally {
             val reconciliationTime = Duration.ofNanos(reconciliationEndTime - startTime)
-            logger.info("Reconciliation $reconciliationOutcome in ${reconciliationTime.toMillis()} ms")
+            logger.trace { "Reconciliation $reconciliationOutcome in ${reconciliationTime.toMillis()} ms" }
             CordaMetrics.Metric.Db.ReconciliationRunTime.builder()
                 .withTag(CordaMetrics.Tag.OperationName, name)
                 .withTag(CordaMetrics.Tag.OperationStatus, reconciliationOutcome)
