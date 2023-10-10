@@ -188,21 +188,23 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun pollConsumers(): List<CordaConsumerRecord<K, E>> {
-        return runBlocking {
-            consumers.map { consumer ->
-                consumer.poll(config.pollTimeout)
-            }.map {
-                it.await()
+        return consumers.map { consumer ->
+            taskManager.execute(TaskType.SHORT_RUNNING) {
+                runBlocking {
+                    consumer.poll(config.pollTimeout).await()
+                }
             }
+        }.map {
+            it.join()
         }.flatten()
     }
 
     private fun commitOffsets() {
-        runBlocking {
-            consumers.map { consumer ->
-                consumer.asyncCommitOffsets()
-            }.map {
-                it.await()
+        consumers.map { consumer ->
+            taskManager.execute(TaskType.SHORT_RUNNING) {
+                runBlocking {
+                    consumer.asyncCommitOffsets().await()
+                }
             }
         }
     }
