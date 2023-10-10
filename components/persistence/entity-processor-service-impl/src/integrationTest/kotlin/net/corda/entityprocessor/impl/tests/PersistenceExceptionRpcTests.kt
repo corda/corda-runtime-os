@@ -217,7 +217,7 @@ class PersistenceExceptionRpcTests {
 
         val processor = EntityRpcRequestProcessor(
             currentSandboxGroupContext,
-            entitySandboxService,
+            brokenEntitySandboxService,
             responseFactory,
             requestClass,
             responseClass
@@ -314,8 +314,6 @@ class PersistenceExceptionRpcTests {
         )
         assertEventResponseWithError(Record(TOPIC, KEY, errorDuplicateResult))
     }
-
-    private fun noOpPayloadCheck(bytes: ByteBuffer) = bytes
 
     private fun createDogPersistRequest(dogId: UUID = UUID.randomUUID()): EntityRequest {
         val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
