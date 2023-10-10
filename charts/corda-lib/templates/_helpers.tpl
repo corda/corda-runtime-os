@@ -637,5 +637,5 @@ Get the endpoint argument for a given worker
 {{- $worker := .worker }}
 {{- $workerName := printf "%s-%s-worker" (include "corda.fullname" $context) (include "corda.workerTypeKebabCase" $worker) }}
 {{- $workerServiceName := include "corda.workerInternalServiceName" $workerName }}
-{{- printf "worker.http.endpoint.%s=%s:%s" $worker $workerServiceName (include "corda.workerServicePort" $) }}
+{{- printf "endpoints.%s=%s:%s" $worker $workerServiceName (include "corda.workerServicePort" $) }}
 {{- end }}
