@@ -26,12 +26,13 @@ class StateManagerHelper<K : Any, S : Any, E : Any>(
         key: String,
         persistedState: State?,
         newValue: S?,
+        newMetadata: Metadata?,
     ) = serialize(newValue)?.let { serializedValue ->
         State(
             key,
             serializedValue,
             persistedState?.version ?: State.VERSION_INITIAL_VALUE,
-            persistedState?.metadata ?: Metadata()
+            newMetadata ?: Metadata()
         )
     }
 

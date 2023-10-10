@@ -6,6 +6,7 @@ import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.statemanager.api.Metadata
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
@@ -39,7 +40,8 @@ class FlowMapperMessageProcessor(
 
     override fun onNext(
         state: FlowMapperState?,
-        event: Record<String, FlowMapperEvent>
+        event: Record<String, FlowMapperEvent>,
+        metadata: Metadata?,
     ): StateAndEventProcessor.Response<FlowMapperState> {
 
         val key = event.key

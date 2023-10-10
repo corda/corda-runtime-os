@@ -15,6 +15,7 @@ import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.state.RegistrationState
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.statemanager.api.Metadata
 import net.corda.membership.groupparams.writer.service.GroupParametersWriterService
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
@@ -130,7 +131,8 @@ class RegistrationProcessor(
     @Suppress("ComplexMethod")
     override fun onNext(
         state: RegistrationState?,
-        event: Record<String, RegistrationCommand>
+        event: Record<String, RegistrationCommand>,
+        metadata: Metadata?,
     ): StateAndEventProcessor.Response<RegistrationState> {
         logger.info("Processing registration command for registration ID ${event.key}.")
         val result = try {

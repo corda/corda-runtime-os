@@ -1,5 +1,6 @@
 package net.corda.messaging.mediator.factory
 
+import net.corda.libs.statemanager.api.Metadata
 import net.corda.messaging.api.mediator.MediatorConsumer
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
@@ -27,9 +28,12 @@ import org.mockito.kotlin.whenever
 class MediatorComponentFactoryTest {
     private lateinit var mediatorComponentFactory: MediatorComponentFactory<String, String, String>
     private val messageProcessor = object : StateAndEventProcessor<String, String, String> {
-        override fun onNext(state: String?, event: Record<String, String>): StateAndEventProcessor.Response<String> {
+        override fun onNext(
+            state: String?, event: Record<String, String>, metadata: Metadata?
+        ): StateAndEventProcessor.Response<String> {
             TODO("Not yet implemented")
         }
+
         override val keyClass get() = String::class.java
         override val stateValueClass get() = String::class.java
         override val eventValueClass get() = String::class.java

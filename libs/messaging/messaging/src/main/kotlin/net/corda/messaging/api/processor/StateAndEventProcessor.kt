@@ -1,5 +1,6 @@
 package net.corda.messaging.api.processor
 
+import net.corda.libs.statemanager.api.Metadata
 import net.corda.messaging.api.records.Record
 
 /**
@@ -38,7 +39,12 @@ interface StateAndEventProcessor<K : Any, S : Any, E : Any> {
         /**
          * Flag to indicate processing failed and the State and Event should be moved to the Dead Letter Queue
          */
-        val markForDLQ: Boolean = false
+        val markForDLQ: Boolean = false,
+
+        /**
+         * The updated state metadata in response to an incoming event from [onNext].
+         */
+        val updatedMetadata: Metadata? = null,
     )
 
     /**
@@ -47,6 +53,7 @@ interface StateAndEventProcessor<K : Any, S : Any, E : Any> {
      *
      * @param state the current state (if any) for the [event] key.  If no state exists then [null].
      * @param event the event which triggered this update.
+     * @param metadata the current state metadata (if any) for the [event] key.  If no metadata exists then [null].
      * @return a [Response] which contains the updated state and any subsequent events, both of which will
      * be published.
      *
@@ -55,7 +62,7 @@ interface StateAndEventProcessor<K : Any, S : Any, E : Any> {
      * NOTE: The returned events will be published and the processed events will be consumed atomically as a
      * single transaction.
      */
-    fun onNext(state: S?, event: Record<K, E>): Response<S>
+    fun onNext(state: S?, event: Record<K, E>, metadata: Metadata? = null): Response<S>
 
     /**
      * [keyClass], [stateValueClass] and [eventValueClass] to easily get the class types the processor operates upon.

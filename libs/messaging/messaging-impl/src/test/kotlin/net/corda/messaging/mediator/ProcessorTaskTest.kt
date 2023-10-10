@@ -1,5 +1,6 @@
 package net.corda.messaging.mediator
 
+import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
@@ -36,20 +37,25 @@ class ProcessorTaskTest {
     @Captor
     private val eventCaptor = argumentCaptor<Record<String, EventType>>()
 
+    @Captor
+    private val metadataCaptor = argumentCaptor<Metadata>()
+
     @BeforeEach
     fun setup() {
-        `when`(processor.onNext(anyOrNull(), any())).thenAnswer { invocation ->
+        `when`(processor.onNext(anyOrNull(), any(), anyOrNull())).thenAnswer { invocation ->
             val state = invocation.getArgument<StateType>(0)
             val id = state?.let { it.id + 1 } ?: 0
             StateAndEventProcessor.Response(
                 StateType(id),
                 listOf(
                     EventType("outputEvent$id").toRecord()
-                )
+                ),
+                false,
+                Metadata(mapOf("id" to id)),
             )
         }
 
-        `when`(stateManagerHelper.createOrUpdateState(any(), anyOrNull(), anyOrNull())).thenReturn(
+        `when`(stateManagerHelper.createOrUpdateState(any(), anyOrNull(), anyOrNull(), anyOrNull())).thenReturn(
             mock()
         )
     }
@@ -72,12 +78,21 @@ class ProcessorTaskTest {
 
         val result = task.call()
 
-        verify(processor, times(inputEventRecords.size)).onNext(stateCaptor.capture(), eventCaptor.capture())
+        verify(processor, times(inputEventRecords.size)).onNext(
+            stateCaptor.capture(), eventCaptor.capture(), metadataCaptor.capture()
+        )
         val capturedInputStates = stateCaptor.allValues
         val expectedInputStates = listOf(null, StateType(0), StateType(1))
         assertEquals(expectedInputStates, capturedInputStates)
         val capturedInputEventRecords = eventCaptor.allValues
         assertEquals(inputEventRecords, capturedInputEventRecords)
+        val capturedInputMetadata = metadataCaptor.allValues
+        val expectedInputMetadata = listOf(
+            null,
+            Metadata(mapOf("id" to 0)),
+            Metadata(mapOf("id" to 1))
+        )
+        assertEquals(expectedInputMetadata, capturedInputMetadata)
         assertEquals(task, result.processorTask)
         assertEquals(listOf(0, 1, 2).map { EventType("outputEvent$it").toRecord() }, result.outputEvents)
         assertNotNull(result.updatedState)

@@ -13,6 +13,7 @@ import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
 import net.corda.flow.pipeline.handlers.FlowPostProcessingHandler
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.statemanager.api.Metadata
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
@@ -53,6 +54,7 @@ class FlowEventProcessorImpl(
     override fun onNext(
         state: Checkpoint?,
         event: Record<String, FlowEvent>,
+        metadata: Metadata?,
     ): StateAndEventProcessor.Response<Checkpoint> {
         val flowEvent = event.value
         val mdcProperties = flowMDCService.getMDCLogging(state, flowEvent, event.key)

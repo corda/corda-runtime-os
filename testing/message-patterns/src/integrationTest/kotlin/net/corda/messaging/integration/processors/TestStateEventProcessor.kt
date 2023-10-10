@@ -2,6 +2,7 @@ package net.corda.messaging.integration.processors
 
 import net.corda.data.demo.DemoRecord
 import net.corda.data.demo.DemoStateRecord
+import net.corda.libs.statemanager.api.Metadata
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.Response
@@ -32,7 +33,9 @@ class TestStateEventProcessor(
         get() = DemoRecord::class.java
 
 
-    override fun onNext(state: DemoStateRecord?, event: Record<String, DemoRecord>): Response<DemoStateRecord> {
+    override fun onNext(
+        state: DemoStateRecord?, event: Record<String, DemoRecord>, metadata: Metadata?
+    ): Response<DemoStateRecord> {
         onNextLatch.countDown()
         log.info("Received record, ${onNextLatch.count} remaining")
 

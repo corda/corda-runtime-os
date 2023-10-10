@@ -6,6 +6,7 @@ import net.corda.data.membership.async.request.RegistrationAsyncRequest
 import net.corda.data.membership.async.request.RetriableFailure
 import net.corda.data.membership.async.request.SentToMgmWaitingForNetwork
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.statemanager.api.Metadata
 import net.corda.lifecycle.Resource
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -48,6 +49,7 @@ internal class CommandsRetryManager(
     override fun onNext(
         state: MembershipAsyncRequestState?,
         event: Record<String, MembershipAsyncRequestState>,
+        metadata: Metadata?,
     ): StateAndEventProcessor.Response<MembershipAsyncRequestState> {
         return StateAndEventProcessor.Response(
             updatedState = event.value,

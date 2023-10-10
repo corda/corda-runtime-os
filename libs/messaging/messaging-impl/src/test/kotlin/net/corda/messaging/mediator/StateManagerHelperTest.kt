@@ -52,6 +52,7 @@ class StateManagerHelperTest {
 
         val persistedState: State? = null
         val newValue = StateType(1)
+        val newMetadata = mock<Metadata>()
         val stateManagerHelper = StateManagerHelper<String, StateType, EventType>(
             stateManager,
             stateSerializer,
@@ -59,14 +60,14 @@ class StateManagerHelperTest {
         )
 
         val state = stateManagerHelper.createOrUpdateState(
-            TEST_KEY, persistedState, newValue
+            TEST_KEY, persistedState, newValue, newMetadata
         )
 
         assertNotNull(state)
         assertEquals(TEST_KEY, state!!.key)
         assertArrayEquals(serialized(newValue), state.value)
         assertEquals(State.VERSION_INITIAL_VALUE, state.version)
-        assertNotNull(state.metadata)
+        assertEquals(newMetadata, state.metadata)
     }
 
     @Test
@@ -79,6 +80,7 @@ class StateManagerHelperTest {
             mock<Metadata>()
         )
         val updatedValue = StateType(TEST_STATE_VALUE.id + 1)
+        val updatedMetadata = mock<Metadata>()
         val stateManagerHelper = StateManagerHelper<String, StateType, EventType>(
             stateManager,
             stateSerializer,
@@ -86,14 +88,14 @@ class StateManagerHelperTest {
         )
 
         val state = stateManagerHelper.createOrUpdateState(
-            TEST_KEY, persistedState, updatedValue
+            TEST_KEY, persistedState, updatedValue, updatedMetadata
         )
 
         assertNotNull(state)
         assertEquals(persistedState.key, state!!.key)
         assertArrayEquals(serialized(updatedValue), state.value)
         assertEquals(persistedState.version, state.version)
-        assertEquals(persistedState.metadata, state.metadata)
+        assertEquals(updatedMetadata, state.metadata)
     }
 
     @Test

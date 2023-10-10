@@ -2,6 +2,7 @@ package net.corda.membership.impl.persistence.service
 
 import net.corda.data.membership.db.request.async.MembershipPersistenceAsyncRequest
 import net.corda.data.membership.db.request.async.MembershipPersistenceAsyncRequestState
+import net.corda.libs.statemanager.api.Metadata
 import net.corda.membership.impl.persistence.service.handler.HandlerFactories
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
@@ -20,6 +21,7 @@ internal class MembershipPersistenceAsyncProcessor(
     override fun onNext(
         state: MembershipPersistenceAsyncRequestState?,
         event: Record<String, MembershipPersistenceAsyncRequest>,
+        metadata: Metadata?,
     ): StateAndEventProcessor.Response<MembershipPersistenceAsyncRequestState> {
         val numberOfRetriesSoFar = state?.numberOfRetriesSoFar ?: 0
         val request = event.value

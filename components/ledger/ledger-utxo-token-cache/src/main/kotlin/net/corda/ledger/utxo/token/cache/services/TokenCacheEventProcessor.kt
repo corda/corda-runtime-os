@@ -11,6 +11,7 @@ import net.corda.ledger.utxo.token.cache.converters.EventConverter
 import net.corda.ledger.utxo.token.cache.entities.TokenEvent
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolCache
 import net.corda.ledger.utxo.token.cache.handlers.TokenEventHandler
+import net.corda.libs.statemanager.api.Metadata
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.tracing.traceStateAndEventExecution
@@ -38,7 +39,8 @@ class TokenCacheEventProcessor(
 
     override fun onNext(
         state: TokenPoolCacheState?,
-        event: Record<TokenPoolCacheKey, TokenPoolCacheEvent>
+        event: Record<TokenPoolCacheKey, TokenPoolCacheEvent>,
+        metadata: Metadata?,
     ): StateAndEventProcessor.Response<TokenPoolCacheState> {
 
         val tokenEvent = try {

@@ -10,6 +10,7 @@ import net.corda.data.p2p.markers.LinkManagerProcessedMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
 import net.corda.data.p2p.markers.TtlExpiredMarker
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.statemanager.api.Metadata
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
@@ -151,7 +152,8 @@ internal class DeliveryTracker(
         val processor = object : StateAndEventProcessor<String, AuthenticatedMessageDeliveryState, AppMessageMarker> {
             override fun onNext(
                 state: AuthenticatedMessageDeliveryState?,
-                event: Record<String, AppMessageMarker>
+                event: Record<String, AppMessageMarker>,
+                metadata: Metadata?,
             ): Response<AuthenticatedMessageDeliveryState> {
                 val marker = event.value
                 if (marker == null) {
