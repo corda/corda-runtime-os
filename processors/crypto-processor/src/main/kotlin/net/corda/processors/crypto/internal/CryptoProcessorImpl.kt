@@ -297,7 +297,7 @@ class CryptoProcessorImpl @Activate constructor(
         )
     }
     
-    private fun startTenantInfoService() = TenantInfoServiceImpl({
+    private fun startTenantInfoService() = TenantInfoServiceImpl {
         HSMRepositoryImpl(
             getEntityManagerFactory(
                 CryptoTenants.CRYPTO,
@@ -306,7 +306,7 @@ class CryptoProcessorImpl @Activate constructor(
                 jpaEntitiesRegistry
             )
         )
-    })
+    }
 
     private fun startProcessors(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val cryptoConfig = event.config.getConfig(CRYPTO_CONFIG)
