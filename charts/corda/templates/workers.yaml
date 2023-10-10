@@ -7,7 +7,9 @@
 {{- include "corda.worker" ( list $ .Values.workers.flow "flow"
   ( dict "stateManagerDbAccess" true "servicesAccessed" (list "crypto" "verification" "uniqueness" "persistence") )
 ) }}
-{{- include "corda.worker" ( list $ .Values.workers.flowMapper "flowMapper" ) }}
+{{- include "corda.worker" ( list $ .Values.workers.flowMapper "flowMapper" 
+  ( dict "stateManagerDbAccess" true )
+) }}
 {{- include "corda.worker" ( list $ .Values.workers.verification "verification" ) }}
 {{- include "corda.worker" ( list $ .Values.workers.membership "membership" ) }}
 {{- include "corda.worker" ( list $ .Values.workers.p2pGateway "p2pGateway"
