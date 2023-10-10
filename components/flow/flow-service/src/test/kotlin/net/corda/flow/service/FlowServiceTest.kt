@@ -38,14 +38,15 @@ class FlowServiceTest {
     }
 
     private val flowExecutor = mock<FlowExecutor>()
-    private val externalMessagingRoutingService = mock<ExternalMessagingRoutingService>()
     private val flowMaintenance = mock<FlowMaintenance>()
+    private val externalMessagingRoutingService = mock<ExternalMessagingRoutingService>()
 
     private val exampleConfig = mapOf(
         ConfigKeys.BOOT_CONFIG to MINIMUM_SMART_CONFIG,
         ConfigKeys.MESSAGING_CONFIG to MINIMUM_SMART_CONFIG,
         ConfigKeys.FLOW_CONFIG to MINIMUM_SMART_CONFIG,
-        ConfigKeys.UTXO_LEDGER_CONFIG to MINIMUM_SMART_CONFIG
+        ConfigKeys.UTXO_LEDGER_CONFIG to MINIMUM_SMART_CONFIG,
+        ConfigKeys.STATE_MANAGER_CONFIG to MINIMUM_SMART_CONFIG
     )
 
     @Test
@@ -69,7 +70,15 @@ class FlowServiceTest {
 
             verify(this.configReadService).registerComponentForUpdates(
                 eq(flowServiceCoordinator),
-                eq(setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG, ConfigKeys.FLOW_CONFIG, ConfigKeys.UTXO_LEDGER_CONFIG))
+                eq(
+                    setOf(
+                        ConfigKeys.BOOT_CONFIG,
+                        ConfigKeys.MESSAGING_CONFIG,
+                        ConfigKeys.FLOW_CONFIG,
+                        ConfigKeys.UTXO_LEDGER_CONFIG,
+                        ConfigKeys.STATE_MANAGER_CONFIG
+                    )
+                )
             )
         }
     }

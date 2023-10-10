@@ -174,13 +174,6 @@ spec:
               fieldRef:
                 apiVersion: v1
                 fieldPath: metadata.namespace
-          - name: ENABLE_CLOUDWATCH
-            value:
-              {{- if eq $.Values.serviceAccount.name "cloudwatch-writer" }}
-                "true"
-              {{- else }}
-                "false"
-              {{- end }}
           - name: JAVA_TOOL_OPTIONS
             value:
               {{ .javaOptions }}
@@ -309,8 +302,6 @@ spec:
           - "--stateManager"
           - "database.jdbc.driver=org.postgresql.Driver"
           - "--stateManager"
-          - "database.jdbc.persistenceUnitName=corda-state-manager"
-          - "--stateManager"
           - "database.pool.maxSize={{ .stateManagerDbConnectionPool.maxSize }}"
           {{- if .stateManagerDbConnectionPool.minSize }}
           - "--stateManager"
@@ -334,7 +325,7 @@ spec:
           {{- if $optionalArgs.servicesAccessed }}
           {{- range $worker := $optionalArgs.servicesAccessed }}
           {{- $endpoint := include "corda.getWorkerEndpoint" (dict "context" $ "worker" $worker) }}
-          - --endpoint={{ $endpoint }}
+          - --serviceEndpoint={{ $endpoint }}
           {{- end }}
           {{- end }}
           {{- range $i, $arg := $optionalArgs.additionalWorkerArgs }}
