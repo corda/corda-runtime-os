@@ -669,7 +669,7 @@ object CordaMetrics {
             object TaskCompletionTime : Metric<Timer>("taskmanager.completion.time", CordaMetrics::timer)
 
             /**
-             * Time it took to execute a task, includes time waiting to be scheduled.
+             * The number of live tasks running or scheduled in the task manager.
              */
             class LiveTasks(computation: Supplier<Number>) : ComputedValue<Nothing>("taskmanager.live.tasks", computation)
         }
