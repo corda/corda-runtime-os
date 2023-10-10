@@ -52,9 +52,9 @@ class LockContract : Contract {
             }
 
             is LockCommands.Reclaim -> {
-                val inputLockState = transaction.getInputStates(LockState::class.java).first()
                 "There should be one lock input state as the lock state needs to be consumed" using
                         (transaction.getInputStates(LockState::class.java).size == 1)
+                val inputLockState = transaction.getInputStates(LockState::class.java).first()
                 "There should be one output state as an unlocked asset state needs to be created" using
                         (transaction.getOutputStates(OwnableState::class.java).size == 1)
                 "Original owner gets the asset" using
