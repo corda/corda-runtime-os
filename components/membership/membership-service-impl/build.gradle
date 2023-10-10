@@ -16,6 +16,7 @@ dependencies {
     implementation "net.corda:corda-topic-schema"
 
     implementation project(":libs:messaging:messaging")
+    implementation project(':libs:platform-info')
     implementation project(":libs:utilities")
 
     implementation project(":components:configuration:configuration-read-service")
