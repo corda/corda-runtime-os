@@ -34,11 +34,13 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 
 class MultiSourceEventMediatorImplTest {
     companion object {
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val TEST_TIMEOUT_SECONDS = 20L
         const val KEY1 = "key1"
         const val KEY2 = "key2"
@@ -141,26 +143,39 @@ class MultiSourceEventMediatorImplTest {
         whenever(consumer.poll(any())).thenAnswer {
             CompletableDeferred(
                 if (batchNumber < eventBatches.size) {
+                    log.info("Polling mock for batch number [$batchNumber]")
                     eventBatches[batchNumber++]
                 } else {
+                    log.info("Polling mock, all batches consumed")
                     Thread.sleep(10)
                     emptyList()
                 }
             )
         }
 
+        log.info("Starting mediator")
         mediator.start()
         waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { batchNumber < eventBatches.size }
+        log.info("Closing mediator")
         mediator.close()
 
+        log.info("verify(mediatorConsumerFactory)")
         verify(mediatorConsumerFactory).create(any<MediatorConsumerConfig<Any, Any>>())
+        log.info("verify(messagingClientFactory)")
         verify(messagingClientFactory).create(any<MessagingClientConfig>())
+        log.info("verify(messageRouterFactory)")
         verify(messageRouterFactory).create(any<MessagingClientFinder>())
+        log.info("verify(messageProcessor)")
         verify(messageProcessor, times(events.size)).onNext(anyOrNull(), any())
+        log.info("verify(stateManager).get")
         verify(stateManager, times(eventBatches.size)).get(any())
+        log.info("verify(stateManager).create")
         verify(stateManager, times(eventBatches.size)).create(any())
+        log.info("verify(consumer).poll")
         verify(consumer, atLeast(eventBatches.size)).poll(any())
+        log.info("verify(consumer).asyncCommitOffsets")
         verify(consumer, times(eventBatches.size)).asyncCommitOffsets()
+        log.info("verify(messagingClient)")
         verify(messagingClient, times(events.size)).send(any())
     }
 
