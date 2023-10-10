@@ -37,18 +37,21 @@ class FlowMaintenanceImplTests {
     private val stateManagerFactory = mock<StateManagerFactory> {
         on { create(any()) } doReturn (stateManager)
     }
+
+    private val flowMaintenance = FlowMaintenanceImpl(lifecycleCoordinatorFactory, subscriptionFactory, stateManagerFactory)
     private val messagingConfig = mock<SmartConfig>()
-    // TODO - fix this when state manager config is split up from messaging
-    private val stateManagerConfig = messagingConfig
+    private val stateManagerConfig = mock<SmartConfig>()
+
     private val config = mapOf(
-        ConfigKeys.MESSAGING_CONFIG to messagingConfig
+        ConfigKeys.MESSAGING_CONFIG to messagingConfig,
+        ConfigKeys.STATE_MANAGER_CONFIG to stateManagerConfig
     )
 
     @Test
     fun `when config provided create subscription and start it`() {
         val captor = argumentCaptor<() -> Subscription<String, ScheduledTaskTrigger>>()
-        val m = FlowMaintenanceImpl(lifecycleCoordinatorFactory, subscriptionFactory, stateManagerFactory)
-        m.onConfigChange(config)
+
+        flowMaintenance.onConfigChange(config)
         verify(lifecycleCoordinator).createManagedResource(any(), captor.capture())
         captor.firstValue()
         verify(subscriptionFactory).createDurableSubscription(
@@ -64,35 +67,48 @@ class FlowMaintenanceImplTests {
     }
 
     @Test
-    fun `when same state manager config pushed do not create another StateManager`() {
-        val m = FlowMaintenanceImpl(lifecycleCoordinatorFactory, subscriptionFactory, stateManagerFactory)
-        m.onConfigChange(config)
-        m.onConfigChange(config)
+    fun `when no state manager config pushed and messaging config pushed do not create another StateManager`() {
+        flowMaintenance.onConfigChange(config)
+        flowMaintenance.onConfigChange(mapOf(ConfigKeys.MESSAGING_CONFIG to messagingConfig))
+
+        verify(stateManagerFactory, Times(1)).create(stateManagerConfig)
+    }
+
+    @Test
+    fun `when no messaging config pushed and no state manager config pushed do not create another StateManager`() {
+        flowMaintenance.onConfigChange(config)
+        flowMaintenance.onConfigChange(mapOf(ConfigKeys.STATE_MANAGER_CONFIG to mock<SmartConfig>()))
+
         verify(stateManagerFactory, Times(1)).create(stateManagerConfig)
     }
 
     @Test
     fun `when new state manager config pushed create another StateManager and close old`() {
-        val m = FlowMaintenanceImpl(lifecycleCoordinatorFactory, subscriptionFactory, stateManagerFactory)
-        m.onConfigChange(config)
+        flowMaintenance.onConfigChange(config)
         val newConfig = mock<SmartConfig>()
-        m.onConfigChange(mapOf(ConfigKeys.MESSAGING_CONFIG to newConfig))
+        flowMaintenance.onConfigChange(
+            mapOf(
+                ConfigKeys.MESSAGING_CONFIG to newConfig,
+                ConfigKeys.STATE_MANAGER_CONFIG to newConfig,
+            )
+        )
+
         verify(stateManagerFactory).create(newConfig)
         verify(stateManager).close()
     }
 
     @Test
     fun `when stop close StateManager`() {
-        val m = FlowMaintenanceImpl(lifecycleCoordinatorFactory, subscriptionFactory, stateManagerFactory)
-        m.onConfigChange(config)
-        m.stop()
+        flowMaintenance.onConfigChange(config)
+        flowMaintenance.stop()
+
         verify(stateManager).close()
     }
 
     @Test
     fun `do nothing when messaging config not sent`() {
-        val m = FlowMaintenanceImpl(lifecycleCoordinatorFactory, subscriptionFactory, stateManagerFactory)
-        m.onConfigChange(mapOf("foo" to mock()))
+        flowMaintenance.onConfigChange(mapOf("foo" to mock()))
+
         verify(lifecycleCoordinator, never()).createManagedResource(any(), any<() -> Subscription<String, ScheduledTaskTrigger>>())
     }
 }

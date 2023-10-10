@@ -13,6 +13,7 @@ import net.corda.ledger.utxo.token.cache.handlers.TokenBalanceQueryEventHandler
 import net.corda.ledger.utxo.token.cache.handlers.TokenClaimQueryEventHandler
 import net.corda.ledger.utxo.token.cache.handlers.TokenClaimReleaseEventHandler
 import net.corda.ledger.utxo.token.cache.handlers.TokenEventHandler
+import net.corda.ledger.utxo.token.cache.handlers.TokenForceClaimReleaseEventHandler
 import net.corda.ledger.utxo.token.cache.handlers.TokenLedgerChangeEventHandler
 import net.corda.ledger.utxo.token.cache.queries.impl.SqlQueryProviderTokens
 import net.corda.ledger.utxo.token.cache.repositories.impl.UtxoTokenRepositoryImpl
@@ -68,6 +69,7 @@ class TokenCacheEventProcessorFactoryImpl @Activate constructor(
                 )
             ),
             createHandler(TokenClaimReleaseEventHandler(recordFactory)),
+            createHandler(TokenForceClaimReleaseEventHandler()),
             createHandler(TokenLedgerChangeEventHandler()),
             createHandler(TokenBalanceQueryEventHandler(recordFactory, availableTokenService)),
         )

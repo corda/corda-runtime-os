@@ -104,7 +104,7 @@ internal class ConfigReadServiceEventHandlerTest {
         messagingConfig = mock()
         configMerger  = mock {
             on { getMessagingConfig(bootConfig, null) } doAnswer { messagingConfig }
-            on { getDbConfig(any(), any()) } doAnswer { it.arguments[1] as SmartConfig  }
+            on { getConfig(any(), any(), any()) } doAnswer { it.arguments[1] as SmartConfig  }
         }
         avroSchemaRegistry = mock()
         publisher = mock()

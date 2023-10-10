@@ -41,6 +41,4 @@ interface PublisherFactory {
         rpcConfig: RPCConfig<REQUEST, RESPONSE>,
         messagingConfig: SmartConfig,
     ): RPCSender<REQUEST, RESPONSE>
-
-
 }

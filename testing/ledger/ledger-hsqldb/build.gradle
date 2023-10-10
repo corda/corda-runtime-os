@@ -26,6 +26,7 @@ dependencies {
     integrationTestImplementation project(':libs:db:db-admin-impl')
     integrationTestImplementation project(':libs:db:db-orm-impl')
     integrationTestImplementation project(':testing:persistence-testkit')
+    integrationTestImplementation project(':libs:ledger:ledger-common-data')
     integrationTestRuntimeOnly project(':libs:application:application-impl')
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"

@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.external.messaging.services.ExternalMessagingRoutingService
+import net.corda.flow.maintenance.FlowMaintenance
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -19,6 +20,7 @@ import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.STATE_MANAGER_CONFIG
 import net.corda.schema.configuration.ConfigKeys.UTXO_LEDGER_CONFIG
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
@@ -36,12 +38,18 @@ class FlowService @Activate constructor(
     private val flowExecutor: FlowExecutor,
     @Reference(service = ExternalMessagingRoutingService::class)
     private val externalMessagingRoutingService: ExternalMessagingRoutingService,
-//    @Reference(service = FlowMaintenance::class)
-//    private val flowMaintenance: FlowMaintenance,
-    ) : Lifecycle {
+    @Reference(service = FlowMaintenance::class)
+    private val flowMaintenance: FlowMaintenance
+) : Lifecycle {
 
     companion object {
-        private val configSections = setOf(BOOT_CONFIG, MESSAGING_CONFIG, FLOW_CONFIG, UTXO_LEDGER_CONFIG)
+        private val configSections = setOf(
+            FLOW_CONFIG,
+            BOOT_CONFIG,
+            MESSAGING_CONFIG,
+            UTXO_LEDGER_CONFIG,
+            STATE_MANAGER_CONFIG
+        )
     }
 
     private var registration: RegistrationHandle? = null
@@ -60,10 +68,10 @@ class FlowService @Activate constructor(
                             LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
                             LifecycleCoordinatorName.forComponent<CpiInfoReadService>(),
                             LifecycleCoordinatorName.forComponent<FlowExecutor>(),
-//                            LifecycleCoordinatorName.forComponent<FlowMaintenance>(),
+                            LifecycleCoordinatorName.forComponent<FlowMaintenance>(),
                         )
                     )
-//                flowMaintenance.start()
+                flowMaintenance.start()
                 flowExecutor.start()
             }
 
@@ -74,7 +82,7 @@ class FlowService @Activate constructor(
                         coordinator,
                         configSections
                     )
-                }else {
+                } else {
                     coordinator.updateStatus(event.status)
                 }
             }
@@ -87,14 +95,14 @@ class FlowService @Activate constructor(
                  * is configured before we configure the executor to prevent a race between receiving the first
                  * state events and scheduler creating a publisher.
                  */
-//                flowMaintenance.onConfigChange(config)
+                flowMaintenance.onConfigChange(config)
                 flowExecutor.onConfigChange(config)
                 externalMessagingRoutingService.onConfigChange(config)
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
 
             is StopEvent -> {
-//                flowMaintenance.stop()
+                flowMaintenance.stop()
                 flowExecutor.stop()
                 registration?.close()
                 registration = null

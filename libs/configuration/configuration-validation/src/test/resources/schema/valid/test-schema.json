@@ -10,6 +10,11 @@
       "maximum": 500,
       "default": 7
     },
+    "anotherTestInteger": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 500
+    },
     "testString": {
       "type": "string"
     },
