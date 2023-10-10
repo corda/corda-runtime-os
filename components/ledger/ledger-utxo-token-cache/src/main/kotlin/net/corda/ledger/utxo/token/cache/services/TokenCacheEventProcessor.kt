@@ -51,20 +51,17 @@ class TokenCacheEventProcessor(
         return traceStateAndEventExecution(event, "Token Event - ${tokenEvent.javaClass.simpleName}") {
             try {
                 tokenSelectionMetrics.recordProcessingTime(tokenEvent) {
-
                     val nonNullableState = state ?: TokenPoolCacheState().apply {
                         this.poolKey = event.key
                         this.availableTokens = listOf()
                         this.tokenClaims = listOf()
                     }
 
-
                     // Temporary logic that covers the upgrade from release/5.0 to release/5.1
-                    // The field claimedTokens has been added to the TokenCaim avro object, and it will replace
-                    // claimedTokenStateRefs. In order to avoid breaking compatibility, the claimedTokenStateRefs has been
-                    // deprecated, and it will eventually be removed. Any claim that contains a non-empty
-                    // claimedTokenStateRefs field are considered invalid because this means the avro object is an old one,
-                    // and it should be replaced by the new format.
+                    // The field claimedTokens has been added to the TokenCaim avro object, and it will replace claimedTokenStateRefs.
+                    // In order to avoid breaking compatibility, the claimedTokenStateRefs has been deprecated, and it will eventually
+                    // be removed. Any claim that contains a non-empty claimedTokenStateRefs field are considered invalid because
+                    // this means the avro object is an old one, and it should be replaced by the new format.
                     val invalidClaims =
                         nonNullableState.tokenClaims.filterNot { it.claimedTokenStateRefs.isNullOrEmpty() }
                     if (invalidClaims.isNotEmpty()) {
@@ -85,27 +82,24 @@ class TokenCacheEventProcessor(
                     val result = handler.handle(tokenCache, poolCacheState, tokenEvent)
 
                     if (result == null) {
-                        StateAndEventProcessor.Response(
-                            poolCacheState.toAvro(),
-                            listOf()
-                        )
+                        StateAndEventProcessor.Response(poolCacheState.toAvro(), listOf())
                     } else {
                         StateAndEventProcessor.Response(
                             poolCacheState.toAvro(),
                             listOf(result)
                         )
                     }
-                } catch (e: Exception) {
-                    val responseMessage = externalEventResponseFactory.platformError(
-                        ExternalEventContext(
-                            tokenEvent.externalEventRequestId,
-                            tokenEvent.flowId,
-                            KeyValuePairList(listOf())
-                        ),
-                        e
-                    )
-                    StateAndEventProcessor.Response(state, listOf(responseMessage), markForDLQ = false)
                 }
+            } catch (e: Exception) {
+                val responseMessage = externalEventResponseFactory.platformError(
+                    ExternalEventContext(
+                        tokenEvent.externalEventRequestId,
+                        tokenEvent.flowId,
+                        KeyValuePairList(listOf())
+                    ),
+                    e
+                )
+                StateAndEventProcessor.Response(state, listOf(responseMessage), markForDLQ = false)
             }
         }
     }
