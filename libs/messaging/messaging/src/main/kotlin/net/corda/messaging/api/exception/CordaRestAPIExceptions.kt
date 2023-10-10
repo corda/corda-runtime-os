@@ -19,3 +19,15 @@ class CordaRPCAPIPartitionException(message: String?, exception: Throwable? = nu
  */
 class CordaRPCAPIResponderException(val errorType: String, message: String?, exception: Throwable? = null) :
     CordaRuntimeException(message, exception)
+
+/**
+ * Exception representing a 4XX response from the HTTP server
+ */
+class CordaHTTPClientErrorException(val statusCode: Int, message: String?, exception: Throwable? = null) :
+    CordaRuntimeException(message, exception)
+
+/**
+ * Exception representing a 5XX response from the HTTP server
+ */
+class CordaHTTPServerErrorException(val statusCode: Int, message: String?, exception: Throwable? = null) :
+    CordaRuntimeException(message, exception)
