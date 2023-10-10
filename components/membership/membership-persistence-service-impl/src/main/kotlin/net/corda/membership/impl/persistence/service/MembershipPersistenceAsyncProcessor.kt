@@ -2,9 +2,9 @@ package net.corda.membership.impl.persistence.service
 
 import net.corda.data.membership.db.request.async.MembershipPersistenceAsyncRequest
 import net.corda.data.membership.db.request.async.MembershipPersistenceAsyncRequestState
-import net.corda.libs.statemanager.api.Metadata
 import net.corda.membership.impl.persistence.service.handler.HandlerFactories
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -19,11 +19,10 @@ internal class MembershipPersistenceAsyncProcessor(
         const val MAX_RETRIES = 10
     }
     override fun onNext(
-        state: MembershipPersistenceAsyncRequestState?,
+        state: State<MembershipPersistenceAsyncRequestState>?,
         event: Record<String, MembershipPersistenceAsyncRequest>,
-        metadata: Metadata?,
     ): StateAndEventProcessor.Response<MembershipPersistenceAsyncRequestState> {
-        val numberOfRetriesSoFar = state?.numberOfRetriesSoFar ?: 0
+        val numberOfRetriesSoFar = state?.value?.numberOfRetriesSoFar ?: 0
         val request = event.value
         if (request == null) {
             logger.warn("Empty request for ${event.key}")
@@ -79,10 +78,13 @@ internal class MembershipPersistenceAsyncProcessor(
         return if (numberOfRetriesSoFar < MAX_RETRIES) {
             logger.warn("Got error while trying to execute $key. Will retry again.", e)
             StateAndEventProcessor.Response(
-                updatedState = MembershipPersistenceAsyncRequestState(
-                    request,
-                    numberOfRetriesSoFar + 1,
-                    handlers.persistenceHandlerServices.clock.instant(),
+                updatedState = State(
+                    MembershipPersistenceAsyncRequestState(
+                        request,
+                        numberOfRetriesSoFar + 1,
+                        handlers.persistenceHandlerServices.clock.instant(),
+                    ),
+                    metadata = null,
                 ),
                 responseEvents = emptyList(),
                 markForDLQ = false,

@@ -18,6 +18,13 @@ import net.corda.messaging.api.records.Record
  * [CordaFatalException] and will cause the subscription to close.
  */
 interface StateAndEventProcessor<K : Any, S : Any, E : Any> {
+    /**
+     * This class encapsulates the state and it's metadata.
+     */
+    data class State<S : Any>(
+        val value: S?,
+        val metadata: Metadata?,
+    )
 
     /**
      * This class encapsulates the responses that will be returned (from [onNext]) to the subscription for
@@ -27,7 +34,7 @@ interface StateAndEventProcessor<K : Any, S : Any, E : Any> {
         /**
          * The updated state in response to an incoming event from [onNext].
          */
-        val updatedState: S?,
+        val updatedState: State<S>?,
 
         /**
          * A list of events to be published in response to an incoming event from [onNext].
@@ -40,11 +47,6 @@ interface StateAndEventProcessor<K : Any, S : Any, E : Any> {
          * Flag to indicate processing failed and the State and Event should be moved to the Dead Letter Queue
          */
         val markForDLQ: Boolean = false,
-
-        /**
-         * The updated state metadata in response to an incoming event from [onNext].
-         */
-        val updatedMetadata: Metadata? = null,
     )
 
     /**
@@ -62,7 +64,7 @@ interface StateAndEventProcessor<K : Any, S : Any, E : Any> {
      * NOTE: The returned events will be published and the processed events will be consumed atomically as a
      * single transaction.
      */
-    fun onNext(state: S?, event: Record<K, E>, metadata: Metadata? = null): Response<S>
+    fun onNext(state: State<S>?, event: Record<K, E>): Response<S>
 
     /**
      * [keyClass], [stateValueClass] and [eventValueClass] to easily get the class types the processor operates upon.

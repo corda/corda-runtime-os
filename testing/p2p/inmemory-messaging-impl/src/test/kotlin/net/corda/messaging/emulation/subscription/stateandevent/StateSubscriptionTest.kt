@@ -1,7 +1,7 @@
 package net.corda.messaging.emulation.subscription.stateandevent
 
-import net.corda.libs.statemanager.api.Metadata
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
@@ -37,7 +37,7 @@ class StateSubscriptionTest {
         on { stateSubscriptionConfig } doReturn SubscriptionConfig("group1", "topic1")
         on { processor } doReturn object : StateAndEventProcessor<String, String, String> {
             override fun onNext(
-                state: String?, event: Record<String, String>, metadata: Metadata?
+                state: State<String>?, event: Record<String, String>
             ): StateAndEventProcessor.Response<String> {
                 return StateAndEventProcessor.Response(null, emptyList())
             }

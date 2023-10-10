@@ -2,8 +2,8 @@ package net.corda.session.mapper.service.integration
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
-import net.corda.libs.statemanager.api.Metadata
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
 import org.junit.jupiter.api.fail
 import java.util.concurrent.CountDownLatch
@@ -19,9 +19,8 @@ class TestFlowMessageProcessor(
     var eventsReceived: MutableList<Record<String, FlowEvent>> = mutableListOf()
 
     override fun onNext(
-        state: Checkpoint?,
+        state: State<Checkpoint>?,
         event: Record<String, FlowEvent>,
-        metadata: Metadata?,
     ): StateAndEventProcessor.Response<Checkpoint> {
         eventsReceived.add(event)
 

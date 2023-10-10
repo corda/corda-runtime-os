@@ -6,7 +6,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import net.corda.libs.configuration.SmartConfigImpl
-import net.corda.libs.statemanager.api.Metadata
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -65,15 +64,18 @@ class InMemoryStateAndEventSubscriptionIntegrationTests {
             )
             val processor = object : StateAndEventProcessor<Key, State, Event> {
                 override fun onNext(
-                    state: State?, event: Record<Key, Event>, metadata: Metadata?
+                    state: StateAndEventProcessor.State<State>?, event: Record<Key, Event>
                 ): StateAndEventProcessor.Response<State> {
                     if ((state != null) && (event.value == Event.STOP)) {
-                        states[event.key.type] = state.number
+                        states[event.key.type] = state.value!!.number
                         countDown.countDown()
                     }
                     return if (event.value == Event.CREATE_STATE) {
                         StateAndEventProcessor.Response(
-                            State(event.key.type),
+                            StateAndEventProcessor.State(
+                                State(event.key.type),
+                                metadata = null
+                            ),
                             listOf(
                                 Record(
                                     subscriptionConfig.eventTopic,
@@ -83,7 +85,13 @@ class InMemoryStateAndEventSubscriptionIntegrationTests {
                             )
                         )
                     } else {
-                        StateAndEventProcessor.Response(State(event.key.type), emptyList())
+                        StateAndEventProcessor.Response(
+                            StateAndEventProcessor.State(
+                                State(event.key.type),
+                                metadata = null
+                            ),
+                            emptyList()
+                        )
                     }
                 }
 
@@ -136,7 +144,7 @@ class InMemoryStateAndEventSubscriptionIntegrationTests {
         }
         val processor = object : StateAndEventProcessor<Key, State, Event> {
             override fun onNext(
-                state: State?, event: Record<Key, Event>, metadata: Metadata?
+                state: StateAndEventProcessor.State<State>?, event: Record<Key, Event>
             ): StateAndEventProcessor.Response<State> {
                 return StateAndEventProcessor.Response(
                     null,
@@ -161,7 +169,7 @@ class InMemoryStateAndEventSubscriptionIntegrationTests {
 
         val anotherProcessor = object : StateAndEventProcessor<String, String, String> {
             override fun onNext(
-                state: String?, event: Record<String, String>, metadata: Metadata?
+                state: StateAndEventProcessor.State<String>?, event: Record<String, String>
             ): StateAndEventProcessor.Response<String> {
                 got.add(event)
                 countDown.countDown()
@@ -224,16 +232,19 @@ class InMemoryStateAndEventSubscriptionIntegrationTests {
 
         val processor = object : StateAndEventProcessor<Key, State, Event> {
             override fun onNext(
-                state: State?, event: Record<Key, Event>, metadata: Metadata?
+                state: StateAndEventProcessor.State<State>?, event: Record<Key, Event>
             ): StateAndEventProcessor.Response<State> {
                 val newState = when (event.value) {
                     Event.CREATE_STATE -> 1
-                    Event.INCREASE_STATE -> (state!!.number + 1)
+                    Event.INCREASE_STATE -> (state?.value!!.number + 1)
                     else -> throw Exception("Unexpected event!")
                 }
                 countDown.countDown()
                 return StateAndEventProcessor.Response(
-                    State(newState),
+                    StateAndEventProcessor.State(
+                        State(newState),
+                        metadata = null
+                    ),
                     emptyList()
                 )
             }
@@ -312,10 +323,13 @@ class InMemoryStateAndEventSubscriptionIntegrationTests {
         }
         val processor = object : StateAndEventProcessor<Key, State, Event> {
             override fun onNext(
-                state: State?, event: Record<Key, Event>, metadata: Metadata?
+                state: StateAndEventProcessor.State<State>?, event: Record<Key, Event>
             ): StateAndEventProcessor.Response<State> {
                 return StateAndEventProcessor.Response(
-                    State(state?.number?.inc() ?: -1),
+                    StateAndEventProcessor.State(
+                        State(state?.value?.number?.inc() ?: -1),
+                        metadata = null
+                    ),
                     emptyList()
                 )
             }

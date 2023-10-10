@@ -1,6 +1,6 @@
 package net.corda.messaging.mediator.factory
 
-import net.corda.libs.statemanager.api.Metadata
+
 import net.corda.messaging.api.mediator.MediatorConsumer
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
@@ -11,6 +11,7 @@ import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.mediator.factory.MessagingClientFactory
 import net.corda.messaging.api.mediator.factory.MessagingClientFinder
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -29,7 +30,7 @@ class MediatorComponentFactoryTest {
     private lateinit var mediatorComponentFactory: MediatorComponentFactory<String, String, String>
     private val messageProcessor = object : StateAndEventProcessor<String, String, String> {
         override fun onNext(
-            state: String?, event: Record<String, String>, metadata: Metadata?
+            state: State<String>?, event: Record<String, String>
         ): StateAndEventProcessor.Response<String> {
             TODO("Not yet implemented")
         }

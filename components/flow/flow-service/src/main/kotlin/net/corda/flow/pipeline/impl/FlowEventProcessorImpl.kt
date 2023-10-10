@@ -13,8 +13,8 @@ import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
 import net.corda.flow.pipeline.handlers.FlowPostProcessingHandler
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.statemanager.api.Metadata
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
@@ -52,16 +52,15 @@ class FlowEventProcessorImpl(
     }
 
     override fun onNext(
-        state: Checkpoint?,
+        state: State<Checkpoint>?,
         event: Record<String, FlowEvent>,
-        metadata: Metadata?,
     ): StateAndEventProcessor.Response<Checkpoint> {
         val flowEvent = event.value
-        val mdcProperties = flowMDCService.getMDCLogging(state, flowEvent, event.key)
+        val mdcProperties = flowMDCService.getMDCLogging(state?.value, flowEvent, event.key)
         val eventType = event.value?.payload?.javaClass?.simpleName ?: "Unknown"
         return withMDC(mdcProperties) {
             traceStateAndEventExecution(event, "Flow Event - $eventType") {
-                getFlowPipelineResponse(flowEvent, event, state, mdcProperties, this)
+                getFlowPipelineResponse(flowEvent, event, state?.value, mdcProperties, this)
             }
         }
     }
@@ -75,7 +74,10 @@ class FlowEventProcessorImpl(
     ): StateAndEventProcessor.Response<Checkpoint> {
         if (flowEvent == null) {
             log.debug { "The incoming event record '${event}' contained a null FlowEvent, this event will be discarded" }
-            return StateAndEventProcessor.Response(state, listOf())
+            return StateAndEventProcessor.Response(
+                State(state, metadata = null),
+                listOf()
+            )
         }
 
 

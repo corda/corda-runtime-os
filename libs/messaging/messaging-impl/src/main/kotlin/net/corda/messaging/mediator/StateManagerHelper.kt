@@ -5,6 +5,7 @@ import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.messaging.api.processor.StateAndEventProcessor
 
 /**
  * Helper for working with [StateManager], used by [MultiSourceEventMediatorImpl].
@@ -20,19 +21,18 @@ class StateManagerHelper<K : Any, S : Any, E : Any>(
      *
      * @param key Event's key.
      * @param persistedState State being updated.
-     * @param newValue Updated state value.
+     * @param newState Updated state.
      */
     fun createOrUpdateState(
         key: String,
         persistedState: State?,
-        newValue: S?,
-        newMetadata: Metadata?,
-    ) = serialize(newValue)?.let { serializedValue ->
+        newState: StateAndEventProcessor.State<S>?,
+    ) = serialize(newState?.value)?.let { serializedValue ->
         State(
             key,
             serializedValue,
             persistedState?.version ?: State.VERSION_INITIAL_VALUE,
-            newMetadata ?: Metadata()
+            newState?.metadata ?: Metadata(),
         )
     }
 

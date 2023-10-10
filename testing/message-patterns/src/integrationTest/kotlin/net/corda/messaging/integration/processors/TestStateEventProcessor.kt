@@ -2,10 +2,10 @@ package net.corda.messaging.integration.processors
 
 import net.corda.data.demo.DemoRecord
 import net.corda.data.demo.DemoStateRecord
-import net.corda.libs.statemanager.api.Metadata
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.Response
+import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CountDownLatch
@@ -34,7 +34,7 @@ class TestStateEventProcessor(
 
 
     override fun onNext(
-        state: DemoStateRecord?, event: Record<String, DemoRecord>, metadata: Metadata?
+        state: State<DemoStateRecord>?, event: Record<String, DemoRecord>
     ): Response<DemoStateRecord> {
         onNextLatch.countDown()
         log.info("Received record, ${onNextLatch.count} remaining")
@@ -62,6 +62,9 @@ class TestStateEventProcessor(
             emptyList()
         }
 
-        return Response(newState, outputRecordList)
+        return Response(
+            State(newState, metadata = null),
+            outputRecordList
+        )
     }
 }

@@ -10,7 +10,6 @@ import net.corda.data.p2p.markers.LinkManagerProcessedMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
 import net.corda.data.p2p.markers.TtlExpiredMarker
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.statemanager.api.Metadata
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
@@ -21,6 +20,7 @@ import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.Response
+import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -151,39 +151,44 @@ internal class DeliveryTracker(
 
         val processor = object : StateAndEventProcessor<String, AuthenticatedMessageDeliveryState, AppMessageMarker> {
             override fun onNext(
-                state: AuthenticatedMessageDeliveryState?,
+                state: State<AuthenticatedMessageDeliveryState>?,
                 event: Record<String, AppMessageMarker>,
-                metadata: Metadata?,
             ): Response<AuthenticatedMessageDeliveryState> {
                 val marker = event.value
                 if (marker == null) {
                     logger.error("Received a null event. The state was not updated.")
-                    return respond(state)
+                    return respond(state?.value)
                 }
                 val markerType = marker.marker
                 val timestamp = marker.timestamp
                 return when (markerType) {
-                    is LinkManagerProcessedMarker -> Response(AuthenticatedMessageDeliveryState(markerType.message, timestamp), emptyList())
+                    is LinkManagerProcessedMarker -> Response(
+                        State(AuthenticatedMessageDeliveryState(markerType.message, timestamp), metadata = null),
+                        emptyList()
+                    )
                     is LinkManagerReceivedMarker -> {
-                        if (state != null) {
+                        if (state?.value != null) {
                             // if we receive multiple acknowledgements, it is possible the state might have been nullified already.
                             // Only the first one matters for calculating the end-to-end delivery latency anyway.
-                            recordDeliveryLatencyMetric(state)
+                            recordDeliveryLatencyMetric(state.value!!)
                         }
                         Response(null, emptyList())
                     }
                     is TtlExpiredMarker -> {
-                        if (state != null) {
-                            recordTtlExpiredMetric(state)
+                        if (state?.value != null) {
+                            recordTtlExpiredMetric(state.value!!)
                         }
                         Response(null, emptyList())
                     }
-                    else -> respond(state)
+                    else -> respond(state?.value)
                 }
             }
 
             private fun respond(state: AuthenticatedMessageDeliveryState?): Response<AuthenticatedMessageDeliveryState> {
-                return Response(state, emptyList())
+                return Response(
+                    State(state, metadata = null),
+                    emptyList()
+                )
             }
 
             private fun recordDeliveryLatencyMetric(state: AuthenticatedMessageDeliveryState) {

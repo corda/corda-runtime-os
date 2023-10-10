@@ -13,6 +13,7 @@ import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig
 import net.corda.test.flow.util.buildSessionEvent
@@ -35,12 +36,15 @@ class FlowMapperMessageProcessorTest {
     private val config = SmartConfigImpl.empty().withValue(FlowConfig.SESSION_P2P_TTL, ConfigValueFactory.fromAnyRef(10000))
     private val flowMapperMessageProcessor = FlowMapperMessageProcessor(flowMapperEventExecutorFactory, config)
 
-    private fun buildMapperState(status: FlowMapperStateType) : FlowMapperState {
-        return FlowMapperState.newBuilder()
-            .setStatus(status)
-            .setFlowId("flowId")
-            .setExpiryTime(Instant.now().toEpochMilli())
-            .build()
+    private fun buildMapperState(status: FlowMapperStateType) : State<FlowMapperState> {
+        return State(
+            FlowMapperState.newBuilder()
+                .setStatus(status)
+                .setFlowId("flowId")
+                .setExpiryTime(Instant.now().toEpochMilli())
+                .build(),
+            metadata = null,
+        )
     }
 
     private fun buildMapperEvent(payload: Any) : Record<String, FlowMapperEvent> {

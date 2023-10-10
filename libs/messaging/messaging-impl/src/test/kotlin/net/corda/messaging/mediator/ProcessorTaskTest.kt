@@ -32,30 +32,25 @@ class ProcessorTaskTest {
     private val stateManagerHelper = mock<StateManagerHelper<String, StateType, EventType>>()
 
     @Captor
-    private val stateCaptor = argumentCaptor<StateType>()
+    private val stateCaptor = argumentCaptor<StateAndEventProcessor.State<StateType>>()
 
     @Captor
     private val eventCaptor = argumentCaptor<Record<String, EventType>>()
 
-    @Captor
-    private val metadataCaptor = argumentCaptor<Metadata>()
-
     @BeforeEach
     fun setup() {
-        `when`(processor.onNext(anyOrNull(), any(), anyOrNull())).thenAnswer { invocation ->
-            val state = invocation.getArgument<StateType>(0)
-            val id = state?.let { it.id + 1 } ?: 0
+        `when`(processor.onNext(anyOrNull(), any())).thenAnswer { invocation ->
+            val state = invocation.getArgument<StateAndEventProcessor.State<StateType>>(0)
+            val id = state?.let { it.value!!.id + 1 } ?: 0
             StateAndEventProcessor.Response(
-                StateType(id),
+                StateAndEventProcessor.State(StateType(id), Metadata(mapOf("id" to id))),
                 listOf(
                     EventType("outputEvent$id").toRecord()
                 ),
-                false,
-                Metadata(mapOf("id" to id)),
             )
         }
 
-        `when`(stateManagerHelper.createOrUpdateState(any(), anyOrNull(), anyOrNull(), anyOrNull())).thenReturn(
+        `when`(stateManagerHelper.createOrUpdateState(any(), anyOrNull(), anyOrNull())).thenReturn(
             mock()
         )
     }
@@ -79,20 +74,17 @@ class ProcessorTaskTest {
         val result = task.call()
 
         verify(processor, times(inputEventRecords.size)).onNext(
-            stateCaptor.capture(), eventCaptor.capture(), metadataCaptor.capture()
+            stateCaptor.capture(), eventCaptor.capture()
         )
         val capturedInputStates = stateCaptor.allValues
-        val expectedInputStates = listOf(null, StateType(0), StateType(1))
+        val expectedInputStates = listOf(
+            null,
+            StateAndEventProcessor.State(StateType(0), Metadata(mapOf("id" to 0))),
+            StateAndEventProcessor.State(StateType(1), Metadata(mapOf("id" to 1))),
+        )
         assertEquals(expectedInputStates, capturedInputStates)
         val capturedInputEventRecords = eventCaptor.allValues
         assertEquals(inputEventRecords, capturedInputEventRecords)
-        val capturedInputMetadata = metadataCaptor.allValues
-        val expectedInputMetadata = listOf(
-            null,
-            Metadata(mapOf("id" to 0)),
-            Metadata(mapOf("id" to 1))
-        )
-        assertEquals(expectedInputMetadata, capturedInputMetadata)
         assertEquals(task, result.processorTask)
         assertEquals(listOf(0, 1, 2).map { EventType("outputEvent$it").toRecord() }, result.outputEvents)
         assertNotNull(result.updatedState)
