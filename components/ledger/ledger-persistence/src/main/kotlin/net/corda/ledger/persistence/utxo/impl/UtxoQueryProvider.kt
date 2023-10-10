@@ -86,4 +86,9 @@ interface UtxoQueryProvider {
      * @property persistSignedGroupParameters SQL text for [UtxoRepositoryImpl.persistSignedGroupParameters].
      */
     val persistSignedGroupParameters: String
+
+    /**
+     * @property findTransactionIdsAndStatuses SQL text for [UtxoRepositoryImpl.findTransactionIdsAndStatuses].
+     */
+    val findTransactionIdsAndStatuses: String
 }

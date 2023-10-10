@@ -75,13 +75,7 @@ class UtxoRepositoryImpl @Activate constructor(
         entityManager: EntityManager,
         transactionIds: List<String>
     ): Map<SecureHash, String> {
-        return entityManager.createNativeQuery(
-            """
-                SELECT id, status 
-                FROM {h-schema}utxo_transaction 
-                WHERE id IN (:transactionIds)""",
-            Tuple::class.java
-        )
+        return entityManager.createNativeQuery(queryProvider.findTransactionIdsAndStatuses, Tuple::class.java)
             .setParameter("transactionIds", transactionIds)
             .resultListAsTuples()
             .associate { r -> parseSecureHash(r.get(0) as String) to r.get(1) as String }
@@ -202,7 +196,9 @@ class UtxoRepositoryImpl @Activate constructor(
         groupIndex: Int,
         leafIndex: Int,
         data: ByteArray,
-        hash: String
+        hash: String,
+        referencedStateTransactionId: String?,
+        referencedStateIndex: Int?
     ) {
         entityManager.createNativeQuery(queryProvider.persistTransactionComponentLeaf)
             .setParameter("transactionId", transactionId)
@@ -210,6 +206,8 @@ class UtxoRepositoryImpl @Activate constructor(
             .setParameter("leafIndex", leafIndex)
             .setParameter("data", data)
             .setParameter("hash", hash)
+            .setParameter("referencedStateTransactionId", referencedStateTransactionId)
+            .setParameter("referencedStateIndex", referencedStateIndex)
             .executeUpdate()
             .logResult("transaction component [$transactionId, $groupIndex, $leafIndex]")
     }

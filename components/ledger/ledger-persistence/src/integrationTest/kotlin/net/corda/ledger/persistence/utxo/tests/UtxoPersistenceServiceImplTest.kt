@@ -572,7 +572,9 @@ class UtxoPersistenceServiceImplTest {
                             groupIndex,
                             leafIndex,
                             component,
-                            digest("SHA-256", component).toString()
+                            digest("SHA-256", component).toString(),
+                            null,
+                            null
                         )
                     }
                 }

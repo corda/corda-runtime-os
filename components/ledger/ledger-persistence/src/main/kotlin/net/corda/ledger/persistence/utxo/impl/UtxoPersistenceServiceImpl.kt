@@ -158,13 +158,29 @@ class UtxoPersistenceServiceImpl(
         // Insert the Transactions components
         transaction.rawGroupLists.mapIndexed { groupIndex, leaves ->
             leaves.mapIndexed { leafIndex, data ->
+                val (referencedTransactionId, referencedStateIndex) = when (groupIndex) {
+                    UtxoComponentGroup.INPUTS.ordinal, UtxoComponentGroup.REFERENCES.ordinal -> {
+                        try {
+                            val deserializedStateRef = serializationService.deserialize<StateRef>(data)
+                            Pair(deserializedStateRef.transactionId.toString(), deserializedStateRef.index)
+                        } catch (e: Exception) {
+                            log.warn("Error deserializing input or reference state ref for transaction: $transactionIdString, " +
+                                    "group index: $groupIndex, leaf index: $leafIndex")
+                            Pair(null, null)
+                        }
+                    }
+                    else -> Pair(null, null)
+                }
+
                 repository.persistTransactionComponentLeaf(
                     em,
                     transactionIdString,
                     groupIndex,
                     leafIndex,
                     data,
-                    sandboxDigestService.hash(data, DigestAlgorithmName.SHA2_256).toString()
+                    sandboxDigestService.hash(data, DigestAlgorithmName.SHA2_256).toString(),
+                    referencedTransactionId,
+                    referencedStateIndex
                 )
             }
         }

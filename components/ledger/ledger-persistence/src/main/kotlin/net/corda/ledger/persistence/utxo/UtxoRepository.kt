@@ -87,7 +87,9 @@ interface UtxoRepository {
         groupIndex: Int,
         leafIndex: Int,
         data: ByteArray,
-        hash: String
+        hash: String,
+        referencedStateTransactionId: String?,
+        referencedStateIndex: Int?
     )
 
     /** Persists transaction output (operation is idempotent) */

@@ -29,10 +29,12 @@ class UtxoEntityFactory(entityManagerFactory: EntityManagerFactory) {
         groupIdx: Int,
         leafIdx: Int,
         component: ByteArray,
-        hash: String
+        hash: String,
+        referencedTransactionId: String?,
+        referencedTransactionIndex: Int?
     ): Any {
-        return utxoTransactionComponent.constructors.single { it.parameterCount == 5 }.newInstance(
-            utxoTransaction, groupIdx, leafIdx, component, hash
+        return utxoTransactionComponent.constructors.single { it.parameterCount == 7 }.newInstance(
+            utxoTransaction, groupIdx, leafIdx, component, hash, referencedTransactionId, referencedTransactionIndex
         )
     }
 

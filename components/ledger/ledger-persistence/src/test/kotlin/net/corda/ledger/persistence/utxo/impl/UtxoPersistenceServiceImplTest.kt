@@ -56,7 +56,7 @@ class UtxoPersistenceServiceImplTest {
         }
 
         on { persistTransaction(any(), any(), any(), any(), any(), any()) } doAnswer {}
-        on { persistTransactionComponentLeaf(any(), any(), any(), any(), any(), any()) } doAnswer {}
+        on { persistTransactionComponentLeaf(any(), any(), any(), any(), any(), any(), anyOrNull(), anyOrNull()) } doAnswer {}
     }
 
     private val mockPrivacySalt = mock<PrivacySalt> {

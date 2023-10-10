@@ -108,7 +108,9 @@ class HsqldbVaultNamedQueryTest {
                     groupIndex = state.groupIndex,
                     leafIndex = state.leafIndex,
                     data = byteArrayOf(0x01, 0x02, 0x03, 0x04),
-                    hash = ""
+                    hash = "",
+                    null,
+                    null
                 )
 
                 visibleStates += UtxoVisibleTransactionOutputEntity(
