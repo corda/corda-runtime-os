@@ -6,11 +6,10 @@ import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_KEY
-import net.corda.messaging.api.mediator.taskmanager.TaskManager
-import net.corda.messaging.api.mediator.taskmanager.TaskType
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.utils.toRecord
+import net.corda.taskmanager.TaskManager
 
 /**
  * Helper that creates and executes various tasks used by [MultiSourceEventMediatorImpl].
@@ -99,7 +98,7 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
         processorTasks: Collection<ProcessorTask<K, S, E>>
     ): List<ProcessorTask.Result<K, S, E>> {
         return processorTasks.map { processorTask ->
-            taskManager.execute(TaskType.SHORT_RUNNING, processorTask::call)
+            taskManager.executeShortRunningTask(processorTask::call)
         }.map {
             it.join()
         }
