@@ -56,7 +56,10 @@ class ReclaimFlow : ClientStartableFlow {
                 ?: throw IllegalStateException("Transaction with id: ${flowArgs.signedTransactionId} has no lock state")
             val assetState = encumberedTx.getOutputStateAndRefs(Asset::class.java).singleOrNull()
                 ?: throw IllegalStateException("Transaction with id: ${flowArgs.signedTransactionId} has no asset state")
-            val newAssetState = assetState.state.contractState.copy(participants = listOf(myInfo.ledgerKeys.first()))
+            val newAssetState = assetState.state.contractState.withNewOwner(
+                myInfo.ledgerKeys.first(),
+                listOf(myInfo.ledgerKeys.first())
+            )
             val timeWindowForReclaim = lockState.state.contractState.timeWindow.plusSeconds(31)
 
             val txBuilder = ledgerService.createTransactionBuilder()

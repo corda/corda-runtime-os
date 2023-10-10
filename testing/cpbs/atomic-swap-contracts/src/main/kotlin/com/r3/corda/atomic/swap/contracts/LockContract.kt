@@ -52,11 +52,13 @@ class LockContract : Contract {
             }
 
             is LockCommands.Reclaim -> {
+                val inputLockState = transaction.getInputStates(LockState::class.java).first()
                 "There should be one lock input state as the lock state needs to be consumed" using
                         (transaction.getInputStates(LockState::class.java).size == 1)
                 "There should be one output state as an unlocked asset state needs to be created" using
                         (transaction.getOutputStates(OwnableState::class.java).size == 1)
-                val inputLockState = transaction.getInputStates(LockState::class.java).first()
+                "Original owner gets the asset" using
+                        (transaction.getOutputStates(OwnableState::class.java).first().owner == inputLockState.creator)
                 "Only lock state creator can do a reclaim" using (transaction.signatories.contains(inputLockState.creator))
                 val timeWindowUntil = transaction.timeWindow.from
                 "The time window must have expired. Reversal of Encumbered assets requires a time window that starts " +
