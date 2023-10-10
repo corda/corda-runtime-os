@@ -244,33 +244,39 @@ internal class VirtualNodeUpgradeOperationHandler(
             statuses = listOf(APPROVED),
             limit = 1
         )
-        if (registrationRequest is MembershipQueryResult.Success && registrationRequest.payload.isNotEmpty()) {
-            try {
-                val registrationRequestDetails = registrationRequest.payload.first()
+        when (registrationRequest) {
+            is MembershipQueryResult.Success -> {
+                if (registrationRequest.payload.isNotEmpty()) {
+                    try {
+                        val registrationRequestDetails = registrationRequest.payload.first()
 
-                val updatedSerial = registrationRequestDetails.serial + 1
-                val registrationContext = registrationRequestDetails
-                    .memberProvidedContext.data.array()
-                    .deserializeContext(keyValuePairListDeserializer)
-                    .toMutableMap()
+                        val updatedSerial = registrationRequestDetails.serial + 1
+                        val registrationContext = registrationRequestDetails
+                            .memberProvidedContext.data.array()
+                            .deserializeContext(keyValuePairListDeserializer)
+                            .toMutableMap()
 
-                registrationContext[MemberInfoExtension.SERIAL] = updatedSerial.toString()
+                        registrationContext[MemberInfoExtension.SERIAL] = updatedSerial.toString()
 
-                memberResourceClient.startRegistration(
-                    holdingIdentity.shortHash,
-                    registrationContext,
-                )
-            } catch (e: ContextDeserializationException) {
-                logger.warn(
-                    "Could not deserialize previous registration context for ${holdingIdentity.shortHash}. " +
-                            "Re-registration will not be attempted."
-                )
+                        memberResourceClient.startRegistration(
+                            holdingIdentity.shortHash,
+                            registrationContext,
+                        )
+                    } catch (e: ContextDeserializationException) {
+                        logger.warn(
+                            "Could not deserialize previous registration context for ${holdingIdentity.shortHash}. " +
+                                    "Re-registration will not be attempted."
+                        )
+                    }
+                } else {
+                    logger.warn("No previous registration requests were found for ${holdingIdentity.shortHash}. " +
+                            "Re-registration will not be attempted.")
+                }
             }
-        } else if (registrationRequest is MembershipQueryResult.Failure) {
-            logger.warn("Failed to query for an APPROVED previous registration request for ${holdingIdentity.shortHash}: " +
-                    "${registrationRequest.errorMsg}. Re-registration will not be attempted.")
-        } else {
-            // TODO
+            is MembershipQueryResult.Failure -> {
+                logger.warn("Failed to query for an APPROVED previous registration request for ${holdingIdentity.shortHash}: " +
+                        "${registrationRequest.errorMsg}. Re-registration will not be attempted.")
+            }
         }
     }
 
