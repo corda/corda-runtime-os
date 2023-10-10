@@ -242,13 +242,13 @@ internal class VirtualNodeUpgradeOperationHandler(
             viewOwningIdentity = holdingIdentity,
             requestSubjectX500Name = holdingIdentity.x500Name,
             statuses = listOf(APPROVED),
-            limit = 1
         )
         when (registrationRequest) {
             is MembershipQueryResult.Success -> {
                 if (registrationRequest.payload.isNotEmpty()) {
                     try {
-                        val registrationRequestDetails = registrationRequest.payload.first()
+                        // Get the latest registration request
+                        val registrationRequestDetails = registrationRequest.payload.last()
 
                         val updatedSerial = registrationRequestDetails.serial + 1
                         val registrationContext = registrationRequestDetails
