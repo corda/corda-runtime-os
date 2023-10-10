@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory
 import java.time.Clock
 import java.util.concurrent.Executors
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
+import net.corda.schema.configuration.ConfigKeys.STATE_MANAGER_CONFIG
 
 @Suppress("LongParameterList", "ForbiddenComment")
 @Component(service = [FlowMapperService::class])
@@ -92,7 +93,7 @@ class FlowMapperService @Activate constructor(
                     coordinator.createManagedResource(CONFIG_HANDLE) {
                         configurationReadService.registerComponentForUpdates(
                             coordinator,
-                            setOf(FLOW_CONFIG, MESSAGING_CONFIG)
+                            setOf(FLOW_CONFIG, MESSAGING_CONFIG, STATE_MANAGER_CONFIG)
                         )
                     }
                 } else {
@@ -114,8 +115,7 @@ class FlowMapperService @Activate constructor(
         try {
             val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
             val flowConfig = event.config.getConfig(FLOW_CONFIG)
-            // TODO: config key is incorrect
-            val stateManagerConfig = event.config.getConfig(MESSAGING_CONFIG)
+            val stateManagerConfig = event.config.getConfig(STATE_MANAGER_CONFIG)
 
             // TODO: This can be removed once the state manager is integrated into the flow mapper and the new cleanup
             // tasks work correctly.

@@ -40,6 +40,7 @@ import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.STATE_MANAGER_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.session.mapper.service.FlowMapperService
@@ -419,6 +420,15 @@ class FlowMapperServiceIntegrationTest {
                 )
             )
         )
+        publisher.publish(
+            listOf(
+                Record(
+                    CONFIG_TOPIC,
+                    STATE_MANAGER_CONFIG,
+                    Configuration(stateManagerConf, stateManagerConf, 0, schemaVersion)
+                )
+            )
+        )
     }
 
     private val bootConf = """
@@ -454,4 +464,8 @@ class FlowMapperServiceIntegrationTest {
                 }
             }
       """
+
+    private val stateManagerConf = """
+        
+    """.trimIndent()
 }
