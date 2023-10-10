@@ -229,13 +229,6 @@
                     "null"
                   ]
                 },
-                "persistenceUnitName": {
-                  "description": "The persistence unit name to use by the state manager when using database as the persistent storage",
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
                 "additionalProperties": false
               },
               "additionalProperties": false
