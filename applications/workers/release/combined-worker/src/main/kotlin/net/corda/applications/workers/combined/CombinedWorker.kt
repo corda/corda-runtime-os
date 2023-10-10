@@ -311,7 +311,6 @@ private class CombinedWorkerParams {
     @Option(names = ["--hsm-id"], description = ["HSM ID which is handled by this worker instance."])
     var hsmId = ""
 
-    // TODO - Replace endpoints with localhost:7000 for combined worker deployment
     @Option(names = ["--serviceEndpoint"], description = ["Internal REST endpoints for Corda workers"], required = true)
     val workerEndpoints: Map<String, String> = emptyMap()
 }
