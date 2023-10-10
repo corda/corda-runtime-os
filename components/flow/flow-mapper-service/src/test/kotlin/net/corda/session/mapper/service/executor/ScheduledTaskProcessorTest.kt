@@ -29,8 +29,8 @@ class ScheduledTaskProcessorTest {
     private val clock = Clock.fixed(Instant.now(), ZoneId.systemDefault())
     private val window = 1000L
     private val states = listOf(
-        createStateEntry("key1", clock.instant().minusMillis(window * 2), FlowMapperStateType.CLOSING),
-        createStateEntry("key4", clock.instant().minusMillis(window * 3), FlowMapperStateType.CLOSING)
+        createStateEntry("key1", clock.instant().minusMillis(window * 2)),
+        createStateEntry("key4", clock.instant().minusMillis(window * 3))
     ).toMap()
     private val inputEvent = Record(
         Schemas.ScheduledTask.SCHEDULED_TASK_TOPIC_MAPPER_PROCESSOR,
@@ -51,7 +51,7 @@ class ScheduledTaskProcessorTest {
         val ids = output.flatMap { (it.value as ExecuteCleanup).ids }
         assertThat(ids).contains("key1", "key4")
         verify(stateManager).findUpdatedBetweenWithMetadataFilter(
-            IntervalFilter(Instant.MIN, clock.instant() - Duration.ofMillis(window)),
+            IntervalFilter(Instant.EPOCH, clock.instant() - Duration.ofMillis(window)),
             MetadataFilter(FLOW_MAPPER_STATUS, Operation.Equals, FlowMapperStateType.CLOSING.toString())
         )
     }
@@ -82,7 +82,7 @@ class ScheduledTaskProcessorTest {
         val output = scheduledTaskProcessor.onNext(listOf(inputEvent))
         assertThat(output).isEmpty()
         verify(stateManager).findUpdatedBetweenWithMetadataFilter(
-            IntervalFilter(Instant.MIN, clock.instant() - Duration.ofMillis(window * 5)),
+            IntervalFilter(Instant.EPOCH, clock.instant() - Duration.ofMillis(window * 5)),
             MetadataFilter(FLOW_MAPPER_STATUS, Operation.Equals, FlowMapperStateType.CLOSING.toString())
         )
     }
@@ -107,13 +107,12 @@ class ScheduledTaskProcessorTest {
 
     private fun createStateEntry(
         key: String,
-        lastUpdated: Instant,
-        mapperState: FlowMapperStateType
+        lastUpdated: Instant
     ): Pair<String, State> {
         val state = State(
             key,
             byteArrayOf(),
-            metadata = metadata(FLOW_MAPPER_STATUS to mapperState.toString()),
+            metadata = metadata(FLOW_MAPPER_STATUS to FlowMapperStateType.CLOSING.toString()),
             modifiedTime = lastUpdated
         )
         return Pair(key, state)
