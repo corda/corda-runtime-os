@@ -21,7 +21,7 @@
     org.slf4j.simpleLogger.dateTimeFormat='yyyy-MM-dd HH:mm:ss:SSS Z'
 
 -runrequires: \
-    bnd.identity;id='net.corda.interop-identity-registry-service-impl',\
+    bnd.identity;id='net.corda.interop-identity-registry-service',\
     bnd.identity;id='net.corda.lifecycle-impl',\
     bnd.identity;id='net.corda.configuration-read-service-impl',\
     bnd.identity;id='${project.archivesBaseName}-tests',\

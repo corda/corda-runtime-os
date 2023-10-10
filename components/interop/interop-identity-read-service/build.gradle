@@ -24,7 +24,6 @@ dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 
     implementation project(":components:interop:interop-identity-registry-service")
-    runtimeOnly project(":components:interop:interop-identity-registry-service-impl")
 
     implementation project(":libs:configuration:configuration-core")
 

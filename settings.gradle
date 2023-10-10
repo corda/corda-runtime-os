@@ -487,7 +487,6 @@ include 'components:interop:interop-identity-read-service'
 include 'components:interop:interop-identity-write-service'
 include 'components:interop:interop-identity-write-service-impl'
 include 'components:interop:interop-identity-registry-service'
-include 'components:interop:interop-identity-registry-service-impl'
 include 'components:interop:interop-group-policy-read-service'
 
 // The following logic dictates if we use the composite build gradle functionality,

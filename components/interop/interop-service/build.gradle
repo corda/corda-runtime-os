@@ -22,7 +22,6 @@ dependencies {
     implementation project(':components:domino-logic')
     implementation project(':components:membership:membership-group-read')
     implementation project(':components:interop:interop-identity-registry-service')
-    implementation project(':components:interop:interop-identity-registry-service-impl')
     implementation project(":libs:membership:membership-impl")
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"
@@ -57,5 +56,4 @@ dependencies {
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
     integrationTestRuntimeOnly project(':components:membership:membership-group-read-impl')
-    integrationTestRuntimeOnly project(':components:interop:interop-identity-registry-service-impl')
 }

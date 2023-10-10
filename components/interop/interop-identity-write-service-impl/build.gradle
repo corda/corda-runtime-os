@@ -31,7 +31,6 @@ dependencies {
     implementation project(":components:virtual-node:virtual-node-info-read-service")
 
     runtimeOnly project(":components:interop:interop-identity-write-service-impl")
-    runtimeOnly project(":components:interop:interop-identity-registry-service-impl")
 
     implementation project(":libs:configuration:configuration-core")
 
