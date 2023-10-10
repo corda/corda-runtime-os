@@ -845,7 +845,7 @@ object CordaMetrics {
         Partition("partition"),
 
         /**
-         * Partition of a message bus topic published to or consumed from.
+         * Type of event received by the token selection processor.
          */
         TokenSelectionEvent("token.selection.event"),
 
