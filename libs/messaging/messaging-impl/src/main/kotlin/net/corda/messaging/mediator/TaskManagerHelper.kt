@@ -1,11 +1,11 @@
 package net.corda.messaging.mediator
 
-import kotlinx.coroutines.runBlocking
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
+import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_KEY
 import net.corda.messaging.api.mediator.taskmanager.TaskManager
 import net.corda.messaging.api.mediator.taskmanager.TaskType
 import net.corda.messaging.api.processor.StateAndEventProcessor
@@ -20,17 +20,11 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
     private val stateManagerHelper: StateManagerHelper<K, S, E>,
 ) {
 
-    /** Same as [Callable] but with suspend function call. */
-    fun interface SuspendCallable<V> {
-        @Throws(Exception::class)
-        suspend fun call(): V
-    }
-
     /**
      * Creates [ProcessorTask]s for given events and states.
      *
      * @param messageGroups Map of messages keys and related events.
-     * @param persistedStates Mpa of message keys and related states.
+     * @param persistedStates Map of message keys and related states.
      * @param messageProcessor State and event processor.
      * @return Created [ProcessorTask]s.
      */
@@ -40,11 +34,11 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
         messageProcessor: StateAndEventProcessor<K, S, E>,
     ): List<ProcessorTask<K, S, E>> {
         return messageGroups.map { msgGroup ->
-            val key = msgGroup.key.toString()
+            val key = msgGroup.key
             val events = msgGroup.value.map { it.toRecord() }
             ProcessorTask(
                 key,
-                persistedStates[key],
+                persistedStates[key.toString()],
                 events,
                 messageProcessor,
                 stateManagerHelper,
@@ -68,8 +62,9 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
             .map { (_, clientTaskResults) ->
                 val groupedEvents = clientTaskResults.map { it.toRecord() }
                 with(clientTaskResults.first()) {
+                    val persistedState = processorTaskResult.updatedState!!
                     processorTask.copy(
-                        persistedState = processorTaskResult.updatedState,
+                        persistedState = persistedState.copy(version = persistedState.version + 1),
                         events = groupedEvents
                     )
                 }
@@ -90,7 +85,7 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
         persistedStates: Map<String, State?>,
     ): List<ProcessorTask<K, S, E>> {
         return invalidResults.map {
-            it.processorTask.copy(persistedState = persistedStates[it.processorTask.key])
+            it.processorTask.copy(persistedState = persistedStates[it.processorTask.key.toString()])
         }
     }
 
@@ -124,9 +119,8 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
     ): List<ClientTask<K, S, E>> {
         return processorTaskResults.map { result ->
             result.outputEvents.map { event ->
-                val message = MediatorMessage(event.value!!)
                 ClientTask(
-                    message,
+                    event.toMessage(),
                     messageRouter,
                     result,
                 )
@@ -143,8 +137,10 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
     fun executeClientTasks(
         clientTasks: Collection<ClientTask<K, S, E>>
     ): List<ClientTask.Result<K, S, E>> {
-        return runBlocking {
-            clientTasks.map { it.call() }
+        return clientTasks.map { clientTask ->
+            taskManager.execute(TaskType.SHORT_RUNNING, clientTask::call)
+        }.map {
+            it.join()
         }
     }
 
@@ -157,4 +153,16 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
             processorTask.events.first().key,
             replyMessage!!.payload,
         )
+
+    /**
+     * Converts [Record] to [MediatorMessage].
+     */
+    private fun Record<*, *>.toMessage() =
+        MediatorMessage(
+            value!!,
+            headers.toMessageProperties().also { it[MSG_PROP_KEY] = key },
+        )
+
+    private fun List<Pair<String, String>>.toMessageProperties() =
+        associateTo(mutableMapOf()) { (key, value) -> key to (value as Any) }
 }

@@ -163,7 +163,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                 val processingResults = taskManagerHelper.executeProcessorTasks(msgProcessorTasks)
                 val conflictingStates = stateManagerHelper.persistStates(processingResults)
                 val (successResults, failResults) = processingResults.partition {
-                    !conflictingStates.contains(it.key)
+                    !conflictingStates.contains(it.key.toString())
                 }
                 val clientTasks = taskManagerHelper.createClientTasks(successResults, messageRouter)
                 val clientResults = taskManagerHelper.executeClientTasks(clientTasks)
@@ -176,21 +176,23 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun pollConsumers(): List<CordaConsumerRecord<K, E>> {
-        return runBlocking {
-            consumers.map { consumer ->
-                consumer.poll(config.pollTimeout)
-            }.map {
-                it.await()
+        return consumers.map { consumer ->
+            taskManager.execute(TaskType.SHORT_RUNNING) {
+                runBlocking {
+                    consumer.poll(config.pollTimeout).await()
+                }
             }
+        }.map {
+            it.join()
         }.flatten()
     }
 
     private fun commitOffsets() {
-        runBlocking {
-            consumers.map { consumer ->
-                consumer.asyncCommitOffsets()
-            }.map {
-                it.await()
+        consumers.map { consumer ->
+            taskManager.execute(TaskType.SHORT_RUNNING) {
+                runBlocking {
+                    consumer.asyncCommitOffsets().await()
+                }
             }
         }
     }
