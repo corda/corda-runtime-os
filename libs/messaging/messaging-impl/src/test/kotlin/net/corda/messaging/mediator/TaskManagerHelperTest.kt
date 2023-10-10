@@ -1,6 +1,5 @@
 package net.corda.messaging.mediator
 
-import kotlinx.coroutines.runBlocking
 import net.corda.libs.statemanager.api.State
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.mediator.MediatorMessage
@@ -221,14 +220,16 @@ class TaskManagerHelperTest {
         val clientTask1 = mock<ClientTask<String, String, String>>()
         val clientTask2 = mock<ClientTask<String, String, String>>()
 
+        `when`(taskManager.execute(any(), any<() -> ClientTask.Result<String, String, String>>())).thenReturn(mock())
+
         taskManagerHelper.executeClientTasks(
             listOf(clientTask1, clientTask2)
         )
 
-        runBlocking {
-            verify(clientTask1).call()
-            verify(clientTask1).call()
-        }
+        val commandCaptor = argumentCaptor<() -> ClientTask.Result<String, String, String>>()
+        verify(taskManager, times(2)).execute(any(), commandCaptor.capture())
+        assertEquals(clientTask1::call, commandCaptor.firstValue)
+        assertEquals(clientTask2::call, commandCaptor.secondValue)
     }
 
     private fun List<String>.toCordaConsumerRecords(key: String) =
