@@ -57,7 +57,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     override fun start() {
         log.debug { "Starting multi-source event mediator with config: $config" }
         lifecycleCoordinator.start()
-        taskManager.execute(TaskType.LONG_RUNNING, ::run)
+        taskManager.executeLongRunningTask(::run)
     }
 
     private fun stop() = Thread.currentThread().interrupt()
