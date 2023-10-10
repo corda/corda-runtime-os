@@ -39,7 +39,6 @@ import net.corda.entityprocessor.impl.internal.PersistenceServiceInternal
 import net.corda.entityprocessor.impl.internal.getClass
 import net.corda.entityprocessor.impl.tests.helpers.AnimalCreator.createCats
 import net.corda.entityprocessor.impl.tests.helpers.AnimalCreator.createDogs
-import net.corda.entityprocessor.impl.tests.helpers.QuerySetup
 import net.corda.flow.utils.toKeyValuePairList
 import net.corda.messaging.api.records.Record
 import net.corda.orm.JpaEntitiesSet
@@ -92,6 +91,12 @@ import javax.persistence.EntityManagerFactory
  * Rather than creating a new serializer in these tests from scratch,
  * we grab a reference to the one in the sandbox and use that to serialize and de-serialize.
  */
+
+sealed class QuerySetup {
+    data class NamedQuery(val params: Map<String, String>, val query: String = "Dog.summon") : QuerySetup()
+    data class All(val className: String) : QuerySetup()
+}
+
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PersistenceServiceInternalTests {

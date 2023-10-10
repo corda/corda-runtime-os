@@ -39,7 +39,6 @@ import net.corda.entityprocessor.impl.internal.PersistenceServiceRpcInternal
 import net.corda.entityprocessor.impl.internal.getClass
 import net.corda.entityprocessor.impl.tests.helpers.AnimalCreator.createCats
 import net.corda.entityprocessor.impl.tests.helpers.AnimalCreator.createDogs
-import net.corda.entityprocessor.impl.tests.helpers.QuerySetup
 import net.corda.flow.utils.toKeyValuePairList
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.utils.transaction
@@ -79,6 +78,11 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
+
+sealed class RpcQuerySetup {
+    data class RpcNamedQuery(val params: Map<String, String>, val query: String = "Dog.summon") : RpcQuerySetup()
+    data class RpcAll(val className: String) : RpcQuerySetup()
+}
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -199,9 +203,6 @@ class PersistenceServiceRpcInternalTests {
         entityManagerFactory.close()
         dbConnectionManager.stop()
     }
-
-
-    private fun noOpPayloadCheck(bytes: ByteBuffer) = bytes
 
     @Test
     fun `persist`() {
@@ -413,7 +414,7 @@ class PersistenceServiceRpcInternalTests {
         assertThat(missing).isNull()
         val actual = findDogDirectInDb(dogs[2].id)
         assertThat(actual).isEqualTo(dogs[2].instance)
-        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query = "Dog.all"))
+        val r = assertQuery(RpcQuerySetup.RpcNamedQuery(mapOf(), query = "Dog.all"))
         assertThat(r.size).isEqualTo(dogs.size - 2)
     }
 
@@ -437,7 +438,7 @@ class PersistenceServiceRpcInternalTests {
         val dogs = createDogs(sandbox)
         dogs.map { persistDirectInDb(it.instance) }
         assertDeleteEntitiesById(DOG_CLASS_NAME, dogs[0].id, dogs[2].id, dogs[4].id)
-        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query = "Dog.all"))
+        val r = assertQuery(RpcQuerySetup.RpcNamedQuery(mapOf(), query = "Dog.all"))
         assertThat(r.size).isEqualTo(5)
         assertThat(dogs[0].toString()).contains("Rover")
         r.forEach {
@@ -490,7 +491,7 @@ class PersistenceServiceRpcInternalTests {
     @Test
     fun `find all`() {
         val expected = persistDogs()
-        val results = assertQuery(QuerySetup.All(DOG_CLASS_NAME), numberOfRowsFromQuery = expected)
+        val results = assertQuery(RpcQuerySetup.RpcAll(DOG_CLASS_NAME), numberOfRowsFromQuery = expected)
         assertThat(results.size).isGreaterThanOrEqualTo(expected)
 
         // And check the types we've returned
@@ -504,9 +505,9 @@ class PersistenceServiceRpcInternalTests {
     @Test
     fun `find all with pagination`() {
         val expected = persistDogs()
-        val results1 = assertQuery(QuerySetup.All(DOG_CLASS_NAME), 0, 2, numberOfRowsFromQuery = 2)
-        val results2 = assertQuery(QuerySetup.All(DOG_CLASS_NAME), 2, 2, numberOfRowsFromQuery = 2)
-        val resultsBalance = assertQuery(QuerySetup.All(DOG_CLASS_NAME), 4, Int.MAX_VALUE)
+        val results1 = assertQuery(RpcQuerySetup.RpcAll(DOG_CLASS_NAME), 0, 2, numberOfRowsFromQuery = 2)
+        val results2 = assertQuery(RpcQuerySetup.RpcAll(DOG_CLASS_NAME), 2, 2, numberOfRowsFromQuery = 2)
+        val resultsBalance = assertQuery(RpcQuerySetup.RpcAll(DOG_CLASS_NAME), 4, Int.MAX_VALUE)
 
         assertThat(results1.size).isEqualTo(2)
         assertThat(results2.size).isEqualTo(2)
@@ -525,15 +526,15 @@ class PersistenceServiceRpcInternalTests {
     @Test
     fun `find all with negative pagination produces error`() {
         persistDogs()
-        assertQuery(QuerySetup.All(DOG_CLASS_NAME), -12, 2, expectFailure = "Invalid negative offset -12")
-        assertQuery(QuerySetup.All(DOG_CLASS_NAME), 0, -42, expectFailure = "Invalid negative limit -42")
+        assertQuery(RpcQuerySetup.RpcAll(DOG_CLASS_NAME), -12, 2, expectFailure = "Invalid negative offset -12")
+        assertQuery(RpcQuerySetup.RpcAll(DOG_CLASS_NAME), 0, -42, expectFailure = "Invalid negative limit -42")
     }
 
     /** Cat class has composite key, so also check we find those ok */
     @Test
     fun `find all with composite key`() {
         val expected = persistCats()
-        val results = assertQuery(QuerySetup.All(CAT_CLASS_NAME), numberOfRowsFromQuery = expected)
+        val results = assertQuery(RpcQuerySetup.RpcAll(CAT_CLASS_NAME), numberOfRowsFromQuery = expected)
 
         assertThat(results.size).isEqualTo(expected)
 
@@ -564,7 +565,7 @@ class PersistenceServiceRpcInternalTests {
     fun `find with named query with many results`() {
         persistDogs()
         val r = assertQuery(
-            QuerySetup.NamedQuery(mapOf("name" to "%o%"), query = "Dog.summonLike"),
+            RpcQuerySetup.RpcNamedQuery(mapOf("name" to "%o%"), query = "Dog.summonLike"),
             numberOfRowsFromQuery = 4
         )
         assertThat(r.size).isEqualTo(4)
@@ -574,7 +575,7 @@ class PersistenceServiceRpcInternalTests {
     fun `find with named query with 1 result`() {
         persistDogs()
         val r = assertQuery(
-            QuerySetup.NamedQuery(mapOf("name" to "Rover 1"), query = "Dog.summon"),
+            RpcQuerySetup.RpcNamedQuery(mapOf("name" to "Rover 1"), query = "Dog.summon"),
             numberOfRowsFromQuery = 1
         )
         assertThat(r.size).isEqualTo(1)
@@ -583,7 +584,7 @@ class PersistenceServiceRpcInternalTests {
     @Test
     fun `find with named query and missing owner`() {
         persistDogs()
-        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query = "Dog.independent"), numberOfRowsFromQuery = 1)
+        val r = assertQuery(RpcQuerySetup.RpcNamedQuery(mapOf(), query = "Dog.independent"), numberOfRowsFromQuery = 1)
         assertThat(r.size).isEqualTo(1)
     }
 
@@ -591,7 +592,7 @@ class PersistenceServiceRpcInternalTests {
     fun `update produces error`() {
         persistDogs()
         assertQuery(
-            QuerySetup.NamedQuery(mapOf(), query = "Dog.release"),
+            RpcQuerySetup.RpcNamedQuery(mapOf(), query = "Dog.release"),
             expectFailure = "Not supported for DML operations"
         )
     }
@@ -600,7 +601,7 @@ class PersistenceServiceRpcInternalTests {
     fun `find with named query and incorrectly named parameter`() {
         persistDogs()
         assertQuery(
-            QuerySetup.NamedQuery(mapOf("handle" to "Rover 1"), query = "Dog.summon"),
+            RpcQuerySetup.RpcNamedQuery(mapOf("handle" to "Rover 1"), query = "Dog.summon"),
             expectFailure = "Could not locate named parameter [handle], expecting one of [name]"
         )
     }
@@ -609,7 +610,7 @@ class PersistenceServiceRpcInternalTests {
     fun `find with incorrectly named parameter`() {
         persistDogs()
         assertQuery(
-            QuerySetup.NamedQuery(mapOf("name" to "Rover 1"), query = "Dog.findByOwner"),
+            RpcQuerySetup.RpcNamedQuery(mapOf("name" to "Rover 1"), query = "Dog.findByOwner"),
             expectFailure = "No query defined for that name [Dog.findByOwner]"
         )
     }
@@ -617,13 +618,13 @@ class PersistenceServiceRpcInternalTests {
     @Test
     fun `find with named query with all results`() {
         persistDogs()
-        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query = "Dog.all"), numberOfRowsFromQuery = 8)
+        val r = assertQuery(RpcQuerySetup.RpcNamedQuery(mapOf(), query = "Dog.all"), numberOfRowsFromQuery = 8)
         assertThat(r.size).isEqualTo(8)
     }
 
     @Test
     fun `find with named query and zero limit returns no results`() {
-        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query = "Dog.all"), limit = 0, numberOfRowsFromQuery = 0)
+        val r = assertQuery(RpcQuerySetup.RpcNamedQuery(mapOf(), query = "Dog.all"), limit = 0, numberOfRowsFromQuery = 0)
         assertThat(r.size).isEqualTo(0)
     }
 
@@ -631,13 +632,13 @@ class PersistenceServiceRpcInternalTests {
     fun `find with named query and negative pagination produces error`() {
         persistDogs()
         assertQuery(
-            QuerySetup.NamedQuery(mapOf(), query = "Dog.all"),
+            RpcQuerySetup.RpcNamedQuery(mapOf(), query = "Dog.all"),
             -12,
             2,
             expectFailure = "Invalid negative offset -12"
         )
         assertQuery(
-            QuerySetup.NamedQuery(mapOf(), query = "Dog.all"),
+            RpcQuerySetup.RpcNamedQuery(mapOf(), query = "Dog.all"),
             0,
             -42,
             expectFailure = "Invalid negative limit -42"
@@ -647,11 +648,11 @@ class PersistenceServiceRpcInternalTests {
     @Test
     fun `find with named query with pagination`() {
         persistDogs()
-        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query = "Dog.all"), 0, 2, numberOfRowsFromQuery = 2)
+        val r = assertQuery(RpcQuerySetup.RpcNamedQuery(mapOf(), query = "Dog.all"), 0, 2, numberOfRowsFromQuery = 2)
         assertThat(r.size).isEqualTo(2)
         assertThat(r[0].toString()).contains("Butch 1")
         assertThat(r[1].toString()).contains("Eddie 1")
-        val r2 = assertQuery(QuerySetup.NamedQuery(mapOf(), query = "Dog.all"), 2, 2, numberOfRowsFromQuery = 2)
+        val r2 = assertQuery(RpcQuerySetup.RpcNamedQuery(mapOf(), query = "Dog.all"), 2, 2, numberOfRowsFromQuery = 2)
         assertThat(r.size).isEqualTo(2)
         assertThat(r2[0].toString()).contains("Gromit 1")
         assertThat(r2[1].toString()).contains("Lassie 1")
@@ -660,14 +661,14 @@ class PersistenceServiceRpcInternalTests {
     @Test
     fun `find with named query with excessive pagination`() {
         persistDogs()
-        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query = "Dog.all"), 0, 1000, numberOfRowsFromQuery = 8)
+        val r = assertQuery(RpcQuerySetup.RpcNamedQuery(mapOf(), query = "Dog.all"), 0, 1000, numberOfRowsFromQuery = 8)
         assertThat(r.size).isEqualTo(8)
     }
 
     @Test
     fun `find with named query with 0 results`() {
         val r = assertQuery(
-            QuerySetup.NamedQuery(mapOf("name" to "Topcat"), query = "Dog.summon"),
+            RpcQuerySetup.RpcNamedQuery(mapOf("name" to "Topcat"), query = "Dog.summon"),
             numberOfRowsFromQuery = 0
         )
         assertThat(r.size).isEqualTo(0)
@@ -721,18 +722,18 @@ class PersistenceServiceRpcInternalTests {
     }
 
     private fun assertQuery(
-        querySetup: QuerySetup,
+        querySetup: RpcQuerySetup,
         offset: Int = 0,
         limit: Int = Int.MAX_VALUE,
         expectFailure: String? = null,
         numberOfRowsFromQuery: Int? = null
     ): List<*> {
         val rec = when (querySetup) {
-            is QuerySetup.NamedQuery -> {
+            is RpcQuerySetup.RpcNamedQuery -> {
                 val paramsSerialized = querySetup.params.mapValues { v -> sandbox.serialize(v.value) }
                 FindWithNamedQuery(querySetup.query, paramsSerialized, offset, limit, null)
             }
-            is QuerySetup.All -> {
+            is RpcQuerySetup.RpcAll -> {
                 FindAll(querySetup.className, offset, limit)
             }
         }
