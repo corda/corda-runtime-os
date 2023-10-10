@@ -221,14 +221,14 @@ class TaskManagerHelperTest {
         val clientTask1 = mock<ClientTask<String, String, String>>()
         val clientTask2 = mock<ClientTask<String, String, String>>()
 
-        `when`(taskManager.execute(any(), any<() -> ClientTask.Result<String, String, String>>())).thenReturn(mock())
+        `when`(taskManager.executeShortRunningTask(any<() -> ClientTask.Result<String, String, String>>())).thenReturn(mock())
 
         taskManagerHelper.executeClientTasks(
             listOf(clientTask1, clientTask2)
         )
 
         val commandCaptor = argumentCaptor<() -> ClientTask.Result<String, String, String>>()
-        verify(taskManager, times(2)).execute(any(), commandCaptor.capture())
+        verify(taskManager, times(2)).executeShortRunningTask(commandCaptor.capture())
         assertEquals(clientTask1::call, commandCaptor.firstValue)
         assertEquals(clientTask2::call, commandCaptor.secondValue)
     }
