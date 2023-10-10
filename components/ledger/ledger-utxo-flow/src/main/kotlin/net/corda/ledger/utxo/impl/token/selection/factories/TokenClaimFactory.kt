@@ -2,6 +2,7 @@ package net.corda.ledger.utxo.impl.token.selection.factories
 
 import net.corda.data.ledger.utxo.token.selection.data.Token
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
+import net.corda.ledger.utxo.impl.token.selection.entities.TokenClaimCheckpointState
 import net.corda.v5.ledger.utxo.token.selection.ClaimedToken
 import net.corda.v5.ledger.utxo.token.selection.TokenClaim
 
@@ -28,4 +29,15 @@ interface TokenClaimFactory {
      * @param token The avro representation of the token
      */
     fun createClaimedToken(poolKey: TokenPoolCacheKey, token: Token): ClaimedToken
+
+    /**
+     * Creates an instance of [createTokenClaimCheckpointState]
+     *
+     * @param claimId The unique identifier for the claim
+     * @param poolKey The unique key for the pool of tokens
+     */
+    fun createTokenClaimCheckpointState(
+        claimId: String,
+        poolKey: TokenPoolCacheKey
+    ): TokenClaimCheckpointState
 }

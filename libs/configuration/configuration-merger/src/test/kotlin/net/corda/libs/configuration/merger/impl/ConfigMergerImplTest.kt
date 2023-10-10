@@ -12,9 +12,8 @@ import org.mockito.kotlin.whenever
 
 class ConfigMergerImplTest {
     private val busConfigMerger = mock<BusConfigMerger>()
+    private val configMerger = ConfigMergerImpl(busConfigMerger)
     private val smartConfigFactory = SmartConfigFactory.createWithoutSecurityServices()
-
-    private val merger = ConfigMergerImpl(busConfigMerger)
 
     @Test
     fun `merger correctly merges messaging config with boot config using messaging as fallback`() {
@@ -27,13 +26,36 @@ class ConfigMergerImplTest {
                 )
             )
         )
-        val mergedMessagingConfig = bootConfig.withFallback(messagingConfig)
 
+        val mergedMessagingConfig = bootConfig.withFallback(messagingConfig)
         whenever(busConfigMerger.getMessagingConfig(eq(bootConfig), eq(messagingConfig))).thenReturn(mergedMessagingConfig)
 
-        val result = merger.getMessagingConfig(bootConfig, messagingConfig)
+        val result = configMerger.getMessagingConfig(bootConfig, messagingConfig)
 
         assertThat(result.getString("boot.param.a")).isEqualTo("111")
         assertThat(result.getString("boot.param.b")).isEqualTo("222")
+    }
+
+    @Test
+    fun `merger correctly merges boot config using existing config as fallback`() {
+        val bootConfig = smartConfigFactory.create(
+            ConfigFactory.parseMap(
+                mapOf(
+                    "section.key.param.a" to "X",
+                )
+            )
+        )
+
+        val messagingConfig = smartConfigFactory.create(
+            ConfigFactory.parseMap(
+                mapOf(
+                    "key.param.b" to "222",
+                )
+            )
+        )
+
+        val result = configMerger.getConfig(bootConfig, "section", messagingConfig)
+        assertThat(result.getString("key.param.a")).isEqualTo("X")
+        assertThat(result.getString("key.param.b")).isEqualTo("222")
     }
 }

@@ -34,7 +34,7 @@ class ConfigProcessorTest {
     private val smartConfigFactory = SmartConfigFactory.createWithoutSecurityServices()
     private val configMerger: ConfigMerger = mock {
         on { getMessagingConfig(any(), any()) } doAnswer { it.arguments[1] as SmartConfig }
-        on { getDbConfig(any(), anyOrNull()) } doAnswer { SmartConfigImpl.empty()  }
+        on { getConfig(any(), any(), anyOrNull()) } doAnswer { SmartConfigImpl.empty()  }
     }
 
     companion object {
@@ -75,24 +75,24 @@ class ConfigProcessorTest {
     @Test
     fun `No config is forwarded if the snapshot is empty and db boot config is empty`() {
         val coordinator = mock<LifecycleCoordinator>()
-        val bootconfig = BOOT_CONFIG_STRING.toSmartConfig()
-        val configProcessor = ConfigProcessor(coordinator, smartConfigFactory, bootconfig, configMerger)
+        val bootConfig = BOOT_CONFIG_STRING.toSmartConfig()
+        val configProcessor = ConfigProcessor(coordinator, smartConfigFactory, bootConfig, configMerger)
         configProcessor.onSnapshot(mapOf())
         verify(coordinator, times(0)).postEvent(capture(eventCaptor))
-        verify(configMerger, times(0)).getMessagingConfig(bootconfig, null)
+        verify(configMerger, times(0)).getMessagingConfig(bootConfig, null)
     }
 
     @Test
     fun `config is forwarded if the snapshot is empty but db boot config is set`() {
         val coordinator = mock<LifecycleCoordinator>()
         val dbConfig = DB_CONFIG_STRING.toSmartConfig()
-        whenever(configMerger.getDbConfig(any(), anyOrNull())).thenReturn(dbConfig)
-        val bootconfig = BOOT_CONFIG_STRING.toSmartConfig()
-        val configProcessor = ConfigProcessor(coordinator, smartConfigFactory, bootconfig, configMerger)
+        whenever(configMerger.getConfig(any(), any(), anyOrNull())).thenReturn(dbConfig)
+        val bootConfig = BOOT_CONFIG_STRING.toSmartConfig()
+        val configProcessor = ConfigProcessor(coordinator, smartConfigFactory, bootConfig, configMerger)
         configProcessor.onSnapshot(mapOf())
         verify(coordinator, times(1)).postEvent(capture(eventCaptor))
-        verify(configMerger, times(0)).getMessagingConfig(bootconfig, null)
-        verify(configMerger, times(1)).getDbConfig(any(), anyOrNull())
+        verify(configMerger, times(0)).getMessagingConfig(bootConfig, null)
+        verify(configMerger, times(2)).getConfig(any(), any(), anyOrNull())
     }
 
     @Test

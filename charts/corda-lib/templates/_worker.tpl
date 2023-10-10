@@ -174,13 +174,6 @@ spec:
               fieldRef:
                 apiVersion: v1
                 fieldPath: metadata.namespace
-          - name: ENABLE_CLOUDWATCH
-            value:
-              {{- if eq $.Values.serviceAccount.name "cloudwatch-writer" }}
-                "true"
-              {{- else }}
-                "false"
-              {{- end }}
           - name: JAVA_TOOL_OPTIONS
             value:
               {{ .javaOptions }}
@@ -308,8 +301,6 @@ spec:
           - "database.jdbc.directory=/opt/jdbc-driver"
           - "--stateManager"
           - "database.jdbc.driver=org.postgresql.Driver"
-          - "--stateManager"
-          - "database.jdbc.persistenceUnitName=corda-state-manager"
           - "--stateManager"
           - "database.pool.maxSize={{ .stateManagerDbConnectionPool.maxSize }}"
           {{- if .stateManagerDbConnectionPool.minSize }}
