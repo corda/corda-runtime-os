@@ -311,7 +311,7 @@ class CryptoProcessorImpl @Activate constructor(
     private fun startProcessors(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val cryptoConfig = event.config.getConfig(CRYPTO_CONFIG)
 
-        // make the processors
+        // crate processors
         val retryingConfig = cryptoConfig.retrying()
         val flowOpsProcessor = CryptoFlowOpsRpcProcessor(
             cryptoService,
@@ -323,7 +323,7 @@ class CryptoProcessorImpl @Activate constructor(
         val rpcOpsProcessor = CryptoOpsBusProcessor(cryptoService, retryingConfig, keyEncodingService)
         val hsmRegistrationProcessor = HSMRegistrationBusProcessor(tenantInfoService, cryptoService, retryingConfig)
 
-        // now make and start the subscriptions
+        // create and start subscriptions
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         val flowGroupName = "crypto.ops.flow"
 
@@ -379,11 +379,11 @@ class CryptoProcessorImpl @Activate constructor(
     private fun startBusProcessors(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val cryptoConfig = event.config.getConfig(CRYPTO_CONFIG)
 
-        // make the processors
+        // create processors
         val retryingConfig = cryptoConfig.retrying()
         val flowOpsProcessor = CryptoFlowOpsBusProcessor(cryptoService, externalEventResponseFactory, retryingConfig, keyEncodingService)
 
-        // now make and start the subscriptions
+        // create and start subscriptions
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         val flowGroupName = "crypto.ops.flow"
         coordinator.createManagedResource(FLOW_OPS_SUBSCRIPTION) {
