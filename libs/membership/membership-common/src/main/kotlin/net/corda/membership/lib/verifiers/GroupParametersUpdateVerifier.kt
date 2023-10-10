@@ -30,7 +30,12 @@ class GroupParametersUpdateVerifier {
             }
         }
         parameters[MPV_KEY]?.let {
-            if (it.toInt() !in 50000..99999) {
+            val mpv = try {
+                it.toInt()
+            } catch (e: NumberFormatException) {
+                -1
+            }
+            if (mpv !in 50000..99999) {
                 errorMessages += "The minimum platform version (key: $MPV_KEY) has an invalid value.\n"
             }
             it
