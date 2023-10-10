@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.token.cache.factories
 
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.ledger.utxo.token.selection.data.Token
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.TokenBalance
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
@@ -26,6 +27,23 @@ interface RecordFactory {
         externalEventRequestId: String,
         poolKey: TokenPoolKey,
         selectedTokens: List<CachedToken>
+    ): Record<String, FlowEvent>
+
+    /**
+     * Creates a token claim response record for a successful claim
+     *
+     * @param flowId The unique identifier of the flow that requested the claim
+     * @param externalEventRequestId The unique ID of the flow request event of the claim
+     * @param poolKey The unique key of the pool of tokens the claim was for
+     * @param selectedTokens The list of tokens that were selected by the claim
+     *
+     * @return A [FlowEvent] response record for the claim
+     */
+    fun getSuccessfulClaimResponseWithListTokens(
+        flowId: String,
+        externalEventRequestId: String,
+        poolKey: TokenPoolKey,
+        selectedTokens: List<Token>
     ): Record<String, FlowEvent>
 
     /**
