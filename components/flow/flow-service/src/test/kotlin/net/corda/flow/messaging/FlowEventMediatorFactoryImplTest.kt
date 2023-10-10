@@ -6,10 +6,12 @@ import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.messaging.mediator.FlowEventMediatorFactory
 import net.corda.flow.messaging.mediator.FlowEventMediatorFactoryImpl
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
+import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactoryFactory
 import net.corda.messaging.api.mediator.factory.MessagingClientFactoryFactory
 import net.corda.messaging.api.mediator.factory.MultiSourceEventMediatorFactory
+import net.corda.schema.configuration.ConfigKeys
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -44,7 +46,8 @@ class FlowEventMediatorFactoryImplTest {
 
     @Test
     fun `successfully creates event mediator`() {
-        val mediator = flowEventMediatorFactory.create(mock(), mock())
+        val configs = mapOf(ConfigKeys.FLOW_CONFIG to mock<SmartConfig>())
+        val mediator = flowEventMediatorFactory.create(configs, mock())
 
         assertNotNull(mediator)
     }
