@@ -1879,7 +1879,7 @@
                     "allOf": [
                         {
                             "$ref": "#/$defs/worker"
-                        },                        
+                        },
                         {
                             "required": [
                                 "verifyInstrumentation",
