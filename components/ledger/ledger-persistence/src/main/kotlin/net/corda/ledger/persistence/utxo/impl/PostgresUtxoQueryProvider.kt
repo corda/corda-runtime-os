@@ -20,8 +20,10 @@ class PostgresUtxoQueryProvider @Activate constructor(
     override val persistTransaction: String
         get() = """
             INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created, status, updated)
-            VALUES (:id, :privacySalt, :accountId, :createdAt, :status, :updatedAt)
-            ON CONFLICT DO NOTHING"""
+                VALUES (:id, :privacySalt, :accountId, :createdAt, :status, :updatedAt)
+            ON CONFLICT(id) DO
+                UPDATE SET status = EXCLUDED.status, updated = EXCLUDED.updated
+            WHERE utxo_transaction.status = EXCLUDED.status OR utxo_transaction.status = '$UNVERIFIED'"""
             .trimIndent()
 
     override val persistTransactionComponentLeaf: String
@@ -31,23 +33,16 @@ class PostgresUtxoQueryProvider @Activate constructor(
             ON CONFLICT DO NOTHING"""
             .trimIndent()
 
-    override val persistTransactionCpk: String
-        get() = """
-            INSERT INTO {h-schema}utxo_transaction_cpk
-            SELECT :transactionId, file_checksum
-            FROM {h-schema}utxo_cpk
-            WHERE file_checksum in (:fileChecksums)
-            ON CONFLICT DO NOTHING"""
-            .trimIndent()
-
-    override fun persistTransactionOutput(consumed: Boolean): String {
+    override fun persistVisibleTransactionOutput(consumed: Boolean): String {
         return """INSERT INTO {h-schema}utxo_visible_transaction_output(
                 transaction_id, group_idx, leaf_idx, type, token_type, token_issuer_hash, token_notary_x500_name,
                 token_symbol, token_tag, token_owner_hash, token_amount, created, consumed, custom_representation)
             VALUES(
                 :transactionId, :groupIndex, :leafIndex, :type, :tokenType, :tokenIssuerHash, :tokenNotaryX500Name,
-                :tokenSymbol, :tokenTag, :tokenOwnerHash, :tokenAmount, :createdAt, :consumedAt, :customRepresentation)
-            ON CONFLICT DO NOTHING"""
+                :tokenSymbol, :tokenTag, :tokenOwnerHash, :tokenAmount, :createdAt, 
+                ${if (consumed) ":consumedAt" else "null"}, 
+                CAST(:customRepresentation as JSONB)
+            ) ON CONFLICT DO NOTHING"""
             .trimIndent()
     }
 
@@ -57,15 +52,6 @@ class PostgresUtxoQueryProvider @Activate constructor(
                 transaction_id, signature_idx, signature, pub_key_hash, created)
             VALUES (
                 :transactionId, :signatureIdx, :signature, :publicKeyHash, :createdAt)
-            ON CONFLICT DO NOTHING"""
-            .trimIndent()
-
-    override val persistTransactionSource: String
-        get() = """
-            INSERT INTO {h-schema}utxo_transaction_sources(
-                transaction_id, group_idx, leaf_idx, ref_transaction_id, ref_leaf_idx, is_ref_input, created)
-            VALUES(
-                :transactionId, :groupIndex, :leafIndex, :refTransactionId, :refLeafIndex, :isRefInput, :createdAt)
             ON CONFLICT DO NOTHING"""
             .trimIndent()
 

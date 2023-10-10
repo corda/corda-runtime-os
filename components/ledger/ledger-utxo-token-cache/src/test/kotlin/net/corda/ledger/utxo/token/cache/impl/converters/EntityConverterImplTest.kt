@@ -5,6 +5,7 @@ import net.corda.data.ledger.utxo.token.selection.data.Token
 import net.corda.data.ledger.utxo.token.selection.data.TokenAmount
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimQuery
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimRelease
+import net.corda.data.ledger.utxo.token.selection.data.TokenForceClaimRelease
 import net.corda.data.ledger.utxo.token.selection.data.TokenLedgerChange
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.ledger.utxo.token.cache.converters.EntityConverterImpl
@@ -69,6 +70,20 @@ class EntityConverterImplTest {
         assertThat(result.externalEventRequestId).isEqualTo("r1")
         assertThat(result.flowId).isEqualTo("f1")
         assertThat(result.usedTokens).containsOnly("s1", "s2")
+        assertThat(result.poolKey).isEqualTo(POOL_KEY)
+    }
+
+    @Test
+    fun `toForceClaimRelease creates and instance of ClaimRelease`() {
+        val tokenForceClaimRelease = TokenForceClaimRelease.newBuilder()
+            .setClaimId("c1")
+            .setPoolKey(POOL_CACHE_KEY)
+            .build()
+
+        val result = createEntityConverterImpl()
+            .toForceClaimRelease(POOL_CACHE_KEY, tokenForceClaimRelease)
+
+        assertThat(result.claimId).isEqualTo("c1")
         assertThat(result.poolKey).isEqualTo(POOL_KEY)
     }
 

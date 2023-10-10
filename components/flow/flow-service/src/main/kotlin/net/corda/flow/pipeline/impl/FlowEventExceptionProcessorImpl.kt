@@ -5,13 +5,11 @@ import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
-import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
-import net.corda.flow.pipeline.converters.FlowEventContextConverter
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowEventException
 import net.corda.flow.pipeline.exceptions.FlowFatalException
@@ -26,7 +24,6 @@ import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.getLongOrDefault
-import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig
 import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_WINDOW_DURATION
@@ -37,15 +34,13 @@ import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.time.Instant
 
-@Suppress("Unused" , "TooManyFunctions")
+@Suppress("Unused", "TooManyFunctions")
 @Component(service = [FlowEventExceptionProcessor::class])
 class FlowEventExceptionProcessorImpl @Activate constructor(
     @Reference(service = FlowMessageFactory::class)
     private val flowMessageFactory: FlowMessageFactory,
     @Reference(service = FlowRecordFactory::class)
     private val flowRecordFactory: FlowRecordFactory,
-    @Reference(service = FlowEventContextConverter::class)
-    private val flowEventContextConverter: FlowEventContextConverter,
     @Reference(service = FlowSessionManager::class)
     private val flowSessionManager: FlowSessionManager,
     @Reference(service = FlowFiberCache::class)
@@ -65,20 +60,20 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         )
     }
 
-    override fun process(throwable: Throwable): StateAndEventProcessor.Response<Checkpoint> {
+    override fun process(throwable: Throwable, context: FlowEventContext<*>): FlowEventContext<*> {
         log.warn("Unexpected exception while processing flow, the flow will be sent to the DLQ", throwable)
-        return StateAndEventProcessor.Response(
-            updatedState = null,
-            responseEvents = listOf(),
-            markForDLQ = true
+        context.checkpoint.markDeleted()
+        return context.copy(
+            outputRecords = listOf(),
+            sendToDlq = true
         )
     }
 
     override fun process(
         exception: FlowTransientException,
         context: FlowEventContext<*>
-    ): StateAndEventProcessor.Response<Checkpoint> {
-        return withEscalation {
+    ): FlowEventContext<*> {
+        return withEscalation(context) {
             val flowCheckpoint = context.checkpoint
 
             /** If the retry window has expired then we escalate this to a fatal exception and DLQ the flow */
@@ -117,7 +112,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 
             removeCachedFlowFiber(flowCheckpoint)
 
-            flowEventContextConverter.convert(context.copy(outputRecords = context.outputRecords + records))
+            context.copy(outputRecords = context.outputRecords + records)
         }
     }
 
@@ -129,7 +124,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
     override fun process(
         exception: FlowFatalException,
         context: FlowEventContext<*>
-    ): StateAndEventProcessor.Response<Checkpoint> = withEscalation {
+    ): FlowEventContext<*> = withEscalation(context) {
 
         val exceptionHandlingStartTime = Instant.now()
         val checkpoint = context.checkpoint
@@ -153,7 +148,8 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             )
         }
 
-        val errorEvents = flowSessionManager.getSessionErrorEventRecords(checkpoint, context.flowConfig, exceptionHandlingStartTime)
+        val errorEvents =
+            flowSessionManager.getSessionErrorEventRecords(checkpoint, context.flowConfig, exceptionHandlingStartTime)
         val cleanupEvents = createCleanupEventsForSessions(
             getScheduledCleanupExpiryTime(context, exceptionHandlingStartTime),
             checkpoint.sessions.filterNot { it.hasScheduledCleanup }
@@ -170,10 +166,9 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             )
         }
 
-        StateAndEventProcessor.Response(
-            updatedState = null,
-            responseEvents = records + errorEvents + cleanupEvents,
-            markForDLQ = true
+        context.copy(
+            outputRecords = records + errorEvents + cleanupEvents,
+            sendToDlq = true
         )
     }
 
@@ -197,19 +192,19 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
     override fun process(
         exception: FlowEventException,
         context: FlowEventContext<*>
-    ): StateAndEventProcessor.Response<Checkpoint> = withEscalation {
+    ): FlowEventContext<*> = withEscalation(context) {
         log.warn("A non critical error was reported while processing the event: ${exception.message}")
 
         removeCachedFlowFiber(context.checkpoint)
 
-        flowEventContextConverter.convert(context)
+        context
     }
 
     override fun process(
         exception: FlowPlatformException,
         context: FlowEventContext<*>
-    ): StateAndEventProcessor.Response<Checkpoint> {
-        return withEscalation {
+    ): FlowEventContext<*> {
+        return withEscalation(context) {
             val checkpoint = context.checkpoint
 
             checkpoint.setPendingPlatformError(PLATFORM_ERROR, exception.message)
@@ -217,15 +212,15 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 
             removeCachedFlowFiber(checkpoint)
 
-            flowEventContextConverter.convert(context)
+            context
         }
     }
 
     override fun process(
         exception: FlowMarkedForKillException,
         context: FlowEventContext<*>
-    ): StateAndEventProcessor.Response<Checkpoint> {
-        return withEscalation {
+    ): FlowEventContext<*> {
+        return withEscalation(context) {
             val exceptionHandlingStartTime = Instant.now()
             val checkpoint = context.checkpoint
 
@@ -236,11 +231,9 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
                     exception.message ?: "No exception message provided."
                 )
 
-                return@withEscalation flowEventContextConverter.convert(
-                    context.copy(
-                        outputRecords = statusRecord,
-                        sendToDlq = false
-                    )
+                return@withEscalation context.copy(
+                    outputRecords = statusRecord,
+                    sendToDlq = false
                 )
             }
 
@@ -269,11 +262,9 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 
             checkpoint.markDeleted()
 
-            flowEventContextConverter.convert(
-                context.copy(
-                    outputRecords = errorEvents + cleanupEvents + statusRecord,
-                    sendToDlq = false // killed flows do not go to DLQ
-                )
+            context.copy(
+                outputRecords = errorEvents + cleanupEvents + statusRecord,
+                sendToDlq = false // killed flows do not go to DLQ
             )
         }
     }
@@ -282,12 +273,12 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         sessionState.status == SessionStateType.CLOSED || sessionState.status == SessionStateType.ERROR
     }.map { it.sessionId }
 
-    private fun withEscalation(handler: () -> StateAndEventProcessor.Response<Checkpoint>): StateAndEventProcessor.Response<Checkpoint> {
+    private fun withEscalation(context: FlowEventContext<*>, handler: () -> FlowEventContext<*>): FlowEventContext<*> {
         return try {
             handler()
         } catch (t: Throwable) {
             // The exception handler failed. Rather than take the whole pipeline down, forcibly DLQ the offending event.
-            process(t)
+            process(t, context)
         }
     }
 
@@ -320,7 +311,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 
         return when (inputPayload) {
             is StartFlow -> {
-                val status = FlowStatus().apply{
+                val status = FlowStatus().apply {
                     key = inputPayload.startContext.statusKey
                     flowStatus = FlowStates.KILLED
                     this.flowId = flowId
@@ -328,6 +319,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
                 }
                 listOf(flowRecordFactory.createFlowStatusRecord(status))
             }
+
             else -> createFlowKilledStatusRecord(
                 context.checkpoint, message ?: "No exception message provided."
             )

@@ -5,7 +5,7 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.ledger.utxo.ContractState
 import java.util.Objects
 
-data class UtxoTransactionOutputDto(
+data class UtxoVisibleTransactionOutputDto(
     val transactionId: String,
     val leafIndex: Int,
     val info: ByteArray,
@@ -15,7 +15,7 @@ data class UtxoTransactionOutputDto(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as UtxoTransactionOutputDto
+        other as UtxoVisibleTransactionOutputDto
 
         if (transactionId != other.transactionId) return false
         if (leafIndex != other.leafIndex) return false

@@ -13,7 +13,7 @@ import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
-import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
+import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.ledger.utxo.flow.impl.cache.StateAndRefCache
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.ALICE_X500_HOLDING_IDENTITY
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.AbstractUtxoLedgerExternalEventFactory
@@ -204,15 +204,15 @@ class UtxoLedgerPersistenceServiceImplTest {
         whenever(wireTransaction.metadata).thenReturn(metadata)
 
         val signatures = listOf(mock<DigitalSignatureAndMetadata>())
-        val inputUtxoTransactionOutputDtos = listOf(UtxoTransactionOutputDto("tx1", 1, byteArrayOf(0), byteArrayOf(1)))
-        val referenceUtxoTransactionOutputDtos = listOf(UtxoTransactionOutputDto("tx2", 1, byteArrayOf(0), byteArrayOf(1)))
+        val inputUtxoVisibleTransactionOutputDtos = listOf(UtxoVisibleTransactionOutputDto("tx1", 1, byteArrayOf(0), byteArrayOf(1)))
+        val referenceUtxoVisibleTransactionOutputDtos = listOf(UtxoVisibleTransactionOutputDto("tx2", 1, byteArrayOf(0), byteArrayOf(1)))
 
         whenever(serializationService.deserialize<Pair<SignedLedgerTransactionContainer, String>>(any<ByteArray>(), any()))
             .thenReturn(
                 SignedLedgerTransactionContainer(
                     wireTransaction,
-                    inputUtxoTransactionOutputDtos,
-                    referenceUtxoTransactionOutputDtos,
+                    inputUtxoVisibleTransactionOutputDtos,
+                    referenceUtxoVisibleTransactionOutputDtos,
                     signatures
                 ) to "V"
             )
@@ -222,8 +222,8 @@ class UtxoLedgerPersistenceServiceImplTest {
         whenever(
             utxoLedgerTransactionFactory.create(
                 wireTransaction,
-                inputUtxoTransactionOutputDtos,
-                referenceUtxoTransactionOutputDtos
+                inputUtxoVisibleTransactionOutputDtos,
+                referenceUtxoVisibleTransactionOutputDtos
             )
         ).thenReturn(ledgerTransaction)
 

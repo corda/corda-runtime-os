@@ -4,11 +4,9 @@ import com.example.ledger.testing.datamodel.utxo.UtxoTransactionComponentEntity
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionComponentEntityId
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionEntity
 import com.example.ledger.testing.datamodel.utxo.UtxoVisibleTransactionOutputEntity
-import com.example.ledger.testing.datamodel.utxo.UtxoTransactionOutputEntityId
+import com.example.ledger.testing.datamodel.utxo.UtxoVisibleTransactionOutputEntityId
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionSignatureEntity
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionSignatureEntityId
-import com.example.ledger.testing.datamodel.utxo.UtxoTransactionSourceEntity
-import com.example.ledger.testing.datamodel.utxo.UtxoTransactionSourceEntityId
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
@@ -19,6 +17,7 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.hsqldb.json.HsqldbJsonExtension.JSON_SQL_TYPE
 import net.corda.db.persistence.testkit.components.DataSourceAdmin
 import net.corda.db.schema.DbSchema
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.query.parsing.VaultNamedQueryParser
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.utils.transaction
@@ -82,11 +81,9 @@ class HsqldbVaultNamedQueryTest {
             UtxoTransactionComponentEntity::class.java,
             UtxoTransactionComponentEntityId::class.java,
             UtxoVisibleTransactionOutputEntity::class.java,
-            UtxoTransactionOutputEntityId::class.java,
+            UtxoVisibleTransactionOutputEntityId::class.java,
             UtxoTransactionSignatureEntity::class.java,
-            UtxoTransactionSignatureEntityId::class.java,
-            UtxoTransactionSourceEntity::class.java,
-            UtxoTransactionSourceEntityId::class.java
+            UtxoTransactionSignatureEntityId::class.java
         ))
         entityManagerFactory = dbConnectionManager.createEntityManagerFactory(dbConnectionId, entities)
     }
@@ -100,7 +97,7 @@ class HsqldbVaultNamedQueryTest {
                 privacySalt = byteArrayOf(),
                 accountId = ACCOUNT_ID.toString(),
                 created = timestamp,
-                status = "V",
+                status = TransactionStatus.VERIFIED.value,
                 updated = timestamp
             )
 
@@ -165,6 +162,7 @@ class HsqldbVaultNamedQueryTest {
         }.single()
         assertAll(
             { assertEquals(txId.toString(), numberResult.transaction.id) },
+            { assertEquals(30, numberResult.groupIndex) },
             { assertEquals(50, numberResult.leafIndex) }
         )
 
@@ -173,6 +171,7 @@ class HsqldbVaultNamedQueryTest {
         }.single()
         assertAll(
             { assertEquals(txId.toString(), stringResult.transaction.id) },
+            { assertEquals(10, stringResult.groupIndex) },
             { assertEquals(20, stringResult.leafIndex) }
         )
     }
@@ -196,6 +195,7 @@ class HsqldbVaultNamedQueryTest {
         }.single()
         assertAll(
             { assertEquals(txId.toString(), numberResult.transaction.id) },
+            { assertEquals(15, numberResult.groupIndex) },
             { assertEquals(25, numberResult.leafIndex) }
         )
 
@@ -205,6 +205,7 @@ class HsqldbVaultNamedQueryTest {
         }.single()
         assertAll(
             { assertEquals(txId.toString(), stringResult.transaction.id) },
+            { assertEquals(0, stringResult.groupIndex) },
             { assertEquals(1, stringResult.leafIndex) }
         )
     }
@@ -228,6 +229,7 @@ class HsqldbVaultNamedQueryTest {
         }.single()
         assertAll(
             { assertEquals(txId.toString(), numberResult.transaction.id) },
+            { assertEquals(25, numberResult.groupIndex) },
             { assertEquals(35, numberResult.leafIndex) }
         )
 
@@ -237,6 +239,7 @@ class HsqldbVaultNamedQueryTest {
         }.single()
         assertAll(
             { assertEquals(txId.toString(), stringResult.transaction.id) },
+            { assertEquals(10, stringResult.groupIndex) },
             { assertEquals(11, stringResult.leafIndex) }
         )
     }
@@ -257,6 +260,7 @@ class HsqldbVaultNamedQueryTest {
         val visibleState = executeQuery(sqlText, txId) {}.single()
         assertAll(
             { assertEquals(txId.toString(), visibleState.transaction.id) },
+            { assertEquals(30, visibleState.groupIndex) },
             { assertEquals(50, visibleState.leafIndex) }
         )
     }
@@ -280,6 +284,7 @@ class HsqldbVaultNamedQueryTest {
 
         assertAll(
             { assertEquals(txId.toString(), visibleState.transaction.id) },
+            { assertEquals(10, visibleState.groupIndex) },
             { assertEquals(20, visibleState.leafIndex) }
         )
     }

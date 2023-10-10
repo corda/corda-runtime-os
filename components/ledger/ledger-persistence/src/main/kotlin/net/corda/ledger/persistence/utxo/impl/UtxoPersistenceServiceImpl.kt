@@ -14,7 +14,7 @@ import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
-import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
+import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.libs.packaging.hash
 import net.corda.orm.utils.transaction
@@ -108,7 +108,7 @@ class UtxoPersistenceServiceImpl(
         }
     }
 
-    override fun <T: ContractState> findUnconsumedVisibleStatesByType(stateClass: Class<out T>): List<UtxoTransactionOutputDto> {
+    override fun <T: ContractState> findUnconsumedVisibleStatesByType(stateClass: Class<out T>): List<UtxoVisibleTransactionOutputDto> {
         return entityManagerFactory.transaction { em ->
             repository.findUnconsumedVisibleStatesByType(em)
         }.filter {
@@ -117,13 +117,15 @@ class UtxoPersistenceServiceImpl(
         }
     }
 
-    override fun <T: ContractState> findUnconsumedVisibleStatesByExactType(stateClass: Class<out T>): List<UtxoTransactionOutputDto> {
+    override fun <T: ContractState> findUnconsumedVisibleStatesByExactType(
+        stateClass: Class<out T>
+    ): List<UtxoVisibleTransactionOutputDto> {
         return entityManagerFactory.transaction { em ->
             repository.findUnconsumedVisibleStatesByExactType(em, stateClass.canonicalName)
         }
     }
 
-    override fun resolveStateRefs(stateRefs: List<StateRef>): List<UtxoTransactionOutputDto> {
+    override fun resolveStateRefs(stateRefs: List<StateRef>): List<UtxoVisibleTransactionOutputDto> {
         return entityManagerFactory.transaction { em ->
             repository.resolveStateRefs(em, stateRefs)
         }
@@ -162,46 +164,30 @@ class UtxoPersistenceServiceImpl(
                     groupIndex,
                     leafIndex,
                     data,
-                    sandboxDigestService.hash(data, DigestAlgorithmName.SHA2_256).toString(),
-                    nowUtc
+                    sandboxDigestService.hash(data, DigestAlgorithmName.SHA2_256).toString()
                 )
             }
-        }
-
-        // Insert inputs data
-        val inputs = transaction.getConsumedStateRefs()
-        inputs.forEachIndexed { index, input ->
-            repository.persistTransactionSource(
-                em,
-                transactionIdString,
-                UtxoComponentGroup.INPUTS.ordinal,
-                index,
-                input.transactionId.toString(),
-                input.index,
-                false,
-                nowUtc
-            )
         }
 
         // Insert outputs data
         transaction.getVisibleStates().entries.forEach { (stateIndex, stateAndRef) ->
             val utxoToken = utxoTokenMap[stateAndRef.ref]
-            repository.persistTransactionOutput(
+            repository.persistVisibleTransactionOutput(
                 em,
                 transactionIdString,
                 UtxoComponentGroup.OUTPUTS.ordinal,
                 stateIndex,
                 stateAndRef.state.contractState::class.java.canonicalName,
+                nowUtc,
+                consumed = false,
+                CustomRepresentation(extractJsonDataFromState(stateAndRef)),
                 utxoToken?.poolKey?.tokenType,
                 utxoToken?.poolKey?.issuerHash?.toString(),
                 stateAndRef.state.notaryName.toString(),
                 utxoToken?.poolKey?.symbol,
                 utxoToken?.filterFields?.tag,
                 utxoToken?.filterFields?.ownerHash?.toString(),
-                utxoToken?.amount,
-                nowUtc,
-                consumed = false,
-                CustomRepresentation(extractJsonDataFromState(stateAndRef))
+                utxoToken?.amount
             )
         }
 
@@ -227,10 +213,6 @@ class UtxoPersistenceServiceImpl(
                 nowUtc
             )
         }
-
-        // Insert the CPK details liked to this transaction
-        // TODOs: The CPK file meta does not exist yet, this will be implemented by
-        // https://r3-cev.atlassian.net/browse/CORE-7626
         return emptyList()
     }
 
