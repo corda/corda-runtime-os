@@ -121,8 +121,7 @@ class MultiSourceEventMediatorImplTest {
         )
     }
 
-    //@Test
-    // TODO Test temporarily disabled as it seems to be flaky
+    @Test
     fun `mediator processes multiples events by key`() {
         val events = (1..6).map { "event$it" }
         val eventBatches = listOf(
