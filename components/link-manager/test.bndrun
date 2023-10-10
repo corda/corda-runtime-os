@@ -29,7 +29,7 @@
     bnd.identity;id='net.corda.cipher-suite-impl',\
     bnd.identity;id='net.corda.membership-group-read-impl',\
     bnd.identity;id='net.corda.membership-persistence-client-impl',\
-    bnd.identity;id='net.corda.interop-group-policy-read-service-impl',\
+    bnd.identity;id='net.corda.interop-group-policy-read-service',\
     bnd.identity;id='net.corda.crypto-impl',\
     bnd.identity;id='net.bytebuddy.byte-buddy',\
     bnd.identity;id='junit-jupiter-engine',\

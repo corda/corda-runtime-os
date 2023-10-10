@@ -25,8 +25,8 @@ dependencies {
     implementation project(":components:membership:membership-persistence-client")
     implementation project(":components:ledger:ledger-utxo-token-cache")
     implementation project(":components:virtual-node:cpi-info-read-service")
-    implementation project(":components:interop:interop-group-policy-read-service")
 
+    implementation project(":components:interop:interop-group-policy-read-service")
     implementation project(":components:interop:interop-identity-registry-service")
 
     implementation project(":components:virtual-node:cpk-read-service")
@@ -53,9 +53,6 @@ dependencies {
     runtimeOnly project(':libs:crypto:cipher-suite-impl')
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
     runtimeOnly project(":components:uniqueness:uniqueness-checker-client-service-impl")
-    runtimeOnly project(":components:interop:interop-group-policy-read-service-impl")
-
-    runtimeOnly project(":components:interop:interop-identity-registry-service-impl")
 
     runtimeOnly project(":components:membership:membership-group-read-impl")
     runtimeOnly project(":components:membership:membership-persistence-client-impl")

@@ -65,7 +65,6 @@ dependencies {
     runtimeOnly project(':components:membership:locally-hosted-identities-service-impl')
     runtimeOnly project(':components:membership:members-client-certificate-publisher-service-impl')
     runtimeOnly project(":libs:web:web-impl")
-    runtimeOnly project(":components:interop:interop-group-policy-read-service-impl")
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
@@ -90,7 +89,6 @@ dependencies {
     integrationTestImplementation project(":processors:crypto-processor")
     integrationTestImplementation project(":testing:db-testkit")
     integrationTestImplementation project(":testing:test-utilities")
-    integrationTestRuntimeOnly project(':components:interop:interop-group-policy-read-service-impl')
 
     integrationTestImplementation("org.hibernate:hibernate-osgi:$hibernateVersion") {
         // Need to exclude the org.osgi package as will use the BND ones at runtime

@@ -47,5 +47,4 @@ dependencies {
     runtimeOnly project(':libs:interop:interop-core')
     runtimeOnly project(":components:membership:membership-group-read-impl")
     runtimeOnly project(":libs:web:web-impl")
-    runtimeOnly project(":components:interop:interop-group-policy-read-service-impl")
 }

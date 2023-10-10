@@ -19,7 +19,7 @@ dependencies {
     implementation project(':testing:test-serialization')
     implementation project(':components:flow:flow-service')
     implementation project(':libs:serialization:serialization-checkpoint-api')
-    implementation project(':components:interop:interop-identity-registry-service-impl')
+    implementation project(':components:interop:interop-identity-registry-service')
     implementation project(':libs:serialization:serialization-internal')
     implementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
 }
