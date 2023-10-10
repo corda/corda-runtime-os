@@ -17,6 +17,11 @@ import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
+import net.corda.schema.configuration.BootConfig.CRYPTO_WORKER_REST_ENDPOINT
+import net.corda.schema.configuration.BootConfig.PERSISTENCE_WORKER_REST_ENDPOINT
+import net.corda.schema.configuration.BootConfig.UNIQUENESS_WORKER_REST_ENDPOINT
+import net.corda.schema.configuration.BootConfig.VERIFICATION_WORKER_REST_ENDPOINT
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
@@ -62,7 +67,7 @@ class FlowExecutorImpl constructor(
 
     override fun onConfigChange(config: Map<String, SmartConfig>) {
         try {
-            val messagingConfig = toMessagingConfig(config)
+            val messagingConfig = toMessagingConfig(config).withServiceEndpoints(config)
             val updatedConfigs = updateConfigsWithFlowConfig(config, messagingConfig)
 
             // close the lifecycle registration first to prevent down being signaled
@@ -127,6 +132,19 @@ class FlowExecutorImpl constructor(
                 subscription?.close()
                 log.trace { "Flow executor stopped" }
             }
+        }
+    }
+
+    private fun SmartConfig.withServiceEndpoints(config: Map<String, SmartConfig>) : SmartConfig {
+        val bootConfig = config.getConfig(BOOT_CONFIG)
+
+        return listOf(
+            CRYPTO_WORKER_REST_ENDPOINT,
+            PERSISTENCE_WORKER_REST_ENDPOINT,
+            UNIQUENESS_WORKER_REST_ENDPOINT,
+            VERIFICATION_WORKER_REST_ENDPOINT
+        ).fold(this) { msgConfig: SmartConfig, endpoint: String ->
+            msgConfig.withValue(endpoint, ConfigValueFactory.fromAnyRef(bootConfig.getString(endpoint)))
         }
     }
 }

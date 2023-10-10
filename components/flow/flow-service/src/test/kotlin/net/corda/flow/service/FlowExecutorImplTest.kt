@@ -16,6 +16,8 @@ import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.schema.configuration.BootConfig
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
@@ -41,6 +43,7 @@ class FlowExecutorImplTest {
     }
 
     private val config = mutableMapOf(
+        BOOT_CONFIG to SmartConfigImpl.empty().withServiceEndpoints(),
         FLOW_CONFIG to SmartConfigImpl.empty()
     )
     private val messagingConfig = getMinimalMessagingConfig()
@@ -182,5 +185,17 @@ class FlowExecutorImplTest {
         return SmartConfigImpl.empty()
             .withValue(PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(5000))
             .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(1000000000))
+    }
+
+    private fun SmartConfig.withServiceEndpoints(): SmartConfig {
+        fun SmartConfig.withEndpoint(endpoint: String, value: String): SmartConfig {
+            return withValue(endpoint, ConfigValueFactory.fromAnyRef(value))
+        }
+
+        return this
+            .withEndpoint(BootConfig.CRYPTO_WORKER_REST_ENDPOINT, "TEST_CRYPTO_ENDPOINT")
+            .withEndpoint(BootConfig.PERSISTENCE_WORKER_REST_ENDPOINT, "TEST_PERSISTENCE_ENDPOINT")
+            .withEndpoint(BootConfig.UNIQUENESS_WORKER_REST_ENDPOINT, "TEST_UNIQUENESS_ENDPOINT")
+            .withEndpoint(BootConfig.VERIFICATION_WORKER_REST_ENDPOINT, "TEST_VERIFICATION_ENDPOINT")
     }
 }
