@@ -1,5 +1,6 @@
 package net.corda.interop.group.policy.read.impl
 
+import java.util.*
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.helper.getConfig
@@ -37,7 +38,7 @@ class InteropGroupPolicyReadServiceEventHandler(
 
     private var registration: RegistrationHandle? = null
     private var configSubscription: AutoCloseable? = null
-    private val groupPolicies = ConcurrentHashMap<String, String>()
+    private val groupPolicies = ConcurrentHashMap<UUID, String>()
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
@@ -96,14 +97,14 @@ class InteropGroupPolicyReadServiceEventHandler(
         }
     }
 
-    private inner class Processor : CompactedProcessor<String, String> {
-        override val keyClass = String::class.java
+    private inner class Processor : CompactedProcessor<UUID, String> {
+        override val keyClass = UUID::class.java
         override val valueClass = String::class.java
 
         override fun onNext(
-            newRecord: Record<String, String>,
+            newRecord: Record<UUID, String>,
             oldValue: String?,
-            currentData: Map<String, String>,
+            currentData: Map<UUID, String>,
         ) {
             log.info("onNext currentData=${currentData.size} newRecord=${newRecord}")
             val key = newRecord.key
@@ -111,7 +112,7 @@ class InteropGroupPolicyReadServiceEventHandler(
             if (newEntry == null) {
                 if (oldValue != null) {
                     groupPolicies.remove(
-                        oldValue
+                        UUID.fromString(oldValue)
                     )
                 }
             } else {
@@ -119,18 +120,19 @@ class InteropGroupPolicyReadServiceEventHandler(
             }
         }
 
-        override fun onSnapshot(currentData: Map<String, String>) {
+        override fun onSnapshot(currentData: Map<UUID, String>) {
             log.info("onSnapshot=${currentData.size}")
             currentData.entries.forEach {
                 addEntry(it.key, it.value)
             }
         }
     }
-    private fun addEntry(key: String, newEntry: String) {
+
+    private fun addEntry(key: UUID, newEntry: String) {
         groupPolicies[key] = newEntry
     }
 
-    fun getGroupPolicy(key: String) : String? {
+    fun getGroupPolicy(key: UUID) : String? {
         return groupPolicies[key]
     }
 }

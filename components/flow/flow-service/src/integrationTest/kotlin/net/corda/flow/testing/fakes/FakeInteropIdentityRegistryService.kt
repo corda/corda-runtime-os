@@ -1,5 +1,6 @@
 package net.corda.flow.testing.fakes
 
+import java.util.*
 import net.corda.crypto.core.ShortHash
 import net.corda.interop.core.InteropIdentity
 import net.corda.interop.identity.registry.InteropIdentityRegistryService
@@ -32,7 +33,7 @@ class FakeInteropIdentityRegistryService : InteropIdentityRegistryService {
             TODO("Not yet implemented")
         }
 
-        override fun getIdentitiesByGroupId(groupId: String): Set<InteropIdentity> {
+        override fun getIdentitiesByGroupId(groupId: UUID): Set<InteropIdentity> {
             TODO("Not yet implemented")
         }
 
@@ -52,11 +53,11 @@ class FakeInteropIdentityRegistryService : InteropIdentityRegistryService {
             TODO("Not yet implemented")
         }
 
-        override fun getOwnedIdentities(groupId: String): Set<InteropIdentity> {
+        override fun getOwnedIdentities(groupId: UUID): Set<InteropIdentity> {
             TODO("Not yet implemented")
         }
 
-        override fun getOwnedIdentity(groupId: String): InteropIdentity? {
+        override fun getOwnedIdentity(groupId: UUID): InteropIdentity? {
             TODO("Not yet implemented")
         }
     }

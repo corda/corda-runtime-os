@@ -73,7 +73,7 @@ class FlowMessagingImpl @Activate constructor(
     @Suspendable
     override fun callFacade(
         memberName: MemberX500Name,
-        interopGroupId: String,
+        interopGroupId: UUID,
         facadeId: String,
         methodName: String,
         payload: String
@@ -204,11 +204,11 @@ class FlowMessagingImpl @Activate constructor(
     }
 
     @Suspendable
-    private fun createInteropFlowSession(x500Name: MemberX500Name, groupId: String, facadeId: String, methodName: String): FlowSession {
+    private fun createInteropFlowSession(x500Name: MemberX500Name, groupId: UUID, facadeId: String, methodName: String): FlowSession {
         val sessionId = UUID.randomUUID().toString()
         addSessionIdToFlowStackItem(sessionId)
         return flowSessionFactory.createInitiatingFlowSession(sessionId, true, x500Name, { flowContextProperties ->
-            flowContextProperties.put(INTEROP_GROUP_ID, groupId)
+            flowContextProperties.put(INTEROP_GROUP_ID, groupId.toString())
             flowContextProperties.put(INTEROP_FACADE_ID, facadeId)
             flowContextProperties.put(INTEROP_FACADE_METHOD, methodName)
         }, true)

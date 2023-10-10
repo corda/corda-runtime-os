@@ -18,20 +18,20 @@ class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: ShortHas
 
     private val interopIdentities = InteropIdentityRegistrySet()
 
-    private val ownedIdentities = HashMap<String, InteropIdentityRegistrySet>()
-    private val byGroupId = HashMap<String, InteropIdentityRegistrySet>()
+    private val ownedIdentities = HashMap<UUID, InteropIdentityRegistrySet>()
+    private val byGroupId = HashMap<UUID, InteropIdentityRegistrySet>()
     private val byVirtualNodeShortHash = HashMap<ShortHash, InteropIdentityRegistrySet>()
     private val byApplicationName = HashMap<String, InteropIdentityRegistrySet>()
     private val byFacadeId = HashMap<FacadeId, InteropIdentityRegistrySet>()
 
 
-    private fun getOrCreateOwnedIdentitiesEntry(groupId: String): InteropIdentityRegistrySet {
+    private fun getOrCreateOwnedIdentitiesEntry(groupId: UUID): InteropIdentityRegistrySet {
         return ownedIdentities.computeIfAbsent(groupId) {
             InteropIdentityRegistrySet()
         }
     }
 
-    private fun getOrCreateByGroupIdEntry(groupId: String): InteropIdentityRegistrySet {
+    private fun getOrCreateByGroupIdEntry(groupId: UUID): InteropIdentityRegistrySet {
         return byGroupId.computeIfAbsent(groupId) {
             InteropIdentityRegistrySet()
         }
@@ -99,7 +99,7 @@ class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: ShortHas
     override fun getIdentities(): Set<InteropIdentity> =
         Collections.unmodifiableSet(interopIdentities.toSet())
 
-    override fun getIdentitiesByGroupId(groupId: String): Set<InteropIdentity> =
+    override fun getIdentitiesByGroupId(groupId: UUID): Set<InteropIdentity> =
         Collections.unmodifiableSet(byGroupId[groupId]?.toSet() ?: emptySet())
 
     override fun getIdentityWithShortHash(shortHash: ShortHash): InteropIdentity? =
@@ -122,10 +122,10 @@ class InteropIdentityRegistryViewImpl(private val virtualNodeShortHash: ShortHas
     override fun getIdentitiesByFacadeId(facadeId: FacadeId): Set<InteropIdentity> =
         Collections.unmodifiableSet(byFacadeId[facadeId]?.toSet() ?: emptySet())
 
-    override fun getOwnedIdentities(groupId: String): Set<InteropIdentity> =
+    override fun getOwnedIdentities(groupId: UUID): Set<InteropIdentity> =
         Collections.unmodifiableSet(ownedIdentities[groupId]?.toSet() ?: emptySet())
 
-    override fun getOwnedIdentity(groupId: String): InteropIdentity? {
+    override fun getOwnedIdentity(groupId: UUID): InteropIdentity? {
         val ownedIdentities = getOwnedIdentities(groupId)
         if (ownedIdentities.size > 1) {
             throw InteropIdentityRegistryStateError(

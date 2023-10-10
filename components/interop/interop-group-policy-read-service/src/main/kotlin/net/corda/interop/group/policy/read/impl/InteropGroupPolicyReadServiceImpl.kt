@@ -1,5 +1,6 @@
 package net.corda.interop.group.policy.read.impl
 
+import java.util.UUID
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.interop.group.policy.read.InteropGroupPolicyReadService
 import net.corda.lifecycle.DependentComponents
@@ -37,7 +38,7 @@ class InteropGroupPolicyReadServiceImpl @Activate constructor(
     private val coordinatorName = LifecycleCoordinatorName.forComponent<InteropGroupPolicyReadService>()
     private val coordinator = coordinatorFactory.createCoordinator(coordinatorName, dependentComponents, lifecycleEventHandler)
 
-    override fun getGroupPolicy(groupId: String) : String? {
+    override fun getGroupPolicy(groupId: UUID) : String? {
         return lifecycleEventHandler.getGroupPolicy(groupId)
     }
 
