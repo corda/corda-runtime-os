@@ -12,7 +12,7 @@ import java.util.concurrent.Callable
  */
 @Suppress("LongParameterList")
 data class ProcessorTask<K : Any, S : Any, E : Any>(
-    val key: String,
+    val key: K,
     val persistedState: State?,
     val events: Collection<Record<K, E>>,
     private val processor: StateAndEventProcessor<K, S, E>,
@@ -32,12 +32,12 @@ data class ProcessorTask<K : Any, S : Any, E : Any>(
 
         val outputEvents = events.map { event ->
             val response = processor.onNext(stateValue, event)
-            response.updatedState?.let { stateValue = it }
+            stateValue = response.updatedState
             response.responseEvents
         }.flatten()
 
         val updatedState = stateManagerHelper.createOrUpdateState(
-            key,
+            key.toString(),
             persistedState,
             stateValue
         )

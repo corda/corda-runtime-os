@@ -9,6 +9,9 @@ interface MessagingClient : AutoCloseable {
     companion object {
         /** Name of the property for specifying the endpoint string */
         const val MSG_PROP_ENDPOINT = "clientEndpoint"
+
+        /** Name of the property for specifying the message key */
+        const val MSG_PROP_KEY = "key"
     }
 
     /**

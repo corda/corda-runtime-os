@@ -2,7 +2,6 @@ package net.corda.messaging.mediator
 
 import kotlinx.coroutines.runBlocking
 import net.corda.messagebus.api.consumer.CordaConsumer
-import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -24,15 +23,6 @@ class MessageBusConsumerTest {
 
     private lateinit var cordaConsumer: CordaConsumer<String, String>
     private lateinit var mediatorConsumer: MessageBusConsumer<String, String>
-
-    private val defaultHeaders: List<Pair<String, String>> = emptyList()
-    private val messageProps: MutableMap<String, Any> = mutableMapOf(
-        "topic" to "topic",
-        "key" to "key",
-        "headers" to defaultHeaders
-    )
-    private val message: MediatorMessage<Any> = MediatorMessage("value", messageProps)
-
 
     @BeforeEach
     fun setup() {
@@ -76,7 +66,10 @@ class MessageBusConsumerTest {
 
     @Test
     fun testCommitAsyncOffsetsWithError() {
-        doThrow(CordaRuntimeException("")).whenever(cordaConsumer).asyncCommitOffsets(any())
+        whenever(cordaConsumer.asyncCommitOffsets(any<CordaConsumer.Callback>())).thenAnswer { invocation ->
+            val callback = invocation.getArgument<CordaConsumer.Callback>(0)
+            callback.onCompletion(mock(), CordaRuntimeException(""))
+        }
 
         assertThrows<CordaRuntimeException> {
             runBlocking {

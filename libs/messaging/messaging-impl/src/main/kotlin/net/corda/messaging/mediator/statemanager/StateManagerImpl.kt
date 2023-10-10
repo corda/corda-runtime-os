@@ -26,7 +26,8 @@ class StateManagerImpl @Activate constructor() : StateManager {
         return states.mapNotNull {
             val existingState = storage[it.key]
             if (existingState?.version == it.version) {
-                storage[it.key] = it
+                val updatedState = it.copy(version = it.version + 1)
+                storage[it.key] = updatedState
                 null
             } else {
                 it

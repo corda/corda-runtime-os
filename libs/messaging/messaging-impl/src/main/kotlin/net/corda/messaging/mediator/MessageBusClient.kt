@@ -7,6 +7,7 @@ import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_ENDPOINT
+import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_KEY
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -41,13 +42,14 @@ class MessageBusClient(
     }
 }
 
-private fun MediatorMessage<*>.toCordaProducerRecord() : CordaProducerRecord<*, *> {
+private fun MediatorMessage<*>.toCordaProducerRecord(): CordaProducerRecord<*, *> {
     return CordaProducerRecord(
         topic = this.getProperty<String>(MSG_PROP_ENDPOINT),
-        key = this.getProperty("key"),
+        key = this.getProperty(MSG_PROP_KEY),
         value = this.payload,
-        headers = this.getProperty<Headers>("headers"),
+        headers = this.properties.toHeaders(),
     )
 }
 
-private typealias Headers = List<Pair<String, String>>
+private fun Map<String, Any>.toHeaders() =
+    map { (key, value) -> (key to value.toString()) }

@@ -56,9 +56,7 @@ class ClientTaskTest {
             mock(),
         )
 
-        val result = runBlocking {
-            task.call()
-        }
+        val result = task.call()
 
         assertNotNull(result)
         verify(messageRouter).getDestination(message)

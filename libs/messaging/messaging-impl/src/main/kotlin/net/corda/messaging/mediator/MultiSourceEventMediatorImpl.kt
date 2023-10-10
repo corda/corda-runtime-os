@@ -17,7 +17,9 @@ import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.mediator.taskmanager.TaskManager
 import net.corda.messaging.api.mediator.taskmanager.TaskType
+import net.corda.messaging.constants.MetricsConstants
 import net.corda.messaging.mediator.factory.MediatorComponentFactory
+import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.util.UUID
@@ -44,7 +46,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         stateManager, stateSerializer, stateDeserializer
     )
     private val taskManagerHelper = TaskManagerHelper(
-        taskManager, stateManagerHelper
+        taskManager, stateManagerHelper, config.name
     )
     private val uniqueId = UUID.randomUUID().toString()
     private val lifecycleCoordinatorName = LifecycleCoordinatorName(
@@ -52,6 +54,15 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     )
     private val lifecycleCoordinator =
         lifecycleCoordinatorFactory.createCoordinator(lifecycleCoordinatorName) { _, _ -> }
+
+    private val pollTimer = CordaMetrics.Metric.Messaging.ConsumerPollTime.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.name)
+        .build()
+
+    private val commitTimer = CordaMetrics.Metric.Messaging.MessageCommitTime.builder()
+        .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.EVENT_MEDIATOR_TYPE)
+        .withTag(CordaMetrics.Tag.MessagePatternClientId, config.name)
+        .build()
 
     override val subscriptionName: LifecycleCoordinatorName
         get() = lifecycleCoordinatorName
@@ -163,7 +174,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                 val processingResults = taskManagerHelper.executeProcessorTasks(msgProcessorTasks)
                 val conflictingStates = stateManagerHelper.persistStates(processingResults)
                 val (successResults, failResults) = processingResults.partition {
-                    !conflictingStates.contains(it.key)
+                    !conflictingStates.contains(it.key.toString())
                 }
                 val clientTasks = taskManagerHelper.createClientTasks(successResults, messageRouter)
                 val clientResults = taskManagerHelper.executeClientTasks(clientTasks)
@@ -176,21 +187,27 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun pollConsumers(): List<CordaConsumerRecord<K, E>> {
-        return runBlocking {
+        return pollTimer.recordCallable {
             consumers.map { consumer ->
-                consumer.poll(config.pollTimeout)
+                taskManager.execute(TaskType.SHORT_RUNNING) {
+                    runBlocking {
+                        consumer.poll(config.pollTimeout).await()
+                    }
+                }
             }.map {
-                it.await()
-            }
-        }.flatten()
+                it.join()
+            }.flatten()
+        }!!
     }
 
     private fun commitOffsets() {
-        runBlocking {
+        commitTimer.recordCallable {
             consumers.map { consumer ->
-                consumer.asyncCommitOffsets()
-            }.map {
-                it.await()
+                taskManager.execute(TaskType.SHORT_RUNNING) {
+                    runBlocking {
+                        consumer.asyncCommitOffsets().await()
+                    }
+                }
             }
         }
     }
