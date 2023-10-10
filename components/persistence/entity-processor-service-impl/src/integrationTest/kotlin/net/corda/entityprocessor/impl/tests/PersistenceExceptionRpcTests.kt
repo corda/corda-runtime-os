@@ -28,6 +28,7 @@ import net.corda.entityprocessor.impl.tests.helpers.assertEventResponseWithoutEr
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
 import net.corda.flow.utils.toKeyValuePairList
+import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.EntitySandboxServiceFactory
 import net.corda.persistence.common.ResponseFactory
@@ -56,7 +57,6 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.io.TempDir
-import org.mockito.kotlin.mock
 import org.osgi.framework.BundleContext
 import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
@@ -76,6 +76,8 @@ import java.util.UUID
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PersistenceExceptionRpcTests {
     companion object {
+        const val TOPIC = "pretend-topic"
+        const val KEY = "key"
         private const val TIMEOUT_MILLIS = 10000L
         private const val X500_NAME = "CN=Testing, OU=Application, O=R3, L=London, C=GB"
 
@@ -267,12 +269,12 @@ class PersistenceExceptionRpcTests {
         val persistEntitiesRequest = createDogPersistRequest()
 
         val result = processor.process(persistEntitiesRequest)
-        assertEventResponseWithoutError(result.single())
+        assertEventResponseWithoutError(Record(TOPIC, KEY, result))
         // duplicate request
         val duplicateResult = processor.process(persistEntitiesRequest)
         // The below should not contain a PK violation error as it should be identified it is the same persistence request
         // and therefore not executed
-        assertEventResponseWithoutError(duplicateResult.single())
+        assertEventResponseWithoutError(Record(TOPIC, KEY, duplicateResult))
     }
 
     @Test
@@ -281,10 +283,10 @@ class PersistenceExceptionRpcTests {
         val persistEntitiesRequest = createDogPersistRequest()
 
         val result = processor.process(persistEntitiesRequest)
-        assertEventResponseWithoutError(result.single())
+        assertEventResponseWithoutError(Record(TOPIC, KEY, result))
         // duplicate request
         val duplicateResult = processor.process(persistEntitiesRequest)
-        assertEventResponseWithoutError(duplicateResult.single())
+        assertEventResponseWithoutError(Record(TOPIC, KEY, duplicateResult))
 
         val dogDbCount = getDogDbCount(virtualNodeInfo.vaultDmlConnectionId)
         // There shouldn't be a dog duplicate entry in the DB, i.e. dogs count in the DB should still be 1
@@ -298,19 +300,19 @@ class PersistenceExceptionRpcTests {
         val persistEntitiesRequest = createDogPersistRequest(dogId)
 
         val result = processor.process(persistEntitiesRequest)
-        assertEventResponseWithoutError(result.single())
+        assertEventResponseWithoutError(Record(TOPIC, KEY, result))
         // duplicate request
         val duplicateResult = processor.process(persistEntitiesRequest)
         // The below should not contain a PK violation error as it should be identified it is the same persistence request
         // and therefore not executed
-        assertEventResponseWithoutError(duplicateResult.single())
+        assertEventResponseWithoutError(Record(TOPIC, KEY, duplicateResult))
 
         val userDuplicatePersistEntitiesRequest = createDogPersistRequest(dogId)
         // the following should now throw as it is different request that violates PK
         val errorDuplicateResult = processor.process(
             userDuplicatePersistEntitiesRequest
         )
-        assertEventResponseWithError(errorDuplicateResult.single())
+        assertEventResponseWithError(Record(TOPIC, KEY, errorDuplicateResult))
     }
 
     private fun noOpPayloadCheck(bytes: ByteBuffer) = bytes
