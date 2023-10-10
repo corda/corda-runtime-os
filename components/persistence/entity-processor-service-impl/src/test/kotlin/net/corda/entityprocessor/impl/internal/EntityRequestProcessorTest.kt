@@ -2,35 +2,58 @@ package net.corda.entityprocessor.impl.internal
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
+import net.corda.data.identity.HoldingIdentity
 import net.corda.data.persistence.EntityRequest
+import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
+import net.corda.ledger.utxo.verification.CordaPackageSummary
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.libs.virtualnode.datamodel.repository.RequestsIdsRepositoryImpl
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.ResponseFactory
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
+import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.sandboxgroupcontext.VirtualNodeContext
+import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.toAvro
+import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito.mock
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 
 internal class EntityRequestProcessorTest {
 
-    //TODO - find or create this test class
+    private companion object {
+        const val ALICE_X500 = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
+        val ALICE_X500_HOLDING_ID = HoldingIdentity(ALICE_X500, "group1")
+        const val CPK_NAME = "test.cpk"
+        const val CPK_VERSION = "1.0"
+        const val CPK_CHECKSUM = "SHA-256:1212121212121212"
+        const val SIGNER_SUMMARY_HASH = "SHA-256:3434343434343434"
+    }
 
-    private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>(),
-    private val entitySandboxService = mock<EntitySandboxService>(),
-    private val responseFactory = mock<ResponseFactory>(),
-    private val payloadCheck = mock < (bytes: ByteBuffer) -> ByteBuffer,
+    private val entitySandboxService = mock<EntitySandboxService>()
     private val requestsIdsRepository = mock<RequestsIdsRepositoryImpl>()
+    private val persistenceServiceInternal = mock<PersistenceServiceInternal>()
+    private val responseFactory = mock<ResponseFactory>()
+    private val cordaHoldingIdentity = ALICE_X500_HOLDING_ID.toCorda()
+    private val cpkSummaries = setOf(SecureHash(CPK_NAME, CPK_VERSION, SIGNER_SUMMARY_HASH, CPK_CHECKSUM))
+    cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
+
+    private val sandbox = mock<SandboxGroupContext>()
+    private val virtualNodeContext = mock<VirtualNodeContext>()
+    private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
+
+    private fun noOpPayloadCheck(bytes: ByteBuffer) = bytes
 
     private val entityRequestProcessor = EntityRequestProcessor(
         currentSandboxGroupContext,
         entitySandboxService,
         responseFactory,
-        payloadCheck,
+        this::noOpPayloadCheck,
         requestsIdsRepository
     )
 
@@ -40,6 +63,14 @@ internal class EntityRequestProcessorTest {
         whenever(sandbox.virtualNodeContext).thenReturn(virtualNodeContext)
         whenever(virtualNodeContext.holdingIdentity).thenReturn(cordaHoldingIdentity)
         whenever(currentSandboxGroupContext.get()).thenReturn(sandbox)
+
+        whenever(persistenceServiceInternal.deleteEntities())
+        whenever(persistenceServiceInternal.persist())
+        whenever(persistenceServiceInternal.find())
+        whenever(persistenceServiceInternal.deleteEntitiesByIds())
+        whenever(persistenceServiceInternal.findWithNamedQuery())
+        whenever(persistenceServiceInternal.merge())
+        whenever(persistenceServiceInternal.findAll())
     }
 
     @Test
@@ -48,7 +79,7 @@ internal class EntityRequestProcessorTest {
     }
 
     @Test
-    fun `value should be of type TransactionVerificationRequest`() {
+    fun `value should be of type EntityRequest`() {
         Assertions.assertThat(entityRequestProcessor.valueClass).isEqualTo(TransactionVerificationRequest::class.java)
     }
 
