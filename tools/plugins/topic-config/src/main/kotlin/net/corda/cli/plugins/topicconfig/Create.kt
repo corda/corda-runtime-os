@@ -40,6 +40,15 @@ class Create(
     var partitionOverride: Int = 1
 
     @CommandLine.Option(
+        names = ["-t", "--tag"],
+        description = ["One or more tags associated with topics and their respective number of partitions " +
+                "e.g. -t t01=partitions:3 -t t02=partitions:5"]
+    )
+    // Ideally, this would use a custom converter and a custom data type to provide some future flexibility
+    // Potentially to be implemented as a last step. For now, we'll manually parse the inputs
+    var tagsToPropertiesMap: Map<String, String> = emptyMap()
+
+    @CommandLine.Option(
         names = ["-u", "--user"],
         description = ["One or more Corda workers and their respective Kafka users e.g. -u crypto=Charlie -u rest=Rob"]
     )
@@ -47,6 +56,7 @@ class Create(
 
     data class TopicConfig(
         val name: String,
+        val tag: String?,
         val consumers: List<String>,
         val producers: List<String>,
         val config: Map<String, String> = emptyMap()

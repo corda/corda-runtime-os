@@ -156,16 +156,41 @@ class CreateConnect : Runnable {
         }
     }
 
-    fun getTopics(topicConfigs: List<Create.PreviewTopicConfiguration>) =
-        topicConfigs.associate { topicConfig: Create.PreviewTopicConfiguration ->
-            topicConfig.name to NewTopic(topicConfig.name, create!!.partitionOverride, create!!.replicaOverride)
+    internal fun getTopics(topicConfigs: List<Create.PreviewTopicConfiguration>, schemaFilePath: String? = null): Map<String, NewTopic> {
+        val tags = if (schemaFilePath != null) {
+            getTopicsTags(schemaFilePath)
+        } else {
+            create!!.getTopicConfigs().associate { it.name to it.tag }
+        }
+        return topicConfigs.associate { topicConfig: Create.PreviewTopicConfiguration ->
+            topicConfig.name to NewTopic(topicConfig.name, getPartitionNumber(tags[topicConfig.name]), create!!.replicaOverride)
                 .configs(topicConfig.config)
         }
+    }
+
+    private fun getTopicsTags(schemaFilePath: String): Map<String, String?> {
+        val topicDefinitions: Create.TopicDefinitions = create!!.mapper.readValue(Files.readString(Paths.get(schemaFilePath)))
+        return topicDefinitions.topics.values.associate { it.name to it.tag }
+    }
 
     fun getGeneratedTopicConfigs(): Create.PreviewTopicConfigurations = if (configFilePath == null) {
         create!!.getTopicConfigsForPreview()
     } else {
         // Simply read the info from provided file
         create!!.mapper.readValue(Files.readString(Paths.get(configFilePath!!)))
+    }
+
+    private fun getPartitionNumber(tag: String?): Int {
+        tag?.let {
+            create!!.tagsToPropertiesMap[tag]?.let { props ->
+                try {
+                   return props.lowercase().split("partitions:")[1].toInt()
+                } catch (e: Exception) {
+                    throw IllegalArgumentException("Invalid tag argument found: $$props")
+                }
+            }
+        }
+
+        return create!!.partitionOverride
     }
 }
