@@ -33,7 +33,6 @@ class ClusterBootstrapTest {
         "flow-mapper-worker" to System.getProperty("flowMapperWorkerUrl"),
         "verification-worker" to System.getProperty("verificationWorkerUrl"),
         "persistence-worker" to System.getProperty("persistenceWorkerUrl"),
-        "token-selection-worker" to System.getProperty("tokenSelectionWorkerUrl"),
         "rest-worker" to System.getProperty("restWorkerUrl"),
         "uniqueness-worker" to System.getProperty("uniquenessWorkerUrl"),
     )

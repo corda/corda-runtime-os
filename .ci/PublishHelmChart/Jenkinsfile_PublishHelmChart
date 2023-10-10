@@ -1,5 +1,5 @@
 #! groovy
-@Library('corda-shared-build-pipeline-steps@owen/CORE-17383-Add-token-selection-worker') _
+@Library('corda-shared-build-pipeline-steps@5.1') _
 
 import com.r3.build.enums.BuildEnvironment
 import com.r3.build.utils.PublishingUtils

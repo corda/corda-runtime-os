@@ -13,6 +13,5 @@ kafka:
           - "p2pGateway"
           - "p2pLinkManager"
           - "persistence"
-          - "tokenSelection"
           - "rest"
           - "uniqueness"
