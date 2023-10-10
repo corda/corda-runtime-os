@@ -12,6 +12,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.messaging.api.exception.CordaHTTPClientErrorException
+import net.corda.messaging.api.exception.CordaHTTPServerErrorException
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.records.Record
@@ -33,9 +35,6 @@ class RPCClient(
     private val serializer = cordaAvroSerializerFactory.createAvroSerializer<Any> {}
     private val deserializer = cordaAvroSerializerFactory.createAvroDeserializer({}, Record::class.java)
 
-    // TODO Temporary; need to find correct exceptions for these cases
-    class HttpClientErrorException(val statusCode: Int, message: String): Exception(message)
-    class HttpServerErrorException(val statusCode: Int, message: String): Exception(message)
 
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -67,10 +66,12 @@ class RPCClient(
         val response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
 
         // TODO: The HTTP client should be abstracted out into its own class which handles retries
-        if (response.statusCode() in 400..499) {
-            throw HttpClientErrorException(response.statusCode(), "Client error response from server.")
-        } else if (response.statusCode() in 500..599) {
-            throw HttpServerErrorException(response.statusCode(), "Server error response from server.")
+        response.statusCode().let {
+            when (it) {
+                in 400 .. 499 -> throw CordaHTTPClientErrorException(it, "Server returned status code $it.")
+                in 500 .. 599 -> throw CordaHTTPServerErrorException(it, "Server returned status code $it.")
+                else -> {}
+            }
         }
 
         val deserializedResponse = deserializePayload(response.body())
