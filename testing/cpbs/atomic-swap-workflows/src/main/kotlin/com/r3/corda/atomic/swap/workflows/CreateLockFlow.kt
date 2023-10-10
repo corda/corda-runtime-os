@@ -24,9 +24,14 @@ import java.time.Duration
 import java.time.Instant
 
 
-data class CreateLockFlowArgs(val newOwner: String, val stateId: String)
+data class CreateLockFlowArgs(val newOwner: String, val stateId: String, val timeWindow: String)
 
-data class CreateLockFlowResult(val transactionId: String, val signedTransactionId: SecureHash, val stateId: String, val ownerPublicKey: String)
+data class CreateLockFlowResult(
+    val transactionId: String,
+    val signedTransactionId: SecureHash,
+    val stateId: String,
+    val ownerPublicKey: String
+)
 
 
 class CreateLockFlow : ClientStartableFlow {
@@ -83,7 +88,8 @@ class CreateLockFlow : ClientStartableFlow {
                 inputState.owner,
                 newOwnerInfo.ledgerKeys.first(),
                 inputState.assetId,
-                listOf(inputState.owner, newOwnerInfo.ledgerKeys.first())
+                Instant.parse(flowArgs.timeWindow),
+                listOf(inputState.owner, newOwnerInfo.ledgerKeys.first()),
             )
 
             val compositeKey = constructCompositeKey(inputState, newOwnerInfo)

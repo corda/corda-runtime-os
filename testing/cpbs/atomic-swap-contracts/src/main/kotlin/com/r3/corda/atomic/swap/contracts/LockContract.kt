@@ -56,6 +56,12 @@ class LockContract : Contract {
                         (transaction.getInputStates(LockState::class.java).size == 1)
                 "There should be one output state as an unlocked asset state needs to be created" using
                         (transaction.getOutputStates(OwnableState::class.java).size == 1)
+                val inputLockState = transaction.getInputStates(LockState::class.java).first()
+                "Only lock state creator can do a reclaim" using (transaction.signatories.contains(inputLockState.creator))
+                val timeWindowUntil = transaction.timeWindow.from
+                "The time window must have expired. Reversal of Encumbered assets requires a time window that starts " +
+                        "only after the time-window to claim the encumbered assets" using (timeWindowUntil != null &&
+                        timeWindowUntil.isAfter(inputLockState.timeWindow))
             }
 
             else -> {

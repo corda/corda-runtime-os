@@ -32,10 +32,7 @@ class AssetContract : Contract {
                 "The transaction requires one Asset output." using (transaction.getOutputStates(Asset::class.java).size == 1)
                 "The transaction requires one Asset input." using (transaction.getInputStates(Asset::class.java).size == 1)
 
-                val input = transaction.getInputStates(Asset::class.java).first()
-
                 val output = transaction.getOutputStates(Asset::class.java).first()
-                "Owner must change in this transaction." using (input.owner != output.owner)
 
                 "Both old and new owner must sign the transaction." using (transaction.signatories.containsAll(output.participants))
             }

@@ -15,7 +15,6 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import org.slf4j.LoggerFactory
 import java.lang.IllegalArgumentException
-import java.time.Duration
 import java.time.Instant
 
 
@@ -52,18 +51,18 @@ class ReclaimFlow : ClientStartableFlow {
             val encumberedTx = ledgerService.findLedgerTransaction(flowArgs.signedTransactionId)
                 ?: throw IllegalArgumentException("Unable to find transaction with id: ${flowArgs.signedTransactionId}")
 
+            val myInfo = memberLookup.myInfo()
             val lockState = encumberedTx.getOutputStateAndRefs(LockState::class.java).singleOrNull()
                 ?: throw IllegalStateException("Transaction with id: ${flowArgs.signedTransactionId} has no lock state")
-            val assetState = encumberedTx.getOutputStateAndRefs(Asset::class.java).single()
+            val assetState = encumberedTx.getOutputStateAndRefs(Asset::class.java).singleOrNull()
                 ?: throw IllegalStateException("Transaction with id: ${flowArgs.signedTransactionId} has no asset state")
-            val newAssetState = assetState.state.contractState.copy()
-
-            val myInfo = memberLookup.myInfo()
+            val newAssetState = assetState.state.contractState.copy(participants = listOf(myInfo.ledgerKeys.first()))
+            val timeWindowForReclaim = lockState.state.contractState.timeWindow.plusSeconds(31)
 
             val txBuilder = ledgerService.createTransactionBuilder()
 
                 .setNotary(encumberedTx.notaryName)
-                .setTimeWindowBetween(Instant.now(), Instant.now().plusMillis(Duration.ofDays(1).toMillis()))
+                .setTimeWindowBetween(timeWindowForReclaim, Instant.now())
                 .addInputState(lockState.ref)
                 .addInputState(assetState.ref)
                 .addOutputState(newAssetState)
