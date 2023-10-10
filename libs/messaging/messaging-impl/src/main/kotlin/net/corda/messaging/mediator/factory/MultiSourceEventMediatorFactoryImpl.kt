@@ -51,7 +51,7 @@ class MultiSourceEventMediatorFactoryImpl(
             taskManagerFactory.createThreadPoolTaskManager(
                 name = "MultiSourceEventMediator",
                 threadName = "multi-source-event-mediator",
-                threads = 8
+                threads = eventMediatorConfig.threads
             ),
             lifecycleCoordinatorFactory,
         )
