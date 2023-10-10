@@ -33,7 +33,7 @@ const val CERT_ALIAS_P2P = "p2p-tls-cert"
 const val CERT_ALIAS_SESSION = "p2p-session-cert"
 const val DEFAULT_KEY_SCHEME = "CORDA.ECDSA.SECP256R1"
 const val DEFAULT_SIGNATURE_SPEC = "SHA256withECDSA"
-const val REG_PROTOCOL_VERSION = "registrationProtocolVersion"
+const val DEFAULT_NOTARY_SERVICE = "O=NotaryService, L=London, C=GB"
 
 /**
  * Onboard a member by uploading a CPI if it doesn't exist, creating a vnode if it doesn't exist, configuring the
@@ -58,7 +58,7 @@ fun ClusterInfo.onboardMember(
     cpiName: String,
     groupPolicy: String,
     x500Name: String,
-    waitForStatus: String? = REGISTRATION_APPROVED,
+    waitForApproval: Boolean = true,
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null,
     tlsCertificateUploadedCallback: (String) -> Unit = {},
     useSessionCertificate: Boolean = false,
@@ -113,7 +113,7 @@ fun ClusterInfo.onboardMember(
         configureNetworkParticipant(holdingId, sessionKeyId)
     }
 
-    val registrationId = register(holdingId, registrationContext, waitForStatus)
+    val registrationId = register(holdingId, registrationContext, waitForApproval)
 
     return NetworkOnboardingMetadata(holdingId, x500Name, registrationId, registrationContext, this)
 }
@@ -124,7 +124,7 @@ fun ClusterInfo.onboardMember(
  */
 fun NetworkOnboardingMetadata.reregisterMember(
     contextToMerge: Map<String, String?> = emptyMap(),
-    waitForStatus: String? = REGISTRATION_APPROVED,
+    waitForApproval: Boolean = true
 ): NetworkOnboardingMetadata {
     val newContext = registrationContext.toMutableMap()
     contextToMerge.forEach {
@@ -136,31 +136,7 @@ fun NetworkOnboardingMetadata.reregisterMember(
     }
     return copy(
         registrationContext = newContext,
-        registrationId = clusterInfo.register(holdingId, newContext, waitForStatus)
-    )
-}
-
-fun ClusterInfo.reregisterMember(
-    holdingId: String,
-    x500Name: String,
-    previousContext: Map<String, String>,
-    contextToMerge: Map<String, String?> = emptyMap(),
-    waitForStatus: String? = REGISTRATION_APPROVED,
-): NetworkOnboardingMetadata {
-    val newContext = previousContext.toMutableMap()
-    contextToMerge.forEach {
-        if (it.value == null) {
-            newContext.remove(it.key)
-        } else {
-            newContext[it.key] = it.value!!
-        }
-    }
-    return NetworkOnboardingMetadata(
-        holdingId = holdingId,
-        x500Name = x500Name,
-        registrationContext = newContext.toMap(),
-        registrationId = register(holdingId, newContext.toMap(), waitForStatus),
-        clusterInfo = this,
+        registrationId = clusterInfo.register(holdingId, newContext, waitForApproval)
     )
 }
 
@@ -174,16 +150,16 @@ fun ClusterInfo.onboardNotaryMember(
     cpiName: String,
     groupPolicy: String,
     x500Name: String,
-    waitForStatus: String? = REGISTRATION_APPROVED,
+    wait: Boolean = true,
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null,
     tlsCertificateUploadedCallback: (String) -> Unit = {},
-    notaryServiceName: String = "O=NotaryService, L=London, C=GB"
+    notaryServiceName: String = DEFAULT_NOTARY_SERVICE
 ) = onboardMember(
     resourceName,
     cpiName,
     groupPolicy,
     x500Name,
-    waitForStatus,
+    wait,
     getAdditionalContext = { holdingId ->
         addSoftHsmFor(holdingId, CAT_NOTARY)
         val notaryKeyId = createKeyFor(holdingId, "$holdingId$CAT_NOTARY", CAT_NOTARY, DEFAULT_KEY_SCHEME)
@@ -227,7 +203,7 @@ fun ClusterInfo.configureNetworkParticipant(
 fun ClusterInfo.register(
     holdingIdentityShortHash: String,
     registrationContext: Map<String, String>,
-    waitForStatus: String? = REGISTRATION_APPROVED,
+    waitForApproval: Boolean
 ) = cluster {
 
     val payload = mapOf(
@@ -244,26 +220,12 @@ fun ClusterInfo.register(
         failMessage("Failed to register to the network '$holdingIdentityShortHash'")
     }.toJson().get("registrationId")!!.textValue()
 }.also {
-    if (waitForStatus != null) {
+    if (waitForApproval) {
         waitForRegistrationStatus(
             holdingIdentityShortHash,
             it,
-            registrationStatus = waitForStatus
+            registrationStatus = REGISTRATION_APPROVED
         )
-    }
-}
-
-fun ClusterInfo.getRegistrationContext(
-    holdingIdentityShortHash: String,
-    registrationId: String,
-) = cluster {
-    assertWithRetryIgnoringExceptions {
-        timeout(15.seconds)
-        interval(5.seconds)
-        command {
-            getRegistrationStatus(holdingIdentityShortHash, registrationId)
-        }
-        condition { it.code == ResponseCode.OK.statusCode }
     }
 }
 
