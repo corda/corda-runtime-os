@@ -485,7 +485,6 @@ include 'testing:cpbs:interop-token-demo-contracts'
 include 'testing:cpbs:interop-token-demo-workflows'
 include 'components:interop:interop-identity-read-service'
 include 'components:interop:interop-identity-write-service'
-include 'components:interop:interop-identity-write-service-impl'
 include 'components:interop:interop-identity-registry-service'
 include 'components:interop:interop-group-policy-read-service'
 
