@@ -21,11 +21,16 @@ class TaskManagerImpl  @Activate constructor() : TaskManager {
         }
 
     private fun <T> executeShortRunning(command: () -> T): CompletableFuture<T> {
-        val result = CompletableFuture<T>()
+        val resultFuture = CompletableFuture<T>()
         executorService.execute {
-            result.complete(command())
+            try {
+                val result = command()
+                resultFuture.complete(result)
+            } catch (t: Throwable) {
+                resultFuture.completeExceptionally(t)
+            }
         }
-        return result
+        return resultFuture
     }
 
     private fun <T> executeLongRunning(command: () -> T): CompletableFuture<T> {
