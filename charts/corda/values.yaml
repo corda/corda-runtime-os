@@ -366,8 +366,6 @@ bootstrap:
 
     # State Manager DB Bootstrap Configuration
     stateManager:
-      # -- the schema in which the state-manager entities will be stored
-      schema: state_manager
       # JDBC connection pool configuration for state-manager DB
       dbConnectionPool:
         # -- maximum JDBC connection pool size for state-manager DB
