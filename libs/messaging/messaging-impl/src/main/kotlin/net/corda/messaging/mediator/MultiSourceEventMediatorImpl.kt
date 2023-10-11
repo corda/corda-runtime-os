@@ -216,6 +216,9 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                 }
                 log.info("commitOffsets() task ended")
             }
+        }.map {
+            log.info("commitOffsets() waiting for task to finish")
+            it.join()
         }
         log.info("commitOffsets() end")
     }
