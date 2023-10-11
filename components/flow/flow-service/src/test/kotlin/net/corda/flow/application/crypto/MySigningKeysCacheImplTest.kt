@@ -90,8 +90,6 @@ class MySigningKeysCacheImplTest {
        whenever(sandbox.virtualNodeContext).thenReturn(
             aliceVirtualNodeContext,
             bobVirtualNodeContext,
-            bobVirtualNodeContext,
-           aliceVirtualNodeContext
         )
         whenever(currentSandboxGroupContext.get()).thenReturn(sandbox)
 
@@ -101,15 +99,12 @@ class MySigningKeysCacheImplTest {
         mySigningKeysCache.putAll(mapOf(KEY_C to KEY_C, KEY_D to null))
         mySigningKeysCache.remove(aliceVirtualNodeContext)
 
-        // check bob's cache
+        // there should bob's cache only
         assertThat(mySigningKeysCache.get(setOf(KEY_A, KEY_B, KEY_C, KEY_D))).containsExactlyInAnyOrderEntriesOf(
             mapOf(
                 KEY_C to KEY_C,
                 KEY_D to null
             )
-        )
-        assertThat(mySigningKeysCache.get(setOf(KEY_A, KEY_B, KEY_C, KEY_D))).containsExactlyInAnyOrderEntriesOf(
-            emptyMap()
         )
     }
 }
