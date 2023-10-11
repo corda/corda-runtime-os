@@ -1,3 +1,3 @@
-@Library('corda-shared-build-pipeline-steps@owen/CORE-17383-Add-token-selection-worker') _
+@Library('corda-shared-build-pipeline-steps@5.1') _
 
 cordaCompatibilityCheckPipeline(javaVersion: '17')
