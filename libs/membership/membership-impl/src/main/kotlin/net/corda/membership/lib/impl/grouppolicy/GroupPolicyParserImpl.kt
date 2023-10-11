@@ -35,7 +35,7 @@ class GroupPolicyParserImpl @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val EMPTY_GROUP_POLICY = "GroupPolicy file is empty."
         const val NULL_GROUP_POLICY = "GroupPolicy file is null."
-        const val FAILED_PARSING = "GroupPolicy file is incorrectly formatted and parsing failed."
+        const val FAILED_PARSING = "GroupPolicy file is incorrectly formatted and parsing failed. Caused by:"
     }
 
     private val objectMapper = ObjectMapper().enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
@@ -78,8 +78,8 @@ class GroupPolicyParserImpl @Activate constructor(
                 try {
                     objectMapper.readTree(groupPolicy)
                 } catch (e: Exception) {
-                    logger.error("$FAILED_PARSING Caused by: ${e.message}")
-                    throw BadGroupPolicyException(FAILED_PARSING, e)
+                    logger.error("$FAILED_PARSING ${e.message}")
+                    throw BadGroupPolicyException("$FAILED_PARSING ${e.message}", e)
                 }
             }
         }
@@ -105,8 +105,8 @@ class GroupPolicyParserImpl @Activate constructor(
                 try {
                     objectMapper.readTree(groupPolicy)
                 } catch (e: Exception) {
-                    logger.error("$FAILED_PARSING Caused by: ${e.message}")
-                    throw BadGroupPolicyException(FAILED_PARSING, e)
+                    logger.error("$FAILED_PARSING ${e.message}")
+                    throw BadGroupPolicyException("$FAILED_PARSING ${e.message}", e)
                 }
             }
         }
