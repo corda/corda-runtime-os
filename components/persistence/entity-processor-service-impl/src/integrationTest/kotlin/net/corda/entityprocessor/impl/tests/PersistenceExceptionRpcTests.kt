@@ -282,6 +282,8 @@ class PersistenceExceptionRpcTests {
         createDogDb(DOGS_TABLE_WITHOUT_PK)
         val persistEntitiesRequest = createDogPersistRequest()
 
+        val initialDogDbCount = getDogDbCount(virtualNodeInfo.vaultDmlConnectionId)
+
         val result = processor.process(persistEntitiesRequest)
         assertEventResponseWithoutError(Record(TOPIC, KEY, result))
         // duplicate request
@@ -290,7 +292,7 @@ class PersistenceExceptionRpcTests {
 
         val dogDbCount = getDogDbCount(virtualNodeInfo.vaultDmlConnectionId)
         // There shouldn't be a dog duplicate entry in the DB, i.e. dogs count in the DB should still be 1
-        assertEquals(1, dogDbCount)
+        assertEquals(initialDogDbCount + 1, dogDbCount)
     }
 
     @Test
