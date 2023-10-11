@@ -155,23 +155,33 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         val messages = pollConsumers()
         if (messages.isNotEmpty()) {
             val msgGroups = messages.groupBy { it.key }
+            log.info("Retrieving states from StateManager")
             val persistedStates = stateManager.get(msgGroups.keys.map { it.toString() })
+            log.info("Creating message processor tasks")
             var msgProcessorTasks = taskManagerHelper.createMessageProcessorTasks(
                 msgGroups, persistedStates, config.messageProcessor
             )
             do {
+                log.info("Executing processor tasks")
                 val processingResults = taskManagerHelper.executeProcessorTasks(msgProcessorTasks)
+                log.info("Persisting states")
                 val conflictingStates = stateManagerHelper.persistStates(processingResults)
+                log.info("Splitting successful/failed states")
                 val (successResults, failResults) = processingResults.partition {
                     !conflictingStates.contains(it.key.toString())
                 }
+                log.info("Creating client tasks")
                 val clientTasks = taskManagerHelper.createClientTasks(successResults, messageRouter)
+                log.info("Executing client tasks")
                 val clientResults = taskManagerHelper.executeClientTasks(clientTasks)
+                log.info("Generating new tasks")
                 msgProcessorTasks =
                     taskManagerHelper.createMessageProcessorTasks(clientResults) +
                             taskManagerHelper.createMessageProcessorTasks(failResults, conflictingStates)
             } while (msgProcessorTasks.isNotEmpty())
+            log.info("Committing offsets")
             commitOffsets()
+            log.info("Committing offsets done")
         }
     }
 

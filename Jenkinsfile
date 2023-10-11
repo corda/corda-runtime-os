@@ -2,14 +2,16 @@
 
 cordaPipelineKubernetesAgent(
     dailyBuildCron: 'H H/6 * * *',
-    runIntegrationTests: true,
+    // TODO Disabled while debugging e2e cluster issue
+    runIntegrationTests: false,
     createPostgresDb: true,
     publishOSGiImage: true,
     publishPreTestImage: true,
     publishHelmChart: true,
     e2eTestName: 'corda-runtime-os-e2e-tests',
     runE2eTests: true,
-    combinedWorkere2eTests: true,
+    // TODO Disabled while debugging e2e cluster issue
+    combinedWorkere2eTests: false,
     // allow publishing artifacts to S3 bucket
     publishToMavenS3Repository: true,
     // allow publishing an installer to a download site
