@@ -22,7 +22,7 @@ class InteropGroupPolicyProducer(
             return
         }
 
-        val futures = publisher.get()!!.publish(listOf(Record(INTEROP_GROUP_POLICY_TOPIC, groupId, groupPolicy)))
+        val futures = publisher.get()!!.publish(listOf(Record(INTEROP_GROUP_POLICY_TOPIC, groupId.toString(), groupPolicy)))
 
         try {
             futures.single().get()

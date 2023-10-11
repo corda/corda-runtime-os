@@ -97,17 +97,17 @@ class InteropGroupPolicyReadServiceEventHandler(
         }
     }
 
-    private inner class Processor : CompactedProcessor<UUID, String> {
-        override val keyClass = UUID::class.java
+    private inner class Processor : CompactedProcessor<String, String> {
+        override val keyClass = String::class.java
         override val valueClass = String::class.java
 
         override fun onNext(
-            newRecord: Record<UUID, String>,
+            newRecord: Record<String, String>,
             oldValue: String?,
-            currentData: Map<UUID, String>,
+            currentData: Map<String, String>,
         ) {
             log.info("onNext currentData=${currentData.size} newRecord=${newRecord}")
-            val key = newRecord.key
+            val key = UUID.fromString(newRecord.key)
             val newEntry = newRecord.value
             if (oldValue != getGroupPolicy(key)) {
                 log.warn("Value mismatch when updating entry. Current and expected values do not match.")
@@ -119,10 +119,11 @@ class InteropGroupPolicyReadServiceEventHandler(
             }
         }
 
-        override fun onSnapshot(currentData: Map<UUID, String>) {
+        override fun onSnapshot(currentData: Map<String, String>) {
             log.info("onSnapshot=${currentData.size}")
             currentData.entries.forEach {
-                addEntry(it.key, it.value)
+                val groupId = UUID.fromString(it.key)
+                addEntry(groupId, it.value)
             }
         }
     }
