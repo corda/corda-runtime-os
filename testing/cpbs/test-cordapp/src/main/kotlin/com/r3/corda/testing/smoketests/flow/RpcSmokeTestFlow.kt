@@ -237,7 +237,6 @@ class RpcSmokeTestFlow : ClientStartableFlow {
             log.info("Creating session for '${x500}'...")
             val session = flowMessaging.initiateFlow(MemberX500Name.parse(x500))
 
-            log.info("Requesting counterpartyFlowInfo for '${x500}'...")
             val countpartyInfo = session.counterpartyFlowInfo
 
             log.info("Creating session '${session}' with version ${countpartyInfo.protocolVersion()} now sending and waiting for response" +
