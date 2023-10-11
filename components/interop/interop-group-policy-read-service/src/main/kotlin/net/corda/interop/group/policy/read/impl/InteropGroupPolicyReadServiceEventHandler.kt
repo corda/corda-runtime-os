@@ -109,14 +109,13 @@ class InteropGroupPolicyReadServiceEventHandler(
             log.info("onNext currentData=${currentData.size} newRecord=${newRecord}")
             val key = newRecord.key
             val newEntry = newRecord.value
-            if (newEntry == null) {
-                if (oldValue != null) {
-                    groupPolicies.remove(
-                        UUID.fromString(oldValue)
-                    )
-                }
-            } else {
+            if (oldValue != getGroupPolicy(key)) {
+                log.warn("Value mismatch when updating entry. Current and expected values do not match.")
+            }
+            if (newEntry != null) {
                 addEntry(key, newEntry)
+            } else {
+                groupPolicies.remove(key)
             }
         }
 
