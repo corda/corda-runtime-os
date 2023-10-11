@@ -1263,19 +1263,9 @@
                             "default": {},
                             "title": "State Manager db configuration",
                             "required": [
-                                "dbConnectionPool",
-                                "schema"
+                                "dbConnectionPool"
                             ],
                             "properties": {
-                                "schema": {
-                                    "type": "string",
-                                    "default": "STATE_MANAGER",
-                                    "title": "the schema in which the State Manager entities will be stored",
-                                    "examples": [
-                                        "STATE_MANAGER"
-                                    ],
-                                    "minLength": 1
-                                },
                                 "username": {
                                     "$ref": "#/$defs/config"
                                 },
@@ -1346,7 +1336,6 @@
                                 }
                             },
                             "examples": [{
-                                "schema": "STATE_MANAGER",
                                 "password": {
                                     "value": "password"
                                 },
