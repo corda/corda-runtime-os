@@ -325,7 +325,7 @@ spec:
           {{- if $optionalArgs.servicesAccessed }}
           {{- range $worker := $optionalArgs.servicesAccessed }}
           {{- $endpoint := include "corda.getWorkerEndpoint" (dict "context" $ "worker" $worker) }}
-          - --endpoint={{ $endpoint }}
+          - --serviceEndpoint={{ $endpoint }}
           {{- end }}
           {{- end }}
           {{- range $i, $arg := $optionalArgs.additionalWorkerArgs }}
