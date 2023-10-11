@@ -30,7 +30,10 @@ data class UtxoTransactionEntity(
     var status: String,
 
     @get:Column(name = "updated", nullable = false)
-    var updated: Instant
+    var updated: Instant,
+
+    @get:Column(name = "metadata_hash", nullable = false)
+    var metadataHash: String
 ) {
     @get:OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
     var components: MutableList<UtxoTransactionComponentEntity> = mutableListOf()

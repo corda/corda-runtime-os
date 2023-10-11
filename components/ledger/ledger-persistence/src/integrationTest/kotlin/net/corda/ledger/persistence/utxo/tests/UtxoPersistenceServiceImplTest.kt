@@ -658,6 +658,8 @@ class UtxoPersistenceServiceImplTest {
             get() = transactionContainer.id
         override val privacySalt: PrivacySalt
             get() = transactionContainer.wireTransaction.privacySalt
+        override val metadata: TransactionMetadataInternal
+            get() = transactionContainer.wireTransaction.metadata as TransactionMetadataInternal
         override val rawGroupLists: List<List<ByteArray>>
             get() = transactionContainer.wireTransaction.componentGroupLists
         override val signatures: List<DigitalSignatureAndMetadata>

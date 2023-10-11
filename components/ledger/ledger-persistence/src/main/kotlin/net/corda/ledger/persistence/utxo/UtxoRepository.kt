@@ -2,6 +2,7 @@ package net.corda.ledger.persistence.utxo
 
 import net.corda.data.membership.SignedGroupParameters
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -76,7 +77,17 @@ interface UtxoRepository {
         privacySalt: ByteArray,
         account: String,
         timestamp: Instant,
-        status: TransactionStatus
+        status: TransactionStatus,
+        metadataHash: String
+    )
+
+    /** Persists transaction metadata (operation is idempotent) */
+    fun persistTransactionMetadata(
+        entityManager: EntityManager,
+        hash: String,
+        metadataBytes: ByteArray,
+        groupParametersHash: String,
+        cpiFileChecksum: String
     )
 
     /** Persists transaction component leaf [data] (operation is idempotent) */
