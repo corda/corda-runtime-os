@@ -15,6 +15,11 @@ import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.messaging.api.constants.WorkerRPCPaths.CRYPTO_PATH
+import net.corda.messaging.api.constants.WorkerRPCPaths.LEDGER_PATH
+import net.corda.messaging.api.constants.WorkerRPCPaths.PERSISTENCE_PATH
+import net.corda.messaging.api.constants.WorkerRPCPaths.UNIQUENESS_PATH
+import net.corda.messaging.api.constants.WorkerRPCPaths.VERIFICATION_PATH
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.RoutingDestination.Companion.routeTo
@@ -34,6 +39,7 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.FlowConfig
 import net.corda.schema.configuration.BootConfig.CRYPTO_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.PERSISTENCE_WORKER_REST_ENDPOINT
+import net.corda.schema.configuration.BootConfig.UNIQUENESS_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.VERIFICATION_WORKER_REST_ENDPOINT
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -107,14 +113,14 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
 
         MessageRouter { message ->
             when (val event = message.event()) {
-                is EntityRequest -> routeTo(rpcClient, rpcEndpoint(PERSISTENCE_WORKER_REST_ENDPOINT, "/persistence"))
+                is EntityRequest -> routeTo(rpcClient, rpcEndpoint(PERSISTENCE_WORKER_REST_ENDPOINT, PERSISTENCE_PATH))
                 is FlowMapperEvent -> routeTo(messageBusClient, FLOW_MAPPER_EVENT_TOPIC)
-                is FlowOpsRequest -> routeTo(rpcClient, rpcEndpoint(CRYPTO_WORKER_REST_ENDPOINT, "/crypto"))
+                is FlowOpsRequest -> routeTo(rpcClient, rpcEndpoint(CRYPTO_WORKER_REST_ENDPOINT, CRYPTO_PATH))
                 is FlowStatus -> routeTo(messageBusClient, FLOW_STATUS_TOPIC)
-                is LedgerPersistenceRequest -> routeTo(rpcClient, rpcEndpoint(PERSISTENCE_WORKER_REST_ENDPOINT, "/ledger"))
+                is LedgerPersistenceRequest -> routeTo(rpcClient, rpcEndpoint(PERSISTENCE_WORKER_REST_ENDPOINT, LEDGER_PATH))
                 is TokenPoolCacheEvent -> routeTo(messageBusClient, TOKEN_CACHE_EVENT)
-                is TransactionVerificationRequest -> routeTo(rpcClient, rpcEndpoint(VERIFICATION_WORKER_REST_ENDPOINT, "/verification"))
-                is UniquenessCheckRequestAvro -> routeTo(rpcClient, rpcEndpoint(VERIFICATION_WORKER_REST_ENDPOINT, "/uniqueness-checker"))
+                is TransactionVerificationRequest -> routeTo(rpcClient, rpcEndpoint(VERIFICATION_WORKER_REST_ENDPOINT, VERIFICATION_PATH))
+                is UniquenessCheckRequestAvro -> routeTo(rpcClient, rpcEndpoint(UNIQUENESS_WORKER_REST_ENDPOINT, UNIQUENESS_PATH))
                 else -> {
                     val eventType = event?.let { it::class.java }
                     throw IllegalStateException("No route defined for event type [$eventType]")

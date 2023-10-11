@@ -111,9 +111,7 @@ class RPCClient(
             is InterruptedException,
             is IllegalArgumentException,
             is SecurityException -> log.error("HTTP error in RPCClient: ", e)
-
             is IllegalStateException -> log.error("Coroutine error in RPCClient: ", e)
-
             else -> log.error("Unhandled exception in RPCClient: ", e)
         }
 
