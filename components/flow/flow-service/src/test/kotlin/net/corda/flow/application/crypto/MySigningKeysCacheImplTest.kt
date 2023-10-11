@@ -89,7 +89,7 @@ class MySigningKeysCacheImplTest {
         // return vnode in this order in consecutive calls of the function
        whenever(sandbox.virtualNodeContext).thenReturn(
             aliceVirtualNodeContext,
-            bobVirtualNodeContext,
+            bobVirtualNodeContext
         )
         whenever(currentSandboxGroupContext.get()).thenReturn(sandbox)
 
