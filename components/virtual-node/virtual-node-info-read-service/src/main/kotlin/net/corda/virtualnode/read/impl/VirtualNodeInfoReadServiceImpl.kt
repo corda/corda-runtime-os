@@ -71,7 +71,7 @@ class VirtualNodeInfoReadServiceImpl @Activate constructor(
         get() = coordinator.isRunning
 
     override fun start() {
-        log.debug { "Virtual Node Info Service component starting" }
+        log.info ( "Virtual Node Info Service component starting" )
         coordinator.start()
     }
 

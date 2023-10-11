@@ -66,7 +66,6 @@ class DBWorker @Activate constructor(
 
         JavaSerialisationFilter.install()
 
-
         val params = getParams(args, DBWorkerParams())
 
         if (printHelpOrVersion(params.defaultParams, DBWorker::class.java, shutDownService)) return

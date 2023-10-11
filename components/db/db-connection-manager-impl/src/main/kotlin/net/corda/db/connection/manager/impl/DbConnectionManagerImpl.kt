@@ -80,7 +80,7 @@ class DbConnectionManagerImpl (
         checkDatabaseConnection(getClusterDataSource())
         true
     }  catch (e: DBConfigurationException) {
-        logger.debug("DB check failed", e)
+        logger.info("DB check failed", e)
         false
     }
 

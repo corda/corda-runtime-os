@@ -10,7 +10,6 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.utilities.debug
 import net.corda.utilities.minutes
 import org.slf4j.LoggerFactory
 
@@ -30,14 +29,14 @@ class DbConnectionManagerEventHandler(
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> {
-                logger.debug { "DbConnectionManager starting up." }
+                logger.info ( "DbConnectionManager starting up." )
             }
             is BootstrapConfigProvided -> {
-                logger.debug { "Bootstrap config received: ${event.config}" }
+                logger.debug ( "Bootstrap config received: ${event.config}" )
                 processBootstrapConfig(event.config, coordinator)
             }
             is StopEvent -> {
-                logger.debug { "DbConnectionManager stopping." }
+                logger.debug ( "DbConnectionManager stopping." )
                 onStop(coordinator)
             }
             is ErrorEvent -> {
