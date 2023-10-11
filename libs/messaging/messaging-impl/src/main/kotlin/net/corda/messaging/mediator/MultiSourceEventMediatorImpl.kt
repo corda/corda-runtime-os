@@ -190,12 +190,14 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         return consumers.map { consumer ->
             taskManager.execute(TaskType.SHORT_RUNNING) {
                 log.info("pollConsumers task started")
-                runBlocking {
+                val result = runBlocking {
                     log.info("pollConsumers coroutine started")
-                    consumer.poll(config.pollTimeout).await()
+                    val res = consumer.poll(config.pollTimeout).await()
                     log.info("pollConsumers coroutine finished")
+                    res
                 }
                 log.info("pollConsumers task finished")
+                result
             }
         }.map {
             it.join()
