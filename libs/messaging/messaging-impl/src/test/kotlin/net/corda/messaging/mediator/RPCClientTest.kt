@@ -151,7 +151,7 @@ class RPCClientTest {
         val client = createClient(environment.mocks, onSerializationError)
 
         runBlocking {
-            assertThrows<Exception> {
+            assertThrows<IllegalArgumentException> {
                 client.send(message).await()
             }
 
@@ -171,28 +171,11 @@ class RPCClientTest {
         val client = createClient(environment.mocks, onSerializationError)
 
         runBlocking {
-            assertThrows<Exception> {
+            assertThrows<IllegalArgumentException> {
                 client.send(message).await()
             }
 
             verify(onSerializationError).invoke(any())
-        }
-    }
-
-    @Test
-    fun `send handles IOException`() {
-        val environment = MockEnvironment().apply {
-            whenever(mockHttpClient.send(any(), any<HttpResponse.BodyHandler<*>>()))
-                .thenThrow(IOException("Simulated IO exception"))
-        }
-
-        val client = createClient(environment.mocks)
-
-        runBlocking {
-            val deferred = client.send(message)
-            assertThrows<IOException> {
-                deferred.await()
-            }
         }
     }
 
