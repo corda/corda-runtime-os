@@ -75,6 +75,7 @@ dependencies {
     // Processor list must be kept in sync with workersForProcessor in net.corda.cli.plugins.topicconfig.Create
     implementation project(':processors:crypto-processor')
     implementation project(':processors:db-processor')
+    implementation project(':processors:evm-processor')
     implementation project(':processors:flow-processor')
     implementation project(':processors:flow-mapper-processor')
     implementation project(':processors:member-processor')

@@ -1,4 +1,4 @@
-package net.corda.web3j.encoder
+package net.corda.interop.evm.encoder
 
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.web3j.abi.datatypes.*

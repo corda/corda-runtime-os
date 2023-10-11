@@ -1,4 +1,4 @@
-package net.corda.web3j.decoder
+package net.corda.interop.evm.decoder
 
 
 import org.web3j.abi.TypeDecoder

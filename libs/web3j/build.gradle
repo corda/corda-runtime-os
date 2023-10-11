@@ -1,0 +1,51 @@
+import static aQute.bnd.version.MavenVersion.parseMavenString
+
+plugins {
+    id 'java-library'
+    id 'biz.aQute.bnd.builder'
+    id 'com.jfrog.artifactory'
+    id 'maven-publish'
+}
+
+description 'Web3j'
+
+configurations {
+    bundle {
+        canBeDeclared = false
+        canBeResolved = false
+    }
+}
+
+dependencies {
+    implementation "org.web3j:core:$web3jVersion"
+}
+
+tasks.named('jar', Jar) {
+    archiveBaseName = 'corda-web3j'
+
+    ext {
+        bundleVersion = parseMavenString(web3jVersion).OSGiVersion
+    }
+
+    bundle {
+        bnd """\
+Bundle-Name: Web3j
+Bundle-SymbolicName: \${project.group}.web3j
+Bundle-Version: \${task.bundleVersion}
+Export-Package: org.web3j.*
+Import-Package: \
+"""
+    }
+}
+
+publishing {
+    publications {
+        web3j(MavenPublication) {
+            from components.java
+        }
+    }
+}
+
+artifactoryPublish {
+    publications 'web3j'
+}

@@ -1,11 +1,19 @@
-package net.corda.web3j.encoder
+package net.corda.interop.evm.encoder
 
+import java.math.BigInteger
 import net.corda.data.interop.evm.request.Parameter
 import org.web3j.abi.TypeEncoder
-import org.web3j.abi.datatypes.*
+import org.web3j.abi.datatypes.DynamicArray
+import org.web3j.abi.datatypes.DynamicBytes
+import org.web3j.abi.datatypes.DynamicStruct
+import org.web3j.abi.datatypes.NumericType
+import org.web3j.abi.datatypes.StaticArray
+import org.web3j.abi.datatypes.Type
+import org.web3j.abi.datatypes.Ufixed
+import org.web3j.abi.datatypes.Uint
+import org.web3j.abi.datatypes.Utf8String
 import org.web3j.crypto.Hash
 import org.web3j.utils.Numeric
-import java.math.BigInteger
 
 
 /**

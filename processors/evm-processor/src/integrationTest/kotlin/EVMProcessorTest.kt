@@ -2,7 +2,7 @@ import net.corda.data.interop.evm.EvmRequest
 import net.corda.data.interop.evm.EvmResponse
 import net.corda.data.interop.evm.request.*
 import net.corda.libs.configuration.SmartConfig
-import net.corda.web3j.dispatcher.factory.GenericDispatcherFactory
+import net.corda.interop.evm.dispatcher.factory.GenericDispatcherFactory
 import net.corda.processor.evm.internal.EVMOpsProcessor
 import okhttp3.OkHttpClient
 import org.assertj.core.api.Assertions.assertThat

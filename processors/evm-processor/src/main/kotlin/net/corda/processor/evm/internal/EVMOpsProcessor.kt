@@ -11,11 +11,11 @@ import net.corda.data.interop.evm.request.Transaction
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.web3j.dispatcher.factory.DispatcherFactory
-import net.corda.web3j.dispatcher.EvmDispatcher
-import net.corda.web3j.EVMErrorException
-import net.corda.web3j.EthereumConnector
-import net.corda.web3j.EvmRPCCall
+import net.corda.interop.evm.dispatcher.factory.DispatcherFactory
+import net.corda.interop.evm.dispatcher.EvmDispatcher
+import net.corda.interop.evm.EVMErrorException
+import net.corda.interop.evm.EthereumConnector
+import net.corda.interop.evm.EvmRPCCall
 
 import okhttp3.OkHttpClient
 import org.slf4j.Logger

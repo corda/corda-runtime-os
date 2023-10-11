@@ -26,6 +26,7 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.crypto.CryptoProcessor
 import net.corda.processors.db.DBProcessor
+import net.corda.processor.evm.EVMProcessor
 import net.corda.processors.flow.FlowProcessor
 import net.corda.processors.flow.mapper.FlowMapperProcessor
 import net.corda.processors.member.MemberProcessor
@@ -73,6 +74,8 @@ class CombinedWorker @Activate constructor(
     private val cryptoProcessor: CryptoProcessor,
     @Reference(service = DBProcessor::class)
     private val dbProcessor: DBProcessor,
+    @Reference(service = EVMProcessor::class)
+    private val evmProcessor: EVMProcessor,
     @Reference(service = PersistenceProcessor::class)
     private val persistenceProcessor: PersistenceProcessor,
     @Reference(service = UniquenessProcessor::class)
@@ -206,6 +209,7 @@ class CombinedWorker @Activate constructor(
         webServer.start(params.defaultParams.workerServerPort)
         cryptoProcessor.start(config)
         dbProcessor.start(config)
+        evmProcessor.start(config)
         persistenceProcessor.start(config)
         uniquenessProcessor.start(config)
         tokenCacheProcessor.start(config)

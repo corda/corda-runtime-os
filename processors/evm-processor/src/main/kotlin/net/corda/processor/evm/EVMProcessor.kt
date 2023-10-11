@@ -1,4 +1,4 @@
-package net.corda.processors.db
+package net.corda.processor.evm
 
 import net.corda.libs.configuration.SmartConfig
 

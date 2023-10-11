@@ -1,12 +1,12 @@
 package net.r3.corda.web3j
 
-import net.corda.web3j.EthereumConnector
-import net.corda.web3j.EvmRPCCall
-import net.corda.web3j.GenericResponse
-import net.corda.web3j.constants.ETH_GET_BALANCE
-import net.corda.web3j.constants.ETH_GET_CODE
-import net.corda.web3j.constants.GET_CHAIN_ID
-import net.corda.web3j.constants.LATEST
+import net.corda.interop.evm.EthereumConnector
+import net.corda.interop.evm.EvmRPCCall
+import net.corda.interop.evm.GenericResponse
+import net.corda.interop.evm.constants.ETH_GET_BALANCE
+import net.corda.interop.evm.constants.ETH_GET_CODE
+import net.corda.interop.evm.constants.GET_CHAIN_ID
+import net.corda.interop.evm.constants.LATEST
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.`when`

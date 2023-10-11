@@ -1,4 +1,4 @@
-package net.corda.web3j.constants
+package net.corda.interop.evm.constants
 
 /**
  * This object contains constant values used in the Corda Web3j module for interacting with Ethereum.

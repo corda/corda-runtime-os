@@ -1,7 +1,7 @@
 package net.r3.corda.web3j.encoder
 
 import net.corda.data.interop.evm.request.Parameter
-import net.corda.web3j.encoder.TransactionEncoder
+import net.corda.interop.evm.encoder.TransactionEncoder
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 

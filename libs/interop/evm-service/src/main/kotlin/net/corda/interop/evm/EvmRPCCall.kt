@@ -1,9 +1,9 @@
-package net.corda.web3j
+package net.corda.interop.evm
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.web3j.constants.DEFAULT_RPC_ID
-import net.corda.web3j.constants.JSON_RPC_VERSION
+import net.corda.interop.evm.constants.DEFAULT_RPC_ID
+import net.corda.interop.evm.constants.JSON_RPC_VERSION
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request

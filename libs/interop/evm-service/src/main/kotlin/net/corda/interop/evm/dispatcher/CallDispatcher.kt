@@ -1,15 +1,15 @@
-package net.corda.web3j.dispatcher
+package net.corda.interop.evm.dispatcher
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import net.corda.data.interop.evm.EvmRequest
 import net.corda.data.interop.evm.EvmResponse
 import net.corda.data.interop.evm.request.Call
-import net.corda.web3j.EthereumConnector
-import net.corda.web3j.GenericResponse
-import net.corda.web3j.constants.CALL
-import net.corda.web3j.constants.LATEST
-import net.corda.web3j.decoder.TransactionDecoder
-import net.corda.web3j.encoder.TransactionEncoder
+import net.corda.interop.evm.EthereumConnector
+import net.corda.interop.evm.GenericResponse
+import net.corda.interop.evm.constants.CALL
+import net.corda.interop.evm.constants.LATEST
+import net.corda.interop.evm.decoder.TransactionDecoder
+import net.corda.interop.evm.encoder.TransactionEncoder
 
 
 /**

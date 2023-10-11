@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.interop.evm.EvmRequest
 import net.corda.data.interop.evm.EvmResponse
+import net.corda.interop.evm.dispatcher.factory.GenericDispatcherFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.DependentComponents
@@ -17,11 +18,10 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.processors.db.EVMProcessor
+import net.corda.processor.evm.EVMProcessor
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys.INTEROP_EVM_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.web3j.dispatcher.factory.GenericDispatcherFactory
 import okhttp3.OkHttpClient
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

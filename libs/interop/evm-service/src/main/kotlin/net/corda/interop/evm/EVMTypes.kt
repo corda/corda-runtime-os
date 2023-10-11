@@ -1,4 +1,4 @@
-package net.corda.web3j
+package net.corda.interop.evm
 
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty

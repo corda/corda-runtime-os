@@ -1,7 +1,7 @@
-package net.corda.web3j.dispatcher.factory
+package net.corda.interop.evm.dispatcher.factory
 
-import net.corda.web3j.dispatcher.EvmDispatcher
-import net.corda.web3j.EthereumConnector
+import net.corda.interop.evm.dispatcher.EvmDispatcher
+import net.corda.interop.evm.EthereumConnector
 
 
 /**

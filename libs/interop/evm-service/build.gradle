@@ -10,7 +10,9 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    implementation 'org.web3j:core:4.9.8'
+    implementation project(":libs:web3j")
+//    implementation "org.web3j:core:$web3jVersion"
+    implementation 'org.apache.servicemix.bundles:org.apache.servicemix.bundles.okhttp:4.10.0_3'
 
 
     implementation "net.corda:corda-avro-schema"

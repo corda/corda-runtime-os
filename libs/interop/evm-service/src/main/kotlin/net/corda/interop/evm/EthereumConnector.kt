@@ -1,4 +1,4 @@
-package net.corda.web3j
+package net.corda.interop.evm
 
 import com.fasterxml.jackson.databind.DatabindException
 import com.fasterxml.jackson.databind.ObjectMapper

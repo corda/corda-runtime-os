@@ -1,4 +1,4 @@
-package net.corda.web3j.dispatcher
+package net.corda.interop.evm.dispatcher
 
 import net.corda.data.interop.evm.EvmRequest
 import net.corda.data.interop.evm.EvmResponse
