@@ -94,7 +94,7 @@ class StateAndRefCacheImplTest {
         )
         stateAndRefCache.putAll(listOf(STATE_AND_REF_1, STATE_AND_REF_2))
 
-        stateAndRefCache.remove(ALICE_X500_HOLDING_IDENTITY.toCorda())
+        stateAndRefCache.remove(virtualNodeContext)
 
         assertThat(stateAndRefCache.get(setOf(STATE_REF_1, STATE_REF_2)).values).containsExactly(STATE_AND_REF_2)
     }

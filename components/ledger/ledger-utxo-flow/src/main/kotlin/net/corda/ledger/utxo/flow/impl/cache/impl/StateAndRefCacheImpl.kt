@@ -12,7 +12,6 @@ import net.corda.sandboxgroupcontext.service.CacheEviction
 import net.corda.utilities.debug
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
-import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
@@ -68,8 +67,8 @@ class StateAndRefCacheImpl @Activate constructor(
         }
     }
 
-    override fun remove(holdingIdentity: HoldingIdentity) {
-        cache.invalidateAll(cache.asMap().keys.filter { it.holdingIdentity == holdingIdentity })
+    override fun remove(virtualNodeContext: VirtualNodeContext) {
+        cache.invalidateAll(cache.asMap().keys.filter { it.virtualNodeContext == virtualNodeContext })
         cache.cleanUp()
     }
 
@@ -86,6 +85,6 @@ class StateAndRefCacheImpl @Activate constructor(
             "Evicting cached items from ${cache::class.java} with holding identity: ${vnc.holdingIdentity} and sandbox type: " +
                     SandboxGroupType.FLOW
         }
-        remove(vnc.holdingIdentity)
+        remove(vnc)
     }
 }

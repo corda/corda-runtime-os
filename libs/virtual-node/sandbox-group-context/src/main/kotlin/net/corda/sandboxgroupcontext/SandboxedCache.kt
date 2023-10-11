@@ -20,25 +20,18 @@ interface SandboxedCache {
     /**
      * A cache key holding sandbox information and the _real_ key to the cache.
      *
-     * @property holdingIdentity The [HoldingIdentity] of the sandbox that added the key-value pair.
+     * @property virtualNodeContext The [VirtualNodeContext] of the sandbox that added the key-value pair.
      * @property key The real key of the cache.
      */
-    data class CacheKey<T>(val holdingIdentity: HoldingIdentity, val key: T) {
-
-        /**
-         * @param virtualNodeContext The [VirtualNodeContext] of the sandbox that added the key-value pair.
-         * @param key The real key of the cache.
-         */
-        constructor(virtualNodeContext: VirtualNodeContext, key: T) : this(virtualNodeContext.holdingIdentity, key)
-    }
+    data class CacheKey<T>(val virtualNodeContext: VirtualNodeContext, val key: T)
 
     /**
-     * Removes key-value pairs from the cache based on [HoldingIdentity].
+     * Removes key-value pairs from the cache based on [VirtualNodeContext].
      *
-     * Implementations of this method should iterate over the keys to remove the ones that match the [holdingIdentity].
+     * Implementations of this method should iterate over the keys to remove the ones that match the [virtualNodeContext].
      *
-     * @param holdingIdentity The [HoldingIdentity] of the keys to remove from the cache.
+     * @param virtualNodeContext The [VirtualNodeContext] of the keys to remove from the cache.
      */
-    fun remove(holdingIdentity: HoldingIdentity)
+    fun remove(virtualNodeContext: VirtualNodeContext)
 
 }
