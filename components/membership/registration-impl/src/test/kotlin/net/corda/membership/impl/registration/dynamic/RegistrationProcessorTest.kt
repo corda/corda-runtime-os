@@ -307,7 +307,7 @@ class  RegistrationProcessorTest {
     @Test
     fun `check for pending registration command - onNext can be called`() {
         val result = processor.onNext(null, Record(testTopic, testTopicKey, checkForPendingRegistrationCommand))
-        assertThat(result.updatedState).isNotNull()
+        assertThat(result.updatedState?.value).isNotNull()
         assertThat(result.responseEvents).isNotEmpty.hasSize(1)
         assertThat((result.responseEvents.first().value as? RegistrationCommand)?.command)
             .isNotNull
@@ -323,7 +323,7 @@ class  RegistrationProcessorTest {
             ),
             Record(testTopic, testTopicKey, startRegistrationCommand)
         )
-        assertThat(result.updatedState).isNotNull
+        assertThat(result.updatedState?.value).isNotNull
         val events = result.responseEvents
         assertThat(events).isNotEmpty.hasSize(2)
         assertThat(events.firstNotNullOf { it.value as? RegistrationCommand }.command)
@@ -361,7 +361,7 @@ class  RegistrationProcessorTest {
             State(state, metadata = null),
             Record(testTopic, testTopicKey, verifyMemberCommand)
         )
-        assertThat(result.updatedState).isNotNull
+        assertThat(result.updatedState?.value).isNotNull
         assertThat(result.responseEvents).isNotEmpty.hasSize(1)
             .allMatch {
                 (result.responseEvents.first().value as? AppMessage)?.message as? AuthenticatedMessage != null

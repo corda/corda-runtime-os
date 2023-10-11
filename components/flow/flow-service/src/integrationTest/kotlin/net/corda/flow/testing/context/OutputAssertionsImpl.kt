@@ -364,7 +364,7 @@ class OutputAssertionsImpl(
 
     override fun nullStateRecord() {
         asserts.add {
-            assertNull(it.response?.updatedState, "Expected to receive NULL for output state")
+            assertNull(it.response?.updatedState?.value, "Expected to receive NULL for output state")
         }
     }
 
