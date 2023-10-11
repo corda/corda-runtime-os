@@ -1,6 +1,5 @@
 package net.corda.messaging.subscription
 
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.deadletter.StateAndEventDeadLetterRecord
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -30,9 +29,7 @@ import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.getDLQTopic
 import net.corda.schema.Schemas.getStateAndEventStateTopic
 import net.corda.utilities.debug
-import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.net.http.HttpClient
 import java.nio.ByteBuffer
 import java.time.Clock
 import java.util.UUID
@@ -46,8 +43,6 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val chunkSerializerService: ChunkSerializerService,
     private val stateAndEventListener: StateAndEventListener<K, S>? = null,
-    @Reference(service = CordaAvroSerializationFactory::class)
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val clock: Clock = Clock.systemUTC(),
 ) : StateAndEventSubscription<K, S, E> {
 
@@ -93,12 +88,6 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
         .build()
 
-    private val httpClient: HttpClient = HttpClient.newBuilder()
-        .connectTimeout(java.time.Duration.ofSeconds(10))
-        .build()
-
-    private val avroSerializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
-    private val avroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
 
     /**
      * Is the subscription running.
