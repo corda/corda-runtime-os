@@ -67,7 +67,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
 ) : UtxoLedgerService, UsedByFlow, SingletonSerializeAsToken {
 
     private companion object {
-        const val FIND_UNCONSUMED_STATES_BY_EXACT_TYPE = "FIND_UNCONSUMED_STATES_BY_EXACT_TYPE"
+        const val FIND_UNCONSUMED_STATES_BY_EXACT_TYPE = "CORDA_FIND_UNCONSUMED_STATES_BY_EXACT_TYPE"
         val clock = UTCClock()
     }
 
