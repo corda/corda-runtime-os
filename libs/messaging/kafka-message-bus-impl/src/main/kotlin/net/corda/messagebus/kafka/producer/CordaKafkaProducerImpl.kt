@@ -372,7 +372,6 @@ class CordaKafkaProducerImpl(
                 getOrCreateBatchPublishTracing(config.clientId).complete()
             }
         } catch (ex: Exception) {
-            log.error("Error: ", ex)
             getOrCreateBatchPublishTracing(config.clientId).abort()
             handleException(ex, operation, abortTransactionOnFailure)
         }

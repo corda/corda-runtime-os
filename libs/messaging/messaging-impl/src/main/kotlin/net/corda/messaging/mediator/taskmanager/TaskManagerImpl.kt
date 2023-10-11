@@ -25,26 +25,19 @@ class TaskManagerImpl  @Activate constructor() : TaskManager {
         }
 
     private fun <T> executeShortRunning(command: () -> T): CompletableFuture<T> {
-        log.info("executeShortRunning started [$executorService]")
         val resultFuture = CompletableFuture<T>()
         try {
-            log.info("before execute")
             executorService.execute {
                 try {
-                    log.info("task started")
-                    val result = command()
-                    log.info("task finished")
-                    resultFuture.complete(result)
+                    resultFuture.complete(command())
                 } catch (t: Throwable) {
-                    log.info("task error", t)
+                    log.error("Task error", t)
                     resultFuture.completeExceptionally(t)
                 }
             }
-            log.info("after execute")
         } catch (t: Throwable) {
-            log.info("executor error", t)
+            log.error("Executor error", t)
         }
-        log.info("executeShortRunning done")
         return resultFuture
     }
 
