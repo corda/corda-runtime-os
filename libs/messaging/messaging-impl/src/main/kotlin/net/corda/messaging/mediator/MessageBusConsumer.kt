@@ -39,12 +39,22 @@ class MessageBusConsumer<K: Any, V: Any>(
 
     override fun asyncCommitOffsets(): Deferred<Map<CordaTopicPartition, Long>> =
         CompletableDeferred<Map<CordaTopicPartition, Long>>().apply {
-            consumer.asyncCommitOffsets { offsets, exception ->
-                if (exception != null) {
-                    completeExceptionally(exception)
-                } else {
-                    complete(offsets)
+            try {
+                log.info("CordaConsumer.asyncCommitOffsets begin")
+                consumer.asyncCommitOffsets { offsets, exception ->
+                    log.info("CordaConsumer.asyncCommitOffsets callback begin")
+                    if (exception != null) {
+                        log.info("CordaConsumer.asyncCommitOffsets error", exception)
+                        completeExceptionally(exception)
+                    } else {
+                        log.info("CordaConsumer.asyncCommitOffsets completing")
+                        complete(offsets)
+                    }
+                    log.info("CordaConsumer.asyncCommitOffsets callback end")
                 }
+            } catch (throwable: Throwable) {
+                log.info("CordaConsumer.asyncCommitOffsets error", throwable)
+                completeExceptionally(exception)
             }
         }
 

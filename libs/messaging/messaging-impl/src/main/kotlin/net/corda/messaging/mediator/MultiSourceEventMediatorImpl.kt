@@ -205,13 +205,19 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun commitOffsets() {
+        log.info("commitOffsets() begin")
         consumers.map { consumer ->
             taskManager.execute(TaskType.SHORT_RUNNING) {
+                log.info("commitOffsets() task started")
                 runBlocking {
+                    log.info("commitOffsets() coroutine started")
                     consumer.asyncCommitOffsets().await()
+                    log.info("commitOffsets() coroutine ended")
                 }
+                log.info("commitOffsets() task ended")
             }
         }
+        log.info("commitOffsets() end")
     }
 
     /**
