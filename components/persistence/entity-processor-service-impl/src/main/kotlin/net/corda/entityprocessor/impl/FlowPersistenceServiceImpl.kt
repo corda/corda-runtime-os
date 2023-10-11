@@ -15,7 +15,6 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
-import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
@@ -80,16 +79,13 @@ class FlowPersistenceServiceImpl  @Activate constructor(
             }
             is ConfigChangedEvent -> {
                 entityProcessorSubscription?.close()
-                entityProcessorSubscription = entityRequestSubscriptionFactory.create(
+                val newEntityProcessorSubscription = entityRequestSubscriptionFactory.create(
                     event.config.getConfig(MESSAGING_CONFIG)
                 )
                 logger.debug("Starting EntityProcessor.")
-                start()
+                newEntityProcessorSubscription.start()
+                entityProcessorSubscription = newEntityProcessorSubscription
                 coordinator.updateStatus(LifecycleStatus.UP)
-            }
-            is StopEvent -> {
-                entityProcessorSubscription?.close()
-                logger.debug { "Stopping EntityProcessor." }
             }
         }
     }
