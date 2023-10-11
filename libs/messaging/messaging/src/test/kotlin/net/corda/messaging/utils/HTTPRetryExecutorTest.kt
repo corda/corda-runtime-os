@@ -28,6 +28,7 @@ class HTTPRetryExecutorTest {
         assertEquals("Success", result)
     }
 
+    @Suppress("TooGenericExceptionThrown")
     @Test
     fun `should retry until successful`() = runBlocking {
         var attempt = 0
@@ -43,6 +44,7 @@ class HTTPRetryExecutorTest {
         assertEquals("Success on attempt 3", result)
     }
 
+    @Suppress("TooGenericExceptionThrown")
     @Test
     fun `should throw exception after max attempts`() = runBlocking {
         var attempt = 0
@@ -55,6 +57,7 @@ class HTTPRetryExecutorTest {
         }
     }
 
+    @Suppress("TooGenericExceptionThrown")
     @Test
     fun `should not retry on non-retryable exception`() = runBlocking  {
         val config = HTTPRetryConfig.Builder()
