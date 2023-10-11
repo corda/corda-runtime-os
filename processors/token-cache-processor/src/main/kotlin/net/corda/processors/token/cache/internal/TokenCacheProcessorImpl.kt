@@ -1,6 +1,7 @@
 package net.corda.processors.token.cache.internal
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.ledger.utxo.token.cache.factories.TokenCacheComponentFactory
 import net.corda.ledger.utxo.token.cache.services.TokenCacheComponent
 import net.corda.libs.configuration.SmartConfig
@@ -13,6 +14,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.processors.token.cache.TokenCacheProcessor
+import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -28,7 +30,9 @@ class TokenCacheProcessorImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = TokenCacheComponentFactory::class)
-    private val tokenCacheComponentFactory: TokenCacheComponentFactory
+    private val tokenCacheComponentFactory: TokenCacheComponentFactory,
+    @Reference(service = DbConnectionManager::class)
+    private val dbConnectionManager: DbConnectionManager,
 ) : TokenCacheProcessor {
 
     private companion object {
@@ -65,6 +69,10 @@ class TokenCacheProcessorImpl @Activate constructor(
                 coordinator.updateStatus(event.status)
             }
             is BootConfigEvent -> {
+                val bootstrapConfig = event.config
+                log.info("Bootstrapping DB connection Manager")
+                dbConnectionManager.bootstrap(bootstrapConfig.getConfig(BOOT_DB))
+                log.info("Bootstrapping config read service")
                 configurationReadService.bootstrapConfig(event.config)
             }
             is StopEvent -> {
