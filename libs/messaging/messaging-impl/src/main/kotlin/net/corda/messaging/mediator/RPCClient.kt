@@ -64,9 +64,11 @@ class RPCClient(
 
     private suspend fun processMessage(message: MediatorMessage<*>): MediatorMessage<*> {
         val payload = serializePayload(message)
-        val request = buildHttpRequest(payload, message.getProperty<String>(MSG_PROP_ENDPOINT))
+        val request = buildHttpRequest(payload, message.endpoint())
         val response = sendWithRetry(request)
+
         checkResponseStatus(response.statusCode())
+
         val deserializedResponse = deserializePayload(response.body())
         return MediatorMessage(deserializedResponse, mutableMapOf("statusCode" to response.statusCode()))
     }
@@ -130,5 +132,9 @@ class RPCClient(
 
     override fun close() {
         job.cancel()
+    }
+
+    private fun MediatorMessage<*>.endpoint(): String {
+        return getProperty<String>(MSG_PROP_ENDPOINT)
     }
 }
