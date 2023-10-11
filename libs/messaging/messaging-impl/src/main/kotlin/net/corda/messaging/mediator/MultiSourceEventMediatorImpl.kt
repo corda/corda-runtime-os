@@ -1,6 +1,5 @@
 package net.corda.messaging.mediator
 
-import kotlinx.coroutines.runBlocking
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.libs.statemanager.api.StateManager
@@ -151,72 +150,38 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun processEvents() {
-        log.info("Polling consumers")
         val messages = pollConsumers()
-        log.info("Polled ${messages.size} messages}")
         if (messages.isNotEmpty()) {
             val msgGroups = messages.groupBy { it.key }
-            log.info("Retrieving states from StateManager")
             val persistedStates = stateManager.get(msgGroups.keys.map { it.toString() })
-            log.info("Creating message processor tasks")
             var msgProcessorTasks = taskManagerHelper.createMessageProcessorTasks(
                 msgGroups, persistedStates, config.messageProcessor
             )
             do {
-                log.info("Executing processor tasks")
                 val processingResults = taskManagerHelper.executeProcessorTasks(msgProcessorTasks)
-                log.info("Persisting states")
                 val conflictingStates = stateManagerHelper.persistStates(processingResults)
-                log.info("Splitting successful/failed states")
                 val (successResults, failResults) = processingResults.partition {
                     !conflictingStates.contains(it.key.toString())
                 }
-                log.info("Creating client tasks")
                 val clientTasks = taskManagerHelper.createClientTasks(successResults, messageRouter)
-                log.info("Executing client tasks")
                 val clientResults = taskManagerHelper.executeClientTasks(clientTasks)
-                log.info("Generating new tasks")
                 msgProcessorTasks =
                     taskManagerHelper.createMessageProcessorTasks(clientResults) +
                             taskManagerHelper.createMessageProcessorTasks(failResults, conflictingStates)
             } while (msgProcessorTasks.isNotEmpty())
-            log.info("Committing offsets")
             commitOffsets()
-            log.info("Committing offsets done")
         }
     }
 
     private fun pollConsumers(): List<CordaConsumerRecord<K, E>> {
-        log.info("pollConsumers() started")
-        return runBlocking {
-            consumers.map { consumer ->
-                log.info("pollConsumers() polling")
-                val res = consumer.poll(config.pollTimeout)
-                log.info("pollConsumers() after polling")
-                res
-            }.map {
-                log.info("pollConsumers() await")
-                val res = it.await()
-                log.info("pollConsumers() after await")
-                res
-            }
+        return consumers.map { consumer ->
+            consumer.poll(config.pollTimeout)
         }.flatten()
     }
 
     private fun commitOffsets() {
-        log.info("commitOffsets() begin")
-        runBlocking {
-            consumers.map { consumer ->
-                log.info("commitOffsets() committing")
-                val res = consumer.asyncCommitOffsets()
-                log.info("commitOffsets() after committing")
-                res
-            }.map {
-                log.info("commitOffsets() await")
-                val res = it.await()
-                log.info("commitOffsets() after await")
-                res
-            }
+        consumers.map { consumer ->
+            consumer.syncCommitOffsets()
         }
     }
 
