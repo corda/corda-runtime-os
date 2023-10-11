@@ -207,6 +207,9 @@ class UtxoRepositoryImpl @Activate constructor(
             .setParameter("data", data)
             .setParameter("hash", hash)
             .setParameter("referencedStateTransactionId", referencedStateTransactionId)
+            // This is a workaround for avoiding error when tokenAmount is null, see:
+            // https://stackoverflow.com/questions/53648865/postgresql-spring-data-jpa-integer-null-interpreted-as-bytea
+            .setParameter("referencedStateIndex", 0)
             .setParameter("referencedStateIndex", referencedStateIndex)
             .executeUpdate()
             .logResult("transaction component [$transactionId, $groupIndex, $leafIndex]")
