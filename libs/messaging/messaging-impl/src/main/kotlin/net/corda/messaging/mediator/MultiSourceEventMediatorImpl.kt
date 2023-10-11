@@ -187,40 +187,37 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun pollConsumers(): List<CordaConsumerRecord<K, E>> {
-        return consumers.map { consumer ->
-            taskManager.execute(TaskType.SHORT_RUNNING) {
-                log.info("pollConsumers task started")
-                val result = runBlocking {
-                    log.info("pollConsumers coroutine started")
-                    val res = consumer.poll(config.pollTimeout).await()
-                    log.info("pollConsumers coroutine finished")
-                    res
-                }
-                log.info("pollConsumers task finished")
-                result
+        log.info("pollConsumers() started")
+        return runBlocking {
+            consumers.map { consumer ->
+                log.info("pollConsumers() polling")
+                val res = consumer.poll(config.pollTimeout)
+                log.info("pollConsumers() after polling")
+                res
+            }.map {
+                log.info("pollConsumers() await")
+                val res = it.await()
+                log.info("pollConsumers() after await")
+                res
             }
-        }.map {
-            it.join()
         }.flatten()
     }
 
     private fun commitOffsets() {
         log.info("commitOffsets() begin")
-        consumers.map { consumer ->
-            taskManager.execute(TaskType.SHORT_RUNNING) {
-                log.info("commitOffsets() task started")
-                runBlocking {
-                    log.info("commitOffsets() coroutine started")
-                    consumer.asyncCommitOffsets().await()
-                    log.info("commitOffsets() coroutine ended")
-                }
-                log.info("commitOffsets() task ended")
+        runBlocking {
+            consumers.map { consumer ->
+                log.info("commitOffsets() committing")
+                val res = consumer.asyncCommitOffsets()
+                log.info("commitOffsets() after committing")
+                res
+            }.map {
+                log.info("commitOffsets() await")
+                val res = it.await()
+                log.info("commitOffsets() after await")
+                res
             }
-        }.map {
-            log.info("commitOffsets() waiting for task to finish")
-            it.join()
         }
-        log.info("commitOffsets() end")
     }
 
     /**

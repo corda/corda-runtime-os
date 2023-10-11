@@ -11,7 +11,7 @@ import java.util.UUID
 const val SMOKE_TEST_CLASS_NAME = "com.r3.corda.testing.smoketests.flow.RpcSmokeTestFlow"
 const val RPC_FLOW_STATUS_SUCCESS = "COMPLETED"
 const val RPC_FLOW_STATUS_FAILED = "FAILED"
-private val RETRY_TIMEOUT = 6.minutes
+private val RETRY_TIMEOUT = 3.minutes
 
 fun startRpcFlow(
     holdingId: String,
