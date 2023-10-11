@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 import java.time.Duration
 import java.time.Instant
+import net.corda.v5.application.interop.facade.FacadeId
 
 
 @InitiatingFlow(protocol = "interop-sample-simple-swap-protocol")
@@ -109,7 +110,7 @@ class SimpleSwapFlow : ClientStartableFlow {
             }
             val myInteropIdentityName = MemberX500Name.parse(myInteropIdentityInfo.x500Name)
 
-            val facadeId = "org.corda.interop/platform/tokens/v3.0"
+            val facadeId = FacadeId("org.corda.interop", listOf("platform", "tokens"), "v3.0")
             log.info("Interop call: $facadeId, $myInteropIdentityName")
             val tokens: TokensFacade =
                 facadeService.getProxy(facadeId, TokensFacade::class.java, myInteropIdentityInfo)

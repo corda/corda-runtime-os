@@ -35,7 +35,7 @@ class FacadeInvocationFlow : ClientStartableFlow {
         log.info("FacadeInvocationFlow.call() starting")
         val args = requestBody.getRequestBodyAsMap(jsonMarshallingService, String::class.java, String::class.java)
 
-        val facadeId = getArgument(args, "facadeId")
+        val facadeId = FacadeId.of(getArgument(args, "facadeId"))
         val methodName = getArgument(args, "methodName")
         val applicationName = getArgument(args,"applicationName")
         val payload = getArgument(args, "payload")
@@ -46,7 +46,7 @@ class FacadeInvocationFlow : ClientStartableFlow {
 
         log.info("InteropIdentityInfo for $applicationName: $interopIdentityInfo")
 
-        if (!interopIdentityInfo.facadeIds.contains(FacadeId.of(facadeId))) {
+        if (!interopIdentityInfo.facadeIds.contains(facadeId)) {
             throw IllegalArgumentException("facade with facadeId : $facadeId is not supported by alias : $applicationName")
         }
 

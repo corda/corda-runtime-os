@@ -24,6 +24,7 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import org.slf4j.LoggerFactory
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
+import net.corda.v5.application.interop.facade.FacadeId
 
 @Component(service = [FacadeService::class, UsedByFlow::class], scope = PROTOTYPE)
 class FacadeServiceImpl @Activate constructor(
@@ -37,13 +38,11 @@ class FacadeServiceImpl @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    //TODO CORE-16382 Change input of facadeId from String to FacadeId Object.
     @Suspendable
-    override fun <T : Any?> getProxy(facadeId: String?, expectedType: Class<T>?, interOpIdentity: InterOpIdentityInfo?): T {
+    override fun <T : Any?> getProxy(facadeId: FacadeId, expectedType: Class<T>?, interOpIdentity: InterOpIdentityInfo?): T {
         logger.info("Creating Proxy for: facadeId=$facadeId," +
                 " expectedType=$expectedType, interOpIdentity=${interOpIdentity?.applicationName}, " +
                 "interopGroup=${interOpIdentity?.groupId}") //TODO lower level to debug
-        requireNotNull(facadeId) { "Required value for facadeId was null." }
         requireNotNull(expectedType) { "Required value for expectedType was null." }
         requireNotNull(interOpIdentity) { "Required value for interOpIdentity was null." }
         val facade = facadeLookup(facadeId)
@@ -60,7 +59,7 @@ class FacadeServiceImpl @Activate constructor(
         require(target != null)
         require(request != null)
         val facadeRequest = jsonMarshallingService.parse(request, FacadeRequestImpl::class.java)
-        val facade = facadeLookup(facadeRequest.facadeId.toString())
+        val facade = facadeLookup(facadeRequest.facadeId)
         val marshaller = JacksonJsonMarshallerAdaptor(jsonMarshallingService)
         val dispatcher = target.buildDispatcher(facade, marshaller) //TODO return dispatcher which can be reused
         val facadeResponse = dispatcher.invoke(facadeRequest)
@@ -68,14 +67,14 @@ class FacadeServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    private fun facadeLookup(facadeId: String): Facade = hardcodedFacadesSpec[facadeId]
+    private fun facadeLookup(facadeId: FacadeId): Facade = hardcodedFacadesSpec[facadeId]
         ?: throw IllegalArgumentException("Facade $facadeId not found. Available facades: ${hardcodedFacadesSpec.keys}.")
 
-    private val hardcodedFacadesSpec: Map<String, Facade> by lazy {
+    private val hardcodedFacadesSpec: Map<FacadeId, Facade> by lazy {
         mapOf(
-            "org.corda.interop/platform/tokens/v1.0" to "/tokens-v1.0.json",
-            "org.corda.interop/platform/tokens/v2.0" to "/tokens-v2.0.json",
-            "org.corda.interop/platform/tokens/v3.0" to "/tokens-v3.0.json"
+            FacadeId("org.corda.interop", listOf("platform", "tokens"), "v1.0") to "/tokens-v1.0.json",
+            FacadeId("org.corda.interop", listOf("platform", "tokens"), "v2.0") to "/tokens-v2.0.json",
+            FacadeId("org.corda.interop", listOf("platform", "tokens"), "v3.0") to "/tokens-v3.0.json"
         ).mapValues { (_, value) -> this::class.java.getResource(value)?.readText().toString().trimIndent() }
             .mapValues { (_, value) ->
                 try {
