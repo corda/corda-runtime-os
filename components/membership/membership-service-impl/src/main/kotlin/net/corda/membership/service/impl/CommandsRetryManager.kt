@@ -51,7 +51,7 @@ internal class CommandsRetryManager(
         event: Record<String, MembershipAsyncRequestState>,
     ): StateAndEventProcessor.Response<MembershipAsyncRequestState> {
         return StateAndEventProcessor.Response(
-            updatedState = state,
+            updatedState = State(event.value, state?.metadata),
             responseEvents = emptyList(),
             markForDLQ = false,
         )

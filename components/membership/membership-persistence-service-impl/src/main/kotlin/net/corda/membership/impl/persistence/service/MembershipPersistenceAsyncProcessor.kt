@@ -22,7 +22,6 @@ internal class MembershipPersistenceAsyncProcessor(
         state: State<MembershipPersistenceAsyncRequestState>?,
         event: Record<String, MembershipPersistenceAsyncRequest>,
     ): StateAndEventProcessor.Response<MembershipPersistenceAsyncRequestState> {
-        val numberOfRetriesSoFar = state?.value?.numberOfRetriesSoFar ?: 0
         val request = event.value
         if (request == null) {
             logger.warn("Empty request for ${event.key}")
@@ -47,21 +46,21 @@ internal class MembershipPersistenceAsyncProcessor(
             retry(
                 event.key,
                 e,
-                numberOfRetriesSoFar,
+                state,
                 request,
             )
         } catch (e: OptimisticLockException) {
             retry(
                 event.key,
                 e,
-                numberOfRetriesSoFar,
+                state,
                 request,
             )
         } catch (e: RecoverableException) {
             retry(
                 event.key,
                 e,
-                numberOfRetriesSoFar,
+                state,
                 request,
             )
         } catch (e: Exception) {
@@ -72,9 +71,10 @@ internal class MembershipPersistenceAsyncProcessor(
     private fun retry(
         key: String,
         e: Exception,
-        numberOfRetriesSoFar: Int,
+        state: State<MembershipPersistenceAsyncRequestState>?,
         request: MembershipPersistenceAsyncRequest
     ): StateAndEventProcessor.Response<MembershipPersistenceAsyncRequestState> {
+        val numberOfRetriesSoFar = state?.value?.numberOfRetriesSoFar ?: 0
         return if (numberOfRetriesSoFar < MAX_RETRIES) {
             logger.warn("Got error while trying to execute $key. Will retry again.", e)
             StateAndEventProcessor.Response(
@@ -84,7 +84,7 @@ internal class MembershipPersistenceAsyncProcessor(
                         numberOfRetriesSoFar + 1,
                         handlers.persistenceHandlerServices.clock.instant(),
                     ),
-                    metadata = null,
+                    metadata = state?.metadata,
                 ),
                 responseEvents = emptyList(),
                 markForDLQ = false,

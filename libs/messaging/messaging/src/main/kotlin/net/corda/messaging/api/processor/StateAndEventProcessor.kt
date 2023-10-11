@@ -19,7 +19,7 @@ import net.corda.messaging.api.records.Record
  */
 interface StateAndEventProcessor<K : Any, S : Any, E : Any> {
     /**
-     * This class encapsulates the state and it's metadata.
+     * State and metadata stored alongside the state.
      */
     data class State<S : Any>(
         val value: S?,
@@ -33,6 +33,10 @@ interface StateAndEventProcessor<K : Any, S : Any, E : Any> {
     data class Response<S : Any>(
         /**
          * The updated state in response to an incoming event from [onNext].
+         *
+         * Both the state and its associated metadata will be overwritten in storage by this new state when provided by
+         * the processor. It is the processor's responsibility to ensure that any required metadata is preserved across
+         * processing.
          */
         val updatedState: State<S>?,
 
@@ -55,7 +59,6 @@ interface StateAndEventProcessor<K : Any, S : Any, E : Any> {
      *
      * @param state the current state (if any) for the [event] key.  If no state exists then [null].
      * @param event the event which triggered this update.
-     * @param metadata the current state metadata (if any) for the [event] key.  If no metadata exists then [null].
      * @return a [Response] which contains the updated state and any subsequent events, both of which will
      * be published.
      *

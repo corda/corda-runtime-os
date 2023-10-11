@@ -163,20 +163,25 @@ internal class DeliveryTracker(
                 val timestamp = marker.timestamp
                 return when (markerType) {
                     is LinkManagerProcessedMarker -> Response(
-                        State(AuthenticatedMessageDeliveryState(markerType.message, timestamp), metadata = null),
+                        State(
+                            AuthenticatedMessageDeliveryState(markerType.message, timestamp),
+                            metadata = state?.metadata
+                        ),
                         emptyList()
                     )
                     is LinkManagerReceivedMarker -> {
-                        if (state?.value != null) {
+                        val value = state?.value
+                        if (value != null) {
                             // if we receive multiple acknowledgements, it is possible the state might have been nullified already.
                             // Only the first one matters for calculating the end-to-end delivery latency anyway.
-                            recordDeliveryLatencyMetric(state.value!!)
+                            recordDeliveryLatencyMetric(value)
                         }
                         Response(null, emptyList())
                     }
                     is TtlExpiredMarker -> {
-                        if (state?.value != null) {
-                            recordTtlExpiredMetric(state.value!!)
+                        val value = state?.value
+                        if (value != null) {
+                            recordTtlExpiredMetric(value)
                         }
                         Response(null, emptyList())
                     }
