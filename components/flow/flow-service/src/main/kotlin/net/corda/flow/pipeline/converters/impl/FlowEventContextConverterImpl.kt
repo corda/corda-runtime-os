@@ -12,7 +12,7 @@ import org.osgi.service.component.annotations.Component
 class FlowEventContextConverterImpl : FlowEventContextConverter {
     override fun convert(flowContext: FlowEventContext<*>): StateAndEventProcessor.Response<Checkpoint> {
         return StateAndEventProcessor.Response(
-            State(flowContext.checkpoint.toAvro(), metadata = null),
+            State(flowContext.checkpoint.toAvro(), metadata = flowContext.metadata),
             flowContext.outputRecords,
             flowContext.sendToDlq
         )

@@ -60,7 +60,7 @@ class FlowEventProcessorImpl(
         val eventType = event.value?.payload?.javaClass?.simpleName ?: "Unknown"
         return withMDC(mdcProperties) {
             traceStateAndEventExecution(event, "Flow Event - $eventType") {
-                getFlowPipelineResponse(flowEvent, event, state?.value, mdcProperties, this)
+                getFlowPipelineResponse(flowEvent, event, state, mdcProperties, this)
             }
         }
     }
@@ -68,14 +68,14 @@ class FlowEventProcessorImpl(
     private fun getFlowPipelineResponse(
         flowEvent: FlowEvent?,
         event: Record<String, FlowEvent>,
-        state: Checkpoint?,
+        state: State<Checkpoint>?,
         mdcProperties: Map<String, String>,
         traceContext: TraceContext
     ): StateAndEventProcessor.Response<Checkpoint> {
         if (flowEvent == null) {
             log.debug { "The incoming event record '${event}' contained a null FlowEvent, this event will be discarded" }
             return StateAndEventProcessor.Response(
-                State(state, metadata = null),
+                state,
                 listOf()
             )
         }

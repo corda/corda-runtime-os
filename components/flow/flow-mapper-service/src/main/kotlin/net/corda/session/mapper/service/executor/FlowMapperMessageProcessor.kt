@@ -61,7 +61,7 @@ class FlowMapperMessageProcessor(
                     val executor = flowMapperEventExecutorFactory.create(key, value, state?.value, flowConfig)
                     val result = executor.execute()
                     StateAndEventProcessor.Response(
-                        State(result.flowMapperState, metadata = null),
+                        State(result.flowMapperState, state?.metadata),
                         result.outputEvents
                     )
                 } else {
