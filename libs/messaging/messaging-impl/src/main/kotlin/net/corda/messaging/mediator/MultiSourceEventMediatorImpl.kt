@@ -189,9 +189,13 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     private fun pollConsumers(): List<CordaConsumerRecord<K, E>> {
         return consumers.map { consumer ->
             taskManager.execute(TaskType.SHORT_RUNNING) {
+                log.info("pollConsumers task started")
                 runBlocking {
+                    log.info("pollConsumers coroutine started")
                     consumer.poll(config.pollTimeout).await()
+                    log.info("pollConsumers coroutine finished")
                 }
+                log.info("pollConsumers task finished")
             }
         }.map {
             it.join()

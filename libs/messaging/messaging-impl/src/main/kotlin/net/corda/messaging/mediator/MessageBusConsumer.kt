@@ -7,6 +7,7 @@ import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
 import net.corda.messaging.api.mediator.MediatorConsumer
+import org.slf4j.LoggerFactory
 import java.time.Duration
 
 /**
@@ -16,6 +17,9 @@ class MessageBusConsumer<K: Any, V: Any>(
     private val topic: String,
     private val consumer: CordaConsumer<K, V>,
 ): MediatorConsumer<K, V> {
+    companion object {
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
     override fun subscribe() =
         consumer.subscribe(topic)
@@ -23,8 +27,12 @@ class MessageBusConsumer<K: Any, V: Any>(
     override fun poll(timeout: Duration): Deferred<List<CordaConsumerRecord<K, V>>> =
         CompletableDeferred<List<CordaConsumerRecord<K, V>>>().apply {
             try {
-                complete(consumer.poll(timeout))
+                log.info("CordaConsumer.poll([$timeout]) started")
+                val result = consumer.poll(timeout)
+                log.info("CordaConsumer.poll([$timeout]) finished")
+                complete(result)
             } catch (throwable: Throwable) {
+                log.info("CordaConsumer.poll([$timeout]) error", throwable)
                 completeExceptionally(throwable)
             }
         }
