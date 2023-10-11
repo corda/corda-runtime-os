@@ -1,7 +1,9 @@
 topics:
   ConfigManagementRequestTopic:
     name: config.management.request
-    tag: tag01
+    tags:
+      - tag01
+      - tag03
     consumers:
       - db
     producers:
@@ -9,7 +11,7 @@ topics:
     config:
   ConfigManagementRequestResponseTopic:
     name: config.management.request.resp
-    tag:
+    tags:
     consumers:
       - rest
     producers:

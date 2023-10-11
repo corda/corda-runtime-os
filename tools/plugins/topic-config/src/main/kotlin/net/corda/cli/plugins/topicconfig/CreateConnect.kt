@@ -160,17 +160,19 @@ class CreateConnect : Runnable {
         val tags = if (schemaFilePath != null) {
             getTopicsTags(schemaFilePath)
         } else {
-            create!!.getTopicConfigs().associate { it.name to it.tag }
+            create!!.getTopicConfigs().associate { it.name to it.tags }
         }
         return topicConfigs.associate { topicConfig: Create.PreviewTopicConfiguration ->
-            topicConfig.name to NewTopic(topicConfig.name, getPartitionNumber(tags[topicConfig.name]), create!!.replicaOverride)
-                .configs(topicConfig.config)
+            topicConfig.name to NewTopic(
+                topicConfig.name,
+                getPartitionNumber(tags.getOrDefault(topicConfig.name, emptyList())),
+                create!!.replicaOverride).configs(topicConfig.config)
         }
     }
 
-    private fun getTopicsTags(schemaFilePath: String): Map<String, String?> {
+    private fun getTopicsTags(schemaFilePath: String): Map<String, List<String>> {
         val topicDefinitions: Create.TopicDefinitions = create!!.mapper.readValue(Files.readString(Paths.get(schemaFilePath)))
-        return topicDefinitions.topics.values.associate { it.name to it.tag }
+        return topicDefinitions.topics.values.associate { it.name to it.tags }
     }
 
     fun getGeneratedTopicConfigs(): Create.PreviewTopicConfigurations = if (configFilePath == null) {
@@ -180,11 +182,12 @@ class CreateConnect : Runnable {
         create!!.mapper.readValue(Files.readString(Paths.get(configFilePath!!)))
     }
 
-    private fun getPartitionNumber(tag: String?): Int {
-        tag?.let {
+    private fun getPartitionNumber(tags: List<String>): Int {
+        tags.forEach { tag ->
             create!!.tagsToPropertiesMap[tag]?.let { props ->
                 try {
-                   return props.lowercase().split("partitions:")[1].toInt()
+                    // In case of multiple matching tags, we use the value from the first one
+                    return props.lowercase().split("partitions:")[1].toInt()
                 } catch (e: Exception) {
                     throw IllegalArgumentException("Invalid tag argument found: $$props")
                 }

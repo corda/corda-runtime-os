@@ -56,7 +56,7 @@ class Create(
 
     data class TopicConfig(
         val name: String,
-        val tag: String?,
+        val tags: List<String> = emptyList(),
         val consumers: List<String>,
         val producers: List<String>,
         val config: Map<String, String> = emptyMap()
