@@ -1,6 +1,6 @@
 package net.corda.ledger.persistence.query.registration.impl
 
-import net.corda.ledger.persistence.query.impl.DefaultVaultNamedQueryFactory
+import net.corda.ledger.persistence.query.DefaultVaultNamedQueryFactory
 import net.corda.sandbox.type.SandboxConstants
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.sandboxgroupcontext.CustomMetadataConsumer

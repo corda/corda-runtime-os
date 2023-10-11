@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.query.impl
 
+import net.corda.ledger.persistence.query.DefaultVaultNamedQueryFactory
 import net.corda.sandbox.type.SandboxConstants
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.v5.ledger.utxo.query.registration.VaultNamedQueryBuilderFactory
