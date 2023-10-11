@@ -35,7 +35,8 @@ interface InteropIdentityWriteService : Lifecycle {
     /**
      * Add a new group policy json.
      *
-     * @param groupPolicy group policy content.
+     * @param groupPolicy group policy to publish.
+     * @return The UUID of the created group, either generated or taken from the [groupPolicy] argument.
      */
     fun publishGroupPolicy(groupPolicy: String) : UUID
 }
