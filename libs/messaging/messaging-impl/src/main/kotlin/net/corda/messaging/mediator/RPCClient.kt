@@ -5,6 +5,7 @@ import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.util.concurrent.TimeoutException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -14,6 +15,8 @@ import kotlinx.coroutines.launch
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.messaging.api.exception.CordaHTTPClientErrorException
 import net.corda.messaging.api.exception.CordaHTTPServerErrorException
+import net.corda.messaging.utils.HTTPRetryExecutor
+import net.corda.messaging.utils.HTTPRetryConfig
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_ENDPOINT
@@ -21,12 +24,15 @@ import net.corda.messaging.api.records.Record
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-@Suppress("ForbiddenComment")
 class RPCClient(
     override val id: String,
     cordaAvroSerializerFactory: CordaAvroSerializationFactory,
     private val onSerializationError: ((ByteArray) -> Unit)?,
-    httpClientFactory: () -> HttpClient = { HttpClient.newBuilder().build() }
+    httpClientFactory: () -> HttpClient = { HttpClient.newBuilder().build() },
+    private val retryConfig: HTTPRetryConfig =
+        HTTPRetryConfig.Builder()
+            .retryOn(IOException::class, TimeoutException::class)
+            .build()
 ) : MessagingClient {
     private val httpClient: HttpClient = httpClientFactory()
 
@@ -56,28 +62,12 @@ class RPCClient(
         return deferred;
     }
 
-    private fun processMessage(message: MediatorMessage<*>): MediatorMessage<*> {
+    private suspend fun processMessage(message: MediatorMessage<*>): MediatorMessage<*> {
         val payload = serializePayload(message)
-        val endpoint = "http://${message.getProperty<String>(MSG_PROP_ENDPOINT)}"
-
-        val request = HttpRequest.newBuilder()
-            .uri(URI(endpoint))
-            .PUT(HttpRequest.BodyPublishers.ofByteArray(payload))
-            .build()
-
-        val response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
-
-        // TODO: The HTTP client should be abstracted out into its own class which handles retries
-        response.statusCode().let {
-            when (it) {
-                in 400 .. 499 -> throw CordaHTTPClientErrorException(it, "Server returned status code $it.")
-                in 500 .. 599 -> throw CordaHTTPServerErrorException(it, "Server returned status code $it.")
-                else -> {}
-            }
-        }
-
+        val request = buildHttpRequest(payload, message.getProperty<String>(MSG_PROP_ENDPOINT))
+        val response = sendWithRetry(request)
+        checkResponseStatus(response.statusCode())
         val deserializedResponse = deserializePayload(response.body())
-
         return MediatorMessage(deserializedResponse, mutableMapOf("statusCode" to response.statusCode()))
     }
 
@@ -103,15 +93,35 @@ class RPCClient(
         }
     }
 
-    @Suppress("ForbiddenComment")
-    // TODO This is placeholder exception handling
+    private fun buildHttpRequest(payload: ByteArray, endpoint: String): HttpRequest {
+        return HttpRequest.newBuilder()
+            .uri(URI("http://$endpoint"))
+            .PUT(HttpRequest.BodyPublishers.ofByteArray(payload))
+            .build()
+    }
+
+    private suspend fun sendWithRetry(request: HttpRequest): HttpResponse<ByteArray> {
+        return HTTPRetryExecutor.withConfig(retryConfig) {
+            httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
+        }
+    }
+
+    private fun checkResponseStatus(statusCode: Int) {
+        when (statusCode) {
+            in 400..499 -> throw CordaHTTPClientErrorException(statusCode, "Server returned status code $statusCode.")
+            in 500..599 -> throw CordaHTTPServerErrorException(statusCode, "Server returned status code $statusCode.")
+        }
+    }
+
     private fun handleExceptions(e: Exception, deferred: CompletableDeferred<MediatorMessage<*>?>) {
         when (e) {
-            is IOException,
-            is InterruptedException,
-            is IllegalArgumentException,
-            is SecurityException -> log.error("HTTP error in RPCClient: ", e)
-            is IllegalStateException -> log.error("Coroutine error in RPCClient: ", e)
+            is IOException -> log.error("Network or IO operation error in RPCClient: ", e)
+            is InterruptedException -> log.error("Operation was interrupted in RPCClient: ", e)
+            is IllegalArgumentException -> log.error("Invalid argument provided in RPCClient call: ", e)
+            is SecurityException -> log.error("Security violation detected in RPCClient: ", e)
+            is IllegalStateException -> log.error("Coroutine state error in RPCClient: ", e)
+            is CordaHTTPClientErrorException -> log.error("Client-side HTTP error in RPCClient: ", e)
+            is CordaHTTPServerErrorException -> log.error("Server-side HTTP error in RPCClient: ", e)
             else -> log.error("Unhandled exception in RPCClient: ", e)
         }
 
