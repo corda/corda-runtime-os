@@ -157,7 +157,7 @@ internal class DeliveryTracker(
                 val marker = event.value
                 if (marker == null) {
                     logger.error("Received a null event. The state was not updated.")
-                    return respond(state?.value)
+                    return respond(state)
                 }
                 val markerType = marker.marker
                 val timestamp = marker.timestamp
@@ -180,13 +180,13 @@ internal class DeliveryTracker(
                         }
                         Response(null, emptyList())
                     }
-                    else -> respond(state?.value)
+                    else -> respond(state)
                 }
             }
 
-            private fun respond(state: AuthenticatedMessageDeliveryState?): Response<AuthenticatedMessageDeliveryState> {
+            private fun respond(state: State<AuthenticatedMessageDeliveryState>?): Response<AuthenticatedMessageDeliveryState> {
                 return Response(
-                    State(state, metadata = null),
+                    state,
                     emptyList()
                 )
             }
