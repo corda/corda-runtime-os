@@ -1,7 +1,6 @@
 package net.corda.messaging.mediator.factory
 
 import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
@@ -18,8 +17,6 @@ class MultiSourceEventMediatorFactoryImpl @Activate constructor(
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = TaskManager::class)
     private val taskManager: TaskManager,
-    @Reference(service = StateManager::class)
-    private val stateManager: StateManager,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
 ): MultiSourceEventMediatorFactory {
@@ -36,7 +33,7 @@ class MultiSourceEventMediatorFactoryImpl @Activate constructor(
             eventMediatorConfig,
             stateSerializer,
             stateDeserializer,
-            stateManager,
+            eventMediatorConfig.stateManager,
             taskManager,
             lifecycleCoordinatorFactory,
         )

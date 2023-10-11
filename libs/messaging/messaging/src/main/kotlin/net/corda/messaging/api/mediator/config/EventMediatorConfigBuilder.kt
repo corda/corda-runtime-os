@@ -1,6 +1,7 @@
 package net.corda.messaging.api.mediator.config
 
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
@@ -22,6 +23,7 @@ class EventMediatorConfigBuilder<K: Any, S: Any, E: Any> {
     private var clientFactories = emptyArray<MessagingClientFactory>()
     private var messageProcessor : StateAndEventProcessor<K, S, E>? = null
     private var messageRouterFactory: MessageRouterFactory? = null
+    private var stateManager: StateManager? = null
 
     /** Sets name for [MultiSourceEventMediator]. */
     fun name(name: String) =
@@ -47,6 +49,10 @@ class EventMediatorConfigBuilder<K: Any, S: Any, E: Any> {
     fun messageRouterFactory(messageRouterFactory: MessageRouterFactory) =
         apply { this.messageRouterFactory = messageRouterFactory }
 
+    /** Sets state manager. */
+    fun stateManager(stateManager: StateManager) =
+        apply { this.stateManager = stateManager }
+
     /** Builds [EventMediatorConfig]. */
     fun build(): EventMediatorConfig<K, S, E> {
         check(name != null) { "Name not set" }
@@ -55,13 +61,15 @@ class EventMediatorConfigBuilder<K: Any, S: Any, E: Any> {
         check(clientFactories.isNotEmpty()) { "At least on messaging client factory has to be set" }
         check(messageProcessor != null) { "Message processor not set" }
         check(messageRouterFactory != null) { "Message router factory not set" }
+        check(stateManager != null) { "State manager not set" }
         return EventMediatorConfig(
             name!!,
             messagingConfig!!,
             consumerFactories.asList(),
             clientFactories.asList(),
             messageProcessor!!,
-            messageRouterFactory!!
+            messageRouterFactory!!,
+            stateManager!!,
         )
     }
 }

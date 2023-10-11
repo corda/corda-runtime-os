@@ -13,6 +13,7 @@ import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.RoutingDestination.Companion.routeTo
@@ -58,16 +59,19 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
     override fun create(
         configs: Map<String, SmartConfig>,
         messagingConfig: SmartConfig,
+        stateManager: StateManager,
     ) = eventMediatorFactory.create(
         createEventMediatorConfig(
             messagingConfig,
             flowEventProcessorFactory.create(configs),
+            stateManager,
         )
     )
 
     private fun createEventMediatorConfig(
         messagingConfig: SmartConfig,
         messageProcessor: StateAndEventProcessor<String, Checkpoint, FlowEvent>,
+        stateManager: StateManager,
     ) = EventMediatorConfigBuilder<String, Checkpoint, FlowEvent>()
         .name("FlowEventMediator")
         .messagingConfig(messagingConfig)
@@ -83,6 +87,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         )
         .messageProcessor(messageProcessor)
         .messageRouterFactory(createMessageRouterFactory())
+        .stateManager(stateManager)
         .build()
 
     private fun createMessageRouterFactory() = MessageRouterFactory { clientFinder ->

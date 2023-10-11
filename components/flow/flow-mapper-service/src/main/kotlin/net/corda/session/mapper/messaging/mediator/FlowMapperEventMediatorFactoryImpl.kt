@@ -6,6 +6,7 @@ import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.p2p.app.AppMessage
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.RoutingDestination.Companion.routeTo
 import net.corda.messaging.api.mediator.config.EventMediatorConfigBuilder
@@ -41,16 +42,19 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
     override fun create(
         flowConfig: SmartConfig,
         messagingConfig: SmartConfig,
+        stateManager: StateManager,
     ) = eventMediatorFactory.create(
         createEventMediatorConfig(
             messagingConfig,
             FlowMapperMessageProcessor(flowMapperEventExecutorFactory, flowConfig),
+            stateManager,
         )
     )
 
     private fun createEventMediatorConfig(
         messagingConfig: SmartConfig,
         messageProcessor: StateAndEventProcessor<String, FlowMapperState, FlowMapperEvent>,
+        stateManager: StateManager,
     ) = EventMediatorConfigBuilder<String, FlowMapperState, FlowMapperEvent>()
         .name("FlowMapperEventMediator")
         .messagingConfig(messagingConfig)
@@ -66,6 +70,7 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
         )
         .messageProcessor(messageProcessor)
         .messageRouterFactory(createMessageRouterFactory())
+        .stateManager(stateManager)
         .build()
 
     private fun createMessageRouterFactory() = MessageRouterFactory { clientFinder ->
