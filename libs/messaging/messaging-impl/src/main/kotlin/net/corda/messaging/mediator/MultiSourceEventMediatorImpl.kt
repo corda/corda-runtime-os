@@ -151,8 +151,9 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun processEvents() {
-        log.debug { "Polling and processing events" }
+        log.info("Polling consumers")
         val messages = pollConsumers()
+        log.info("Polled ${messages.size} messages}")
         if (messages.isNotEmpty()) {
             val msgGroups = messages.groupBy { it.key }
             log.info("Retrieving states from StateManager")

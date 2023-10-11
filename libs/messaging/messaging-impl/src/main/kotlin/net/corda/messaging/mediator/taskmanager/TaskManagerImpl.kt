@@ -4,6 +4,7 @@ import net.corda.messaging.api.mediator.taskmanager.TaskManager
 import net.corda.messaging.api.mediator.taskmanager.TaskType
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.slf4j.LoggerFactory
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
@@ -12,6 +13,9 @@ import kotlin.concurrent.thread
 // TODO This is used temporarily until Task Manager implementation is finished
 @Component(service = [TaskManager::class])
 class TaskManagerImpl  @Activate constructor() : TaskManager {
+    companion object {
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
     private var executorService = Executors.newSingleThreadExecutor()
 
     override fun <T> execute(type: TaskType, command: () -> T) =
@@ -21,15 +25,25 @@ class TaskManagerImpl  @Activate constructor() : TaskManager {
         }
 
     private fun <T> executeShortRunning(command: () -> T): CompletableFuture<T> {
+        log.info("executeShortRunning started")
+        executorService.toString()
         val resultFuture = CompletableFuture<T>()
-        executorService.execute {
-            try {
-                val result = command()
-                resultFuture.complete(result)
-            } catch (t: Throwable) {
-                resultFuture.completeExceptionally(t)
+        try {
+            executorService.execute {
+                try {
+                    log.info("task started")
+                    val result = command()
+                    log.info("task finished")
+                    resultFuture.complete(result)
+                } catch (t: Throwable) {
+                    log.info("task error", t)
+                    resultFuture.completeExceptionally(t)
+                }
             }
+        } catch (t: Throwable) {
+            log.info("executor error", t)
         }
+        log.info("executeShortRunning done")
         return resultFuture
     }
 
