@@ -21,8 +21,18 @@ import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.time.Duration
+import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.sql.DataSource
+
+var instance: DbConnectionManagerImpl? = null
+
+fun makeEntityManager(): EntityManager {
+    while (instance == null) {
+        Thread.sleep(1000)
+    }
+    return instance.getClusterEntityManagerFactory().createEntityManager()
+}
 
 @Component(service = [DbConnectionManager::class])
 @Suppress("LongParameterList")
@@ -54,7 +64,10 @@ class DbConnectionManagerImpl (
                 DbConnectionRepositoryFactory(),
                 LateInitDbConnectionOps(),
                 Duration.ofSeconds(3),
-                { d -> Thread.sleep(d.toMillis()) })
+                { d -> Thread.sleep(d.toMillis()) })  {
+                logger.error("Constructed DbConnectionManager $this")
+                instance = this
+            }
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
