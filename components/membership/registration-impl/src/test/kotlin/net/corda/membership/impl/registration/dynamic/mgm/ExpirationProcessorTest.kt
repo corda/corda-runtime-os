@@ -1,6 +1,5 @@
 package net.corda.membership.impl.registration.dynamic.mgm
 
-import com.typesafe.config.ConfigException
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.membership.command.registration.RegistrationCommand
