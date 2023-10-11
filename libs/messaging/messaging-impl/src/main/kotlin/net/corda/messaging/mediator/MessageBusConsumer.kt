@@ -54,7 +54,7 @@ class MessageBusConsumer<K: Any, V: Any>(
                 }
             } catch (throwable: Throwable) {
                 log.info("CordaConsumer.asyncCommitOffsets error", throwable)
-                completeExceptionally(exception)
+                completeExceptionally(throwable)
             }
         }
 
