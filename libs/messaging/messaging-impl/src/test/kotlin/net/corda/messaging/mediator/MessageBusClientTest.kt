@@ -9,7 +9,6 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.Mockito.doThrow
 import org.mockito.Mockito.times
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
@@ -27,11 +26,9 @@ class MessageBusClientTest {
     private lateinit var cordaProducer: CordaProducer
     private lateinit var messageBusClient: MessageBusClient
 
-    private val defaultHeaders: List<Pair<String, String>> = emptyList()
     private val messageProps: MutableMap<String, Any> = mutableMapOf(
         MSG_PROP_ENDPOINT to TEST_ENDPOINT,
         MSG_PROP_KEY to TEST_KEY,
-        "headers" to defaultHeaders
     )
     private val message: MediatorMessage<Any> = MediatorMessage("value", messageProps)
 
@@ -49,7 +46,8 @@ class MessageBusClientTest {
         val expected = CordaProducerRecord(
             TEST_ENDPOINT,
             TEST_KEY,
-            message.payload
+            message.payload,
+            messageProps.toHeaders(),
         )
 
         verify(cordaProducer).send(eq(expected), any())
@@ -60,10 +58,14 @@ class MessageBusClientTest {
         val record = CordaProducerRecord(
             TEST_ENDPOINT,
             TEST_KEY,
-            message.payload
+            message.payload,
+            messageProps.toHeaders(),
         )
 
-        doThrow(CordaRuntimeException("")).whenever(cordaProducer).send(eq(record), any())
+        whenever(cordaProducer.send(eq(record), any<CordaProducer.Callback>())).thenAnswer { invocation ->
+            val callback = invocation.getArgument<CordaProducer.Callback>(1)
+            callback.onCompletion(CordaRuntimeException(""))
+        }
         assertThrows<CordaRuntimeException> {
             runBlocking {
                 messageBusClient.send(message).await()
@@ -76,4 +78,7 @@ class MessageBusClientTest {
         messageBusClient.close()
         verify(cordaProducer, times(1)).close()
     }
+
+    private fun Map<String, Any>.toHeaders() =
+        map { (key, value) -> (key to value.toString()) }
 }

@@ -10,6 +10,7 @@ import net.corda.ledger.utxo.flow.impl.flows.finality.addTransactionIdToFlowCont
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
 import net.corda.ledger.utxo.flow.impl.flows.finality.v1.FinalityNotarizationFailureType.Companion.toFinalityNotarizationFailureType
 import net.corda.flow.application.GroupParametersLookupInternal
+import net.corda.ledger.utxo.flow.impl.flows.backchain.InvalidBackchainException
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
@@ -116,7 +117,14 @@ class UtxoReceiveFinalityFlowV1(
         utxoLedgerGroupParametersPersistenceService.persistIfDoesNotExist(currentGroupParameters)
         val transactionDependencies = initialTransaction.dependencies
         if (transactionDependencies.isNotEmpty()) {
-            flowEngine.subFlow(TransactionBackchainResolutionFlow(transactionDependencies, session))
+            try {
+                flowEngine.subFlow(TransactionBackchainResolutionFlow(transactionDependencies, session))
+            } catch (e: InvalidBackchainException) {
+                log.warn("Invalid transaction found during back-chain resolution, marking transaction with ID " +
+                        "${initialTransaction.id} as invalid.", e)
+                persistInvalidTransaction(initialTransaction)
+                throw e
+            }
         } else {
             log.trace {
                 "Transaction with id ${initialTransaction.id} has no dependencies so backchain resolution will not be performed."

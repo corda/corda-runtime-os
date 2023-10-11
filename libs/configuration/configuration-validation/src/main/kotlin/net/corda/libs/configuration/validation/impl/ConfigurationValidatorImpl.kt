@@ -117,6 +117,8 @@ internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProv
 
     private fun getSchema(schemaInput: InputStream, applyDefaults: Boolean): JsonSchema {
         val schemaValidatorsConfig = SchemaValidatorsConfig().apply {
+            // Try to convert string to declared type when validating the schema.
+            isTypeLoose = true
             applyDefaultsStrategy = ApplyDefaultsStrategy(applyDefaults, false, false)
         }
         return schemaFactory.getSchema(schemaInput, schemaValidatorsConfig)

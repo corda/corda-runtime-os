@@ -2,7 +2,6 @@ package net.corda.applications.workers.workercommon
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory.fromAnyRef
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
@@ -12,7 +11,6 @@ import net.corda.osgi.api.Shutdown
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.ConfigDefaults
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import org.osgi.framework.FrameworkUtil
@@ -38,18 +36,6 @@ class WorkerHelpers {
             "--stateManager.database.pass",
             "-spassphrase",
             "-msasl.jaas.config"
-        )
-
-        /**
-         * Define the paths of any boot config that must be treated as integers for boot config json validation.
-         */
-        private val BOOT_CONFIG_INTEGER_PATHS = setOf(
-            MessagingConfig.StateManager.JDBC_POOL_MAX_SIZE,
-            MessagingConfig.StateManager.JDBC_POOL_MIN_SIZE,
-            MessagingConfig.StateManager.JDBC_POOL_IDLE_TIMEOUT_SECONDS,
-            MessagingConfig.StateManager.JDBC_POOL_MAX_LIFETIME_SECONDS,
-            MessagingConfig.StateManager.JDBC_POOL_KEEP_ALIVE_TIME_SECONDS,
-            MessagingConfig.StateManager.JDBC_POOL_VALIDATION_TIMEOUT_SECONDS,
         )
 
         /**
@@ -108,31 +94,6 @@ class WorkerHelpers {
             return this.fold(accumulator) { mergedConfig, config ->
                 mergedConfig.withFallback(config)
             }.withFallback(baseConfig)
-        }
-
-        /**
-         * Converts configuration parameters that should be [Integer] from their [String] representations to actual Integers
-         * before performing boot configuration validation. PicoCLI casts parameters in maps to strings, so this function
-         * helps ensure that specific configuration paths are treated as integers.
-         *
-         * For example, when passing the command-line argument:
-         *
-         * ```
-         * --stateManager database.pool.maxSize=1
-         * ```
-         *
-         * The corresponding map will be `["database.pool.maxSize" to "1"]`. This function checks if the specified configuration
-         * paths (defined in [BOOT_CONFIG_INTEGER_PATHS]) exist in the given `bootConfig` and, if found, converts them to integer values.
-         *
-         * @param bootConfig The SmartConfig containing the configuration parameters.
-         * @return A new SmartConfig with specified integer configuration paths converted to actual integers.
-         */
-        private fun prepareIntegerConfigPaths(bootConfig: SmartConfig): SmartConfig {
-            var updatedConfig = bootConfig
-            BOOT_CONFIG_INTEGER_PATHS.forEach { path ->
-                if(bootConfig.hasPath(path)) updatedConfig = updatedConfig.withValue(path, fromAnyRef(bootConfig.getInt(path)))
-            }
-            return updatedConfig
         }
 
         /**
@@ -200,10 +161,7 @@ class WorkerHelpers {
                     configWithFiles.getConfig(BootConfig.BOOT_SECRETS).atPath(BootConfig.BOOT_SECRETS),
                     secretsServiceFactoryResolver.findAll())
 
-            val unvalidatedBootConfig = smartConfigFactory.create(configWithFiles.withoutPath(BootConfig.BOOT_SECRETS))
-
-            val bootConfig = prepareIntegerConfigPaths(unvalidatedBootConfig)
-
+            val bootConfig = smartConfigFactory.create(configWithFiles.withoutPath(BootConfig.BOOT_SECRETS))
             validator.validate(ConfigKeys.BOOT_CONFIG, bootConfig, loadResource(BOOT_CONFIG_PATH), true)
 
             // we now know bootConfig has:

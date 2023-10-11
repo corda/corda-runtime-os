@@ -12,7 +12,7 @@ import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.ledger.utxo.data.state.cast
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
-import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
+import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.persistence.common.exceptions.MissingAccountContextPropertyException
 import net.corda.persistence.common.getSerializationService
@@ -91,7 +91,7 @@ class UtxoTransactionReaderImpl(
             .withIndex()
             .filter { indexed -> visibleStatesSet.contains(indexed.index) }
             .associate { (index, value) ->
-                index to UtxoTransactionOutputDto(id.toString(), index, value.second, value.first).toStateAndRef(
+                index to UtxoVisibleTransactionOutputDto(id.toString(), index, value.second, value.first).toStateAndRef(
                     serializer
                 )
             }

@@ -28,6 +28,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -43,16 +44,19 @@ class UtxoPersistenceServiceImplTest {
     private val persistedJsonStrings = mutableMapOf<String, CustomRepresentation>()
 
     private val mockRepository = mock<UtxoRepository> {
-        on { persistTransactionVisibleStates(any(), any(), any(), any(), any(), any(), any()) } doAnswer {
+        on { persistVisibleTransactionOutput(
+            any(), any(), any(), any(), any(), any(), any(), any(),
+            anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()
+        ) } doAnswer {
             val txId = it.getArgument<String>(1)
-            val customRepresentation = it.getArgument<CustomRepresentation>(5)
+            val customRepresentation = it.arguments.single {
+                it as? CustomRepresentation != null
+            } as CustomRepresentation
             persistedJsonStrings[txId] = customRepresentation
         }
 
-        on { persistTransaction(any(), any(), any(), any(), any()) } doAnswer {}
-        on { persistTransactionComponentLeaf(any(), any(), any(), any(), any(), any(), any()) } doAnswer {}
-        on { persistTransactionOutput(any(), any(), any(), any(), any(), any(), any(), any(), any(),
-            any(), any(), any(), any()) } doAnswer {}
+        on { persistTransaction(any(), any(), any(), any(), any(), any()) } doAnswer {}
+        on { persistTransactionComponentLeaf(any(), any(), any(), any(), any(), any()) } doAnswer {}
     }
 
     private val mockPrivacySalt = mock<PrivacySalt> {

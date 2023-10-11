@@ -7,7 +7,7 @@ import net.corda.ledger.persistence.query.data.VaultNamedQuery
 import net.corda.ledger.persistence.query.execution.VaultNamedQueryExecutor
 import net.corda.ledger.persistence.query.registration.VaultNamedQueryRegistry
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
-import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
+import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.orm.utils.transaction
 import net.corda.persistence.common.exceptions.NullParameterException
 import net.corda.utilities.debug
@@ -31,8 +31,9 @@ class VaultNamedQueryExecutorImpl(
 ) : VaultNamedQueryExecutor {
 
     private companion object {
-        const val UTXO_VISIBLE_TX_TABLE = "utxo_visible_transaction_state"
+        const val UTXO_VISIBLE_TX_TABLE = "utxo_visible_transaction_output"
         const val UTXO_TX_COMPONENT_TABLE = "utxo_transaction_component"
+        const val UTXO_TX_TABLE = "utxo_transaction"
         const val TIMESTAMP_LIMIT_PARAM_NAME = "Corda_TimestampLimit"
 
         const val RESULT_SET_FILL_RETRY_LIMIT = 5
@@ -77,7 +78,7 @@ class VaultNamedQueryExecutorImpl(
         private val created = (sqlRow[4] as Timestamp).toInstant()
 
         val stateAndRef: StateAndRef<ContractState> by lazy {
-            UtxoTransactionOutputDto(txId, leafIdx, outputInfoData, outputData)
+            UtxoVisibleTransactionOutputDto(txId, leafIdx, outputInfoData, outputData)
                 .toStateAndRef(serializationService)
         }
 
@@ -283,9 +284,9 @@ class VaultNamedQueryExecutorImpl(
         val resultList = entityManagerFactory.transaction { em ->
 
             val resumePointExpr = resumePoint?.let {
-                " AND ((tc_output.created > :created) OR " +
-                "(tc_output.created = :created AND tc_output.transaction_id > :txId) OR " +
-                "(tc_output.created = :created AND tc_output.transaction_id = :txId AND tc_output.leaf_idx > :leafIdx))"
+                " AND ((tx.created > :created) OR " +
+                "(tx.created = :created AND tc_output.transaction_id > :txId) OR " +
+                "(tx.created = :created AND tc_output.transaction_id = :txId AND tc_output.leaf_idx > :leafIdx))"
             } ?: ""
 
             val query = em.createNativeQuery(
@@ -294,7 +295,7 @@ class VaultNamedQueryExecutorImpl(
                         tc_output.leaf_idx,
                         tc_output_info.data as output_info_data,
                         tc_output.data AS output_data,
-                        tc_output.created AS created
+                        tx.created AS created
                         FROM $UTXO_VISIBLE_TX_TABLE AS visible_states
                         JOIN $UTXO_TX_COMPONENT_TABLE AS tc_output_info
                              ON tc_output_info.transaction_id = visible_states.transaction_id
@@ -304,10 +305,12 @@ class VaultNamedQueryExecutorImpl(
                              ON tc_output_info.transaction_id = tc_output.transaction_id
                              AND tc_output_info.leaf_idx = tc_output.leaf_idx
                              AND tc_output.group_idx = ${UtxoComponentGroup.OUTPUTS.ordinal}
+                        JOIN $UTXO_TX_TABLE AS tx
+                             ON tc_output.transaction_id = tx.id
                         WHERE ($whereJson)
                         $resumePointExpr
                         AND visible_states.created <= :$TIMESTAMP_LIMIT_PARAM_NAME
-                        ORDER BY tc_output.created, tc_output.transaction_id, tc_output.leaf_idx
+                        ORDER BY tx.created, tc_output.transaction_id, tc_output.leaf_idx
                 """,
                 Tuple::class.java)
 

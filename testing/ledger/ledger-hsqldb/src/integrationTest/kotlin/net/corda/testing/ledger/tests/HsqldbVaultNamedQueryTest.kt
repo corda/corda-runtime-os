@@ -3,16 +3,10 @@ package net.corda.testing.ledger.tests
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionComponentEntity
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionComponentEntityId
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionEntity
-import com.example.ledger.testing.datamodel.utxo.UtxoTransactionOutputEntity
-import com.example.ledger.testing.datamodel.utxo.UtxoTransactionOutputEntityId
+import com.example.ledger.testing.datamodel.utxo.UtxoVisibleTransactionOutputEntity
+import com.example.ledger.testing.datamodel.utxo.UtxoVisibleTransactionOutputEntityId
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionSignatureEntity
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionSignatureEntityId
-import com.example.ledger.testing.datamodel.utxo.UtxoTransactionSourceEntity
-import com.example.ledger.testing.datamodel.utxo.UtxoTransactionSourceEntityId
-import com.example.ledger.testing.datamodel.utxo.UtxoTransactionStatusEntity
-import com.example.ledger.testing.datamodel.utxo.UtxoTransactionStatusEntityId
-import com.example.ledger.testing.datamodel.utxo.UtxoVisibleTransactionStateEntity
-import com.example.ledger.testing.datamodel.utxo.UtxoVisibleTransactionStateEntityId
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
@@ -23,6 +17,7 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.hsqldb.json.HsqldbJsonExtension.JSON_SQL_TYPE
 import net.corda.db.persistence.testkit.components.DataSourceAdmin
 import net.corda.db.schema.DbSchema
+import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.query.parsing.VaultNamedQueryParser
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.utils.transaction
@@ -41,7 +36,7 @@ import org.osgi.test.junit5.service.ServiceExtension
 @ExtendWith(ServiceExtension::class)
 class HsqldbVaultNamedQueryTest {
     private companion object {
-        private const val UTXO_VISIBLE_TX_STATE = "utxo_visible_transaction_state"
+        private const val UTXO_VISIBLE_TX_STATE = "utxo_visible_transaction_output"
         private const val BASE_QUERY = "SELECT * FROM $UTXO_VISIBLE_TX_STATE AS visible_state WHERE "
         private const val TIMEOUT_MILLIS = 10000L
 
@@ -85,16 +80,10 @@ class HsqldbVaultNamedQueryTest {
             UtxoTransactionEntity::class.java,
             UtxoTransactionComponentEntity::class.java,
             UtxoTransactionComponentEntityId::class.java,
-            UtxoTransactionStatusEntity::class.java,
-            UtxoTransactionStatusEntityId::class.java,
-            UtxoTransactionOutputEntity::class.java,
-            UtxoTransactionOutputEntityId::class.java,
+            UtxoVisibleTransactionOutputEntity::class.java,
+            UtxoVisibleTransactionOutputEntityId::class.java,
             UtxoTransactionSignatureEntity::class.java,
-            UtxoTransactionSignatureEntityId::class.java,
-            UtxoTransactionSourceEntity::class.java,
-            UtxoTransactionSourceEntityId::class.java,
-            UtxoVisibleTransactionStateEntity::class.java,
-            UtxoVisibleTransactionStateEntityId::class.java
+            UtxoTransactionSignatureEntityId::class.java
         ))
         entityManagerFactory = dbConnectionManager.createEntityManagerFactory(dbConnectionId, entities)
     }
@@ -107,25 +96,34 @@ class HsqldbVaultNamedQueryTest {
                 id = txId.toString(),
                 privacySalt = byteArrayOf(),
                 accountId = ACCOUNT_ID.toString(),
-                created = timestamp
+                created = timestamp,
+                status = TransactionStatus.VERIFIED.value,
+                updated = timestamp
             )
 
-            val visibleStates = mutableListOf<UtxoVisibleTransactionStateEntity>()
+            val visibleStates = mutableListOf<UtxoVisibleTransactionOutputEntity>()
             for (state in states) {
                 tx.components += UtxoTransactionComponentEntity(
                     transaction = tx,
                     groupIndex = state.groupIndex,
                     leafIndex = state.leafIndex,
                     data = byteArrayOf(0x01, 0x02, 0x03, 0x04),
-                    hash = "",
-                    timestamp
+                    hash = ""
                 )
 
-                visibleStates += UtxoVisibleTransactionStateEntity(
+                visibleStates += UtxoVisibleTransactionOutputEntity(
                     transaction = tx,
                     groupIndex = state.groupIndex,
                     leafIndex = state.leafIndex,
-                    state.customRepresentation,
+                    type = "com.r3.Dummy",
+                    tokenType = null,
+                    tokenIssuerHash = null,
+                    tokenNotaryX500Name = null,
+                    tokenSymbol = null,
+                    tokenTag = null,
+                    tokenOwnerHash = null,
+                    tokenAmount = null,
+                    customRepresentation = state.customRepresentation,
                     created = timestamp,
                     consumed = null
                 )
@@ -136,14 +134,14 @@ class HsqldbVaultNamedQueryTest {
         }
     }
 
-    private fun executeQuery(sqlText: String, txId: UUID, parameters: (Query) -> Unit): List<UtxoVisibleTransactionStateEntity> {
+    private fun executeQuery(sqlText: String, txId: UUID, parameters: (Query) -> Unit): List<UtxoVisibleTransactionOutputEntity> {
         @Suppress("unchecked_cast")
         return entityManagerFactory.transaction { em ->
-            em.createNativeQuery("$BASE_QUERY $sqlText AND transaction_id = :txId", UtxoVisibleTransactionStateEntity::class.java)
+            em.createNativeQuery("$BASE_QUERY $sqlText AND transaction_id = :txId", UtxoVisibleTransactionOutputEntity::class.java)
                 .setParameter("txId", txId.toString())
                 .also(parameters)
                 .resultList
-        } as List<UtxoVisibleTransactionStateEntity>
+        } as List<UtxoVisibleTransactionOutputEntity>
     }
 
     @Test

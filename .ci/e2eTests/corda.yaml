@@ -133,6 +133,16 @@ workers:
             secretKeyRef:
               name: "kafka-credentials"
               key: "persistence"
+  tokenSelection:
+    kafka:
+      sasl:
+        username:
+          value: "tokenSelection"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "kafka-credentials"
+              key: "tokenSelection"
   rest:
     kafka:
       sasl:

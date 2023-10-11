@@ -10,6 +10,7 @@ import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.ledger.utxo.impl.token.selection.services.TokenClaimCheckpointService
 import net.corda.schema.Schemas
 import net.corda.v5.ledger.utxo.token.selection.TokenClaim
 import net.corda.v5.ledger.utxo.token.selection.TokenClaimCriteria
@@ -21,7 +22,9 @@ import java.nio.ByteBuffer
 @Component(service = [ExternalEventFactory::class])
 class TokenClaimQueryExternalEventFactory @Activate constructor(
     @Reference(service = TokenClaimFactory::class)
-    private val tokenClaimFactory: TokenClaimFactory
+    private val tokenClaimFactory: TokenClaimFactory,
+    @Reference(service = TokenClaimCheckpointService::class)
+    private val tokenClaimCheckpointService: TokenClaimCheckpointService
 ) : ExternalEventFactory<TokenClaimCriteria, TokenClaimQueryResult, TokenClaim?> {
 
     override val responseType = TokenClaimQueryResult::class.java
@@ -57,6 +60,8 @@ class TokenClaimQueryExternalEventFactory @Activate constructor(
         if (response.resultType == TokenClaimResultStatus.NONE_AVAILABLE) {
             return null
         }
+
+        tokenClaimCheckpointService.addClaimToCheckpoint(checkpoint, response.claimId, response.poolKey)
 
         return tokenClaimFactory.createTokenClaim(
             response.claimId,

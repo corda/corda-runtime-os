@@ -77,6 +77,19 @@ spec:
     targetPort: http
 {{- end }}
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "corda.workerInternalServiceName" $workerName }}
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ $workerName }}
+  ports:
+      - protocol: TCP
+        port: {{ include "corda.workerServicePort" . }}
+        targetPort: "monitor"
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -161,13 +174,6 @@ spec:
               fieldRef:
                 apiVersion: v1
                 fieldPath: metadata.namespace
-          - name: ENABLE_CLOUDWATCH
-            value:
-              {{- if eq $.Values.serviceAccount.name "cloudwatch-writer" }}
-                "true"
-              {{- else }}
-                "false"
-              {{- end }}
           - name: JAVA_TOOL_OPTIONS
             value:
               {{ .javaOptions }}
@@ -296,8 +302,6 @@ spec:
           - "--stateManager"
           - "database.jdbc.driver=org.postgresql.Driver"
           - "--stateManager"
-          - "database.jdbc.persistenceUnitName=corda-state-manager"
-          - "--stateManager"
           - "database.pool.maxSize={{ .stateManagerDbConnectionPool.maxSize }}"
           {{- if .stateManagerDbConnectionPool.minSize }}
           - "--stateManager"
@@ -317,6 +321,12 @@ spec:
           {{- end }}
           {{- if $.Values.tracing.samplesPerSecond }}
           - "--trace-samples-per-second={{ $.Values.tracing.samplesPerSecond }}"
+          {{- end }}
+          {{- if $optionalArgs.servicesAccessed }}
+          {{- range $worker := $optionalArgs.servicesAccessed }}
+          {{- $endpoint := include "corda.getWorkerEndpoint" (dict "context" $ "worker" $worker) }}
+          - --serviceEndpoint={{ $endpoint }}
+          {{- end }}
           {{- end }}
           {{- range $i, $arg := $optionalArgs.additionalWorkerArgs }}
           - {{ $arg | quote }}

@@ -1437,15 +1437,6 @@
                                 false
                             ]
                         },
-                        "cleanup": {
-                            "type": "boolean",
-                            "default": false,
-                            "title": "specifies whether existing topics with the given prefix should be deleted before trying to create new ones (deletes all existing topics if no prefix is given)",
-                            "examples": [
-                                false,
-                                true
-                            ]
-                        },
                         "partitions": {
                             "type": "integer",
                             "default": 10,
@@ -1491,14 +1482,12 @@
                     },
                     "then": {
                         "required": [
-                            "cleanup",
                             "partitions",
                             "replicas"
                         ]
                     },
                     "examples": [{
                         "enabled": true,
-                        "cleanup": false,
                         "partitions": 10,
                         "replicas": 3
                     }]
@@ -1907,64 +1896,7 @@
                                 "resources": {},
                                 "kafka": {},
                                 "stateManagerDbConnectionPool": {
-                                    "type": "object",
-                                    "default": {},
-                                    "title": "Flow worker JDBC connection pool configuration for State Manager DB",
-                                    "required": [
-                                        "maxSize",
-                                        "idleTimeoutSeconds",
-                                        "maxLifetimeSeconds",
-                                        "keepAliveTimeSeconds",
-                                        "validationTimeoutSeconds"
-                                    ],
-                                    "additionalProperties": false,
-                                    "properties": {
-                                        "maxSize": {
-                                            "type": "integer",
-                                            "default": 5,
-                                            "title": "Flow worker JDBC connection pool size for State Manager DB",
-                                            "examples": [
-                                                5
-                                            ]
-                                        },
-                                        "minSize": {
-                                            "anyOf": [
-                                                {
-                                                    "type": "integer",
-                                                    "minimum": 0
-                                                },
-                                                {
-                                                    "type": "null"
-                                                }
-                                            ],
-                                            "default": null,
-                                            "title": "Flow worker minimum JDBC connection pool size for State Manager DB; null value means pool's min size will default to pool's max size value"
-                                        },
-                                        "idleTimeoutSeconds": {
-                                            "type": "integer",
-                                            "default": 120,
-                                            "minimum": 0,
-                                            "title": "maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool"
-                                        },
-                                        "maxLifetimeSeconds": {
-                                            "type": "integer",
-                                            "default": 1800,
-                                            "minimum": 1,
-                                            "title": "maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached \"maxLifetime\" timeout, it will be removed from the pool only when it becomes idle"
-                                        },
-                                        "keepAliveTimeSeconds": {
-                                            "type": "integer",
-                                            "default": 0,
-                                            "minimum": 0,
-                                            "title": "interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled"
-                                        },
-                                        "validationTimeoutSeconds": {
-                                            "type": "integer",
-                                            "minimum": 1,
-                                            "default": 5,
-                                            "title": "maximum time (in seconds) that the pool will wait for a connection to be validated as alive"
-                                        }
-                                    }
+                                    "$ref": "#/$defs/stateManagerDbConnectionPool"
                                 },
                                 "verifyInstrumentation": {
                                     "type": "boolean",
@@ -2014,7 +1946,8 @@
                         },
                         {
                             "required": [
-                                "verifyInstrumentation"
+                                "verifyInstrumentation",
+                                "stateManagerDbConnectionPool"
                             ],
                             "properties": {
                                 "image": {},
@@ -2026,6 +1959,9 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
+                                "stateManagerDbConnectionPool" : {
+                                    "$ref": "#/$defs/stateManagerDbConnectionPool"
+                                },
                                 "verifyInstrumentation": {
                                     "type": "boolean",
                                     "default": false,
@@ -2484,6 +2420,60 @@
                                     "examples": [{
                                         "port": 8080
                                     }]
+                                },
+                                "ingress": {
+                                    "type": "object",
+                                    "default": {},
+                                    "title": "P2P gateway worker ingress configuration",
+                                    "required": [
+                                        "annotations",
+                                        "hosts"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "annotations": {
+                                            "type": "object",
+                                            "default": {},
+                                            "title": "the annotations for P2P gateway worker ingress",
+                                            "required": [],
+                                            "properties": {},
+                                            "examples": [
+                                                {
+                                                    "cert-manager.io/cluster-issuer": "production",
+                                                    "nginx.ingress.kubernetes.io/backend-protocol": "HTTPS"
+                                                }
+                                            ]
+                                        },
+                                        "className": {
+                                            "type": "string",
+                                            "default": "",
+                                            "title": "the className for the P2P gateway worker ingress",
+                                            "examples": [
+                                                "nginx"
+                                            ]
+                                        },
+                                        "hosts": {
+                                            "type": "array",
+                                            "default": [],
+                                            "title": "the hosts for P2P gateway worker ingress",
+                                            "items": {},
+                                            "examples": [
+                                                ["p2p-gateway-worker-1234.dev.corda.cloud"]
+                                            ]
+                                        }
+                                    },
+                                    "examples": [
+                                        {
+                                            "annotations": {
+                                                "cert-manager.io/cluster-issuer": "production",
+                                                "nginx.ingress.kubernetes.io/backend-protocol": "HTTPS"
+                                            },
+                                            "className": "nginx",
+                                            "hosts": [
+                                                "p2p-gateway-worker-1234.dev.corda.cloud"
+                                            ]
+                                        }
+                                    ]
                                 }
                             },
                             "examples": [{
@@ -2605,6 +2595,118 @@
                                 "image": {
                                     "registry": "",
                                     "repository": "corda-os-persistence-worker",
+                                    "tag": ""
+                                },
+                                "replicaCount": 1,
+                                "debug": {
+                                    "enabled": false,
+                                    "suspend": false
+                                },
+                                "logging": {
+                                    "level": "warn"
+                                },
+                                "profiling": {
+                                    "enabled": false
+                                },
+                                "resources": {
+                                    "requests": {
+                                        "cpu": "1",
+                                        "memory": "2048Mi"
+                                    },
+                                    "limits": {
+                                        "cpu": "1",
+                                        "memory": "2048Mi"
+                                    }
+                                }
+                            }]
+                        }
+                    ]
+                },
+                "tokenSelection": {
+                    "allOf": [
+                        {
+                            "$ref": "#/$defs/worker"
+                        },
+                        {
+                            "additionalProperties": false,
+                            "required": [
+                                "clusterDbConnectionPool"
+                            ],
+                            "properties": {
+                                "image": {},
+                                "javaOptions": {},
+                                "annotations": {},
+                                "replicaCount": {},
+                                "debug": {},
+                                "logging": {},
+                                "profiling": {},
+                                "resources": {},
+                                "kafka": {},
+                                "clusterDbConnectionPool": {
+                                    "type": "object",
+                                    "default": {},
+                                    "title": "token selection worker JDBC connection pool configuration for cluster DB",
+                                    "required": [
+                                        "maxSize",
+                                        "idleTimeoutSeconds",
+                                        "maxLifetimeSeconds",
+                                        "keepaliveTimeSeconds",
+                                        "validationTimeoutSeconds"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "maxSize": {
+                                            "type": "integer",
+                                            "default": 5,
+                                            "title": "token selection worker maximum JDBC connection pool size for cluster DB",
+                                            "examples": [
+                                                5
+                                            ]
+                                        },
+                                        "minSize": {
+                                            "anyOf": [
+                                                {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                },
+                                                {
+                                                    "type": "null"
+                                                }
+                                            ],
+                                            "default": null,
+                                            "title": "token selection worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value"
+                                        },
+                                        "idleTimeoutSeconds": {
+                                            "type": "integer",
+                                            "default": 120,
+                                            "minimum": 0,
+                                            "title": "maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool"
+                                        },
+                                        "maxLifetimeSeconds": {
+                                            "type": "integer",
+                                            "default": 1800,
+                                            "minimum": 1,
+                                            "title": "maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached \"maxLifetime\" timeout, it will be removed from the pool only when it becomes idle"
+                                        },
+                                        "keepaliveTimeSeconds": {
+                                            "type": "integer",
+                                            "default": 0,
+                                            "minimum": 0,
+                                            "title": "interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled"
+                                        },
+                                        "validationTimeoutSeconds": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "default": 5,
+                                            "title": "maximum time (in seconds) that the pool will wait for a connection to be validated as alive"
+                                        }
+                                    }
+                                }
+                            },
+                            "examples": [{
+                                "image": {
+                                    "registry": "",
+                                    "repository": "corda-os-token-selection-worker",
                                     "tag": ""
                                 },
                                 "replicaCount": 1,
@@ -3393,6 +3495,66 @@
                             }
                         }
                     }
+                }
+            }
+        },
+        "stateManagerDbConnectionPool": {
+            "type": "object",
+            "default": {},
+            "title": "JDBC connection pool configuration for State Manager DB",
+            "required": [
+                "maxSize",
+                "idleTimeoutSeconds",
+                "maxLifetimeSeconds",
+                "keepAliveTimeSeconds",
+                "validationTimeoutSeconds"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "maxSize": {
+                    "type": "integer",
+                    "default": 5,
+                    "title": "JDBC connection pool size for State Manager DB",
+                    "examples": [
+                        5
+                    ]
+                },
+                "minSize": {
+                    "anyOf": [
+                        {
+                            "type": "integer",
+                            "minimum": 0
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Minimum JDBC connection pool size for State Manager DB; null value means pool's min size will default to pool's max size value"
+                },
+                "idleTimeoutSeconds": {
+                    "type": "integer",
+                    "default": 120,
+                    "minimum": 0,
+                    "title": "Maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool"
+                },
+                "maxLifetimeSeconds": {
+                    "type": "integer",
+                    "default": 1800,
+                    "minimum": 1,
+                    "title": "Maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached \"maxLifetime\" timeout, it will be removed from the pool only when it becomes idle"
+                },
+                "keepAliveTimeSeconds": {
+                    "type": "integer",
+                    "default": 0,
+                    "minimum": 0,
+                    "title": "Interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled"
+                },
+                "validationTimeoutSeconds": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "default": 5,
+                    "title": "Maximum time (in seconds) that the pool will wait for a connection to be validated as alive"
                 }
             }
         }

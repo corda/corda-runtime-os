@@ -5,6 +5,7 @@ import net.corda.db.schema.DbSchema.STATE_MANAGER_TABLE
 import net.corda.libs.statemanager.api.MetadataFilter
 
 class PostgresQueryProvider : AbstractQueryProvider() {
+
     override val createState: String
         get() = """
             INSERT INTO $STATE_MANAGER_TABLE

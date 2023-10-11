@@ -20,6 +20,7 @@ import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.STATE_MANAGER_CONFIG
 import net.corda.schema.configuration.ConfigKeys.UTXO_LEDGER_CONFIG
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
@@ -38,11 +39,17 @@ class FlowService @Activate constructor(
     @Reference(service = ExternalMessagingRoutingService::class)
     private val externalMessagingRoutingService: ExternalMessagingRoutingService,
     @Reference(service = FlowMaintenance::class)
-    private val flowMaintenance: FlowMaintenance,
-    ) : Lifecycle {
+    private val flowMaintenance: FlowMaintenance
+) : Lifecycle {
 
     companion object {
-        private val configSections = setOf(BOOT_CONFIG, MESSAGING_CONFIG, FLOW_CONFIG, UTXO_LEDGER_CONFIG)
+        private val configSections = setOf(
+            FLOW_CONFIG,
+            BOOT_CONFIG,
+            MESSAGING_CONFIG,
+            UTXO_LEDGER_CONFIG,
+            STATE_MANAGER_CONFIG
+        )
     }
 
     private var registration: RegistrationHandle? = null
@@ -75,7 +82,7 @@ class FlowService @Activate constructor(
                         coordinator,
                         configSections
                     )
-                }else {
+                } else {
                     coordinator.updateStatus(event.status)
                 }
             }

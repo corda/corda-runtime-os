@@ -31,12 +31,21 @@ fun useWebsocketConnection(
     client.use {
         it.start()
         it.connect(path, wsHandler)
+        
+        // Loop as necessary to wait for connection to be established
+        eventually(duration = Duration.ofSeconds(30)) {
+            assertThat(wsHandler.isConnected)
+                .withFailMessage("web-socket-client should get connected")
+                .isTrue
+        }
+        
+        // Ensure that connection stays stable
         consistently(
             duration = Duration.ofSeconds(5),
             waitBefore = Duration.ofMillis(500)
         ) {
             assertThat(wsHandler.isConnected)
-                .withFailMessage("web-socket-client should be connected")
+                .withFailMessage("web-socket-client should have stable connection")
                 .isTrue
         }
 

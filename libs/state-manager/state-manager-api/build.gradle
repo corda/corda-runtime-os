@@ -7,6 +7,7 @@ description 'State Manager API'
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
     api project(":libs:configuration:configuration-core")
+    api project(":libs:lifecycle:lifecycle")
 
     implementation "net.corda:corda-base"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'

@@ -5,7 +5,8 @@ import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.common.InconsistentLedgerStateException
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
-import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
+import net.corda.v5.crypto.SecureHash
+import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
@@ -26,6 +27,16 @@ interface UtxoPersistenceService {
     fun findSignedTransaction(id: String, transactionStatus: TransactionStatus): Pair<SignedTransactionContainer?, String?>
 
     /**
+     * Find transactions with the given [transactionIds] that are present in the persistence context and return
+     * their IDs and statuses.
+     *
+     * @param transactionIds IDs of transactions to find.
+     *
+     * @return A map of the transaction IDs found and their statuses.
+     */
+    fun findTransactionIdsAndStatuses(transactionIds: List<String>): Map<SecureHash, String>
+
+    /**
      * Find a signed ledger transaction in the persistence context given it's [id] and return it with the status it is stored with. This
      * involves resolving its input and reference state and fetching the transaction's signatures.
      *
@@ -39,11 +50,11 @@ interface UtxoPersistenceService {
      */
     fun findSignedLedgerTransaction(id: String, transactionStatus: TransactionStatus): Pair<SignedLedgerTransactionContainer?, String?>
 
-    fun <T: ContractState> findUnconsumedVisibleStatesByType(stateClass: Class<out T>): List<UtxoTransactionOutputDto>
+    fun <T: ContractState> findUnconsumedVisibleStatesByType(stateClass: Class<out T>): List<UtxoVisibleTransactionOutputDto>
 
-    fun <T: ContractState> findUnconsumedVisibleStatesByExactType(stateClass: Class<out T>): List<UtxoTransactionOutputDto>
+    fun <T: ContractState> findUnconsumedVisibleStatesByExactType(stateClass: Class<out T>): List<UtxoVisibleTransactionOutputDto>
 
-    fun resolveStateRefs(stateRefs: List<StateRef>): List<UtxoTransactionOutputDto>
+    fun resolveStateRefs(stateRefs: List<StateRef>): List<UtxoVisibleTransactionOutputDto>
 
     fun persistTransaction(
         transaction: UtxoTransactionReader,

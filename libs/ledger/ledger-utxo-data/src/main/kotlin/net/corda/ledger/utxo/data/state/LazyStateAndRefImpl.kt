@@ -2,7 +2,7 @@ package net.corda.ledger.utxo.data.state
 
 import net.corda.crypto.core.parseSecureHash
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
-import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
+import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
@@ -20,11 +20,11 @@ import java.lang.Exception
  *  - deserializations whose required CPKs are not necessarily available.
  *
  * @constructor Creates a new instance of the [LazyStateAndRefImpl] data class.
- * @property serializedStateAndRef A [UtxoTransactionOutputDto] with the serialized information
+ * @property serializedStateAndRef A [UtxoVisibleTransactionOutputDto] with the serialized information
  */
 @CordaSerializable
 data class LazyStateAndRefImpl<out T : ContractState>(
-    val serializedStateAndRef: UtxoTransactionOutputDto,
+    val serializedStateAndRef: UtxoVisibleTransactionOutputDto,
     val deserializedStateAndRef: StateAndRef<@UnsafeVariance T>?,
     private val serializationService: SerializationService
 ) : StateAndRef<@UnsafeVariance T> {
@@ -67,7 +67,7 @@ data class LazyStateAndRefImpl<out T : ContractState>(
 }
 
 @Suppress("UNCHECKED_CAST")
-private fun <T : ContractState> UtxoTransactionOutputDto.deserializeToStateAndRef(
+private fun <T : ContractState> UtxoVisibleTransactionOutputDto.deserializeToStateAndRef(
     serializationService: SerializationService
 ): StateAndRef<T> {
     val info = try{

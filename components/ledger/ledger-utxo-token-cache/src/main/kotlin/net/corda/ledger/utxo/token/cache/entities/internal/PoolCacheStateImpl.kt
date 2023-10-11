@@ -33,6 +33,11 @@ class PoolCacheStateImpl(
         return cacheState.tokenClaims.any { it.claimId == claimId }
     }
 
+    override fun claim(claimId: String): TokenClaim? {
+        // There must only exist one claim
+        return cacheState.tokenClaims.filter { it.claimId == claimId }.singleOrNull()
+    }
+
     override fun removeClaim(claimId: String) {
         cacheState.tokenClaims = cacheState.tokenClaims.filterNot { it.claimId == claimId }
         claimedTokens = createClaimedTokenMap()

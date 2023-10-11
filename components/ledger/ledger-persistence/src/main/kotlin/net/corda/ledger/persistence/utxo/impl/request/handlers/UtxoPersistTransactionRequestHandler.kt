@@ -1,9 +1,6 @@
 package net.corda.ledger.persistence.utxo.impl.request.handlers
 
 import net.corda.data.flow.event.external.ExternalEventContext
-import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
-import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
-import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.ledger.persistence.utxo.UtxoOutputRecordFactory
 import net.corda.ledger.persistence.utxo.UtxoPersistenceService
@@ -17,11 +14,9 @@ import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.observer.TokenStateObserverContext
 import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.v5.ledger.utxo.observer.UtxoTokenPoolKey
-import net.corda.virtualnode.HoldingIdentity
 import org.slf4j.LoggerFactory
 
 class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constructor(
-    private val holdingIdentity: HoldingIdentity,
     private val transaction: UtxoTransactionReader,
     private val tokenObservers: UtxoTokenObserverMap,
     private val externalEventContext: ExternalEventContext,
@@ -38,29 +33,13 @@ class UtxoPersistTransactionRequestHandler @Suppress("LongParameterList") constr
 
         val listOfPairsStateAndUtxoToken =
             getTokens(transaction.getVisibleStates().values.toList(), tokenObservers)
-        val outputTokenRecords = getOutputTokenRecords(listOfPairsStateAndUtxoToken)
         val utxoTokenMap = listOfPairsStateAndUtxoToken.associate { it.first.ref to it.second }
 
         // persist the transaction
         persistenceService.persistTransaction(transaction, utxoTokenMap)
 
         // return output records
-        return outputTokenRecords + utxoOutputRecordFactory.getPersistTransactionSuccessRecord(externalEventContext)
-    }
-
-    private fun getOutputTokenRecords(
-        listOfPairsStateAndUtxoToken: List<Pair<StateAndRef<*>, UtxoToken>>
-    ): List<Record<TokenPoolCacheKey, TokenPoolCacheEvent>> {
-        val isTransactionVerified = transaction.status == TransactionStatus.VERIFIED
-        if (!isTransactionVerified) {
-            return listOf()
-        }
-
-        return utxoOutputRecordFactory.getTokenCacheChangeEventRecords(
-            holdingIdentity,
-            listOfPairsStateAndUtxoToken,
-            getTokens(transaction.getConsumedStates(persistenceService), tokenObservers)
-        )
+        return listOf(utxoOutputRecordFactory.getPersistTransactionSuccessRecord(externalEventContext))
     }
 
     private fun getTokens(
