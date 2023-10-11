@@ -47,7 +47,7 @@ class TokenCacheEventProcessor(
         } catch (e: Exception) {
             log.error("Unexpected error while processing event '${event}'. The event will be sent to the DLQ.", e)
             return StateAndEventProcessor.Response(
-                State(state?.value, metadata = null),
+                state,
                 listOf(),
                 markForDLQ = true)
         }
@@ -87,12 +87,12 @@ class TokenCacheEventProcessor(
 
                     if (result == null) {
                         StateAndEventProcessor.Response(
-                            State(poolCacheState.toAvro(), metadata = null),
+                            State(poolCacheState.toAvro(), metadata = state?.metadata),
                             listOf()
                         )
                     } else {
                         StateAndEventProcessor.Response(
-                            State(poolCacheState.toAvro(), metadata = null),
+                            State(poolCacheState.toAvro(), metadata = state?.metadata),
                             listOf(result)
                         )
                     }
