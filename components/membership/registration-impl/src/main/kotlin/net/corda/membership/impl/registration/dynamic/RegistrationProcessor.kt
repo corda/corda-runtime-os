@@ -196,7 +196,9 @@ class RegistrationProcessor(
             createEmptyResult()
         }
         return StateAndEventProcessor.Response(
-            State(result?.updatedState, metadata = null),
+            result?.updatedState.let {
+                State(it, state?.metadata)
+            },
             result?.outputStates ?: emptyList()
         )
     }
