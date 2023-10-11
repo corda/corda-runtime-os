@@ -2,9 +2,11 @@ package net.corda.processors.token.cache.internal
 
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.schema.CordaDb
 import net.corda.ledger.utxo.token.cache.factories.TokenCacheComponentFactory
 import net.corda.ledger.utxo.token.cache.services.TokenCacheComponent
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -13,6 +15,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.orm.JpaEntitiesRegistry
 import net.corda.processors.token.cache.TokenCacheProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.utilities.debug
@@ -36,7 +39,17 @@ class TokenCacheProcessorImpl @Activate constructor(
     private val dbConnectionManager: DbConnectionManager,
     @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = JpaEntitiesRegistry::class)
+    private val entitiesRegistry: JpaEntitiesRegistry,
 ) : TokenCacheProcessor {
+    init {
+        // define the different DB Entity Sets
+        //  entities can be in different packages, but all JPA classes must be passed in.
+        entitiesRegistry.register(
+            CordaDb.CordaCluster.persistenceUnitName,
+            ConfigurationEntities.classes
+        )
+    }
 
     private companion object {
         val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
