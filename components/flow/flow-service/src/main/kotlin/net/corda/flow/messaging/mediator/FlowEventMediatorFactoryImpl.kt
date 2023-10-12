@@ -96,6 +96,9 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
             messagingClientFactoryFactory.createMessageBusClientFactory(
                 MESSAGE_BUS_CLIENT, messagingConfig
             ),
+            messagingClientFactoryFactory.createRPCClientFactory(
+                RPC_CLIENT
+            )
         )
         .messageProcessor(messageProcessor)
         .messageRouterFactory(createMessageRouterFactory(messagingConfig))
