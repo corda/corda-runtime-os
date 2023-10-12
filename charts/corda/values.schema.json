@@ -799,13 +799,6 @@
                     "type": "object",
                     "default": {},
                     "title": "State Manager database configuration",
-                    "required": [
-                        "host",
-                        "type",
-                        "port",
-                        "username",
-                        "database"
-                    ],
                     "additionalProperties": false,
                     "properties": {
                         "username": {

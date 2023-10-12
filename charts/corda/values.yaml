@@ -149,7 +149,7 @@ stateManager:
   type: DATABASE
   # State Manager database configuration
   db:
-    # -- the State Manager database host (required)
+    # -- the State Manager database host
     host: null
     # -- the State Manager database type
     type: "postgresql"
