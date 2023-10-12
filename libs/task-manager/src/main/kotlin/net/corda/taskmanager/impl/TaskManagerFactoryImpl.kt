@@ -1,10 +1,12 @@
 package net.corda.taskmanager.impl
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder
 import net.corda.metrics.CordaMetrics
 import net.corda.taskmanager.TaskManager
 import net.corda.taskmanager.TaskManagerFactory
+import java.util.Locale
 import java.util.concurrent.Executors
+import java.util.concurrent.ThreadFactory
+import java.util.concurrent.atomic.AtomicLong
 
 internal object TaskManagerFactoryImpl : TaskManagerFactory {
 
@@ -21,13 +23,21 @@ internal object TaskManagerFactoryImpl : TaskManagerFactory {
                 "corda.taskmanager.",
                 Executors.newScheduledThreadPool(
                     threads,
-                    ThreadFactoryBuilder()
-                        .setNameFormat("$threadName-thread-%d")
-                        .setDaemon(false)
-                        .build()
+                    threadFactory(threadName)
                 ),
                 CordaMetrics.registry
             )
         )
+    }
+
+    private fun threadFactory(threadName: String): ThreadFactory {
+        val backingThreadFactory = Executors.defaultThreadFactory()
+        val count = AtomicLong(0)
+        return ThreadFactory { runnable ->
+            backingThreadFactory.newThread(runnable).apply {
+                setName(String.format(Locale.ROOT, "$threadName-thread-%d", count.getAndIncrement()))
+                setDaemon(false)
+            }
+        }
     }
 }

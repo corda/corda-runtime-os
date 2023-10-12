@@ -11,7 +11,6 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":libs:metrics")
     implementation project(":libs:utilities")
-    implementation "com.google.guava:guava:$guavaVersion"
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
