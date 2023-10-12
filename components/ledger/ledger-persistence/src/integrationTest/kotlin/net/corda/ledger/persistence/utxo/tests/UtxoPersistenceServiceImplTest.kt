@@ -406,7 +406,6 @@ class UtxoPersistenceServiceImplTest {
         // Verify persisted data
         entityManagerFactory.transaction { em ->
             val dbTransaction = em.find(entityFactory.utxoTransaction, signedTransaction.id.toString())
-
             assertThat(dbTransaction).isNotNull
             val txPrivacySalt = dbTransaction.field<ByteArray>("privacySalt")
             val txAccountId = dbTransaction.field<String>("accountId")
@@ -436,6 +435,13 @@ class UtxoPersistenceServiceImplTest {
                             )
                         }
                 }
+
+            val dbMetadata = dbTransaction.field<Any>("metadata")
+            assertThat(dbMetadata).isNotNull
+            assertThat(dbMetadata.field<ByteArray>("canonicalData"))
+                .isEqualTo(signedTransaction.wireTransaction.componentGroupLists[0][0])
+            assertThat(dbMetadata.field<String>("groupParametersHash")).isNotNull
+            assertThat(dbMetadata.field<String>("cpiFileChecksum")).isNotNull
 
             val dbTransactionOutputs = em.createNamedQuery(
                 "UtxoVisibleTransactionOutputEntity.findByTransactionId",
@@ -549,15 +555,6 @@ class UtxoPersistenceServiceImplTest {
         return signedTransaction
     }
 
-    private fun createOrFindMetadata(entityFactory: UtxoEntityFactory, metadataBytes: ByteArray): Any {
-        return entityFactory.createOrFindUtxoTransactionMetadataEntity(
-            digest("SHA-256", metadataBytes).toString(),
-            metadataBytes,
-            "fakeGroupParametersHash",
-            "fakeCpiFileChecksum"
-        )
-    }
-
     private fun createTransactionEntity(
         entityFactory: UtxoEntityFactory,
         signedTransaction: SignedTransactionContainer,
@@ -565,7 +562,13 @@ class UtxoPersistenceServiceImplTest {
         createdTs: Instant = testClock.instant(),
         status: TransactionStatus = UNVERIFIED
     ): Any {
-        val metadata = createOrFindMetadata(entityFactory, signedTransaction.wireTransaction.componentGroupLists[0][0])
+        val metadataBytes = signedTransaction.wireTransaction.componentGroupLists[0][0]
+        val metadata = entityFactory.createOrFindUtxoTransactionMetadataEntity(
+            digest("SHA-256", metadataBytes).toString(),
+            metadataBytes,
+            "fakeGroupParametersHash",
+            "fakeCpiFileChecksum"
+        )
 
         return entityFactory.createUtxoTransactionEntity(
             signedTransaction.id.toString(),

@@ -26,7 +26,7 @@ interface UtxoRepository {
         id: String
     ): SignedTransactionContainer?
 
-    /** Retrieves transaction component leafs */
+    /** Retrieves transaction component leafs except metadata which is stored separately */
     fun findTransactionComponentLeafs(
         entityManager: EntityManager,
         transactionId: String

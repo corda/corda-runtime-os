@@ -102,11 +102,10 @@ class UtxoRepositoryImpl @Activate constructor(
         entityManager: EntityManager,
         transactionId: String
     ): Map<Int, List<ByteArray>> {
-        val leafs = entityManager.createNativeQuery(queryProvider.findTransactionComponentLeafs, Tuple::class.java)
+        return entityManager.createNativeQuery(queryProvider.findTransactionComponentLeafs, Tuple::class.java)
             .setParameter("transactionId", transactionId)
             .resultListAsTuples()
             .mapToComponentGroups(UtxoComponentGroupMapper(transactionId))
-        return leafs
     }
 
     private fun findUnconsumedVisibleStates(
@@ -223,7 +222,7 @@ class UtxoRepositoryImpl @Activate constructor(
         data: ByteArray,
         hash: String
     ) {
-        // Metadata is not stored as the other component groups. See persistTransactionMetadata().
+        // Metadata is not stored with the other components. See persistTransactionMetadata().
         if (groupIndex == 0 && leafIndex == 0) {
             return
         }
