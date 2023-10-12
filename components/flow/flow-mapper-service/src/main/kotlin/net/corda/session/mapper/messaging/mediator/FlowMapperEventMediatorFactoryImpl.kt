@@ -70,6 +70,7 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
         .messageProcessor(messageProcessor)
         .messageRouterFactory(createMessageRouterFactory())
         .threads(flowConfig.getInt(FlowConfig.PROCESSING_THREAD_POOL_SIZE))
+        .threadName("flow-mapper-event-mediator")
         .build()
 
     private fun createMessageRouterFactory() = MessageRouterFactory { clientFinder ->

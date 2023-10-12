@@ -29,7 +29,8 @@ data class EventMediatorConfig<K: Any, S: Any, E: Any>(
     val clientFactories: Collection<MessagingClientFactory>,
     val messageProcessor : StateAndEventProcessor<K, S, E>,
     val messageRouterFactory: MessageRouterFactory,
-    val threads: Int
+    val threads: Int,
+    val threadName: String
 ) {
     /**
      * Timeout for polling consumers.
