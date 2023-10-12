@@ -42,9 +42,9 @@ class EntityRpcRequestProcessor(
     override fun process(request: EntityRequest): FlowEvent {
         logger.debug { "process processing request $request" }
 
-        val persistenceServiceInternal = PersistenceServiceInternal(::getClass) { it }
-
-        val record = processorService.processEvent(logger, request, entitySandboxService, currentSandboxGroupContext, responseFactory, requestsIdsRepository, persistenceServiceInternal)
+        val record = processorService.processEvent(
+            logger, request, entitySandboxService, currentSandboxGroupContext, responseFactory, requestsIdsRepository
+        ) { it }
         return record.value as FlowEvent
     }
 }
