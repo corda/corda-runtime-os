@@ -30,7 +30,6 @@ class MultiSourceEventMediatorFactoryTest {
         multiSourceEventMediatorFactory = MultiSourceEventMediatorFactoryImpl(
             cordaAvroSerializationFactory,
             mock<TaskManager>(),
-            mock<StateManager>(),
             mock<LifecycleCoordinatorFactory>(),
         )
     }
@@ -40,9 +39,11 @@ class MultiSourceEventMediatorFactoryTest {
         val messageProcessor = mock<StateAndEventProcessor<Any, Any, Any>>()
         doReturn(Any::class.java).`when`(messageProcessor).stateValueClass
         val messageRouterFactory = mock<MessageRouterFactory>()
+        val stateManager = mock<StateManager>()
         val config = mock<EventMediatorConfig<Any, Any, Any>>()
         doReturn(messageProcessor).`when`(config).messageProcessor
         doReturn(messageRouterFactory).`when`(config).messageRouterFactory
+        doReturn(stateManager).`when`(config).stateManager
 
         val mediator = multiSourceEventMediatorFactory.create(config)
 

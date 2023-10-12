@@ -26,10 +26,10 @@ import java.time.Duration
  */
 data class EventMediatorConfig<K: Any, S: Any, E: Any>(
     val name: String,
-    val messagingConfig : SmartConfig,
+    val messagingConfig: SmartConfig,
     val consumerFactories: Collection<MediatorConsumerFactory>,
     val clientFactories: Collection<MessagingClientFactory>,
-    val messageProcessor : StateAndEventProcessor<K, S, E>,
+    val messageProcessor: StateAndEventProcessor<K, S, E>,
     val messageRouterFactory: MessageRouterFactory,
     val stateManager: StateManager,
 ) {
