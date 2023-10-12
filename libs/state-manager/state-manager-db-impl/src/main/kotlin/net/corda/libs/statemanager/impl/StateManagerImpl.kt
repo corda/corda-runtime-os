@@ -58,28 +58,38 @@ class StateManagerImpl(
     }
 
     override fun update(states: Collection<State>): Map<String, State> {
-        entityManagerFactory.transaction { em ->
-            val failedUpdates = stateRepository.update(em, states.map { it.toPersistentEntity() })
+        try {
+            entityManagerFactory.transaction { em ->
+                val failedUpdates = stateRepository.update(em, states.map { it.toPersistentEntity() })
 
-            return if (failedUpdates.isEmpty()) {
-                emptyMap()
-            } else {
-                logger.warn("Optimistic locking check failed while updating States ${failedUpdates.joinToString()}")
-                get(failedUpdates)
+                return if (failedUpdates.isEmpty()) {
+                    emptyMap()
+                } else {
+                    logger.warn("Optimistic locking check failed while updating States ${failedUpdates.joinToString()}")
+                    get(failedUpdates)
+                }
             }
+        } catch (e: Exception) {
+            logger.warn("Failed to updated batch of states - ${states.joinToString { it.key }}", e)
+            throw e
         }
     }
 
     override fun delete(states: Collection<State>): Map<String, State> {
-        entityManagerFactory.transaction { em ->
-            val failedDeletes = stateRepository.delete(em, states.map { it.toPersistentEntity() })
+        try {
+            entityManagerFactory.transaction { em ->
+                val failedDeletes = stateRepository.delete(em, states.map { it.toPersistentEntity() })
 
-            return if (failedDeletes.isEmpty()) {
-                emptyMap()
-            } else {
-                logger.warn("Optimistic locking check failed while deleting States ${failedDeletes.joinToString()}")
-                get(failedDeletes)
+                return if (failedDeletes.isEmpty()) {
+                    emptyMap()
+                } else {
+                    logger.warn("Optimistic locking check failed while deleting States ${failedDeletes.joinToString()}")
+                    get(failedDeletes)
+                }
             }
+        } catch (e: Exception) {
+            logger.warn("Failed to delete batch of states - ${states.joinToString { it.key }}", e)
+            throw e
         }
     }
 

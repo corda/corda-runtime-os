@@ -34,51 +34,41 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
             .resultListAsStateEntityCollection()
 
     override fun update(entityManager: EntityManager, states: Collection<StateEntity>): Collection<String> {
-        try {
-            val failedKeys = mutableListOf<String>()
+        val failedKeys = mutableListOf<String>()
 
-            states.forEach { state ->
-                entityManager
-                    .createNativeQuery(queryProvider.updateState)
-                    .setParameter(KEY_PARAMETER_NAME, state.key)
-                    .setParameter(VALUE_PARAMETER_NAME, state.value)
-                    .setParameter(VERSION_PARAMETER_NAME, state.version)
-                    .setParameter(METADATA_PARAMETER_NAME, state.metadata)
-                    .executeUpdate().also {
-                        if (it == 0) {
-                            failedKeys.add(state.key)
-                        }
+        states.forEach { state ->
+            entityManager
+                .createNativeQuery(queryProvider.updateState)
+                .setParameter(KEY_PARAMETER_NAME, state.key)
+                .setParameter(VALUE_PARAMETER_NAME, state.value)
+                .setParameter(VERSION_PARAMETER_NAME, state.version)
+                .setParameter(METADATA_PARAMETER_NAME, state.metadata)
+                .executeUpdate().also {
+                    if (it == 0) {
+                        failedKeys.add(state.key)
                     }
-            }
-
-            return failedKeys
-        } catch (e: Exception) {
-            logger.warn("Failed to updated batch of states - ${states.joinToString { it.key }}", e)
-            throw e
+                }
         }
+
+        return failedKeys
     }
 
     override fun delete(entityManager: EntityManager, states: Collection<StateEntity>): Collection<String> {
-        try {
-            val failedKeys = mutableListOf<String>()
+        val failedKeys = mutableListOf<String>()
 
-            states.forEach { state ->
-                entityManager
-                    .createNativeQuery(queryProvider.deleteStatesByKey)
-                    .setParameter(KEY_PARAMETER_NAME, state.key)
-                    .setParameter(VERSION_PARAMETER_NAME, state.version)
-                    .executeUpdate().also {
-                        if (it == 0) {
-                            failedKeys.add(state.key)
-                        }
+        states.forEach { state ->
+            entityManager
+                .createNativeQuery(queryProvider.deleteStatesByKey)
+                .setParameter(KEY_PARAMETER_NAME, state.key)
+                .setParameter(VERSION_PARAMETER_NAME, state.version)
+                .executeUpdate().also {
+                    if (it == 0) {
+                        failedKeys.add(state.key)
                     }
-            }
-
-            return failedKeys
-        } catch (e: Exception) {
-            logger.warn("Failed to delete batch of states - ${states.joinToString { it.key }}", e)
-            throw e
+                }
         }
+
+        return failedKeys
     }
 
     override fun updatedBetween(entityManager: EntityManager, interval: IntervalFilter): Collection<StateEntity> =
