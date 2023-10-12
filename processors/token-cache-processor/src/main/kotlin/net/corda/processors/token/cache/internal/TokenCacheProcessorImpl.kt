@@ -49,6 +49,11 @@ class TokenCacheProcessorImpl @Activate constructor(
             CordaDb.CordaCluster.persistenceUnitName,
             ConfigurationEntities.classes
         )
+        entitiesRegistry.register(
+            CordaDb.Vault.persistenceUnitName,
+            // Token selection uses native queries, so no JPA entities to register.
+            emptySet()
+        )
     }
 
     private companion object {
