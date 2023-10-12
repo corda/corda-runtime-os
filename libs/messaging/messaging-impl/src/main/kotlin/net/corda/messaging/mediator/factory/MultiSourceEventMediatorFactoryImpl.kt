@@ -49,8 +49,8 @@ class MultiSourceEventMediatorFactoryImpl(
             stateDeserializer,
             stateManager,
             taskManagerFactory.createThreadPoolTaskManager(
-                name = "MultiSourceEventMediator",
-                threadName = "multi-source-event-mediator",
+                name = eventMediatorConfig.name,
+                threadName = eventMediatorConfig.threadName,
                 threads = eventMediatorConfig.threads
             ),
             lifecycleCoordinatorFactory,
