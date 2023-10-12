@@ -33,29 +33,50 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
             .setParameter(KEYS_PARAMETER_NAME, keys)
             .resultListAsStateEntityCollection()
 
-    override fun update(entityManager: EntityManager, states: Collection<StateEntity>) =
+    override fun update(entityManager: EntityManager, states: Collection<StateEntity>): Collection<String> {
         try {
-            states.forEach {
+            val failedKeys = mutableListOf<String>()
+
+            states.forEach { state ->
                 entityManager
                     .createNativeQuery(queryProvider.updateState)
-                    .setParameter(KEY_PARAMETER_NAME, it.key)
-                    .setParameter(VALUE_PARAMETER_NAME, it.value)
-                    .setParameter(METADATA_PARAMETER_NAME, it.metadata)
-                    .executeUpdate()
+                    .setParameter(KEY_PARAMETER_NAME, state.key)
+                    .setParameter(VALUE_PARAMETER_NAME, state.value)
+                    .setParameter(VERSION_PARAMETER_NAME, state.version)
+                    .setParameter(METADATA_PARAMETER_NAME, state.metadata)
+                    .executeUpdate().also {
+                        if (it == 0) {
+                            failedKeys.add(state.key)
+                        }
+                    }
             }
+
+            return failedKeys
         } catch (e: Exception) {
             logger.warn("Failed to updated batch of states - ${states.joinToString { it.key }}", e)
             throw e
         }
+    }
 
-    override fun delete(entityManager: EntityManager, keys: Collection<String>) {
+    override fun delete(entityManager: EntityManager, states: Collection<StateEntity>): Collection<String> {
         try {
-            entityManager
-                .createNativeQuery(queryProvider.deleteStatesByKey)
-                .setParameter(KEYS_PARAMETER_NAME, keys)
-                .executeUpdate()
+            val failedKeys = mutableListOf<String>()
+
+            states.forEach { state ->
+                entityManager
+                    .createNativeQuery(queryProvider.deleteStatesByKey)
+                    .setParameter(KEY_PARAMETER_NAME, state.key)
+                    .setParameter(VERSION_PARAMETER_NAME, state.version)
+                    .executeUpdate().also {
+                        if (it == 0) {
+                            failedKeys.add(state.key)
+                        }
+                    }
+            }
+
+            return failedKeys
         } catch (e: Exception) {
-            logger.warn("Failed to delete batch of states - ${keys.joinToString()}", e)
+            logger.warn("Failed to delete batch of states - ${states.joinToString { it.key }}", e)
             throw e
         }
     }
