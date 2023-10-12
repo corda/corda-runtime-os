@@ -29,7 +29,30 @@ import javax.sql.DataSource
 
 var instance: DbConnectionManagerImpl? = null
 
-fun makeEntityManager(privilege: DbPrivilege=DbPrivilege.DML, name: CordaDb?=null, connectionId: UUID?=null, persistenceUnitName: String? = null): EntityManager {
+/**
+ * Recommended entry point for creating an Entity Manager.
+ *
+ * Use this to get an EntityManager, which you should use and then quickly close. Caching and health checks
+ * are handled internally.
+ *
+ * If the DB connection manager is not ready, or the database is down, or the network is unreliable, this will
+ * sleep until the database is available. In that time, the health check will be negative, so the operator may
+ * choose to restart the whole container (and that happens automatically on Kubernetes using our Helm charts).
+ *
+ * @param privilege The privilege level of the entity manager - DML or DDL.
+ * @param name Optionally, the database name to connect to
+ * @param name Optionally, connection ID in the DB Connection Manager records to use.
+ * @param persistenceUnitName Optionally, the persistence units to expose
+ * @return An EntityManager, that is closeable
+ *
+ * It is suggested that classes using this have a constructor parameter which defaults to this, so that it can be
+ * overriden for local use. To keep that concise, we deliberately use a few defaulted arguments.
+ */
+fun makeEntityManager(
+    privilege: DbPrivilege=DbPrivilege.DML,
+    name: CordaDb?=null,
+    connectionId: UUID?=null,
+    persistenceUnitName: String? = null): EntityManager {
     while (instance == null) {
         DbConnectionManagerImpl.logger.info("Wating for DBConnectionManager to appear connecting to $name at privilege $privilege")
         Thread.sleep(1000)
