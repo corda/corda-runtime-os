@@ -37,6 +37,7 @@ import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.PersistenceException
 
+@SuppressWarnings("LongParameterList")
 class ProcessorService {
 
     fun processEvent(

@@ -57,15 +57,21 @@ class EntityRequestProcessor(
                 val eventType = request.request?.javaClass?.simpleName ?: "Unknown"
                 traceEventProcessingNullableSingle(event, "Crypto Event - $eventType") {
                     CordaMetrics.Metric.Db.EntityPersistenceRequestLag.builder()
-                        .withTag(CordaMetrics.Tag.OperationName, request.request::class.java.name)
-                        .build()
-                        .record(
+                        .withTag(CordaMetrics.Tag.OperationName, request.request::class.java.name).build().record(
                             Duration.ofMillis(Instant.now().toEpochMilli() - event.timestamp)
                         )
 
-                   // val persistenceServiceInternal = PersistenceServiceInternal(sandbox::getClass, payloadCheck)
+                    // val persistenceServiceInternal = PersistenceServiceInternal(sandbox::getClass, payloadCheck)
 
-                    processorService.processEvent(logger, request, entitySandboxService, currentSandboxGroupContext, responseFactory, requestsIdsRepository, payloadCheck)
+                    processorService.processEvent(
+                        logger,
+                        request,
+                        entitySandboxService,
+                        currentSandboxGroupContext,
+                        responseFactory,
+                        requestsIdsRepository,
+                        payloadCheck
+                    )
                 }
             }
         }
