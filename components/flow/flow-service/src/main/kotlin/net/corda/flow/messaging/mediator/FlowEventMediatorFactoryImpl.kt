@@ -116,7 +116,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
 
         fun rpcEndpoint(endpoint: String, path: String) = "${messagingConfig.getString(endpoint)}$path"
 
-        // @TODO: Replace crypto and ledger calls with RPC calls once the endpoints are implemented
+        // @TO-DO: Replace crypto and ledger calls with RPC calls once the endpoints are implemented
         MessageRouter { message ->
             when (val event = message.event()) {
                 is EntityRequest -> routeTo(rpcClient, rpcEndpoint(PERSISTENCE_WORKER_REST_ENDPOINT, PERSISTENCE_PATH))
