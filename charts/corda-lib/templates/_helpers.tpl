@@ -233,31 +233,31 @@ Cluster DB credentials environment variables
 - name: DB_CLUSTER_USERNAME
   valueFrom:
     secretKeyRef:
-      {{ include "corda.clusterDbUsername" . }}
+      {{- include "corda.clusterDbUsername" . | nindent 6 }}
 - name: DB_CLUSTER_PASSWORD
   valueFrom:
     secretKeyRef:
-      {{ include "corda.clusterDbPassword" . }}
+      {{- include "corda.clusterDbPassword" . | nindent 6 }}
 {{- end -}}
 
 {{- define "corda.clusterDbUsername" -}}
-{{- if .Values.db.cluster.username.valueFrom.secretKeyRef.name }}
+{{- if .Values.db.cluster.username.valueFrom.secretKeyRef.name -}}
 name: {{ .Values.db.cluster.username.valueFrom.secretKeyRef.name | quote }}
 key: {{ required "Must specify db.cluster.username.valueFrom.secretKeyRef.key" .Values.db.cluster.username.valueFrom.secretKeyRef.key | quote }}
-{{- else }}
+{{- else -}}
 name: {{ include "corda.clusterDbDefaultSecretName" . | quote }}
 key: "username"
 {{- end }}
-{{- end -}}
+{{- end }}
 
 {{- define "corda.clusterDbPassword" -}}
-{{- if .Values.db.cluster.password.valueFrom.secretKeyRef.name }}
+{{- if .Values.db.cluster.password.valueFrom.secretKeyRef.name -}}
 name: {{ .Values.db.cluster.password.valueFrom.secretKeyRef.name | quote }}
 key: {{ required "Must specify db.cluster.password.valueFrom.secretKeyRef.key" .Values.db.cluster.password.valueFrom.secretKeyRef.key | quote }}
-{{- else }}
+{{- else -}}
 name: {{ include "corda.clusterDbDefaultSecretName" . | quote }}
 key: "password"
-{{- end }}
+{{- end -}}
 {{- end -}}
 
 {{/*
@@ -268,28 +268,28 @@ Default name for bootstrap cluster DB secret
 {{- end -}}
 
 {{- define "corda.bootstrapClusterPgUser" -}}
-{{- if .Values.bootstrap.db.cluster.username.valueFrom.secretKeyRef.name }}
+{{- if .Values.bootstrap.db.cluster.username.valueFrom.secretKeyRef.name -}}
 name: {{ .Values.bootstrap.db.cluster.username.valueFrom.secretKeyRef.name | quote }}
 key: {{ required "Must specify bootstrap.db.cluster.username.valueFrom.secretKeyRef.key" .Values.bootstrap.db.cluster.username.valueFrom.secretKeyRef.key | quote }}
-{{- else if .Values.bootstrap.db.cluster.username.value }}
+{{- else if .Values.bootstrap.db.cluster.username.value -}}
 name: {{ include "corda.bootstrapClusterDbDefaultSecretName" . | quote }}
 key: "username"
-{{- else }}
+{{- else -}}
 {{ include "corda.clusterDbUsername" . }}
-{{- end }}
 {{- end -}}
+{{- end }}
 
 {{- define "corda.bootstrapClusterPgPassword" -}}
-{{- if .Values.bootstrap.db.cluster.password.valueFrom.secretKeyRef.name }}
+{{- if .Values.bootstrap.db.cluster.password.valueFrom.secretKeyRef.name -}}
 name: {{ .Values.bootstrap.db.cluster.password.valueFrom.secretKeyRef.name | quote }}
 key: {{ required "Must specify bootstrap.db.cluster.password.valueFrom.secretKeyRef.key" .Values.bootstrap.db.cluster.password.valueFrom.secretKeyRef.key | quote }}
-{{- else if .Values.bootstrap.db.cluster.password.value }}
+{{- else if .Values.bootstrap.db.cluster.password.value -}}
 name: {{ include "corda.bootstrapClusterDbDefaultSecretName" . | quote }}
 key: "password"
-{{- else }}
+{{- else -}}
 {{ include "corda.clusterDbPassword" . }}
-{{- end }}
 {{- end -}}
+{{- end }}
 
 {{/*
 Bootstrap cluster DB credentials environment variables
@@ -298,11 +298,11 @@ Bootstrap cluster DB credentials environment variables
 - name: CLUSTER_PGUSER
   valueFrom:
     secretKeyRef:
-      {{ - include "corda.bootstrapClusterPgUser" . }}
+      {{- include "corda.bootstrapClusterPgUser" . | nindent 6 }}
 - name: CLUSTER_PGPASSWORD
   valueFrom:
     secretKeyRef:
-      {{ - include "corda.bootstrapClusterPgPassword" . }}
+      {{- include "corda.bootstrapClusterPgPassword" . | nindent 6 }}
 {{- end -}}
 
 {{/*
@@ -628,11 +628,11 @@ Default name for State Manager DB secret
 */}}
 {{- define "corda.stateManagerDbDefaultSecretName" -}}
 {{- if $.Values.stateManager.db.host -}}
-{{- printf "%s-statemanager-db" (include "corda.fullname" .) -}}
+{{ printf "%s-statemanager-db" (include "corda.fullname" .) }}
 {{- else -}}
-{{- printf "%s" (include "corda.clusterDbDefaultSecretName" .) -}}
+{{ printf "%s" (include "corda.clusterDbDefaultSecretName" .) }}
 {{- end -}}
-{{- end -}}
+{{- end }}
 
 {{/*
 State Manager JDBC URL. If no state-manager host is provided, it will default to use a state_manager schema in
@@ -709,7 +709,7 @@ stateManager host is supplied.
       key: "username"
       {{- end }}
       {{- else }}
-      {{ include "corda.clusterDbUsername" . }}
+      {{- include "corda.clusterDbUsername" . | nindent 6 }}
       {{- end }}
 - name: STATE_MANAGER_DB_PASSWORD
   valueFrom:
@@ -723,7 +723,7 @@ stateManager host is supplied.
       key: "password"
       {{- end }}
       {{- else }}
-      {{ include "corda.clusterDbPassword" . }}
+      {{- include "corda.clusterDbPassword" . | nindent 6 }}
       {{- end }}
 {{- end -}}
 
@@ -731,12 +731,12 @@ stateManager host is supplied.
 Default name for bootstrap State Manager DB secret
 */}}
 {{- define "corda.bootstrapStateManagerDbDefaultSecretName" -}}
-{{- if .Values.stateManager.db.host }}
-{{- printf "%s-bootstrap-statemanager-db" (include "corda.fullname" .) -}}
-{{- else }}
-{{- printf "%s" (include "corda.bootstrapClusterDbDefaultSecretName" .) -}}
-{{- end -}}
-{{- end -}}
+{{- if .Values.stateManager.db.host -}}
+{{ printf "%s-bootstrap-statemanager-db" (include "corda.fullname" .) }}
+{{- else -}}
+{{ printf "%s" (include "corda.bootstrapClusterDbDefaultSecretName" .) }}
+{{- end }}
+{{- end }}
 
 {{/*
 Bootstrap State Manager DB credentials environment variables. If there is no other host defined for state manager, the
@@ -761,7 +761,7 @@ cluster db user and password are used.
       key: "username"
       {{- end }}
       {{- else }}
-      {{ include "corda.bootstrapClusterPgUser" . }}
+      {{- include "corda.bootstrapClusterPgUser" . | nindent 6 }}
       {{- end }}
 - name: STATE_MANAGER_PGPASSWORD
   valueFrom:
@@ -776,12 +776,12 @@ cluster db user and password are used.
       {{- else if .Values.stateManager.db.password.valueFrom.secretKeyRef.name }}
       name: {{ .Values.stateManager.db.password.valueFrom.secretKeyRef.name | quote }}
       key: {{ required "Must specify stateManager.db.password.valueFrom.secretKeyRef.key" .Values.stateManager.db.password.valueFrom.secretKeyRef.key | quote }}
-      {{- else}}
+      {{- else }}
       name: {{ include "corda.stateManagerDbDefaultSecretName" . | quote }}
       key: "password"
       {{- end }}
-      {{- else}}
-      {{ include "corda.bootstrapClusterPgPassword" }}
+      {{- else }}
+      {{- include "corda.bootstrapClusterPgPassword" . | nindent 6 }}
       {{- end }}
 {{- end -}}
 
