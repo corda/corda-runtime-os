@@ -296,7 +296,7 @@ class UtxoPersistenceServiceImplTest {
     private fun createMockTransaction(producedStates: Map<Int, StateAndRef<ContractState>>): UtxoTransactionReader {
         return mock {
             on { getConsumedStateRefs() } doReturn emptyList()
-            on { rawGroupLists } doReturn listOf(listOf("{}".toByteArray())) // "membershipGroupParametersHash": "membershipGroupParametersHash", "cpiMetadata": {"fileChecksum": "cpiFileChecksum"}
+            on { rawGroupLists } doReturn listOf(listOf("{}".toByteArray()))
             on { visibleStatesIndexes } doReturn listOf(0)
             on { status } doReturn TransactionStatus.UNVERIFIED
             on { signatures } doReturn emptyList()
