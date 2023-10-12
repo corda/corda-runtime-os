@@ -19,9 +19,6 @@ data class UtxoTransactionMetadataEntity(
     @get:Column(name = "canonical_data", nullable = false)
     var canonicalData: ByteArray,
 
-    @get:Column(name = "json_data", nullable = false)
-    var jsonData: String,
-
     @get:Column(name = "group_parameters_hash", nullable = false)
     var groupParametersHash: String,
 
@@ -40,7 +37,6 @@ data class UtxoTransactionMetadataEntity(
 
         if (hash != other.hash) return false
         if (!canonicalData.contentEquals(other.canonicalData)) return false
-        if (jsonData != other.jsonData) return false
         if (groupParametersHash != other.groupParametersHash) return false
         if (cpiFileChecksum != other.cpiFileChecksum) return false
 
@@ -50,7 +46,6 @@ data class UtxoTransactionMetadataEntity(
     override fun hashCode(): Int {
         var result = hash.hashCode()
         result = 31 * result + canonicalData.contentHashCode()
-        result = 31 * result + jsonData.hashCode()
         result = 31 * result + groupParametersHash.hashCode()
         result = 31 * result + cpiFileChecksum.hashCode()
         return result

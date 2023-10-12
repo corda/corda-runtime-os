@@ -94,7 +94,6 @@ import javax.persistence.EntityManagerFactory
 import net.corda.v5.ledger.utxo.observer.UtxoToken
 import net.corda.v5.ledger.utxo.observer.UtxoTokenFilterFields
 import net.corda.v5.ledger.utxo.observer.UtxoTokenPoolKey
-import javax.persistence.EntityManager
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
@@ -554,7 +553,6 @@ class UtxoPersistenceServiceImplTest {
         return entityFactory.createOrFindUtxoTransactionMetadataEntity(
             digest("SHA-256", metadataBytes).toString(),
             metadataBytes,
-            metadataBytes.decodeToString(),
             "fakeGroupParametersHash",
             "fakeCpiFileChecksum"
         )

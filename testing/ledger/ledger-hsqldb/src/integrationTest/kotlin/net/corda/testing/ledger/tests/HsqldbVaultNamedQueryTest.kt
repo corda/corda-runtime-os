@@ -97,7 +97,6 @@ class HsqldbVaultNamedQueryTest {
             val metadata = em.find(UtxoTransactionMetadataEntity::class.java, "hash") ?: UtxoTransactionMetadataEntity(
                 "hash",
                 "canonicalData".toByteArray(),
-                "jsonData",
                 "groupParametersHash",
                 "cpiFileChecksum"
             ).also{

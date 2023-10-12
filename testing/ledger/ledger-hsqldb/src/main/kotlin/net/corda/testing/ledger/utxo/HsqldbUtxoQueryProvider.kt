@@ -33,12 +33,12 @@ class HsqldbUtxoQueryProvider @Activate constructor(
     override val persistTransactionMetadata: String
         get() = """
             MERGE INTO {h-schema}utxo_transaction_metadata AS m
-            USING (VALUES :hash, CAST(:canonicalData AS VARBINARY(1048576)), :jsonData, :groupParametersHash, :cpiFileChecksum)
-                AS x(hash, canonical_data, json_data, group_parameters_hash, cpi_file_checksum)
+            USING (VALUES :hash, CAST(:canonicalData AS VARBINARY(1048576)), :groupParametersHash, :cpiFileChecksum)
+                AS x(hash, canonical_data, group_parameters_hash, cpi_file_checksum)
             ON x.hash = m.hash
             WHEN NOT MATCHED THEN
-                INSERT (hash, canonical_data, json_data, group_parameters_hash, cpi_file_checksum)
-                VALUES (x.hash, x.canonical_data, x.json_data, x.group_parameters_hash, x.cpi_file_checksum)"""
+                INSERT (hash, canonical_data, group_parameters_hash, cpi_file_checksum)
+                VALUES (x.hash, x.canonical_data, x.group_parameters_hash, x.cpi_file_checksum)"""
             .trimIndent()
 
     override val persistTransactionComponentLeaf: String

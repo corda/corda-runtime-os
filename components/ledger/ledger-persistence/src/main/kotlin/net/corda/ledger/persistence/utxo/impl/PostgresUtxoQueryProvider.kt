@@ -28,8 +28,8 @@ class PostgresUtxoQueryProvider @Activate constructor(
 
     override val persistTransactionMetadata: String
         get() = """
-            INSERT INTO {h-schema}utxo_transaction_metadata(hash, canonical_data, json_data, group_parameters_hash, cpi_file_checksum)
-                VALUES (:hash, :canonicalData, CAST(:jsonData as JSONB), :groupParametersHash, :cpiFileChecksum)
+            INSERT INTO {h-schema}utxo_transaction_metadata(hash, canonical_data, group_parameters_hash, cpi_file_checksum)
+                VALUES (:hash, :canonicalData, :groupParametersHash, :cpiFileChecksum)
             ON CONFLICT DO NOTHING"""
             .trimIndent()
 

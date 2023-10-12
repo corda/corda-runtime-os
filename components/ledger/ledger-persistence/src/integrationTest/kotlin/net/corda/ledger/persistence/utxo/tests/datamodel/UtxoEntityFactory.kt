@@ -30,7 +30,6 @@ class UtxoEntityFactory(private val entityManagerFactory: EntityManagerFactory) 
     fun createOrFindUtxoTransactionMetadataEntity(
         hash: String,
         canonicalData: ByteArray,
-        jsonData: String,
         groupParametersHash: String,
         cpiFileChecksum: String,
     ): Any {
@@ -38,7 +37,6 @@ class UtxoEntityFactory(private val entityManagerFactory: EntityManagerFactory) 
             em.find(utxoTransactionMetadata, hash) ?: createUtxoTransactionMetadataEntity(
                 hash,
                 canonicalData,
-                jsonData,
                 groupParametersHash,
                 cpiFileChecksum,
             ).also {
@@ -50,12 +48,11 @@ class UtxoEntityFactory(private val entityManagerFactory: EntityManagerFactory) 
     fun createUtxoTransactionMetadataEntity(
         hash: String,
         canonicalData: ByteArray,
-        jsonData: String,
         groupParametersHash: String,
         cpiFileChecksum: String,
     ): Any {
-        return utxoTransactionMetadata.constructors.single { it.parameterCount == 5 }.newInstance(
-            hash, canonicalData, jsonData, groupParametersHash, cpiFileChecksum
+        return utxoTransactionMetadata.constructors.single { it.parameterCount == 4 }.newInstance(
+            hash, canonicalData, groupParametersHash, cpiFileChecksum
         )
     }
 

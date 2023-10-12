@@ -209,7 +209,6 @@ class UtxoRepositoryImpl @Activate constructor(
         entityManager.createNativeQuery(queryProvider.persistTransactionMetadata)
             .setParameter("hash", hash)
             .setParameter("canonicalData", metadataBytes)
-            .setParameter("jsonData", metadataBytes.decodeToString())
             .setParameter("groupParametersHash", groupParametersHash)
             .setParameter("cpiFileChecksum", cpiFileChecksum)
             .executeUpdate()
