@@ -61,7 +61,6 @@ class EntityRequestSubscriptionFactoryImpl @Activate constructor(
             currentSandboxGroupContext,
             entitySandboxService,
             responseFactory,
-            //TODO - what to do about config payload below?
             EntityRequest::class.java,
             FlowEvent::class.java
         )

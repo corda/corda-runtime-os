@@ -35,7 +35,7 @@ import net.corda.db.persistence.testkit.helpers.SandboxHelper.getDogClass
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getOwnerClass
 import net.corda.db.schema.DbSchema
 import net.corda.entityprocessor.impl.internal.EntityRpcRequestProcessor
-import net.corda.entityprocessor.impl.internal.PersistenceServiceRpcInternal
+import net.corda.entityprocessor.impl.internal.PersistenceServiceInternal
 import net.corda.entityprocessor.impl.internal.getClass
 import net.corda.entityprocessor.impl.tests.helpers.AnimalCreator.createCats
 import net.corda.entityprocessor.impl.tests.helpers.AnimalCreator.createDogs
@@ -206,7 +206,7 @@ class PersistenceServiceRpcInternalTests {
 
     @Test
     fun `persist`() {
-        val persistenceService = PersistenceServiceRpcInternal(sandbox::getClass)
+        val persistenceService = PersistenceServiceInternal(sandbox::getClass) { it }
         val dog = sandbox.createDog("Rover").instance
         val payload = PersistEntities(listOf(sandbox.serialize(dog)))
 
