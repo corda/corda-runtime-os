@@ -2,7 +2,6 @@ package net.corda.crypto.softhsm.impl
 
 import net.corda.crypto.config.impl.MasterKeyPolicy
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.persistence.HSMUsage
 import net.corda.crypto.persistence.db.model.HSMAssociationEntity
 import net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity
@@ -104,7 +103,7 @@ class HSMRepositoryImpl(val emf: ()->EntityManager = { makeEntityManager(name=Co
         tenantId: String,
         category: String,
         masterKeyPolicy: MasterKeyPolicy
-    ): HSMAssociationInfo = entityManagerFactory.createEntityManager().use {
+    ): HSMAssociationInfo = emf().use {
         try {
             it.transaction { em ->
                 val association =

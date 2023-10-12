@@ -4,7 +4,6 @@ import net.corda.crypto.config.impl.MasterKeyPolicy
 import net.corda.crypto.persistence.db.model.HSMAssociationEntity
 import net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
-import net.corda.db.connection.manager.impl.makeEntityManager
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -32,9 +31,9 @@ class HSMRepositoryImplTest {
     fun `findTenantAssociation returns null when there are no results`() {
         val tenantCap = argumentCaptor<String>()
         val categoryCap = argumentCaptor<String>()
-        val em = org.mockito.kotlin.mock<EntityManager> {
+        val em = mock<EntityManager> {
             on { createQuery(any(), eq(HSMCategoryAssociationEntity::class.java)) } doAnswer {
-                org.mockito.kotlin.mock {
+                mock {
                     on { setParameter(eq("tenantId"), tenantCap.capture()) } doReturn it
                     on { setParameter(eq("category"), categoryCap.capture()) } doReturn it
                     on { resultList } doReturn emptyList()
@@ -57,9 +56,9 @@ class HSMRepositoryImplTest {
         val hsmCategoryAssociation2 = HSMCategoryAssociationEntity("2", "tenant", "category", hsmAssociation2, Instant.ofEpochMilli(0), 0)
         val tenantCap = argumentCaptor<String>()
         val categoryCap = argumentCaptor<String>()
-        val em = org.mockito.kotlin.mock<EntityManager> {
+        val em = mock<EntityManager> {
             on { createQuery(any(), eq(HSMCategoryAssociationEntity::class.java)) } doAnswer {
-                org.mockito.kotlin.mock {
+                mock {
                     on { setParameter(eq("tenantId"), tenantCap.capture()) } doReturn it
                     on { setParameter(eq("category"), categoryCap.capture()) } doReturn it
                     on { resultList } doReturn listOf(hsmCategoryAssociation1, hsmCategoryAssociation2)
@@ -128,11 +127,6 @@ class HSMRepositoryImplTest {
             on { transaction } doReturn et
             on { merge(entityCap.capture()) } doAnswer { entityCap.lastValue }
         }
-        val repo = HSMRepositoryImpl(
-            mock {
-                on { createEntityManager() } doReturn em
-            }
-        )
-        return Pair(entityCap, repo)
+        return Pair(entityCap, HSMRepositoryImpl( { em }))
     }
 }

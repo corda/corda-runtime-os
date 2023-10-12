@@ -299,7 +299,7 @@ class CryptoProcessorImpl @Activate constructor(
     
     private fun startTenantInfoService() = TenantInfoServiceImpl({ HSMRepositoryImpl() } )
 
-    private fun startBusProcessors(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
+    private fun startProcessors(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val cryptoConfig = event.config.getConfig(CRYPTO_CONFIG)
 
         // create processors
