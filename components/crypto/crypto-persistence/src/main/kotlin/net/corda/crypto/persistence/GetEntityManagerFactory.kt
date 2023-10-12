@@ -1,14 +1,17 @@
 package net.corda.crypto.persistence
 
-import javax.persistence.EntityManagerFactory
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.ShortHash
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.connection.manager.impl.makeEntityManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.metrics.CordaMetrics
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import javax.persistence.EntityManager
+import javax.persistence.EntityManagerFactory
+
 
 fun getEntityManagerFactory(
     tenantId: String,

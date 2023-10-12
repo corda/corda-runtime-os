@@ -2,11 +2,14 @@ package net.corda.crypto.softhsm.impl
 
 import net.corda.crypto.config.impl.MasterKeyPolicy
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.persistence.HSMUsage
 import net.corda.crypto.persistence.db.model.HSMAssociationEntity
 import net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity
 import net.corda.crypto.softhsm.HSMRepository
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
+import net.corda.db.connection.manager.impl.makeEntityManager
+import net.corda.db.schema.CordaDb
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.v5.base.util.EncodingUtils.toHex
@@ -26,17 +29,16 @@ import net.corda.utilities.debug
  * @param entityManagerFactory An entity manager factory connected to the right database, matching tenantId
  */
 
-class HSMRepositoryImpl(
-    private val entityManagerFactory: EntityManagerFactory
-) : HSMRepository {
+class HSMRepositoryImpl: HSMRepository {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun close() = entityManagerFactory.close()
+    override fun close() {
+    }
 
     override fun findTenantAssociation(tenantId: String, category: String): HSMAssociationInfo? =
-        entityManagerFactory.createEntityManager().use {
+        makeEntityManager(name= CordaDb.Crypto).use {
             val result = it.createQuery(
                 """
             SELECT ca FROM HSMCategoryAssociationEntity ca
@@ -57,7 +59,7 @@ class HSMRepositoryImpl(
             logger.debug { "Looked up tenant association for $tenantId $category with wrapping key alias ${it?.masterKeyAlias}" }
         }
 
-    override fun getHSMUsage(): List<HSMUsage> = entityManagerFactory.createEntityManager().use {
+    override fun getHSMUsage(): List<HSMUsage> = makeEntityManager(name=CordaDb.Crypto).use {
         it.createQuery(
             """
             SELECT ha.hsmId as hsmId, COUNT(*) as usages 
@@ -77,7 +79,7 @@ class HSMRepositoryImpl(
         tenantId: String,
         category: String,
         masterKeyPolicy: MasterKeyPolicy,
-    ): HSMAssociationInfo = entityManagerFactory.createEntityManager().use {
+    ): HSMAssociationInfo = makeEntityManager(name= CordaDb.Crypto).use {
         it.transaction { em ->
             val association =
                 findHSMAssociationEntity(em, tenantId)

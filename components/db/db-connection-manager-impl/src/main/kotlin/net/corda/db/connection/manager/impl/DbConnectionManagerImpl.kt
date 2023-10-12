@@ -6,6 +6,7 @@ import net.corda.db.connection.manager.DbConnectionOps
 import net.corda.db.connection.manager.DbConnectionsRepository
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DataSourceFactory
+import net.corda.db.core.DbPrivilege
 import net.corda.db.core.HikariDataSourceFactory
 import net.corda.db.schema.CordaDb
 import net.corda.libs.configuration.SmartConfig
@@ -21,17 +22,40 @@ import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.time.Duration
+import java.util.*
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.sql.DataSource
 
 var instance: DbConnectionManagerImpl? = null
 
-fun makeEntityManager(): EntityManager {
+fun makeEntityManager(privilege: DbPrivilege=DbPrivilege.DML, name: CordaDb?=null, connectionId: UUID?=null, persistenceUnitName: String? = null): EntityManager {
     while (instance == null) {
+        DbConnectionManagerImpl.logger.info("Wating for DBConnectionManager to appear connecting to $name at privilege $privilege")
         Thread.sleep(1000)
     }
-    return instance.getClusterEntityManagerFactory().createEntityManager()
+    while (!instance!!.isRunning) {
+        DbConnectionManagerImpl.logger.info("Wating for DBConnectionManager to become ready connecting to $name at privilege $privilege")
+        Thread.sleep(1000)
+    }
+    val emf: EntityManagerFactory = if (name == CordaDb.CordaCluster) {
+        require(connectionId == null)
+        instance!!.getOrCreateEntityManagerFactory(name, privilege)
+    } else {
+        require(name != null)
+        if (connectionId != null) {
+            require(persistenceUnitName != null)
+            instance!!.createEntityManagerFactory(
+                connectionId = connectionId,
+                entitiesSet = instance!!.entitiesRegistry.get(persistenceUnitName)?: throw IllegalStateException(
+                    "persistenceUnitName ${persistenceUnitName} is not registered."
+                )
+            )
+        } else {
+            instance!!.getClusterEntityManagerFactory() // TODO change
+        }
+    }
+    return emf.createEntityManager()
 }
 
 @Component(service = [DbConnectionManager::class])
@@ -40,7 +64,7 @@ class DbConnectionManagerImpl (
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val dataSourceFactory: DataSourceFactory,
     private val entityManagerFactoryFactory: EntityManagerFactoryFactory,
-    private val entitiesRegistry: JpaEntitiesRegistry,
+    internal val entitiesRegistry: JpaEntitiesRegistry,
     private val dbConnectionRepositoryFactory: DbConnectionRepositoryFactory,
     private val dbConnectionOps: DbConnectionOps,
     private val checkConnectionRetryTimeout: Duration,
@@ -65,12 +89,12 @@ class DbConnectionManagerImpl (
                 LateInitDbConnectionOps(),
                 Duration.ofSeconds(3),
                 { d -> Thread.sleep(d.toMillis()) })  {
-                logger.error("Constructed DbConnectionManager $this")
+                logger.info("Constructed DbConnectionManager $this")
                 instance = this
             }
 
-    private companion object {
-        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    companion object {
+        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val eventHandler = DbConnectionManagerEventHandler(this)

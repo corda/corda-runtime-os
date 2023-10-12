@@ -297,18 +297,9 @@ class CryptoProcessorImpl @Activate constructor(
         )
     }
     
-    private fun startTenantInfoService() = TenantInfoServiceImpl {
-        HSMRepositoryImpl(
-            getEntityManagerFactory(
-                CryptoTenants.CRYPTO,
-                dbConnectionManager,
-                virtualNodeInfoReadService,
-                jpaEntitiesRegistry
-            )
-        )
-    }
+    private fun startTenantInfoService() = TenantInfoServiceImpl({ HSMRepositoryImpl() } )
 
-    private fun startProcessors(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
+    private fun startBusProcessors(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val cryptoConfig = event.config.getConfig(CRYPTO_CONFIG)
 
         // create processors
@@ -375,7 +366,7 @@ class CryptoProcessorImpl @Activate constructor(
         logger.trace("Starting processing on $hsmRegGroupName ${Schemas.Crypto.RPC_HSM_REGISTRATION_MESSAGE_TOPIC}")
         coordinator.getManagedResource<SubscriptionBase>(HSM_REG_SUBSCRIPTION)!!.start()
     }
-    
+
     private fun startBusProcessors(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val cryptoConfig = event.config.getConfig(CRYPTO_CONFIG)
 
