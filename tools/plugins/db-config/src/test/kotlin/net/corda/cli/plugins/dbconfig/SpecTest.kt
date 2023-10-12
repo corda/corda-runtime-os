@@ -120,4 +120,24 @@ class SpecTest {
         verify(mockLiquibase, times(NUMBER_OF_DEFAULT_SCHEMAS)).update(any<Contexts>(), any<FileWriter>())
         verify(mockWriter, times(NUMBER_OF_DEFAULT_SCHEMAS)).close()
     }
+
+    @Test
+    fun `Verify specifying statemanager schema will generate only statemanager sql`() {
+        val spec = Spec(specConfig)
+
+        spec.jdbcUrl = JDBC_URL
+        spec.user = USER
+        spec.password = PASSWORD
+        spec.schemasToGenerate = listOf("statemanager")
+        spec.generateSchemaSql = listOf("statemanager:STATE_MANAGER_SCHEMA")
+
+        spec.run()
+
+        verify(mockConnectionFactory, times(1)).invoke(JDBC_URL, USER, PASSWORD)
+        verify(mockDatabaseFactory, times(1)).invoke(mockConnection)
+        verify(mockLiquibaseFactory, times(1)).invoke(any(), eq(mockDatabase))
+
+        verify(mockLiquibase, times(1)).update(any<Contexts>(), any<FileWriter>())
+        verify(mockWriter, times(1)).close()
+    }
 }

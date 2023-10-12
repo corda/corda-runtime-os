@@ -297,7 +297,7 @@ spec:
           - "--stateManager"
           - "database.pass=$(STATE_MANAGER_DB_PASSWORD)"
           - "--stateManager"
-          - "database.jdbc.url=jdbc:{{ $.Values.stateManager.db.type }}://{{ $.Values.stateManager.db.host }}:{{ $.Values.stateManager.db.port }}/{{ $.Values.stateManager.db.database }}?currentSchema=STATE_MANAGER"
+          - "database.jdbc.url={{- include "corda.stateManagerJdbcUrl" $ -}}?currentSchema=STATE_MANAGER"
           - "--stateManager"
           - "database.jdbc.directory=/opt/jdbc-driver"
           - "--stateManager"
