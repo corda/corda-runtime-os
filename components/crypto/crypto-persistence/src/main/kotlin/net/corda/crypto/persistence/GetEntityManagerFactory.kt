@@ -23,16 +23,10 @@ fun getEntityManagerFactory(
             val onCluster = CryptoTenants.isClusterTenant(tenantId)
             val entityManagerFactory = if (onCluster) {
                 // tenantID is crypto, P2P or REST; let's obtain a connection to our cluster Crypto database
-                val baseEMF = dbConnectionManager.getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
-                object : EntityManagerFactory by baseEMF {
-                    override fun close() {
-                        // ignored; we should never close this since dbConnectionManager owns it
-                        // TODO maybe move this logic to never close to DbConnectionManager
-                    }
-                }
+                dbConnectionManager.getOrCreateEntityManagerFactory(CordaDb.Crypto, DbPrivilege.DML)
             } else {
                 // tenantID is a virtual node; let's connect to one of the virtual node Crypto databases
-                dbConnectionManager.createEntityManagerFactory(
+                dbConnectionManager.getOrCreateEntityManagerFactory(
                     connectionId = virtualNodeInfoReadService.getByHoldingIdentityShortHash(
                         ShortHash.of(
                             tenantId
@@ -48,5 +42,13 @@ fun getEntityManagerFactory(
                 )
             }
             entityManagerFactory
-        }!!
+        }!!.let { baseEmf ->
+            object : EntityManagerFactory by baseEmf {
+                override fun close() {
+                    // ignored; we should never close this since dbConnectionManager owns it
+                    // TODO maybe move this logic to never close to DbConnectionManager
+                }
+            }
+
+        }
 }
