@@ -143,22 +143,13 @@ class SessionEventHandler @Activate constructor(
         context.flowMetrics.flowStarted()
 
         initiatedFlowNameAndProtocolResult.let { result ->
-            if (result.isSuccess) {
-                context.checkpoint.putSessionState(sessionManager.generateSessionState(
-                    sessionId,
-                    getContextSessionProperties(sessionEvent.contextSessionProperties, result.getOrThrow()),
-                    sessionEvent.initiatingIdentity,
-                    Instant.now(),
-                    SessionStateType.CONFIRMED
-                ))
-            } else {
-                sendErrorMessage(
-                    context,
-                    sessionId,
-                    initiatedFlowNameAndProtocolResult.exceptionOrNull() ?:
-                    FlowFatalException("Failed to create initiated checkpoint for session: $sessionId.")
-                )
-            }
+            context.checkpoint.putSessionState(sessionManager.generateSessionState(
+                sessionId,
+                getContextSessionProperties(sessionEvent.contextSessionProperties, result),
+                sessionEvent.initiatingIdentity,
+                Instant.now(),
+                SessionStateType.CONFIRMED
+            ))
         }
     }
 
@@ -168,12 +159,12 @@ class SessionEventHandler @Activate constructor(
         cpiId: String,
         requestedProtocolName: String,
         initiatorVersionsSupported: List<Int>
-    ): Result<FlowAndProtocolVersion> {
+    ): FlowAndProtocolVersion {
         val sessionId = sessionEvent.sessionId
         val initiatingIdentity = sessionEvent.initiatingIdentity
         val initiatedIdentity = sessionEvent.initiatedIdentity
         val holdingIdentity = initiatedIdentity.toCorda()
-        var initiatedFlowNameAndProtocolResult: Result<FlowAndProtocolVersion>? = null
+        var initiatedFlowNameAndProtocolResult: FlowAndProtocolVersion? = null
 
         checkpointInitializer.initialize(
             context.checkpoint,
@@ -189,9 +180,7 @@ class SessionEventHandler @Activate constructor(
                 )
             }
 
-            initiatedFlowNameAndProtocolResult = runCatching {
-                protocolStore.responderForProtocol(requestedProtocolName, initiatorVersionsSupported, context)
-            }
+            initiatedFlowNameAndProtocolResult = protocolStore.responderForProtocol(requestedProtocolName, initiatorVersionsSupported, context)
 
             FlowStartContext.newBuilder()
                 .setStatusKey(FlowKey(sessionId, initiatedIdentity))
@@ -200,7 +189,7 @@ class SessionEventHandler @Activate constructor(
                 .setIdentity(initiatedIdentity)
                 .setCpiId(cpiId)
                 .setInitiatedBy(initiatingIdentity)
-                .setFlowClassName(initiatedFlowNameAndProtocolResult?.getOrNull()?.flowClassName ?: "Invalid protocol")
+                .setFlowClassName(initiatedFlowNameAndProtocolResult!!.flowClassName)
                 .setContextPlatformProperties(keyValuePairListOf(mapOf(MDC_CLIENT_ID to sessionId)))
                 .setCreatedTimestamp(Instant.now())
                 .build()
