@@ -443,13 +443,35 @@ class UtxoPersistenceServiceImplTest {
             )
                 .setParameter("transactionId", signedTransaction.id.toString())
                 .resultList
-            assertThat(dbTransactionSources).isNotNull
+
+            assertThat(dbTransactionSources).allMatch {
+                it.field<Int>("groupIndex") == UtxoComponentGroup.INPUTS.ordinal
+                        || it.field<Int>("groupIndex") == UtxoComponentGroup.REFERENCES.ordinal
+            }
+
+            val (dbTransactionInputs, dbTransactionReferences) = dbTransactionSources.partition {
+                it.field<Int>("groupIndex") == UtxoComponentGroup.INPUTS.ordinal
+            }
+
+            assertThat(dbTransactionInputs).isNotNull
                 .hasSameSizeAs(defaultInputStateRefs)
-            dbTransactionSources
+
+            assertThat(dbTransactionReferences).isNotNull
+                .hasSameSizeAs(defaultReferenceStateRefs)
+
+            dbTransactionInputs
                 .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
                 .zip(defaultInputStateRefs)
                 .forEachIndexed { leafIndex, (dbInput, transactionInput) ->
-                    assertThat(dbInput.field<Int>("groupIndex")).isEqualTo(UtxoComponentGroup.INPUTS.ordinal)
+                    assertThat(dbInput.field<Int>("leafIndex")).isEqualTo(leafIndex)
+                    assertThat(dbInput.field<String>("refTransactionId")).isEqualTo(transactionInput.transactionId.toString())
+                    assertThat(dbInput.field<Int>("refLeafIndex")).isEqualTo(transactionInput.index)
+                }
+
+            dbTransactionReferences
+                .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
+                .zip(defaultReferenceStateRefs)
+                .forEachIndexed { leafIndex, (dbInput, transactionInput) ->
                     assertThat(dbInput.field<Int>("leafIndex")).isEqualTo(leafIndex)
                     assertThat(dbInput.field<String>("refTransactionId")).isEqualTo(transactionInput.transactionId.toString())
                     assertThat(dbInput.field<Int>("refLeafIndex")).isEqualTo(transactionInput.index)
@@ -695,7 +717,7 @@ class UtxoPersistenceServiceImplTest {
         }
 
         override fun getReferenceStateRefs(): List<StateRef> {
-            return emptyList()
+            return listOf(StateRef(SecureHashImpl("SHA-256", ByteArray(34)), 2))
         }
 
         override fun getConsumedStateRefs(): List<StateRef> {
