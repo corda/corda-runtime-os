@@ -1,7 +1,6 @@
 package net.corda.libs.statemanager.impl.tests
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import net.corda.libs.statemanager.impl.convertToMetadata
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
@@ -14,6 +13,7 @@ import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.metadata
 import net.corda.libs.statemanager.impl.StateManagerImpl
+import net.corda.libs.statemanager.impl.convertToMetadata
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.model.v1.StateManagerEntities
 import net.corda.libs.statemanager.impl.repository.impl.KEY_PARAMETER_NAME
