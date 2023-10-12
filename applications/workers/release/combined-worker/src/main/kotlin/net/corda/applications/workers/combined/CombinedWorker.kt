@@ -3,6 +3,7 @@ package net.corda.applications.workers.combined
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory.fromAnyRef
+import java.time.Duration
 import net.corda.application.dbsetup.PostgresDbSetup
 import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.BusType
@@ -44,6 +45,7 @@ import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER_DB_PASS
 import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER_DB_USER
 import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER_JDBC_URL
 import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER_TYPE
+import net.corda.schema.configuration.BootConfig.BOOT_WORKER_SERVICE
 import net.corda.schema.configuration.DatabaseConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.schema.configuration.StateManagerConfig
@@ -56,7 +58,6 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
-import java.time.Duration
 
 
 // We use a different port for the combined worker since it is often run on Macs, which 
@@ -156,7 +157,8 @@ class CombinedWorker @Activate constructor(
                 preparedDbConfig,
                 createConfigFromParams(BootConfig.BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId)),
                 createConfigFromParams(BootConfig.BOOT_REST, params.restParams),
-                preparedStateManagerConfig
+                preparedStateManagerConfig,
+                createConfigFromParams(BOOT_WORKER_SERVICE, params.workerEndpoints)
             )
         )
 
@@ -308,4 +310,7 @@ private class CombinedWorkerParams {
     // TODO - remove when reviewing crypto config
     @Option(names = ["--hsm-id"], description = ["HSM ID which is handled by this worker instance."])
     var hsmId = ""
+
+    @Option(names = ["--serviceEndpoint"], description = ["Internal REST endpoints for Corda workers"], required = true)
+    val workerEndpoints: Map<String, String> = emptyMap()
 }

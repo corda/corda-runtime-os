@@ -296,7 +296,7 @@ spec:
           - "--stateManager"
           - "database.pass=$(DB_CLUSTER_PASSWORD)"
           - "--stateManager"
-          - "database.jdbc.url=jdbc:postgresql://{{ required "Must specify db.cluster.host" $.Values.db.cluster.host }}:{{ $.Values.db.cluster.port }}/{{ $.Values.db.cluster.database }}?currentSchema={{ $.Values.bootstrap.db.stateManager.schema }}"
+          - "database.jdbc.url=jdbc:postgresql://{{ required "Must specify db.cluster.host" $.Values.db.cluster.host }}:{{ $.Values.db.cluster.port }}/{{ $.Values.db.cluster.database }}?currentSchema=STATE_MANAGER"
           - "--stateManager"
           - "database.jdbc.directory=/opt/jdbc-driver"
           - "--stateManager"
@@ -325,7 +325,7 @@ spec:
           {{- if $optionalArgs.servicesAccessed }}
           {{- range $worker := $optionalArgs.servicesAccessed }}
           {{- $endpoint := include "corda.getWorkerEndpoint" (dict "context" $ "worker" $worker) }}
-          - --endpoint={{ $endpoint }}
+          - --serviceEndpoint={{ $endpoint }}
           {{- end }}
           {{- end }}
           {{- range $i, $arg := $optionalArgs.additionalWorkerArgs }}

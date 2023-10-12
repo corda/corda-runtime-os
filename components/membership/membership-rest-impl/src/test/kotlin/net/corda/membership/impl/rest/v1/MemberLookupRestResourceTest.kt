@@ -59,6 +59,7 @@ import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
 
+@Suppress("deprecation") // supressing in order to be able to unit test deprecated methods
 class MemberLookupRestResourceTest {
     private companion object {
         const val KNOWN_KEY = "12345"
@@ -442,6 +443,26 @@ class MemberLookupRestResourceTest {
         }
 
         @Test
+        fun `lookup does not return same member when it's suspended`() {
+            whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.of(HOLDING_IDENTITY_STRING)))
+                .thenReturn(VirtualNodeInfo(
+                    createTestHoldingIdentity(charlie.name.toString(), "DEFAULT_MEMBER_GROUP_ID"),
+                    CpiIdentifier("test", "test", SecureHashImpl("algorithm", "1234".toByteArray())),
+                    null,
+                    UUID.randomUUID(),
+                    null,
+                    UUID.randomUUID(),
+                    null,
+                    UUID.randomUUID(),
+                    timestamp = Instant.now()
+                ))
+
+            val result1 = memberLookupRestResource.lookup(HOLDING_IDENTITY_STRING, statuses = listOf(MEMBER_STATUS_SUSPENDED))
+
+            assertThat(result1.members).isEmpty()
+        }
+
+        @Test
         fun `lookup should fail when invalid statuses are used`() {
             val exception = assertThrows<ResourceNotFoundException> {
                 memberLookupRestResource.lookup(
@@ -456,6 +477,224 @@ class MemberLookupRestResourceTest {
         fun `lookup should fail when non-existent holding identity is used`() {
             val ex =
                 assertThrows<ResourceNotFoundException> { memberLookupRestResource.lookup(BAD_HOLDING_IDENTITY.value) }
+            assertThat(ex).hasMessageContaining("Could not find holding identity")
+        }
+    }
+
+    @Nested
+    inner class Lookupv5_1Tests {
+
+        @BeforeEach
+        fun setUp() = startService()
+
+        @AfterEach
+        fun tearDown() = stopService()
+
+        @Test
+        fun `unfiltered lookupv5_1 returns a list of all active members and their contexts`() {
+            val result = memberLookupRestResource.lookupV51(HOLDING_IDENTITY_STRING).members
+
+            assertThat(result).containsExactlyInAnyOrder(aliceResult, bobResult)
+
+            whenever(groupReader.lookup(MembershipStatusFilter.ACTIVE_OR_SUSPENDED))
+                .doReturn(listOf(mgm, alice, bob, charlie))
+
+            val result2 = memberLookupRestResource.lookupV51(
+                MGM_HOLDING_IDENTITY_STRING,
+            ).members
+
+            assertThat(result2).containsExactlyInAnyOrder(aliceResult, bobResult, mgmResult)
+        }
+
+        @Test
+        fun `lookupv5_1 filtered by common name (CN) is case-insensitive and returns a list of members and their contexts`() {
+            val result1 = memberLookupRestResource.lookupV51(HOLDING_IDENTITY_STRING, commonName = "bob")
+
+            assertThat(result1.members).containsExactlyInAnyOrder(bobResult)
+
+            val result2 = memberLookupRestResource.lookupV51(HOLDING_IDENTITY_STRING, commonName = "BOB")
+
+            assertThat(result2.members).containsExactlyInAnyOrder(bobResult)
+        }
+
+        @Test
+        fun `lookupv5_1 filtered by organization (O) is case-insensitive and returns a list of members and their contexts`() {
+            val result1 = memberLookupRestResource.lookupV51(HOLDING_IDENTITY_STRING, organization = "ALICE")
+
+            assertThat(result1.members).containsExactlyInAnyOrder(aliceResult)
+
+            val result2 = memberLookupRestResource.lookupV51(HOLDING_IDENTITY_STRING, organization = "alice")
+
+            assertThat(result2.members).containsExactlyInAnyOrder(aliceResult)
+        }
+
+        @Test
+        fun `lookupv5_1 filtered by organization unit (OU) is case-insensitive and returns a list of members and their contexts`() {
+            val result1 = memberLookupRestResource.lookupV51(HOLDING_IDENTITY_STRING, organizationUnit = "unit2")
+
+            assertThat(result1.members).containsExactlyInAnyOrder(bobResult)
+
+            val result2 = memberLookupRestResource.lookupV51(HOLDING_IDENTITY_STRING, organizationUnit = "UNIT2")
+
+            assertThat(result2.members).containsExactlyInAnyOrder(bobResult)
+        }
+
+        @Test
+        fun `lookupv5_1 filtered by locality (L) is case-insensitive and returns a list of members and their contexts`() {
+            val result1 = memberLookupRestResource.lookupV51(HOLDING_IDENTITY_STRING, locality = "london")
+
+            assertThat(result1.members).containsExactlyInAnyOrder(aliceResult)
+
+            val result2 = memberLookupRestResource.lookupV51(HOLDING_IDENTITY_STRING, locality = "LONDON")
+
+            assertThat(result2.members).containsExactlyInAnyOrder(aliceResult)
+        }
+
+        @Test
+        fun `lookupv5_1 filtered by state (ST) is case-insensitive and returns a list of members and their contexts`() {
+            val result1 = memberLookupRestResource.lookupV51(HOLDING_IDENTITY_STRING, state = "state2")
+
+            assertThat(result1.members).containsExactlyInAnyOrder(bobResult)
+
+            val result2 = memberLookupRestResource.lookupV51(HOLDING_IDENTITY_STRING, state = "state2")
+
+            assertThat(result2.members).containsExactlyInAnyOrder(bobResult)
+        }
+
+        @Test
+        fun `lookupv5_1 filtered by country (C) is case-insensitive and returns a list of members and their contexts`() {
+            val result1 = memberLookupRestResource.lookupV51(HOLDING_IDENTITY_STRING, country = "gb")
+
+            assertThat(result1.members).containsExactlyInAnyOrder(aliceResult)
+
+            val result2 = memberLookupRestResource.lookupV51(HOLDING_IDENTITY_STRING, country = "GB")
+
+            assertThat(result2.members).containsExactlyInAnyOrder(aliceResult)
+        }
+
+        @Test
+        fun `lookupv5_1 filtered by all attributes is case-insensitive and returns a list of members and their contexts`() {
+            val result1 = memberLookupRestResource.lookupV51(
+                HOLDING_IDENTITY_STRING,
+                "bob",
+                "bob",
+                "unit2",
+                "dublin",
+                "state2",
+                "ie"
+            )
+
+            assertThat(result1.members).containsExactlyInAnyOrder(bobResult)
+
+            val result2 = memberLookupRestResource.lookupV51(
+                HOLDING_IDENTITY_STRING,
+                "BOB",
+                "BOB",
+                "UNIT2",
+                "DUBLIN",
+                "STATE2",
+                "IE"
+            )
+
+            assertThat(result2.members).containsExactlyInAnyOrder(bobResult)
+        }
+
+        @Test
+        fun `lookupv5_1 by member filtered by statuses returns active members but not suspended members`() {
+            val result1 = memberLookupRestResource.lookupV51(
+                HOLDING_IDENTITY_STRING,
+                statuses = listOf(MEMBER_STATUS_ACTIVE)
+            )
+
+            assertThat(result1.members).containsExactlyInAnyOrder(aliceResult, bobResult)
+
+            val result2 = memberLookupRestResource.lookupV51(
+                HOLDING_IDENTITY_STRING,
+                statuses = listOf(MEMBER_STATUS_SUSPENDED)
+            )
+
+            assertThat(result2.members).isEmpty()
+
+            val result3 = memberLookupRestResource.lookupV51(
+                HOLDING_IDENTITY_STRING,
+                statuses = listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED)
+            )
+
+            assertThat(result3.members).containsExactlyInAnyOrder(aliceResult, bobResult)
+        }
+
+        @Test
+        fun `lookupv5_1 by MGM filtered by statuses returns a list of members and their contexts`() {
+            whenever(groupReader.lookup(MembershipStatusFilter.ACTIVE_OR_SUSPENDED))
+                .doReturn(setOf(mgm, alice, bob, charlie))
+
+            val result1 = memberLookupRestResource.lookupV51(
+                MGM_HOLDING_IDENTITY_STRING,
+                statuses = listOf(MEMBER_STATUS_ACTIVE)
+            )
+
+            assertThat(result1.members).containsExactlyInAnyOrder(aliceResult, bobResult, mgmResult)
+
+            val result2 = memberLookupRestResource.lookupV51(
+                MGM_HOLDING_IDENTITY_STRING,
+                statuses = listOf(MEMBER_STATUS_SUSPENDED)
+            )
+
+            assertThat(result2.members).containsExactlyInAnyOrder(charlieResult)
+
+            val result3 = memberLookupRestResource.lookupV51(
+                MGM_HOLDING_IDENTITY_STRING,
+                statuses = listOf(MEMBER_STATUS_ACTIVE, MEMBER_STATUS_SUSPENDED)
+            )
+
+            assertThat(result3.members).containsExactlyInAnyOrder(aliceResult, bobResult, charlieResult, mgmResult)
+        }
+
+        @Test
+        fun `lookupv5_1 filtered by statuses is case-insensitive`() {
+            val result1 = memberLookupRestResource.lookupV51(
+                HOLDING_IDENTITY_STRING,
+                statuses = listOf(MEMBER_STATUS_ACTIVE.lowercase())
+            )
+
+            assertThat(result1.members).containsExactlyInAnyOrder(aliceResult, bobResult)
+        }
+
+        @Test
+        fun `lookupv5_1 returns same member even when it's suspended`() {
+            whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.of(HOLDING_IDENTITY_STRING)))
+                .thenReturn(VirtualNodeInfo(
+                    createTestHoldingIdentity(charlie.name.toString(), "DEFAULT_MEMBER_GROUP_ID"),
+                    CpiIdentifier("test", "test", SecureHashImpl("algorithm", "1234".toByteArray())),
+                    null,
+                    UUID.randomUUID(),
+                    null,
+                    UUID.randomUUID(),
+                    null,
+                    UUID.randomUUID(),
+                    timestamp = Instant.now()
+                ))
+
+            val result1 = memberLookupRestResource.lookupV51(HOLDING_IDENTITY_STRING, statuses = listOf(MEMBER_STATUS_SUSPENDED))
+
+            assertThat(result1.members).containsExactlyInAnyOrder(charlieResult)
+        }
+
+        @Test
+        fun `lookupv5_1 should fail when invalid statuses are used`() {
+            val exception = assertThrows<ResourceNotFoundException> {
+                memberLookupRestResource.lookupV51(
+                    HOLDING_IDENTITY_STRING,
+                    statuses = listOf("invalid-status")
+                )
+            }
+            assertThat(exception).hasMessageContaining("Invalid status")
+        }
+
+        @Test
+        fun `lookupv5_1 should fail when non-existent holding identity is used`() {
+            val ex =
+                assertThrows<ResourceNotFoundException> { memberLookupRestResource.lookupV51(BAD_HOLDING_IDENTITY.value) }
             assertThat(ex).hasMessageContaining("Could not find holding identity")
         }
     }

@@ -10,7 +10,7 @@ ignore:
           identification algorithm set to “HTTPS”, which means a Corda gateway
           will always validate server certificate hostnames when establishing
           HTTPS connections with other gateways.
-        expires: 2023-10-10T12:08:30.514Z
+        expires: 2023-12-20T12:08:30.514Z
         created: 2022-12-20T12:08:30.517Z
 
   SNYK-JAVA-ORGECLIPSEJETTY-5769685:

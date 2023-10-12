@@ -8,6 +8,8 @@ import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
 import net.corda.data.membership.rpc.response.MGMGroupPolicyResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
+import net.corda.libs.platform.PlatformInfoProvider
+import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
@@ -49,6 +51,7 @@ class MemberOpsServiceProcessor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
     private val membershipQueryClient: MembershipQueryClient,
+    private val platformInfoProvider: PlatformInfoProvider,
     private val clock: Clock = UTCClock(),
 ) : RPCResponderProcessor<MembershipRpcRequest, MembershipRpcResponse> {
 
@@ -127,6 +130,13 @@ class MemberOpsServiceProcessor(
                 } ?: throw GroupPolicyGenerationException(
                 "Could not find holding identity associated with ${request.holdingIdentityId}"
             )
+            val mgmInfo = mgm.memberProvidedContext.entries.filterNot { it.key == PLATFORM_VERSION }
+                .associate { it.key to it.value }.plus(
+                    mapOf(
+                        PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
+                        SERIAL to mgm.serial.toString()
+                    )
+                )
 
             val persistedGroupPolicyProperties = membershipQueryClient
                 .queryGroupPolicy(holdingIdentity)
@@ -181,8 +191,7 @@ class MemberOpsServiceProcessor(
                     SESSION_KEY_POLICY to sessionKeyPolicy
                 ),
                 P2P_PARAMETERS to p2pParameters,
-                MGM_INFO to mgm.memberProvidedContext.entries.associate { it.key to it.value }
-                    .plus(SERIAL to mgm.serial.toString()),
+                MGM_INFO to mgmInfo,
                 CIPHER_SUITE to emptyMap<String, String>()
             )
             return MGMGroupPolicyResponse(ObjectMapper().writeValueAsString(groupPolicy))

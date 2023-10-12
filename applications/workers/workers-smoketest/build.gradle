@@ -146,8 +146,10 @@ tasks.register('smokeTest', Test) {
     println "DB worker url: $dbWorkerUrl"
     def persistenceWorkerUrl = project.getProperties().getOrDefault("persistenceWorkerUrl", combinedWorker ? combinedWorkerUrl : "http://localhost:7007/")
     systemProperty "persistenceWorkerUrl", persistenceWorkerUrl
-    println "Persistence worker url: $persistenceWorkerUrl"
-    def uniquenessWorkerUrl = project.getProperties().getOrDefault("uniquenessWorkerUrl", combinedWorker ? combinedWorkerUrl : "http://localhost:7008/")
+    def tokenSelectionWorkerUrl = project.getProperties().getOrDefault("tokenSelectionWorkerUrl", combinedWorker ? combinedWorkerUrl : "http://localhost:7008/")
+    systemProperty "tokenSelectionWorkerUrl", tokenSelectionWorkerUrl
+    println "tokenSelection worker url: $tokenSelectionWorkerUrl"
+    def uniquenessWorkerUrl = project.getProperties().getOrDefault("uniquenessWorkerUrl", combinedWorker ? combinedWorkerUrl : "http://localhost:7009/")
     systemProperty "uniquenessWorkerUrl", uniquenessWorkerUrl
 
     jvmArgs '--add-opens', 'java.base/java.lang.reflect=ALL-UNNAMED'
