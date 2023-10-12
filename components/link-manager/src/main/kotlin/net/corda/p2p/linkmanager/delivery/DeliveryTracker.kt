@@ -20,7 +20,6 @@ import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.Response
-import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -151,8 +150,8 @@ internal class DeliveryTracker(
 
         val processor = object : StateAndEventProcessor<String, AuthenticatedMessageDeliveryState, AppMessageMarker> {
             override fun onNext(
-                state: State<AuthenticatedMessageDeliveryState>?,
-                event: Record<String, AppMessageMarker>,
+                state: AuthenticatedMessageDeliveryState?,
+                event: Record<String, AppMessageMarker>
             ): Response<AuthenticatedMessageDeliveryState> {
                 val marker = event.value
                 if (marker == null) {
@@ -162,26 +161,18 @@ internal class DeliveryTracker(
                 val markerType = marker.marker
                 val timestamp = marker.timestamp
                 return when (markerType) {
-                    is LinkManagerProcessedMarker -> Response(
-                        State(
-                            AuthenticatedMessageDeliveryState(markerType.message, timestamp),
-                            metadata = state?.metadata
-                        ),
-                        emptyList()
-                    )
+                    is LinkManagerProcessedMarker -> Response(AuthenticatedMessageDeliveryState(markerType.message, timestamp), emptyList())
                     is LinkManagerReceivedMarker -> {
-                        val value = state?.value
-                        if (value != null) {
+                        if (state != null) {
                             // if we receive multiple acknowledgements, it is possible the state might have been nullified already.
                             // Only the first one matters for calculating the end-to-end delivery latency anyway.
-                            recordDeliveryLatencyMetric(value)
+                            recordDeliveryLatencyMetric(state)
                         }
                         Response(null, emptyList())
                     }
                     is TtlExpiredMarker -> {
-                        val value = state?.value
-                        if (value != null) {
-                            recordTtlExpiredMetric(value)
+                        if (state != null) {
+                            recordTtlExpiredMetric(state)
                         }
                         Response(null, emptyList())
                     }
@@ -189,11 +180,8 @@ internal class DeliveryTracker(
                 }
             }
 
-            private fun respond(state: State<AuthenticatedMessageDeliveryState>?): Response<AuthenticatedMessageDeliveryState> {
-                return Response(
-                    state,
-                    emptyList()
-                )
+            private fun respond(state: AuthenticatedMessageDeliveryState?): Response<AuthenticatedMessageDeliveryState> {
+                return Response(state, emptyList())
             }
 
             private fun recordDeliveryLatencyMetric(state: AuthenticatedMessageDeliveryState) {

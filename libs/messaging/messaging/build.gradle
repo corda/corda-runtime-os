@@ -7,8 +7,6 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
-    api project(":libs:state-manager:state-manager-api")
-
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "com.typesafe:config:$typeSafeConfigVersion"

@@ -1,6 +1,5 @@
 package net.corda.messaging.mediator
 
-import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
@@ -32,7 +31,7 @@ class ProcessorTaskTest {
     private val stateManagerHelper = mock<StateManagerHelper<String, StateType, EventType>>()
 
     @Captor
-    private val stateCaptor = argumentCaptor<StateAndEventProcessor.State<StateType>>()
+    private val stateCaptor = argumentCaptor<StateType>()
 
     @Captor
     private val eventCaptor = argumentCaptor<Record<String, EventType>>()
@@ -40,13 +39,13 @@ class ProcessorTaskTest {
     @BeforeEach
     fun setup() {
         `when`(processor.onNext(anyOrNull(), any())).thenAnswer { invocation ->
-            val state = invocation.getArgument<StateAndEventProcessor.State<StateType>>(0)
-            val id = state?.let { it.value!!.id + 1 } ?: 0
+            val state = invocation.getArgument<StateType>(0)
+            val id = state?.let { it.id + 1 } ?: 0
             StateAndEventProcessor.Response(
-                StateAndEventProcessor.State(StateType(id), Metadata(mapOf("id" to id))),
+                StateType(id),
                 listOf(
                     EventType("outputEvent$id").toRecord()
-                ),
+                )
             )
         }
 
@@ -73,15 +72,9 @@ class ProcessorTaskTest {
 
         val result = task.call()
 
-        verify(processor, times(inputEventRecords.size)).onNext(
-            stateCaptor.capture(), eventCaptor.capture()
-        )
+        verify(processor, times(inputEventRecords.size)).onNext(stateCaptor.capture(), eventCaptor.capture())
         val capturedInputStates = stateCaptor.allValues
-        val expectedInputStates = listOf(
-            null,
-            StateAndEventProcessor.State(StateType(0), Metadata(mapOf("id" to 0))),
-            StateAndEventProcessor.State(StateType(1), Metadata(mapOf("id" to 1))),
-        )
+        val expectedInputStates = listOf(null, StateType(0), StateType(1))
         assertEquals(expectedInputStates, capturedInputStates)
         val capturedInputEventRecords = eventCaptor.allValues
         assertEquals(inputEventRecords, capturedInputEventRecords)
