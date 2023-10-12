@@ -1,7 +1,5 @@
 package net.corda.messaging.api.mediator
 
-import kotlinx.coroutines.Deferred
-import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import java.time.Duration
 
@@ -20,14 +18,12 @@ interface MediatorConsumer<K : Any, V : Any> : AutoCloseable {
      *
      * @param timeout - The maximum time to block if there are no available messages.
      */
-    fun poll(timeout: Duration): Deferred<List<CordaConsumerRecord<K, V>>>
+    fun poll(timeout: Duration): List<CordaConsumerRecord<K, V>>
 
     /**
-     * Asynchronously commit the consumer offsets. This function should be called only after `poll` was called.
-     *
-     * @return [Deferred] with committed offsets.
+     * Synchronously commits the consumer offsets. This function should be called only after `poll` was called.
      */
-    fun asyncCommitOffsets(): Deferred<Map<CordaTopicPartition, Long>>
+    fun syncCommitOffsets()
 
     /**
      * Resets consumer's offsets to the last committed positions. Next poll will read from the last committed positions.
