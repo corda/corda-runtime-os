@@ -1,7 +1,7 @@
 package net.corda.libs.statemanager.impl.tests
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.convertToMetadata
+import net.corda.libs.statemanager.impl.convertToMetadata
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema

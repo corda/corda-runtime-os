@@ -1,7 +1,6 @@
 package net.corda.libs.statemanager.impl
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.convertToMetadata
 import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
