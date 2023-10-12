@@ -38,7 +38,7 @@ internal class LogCloseableDataSource(
                 maxSoFar.set(allLiveConnections.size)
                 logger.info("New pick - ${allLiveConnections.size}:")
                 allLiveConnections.values.forEachIndexed { index, throwable ->
-                    logger.info("Connection$index", throwable)
+                    logger.info("Connection $index", throwable)
                 }
             }
         }
@@ -88,6 +88,5 @@ internal class LogCloseableDataSource(
                 it.isDaemon = true
             }
         }
-
     }
 }
