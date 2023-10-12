@@ -18,7 +18,7 @@ import java.lang.IllegalArgumentException
 import java.time.Instant
 
 
-data class ReclaimFlowArgs(val signedTransactionId: SecureHash, val stateId: String)
+data class ReclaimFlowArgs(val signedTransactionId: SecureHash, val stateId: String, val secondsToAddToLockStateTimeWindow: Long = 30, val secondsToAddToReclaimTimeWindowExpiry: Long = 300)
 
 data class ReclaimFlowResult(val transactionId: String, val stateId: String, val ownerPublicKey: String)
 
@@ -60,11 +60,11 @@ class ReclaimFlow : ClientStartableFlow {
                 myInfo.ledgerKeys.first(),
                 listOf(myInfo.ledgerKeys.first())
             )
-            val timeWindowForReclaim = lockState.state.contractState.timeWindow.plusSeconds(31)
+            val timeWindowForReclaim = lockState.state.contractState.timeWindow.plusSeconds(flowArgs.secondsToAddToLockStateTimeWindow)
 
             val txBuilder = ledgerService.createTransactionBuilder()
                 .setNotary(encumberedTx.notaryName)
-                .setTimeWindowBetween(timeWindowForReclaim, Instant.now().plusSeconds(420))
+                .setTimeWindowBetween(timeWindowForReclaim, Instant.now().plusSeconds(flowArgs.secondsToAddToReclaimTimeWindowExpiry))
                 .addInputState(lockState.ref)
                 .addInputState(assetState.ref)
                 .addOutputState(newAssetState)
