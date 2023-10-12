@@ -76,7 +76,7 @@ class MultiSourceEventMediatorImplTest {
                 any()
             )
         ).thenAnswer {
-            StateAndEventProcessor.Response(
+            StateAndEventProcessor.Response<Any>(
                 updatedState = mock(),
                 responseEvents = listOf(
                     Record(

@@ -19,6 +19,7 @@ import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.flow.state.impl.FlowCheckpointFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
+import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.tracing.TraceContext
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -97,7 +98,7 @@ class FlowEventPipelineFactoryImpl(
     )
 
     override fun create(
-        checkpoint: Checkpoint?,
+        state: State<Checkpoint>?,
         event: FlowEvent,
         configs: Map<String, SmartConfig>,
         mdcProperties: Map<String, String>,
@@ -106,7 +107,7 @@ class FlowEventPipelineFactoryImpl(
     ): FlowEventPipeline {
         val flowCheckpoint = flowCheckpointFactory.create(
             event.flowId,
-            checkpoint,
+            state?.value,
             configs.getConfig(FLOW_CONFIG)
         )
 
@@ -121,7 +122,8 @@ class FlowEventPipelineFactoryImpl(
             outputRecords = emptyList(),
             mdcProperties = mdcProperties,
             flowMetrics = metrics,
-            flowTraceContext = traceContext
+            flowTraceContext = traceContext,
+            metadata = state?.metadata
         )
 
         val flowExecutionPipelineStage = FlowExecutionPipelineStage(
