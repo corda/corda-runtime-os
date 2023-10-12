@@ -3,7 +3,7 @@ package net.corda.flow.service
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
-import net.corda.flow.messaging.mediator.FlowEventMediatorFactory
+import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -13,7 +13,10 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.mediator.MultiSourceEventMediator
+import net.corda.messaging.api.subscription.StateAndEventSubscription
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.configuration.BootConfig.CRYPTO_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.PERSISTENCE_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.UNIQUENESS_WORKER_REST_ENDPOINT
@@ -33,29 +36,34 @@ import org.slf4j.LoggerFactory
 @Component(service = [FlowExecutor::class])
 class FlowExecutorImpl constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
-    private val flowEventMediatorFactory: FlowEventMediatorFactory,
-    private val toMessagingConfig: (Map<String, SmartConfig>) -> SmartConfig,
+    private val subscriptionFactory: SubscriptionFactory,
+    private val flowEventProcessorFactory: FlowEventProcessorFactory,
+    private val toMessagingConfig: (Map<String, SmartConfig>) -> SmartConfig
 ) : FlowExecutor {
 
     @Activate
     constructor(
         @Reference(service = LifecycleCoordinatorFactory::class)
         coordinatorFactory: LifecycleCoordinatorFactory,
-        @Reference(service = FlowEventMediatorFactory::class)
-        flowEventMediatorFactory: FlowEventMediatorFactory,
+        @Reference(service = SubscriptionFactory::class)
+        subscriptionFactory: SubscriptionFactory,
+        @Reference(service = FlowEventProcessorFactory::class)
+        flowEventProcessorFactory: FlowEventProcessorFactory
     ) : this(
         coordinatorFactory,
-        flowEventMediatorFactory,
+        subscriptionFactory,
+        flowEventProcessorFactory,
         { cfg -> cfg.getConfig(MESSAGING_CONFIG) }
     )
 
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private const val CONSUMER_GROUP = "FlowEventConsumer"
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<FlowExecutor> { event, _ -> eventHandler(event) }
+    private var subscription: StateAndEventSubscription<String, Checkpoint, FlowEvent>? = null
     private var subscriptionRegistrationHandle: RegistrationHandle? = null
-    private var multiSourceEventMediator: MultiSourceEventMediator<String, Checkpoint, FlowEvent>? = null
 
     override fun onConfigChange(config: Map<String, SmartConfig>) {
         try {
@@ -64,18 +72,19 @@ class FlowExecutorImpl constructor(
 
             // close the lifecycle registration first to prevent down being signaled
             subscriptionRegistrationHandle?.close()
-            multiSourceEventMediator?.close()
+            subscription?.close()
 
-            multiSourceEventMediator = flowEventMediatorFactory.create(
-                updatedConfigs,
-                messagingConfig,
+            subscription = subscriptionFactory.createStateAndEventSubscription(
+                SubscriptionConfig(CONSUMER_GROUP, FLOW_EVENT_TOPIC),
+                flowEventProcessorFactory.create(updatedConfigs),
+                messagingConfig
             )
 
             subscriptionRegistrationHandle = coordinator.followStatusChangesByName(
-                setOf(multiSourceEventMediator!!.subscriptionName)
+                setOf(subscription!!.subscriptionName)
             )
 
-            multiSourceEventMediator?.start()
+            subscription?.start()
         } catch (ex: Exception) {
             val reason = "Failed to configure the flow executor using '${config}'"
             log.error(reason, ex)
@@ -117,11 +126,10 @@ class FlowExecutorImpl constructor(
             is StartEvent -> {
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
-
             is StopEvent -> {
                 log.trace { "Flow executor is stopping..." }
                 subscriptionRegistrationHandle?.close()
-                multiSourceEventMediator?.close()
+                subscription?.close()
                 log.trace { "Flow executor stopped" }
             }
         }
