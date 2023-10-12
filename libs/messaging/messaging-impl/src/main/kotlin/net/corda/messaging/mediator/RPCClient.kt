@@ -15,12 +15,12 @@ import kotlinx.coroutines.launch
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.messaging.api.exception.CordaHTTPClientErrorException
 import net.corda.messaging.api.exception.CordaHTTPServerErrorException
-import net.corda.messaging.utils.HTTPRetryExecutor
-import net.corda.messaging.utils.HTTPRetryConfig
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_ENDPOINT
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.utils.HTTPRetryConfig
+import net.corda.messaging.utils.HTTPRetryExecutor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
