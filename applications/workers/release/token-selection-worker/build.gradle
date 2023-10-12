@@ -24,6 +24,7 @@ dependencies {
     implementation project(':libs:platform-info')
     implementation project(':libs:tracing')
     implementation project(':libs:web:web')
+    implementation project(':processors:token-cache-processor')
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'net.corda:corda-base'
@@ -36,6 +37,7 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
 
+    runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
     runtimeOnly project(':libs:tracing-impl')
 
     testImplementation 'org.osgi:osgi.core'
