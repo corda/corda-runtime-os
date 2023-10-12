@@ -86,10 +86,12 @@ class MySigningKeysCacheImplTest {
 
     @Test
     fun `removes keys by virtual node context`() {
-        // return vnode in this order in consecutive calls of the function
-       whenever(sandbox.virtualNodeContext).thenReturn(
+        // return vnode in this order in consecutive calls of the function (alice, bob, alice, bob)
+        whenever(sandbox.virtualNodeContext).thenReturn(
             aliceVirtualNodeContext,
-            bobVirtualNodeContext
+            bobVirtualNodeContext,
+            aliceVirtualNodeContext,
+            bobVirtualNodeContext,
         )
         whenever(currentSandboxGroupContext.get()).thenReturn(sandbox)
 
@@ -98,6 +100,11 @@ class MySigningKeysCacheImplTest {
         // bob put cache
         mySigningKeysCache.putAll(mapOf(KEY_C to KEY_C, KEY_D to null))
         mySigningKeysCache.remove(aliceVirtualNodeContext)
+
+        // alice's cache should be empty
+        assertThat(mySigningKeysCache.get(setOf(KEY_A, KEY_B, KEY_C, KEY_D))).containsExactlyInAnyOrderEntriesOf(
+            emptyMap()
+        )
 
         // there should bob's cache only
         assertThat(mySigningKeysCache.get(setOf(KEY_A, KEY_B, KEY_C, KEY_D))).containsExactlyInAnyOrderEntriesOf(

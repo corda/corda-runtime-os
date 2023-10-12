@@ -108,8 +108,13 @@ class StateAndRefCacheImplTest {
 
     @Test
     fun `removes keys by virtual node context`() {
-        // subsequent calls of sandbox.virtualNodeContext return in order of alice, bob
-        whenever(sandbox.virtualNodeContext).thenReturn(aliceVirtualNodeContext, bobVirtualNodeContext)
+        // subsequent calls of the function call return in the order of alice, bob, alice, bob
+        whenever(sandbox.virtualNodeContext).thenReturn(
+            aliceVirtualNodeContext,
+            bobVirtualNodeContext,
+            aliceVirtualNodeContext,
+            bobVirtualNodeContext
+        )
         whenever(currentSandboxGroupContext.get()).thenReturn(sandbox)
 
         whenever(STATE_AND_REF_1.ref).thenReturn(STATE_REF_1)
@@ -119,15 +124,13 @@ class StateAndRefCacheImplTest {
         stateAndRefCache.putAll(listOf(STATE_AND_REF_3, STATE_AND_REF_4))
         stateAndRefCache.remove(aliceVirtualNodeContext)
 
+        // alice's cache should be empty
         assertThat(
-            stateAndRefCache.get(
-                setOf(
-                    STATE_REF_1,
-                    STATE_REF_2,
-                    STATE_REF_3,
-                    STATE_REF_4
-                )
-            ).values
+            stateAndRefCache.get(setOf(STATE_REF_1, STATE_REF_2, STATE_REF_3, STATE_REF_4)).values
+        ).containsExactlyElementsOf(emptyList())
+        // bob's cache should exist
+        assertThat(
+            stateAndRefCache.get(setOf(STATE_REF_1, STATE_REF_2, STATE_REF_3, STATE_REF_4)).values
         ).containsExactlyElementsOf(listOf(STATE_AND_REF_3, STATE_AND_REF_4))
     }
 }

@@ -426,12 +426,7 @@ class FlowServiceTestContext @Activate constructor(
     override fun resetFlowFiberCache() {
     ALL_TEST_VIRTUAL_NODES.forEach {
         flowFiberCache.remove(
-            VirtualNodeContext(
-                it.toCorda(),
-                setOf(CPK1_CHECKSUM),
-                FLOW,
-                null
-            )
+            VirtualNodeContext(it.toCorda(), setOf(CPK1_CHECKSUM), FLOW, null)
         )
     }
 }
