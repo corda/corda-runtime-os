@@ -29,7 +29,7 @@ import net.corda.utilities.debug
  * @param entityManagerFactory An entity manager factory connected to the right database, matching tenantId
  */
 
-class HSMRepositoryImpl: HSMRepository {
+class HSMRepositoryImpl(val emf: ()->EntityManager = { makeEntityManager(name=CordaDb.Crypto) }): HSMRepository {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -38,7 +38,7 @@ class HSMRepositoryImpl: HSMRepository {
     }
 
     override fun findTenantAssociation(tenantId: String, category: String): HSMAssociationInfo? =
-        makeEntityManager(name= CordaDb.Crypto).use {
+        emf().use {
             val result = it.createQuery(
                 """
             SELECT ca FROM HSMCategoryAssociationEntity ca
@@ -59,7 +59,7 @@ class HSMRepositoryImpl: HSMRepository {
             logger.debug { "Looked up tenant association for $tenantId $category with wrapping key alias ${it?.masterKeyAlias}" }
         }
 
-    override fun getHSMUsage(): List<HSMUsage> = makeEntityManager(name=CordaDb.Crypto).use {
+    override fun getHSMUsage(): List<HSMUsage> =emf().use {
         it.createQuery(
             """
             SELECT ha.hsmId as hsmId, COUNT(*) as usages 

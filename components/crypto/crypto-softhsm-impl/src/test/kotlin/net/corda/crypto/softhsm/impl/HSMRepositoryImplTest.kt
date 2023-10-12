@@ -4,6 +4,7 @@ import net.corda.crypto.config.impl.MasterKeyPolicy
 import net.corda.crypto.persistence.db.model.HSMAssociationEntity
 import net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
+import net.corda.db.connection.manager.impl.makeEntityManager
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -40,11 +41,7 @@ class HSMRepositoryImplTest {
                 }
             }
         }
-        HSMRepositoryImpl(
-            org.mockito.kotlin.mock {
-                on { createEntityManager() } doReturn em
-            }
-        ).use { hsmRepository ->
+        HSMRepositoryImpl( emf = { em } ).use { hsmRepository ->
             val test = hsmRepository.findTenantAssociation("tenant", "category")
             assertThat(test).isNull()
             assertThat(tenantCap.allValues.single()).isEqualTo("tenant")
@@ -69,11 +66,7 @@ class HSMRepositoryImplTest {
                 }
             }
         }
-        HSMRepositoryImpl(
-            org.mockito.kotlin.mock {
-                on { createEntityManager() } doReturn em
-            }
-        ).use { hsmStore ->
+        HSMRepositoryImpl(emf = { em }).use { hsmStore ->
             val expected = HSMAssociationInfo("1", "tenant", "hsm", "category", "master_key", 0)
             val test = hsmStore.findTenantAssociation("tenant", "category")
             assertThat(test).usingRecursiveComparison().isEqualTo(expected)
