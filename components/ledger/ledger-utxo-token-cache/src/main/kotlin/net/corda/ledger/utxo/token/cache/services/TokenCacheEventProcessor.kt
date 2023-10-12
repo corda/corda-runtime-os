@@ -12,6 +12,7 @@ import net.corda.ledger.utxo.token.cache.entities.TokenEvent
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolCache
 import net.corda.ledger.utxo.token.cache.handlers.TokenEventHandler
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
 import net.corda.tracing.traceStateAndEventExecution
 import org.slf4j.LoggerFactory
@@ -37,21 +38,24 @@ class TokenCacheEventProcessor(
     override val stateValueClass = TokenPoolCacheState::class.java
 
     override fun onNext(
-        state: TokenPoolCacheState?,
-        event: Record<TokenPoolCacheKey, TokenPoolCacheEvent>
+        state: State<TokenPoolCacheState>?,
+        event: Record<TokenPoolCacheKey, TokenPoolCacheEvent>,
     ): StateAndEventProcessor.Response<TokenPoolCacheState> {
 
         val tokenEvent = try {
             eventConverter.convert(event.value)
         } catch (e: Exception) {
             log.error("Unexpected error while processing event '${event}'. The event will be sent to the DLQ.", e)
-            return StateAndEventProcessor.Response(state, listOf(), markForDLQ = true)
+            return StateAndEventProcessor.Response(
+                state,
+                listOf(),
+                markForDLQ = true)
         }
 
         return traceStateAndEventExecution(event, "Token Event - ${tokenEvent.javaClass.simpleName}") {
             try {
                 tokenSelectionMetrics.recordProcessingTime(tokenEvent) {
-                    val nonNullableState = state ?: TokenPoolCacheState().apply {
+                    val nonNullableState = state?.value ?: TokenPoolCacheState().apply {
                         this.poolKey = event.key
                         this.availableTokens = listOf()
                         this.tokenClaims = listOf()
@@ -82,10 +86,13 @@ class TokenCacheEventProcessor(
                     val result = handler.handle(tokenCache, poolCacheState, tokenEvent)
 
                     if (result == null) {
-                        StateAndEventProcessor.Response(poolCacheState.toAvro(), listOf())
+                        StateAndEventProcessor.Response(
+                            State(poolCacheState.toAvro(), metadata = state?.metadata),
+                            listOf()
+                        )
                     } else {
                         StateAndEventProcessor.Response(
-                            poolCacheState.toAvro(),
+                            State(poolCacheState.toAvro(), metadata = state?.metadata),
                             listOf(result)
                         )
                     }
