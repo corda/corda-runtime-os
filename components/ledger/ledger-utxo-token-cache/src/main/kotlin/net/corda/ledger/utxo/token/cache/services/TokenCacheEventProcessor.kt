@@ -52,6 +52,8 @@ class TokenCacheEventProcessor(
                 markForDLQ = true)
         }
 
+        log.info("Token event received: $tokenEvent")
+
         return traceStateAndEventExecution(event, "Token Event - ${tokenEvent.javaClass.simpleName}") {
             try {
                 tokenSelectionMetrics.recordProcessingTime(tokenEvent) {
@@ -84,6 +86,8 @@ class TokenCacheEventProcessor(
                     }
 
                     val result = handler.handle(tokenCache, poolCacheState, tokenEvent)
+
+                    log.info("sending token response: $result")
 
                     if (result == null) {
                         StateAndEventProcessor.Response(
