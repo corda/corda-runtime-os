@@ -74,12 +74,17 @@ class RPCClient(
     }
 
     private fun serializePayload(message: MediatorMessage<*>): ByteArray {
-        return try {
-            serializer.serialize(message.payload as Record<*, *>)!!
+        val payload = message.payload
+
+        if (payload is ByteArray) return payload
+
+         try {
+             return serializer.serialize(message.payload as Record<*, *>)!!
         } catch (e: Exception) {
             val errorMsg = "Failed to serialize instance of class type ${
                 message.payload?.let { it::class.java.name } ?: "null"
             }."
+            log.error(errorMsg)
             onSerializationError?.invoke(errorMsg.toByteArray())
             throw(e)
         }
@@ -90,6 +95,7 @@ class RPCClient(
             deserializer.deserialize(payload)!!
         } catch (e: Exception) {
             val errorMsg = "Failed to deserialize payload of size ${payload.size} bytes due to: ${e.message}"
+            log.error(errorMsg)
             onSerializationError?.invoke(errorMsg.toByteArray())
             throw(e)
         }
