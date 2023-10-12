@@ -1777,7 +1777,7 @@
         }, {
           "name" : "statuses",
           "in" : "query",
-          "description" : "List of statuses (\"ACTIVE\", \"SUSPENDED\") to filter members by. By default, only ACTIVE members are filtered. Only an MGM can view suspended members.",
+          "description" : "List of statuses (\"ACTIVE\", \"SUSPENDED\") to filter members by. By default, only ACTIVE members are filtered. Only an MGM can view suspended members. The v5_1 version of the API allows members to view themselves regardless of their status (e.g. even if they are suspended).",
           "required" : false,
           "schema" : {
             "uniqueItems" : false,
