@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory
 import javax.persistence.EntityManager
 import javax.persistence.Query
 
+// TODO-[CORE-17733]: batch update and delete.
 class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepository {
 
     private companion object {
@@ -33,31 +34,42 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
             .setParameter(KEYS_PARAMETER_NAME, keys)
             .resultListAsStateEntityCollection()
 
-    override fun update(entityManager: EntityManager, states: Collection<StateEntity>) =
-        try {
-            states.forEach {
-                entityManager
-                    .createNativeQuery(queryProvider.updateState)
-                    .setParameter(KEY_PARAMETER_NAME, it.key)
-                    .setParameter(VALUE_PARAMETER_NAME, it.value)
-                    .setParameter(METADATA_PARAMETER_NAME, it.metadata)
-                    .executeUpdate()
-            }
-        } catch (e: Exception) {
-            logger.warn("Failed to updated batch of states - ${states.joinToString { it.key }}", e)
-            throw e
+    override fun update(entityManager: EntityManager, states: Collection<StateEntity>): Collection<String> {
+        val failedKeys = mutableListOf<String>()
+
+        states.forEach { state ->
+            entityManager
+                .createNativeQuery(queryProvider.updateState)
+                .setParameter(KEY_PARAMETER_NAME, state.key)
+                .setParameter(VALUE_PARAMETER_NAME, state.value)
+                .setParameter(VERSION_PARAMETER_NAME, state.version)
+                .setParameter(METADATA_PARAMETER_NAME, state.metadata)
+                .executeUpdate().also {
+                    if (it == 0) {
+                        failedKeys.add(state.key)
+                    }
+                }
         }
 
-    override fun delete(entityManager: EntityManager, keys: Collection<String>) {
-        try {
+        return failedKeys
+    }
+
+    override fun delete(entityManager: EntityManager, states: Collection<StateEntity>): Collection<String> {
+        val failedKeys = mutableListOf<String>()
+
+        states.forEach { state ->
             entityManager
                 .createNativeQuery(queryProvider.deleteStatesByKey)
-                .setParameter(KEYS_PARAMETER_NAME, keys)
-                .executeUpdate()
-        } catch (e: Exception) {
-            logger.warn("Failed to delete batch of states - ${keys.joinToString()}", e)
-            throw e
+                .setParameter(KEY_PARAMETER_NAME, state.key)
+                .setParameter(VERSION_PARAMETER_NAME, state.version)
+                .executeUpdate().also {
+                    if (it == 0) {
+                        failedKeys.add(state.key)
+                    }
+                }
         }
+
+        return failedKeys
     }
 
     override fun updatedBetween(entityManager: EntityManager, interval: IntervalFilter): Collection<StateEntity> =
