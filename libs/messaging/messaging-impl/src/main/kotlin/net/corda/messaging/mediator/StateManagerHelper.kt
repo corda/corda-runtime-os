@@ -5,6 +5,7 @@ import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.messaging.api.processor.StateAndEventProcessor
 
 /**
  * Helper for working with [StateManager], used by [MultiSourceEventMediatorImpl].
@@ -20,18 +21,18 @@ class StateManagerHelper<K : Any, S : Any, E : Any>(
      *
      * @param key Event's key.
      * @param persistedState State being updated.
-     * @param newValue Updated state value.
+     * @param newState Updated state.
      */
     fun createOrUpdateState(
         key: String,
         persistedState: State?,
-        newValue: S?,
-    ) = serialize(newValue)?.let { serializedValue ->
+        newState: StateAndEventProcessor.State<S>?,
+    ) = serialize(newState?.value)?.let { serializedValue ->
         State(
             key,
             serializedValue,
             persistedState?.version ?: State.VERSION_INITIAL_VALUE,
-            persistedState?.metadata ?: Metadata()
+            newState?.metadata ?: Metadata(),
         )
     }
 
@@ -43,14 +44,12 @@ class StateManagerHelper<K : Any, S : Any, E : Any>(
      * the meantime).
      */
     fun persistStates(processorTaskResults: Collection<ProcessorTask.Result<K, S, E>>): Map<String, State?> {
-        val states = processorTaskResults.mapNotNull { result ->
-            result.updatedState
-        }
-        val (newStates, existingStates) = states.partition { state ->
-            state.version == State.VERSION_INITIAL_VALUE
+        val (newStateTasks, existingStateTasks) = processorTaskResults.partition { result ->
+            result.processorTask.persistedState == null
         }
         val latestValuesForFailedStates = mutableMapOf<String, State?>()
-        if (newStates.isNotEmpty()) {
+        if (newStateTasks.isNotEmpty()) {
+            val newStates = newStateTasks.mapNotNull { it.updatedState }
             val failedStatesKeys = stateManager.create(newStates).keys
             if (failedStatesKeys.isNotEmpty()) {
                 val latestStatesValues = stateManager.get(failedStatesKeys)
@@ -59,7 +58,8 @@ class StateManagerHelper<K : Any, S : Any, E : Any>(
                 })
             }
         }
-        if (existingStates.isNotEmpty()) {
+        if (existingStateTasks.isNotEmpty()) {
+            val existingStates = existingStateTasks.mapNotNull { it.updatedState }
             latestValuesForFailedStates.putAll(stateManager.update(existingStates))
         }
         return latestValuesForFailedStates

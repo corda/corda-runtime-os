@@ -7,6 +7,8 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
 
+    api project(":libs:state-manager:state-manager-api")
+
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "com.typesafe:config:$typeSafeConfigVersion"
@@ -22,17 +24,6 @@ dependencies {
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-}
-
-// include coroutines bundle in this jar as it doesn't have OSGi metadata
-tasks.named('jar', Jar) {
-    bundle {
-        bnd '''\
--conditionalpackage: kotlinx.coroutines*
-Export-Package: kotlinx.coroutines*
-Import-Package: !android*, *
-'''
-    }
 }
 
 description 'Messaging API'

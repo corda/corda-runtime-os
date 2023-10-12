@@ -1,6 +1,5 @@
 package net.corda.messaging.mediator
 
-import kotlinx.coroutines.runBlocking
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.libs.statemanager.api.StateManager
@@ -151,7 +150,6 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun processEvents() {
-        log.debug { "Polling and processing events" }
         val messages = pollConsumers()
         if (messages.isNotEmpty()) {
             val msgGroups = messages.groupBy { it.key }
@@ -163,7 +161,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                 val processingResults = taskManagerHelper.executeProcessorTasks(msgProcessorTasks)
                 val conflictingStates = stateManagerHelper.persistStates(processingResults)
                 val (successResults, failResults) = processingResults.partition {
-                    !conflictingStates.contains(it.key)
+                    !conflictingStates.contains(it.key.toString())
                 }
                 val clientTasks = taskManagerHelper.createClientTasks(successResults, messageRouter)
                 val clientResults = taskManagerHelper.executeClientTasks(clientTasks)
@@ -176,22 +174,14 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun pollConsumers(): List<CordaConsumerRecord<K, E>> {
-        return runBlocking {
-            consumers.map { consumer ->
-                consumer.poll(config.pollTimeout)
-            }.map {
-                it.await()
-            }
+        return consumers.map { consumer ->
+            consumer.poll(config.pollTimeout)
         }.flatten()
     }
 
     private fun commitOffsets() {
-        runBlocking {
-            consumers.map { consumer ->
-                consumer.asyncCommitOffsets()
-            }.map {
-                it.await()
-            }
+        consumers.map { consumer ->
+            consumer.syncCommitOffsets()
         }
     }
 
