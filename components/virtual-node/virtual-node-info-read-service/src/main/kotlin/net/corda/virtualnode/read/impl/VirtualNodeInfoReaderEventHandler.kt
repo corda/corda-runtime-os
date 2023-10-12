@@ -18,6 +18,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_INFO_TOPIC
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.utilities.debug
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -68,7 +69,7 @@ class VirtualNodeInfoReaderEventHandler(
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val config = event.config[ConfigKeys.MESSAGING_CONFIG] ?: return
 
-        log.info ( "Virtual Node Info Service (re)subscribing" )
+        log.debug { "Virtual Node Info Service (re)subscribing" }
 
         virtualNodeInfoProcessor.clear()
         subscription?.close()
