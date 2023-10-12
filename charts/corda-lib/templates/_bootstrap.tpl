@@ -373,6 +373,9 @@ spec:
             {{- end }}
             '-r', '{{ .Values.bootstrap.kafka.replicas }}',
             '-p', '{{ .Values.bootstrap.kafka.partitions }}',
+            {{- if .Values.bootstrap.kafka.overrides }}
+            '-o', '/tmp/overrides.yaml',
+            {{- end }}
             'connect',
             '-w', '{{ .Values.bootstrap.kafka.timeoutSeconds }}'
           ]
@@ -408,7 +411,7 @@ spec:
               {{- end }}
             {{- end }}
       initContainers:
-        - name: create-trust-store
+        - name: setup
           image: {{ include "corda.bootstrapCliImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
@@ -421,6 +424,9 @@ spec:
             - -c
           args:
             - |
+                {{- with .Values.bootstrap.kafka.overrides }}
+                echo -e {{ toYaml . | quote }} > /tmp/overrides.yaml
+                {{- end }}
                 touch /tmp/config.properties
                 {{- if .Values.kafka.tls.enabled }}
                 {{- if .Values.kafka.sasl.enabled }}
