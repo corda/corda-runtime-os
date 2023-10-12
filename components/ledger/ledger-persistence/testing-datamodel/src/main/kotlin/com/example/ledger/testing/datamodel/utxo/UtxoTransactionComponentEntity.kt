@@ -34,13 +34,7 @@ data class UtxoTransactionComponentEntity(
     var data: ByteArray,
 
     @get:Column(name = "hash", nullable = false)
-    var hash: String,
-
-    @get:Column(name = "referenced_state_transaction_id", nullable = true)
-    var referencedStateTransactionId: String?,
-
-    @get:Column(name = "referenced_state_index", nullable = true)
-    var referencedStateIndex: Int?
+    var hash: String
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -53,8 +47,6 @@ data class UtxoTransactionComponentEntity(
         if (leafIndex != other.leafIndex) return false
         if (!data.contentEquals(other.data)) return false
         if (hash != other.hash) return false
-        if (referencedStateTransactionId != other.referencedStateTransactionId) return false
-        if (referencedStateIndex != other.referencedStateIndex) return false
 
         return true
     }
@@ -65,8 +57,6 @@ data class UtxoTransactionComponentEntity(
         result = 31 * result + leafIndex
         result = 31 * result + data.contentHashCode()
         result = 31 * result + hash.hashCode()
-        result = 31 * result + referencedStateTransactionId.hashCode()
-        result = 31 * result + referencedStateIndex.hashCode()
         return result
     }
 }

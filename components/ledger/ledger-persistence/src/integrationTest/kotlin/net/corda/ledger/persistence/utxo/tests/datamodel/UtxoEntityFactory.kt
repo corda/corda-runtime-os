@@ -10,6 +10,7 @@ class UtxoEntityFactory(entityManagerFactory: EntityManagerFactory) {
     val utxoTransactionComponent: Class<*> get() = classFor("UtxoTransactionComponentEntity")
     val utxoVisibleTransactionOutput: Class<*> get() = classFor("UtxoVisibleTransactionOutputEntity")
     val utxoTransactionSignature: Class<*> get() = classFor("UtxoTransactionSignatureEntity")
+    val utxoTransactionSource: Class<*> get() = classFor("UtxoTransactionSourceEntity")
 
     fun createUtxoTransactionEntity(
         transactionId: String,
@@ -29,12 +30,10 @@ class UtxoEntityFactory(entityManagerFactory: EntityManagerFactory) {
         groupIdx: Int,
         leafIdx: Int,
         component: ByteArray,
-        hash: String,
-        referencedTransactionId: String?,
-        referencedTransactionIndex: Int?
+        hash: String
     ): Any {
-        return utxoTransactionComponent.constructors.single { it.parameterCount == 7 }.newInstance(
-            utxoTransaction, groupIdx, leafIdx, component, hash, referencedTransactionId, referencedTransactionIndex
+        return utxoTransactionComponent.constructors.single { it.parameterCount == 5 }.newInstance(
+            utxoTransaction, groupIdx, leafIdx, component, hash
         )
     }
 

@@ -437,6 +437,24 @@ class UtxoPersistenceServiceImplTest {
                         }
                 }
 
+            val dbTransactionSources = em.createNamedQuery(
+                "UtxoTransactionSourceEntity.findByTransactionId",
+                entityFactory.utxoTransactionSource
+            )
+                .setParameter("transactionId", signedTransaction.id.toString())
+                .resultList
+            assertThat(dbTransactionSources).isNotNull
+                .hasSameSizeAs(defaultInputStateRefs)
+            dbTransactionSources
+                .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
+                .zip(defaultInputStateRefs)
+                .forEachIndexed { leafIndex, (dbInput, transactionInput) ->
+                    assertThat(dbInput.field<Int>("groupIndex")).isEqualTo(UtxoComponentGroup.INPUTS.ordinal)
+                    assertThat(dbInput.field<Int>("leafIndex")).isEqualTo(leafIndex)
+                    assertThat(dbInput.field<String>("refTransactionId")).isEqualTo(transactionInput.transactionId.toString())
+                    assertThat(dbInput.field<Int>("refLeafIndex")).isEqualTo(transactionInput.index)
+                }
+
             val dbTransactionOutputs = em.createNamedQuery(
                 "UtxoVisibleTransactionOutputEntity.findByTransactionId",
                 entityFactory.utxoVisibleTransactionOutput
@@ -572,9 +590,7 @@ class UtxoPersistenceServiceImplTest {
                             groupIndex,
                             leafIndex,
                             component,
-                            digest("SHA-256", component).toString(),
-                            null,
-                            null
+                            digest("SHA-256", component).toString()
                         )
                     }
                 }
@@ -676,6 +692,10 @@ class UtxoPersistenceServiceImplTest {
 
         override fun getConsumedStates(persistenceService: UtxoPersistenceService): List<StateAndRef<ContractState>> {
             TODO("Not yet implemented")
+        }
+
+        override fun getReferenceStateRefs(): List<StateRef> {
+            return emptyList()
         }
 
         override fun getConsumedStateRefs(): List<StateRef> {

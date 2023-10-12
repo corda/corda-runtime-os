@@ -30,18 +30,27 @@ class HsqldbUtxoQueryProvider @Activate constructor(
                 VALUES (x.id, x.privacy_salt, x.account_id, x.created, x.status, x.updated)"""
             .trimIndent()
 
+    override val persistTransactionSource: String
+        get() = """
+            MERGE INTO {h-schema}utxo_transaction_sources AS uts
+            USING (VALUES :transactionId, CAST(:groupIndex AS INT), CAST(:leafIndex AS INT),
+                          :referencedStateTransactionId, CAST(:referencedStateIndex AS INT))
+                AS x(transaction_id, group_idx, leaf_idx, referenced_state_transaction_id, referenced_state_index)
+            ON uts.transaction_id = x.transaction_id AND uts.group_idx = x.group_idx AND uts.leaf_idx = x.leaf_idx
+            WHEN NOT MATCHED THEN
+                INSERT (transaction_id, group_idx, leaf_idx, referenced_state_transaction_id, referenced_state_index)
+                VALUES (x.transaction_id, x.group_idx, x.leaf_idx, x.referenced_state_transaction_id, x.referenced_state_index)"""
+            .trimIndent()
+
     override val persistTransactionComponentLeaf: String
         get() = """
             MERGE INTO {h-schema}utxo_transaction_component AS utc
-            USING (VALUES :transactionId, CAST(:groupIndex AS INT), CAST(:leafIndex AS INT), CAST(:data AS VARBINARY(1048576)), :hash, 
-            :referencedStateTransactionId, :referencedStateIndex)
-                AS x(transaction_id, group_idx, leaf_idx, data, hash, referenced_state_transaction_id, referenced_state_index)
+            USING (VALUES :transactionId, CAST(:groupIndex AS INT), CAST(:leafIndex AS INT), CAST(:data AS VARBINARY(1048576)), :hash)
+                AS x(transaction_id, group_idx, leaf_idx, data, hash)
             ON x.transaction_id = utc.transaction_id AND x.group_idx = utc.group_idx AND x.leaf_idx = utc.leaf_idx 
-            AND x.referenced_state_transaction_id = utc.referenced_state_transaction_id 
-            AND x.referenced_state_index = utc.referenced_state_index
             WHEN NOT MATCHED THEN
-                INSERT (transaction_id, group_idx, leaf_idx, data, hash, referenced_state_transaction_id, referenced_state_index)
-                VALUES (x.transaction_id, x.group_idx, x.leaf_idx, x.data, x.hash, x.referenced_state_transaction_id, x.referenced_state_index)"""
+                INSERT (transaction_id, group_idx, leaf_idx, data, hash)
+                VALUES (x.transaction_id, x.group_idx, x.leaf_idx, x.data, x.hash)"""
             .trimIndent()
 
     override fun persistVisibleTransactionOutput(consumed: Boolean): String {

@@ -79,6 +79,17 @@ interface UtxoRepository {
         status: TransactionStatus
     )
 
+    /** Persists transaction source (operation is idempotent) */
+    @Suppress("LongParameterList")
+    fun persistTransactionSource(
+        entityManager: EntityManager,
+        transactionId: String,
+        groupIndex: Int,
+        leafIndex: Int,
+        referencedStateTransactionId: String,
+        referencedStateIndex: Int
+    )
+
     /** Persists transaction component leaf [data] (operation is idempotent) */
     @Suppress("LongParameterList")
     fun persistTransactionComponentLeaf(
@@ -87,9 +98,7 @@ interface UtxoRepository {
         groupIndex: Int,
         leafIndex: Int,
         data: ByteArray,
-        hash: String,
-        referencedStateTransactionId: String?,
-        referencedStateIndex: Int?
+        hash: String
     )
 
     /** Persists transaction output (operation is idempotent) */

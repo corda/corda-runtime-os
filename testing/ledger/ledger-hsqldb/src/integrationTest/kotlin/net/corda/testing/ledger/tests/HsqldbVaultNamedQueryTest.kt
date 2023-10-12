@@ -7,6 +7,8 @@ import com.example.ledger.testing.datamodel.utxo.UtxoVisibleTransactionOutputEnt
 import com.example.ledger.testing.datamodel.utxo.UtxoVisibleTransactionOutputEntityId
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionSignatureEntity
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionSignatureEntityId
+import com.example.ledger.testing.datamodel.utxo.UtxoTransactionSourceEntity
+import com.example.ledger.testing.datamodel.utxo.UtxoTransactionSourceEntityId
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
@@ -83,7 +85,9 @@ class HsqldbVaultNamedQueryTest {
             UtxoVisibleTransactionOutputEntity::class.java,
             UtxoVisibleTransactionOutputEntityId::class.java,
             UtxoTransactionSignatureEntity::class.java,
-            UtxoTransactionSignatureEntityId::class.java
+            UtxoTransactionSignatureEntityId::class.java,
+            UtxoTransactionSourceEntity::class.java,
+            UtxoTransactionSourceEntityId::class.java
         ))
         entityManagerFactory = dbConnectionManager.createEntityManagerFactory(dbConnectionId, entities)
     }
@@ -108,9 +112,7 @@ class HsqldbVaultNamedQueryTest {
                     groupIndex = state.groupIndex,
                     leafIndex = state.leafIndex,
                     data = byteArrayOf(0x01, 0x02, 0x03, 0x04),
-                    hash = "",
-                    null,
-                    null
+                    hash = ""
                 )
 
                 visibleStates += UtxoVisibleTransactionOutputEntity(

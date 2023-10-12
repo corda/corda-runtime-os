@@ -190,15 +190,31 @@ class UtxoRepositoryImpl @Activate constructor(
             .logResult("transaction [$id]")
     }
 
+    override fun persistTransactionSource(
+        entityManager: EntityManager,
+        transactionId: String,
+        groupIndex: Int,
+        leafIndex: Int,
+        referencedStateTransactionId: String,
+        referencedStateIndex: Int
+    ) {
+        entityManager.createNativeQuery(queryProvider.persistTransactionSource)
+            .setParameter("transactionId", transactionId)
+            .setParameter("groupIndex", groupIndex)
+            .setParameter("leafIndex", leafIndex)
+            .setParameter("referencedStateTransactionId", referencedStateTransactionId)
+            .setParameter("referencedStateIndex", referencedStateIndex)
+            .executeUpdate()
+            .logResult("transaction source [$transactionId, $groupIndex, $leafIndex]")
+    }
+
     override fun persistTransactionComponentLeaf(
         entityManager: EntityManager,
         transactionId: String,
         groupIndex: Int,
         leafIndex: Int,
         data: ByteArray,
-        hash: String,
-        referencedStateTransactionId: String?,
-        referencedStateIndex: Int?
+        hash: String
     ) {
         entityManager.createNativeQuery(queryProvider.persistTransactionComponentLeaf)
             .setParameter("transactionId", transactionId)
@@ -206,11 +222,6 @@ class UtxoRepositoryImpl @Activate constructor(
             .setParameter("leafIndex", leafIndex)
             .setParameter("data", data)
             .setParameter("hash", hash)
-            .setParameter("referencedStateTransactionId", referencedStateTransactionId)
-            // This is a workaround for avoiding error when tokenAmount is null, see:
-            // https://stackoverflow.com/questions/53648865/postgresql-spring-data-jpa-integer-null-interpreted-as-bytea
-            .setParameter("referencedStateIndex", 0)
-            .setParameter("referencedStateIndex", referencedStateIndex)
             .executeUpdate()
             .logResult("transaction component [$transactionId, $groupIndex, $leafIndex]")
     }
