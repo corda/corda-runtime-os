@@ -186,7 +186,7 @@ class UtxoPersistenceServiceImpl(
             repository.persistTransactionSource(
                 em,
                 transactionIdString,
-                UtxoComponentGroup.INPUTS.ordinal,
+                UtxoComponentGroup.REFERENCES.ordinal,
                 index,
                 reference.transactionId.toString(),
                 reference.index
