@@ -63,9 +63,8 @@ class ReclaimFlow : ClientStartableFlow {
             val timeWindowForReclaim = lockState.state.contractState.timeWindow.plusSeconds(31)
 
             val txBuilder = ledgerService.createTransactionBuilder()
-
                 .setNotary(encumberedTx.notaryName)
-                .setTimeWindowBetween(timeWindowForReclaim, Instant.now())
+                .setTimeWindowBetween(timeWindowForReclaim, Instant.now().plusSeconds(420))
                 .addInputState(lockState.ref)
                 .addInputState(assetState.ref)
                 .addOutputState(newAssetState)

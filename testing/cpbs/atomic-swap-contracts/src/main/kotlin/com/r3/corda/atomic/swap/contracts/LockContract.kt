@@ -60,10 +60,12 @@ class LockContract : Contract {
                 "Original owner gets the asset" using
                         (transaction.getOutputStates(OwnableState::class.java).first().owner == inputLockState.creator)
                 "Only lock state creator can do a reclaim" using (transaction.signatories.contains(inputLockState.creator))
-                val timeWindowUntil = transaction.timeWindow.from
-                "The time window must have expired. Reversal of Encumbered assets requires a time window that starts " +
-                        "only after the time-window to claim the encumbered assets" using (timeWindowUntil != null &&
-                        timeWindowUntil.isAfter(inputLockState.timeWindow))
+                val reclaimTransactionStartTime = transaction.timeWindow.from
+                "The lock state time window must have expired. Reclaim of encumbered assets requires a time window that starts " +
+                        "only after the lock state time window" using (reclaimTransactionStartTime != null &&
+                        reclaimTransactionStartTime.isAfter(inputLockState.timeWindow))
+                "Time window should not be longer than a day." using (reclaimTransactionStartTime != null &&
+                        transaction.timeWindow.until < reclaimTransactionStartTime.plusSeconds(86400))
             }
 
             else -> {
