@@ -221,7 +221,7 @@ class DbConfigSubcommand : Runnable {
  *
  */
 @Suppress("LongParameterList")
-private fun createConfigDbConfig(
+fun createConfigDbConfig(
     jdbcUrl: String,
     username: String,
     value: String,
