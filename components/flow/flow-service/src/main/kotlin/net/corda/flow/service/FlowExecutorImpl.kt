@@ -57,7 +57,7 @@ class FlowExecutorImpl constructor(
 
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private const val STATE_MANAGER = "flow.engine.state.manager"
+        // TODO private const val STATE_MANAGER = "flow.engine.state.manager"
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<FlowExecutor> { event, _ -> eventHandler(event) }
@@ -74,9 +74,10 @@ class FlowExecutorImpl constructor(
             subscriptionRegistrationHandle?.close()
             multiSourceEventMediator?.close()
 
-            val stateManager = coordinator.createManagedResource(STATE_MANAGER) {
+            // TODO Create as managed resource once issue with stateManager is fixed
+            val stateManager = // coordinator.createManagedResource(STATE_MANAGER) {
                 stateManagerFactory.create(stateManagerConfig)
-            }
+            // }
 
             multiSourceEventMediator = flowEventMediatorFactory.create(
                 updatedConfigs,
