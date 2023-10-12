@@ -47,7 +47,7 @@ class HsqldbUtxoQueryProvider @Activate constructor(
             MERGE INTO {h-schema}utxo_transaction_component AS utc
             USING (VALUES :transactionId, CAST(:groupIndex AS INT), CAST(:leafIndex AS INT), CAST(:data AS VARBINARY(1048576)), :hash)
                 AS x(transaction_id, group_idx, leaf_idx, data, hash)
-            ON x.transaction_id = utc.transaction_id AND x.group_idx = utc.group_idx AND x.leaf_idx = utc.leaf_idx 
+            ON x.transaction_id = utc.transaction_id AND x.group_idx = utc.group_idx AND x.leaf_idx = utc.leaf_idx
             WHEN NOT MATCHED THEN
                 INSERT (transaction_id, group_idx, leaf_idx, data, hash)
                 VALUES (x.transaction_id, x.group_idx, x.leaf_idx, x.data, x.hash)"""
