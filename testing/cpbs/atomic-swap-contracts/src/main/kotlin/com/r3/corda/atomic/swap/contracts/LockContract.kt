@@ -64,8 +64,6 @@ class LockContract : Contract {
                 "The lock state time window must have expired. Reclaim of encumbered assets requires a time window that starts " +
                         "only after the lock state time window" using (reclaimTransactionStartTime != null &&
                         reclaimTransactionStartTime.isAfter(inputLockState.timeWindow))
-                "Time window should not be longer than a day." using (reclaimTransactionStartTime != null &&
-                        transaction.timeWindow.until < reclaimTransactionStartTime.plusSeconds(86400))
             }
 
             else -> {
