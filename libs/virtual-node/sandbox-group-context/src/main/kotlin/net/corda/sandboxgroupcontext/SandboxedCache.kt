@@ -5,11 +5,11 @@ package net.corda.sandboxgroupcontext
  *
  * These caches should exist as global OSGi singletons.
  *
- * [SandboxedCache]s have invalidate keys related to a sandbox when that sandbox is evicted from the worker's sandbox cache. [remove] is
- * called when this occurs.
+ * [SandboxedCache]s have invalidate keys related to a sandbox when that sandbox is evicted from
+ * the worker's sandbox cache. [remove] is called when this occurs.
  *
- * All [SandboxedCache]s should contain an internal cache that contains _at least_ the [VirtualNodeContext] of the sandbox that put key-value
- * pairs into the cache.
+ * All [SandboxedCache]s should contain an internal cache that contains _at least_ the [VirtualNodeContext] of
+ * the sandbox that put key-value pairs into the cache.
  *
  * Ideally [CacheKey] should be used by a [SandboxedCache]'s internal cache.
  */
