@@ -19,38 +19,16 @@
 # Then deploy Corda using
 #  helm upgrade --install corda -n corda \
 #  charts/corda \
-#  --values values-state-manager.yaml \
+#  --values values-prereqs.yaml \
+#  --values state-manager.yaml \
 #  --wait
 #
 #
 # NOTE: This assumes you deploy the above in the same `corda` namespace, so that domain names containing just the service
 # name are resolved (i.e. prereqs-postgresql instead of prereqs-postgresql.<namespace>). If that is not the case, you
 # might need to add the namespace as a suffix.
-imagePullPolicy: "IfNotPresent"
-image:
-  registry: "corda-os-docker-dev.software.r3.com"
-  tag: "latest-local-5.1.0"
-
-logging:
-  format: "text"
-  level: "info"
-
 bootstrap:
-  restApiAdmin:
-    password:
-      value: "admin"
-  # Disable pre-install check as we are not specifying resources
-  preinstallCheck:
-    enabled: false
   db:
-    cluster:
-      password:
-        valueFrom:
-          secretKeyRef:
-            name: "prereqs-postgresql"
-            key: "postgres-password"
-      username:
-        value: "postgres"
     stateManager:
       password:
         valueFrom:
@@ -59,42 +37,9 @@ bootstrap:
             key: "postgres-password"
       username:
         value: "postgres"
-  kafka:
-    replicas: 1
-
-kafka:
-  bootstrapServers: "prereqs-kafka:9092"
-  sasl:
-    enabled: true
-    username:
-      value: "user"
-    password:
-      valueFrom:
-        secretKeyRef:
-          name: "prereqs-kafka-jaas"
-          key: "client-passwords"
-  tls:
-    enabled: true
-    truststore:
-      valueFrom:
-        secretKeyRef:
-          name: "prereqs-kafka-0-tls"
-          key: "ca.crt"
-
-db:
-  cluster:
-    host: "prereqs-postgresql"
-    password:
-      valueFrom:
-        secretKeyRef:
-          name: "prereqs-postgresql"
-          key: "password"
-    username:
-      value: "user"
-
 stateManager:
   db:
-    host: "statemanager-postgresql"
+    host: "state-manager-db-postgresql"
     password:
       valueFrom:
         secretKeyRef:
