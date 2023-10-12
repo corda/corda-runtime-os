@@ -21,7 +21,6 @@ dependencies {
     kapt "info.picocli:picocli:$picocliVersion"
 
     implementation 'net.corda:corda-config-schema'
-    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 
     implementation project(':libs:permissions:permission-common')
