@@ -31,7 +31,7 @@ class VerificationSubscriptionFactoryImpl @Activate constructor(
     companion object {
         internal const val GROUP_NAME = "verification.ledger.processor"
         const val SUBSCRIPTION_NAME = "Verification"
-        const val VERIFICATION_PATH = "/verification"
+        const val PATH = "/verification"
     }
 
     override fun create(config: SmartConfig): Subscription<String, TransactionVerificationRequest> {
@@ -61,7 +61,7 @@ class VerificationSubscriptionFactoryImpl @Activate constructor(
             TransactionVerificationRequest::class.java,
             FlowEvent::class.java
         )
-        val rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, VERIFICATION_PATH)
+        val rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, PATH)
         return subscriptionFactory.createHttpRPCSubscription(rpcConfig, processor)
     }
 

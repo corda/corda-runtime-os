@@ -1,6 +1,5 @@
 package net.corda.membership.impl.registration.dynamic.mgm
 
-import com.typesafe.config.ConfigException
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.core.ShortHash
@@ -90,9 +89,6 @@ internal class ExpirationProcessorImpl internal constructor(
         const val WAIT_FOR_CONFIG_RESOURCE_NAME = "ExpirationProcessor.registerComponentForUpdates"
         const val PUBLISHER_RESOURCE_NAME = "ExpirationProcessor.publisher"
         const val PUBLISHER_CLIENT_ID = "expiration-processor"
-
-        const val MAX_DURATION_BETWEEN_EXPIRED_REGISTRATION_REQUESTS_POLLS_DEFAULT = 300L
-        const val EXPIRATION_DATE_FOR_REGISTRATION_REQUESTS_DEFAULT = 180L
     }
 
     private val coordinatorName = LifecycleCoordinatorName.forComponent<ExpirationProcessor>()
@@ -146,16 +142,14 @@ internal class ExpirationProcessorImpl internal constructor(
     ) : TimerEvent
 
     private inner class ActiveImpl(membershipConfiguration: SmartConfig) : InnerExpirationProcessor {
-        private val expirationDate = try {
-            membershipConfiguration.getLong(MAX_DURATION_BETWEEN_EXPIRED_REGISTRATION_REQUESTS_POLLS).toMillis()
-        } catch(e: ConfigException.Missing) {
-            MAX_DURATION_BETWEEN_EXPIRED_REGISTRATION_REQUESTS_POLLS_DEFAULT.toMillis()
-        }
-        private val timeframe = try {
-            membershipConfiguration.getLong(EXPIRATION_DATE_FOR_REGISTRATION_REQUESTS).toMillis()
-        } catch(e: ConfigException.Missing) {
-            EXPIRATION_DATE_FOR_REGISTRATION_REQUESTS_DEFAULT.toMillis()
-        }
+        private val expirationDate = membershipConfiguration
+            .getLong(MAX_DURATION_BETWEEN_EXPIRED_REGISTRATION_REQUESTS_POLLS).let {
+                TimeUnit.MINUTES.toMillis(it)
+            }
+        private val timeframe = membershipConfiguration
+            .getLong(EXPIRATION_DATE_FOR_REGISTRATION_REQUESTS).let {
+                TimeUnit.MINUTES.toMillis(it)
+            }
         private val maxNoise = (0.1 * timeframe).toInt()
 
         override fun cancelOrScheduleProcessingOfExpiredRequests(mgm: HoldingIdentity): Boolean {
@@ -309,6 +303,4 @@ internal class ExpirationProcessorImpl internal constructor(
             ?.publish(records)
             ?.forEach { it.join() }
     }
-
-    private fun Long.toMillis() = TimeUnit.MINUTES.toMillis(this)
 }

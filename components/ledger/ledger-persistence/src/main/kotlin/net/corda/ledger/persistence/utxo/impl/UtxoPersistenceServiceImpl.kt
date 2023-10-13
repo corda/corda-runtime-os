@@ -145,6 +145,18 @@ class UtxoPersistenceServiceImpl(
         val nowUtc = utcClock.instant()
         val transactionIdString = transaction.id.toString()
 
+        val metadataBytes = transaction.rawGroupLists[0][0]
+        val metadataHash = sandboxDigestService.hash(metadataBytes, DigestAlgorithmName.SHA2_256).toString()
+
+        val metadata = transaction.metadata
+        repository.persistTransactionMetadata(
+            em,
+            metadataHash,
+            metadataBytes,
+            requireNotNull(metadata.getMembershipGroupParametersHash()) { "Metadata without membership group parameters hash" },
+            requireNotNull(metadata.getCpiMetadata()) { "Metadata without CPI metadata" }.fileChecksum
+        )
+
         // Insert the Transaction
         repository.persistTransaction(
             em,
@@ -152,7 +164,8 @@ class UtxoPersistenceServiceImpl(
             transaction.privacySalt.bytes,
             transaction.account,
             nowUtc,
-            transaction.status
+            transaction.status,
+            metadataHash
         )
 
         // Insert the Transactions components

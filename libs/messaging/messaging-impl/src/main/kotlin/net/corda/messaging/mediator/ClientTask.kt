@@ -1,6 +1,5 @@
 package net.corda.messaging.mediator
 
-import kotlinx.coroutines.runBlocking
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
@@ -30,11 +29,9 @@ data class ClientTask<K : Any, S : Any, E : Any>(
         val destination = messageRouter.getDestination(message)
 
         @Suppress("UNCHECKED_CAST")
-        val reply = runBlocking {
-            with(destination) {
-                message.addProperty(MSG_PROP_ENDPOINT, endpoint)
-                client.send(message).await() as MediatorMessage<E>?
-            }
+        val reply = with(destination) {
+            message.addProperty(MSG_PROP_ENDPOINT, endpoint)
+            client.send(message) as MediatorMessage<E>?
         }
         return Result(this, reply)
     }

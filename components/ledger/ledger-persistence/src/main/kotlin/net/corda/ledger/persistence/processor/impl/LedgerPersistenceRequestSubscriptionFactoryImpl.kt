@@ -36,8 +36,8 @@ class LedgerPersistenceRequestSubscriptionFactoryImpl @Activate constructor(
 ) : LedgerPersistenceRequestSubscriptionFactory {
     companion object {
         internal const val GROUP_NAME = "persistence.ledger.processor"
-        const val SUBSCRIPTION_NAME = "Persistence"
-        const val PERSISTENCE_PATH = "/persistence"
+        const val SUBSCRIPTION_NAME = "Ledger"
+        const val PATH = "/ledger"
     }
 
     override fun create(config: SmartConfig): Subscription<String, LedgerPersistenceRequest> {
@@ -67,7 +67,7 @@ class LedgerPersistenceRequestSubscriptionFactoryImpl @Activate constructor(
             LedgerPersistenceRequest::class.java,
             FlowEvent::class.java
         )
-        val rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, PERSISTENCE_PATH)
+        val rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, PATH)
         return subscriptionFactory.createHttpRPCSubscription(rpcConfig, processor)
     }
 }

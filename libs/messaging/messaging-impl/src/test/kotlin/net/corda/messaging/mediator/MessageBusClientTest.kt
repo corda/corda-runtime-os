@@ -1,6 +1,5 @@
 package net.corda.messaging.mediator
 
-import kotlinx.coroutines.runBlocking
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.mediator.MediatorMessage
@@ -9,9 +8,10 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.Mockito
 import org.mockito.Mockito.times
-import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -50,7 +50,7 @@ class MessageBusClientTest {
             messageProps.toHeaders(),
         )
 
-        verify(cordaProducer).send(eq(expected), any())
+        verify(cordaProducer).send(eq(expected), isNull())
     }
 
     @Test
@@ -62,14 +62,9 @@ class MessageBusClientTest {
             messageProps.toHeaders(),
         )
 
-        whenever(cordaProducer.send(eq(record), any<CordaProducer.Callback>())).thenAnswer { invocation ->
-            val callback = invocation.getArgument<CordaProducer.Callback>(1)
-            callback.onCompletion(CordaRuntimeException(""))
-        }
+        Mockito.doThrow(CordaRuntimeException("")).whenever(cordaProducer).send(eq(record), isNull())
         assertThrows<CordaRuntimeException> {
-            runBlocking {
-                messageBusClient.send(message).await()
-            }
+            messageBusClient.send(message)
         }
     }
 

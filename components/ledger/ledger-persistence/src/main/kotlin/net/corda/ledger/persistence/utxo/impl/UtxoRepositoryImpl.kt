@@ -60,9 +60,9 @@ class UtxoRepositoryImpl @Activate constructor(
         entityManager: EntityManager,
         id: String
     ): SignedTransactionContainer? {
-        val privacySalt = findTransactionPrivacySalt(entityManager, id) ?: return null
+        val (privacySalt, metadataBytes) = findTransactionPrivacySaltAndMetadata(entityManager, id) ?: return null
         val wireTransaction = wireTransactionFactory.create(
-            findTransactionComponentLeafs(entityManager, id),
+            mapOf(0 to listOf(metadataBytes)) + findTransactionComponentLeafs(entityManager, id),
             privacySalt
         )
         return SignedTransactionContainer(
@@ -87,14 +87,14 @@ class UtxoRepositoryImpl @Activate constructor(
             .associate { r -> parseSecureHash(r.get(0) as String) to r.get(1) as String }
     }
 
-    private fun findTransactionPrivacySalt(
+    private fun findTransactionPrivacySaltAndMetadata(
         entityManager: EntityManager,
         transactionId: String
-    ): PrivacySaltImpl? {
-        return entityManager.createNativeQuery(queryProvider.findTransactionPrivacySalt, Tuple::class.java)
+    ): Pair<PrivacySaltImpl, ByteArray>? {
+        return entityManager.createNativeQuery(queryProvider.findTransactionPrivacySaltAndMetadata, Tuple::class.java)
             .setParameter("transactionId", transactionId)
             .resultListAsTuples()
-            .map { r -> PrivacySaltImpl(r.get(0) as ByteArray) }
+            .map { r -> Pair(PrivacySaltImpl(r.get(0) as ByteArray), r.get(1) as ByteArray) }
             .firstOrNull()
     }
 
@@ -183,7 +183,8 @@ class UtxoRepositoryImpl @Activate constructor(
         privacySalt: ByteArray,
         account: String,
         timestamp: Instant,
-        status: TransactionStatus
+        status: TransactionStatus,
+        metadataHash: String
     ) {
         entityManager.createNativeQuery(queryProvider.persistTransaction)
             .setParameter("id", id)
@@ -192,8 +193,25 @@ class UtxoRepositoryImpl @Activate constructor(
             .setParameter("createdAt", timestamp)
             .setParameter("status", status.value)
             .setParameter("updatedAt", timestamp)
+            .setParameter("metadataHash", metadataHash)
             .executeUpdate()
             .logResult("transaction [$id]")
+    }
+
+    override fun persistTransactionMetadata(
+        entityManager: EntityManager,
+        hash: String,
+        metadataBytes: ByteArray,
+        groupParametersHash: String,
+        cpiFileChecksum: String
+    ){
+        entityManager.createNativeQuery(queryProvider.persistTransactionMetadata)
+            .setParameter("hash", hash)
+            .setParameter("canonicalData", metadataBytes)
+            .setParameter("groupParametersHash", groupParametersHash)
+            .setParameter("cpiFileChecksum", cpiFileChecksum)
+            .executeUpdate()
+            .logResult("transaction metadata [$hash]")
     }
 
     override fun persistTransactionComponentLeaf(
@@ -204,6 +222,10 @@ class UtxoRepositoryImpl @Activate constructor(
         data: ByteArray,
         hash: String
     ) {
+        // Metadata is not stored with the other components. See persistTransactionMetadata().
+        if (groupIndex == 0 && leafIndex == 0) {
+            return
+        }
         entityManager.createNativeQuery(queryProvider.persistTransactionComponentLeaf)
             .setParameter("transactionId", transactionId)
             .setParameter("groupIndex", groupIndex)

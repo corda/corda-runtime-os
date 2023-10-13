@@ -3,8 +3,8 @@ package net.corda.entityprocessor.impl
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.entityprocessor.EntityProcessor
-import net.corda.entityprocessor.EntityProcessorFactory
+import net.corda.data.persistence.EntityRequest
+import net.corda.entityprocessor.EntityRequestSubscriptionFactory
 import net.corda.entityprocessor.FlowPersistenceService
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.DependentComponents
@@ -15,8 +15,8 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
-import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.subscription.Subscription
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
@@ -40,14 +40,15 @@ class FlowPersistenceServiceImpl  @Activate constructor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = CpiInfoReadService::class)
     private val cpiInfoReadService: CpiInfoReadService,
-    @Reference(service = EntityProcessorFactory::class)
-    private val entityProcessorFactory: EntityProcessorFactory
+    @Reference(service = EntityRequestSubscriptionFactory::class)
+    private val entityRequestSubscriptionFactory: EntityRequestSubscriptionFactory
 ) : FlowPersistenceService {
     private var configHandle: Resource? = null
-    private var entityProcessor: EntityProcessor? = null
+    private var entityProcessorSubscription: Subscription<String, EntityRequest>? = null
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        const val RPC_SUBSCRIPTION = "RPC_SUBSCRIPTION"
     }
 
     private val dependentComponents = DependentComponents.of(
@@ -56,7 +57,7 @@ class FlowPersistenceServiceImpl  @Activate constructor(
         ::virtualNodeInfoReadService,
         ::cpiInfoReadService,
     )
-    private val coordinator = coordinatorFactory.createCoordinator<FlowPersistenceService>(dependentComponents, ::eventHandler)
+    private val lifecycleCoordinator = coordinatorFactory.createCoordinator<FlowPersistenceService>(dependentComponents, ::eventHandler)
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.debug { "FlowPersistenceService received: $event" }
@@ -66,39 +67,46 @@ class FlowPersistenceServiceImpl  @Activate constructor(
             }
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
+                    configHandle?.close()
                     configHandle = configurationReadService.registerComponentForUpdates(
                         coordinator,
                         setOf(BOOT_CONFIG, MESSAGING_CONFIG)
                     )
+                    initialiseRpcSubscription()
                 } else {
-                    configHandle?.close()
+                    coordinator.updateStatus(event.status)
                 }
             }
             is ConfigChangedEvent -> {
-                entityProcessor?.stop()
-                val newEntityProcessor = entityProcessorFactory.create(
+                entityProcessorSubscription?.close()
+                val newEntityProcessorSubscription = entityRequestSubscriptionFactory.create(
                     event.config.getConfig(MESSAGING_CONFIG)
                 )
                 logger.debug("Starting EntityProcessor.")
-                newEntityProcessor.start()
-                entityProcessor = newEntityProcessor
+                newEntityProcessorSubscription.start()
+                entityProcessorSubscription = newEntityProcessorSubscription
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
-            is StopEvent -> {
-                entityProcessor?.stop()
-                logger.debug { "Stopping EntityProcessor." }
+        }
+    }
+
+    private fun initialiseRpcSubscription() {
+        val subscription = entityRequestSubscriptionFactory.createRpcSubscription()
+        lifecycleCoordinator.createManagedResource(RPC_SUBSCRIPTION) {
+            subscription.also {
+                it.start()
             }
         }
     }
 
     override val isRunning: Boolean
-        get() = coordinator.isRunning
+        get() = lifecycleCoordinator.isRunning
 
     override fun start() {
-        coordinator.start()
+        lifecycleCoordinator.start()
     }
 
     override fun stop() {
-        coordinator.stop()
+        lifecycleCoordinator.stop()
     }
 }

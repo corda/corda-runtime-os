@@ -11,9 +11,9 @@ package net.corda.ledger.persistence.utxo.impl
  */
 interface UtxoQueryProvider {
     /**
-     * @property findTransactionPrivacySalt SQL text for [UtxoRepositoryImpl.findTransactionPrivacySalt].
+     * @property findTransactionPrivacySaltAndMetadata SQL text for [UtxoRepositoryImpl.findTransactionPrivacySaltAndMetadata].
      */
-    val findTransactionPrivacySalt: String
+    val findTransactionPrivacySaltAndMetadata: String
 
     /**
      * @property findTransactionComponentLeafs SQL text for [UtxoRepositoryImpl.findTransactionComponentLeafs].
@@ -60,6 +60,11 @@ interface UtxoQueryProvider {
      * @property persistTransaction SQL text for [UtxoRepositoryImpl.persistTransaction].
      */
     val persistTransaction: String
+
+    /**
+     * @property persistTransactionMetadata SQL text for [UtxoRepositoryImpl.persistTransactionMetadata].
+     */
+    val persistTransactionMetadata: String
 
     /**
      * @property persistTransactionComponentLeaf SQL text for [UtxoRepositoryImpl.persistTransactionComponentLeaf].
