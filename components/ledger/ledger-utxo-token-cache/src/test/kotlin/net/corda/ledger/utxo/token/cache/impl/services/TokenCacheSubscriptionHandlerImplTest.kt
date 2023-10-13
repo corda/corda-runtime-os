@@ -24,6 +24,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Services.TOKEN_CACHE_EVENT
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -49,8 +50,8 @@ class TokenCacheSubscriptionHandlerImplTest {
         whenever(create()).thenReturn(stateAndEventProcessor)
         whenever(
             createDelegatedProcessor(
-                stateManager,
-                stateAndEventProcessor
+                any(),
+                eq(stateAndEventProcessor)
             )
         ).thenReturn(delegatedStateAndEventProcessor)
     }
@@ -79,11 +80,15 @@ class TokenCacheSubscriptionHandlerImplTest {
     @Test
     fun `on configuration change should create new subscription`() {
         val context = getTokenCacheSubscriptionHandlerTestContext()
-        val subName = LifecycleCoordinatorName("sub1")
+
+        val mediatorName = LifecycleCoordinatorName("mediator")
         val sub =
             mock<StateAndEventSubscription<TokenPoolCacheKey, TokenPoolCacheState, TokenPoolCacheEvent>>().apply {
-                whenever(subscriptionName).thenReturn(subName)
+                whenever(subscriptionName).thenReturn(mediatorName)
             }
+
+        val stateManagerName = LifecycleCoordinatorName("stateManager")
+        val stateManager = mock<StateManager>().apply { whenever(name).thenReturn(stateManagerName) }
 
         whenever(
             subscriptionFactory.createStateAndEventSubscription(
@@ -93,15 +98,19 @@ class TokenCacheSubscriptionHandlerImplTest {
             )
         ).thenReturn(sub)
 
-        context.run {
-            addDependency(subName)
-            testClass.start()
+        whenever(stateManagerFactory.create(any())).thenReturn(stateManager)
 
+        context.run {
+            addDependency(mediatorName)
+            addDependency(stateManagerName)
+
+            testClass.start()
             testClass.onConfigChange(mapOf("key" to MINIMUM_SMART_CONFIG))
 
             verifyIsUp<TokenCacheSubscriptionHandler>()
 
             verify(sub).start()
+            verify(stateManager).start()
         }
     }
 
@@ -109,15 +118,19 @@ class TokenCacheSubscriptionHandlerImplTest {
     fun `on configuration change should close existing subscriptions`() {
         val context = getTokenCacheSubscriptionHandlerTestContext()
         val subName = LifecycleCoordinatorName("sub1")
+        val stateManagerName = LifecycleCoordinatorName("stateManager")
+
         val sub1 =
             mock<StateAndEventSubscription<TokenPoolCacheKey, TokenPoolCacheState, TokenPoolCacheEvent>>().apply {
                 whenever(subscriptionName).thenReturn(subName)
             }
+        val stateManager1 = mock<StateManager>().apply { whenever(name).thenReturn(stateManagerName) }
 
         val sub2 =
             mock<StateAndEventSubscription<TokenPoolCacheKey, TokenPoolCacheState, TokenPoolCacheEvent>>().apply {
                 whenever(subscriptionName).thenReturn(subName)
             }
+        val stateManager2 = mock<StateManager>().apply { whenever(name).thenReturn(stateManagerName) }
 
         whenever(
             subscriptionFactory.createStateAndEventSubscription(
@@ -127,8 +140,11 @@ class TokenCacheSubscriptionHandlerImplTest {
             )
         ).thenReturn(sub1, sub2)
 
+        whenever(stateManagerFactory.create(any())).thenReturn(stateManager1, stateManager2)
+
         context.run {
             addDependency(subName)
+            addDependency(stateManagerName)
             testClass.start()
 
             testClass.onConfigChange(mapOf("key" to MINIMUM_SMART_CONFIG))
@@ -136,8 +152,11 @@ class TokenCacheSubscriptionHandlerImplTest {
 
             verifyIsUp<TokenCacheSubscriptionHandler>()
             verify(sub1).start()
+            verify(stateManager1).start()
+            verify(stateManager2).start()
             verify(sub2).start()
             verify(sub1).close()
+            verify(stateManager1).stop()
         }
     }
 
