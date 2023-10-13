@@ -9,7 +9,6 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import net.corda.messaging.api.records.Record
 import net.corda.taskmanager.TaskManager
 import org.mockito.Mockito.`when`
 import org.mockito.kotlin.any
@@ -224,7 +223,7 @@ class TaskManagerHelperTest {
         `when`(taskManager.executeShortRunningTask(any<() -> ClientTask.Result<String, String, String>>())).thenReturn(mock())
 
         taskManagerHelper.executeClientTasks(
-            listOf(clientTask1, clientTask2)
+            mapOf("1" to listOf(clientTask1), "2" to listOf(clientTask2))
         )
 
         val commandCaptor = argumentCaptor<() -> ClientTask.Result<String, String, String>>()
