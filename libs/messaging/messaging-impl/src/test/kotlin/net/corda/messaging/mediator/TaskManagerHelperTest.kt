@@ -229,7 +229,10 @@ class TaskManagerHelperTest {
         whenever(future1.join()).thenReturn(listOf(result1))
         whenever(future2.join()).thenReturn(listOf(result2))
 
-        `when`(taskManager.executeShortRunningTask(any<() -> List<ClientTask.Result<String, String, String>>>())).thenReturn(future1, future2)
+        `when`(taskManager.executeShortRunningTask(any<() -> List<ClientTask.Result<String, String, String>>>())).thenReturn(
+            future1,
+            future2
+        )
 
         val results = taskManagerHelper.executeClientTasks(
             mapOf("1" to listOf(clientTask1), "2" to listOf(clientTask2))
