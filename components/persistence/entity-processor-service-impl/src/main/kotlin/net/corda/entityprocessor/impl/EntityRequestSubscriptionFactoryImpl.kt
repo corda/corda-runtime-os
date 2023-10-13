@@ -6,6 +6,7 @@ import net.corda.entityprocessor.EntityRequestSubscriptionFactory
 import net.corda.entityprocessor.impl.internal.EntityRequestProcessor
 import net.corda.entityprocessor.impl.internal.EntityRpcRequestProcessor
 import net.corda.libs.configuration.SmartConfig
+import net.corda.messaging.api.constants.WorkerRPCPaths.PERSISTENCE_PATH
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -35,7 +36,6 @@ class EntityRequestSubscriptionFactoryImpl @Activate constructor(
     companion object {
         internal const val GROUP_NAME = "persistence.entity.processor"
         const val SUBSCRIPTION_NAME = "Persistence"
-        const val PATH = "/persistence"
     }
 
     override fun create(config: SmartConfig): Subscription<String, EntityRequest> {
@@ -64,7 +64,7 @@ class EntityRequestSubscriptionFactoryImpl @Activate constructor(
             EntityRequest::class.java,
             FlowEvent::class.java
         )
-        val rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, PATH)
+        val rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, PERSISTENCE_PATH)
         return subscriptionFactory.createHttpRPCSubscription(rpcConfig, processor)
     }
 }
