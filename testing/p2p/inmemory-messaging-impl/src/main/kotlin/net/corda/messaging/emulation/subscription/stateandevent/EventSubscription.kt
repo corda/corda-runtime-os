@@ -1,6 +1,7 @@
 package net.corda.messaging.emulation.subscription.stateandevent
 
 import net.corda.lifecycle.Lifecycle
+import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.emulation.topic.model.Consumption
 import net.corda.messaging.emulation.topic.model.RecordMetadata
@@ -35,19 +36,22 @@ internal class EventSubscription<K : Any, S : Any, E : Any>(
             )
             if (event != null) {
                 val state = subscription.stateSubscription.getValue(event.key)
-                val response = subscription.processor.onNext(state, event)
-                subscription.setValue(event.key, response.updatedState, eventMetaData.partition)
+                val response = subscription.processor.onNext(
+                    State(state, metadata = null),
+                    event
+                )
+                subscription.setValue(event.key, response.updatedState?.value, eventMetaData.partition)
                 subscription.topicService.addRecords(
                     listOf(
                         Record(
                             subscription.stateSubscriptionConfig.eventTopic,
                             event.key,
-                            response.updatedState
+                            response.updatedState?.value
                         )
                     ) +
                         response.responseEvents
                 )
-                subscription.stateAndEventListener?.onPostCommit(mapOf(event.key to response.updatedState))
+                subscription.stateAndEventListener?.onPostCommit(mapOf(event.key to response.updatedState?.value))
             }
         }
     }

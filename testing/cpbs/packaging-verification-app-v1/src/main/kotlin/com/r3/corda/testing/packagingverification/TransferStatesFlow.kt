@@ -13,7 +13,6 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.UtxoLedgerService
-import net.corda.v5.ledger.utxo.token.selection.TokenClaim
 import net.corda.v5.ledger.utxo.token.selection.TokenClaimCriteria
 import net.corda.v5.ledger.utxo.token.selection.TokenSelection
 import com.r3.corda.testing.packagingverification.contract.STATE_NAME
@@ -78,10 +77,9 @@ class TransferStatesFlow : ClientStartableFlow {
             BigDecimal(transferRequest.value)
         )
 
-        var tokenClaim: TokenClaim? = null
         try {
             log.info("Making token claim")
-            tokenClaim = tokenSelection.tryClaim(selectionCriteria) ?: throw CordaRuntimeException("Cannot claim tokens.")
+            val tokenClaim = tokenSelection.tryClaim(selectionCriteria) ?: throw CordaRuntimeException("Cannot claim tokens.")
             log.info("Got token claim, ${tokenClaim.claimedTokens.size} tokens")
 
             val myPublicKey = myInfo.ledgerKeys.first()
@@ -114,13 +112,8 @@ class TransferStatesFlow : ClientStartableFlow {
             val session = flowMessaging.initiateFlow(recipientX500)
             log.info("Finalizing transaction")
             utxoLedgerService.finalize(signedTransaction, listOf(session))
-            // Release the claim on the tokens' states, indicating we spent them all
-            tokenClaim.useAndRelease(tokenClaim.claimedTokens.map { it.stateRef })
-            log.info("Finalized transaction")
         } catch (ex: Exception) {
             log.info("TransferStatesFlow failed", ex)
-            // Release the claim on the tokens' states, indicating we spent none of them
-            tokenClaim?.useAndRelease(listOf())
         }
 
         log.info("Finished transferring States")

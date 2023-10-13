@@ -66,14 +66,8 @@ class TokenSelectionFlow : ClientStartableFlow {
         val tokensToSpend = claimResult.claimedTokens.take(takeCount)
 
         log.info("Spending ${tokensToSpend.size} of ${claimResult.claimedTokens.size} tokens claimed...")
-        val spentTokenAmounts = tokensToSpend.map { it.amount }
-        val spentTokenRefs = tokensToSpend.map { it.stateRef }
 
-        // release the tokens we have spent
-        log.info("Releasing token claim...")
-        claimResult.useAndRelease(spentTokenRefs)
-        log.info("Token claim released.")
-        return spentTokenAmounts
+        return tokensToSpend.map { it.amount }
     }
 
 

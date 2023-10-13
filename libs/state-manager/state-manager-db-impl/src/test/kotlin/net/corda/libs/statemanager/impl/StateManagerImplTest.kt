@@ -1,6 +1,5 @@
 package net.corda.libs.statemanager.impl
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.metadata
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
@@ -48,49 +47,6 @@ class StateManagerImplTest {
     private fun StateEntity.newVersion() = StateEntity(key, value, metadata, version + 1, modifiedTime)
 
     @Test
-    fun checkVersionAndPrepareEntitiesForPersistenceReturnsEmptyUnmatchedVersionsWhenAllEntitiesHaveCorrectVersionSet() {
-        whenever(stateRepository.get(any(), any())).thenReturn(listOf(persistentStateOne, persistentStateTwo))
-
-        val result =
-            stateManager.checkVersionAndPrepareEntitiesForPersistence(listOf(apiStateOne, apiStateTwo), entityManager)
-        assertThat(result.first).containsExactly(persistentStateOne, persistentStateTwo)
-        assertThat(result.second).isEmpty()
-    }
-
-    @Test
-    fun checkVersionAndPrepareEntitiesForPersistenceReturnsEmptyMatchedVersionsWhenAllEntitiesHaveIncorrectVersionSet() {
-        val moreUpToDateStateOne = persistentStateOne.newVersion()
-        val moreUpToDateStateTwo = persistentStateTwo.newVersion()
-        whenever(stateRepository.get(any(), any())).thenReturn(listOf(moreUpToDateStateOne, moreUpToDateStateTwo))
-
-        val result =
-            stateManager.checkVersionAndPrepareEntitiesForPersistence(listOf(apiStateOne, apiStateTwo), entityManager)
-        assertThat(result.first).isEmpty()
-        assertThat(result.second).containsExactlyInAnyOrderEntriesOf(
-            mutableMapOf(
-                apiStateOne.key to moreUpToDateStateOne.toState(),
-                apiStateTwo.key to moreUpToDateStateTwo.toState(),
-            )
-        )
-    }
-
-    @Test
-    fun checkVersionAndPrepareEntitiesForPersistenceReturnsCorrectlyWhenSomeVersionsMatchAndSomeVersionsDoNotMatch() {
-        val moreUpToDateStateTwo = persistentStateTwo.newVersion()
-        whenever(stateRepository.get(any(), any())).thenReturn(listOf(persistentStateOne, moreUpToDateStateTwo))
-        val result = stateManager.checkVersionAndPrepareEntitiesForPersistence(
-            listOf(apiStateOne, apiStateTwo, apiStateThree), entityManager
-        )
-
-        assertThat(result.first).containsExactly(persistentStateOne)
-        assertThat(result.second).containsExactlyInAnyOrderEntriesOf(
-            mutableMapOf(
-                apiStateTwo.key to moreUpToDateStateTwo.toState(),
-            )
-        )
-    }
-
-    @Test
     fun createReturnsEmptyMapWhenAllInsertsSucceed() {
         assertThat(stateManager.create(listOf(apiStateOne, apiStateTwo))).isEmpty()
         verify(stateRepository).create(entityManager, persistentStateOne)
@@ -109,54 +65,48 @@ class StateManagerImplTest {
     }
 
     @Test
-    fun updateOnlyPersistsStatesWithMatchingVersions() {
-        val moreUpToDateStateTwo = persistentStateTwo.newVersion()
-        val persistentStateFour = StateEntity("key4", "state4".toByteArray(), "{}", 4, Instant.now())
-        val apiStateFour = persistentStateFour.toState()
-        whenever(stateRepository.get(any(), any())).thenReturn(
-            listOf(persistentStateOne, moreUpToDateStateTwo, persistentStateFour)
-        )
+    fun updateReturnsEmptyMapWhenOptimisticLockingCheckSucceedsForAllStates() {
+        whenever(stateRepository.update(any(), any())).thenReturn(emptyList())
 
-        val result = stateManager.update(listOf(apiStateOne, apiStateTwo, apiStateThree, apiStateFour))
-        assertThat(result).containsExactly(entry(apiStateTwo.key, moreUpToDateStateTwo.toState()))
-        verify(stateRepository).get(
-            entityManager,
-            listOf(apiStateOne.key, apiStateTwo.key, apiStateThree.key, apiStateFour.key)
-        )
-        verify(stateRepository).update(entityManager, listOf(persistentStateOne, persistentStateFour))
+        val result = stateManager.update(listOf(apiStateOne, apiStateTwo, apiStateThree))
+        assertThat(result).isEmpty()
+        verify(stateRepository).update(entityManager, listOf(persistentStateOne, persistentStateTwo, persistentStateThree))
         verifyNoMoreInteractions(stateRepository)
     }
 
     @Test
-    fun deleteOnlyPersistsStatesWithMatchingVersions() {
-        val moreUpToDateStateTwo = persistentStateTwo.newVersion()
-        val persistentStateFour = StateEntity("key4", "state4".toByteArray(), "{}", 4, Instant.now())
-        val apiStateFour = persistentStateFour.toState()
-        whenever(stateRepository.get(any(), any())).thenReturn(
-            listOf(persistentStateOne, moreUpToDateStateTwo, persistentStateFour)
-        )
+    fun updateReturnsLatestPersistedViewForStatesThatFailedOptimisticLockingCheck() {
+        val persistedStateTwo = persistentStateTwo.newVersion()
+        whenever(stateRepository.get(any(), any())).thenReturn(listOf(persistedStateTwo))
+        whenever(stateRepository.update(any(), any())).thenReturn(listOf(persistedStateTwo.key))
 
-        val result = stateManager.delete(listOf(apiStateOne, apiStateTwo, apiStateThree, apiStateFour))
-        assertThat(result).containsExactly(entry(apiStateTwo.key, moreUpToDateStateTwo.toState()))
-        verify(stateRepository).get(
-            entityManager,
-            listOf(apiStateOne.key, apiStateTwo.key, apiStateThree.key, apiStateFour.key)
-        )
-        verify(stateRepository).delete(entityManager, listOf(persistentStateOne.key, persistentStateFour.key))
+        val result = stateManager.update(listOf(apiStateOne, apiStateTwo, apiStateThree))
+        assertThat(result).containsExactly(entry(persistedStateTwo.key, persistedStateTwo.toState()))
+        verify(stateRepository).get(entityManager, listOf(apiStateTwo.key))
+        verify(stateRepository).update(entityManager, listOf(persistentStateOne, persistentStateTwo, persistentStateThree))
         verifyNoMoreInteractions(stateRepository)
     }
 
     @Test
-    fun convertJson() {
-        val str = """
-            {
-             "foo": "bar",
-             "hello": 123
-            }
-        """.trimIndent()
+    fun deleteReturnsEmptyMapWhenOptimisticLockingCheckSucceedsForAllStates() {
+        whenever(stateRepository.delete(any(), any())).thenReturn(emptyList())
 
-        val meta = ObjectMapper().convertToMetadata(str)
-        assertThat(meta["foo"]).isEqualTo("bar")
-        assertThat(meta["hello"]).isEqualTo(123)
+        val result = stateManager.delete(listOf(apiStateOne, apiStateTwo, apiStateThree))
+        assertThat(result).isEmpty()
+        verify(stateRepository).delete(entityManager, listOf(persistentStateOne, persistentStateTwo, persistentStateThree))
+        verifyNoMoreInteractions(stateRepository)
+    }
+
+    @Test
+    fun deleteReturnsLatestPersistedViewForStatesThatFailedOptimisticLockingCheck() {
+        val persistedStateThree = persistentStateThree.newVersion()
+        whenever(stateRepository.get(any(), any())).thenReturn(listOf(persistedStateThree))
+        whenever(stateRepository.delete(any(), any())).thenReturn(listOf(persistedStateThree.key))
+
+        val result = stateManager.delete(listOf(apiStateOne, apiStateTwo, apiStateThree))
+        assertThat(result).containsExactly(entry(persistedStateThree.key, persistedStateThree.toState()))
+        verify(stateRepository).get(entityManager, listOf(apiStateThree.key))
+        verify(stateRepository).delete(entityManager, listOf(persistentStateOne, persistentStateTwo, persistentStateThree))
+        verifyNoMoreInteractions(stateRepository)
     }
 }
