@@ -526,6 +526,16 @@
                                 ]
                             },
                             "examples": [{}]
+                        },
+                        "keepNames": {
+                            "type": "array",
+                            "items": {
+                                "type": "string",
+                                "format": "regex"
+                            },
+                            "default": [],
+                            "title": "A list of regular expressions for the names of metrics that Prometheus should keep; if empty, all metrics are kept",
+                            "examples": [[ "jvm_.*" ]]
                         }
                     },
                     "examples": [
