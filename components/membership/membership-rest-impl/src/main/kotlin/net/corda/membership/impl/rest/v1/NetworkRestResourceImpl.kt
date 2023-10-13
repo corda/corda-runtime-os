@@ -24,7 +24,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
-import java.security.SignatureException
 
 @Component(service = [PluggableRestResource::class])
 class NetworkRestResourceImpl @Activate constructor(
