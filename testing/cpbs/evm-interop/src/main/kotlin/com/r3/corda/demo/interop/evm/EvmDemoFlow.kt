@@ -1,5 +1,6 @@
 package com.r3.corda.demo.interop.evm
 
+import java.math.BigInteger
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
@@ -45,7 +46,7 @@ class EvmDemoFlow : ClientStartableFlow {
 
 
             // Step 2.  Call to the Evm to do the asset transfer
-            val dummyGasNumber = "0x47b760".toBigInteger()
+            val dummyGasNumber = BigInteger("47b760", 16)
             val transactionOptions = TransactionOptions(
                 dummyGasNumber,
                 dummyGasNumber,
