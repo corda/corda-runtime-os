@@ -41,6 +41,18 @@ class HsqldbUtxoQueryProvider @Activate constructor(
                 VALUES (x.hash, x.canonical_data, x.group_parameters_hash, x.cpi_file_checksum)"""
             .trimIndent()
 
+    override val persistTransactionSource: String
+        get() = """
+            MERGE INTO {h-schema}utxo_transaction_sources AS uts
+            USING (VALUES :transactionId, CAST(:groupIndex AS INT), CAST(:leafIndex AS INT),
+                          :sourceStateTransactionId, CAST(:sourceStateIndex AS INT))
+                AS x(transaction_id, group_idx, leaf_idx, source_state_transaction_id, source_state_idx)
+            ON uts.transaction_id = x.transaction_id AND uts.group_idx = x.group_idx AND uts.leaf_idx = x.leaf_idx
+            WHEN NOT MATCHED THEN
+                INSERT (transaction_id, group_idx, leaf_idx, source_state_transaction_id, source_state_idx)
+                VALUES (x.transaction_id, x.group_idx, x.leaf_idx, x.source_state_transaction_id, x.source_state_idx)"""
+            .trimIndent()
+
     override val persistTransactionComponentLeaf: String
         get() = """
             MERGE INTO {h-schema}utxo_transaction_component AS utc
