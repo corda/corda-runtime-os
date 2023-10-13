@@ -4,7 +4,6 @@ import net.corda.ledger.utxo.flow.impl.timewindow.TimeWindowBetweenImpl
 import net.corda.ledger.utxo.flow.impl.timewindow.TimeWindowUntilImpl
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
@@ -27,8 +26,6 @@ class UtxoBaselinedTransactionBuilder private constructor(
 
     override val timeWindow: TimeWindow?
         get() = currentTransactionBuilder.timeWindow
-    override val attachments: List<SecureHash>
-        get() = currentTransactionBuilder.attachments
     override val commands: List<Command>
         get() = currentTransactionBuilder.commands
     override val signatories: List<PublicKey>
@@ -85,7 +82,6 @@ class UtxoBaselinedTransactionBuilder private constructor(
                 && other.notaryName == notaryName
                 && other.notaryKey == notaryKey
                 && other.timeWindow == timeWindow
-                && other.attachments == attachments
                 && other.commands == commands
                 && other.inputStateRefs == inputStateRefs
                 && other.referenceStateRefs == referenceStateRefs
@@ -98,7 +94,6 @@ class UtxoBaselinedTransactionBuilder private constructor(
         notaryName,
         notaryKey,
         timeWindow,
-        attachments,
         commands,
         signatories,
         inputStateRefs,
@@ -110,7 +105,6 @@ class UtxoBaselinedTransactionBuilder private constructor(
         return "UtxoBaselinedTransactionBuilder(" +
                 "notary=$notaryName (key: $notaryKey) (orig: ${baselineTransactionBuilder.getNotaryName()}), " +
                 "timeWindow=$timeWindow (orig: ${baselineTransactionBuilder.timeWindow}), " +
-                "attachments=$attachments (orig: ${baselineTransactionBuilder.attachments}), " +
                 "commands=$commands (orig: ${baselineTransactionBuilder.commands}), " +
                 "signatories=$signatories (orig: ${baselineTransactionBuilder.signatories}), " +
                 "inputStateRefs=$inputStateRefs (orig: ${baselineTransactionBuilder.inputStateRefs}), " +
@@ -121,11 +115,6 @@ class UtxoBaselinedTransactionBuilder private constructor(
 
     // Unfortunately we cannot just simply delegate everything to currentTransactionBuilder since that would return itself
     // instead of the baselined transaction builder object.
-
-    override fun addAttachment(attachmentId: SecureHash): UtxoBaselinedTransactionBuilder {
-        currentTransactionBuilder.addAttachment(attachmentId)
-        return this
-    }
 
     override fun addCommand(command: Command): UtxoBaselinedTransactionBuilder {
         currentTransactionBuilder.addCommand(command)
@@ -221,7 +210,6 @@ class UtxoBaselinedTransactionBuilder private constructor(
         UtxoTransactionBuilderContainer(
             if (baselineTransactionBuilder.getNotaryName() == null) notaryName else null,
             if (baselineTransactionBuilder.timeWindow == null) timeWindow else null,
-            attachments - baselineTransactionBuilder.attachments.toSet(),
             commands.drop(baselineTransactionBuilder.commands.size),
             signatories - baselineTransactionBuilder.signatories.toSet(),
             inputStateRefs - baselineTransactionBuilder.inputStateRefs.toSet(),

@@ -440,7 +440,7 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
                     serializationService.serialize(listOf(MyCommand::class.java.name)).bytes,
                     serializationService.serialize(listOf(MyCommand::class.java.name)).bytes
                 ),
-                // attachments
+                // unused (was attachments)
                 emptyList(),
                 // inputs
                 List(numberOfInputStates) {
