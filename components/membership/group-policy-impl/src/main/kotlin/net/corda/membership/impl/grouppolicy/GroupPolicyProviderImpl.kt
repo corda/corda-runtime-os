@@ -321,7 +321,6 @@ class GroupPolicyProviderImpl @Activate constructor(
             }
         }
 
-        @Suppress("NestedBlockDepth")
         private fun gotData(member: PersistentMemberInfo) {
             try {
                 val memberInfo = memberInfoFactory.createMemberInfo(member)
@@ -333,14 +332,9 @@ class GroupPolicyProviderImpl @Activate constructor(
                 ) {
                     val holdingIdentity = member.viewOwningMember.toCorda()
                     val gp = parseGroupPolicy(holdingIdentity)
-                    if (gp is MGMGroupPolicy) {
-                        if (gp.validate(holdingIdentity)) {
-                            groupPolicies[holdingIdentity] = gp
-                            callBack(holdingIdentity, gp)
-                        } else {
-                            groupPolicies.remove(holdingIdentity)
-                            return
-                        }
+                    if (gp is MGMGroupPolicy && gp.validate(holdingIdentity)) {
+                        groupPolicies[holdingIdentity] = gp
+                        callBack(holdingIdentity, gp)
                     } else {
                         groupPolicies.remove(holdingIdentity)
                     }
