@@ -12,6 +12,8 @@ import java.nio.charset.Charset
 import java.util.jar.JarEntry
 import java.util.jar.JarFile
 import picocli.CommandLine
+import java.nio.file.Files
+import java.nio.file.Paths
 
 @CommandLine.Command(
     name = "create",
@@ -40,6 +42,12 @@ class Create(
     var partitionOverride: Int = 1
 
     @CommandLine.Option(
+        names = ["-o", "--overrides"],
+        description = ["Relative path of override Kafka topic configuration file in YAML format"]
+    )
+    var overrideFilePath: String? = null
+
+    @CommandLine.Option(
         names = ["-u", "--user"],
         description = ["One or more Corda workers and their respective Kafka users e.g. -u crypto=Charlie -u rest=Rob"]
     )
@@ -61,10 +69,25 @@ class Create(
         val acls: List<PreviewTopicACL>
     )
 
+    data class OverrideTopicConfigurations(
+        val topics: List<OverrideTopicConfiguration>,
+        val acls: List<PreviewTopicACL>
+    )
+
     data class PreviewTopicConfiguration(
         val name: String,
+        val partitions: Int,
+        val replicas: Short,
         val config: Map<String, String> = emptyMap()
     )
+
+    data class OverrideTopicConfiguration(
+        val name: String,
+        val partitions: Int?,
+        val replicas: Short?,
+        val config: Map<String, String> = emptyMap()
+    )
+
     data class PreviewTopicACL(
         val topic: String,
         val users: List<UserConfig>
@@ -162,8 +185,15 @@ class Create(
     }
 
     fun getTopicConfigsForPreview(): PreviewTopicConfigurations {
-        return getTopicConfigsForPreview(getTopicConfigs())
+        return applyOverrides(getTopicConfigsForPreview(getTopicConfigs()))
     }
+
+    fun applyOverrides(config: PreviewTopicConfigurations) : PreviewTopicConfigurations =
+        if (overrideFilePath == null) {
+            config
+        } else {
+            mergeConfigurations(config, mapper.readValue(Files.readString(Paths.get(overrideFilePath!!))))
+        }
 
     fun getTopicConfigsForPreview(topicConfigurations: List<TopicConfig>): PreviewTopicConfigurations {
         val topicConfigs = mutableListOf<PreviewTopicConfiguration>()
@@ -171,7 +201,7 @@ class Create(
 
         topicConfigurations.forEach { topicConfig ->
             val topicName = getTopicName(topicConfig)
-            topicConfigs.add(PreviewTopicConfiguration(topicName, topicConfig.config))
+            topicConfigs.add(PreviewTopicConfiguration(topicName, partitionOverride, replicaOverride, topicConfig.config))
 
             val usersReadAccess = getUsersForProcessors(topicConfig.consumers)
             val usersWriteAccess = getUsersForProcessors(topicConfig.producers)
@@ -190,4 +220,30 @@ class Create(
 
         return PreviewTopicConfigurations(topicConfigs, acls)
     }
+
+    private fun mergeConfigurations(source: PreviewTopicConfigurations, overrides: OverrideTopicConfigurations) =
+        PreviewTopicConfigurations(
+            overrides.topics.fold(source.topics, ::mergeTopicConfiguration),
+            overrides.acls.fold(source.acls, ::mergeTopicACL)
+        )
+
+    private fun mergeTopicConfiguration(source: List<PreviewTopicConfiguration>, override: OverrideTopicConfiguration) =
+        source.map {
+            if (it.name == override.name) {
+                PreviewTopicConfiguration(
+                    it.name,
+                    override.partitions ?: it.partitions,
+                    override.replicas ?: it.replicas,
+                    it.config + override.config
+                )
+            } else {
+                it
+            }
+        }.toList()
+
+    private fun mergeTopicACL(source: List<PreviewTopicACL>, override: PreviewTopicACL) =
+        source.map {
+            if (it.topic == override.topic) PreviewTopicACL(it.topic, it.users + override.users) else it
+        }.toList()
+
 }

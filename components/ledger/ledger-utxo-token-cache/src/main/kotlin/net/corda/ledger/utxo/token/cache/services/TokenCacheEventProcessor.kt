@@ -15,6 +15,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
 import net.corda.tracing.traceStateAndEventExecution
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
@@ -52,6 +53,8 @@ class TokenCacheEventProcessor(
                 markForDLQ = true)
         }
 
+        log.debug { "Token event received: $tokenEvent" }
+
         return traceStateAndEventExecution(event, "Token Event - ${tokenEvent.javaClass.simpleName}") {
             try {
                 tokenSelectionMetrics.recordProcessingTime(tokenEvent) {
@@ -84,6 +87,8 @@ class TokenCacheEventProcessor(
                     }
 
                     val result = handler.handle(tokenCache, poolCacheState, tokenEvent)
+
+                    log.debug { "sending token response: $result" }
 
                     if (result == null) {
                         StateAndEventProcessor.Response(

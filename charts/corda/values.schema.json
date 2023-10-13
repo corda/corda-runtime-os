@@ -1442,6 +1442,19 @@
                                 3
                             ]
                         },
+                        "overrides": {
+                            "type": "object",
+                            "default": null,
+                            "title": "overrides for Kafka topic configuration",
+                            "examples": [
+                                {
+                                    "topics": [{
+                                        "name": "avro.schema",
+                                        "partitions": 5
+                                    }]
+                                }
+                            ]
+                        },
                         "timeoutSeconds": {
                             "type": "integer",
                             "default": 60,
