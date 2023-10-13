@@ -48,7 +48,6 @@ class SendTransactionBuilderDiffFlowV1Test {
         whenever(currentTransactionBuilder.notaryName).thenReturn(null)
         whenever(currentTransactionBuilder.notaryKey).thenReturn(null)
         whenever(currentTransactionBuilder.timeWindow).thenReturn(null)
-        whenever(currentTransactionBuilder.attachments).thenReturn(listOf())
         whenever(currentTransactionBuilder.commands).thenReturn(listOf())
         whenever(currentTransactionBuilder.signatories).thenReturn(listOf())
         whenever(currentTransactionBuilder.inputStateRefs).thenReturn(listOf())
@@ -58,7 +57,6 @@ class SendTransactionBuilderDiffFlowV1Test {
 
         whenever(originalTransactionalBuilder.getNotaryName()).thenReturn(null)
         whenever(originalTransactionalBuilder.timeWindow).thenReturn(null)
-        whenever(originalTransactionalBuilder.attachments).thenReturn(listOf())
         whenever(originalTransactionalBuilder.commands).thenReturn(listOf())
         whenever(originalTransactionalBuilder.signatories).thenReturn(listOf())
         whenever(originalTransactionalBuilder.inputStateRefs).thenReturn(listOf())
@@ -115,39 +113,6 @@ class SendTransactionBuilderDiffFlowV1Test {
         callSendFlow()
 
         verify(session).send(UtxoTransactionBuilderContainer())
-        verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
-    }
-
-    @Test
-    fun `called with the same attachments does not send anything`() {
-        whenever(originalTransactionalBuilder.attachments).thenReturn(listOf(hash1))
-        whenever(currentTransactionBuilder.attachments).thenReturn(listOf(hash1))
-
-        callSendFlow()
-
-        verify(session).send(UtxoTransactionBuilderContainer())
-        verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
-    }
-
-    @Test
-    fun `called with the same attachments duplicated does not send anything`() {
-        whenever(originalTransactionalBuilder.attachments).thenReturn(listOf(hash1))
-        whenever(currentTransactionBuilder.attachments).thenReturn(listOf(hash1, hash1))
-
-        callSendFlow()
-
-        verify(session).send(UtxoTransactionBuilderContainer())
-        verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
-    }
-
-    @Test
-    fun `called with a new attachments returns the new only`() {
-        whenever(originalTransactionalBuilder.attachments).thenReturn(listOf(hash1))
-        whenever(currentTransactionBuilder.attachments).thenReturn(listOf(hash1, hash2))
-
-        callSendFlow()
-
-        verify(session).send(UtxoTransactionBuilderContainer(attachments = mutableListOf(hash2)))
         verify(flowEngine, never()).subFlow(any<TransactionBackchainSenderFlow>())
     }
 
