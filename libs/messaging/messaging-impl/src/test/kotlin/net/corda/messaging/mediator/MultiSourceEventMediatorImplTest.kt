@@ -1,5 +1,6 @@
 package net.corda.messaging.mediator
 
+import kotlinx.coroutines.CompletableDeferred
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.libs.statemanager.api.StateManager
@@ -7,6 +8,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.mediator.MediatorConsumer
+import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
@@ -61,7 +63,7 @@ class MultiSourceEventMediatorImplTest {
         whenever(mediatorConsumerFactory.create(any<MediatorConsumerConfig<Any, Any>>())).thenReturn(consumer)
 
         whenever(messagingClient.send(any())).thenAnswer {
-            null
+            CompletableDeferred(null as MediatorMessage<Any>?)
         }
 
         whenever(messagingClientFactory.create(any<MessagingClientConfig>())).thenReturn(messagingClient)
