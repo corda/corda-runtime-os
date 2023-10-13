@@ -181,13 +181,19 @@ class TaskManagerHelperTest {
 
     @Test
     fun `successfully creates client tasks from message processor tasks`() {
+        val key1 = "key1"
+        val key2 = "key2"
         val processorTaskResult1 = ProcessorTask.Result(
-            mock<ProcessorTask<String, String, String>>(),
+            mock<ProcessorTask<String, String, String>>().apply {
+                whenever(this.key).thenReturn(key1)
+            },
             outputEvents = listOf(EVENT1).toRecords(KEY1),
             mock<State>(),
         )
         val processorTaskResult2 = ProcessorTask.Result(
-            mock<ProcessorTask<String, String, String>>(),
+            mock<ProcessorTask<String, String, String>>().apply {
+                whenever(this.key).thenReturn(key2)
+            },
             outputEvents = listOf(EVENT2, EVENT3).toRecords(KEY2),
             mock<State>(),
         )
@@ -198,21 +204,25 @@ class TaskManagerHelperTest {
             messageRouter,
         )
 
-        val expectedClientTasks = listOf(
-            ClientTask(
-                MediatorMessage(EVENT1, mutableMapOf(MSG_PROP_KEY to KEY1)),
-                messageRouter,
-                processorTaskResult1,
+        val expectedClientTasks = mapOf(
+            key1 to listOf(
+                ClientTask(
+                    MediatorMessage(EVENT1, mutableMapOf(MSG_PROP_KEY to KEY1)),
+                    messageRouter,
+                    processorTaskResult1,
+                )
             ),
-            ClientTask(
-                MediatorMessage(EVENT2, mutableMapOf(MSG_PROP_KEY to KEY2)),
-                messageRouter,
-                processorTaskResult2,
-            ),
-            ClientTask(
-                MediatorMessage(EVENT3, mutableMapOf(MSG_PROP_KEY to KEY2)),
-                messageRouter,
-                processorTaskResult2,
+            key2 to listOf(
+                ClientTask(
+                    MediatorMessage(EVENT2, mutableMapOf(MSG_PROP_KEY to KEY2)),
+                    messageRouter,
+                    processorTaskResult2,
+                ),
+                ClientTask(
+                    MediatorMessage(EVENT3, mutableMapOf(MSG_PROP_KEY to KEY2)),
+                    messageRouter,
+                    processorTaskResult2,
+                )
             ),
         )
         assertEquals(expectedClientTasks, clientTasks)

@@ -46,6 +46,9 @@ class MultiSourceEventMediatorFactoryTest {
         val config = mock<EventMediatorConfig<Any, Any, Any>>()
         doReturn(messageProcessor).`when`(config).messageProcessor
         doReturn(messageRouterFactory).`when`(config).messageRouterFactory
+        doReturn("name").`when`(config).name
+        doReturn(1).`when`(config).threads
+        doReturn("name").`when`(config).threadName
 
         val mediator = multiSourceEventMediatorFactory.create(config)
 
