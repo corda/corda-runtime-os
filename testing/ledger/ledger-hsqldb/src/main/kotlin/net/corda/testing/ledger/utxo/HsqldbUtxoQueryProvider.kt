@@ -34,12 +34,12 @@ class HsqldbUtxoQueryProvider @Activate constructor(
         get() = """
             MERGE INTO {h-schema}utxo_transaction_sources AS uts
             USING (VALUES :transactionId, CAST(:groupIndex AS INT), CAST(:leafIndex AS INT),
-                          :referencedStateTransactionId, CAST(:referencedStateIndex AS INT))
-                AS x(transaction_id, group_idx, leaf_idx, referenced_state_transaction_id, referenced_state_index)
+                          :sourceStateTransactionId, CAST(:sourceStateIndex AS INT))
+                AS x(transaction_id, group_idx, leaf_idx, source_state_transaction_id, source_state_idx)
             ON uts.transaction_id = x.transaction_id AND uts.group_idx = x.group_idx AND uts.leaf_idx = x.leaf_idx
             WHEN NOT MATCHED THEN
-                INSERT (transaction_id, group_idx, leaf_idx, referenced_state_transaction_id, referenced_state_index)
-                VALUES (x.transaction_id, x.group_idx, x.leaf_idx, x.referenced_state_transaction_id, x.referenced_state_index)"""
+                INSERT (transaction_id, group_idx, leaf_idx, source_state_transaction_id, source_state_idx)
+                VALUES (x.transaction_id, x.group_idx, x.leaf_idx, x.source_state_transaction_id, x.source_state_idx)"""
             .trimIndent()
 
     override val persistTransactionComponentLeaf: String

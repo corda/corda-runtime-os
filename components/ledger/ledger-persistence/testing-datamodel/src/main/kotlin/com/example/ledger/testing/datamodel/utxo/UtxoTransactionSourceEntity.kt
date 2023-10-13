@@ -34,10 +34,10 @@ data class UtxoTransactionSourceEntity(
     @get:Column(name = "leaf_idx", nullable = false)
     var leafIndex: Int,
 
-    @get:Column(name = "referenced_state_transaction_id", nullable = false)
+    @get:Column(name = "source_state_transaction_id", nullable = false)
     var refTransactionId: String,
 
-    @get:Column(name = "referenced_state_index", nullable = false)
+    @get:Column(name = "source_state_idx", nullable = false)
     var refLeafIndex: Int
 )
 

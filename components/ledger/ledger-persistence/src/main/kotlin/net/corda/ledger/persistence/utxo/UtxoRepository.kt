@@ -86,8 +86,8 @@ interface UtxoRepository {
         transactionId: String,
         groupIndex: Int,
         leafIndex: Int,
-        referencedStateTransactionId: String,
-        referencedStateIndex: Int
+        sourceStateTransactionId: String,
+        sourceStateIndex: Int
     )
 
     /** Persists transaction component leaf [data] (operation is idempotent) */

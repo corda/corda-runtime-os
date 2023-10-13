@@ -201,15 +201,15 @@ class UtxoRepositoryImpl @Activate constructor(
         transactionId: String,
         groupIndex: Int,
         leafIndex: Int,
-        referencedStateTransactionId: String,
-        referencedStateIndex: Int
+        sourceStateTransactionId: String,
+        sourceStateIndex: Int
     ) {
         entityManager.createNativeQuery(queryProvider.persistTransactionSource)
             .setParameter("transactionId", transactionId)
             .setParameter("groupIndex", groupIndex)
             .setParameter("leafIndex", leafIndex)
-            .setParameter("referencedStateTransactionId", referencedStateTransactionId)
-            .setParameter("referencedStateIndex", referencedStateIndex)
+            .setParameter("sourceStateTransactionId", sourceStateTransactionId)
+            .setParameter("sourceStateIndex", sourceStateIndex)
             .executeUpdate()
             .logResult("transaction source [$transactionId, $groupIndex, $leafIndex]")
     }

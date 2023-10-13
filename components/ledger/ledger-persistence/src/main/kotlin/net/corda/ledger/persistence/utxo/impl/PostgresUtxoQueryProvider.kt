@@ -29,9 +29,9 @@ class PostgresUtxoQueryProvider @Activate constructor(
     override val persistTransactionSource: String
         get() = """
             INSERT INTO {h-schema}utxo_transaction_sources(
-                transaction_id, group_idx, leaf_idx, referenced_state_transaction_id, referenced_state_index)
+                transaction_id, group_idx, leaf_idx, source_state_transaction_id, source_state_idx)
             VALUES(
-                :transactionId, :groupIndex, :leafIndex, :referencedStateTransactionId, :referencedStateIndex)
+                :transactionId, :groupIndex, :leafIndex, :sourceStateTransactionId, :sourceStateIndex)
             ON CONFLICT DO NOTHING"""
             .trimIndent()
 
