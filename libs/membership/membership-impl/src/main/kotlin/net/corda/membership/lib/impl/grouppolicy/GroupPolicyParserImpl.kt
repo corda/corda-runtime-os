@@ -62,7 +62,7 @@ class GroupPolicyParserImpl @Activate constructor(
 
     private fun failedParsing(errorMessage: String): String =
         duplicateKeyRegex.find(errorMessage)?.groupValues?.firstOrNull()?.let {
-            "$FAILED_PARSING. Caused by: $it."
+            "$FAILED_PARSING Caused by: $it."
         } ?: FAILED_PARSING
 
     @Suppress("ThrowsCount")
