@@ -12,7 +12,6 @@ import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.service.CacheEviction
 import net.corda.utilities.debug
 import net.corda.v5.crypto.SecureHash
-import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
@@ -58,10 +57,10 @@ class GroupParametersCacheImpl @Activate constructor(
 
     private fun onEviction(vnc: VirtualNodeContext) {
         log.debug {
-            "Evicting cached items from ${cache::class.java} with holding identity: ${vnc.holdingIdentity} and sandbox type: " +
-                    SandboxGroupType.FLOW
+            "Evicting cached items from ${cache::class.java} with holding identity: ${vnc.holdingIdentity}, " +
+                    "cpkFileChecksums: ${vnc.cpkFileChecksums} and sandbox type: ${SandboxGroupType.FLOW}"
         }
-        remove(vnc.holdingIdentity)
+        remove(vnc)
     }
 
     override fun get(hash: SecureHash): SignedGroupParameters? {
@@ -74,8 +73,8 @@ class GroupParametersCacheImpl @Activate constructor(
         cache.put(CacheKey(virtualNodeContext, groupParameters.hash), groupParameters)
     }
 
-    override fun remove(holdingIdentity: HoldingIdentity) {
-        cache.invalidateAll(cache.asMap().keys.filter { it.holdingIdentity == holdingIdentity })
+    override fun remove(virtualNodeContext: VirtualNodeContext) {
+        cache.invalidateAll(cache.asMap().keys.filter { it.virtualNodeContext == virtualNodeContext })
         cache.cleanUp()
     }
 }

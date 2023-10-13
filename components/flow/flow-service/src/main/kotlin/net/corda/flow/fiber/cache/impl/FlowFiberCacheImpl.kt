@@ -11,7 +11,6 @@ import net.corda.sandboxgroupcontext.SandboxedCache
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.service.CacheEviction
 import net.corda.utilities.debug
-import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -59,10 +58,10 @@ class FlowFiberCacheImpl @Activate constructor(
 
     private fun onEviction(vnc: VirtualNodeContext) {
         logger.debug {
-            "Evicting cached items from ${cache::class.java} with holding identity: ${vnc.holdingIdentity} and sandbox type: " +
-                    SandboxGroupType.FLOW
+            "Evicting cached items from ${cache::class.java} with holding identity: ${vnc.holdingIdentity}, " +
+                    "cpkFileChecksums: ${vnc.cpkFileChecksums} and sandbox type: ${SandboxGroupType.FLOW}"
         }
-        remove(vnc.holdingIdentity)
+        remove(vnc)
     }
 
     override fun put(key: FlowKey, fiber: FlowFiberImpl) {
@@ -83,9 +82,10 @@ class FlowFiberCacheImpl @Activate constructor(
         cache.cleanUp()
     }
 
-    override fun remove(holdingIdentity: HoldingIdentity) {
-        logger.debug { "Flow fiber cache removing holdingIdentity $holdingIdentity" }
-        val holdingIdentityToRemove = holdingIdentity.toAvro()
+    override fun remove(virtualNodeContext: VirtualNodeContext) {
+        logger.debug {
+            "Flow fiber cache removing holdingIdentity ${virtualNodeContext.holdingIdentity}" }
+        val holdingIdentityToRemove = virtualNodeContext.holdingIdentity.toAvro()
         val keysToInvalidate = cache.asMap().keys.filter { holdingIdentityToRemove == it.identity }
         cache.invalidateAll(keysToInvalidate)
         cache.cleanUp()
