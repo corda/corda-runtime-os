@@ -48,8 +48,6 @@ data class UtxoTransactionEntity(
         if (!privacySalt.contentEquals(other.privacySalt)) return false
         if (accountId != other.accountId) return false
         if (created != other.created) return false
-        if (status != other.status) return false
-        if (updated != other.updated) return false
 
         return true
     }
@@ -59,8 +57,6 @@ data class UtxoTransactionEntity(
         result = 31 * result + privacySalt.contentHashCode()
         result = 31 * result + accountId.hashCode()
         result = 31 * result + created.hashCode()
-        result = 31 * result + status.hashCode()
-        result = 31 * result + updated.hashCode()
         return result
     }
 }
