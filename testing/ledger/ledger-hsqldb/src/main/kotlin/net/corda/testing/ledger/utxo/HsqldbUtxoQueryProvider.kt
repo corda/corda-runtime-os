@@ -22,12 +22,23 @@ class HsqldbUtxoQueryProvider @Activate constructor(
     override val persistTransaction: String
         get() = """
             MERGE INTO {h-schema}utxo_transaction AS ut
-            USING (VALUES :id, CAST(:privacySalt AS VARBINARY(64)), :accountId, CAST(:createdAt AS TIMESTAMP), :status, CAST(:updatedAt AS TIMESTAMP))
-                AS x(id, privacy_salt, account_id, created, status, updated)
+            USING (VALUES :id, CAST(:privacySalt AS VARBINARY(64)), :accountId, CAST(:createdAt AS TIMESTAMP), :status, CAST(:updatedAt AS TIMESTAMP), :metadataHash)
+                AS x(id, privacy_salt, account_id, created, status, updated, metadata_hash)
             ON x.id = ut.id
             WHEN NOT MATCHED THEN
-                INSERT (id, privacy_salt, account_id, created, status, updated)
-                VALUES (x.id, x.privacy_salt, x.account_id, x.created, x.status, x.updated)"""
+                INSERT (id, privacy_salt, account_id, created, status, updated, metadata_hash)
+                VALUES (x.id, x.privacy_salt, x.account_id, x.created, x.status, x.updated, x.metadata_hash)"""
+            .trimIndent()
+
+    override val persistTransactionMetadata: String
+        get() = """
+            MERGE INTO {h-schema}utxo_transaction_metadata AS m
+            USING (VALUES :hash, CAST(:canonicalData AS VARBINARY(1048576)), :groupParametersHash, :cpiFileChecksum)
+                AS x(hash, canonical_data, group_parameters_hash, cpi_file_checksum)
+            ON x.hash = m.hash
+            WHEN NOT MATCHED THEN
+                INSERT (hash, canonical_data, group_parameters_hash, cpi_file_checksum)
+                VALUES (x.hash, x.canonical_data, x.group_parameters_hash, x.cpi_file_checksum)"""
             .trimIndent()
 
     override val persistTransactionComponentLeaf: String

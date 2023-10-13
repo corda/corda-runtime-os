@@ -3,6 +3,7 @@ package net.corda.testing.ledger.tests
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionComponentEntity
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionComponentEntityId
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionEntity
+import com.example.ledger.testing.datamodel.utxo.UtxoTransactionMetadataEntity
 import com.example.ledger.testing.datamodel.utxo.UtxoVisibleTransactionOutputEntity
 import com.example.ledger.testing.datamodel.utxo.UtxoVisibleTransactionOutputEntityId
 import com.example.ledger.testing.datamodel.utxo.UtxoTransactionSignatureEntity
@@ -78,6 +79,7 @@ class HsqldbVaultNamedQueryTest {
 
         val entities = JpaEntitiesSet.create("utxo-ledger", setOf(
             UtxoTransactionEntity::class.java,
+            UtxoTransactionMetadataEntity::class.java,
             UtxoTransactionComponentEntity::class.java,
             UtxoTransactionComponentEntityId::class.java,
             UtxoVisibleTransactionOutputEntity::class.java,
@@ -92,13 +94,22 @@ class HsqldbVaultNamedQueryTest {
         entityManagerFactory.transaction { em ->
             val timestamp = Instant.now()
 
+            val metadata = em.find(UtxoTransactionMetadataEntity::class.java, "hash") ?: UtxoTransactionMetadataEntity(
+                "hash",
+                "canonicalData".toByteArray(),
+                "groupParametersHash",
+                "cpiFileChecksum"
+            ).also{
+                em.persist(it)
+            }
             val tx = UtxoTransactionEntity(
                 id = txId.toString(),
                 privacySalt = byteArrayOf(),
                 accountId = ACCOUNT_ID.toString(),
                 created = timestamp,
                 status = TransactionStatus.VERIFIED.value,
-                updated = timestamp
+                updated = timestamp,
+                metadata = metadata
             )
 
             val visibleStates = mutableListOf<UtxoVisibleTransactionOutputEntity>()
