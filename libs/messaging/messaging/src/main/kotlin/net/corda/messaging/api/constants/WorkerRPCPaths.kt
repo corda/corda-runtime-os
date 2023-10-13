@@ -8,7 +8,7 @@ package net.corda.messaging.api.constants
 object WorkerRPCPaths {
     const val CRYPTO_PATH = "/crypto"
     const val LEDGER_PATH = "/ledger"
-    const val PERSISTENCE_PATH = "/ledger-persistence"
+    const val PERSISTENCE_PATH = "/persistence"
     const val UNIQUENESS_PATH = "/uniqueness-checker"
     const val VERIFICATION_PATH = "/verification"
 }

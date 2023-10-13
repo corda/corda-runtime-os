@@ -7,6 +7,7 @@ import net.corda.ledger.persistence.processor.LedgerPersistenceRequestProcessor
 import net.corda.ledger.persistence.processor.LedgerPersistenceRequestSubscriptionFactory
 import net.corda.ledger.persistence.processor.LedgerPersistenceRpcRequestProcessor
 import net.corda.libs.configuration.SmartConfig
+import net.corda.messaging.api.constants.WorkerRPCPaths.LEDGER_PATH
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -37,7 +38,6 @@ class LedgerPersistenceRequestSubscriptionFactoryImpl @Activate constructor(
     companion object {
         internal const val GROUP_NAME = "persistence.ledger.processor"
         const val SUBSCRIPTION_NAME = "Ledger"
-        const val PATH = "/ledger"
     }
 
     override fun create(config: SmartConfig): Subscription<String, LedgerPersistenceRequest> {
@@ -67,7 +67,7 @@ class LedgerPersistenceRequestSubscriptionFactoryImpl @Activate constructor(
             LedgerPersistenceRequest::class.java,
             FlowEvent::class.java
         )
-        val rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, PATH)
+        val rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, LEDGER_PATH)
         return subscriptionFactory.createHttpRPCSubscription(rpcConfig, processor)
     }
 }

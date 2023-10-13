@@ -16,6 +16,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.constants.WorkerRPCPaths.UNIQUENESS_PATH
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.config.SyncRPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -52,7 +53,6 @@ class BatchedUniquenessCheckerLifecycleImpl @Activate constructor(
         const val GROUP_NAME = "uniqueness.checker"
         const val CONFIG_HANDLE = "CONFIG_HANDLE"
         const val SUBSCRIPTION_NAME = "Uniqueness Check"
-        const val PATH = "/uniqueness-checker"
         const val SUBSCRIPTION = "SUBSCRIPTION"
         const val RPC_SUBSCRIPTION = "RPC_SUBSCRIPTION"
 
@@ -141,7 +141,7 @@ class BatchedUniquenessCheckerLifecycleImpl @Activate constructor(
             FlowEvent::class.java
         )
         lifecycleCoordinator.createManagedResource(RPC_SUBSCRIPTION) {
-            val rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, PATH)
+            val rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, UNIQUENESS_PATH)
             subscriptionFactory.createHttpRPCSubscription(rpcConfig, processor).also {
                 it.start()
             }

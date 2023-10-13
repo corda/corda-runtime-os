@@ -121,4 +121,6 @@ class UtxoTransactionReaderImpl(
     }
 
     override fun getConsumedStateRefs(): List<StateRef> = wrappedWireTransaction.inputStateRefs
+
+    override fun getReferenceStateRefs(): List<StateRef> = wrappedWireTransaction.referenceStateRefs
 }

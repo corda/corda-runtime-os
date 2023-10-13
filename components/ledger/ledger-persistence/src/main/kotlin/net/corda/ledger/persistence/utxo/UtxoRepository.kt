@@ -89,6 +89,17 @@ interface UtxoRepository {
         cpiFileChecksum: String
     )
 
+    /** Persists transaction source (operation is idempotent) */
+    @Suppress("LongParameterList")
+    fun persistTransactionSource(
+        entityManager: EntityManager,
+        transactionId: String,
+        groupIndex: Int,
+        leafIndex: Int,
+        sourceStateTransactionId: String,
+        sourceStateIndex: Int
+    )
+
     /** Persists transaction component leaf [data] (operation is idempotent) */
     @Suppress("LongParameterList")
     fun persistTransactionComponentLeaf(

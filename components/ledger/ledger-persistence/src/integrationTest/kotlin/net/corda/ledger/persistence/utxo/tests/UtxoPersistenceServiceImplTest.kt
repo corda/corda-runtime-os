@@ -443,6 +443,46 @@ class UtxoPersistenceServiceImplTest {
             assertThat(dbMetadata.field<String>("groupParametersHash")).isNotNull
             assertThat(dbMetadata.field<String>("cpiFileChecksum")).isNotNull
 
+            val dbTransactionSources = em.createNamedQuery(
+                "UtxoTransactionSourceEntity.findByTransactionId",
+                entityFactory.utxoTransactionSource
+            )
+                .setParameter("transactionId", signedTransaction.id.toString())
+                .resultList
+
+            assertThat(dbTransactionSources).allMatch {
+                it.field<Int>("groupIndex") == UtxoComponentGroup.INPUTS.ordinal
+                        || it.field<Int>("groupIndex") == UtxoComponentGroup.REFERENCES.ordinal
+            }
+
+            val (dbTransactionInputs, dbTransactionReferences) = dbTransactionSources.partition {
+                it.field<Int>("groupIndex") == UtxoComponentGroup.INPUTS.ordinal
+            }
+
+            assertThat(dbTransactionInputs).isNotNull
+                .hasSameSizeAs(defaultInputStateRefs)
+
+            assertThat(dbTransactionReferences).isNotNull
+                .hasSameSizeAs(defaultReferenceStateRefs)
+
+            dbTransactionInputs
+                .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
+                .zip(defaultInputStateRefs)
+                .forEachIndexed { leafIndex, (dbInput, transactionInput) ->
+                    assertThat(dbInput.field<Int>("leafIndex")).isEqualTo(leafIndex)
+                    assertThat(dbInput.field<String>("refTransactionId")).isEqualTo(transactionInput.transactionId.toString())
+                    assertThat(dbInput.field<Int>("refLeafIndex")).isEqualTo(transactionInput.index)
+                }
+
+            dbTransactionReferences
+                .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
+                .zip(defaultReferenceStateRefs)
+                .forEachIndexed { leafIndex, (dbInput, transactionInput) ->
+                    assertThat(dbInput.field<Int>("leafIndex")).isEqualTo(leafIndex)
+                    assertThat(dbInput.field<String>("refTransactionId")).isEqualTo(transactionInput.transactionId.toString())
+                    assertThat(dbInput.field<Int>("refLeafIndex")).isEqualTo(transactionInput.index)
+                }
+
             val dbTransactionOutputs = em.createNamedQuery(
                 "UtxoVisibleTransactionOutputEntity.findByTransactionId",
                 entityFactory.utxoVisibleTransactionOutput
@@ -695,6 +735,10 @@ class UtxoPersistenceServiceImplTest {
 
         override fun getConsumedStates(persistenceService: UtxoPersistenceService): List<StateAndRef<ContractState>> {
             TODO("Not yet implemented")
+        }
+
+        override fun getReferenceStateRefs(): List<StateRef> {
+            return listOf(StateRef(SecureHashImpl("SHA-256", ByteArray(34)), 2))
         }
 
         override fun getConsumedStateRefs(): List<StateRef> {

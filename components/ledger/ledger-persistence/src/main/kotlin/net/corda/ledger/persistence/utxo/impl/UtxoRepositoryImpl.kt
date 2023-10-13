@@ -214,6 +214,24 @@ class UtxoRepositoryImpl @Activate constructor(
             .logResult("transaction metadata [$hash]")
     }
 
+    override fun persistTransactionSource(
+        entityManager: EntityManager,
+        transactionId: String,
+        groupIndex: Int,
+        leafIndex: Int,
+        sourceStateTransactionId: String,
+        sourceStateIndex: Int
+    ) {
+        entityManager.createNativeQuery(queryProvider.persistTransactionSource)
+            .setParameter("transactionId", transactionId)
+            .setParameter("groupIndex", groupIndex)
+            .setParameter("leafIndex", leafIndex)
+            .setParameter("sourceStateTransactionId", sourceStateTransactionId)
+            .setParameter("sourceStateIndex", sourceStateIndex)
+            .executeUpdate()
+            .logResult("transaction source [$transactionId, $groupIndex, $leafIndex]")
+    }
+
     override fun persistTransactionComponentLeaf(
         entityManager: EntityManager,
         transactionId: String,
