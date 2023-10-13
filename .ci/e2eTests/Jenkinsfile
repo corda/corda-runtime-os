@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@5.1') _
+@Library('corda-shared-build-pipeline-steps@feature/CORE-16419-isolated-sm-db') _
 
 endToEndPipeline(
     assembleAndCompile: false,
