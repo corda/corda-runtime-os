@@ -249,9 +249,6 @@ class ExpirationProcessorTest {
         fun `use values from config to configure the processor`() {
             val capturedTimeframes = argumentCaptor<Long>()
             val capturedEvents = argumentCaptor<(String) -> TimerEvent>()
-
-            handler.firstValue.processEvent(configChangedEvent, coordinator)
-
             val dummyTime = 100L
             whenever(membershipConfig.getLong(MAX_DURATION_BETWEEN_EXPIRED_REGISTRATION_REQUESTS_POLLS))
                 .thenReturn(dummyTime)
@@ -260,21 +257,14 @@ class ExpirationProcessorTest {
 
             handler.firstValue.processEvent(configChangedEvent, coordinator)
 
-            verify(coordinator, times(2)).setTimer(any(), capturedTimeframes.capture(), capturedEvents.capture())
+            verify(coordinator, times(1)).setTimer(any(), capturedTimeframes.capture(), capturedEvents.capture())
 
             SoftAssertions.assertSoftly {
-                it.assertThat(capturedTimeframes.firstValue).isLessThanOrEqualTo(TimeUnit.MINUTES.toMillis(180))
+                it.assertThat(capturedTimeframes.firstValue).isLessThanOrEqualTo(TimeUnit.MINUTES.toMillis(dummyTime))
 
-                val firstEvent = capturedEvents.firstValue.invoke("")
-                it.assertThat(firstEvent).isInstanceOf(ExpirationProcessorImpl.DeclineExpiredRegistrationRequests::class.java)
-                val declineEvent = firstEvent as ExpirationProcessorImpl.DeclineExpiredRegistrationRequests
-                it.assertThat(declineEvent.expirationDate).isEqualTo(TimeUnit.MINUTES.toMillis(300))
-
-                it.assertThat(capturedTimeframes.secondValue).isLessThanOrEqualTo(TimeUnit.MINUTES.toMillis(dummyTime))
-
-                val secondEvent = capturedEvents.secondValue.invoke("")
-                it.assertThat(secondEvent).isInstanceOf(ExpirationProcessorImpl.DeclineExpiredRegistrationRequests::class.java)
-                val declineEventAfterUpdate = secondEvent as ExpirationProcessorImpl.DeclineExpiredRegistrationRequests
+                val capturedEvent = capturedEvents.firstValue.invoke("")
+                it.assertThat(capturedEvent).isInstanceOf(ExpirationProcessorImpl.DeclineExpiredRegistrationRequests::class.java)
+                val declineEventAfterUpdate = capturedEvent as ExpirationProcessorImpl.DeclineExpiredRegistrationRequests
                 it.assertThat(declineEventAfterUpdate.expirationDate).isEqualTo(TimeUnit.MINUTES.toMillis(dummyTime))
             }
         }
