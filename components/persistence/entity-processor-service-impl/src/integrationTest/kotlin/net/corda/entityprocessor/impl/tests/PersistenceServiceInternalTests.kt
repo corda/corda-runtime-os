@@ -1,15 +1,14 @@
 package net.corda.entityprocessor.impl.tests
 
-import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.cpk.read.CpkReadService
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.cpk.read.CpkReadService
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
-import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
 import net.corda.data.persistence.DeleteEntities
 import net.corda.data.persistence.DeleteEntitiesById
 import net.corda.data.persistence.EntityRequest
@@ -35,7 +34,7 @@ import net.corda.db.persistence.testkit.helpers.SandboxHelper.getCatClass
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getDogClass
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getOwnerClass
 import net.corda.db.schema.DbSchema
-import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
+import net.corda.entityprocessor.impl.internal.EntityRequestProcessor
 import net.corda.entityprocessor.impl.internal.PersistenceServiceInternal
 import net.corda.entityprocessor.impl.internal.getClass
 import net.corda.entityprocessor.impl.tests.helpers.AnimalCreator.createCats
@@ -56,6 +55,7 @@ import net.corda.test.util.dsl.entities.cpx.getCpkFileHashes
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
+import net.corda.v5.application.flows.FlowContextPropertyKeys.CPK_FILE_CHECKSUM
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -81,11 +81,6 @@ import java.time.ZoneOffset
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
 
-sealed class QuerySetup {
-    data class NamedQuery(val params: Map<String, String>, val query: String = "Dog.summon") : QuerySetup()
-    data class All(val className: String) : QuerySetup()
-}
-
 /**
  * To use Postgres rather than in-memory (HSQL):
  *
@@ -96,6 +91,12 @@ sealed class QuerySetup {
  * Rather than creating a new serializer in these tests from scratch,
  * we grab a reference to the one in the sandbox and use that to serialize and de-serialize.
  */
+
+sealed class QuerySetup {
+    data class NamedQuery(val params: Map<String, String>, val query: String = "Dog.summon") : QuerySetup()
+    data class All(val className: String) : QuerySetup()
+}
+
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PersistenceServiceInternalTests {
@@ -285,7 +286,7 @@ class PersistenceServiceInternalTests {
             }
         )
 
-        val processor = EntityMessageProcessor(
+        val processor = EntityRequestProcessor(
             currentSandboxGroupContext,
             myEntitySandboxService,
             responseFactory,
@@ -1015,8 +1016,8 @@ class PersistenceServiceInternalTests {
     private fun SandboxGroupContext.deserialize(bytes: ByteBuffer) =
         getSerializationService().deserialize(bytes.array(), Any::class.java)
 
-    private fun getMessageProcessor(payloadCheck: (bytes: ByteBuffer) -> ByteBuffer): EntityMessageProcessor {
-        return EntityMessageProcessor(
+    private fun getMessageProcessor(payloadCheck: (bytes: ByteBuffer) -> ByteBuffer): EntityRequestProcessor {
+        return EntityRequestProcessor(
             currentSandboxGroupContext,
             entitySandboxService,
             responseFactory,

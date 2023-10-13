@@ -1,0 +1,16 @@
+topics:
+  - name: avro.schema
+    partitions: 8
+    config:
+      min.cleanable.dirty.ratio: 0.7
+acls:
+  - topic: avro.schema
+    users:
+      - name: Mo
+        operations:
+          - write
+  - topic: certificates.rpc.ops
+    users:
+      - name: George
+        operations:
+          - read
