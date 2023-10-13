@@ -259,13 +259,13 @@ class OutputAssertionsImpl(
 
     override fun hasPendingUserException() {
         asserts.add { testRun ->
-            assertThat(testRun.response?.updatedState?.value?.pipelineState?.pendingPlatformError).isNotNull()
+            assertThat(testRun.response?.updatedState?.pipelineState?.pendingPlatformError).isNotNull()
         }
     }
 
     override fun noPendingUserException() {
         asserts.add { testRun ->
-            assertThat(testRun.response?.updatedState?.value?.pipelineState?.pendingPlatformError).isNull()
+            assertThat(testRun.response?.updatedState?.pipelineState?.pendingPlatformError).isNull()
         }
     }
 
@@ -278,8 +278,8 @@ class OutputAssertionsImpl(
 
     override fun checkpointHasRetry(expectedCount: Int) {
         asserts.add { testRun ->
-            assertThat(testRun.response?.updatedState?.value?.pipelineState?.retryState).isNotNull
-            val retry = testRun.response!!.updatedState!!.value?.pipelineState!!.retryState
+            assertThat(testRun.response?.updatedState?.pipelineState?.retryState).isNotNull
+            val retry = testRun.response!!.updatedState!!.pipelineState!!.retryState
 
             assertThat(retry.retryCount).isEqualTo(expectedCount)
 
@@ -296,7 +296,7 @@ class OutputAssertionsImpl(
 
     override fun checkpointDoesNotHaveRetry() {
         asserts.add { testRun ->
-            assertThat(testRun.response?.updatedState?.value?.pipelineState?.retryState).isNull()
+            assertThat(testRun.response?.updatedState?.pipelineState?.retryState).isNull()
         }
     }
 
@@ -364,7 +364,7 @@ class OutputAssertionsImpl(
 
     override fun nullStateRecord() {
         asserts.add {
-            assertNull(it.response?.updatedState?.value, "Expected to receive NULL for output state")
+            assertNull(it.response?.updatedState, "Expected to receive NULL for output state")
         }
     }
 

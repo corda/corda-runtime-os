@@ -1,11 +1,14 @@
 package net.corda.messaging.mediator
 
+import kotlinx.coroutines.CompletableDeferred
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.mediator.MediatorConsumer
+import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
@@ -23,6 +26,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.test.util.waitWhile
 import org.junit.jupiter.api.BeforeEach
+// import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.atLeast
@@ -59,7 +63,7 @@ class MultiSourceEventMediatorImplTest {
         whenever(mediatorConsumerFactory.create(any<MediatorConsumerConfig<Any, Any>>())).thenReturn(consumer)
 
         whenever(messagingClient.send(any())).thenAnswer {
-            null
+            CompletableDeferred(null as MediatorMessage<Any>?)
         }
 
         whenever(messagingClientFactory.create(any<MessagingClientConfig>())).thenReturn(messagingClient)
@@ -72,7 +76,7 @@ class MultiSourceEventMediatorImplTest {
                 any()
             )
         ).thenAnswer {
-            StateAndEventProcessor.Response<Any>(
+            StateAndEventProcessor.Response(
                 updatedState = mock(),
                 responseEvents = listOf(
                     Record(
@@ -115,7 +119,7 @@ class MultiSourceEventMediatorImplTest {
         )
     }
 
-    // @Test
+    //@Test
     // TODO Test temporarily disabled as it seems to be flaky
     fun `mediator processes multiples events by key`() {
         val events = (1..6).map { "event$it" }
@@ -132,13 +136,18 @@ class MultiSourceEventMediatorImplTest {
             ),
         )
         var batchNumber = 0
+        whenever(consumer.asyncCommitOffsets()).thenAnswer {
+            CompletableDeferred(mock<Map<CordaTopicPartition, Long>>())
+        }
         whenever(consumer.poll(any())).thenAnswer {
-            if (batchNumber < eventBatches.size) {
-                eventBatches[batchNumber++]
-            } else {
-                Thread.sleep(10)
-                emptyList()
-            }
+            CompletableDeferred(
+                if (batchNumber < eventBatches.size) {
+                    eventBatches[batchNumber++]
+                } else {
+                    Thread.sleep(10)
+                    emptyList()
+                }
+            )
         }
 
         mediator.start()
@@ -152,7 +161,7 @@ class MultiSourceEventMediatorImplTest {
         verify(stateManager, times(eventBatches.size)).get(any())
         verify(stateManager, times(eventBatches.size)).create(any())
         verify(consumer, atLeast(eventBatches.size)).poll(any())
-        verify(consumer, times(eventBatches.size)).syncCommitOffsets()
+        verify(consumer, times(eventBatches.size)).asyncCommitOffsets()
         verify(messagingClient, times(events.size)).send(any())
     }
 

@@ -17,7 +17,6 @@ import net.corda.messaging.api.chunking.ChunkSerializerService
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
-import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.constants.SubscriptionType
 import net.corda.messaging.createResolvedSubscriptionConfig
@@ -76,7 +75,7 @@ class StateAndEventSubscriptionImplTest {
         doAnswer {
             CompletableFuture.completedFuture(
                 StateAndEventProcessor.Response(
-                    State("newstate", metadata = null),
+                    "newstate",
                     emptyList()
                 )
             )
@@ -467,7 +466,7 @@ class StateAndEventSubscriptionImplTest {
 
         doAnswer {
             CompletableFuture.completedFuture(
-                StateAndEventProcessor.Response<String>(
+                StateAndEventProcessor.Response(
                     null,
                     listOf(outputRecord),
                     true

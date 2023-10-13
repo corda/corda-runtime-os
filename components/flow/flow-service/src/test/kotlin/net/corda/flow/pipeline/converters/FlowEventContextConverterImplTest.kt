@@ -29,7 +29,7 @@ class FlowEventContextConverterImplTest {
         val result = converter.convert(context)
 
         assertThat(result.markForDLQ).isTrue
-        assertThat(result.updatedState?.value).isSameAs(avroCheckpoint)
+        assertThat(result.updatedState).isSameAs(avroCheckpoint)
         assertThat(result.responseEvents).isSameAs(records)
     }
 }

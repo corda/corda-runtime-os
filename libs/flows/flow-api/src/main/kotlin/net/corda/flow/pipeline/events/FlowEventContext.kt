@@ -4,7 +4,6 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.flow.pipeline.metrics.FlowMetrics
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.statemanager.api.Metadata
 import net.corda.messaging.api.records.Record
 import net.corda.tracing.TraceContext
 
@@ -24,7 +23,6 @@ import net.corda.tracing.TraceContext
  * @param mdcProperties properties to set the flow fibers MDC with.
  * @param flowMetrics The [FlowMetrics] instance associated with the flow event
  * @param flowTraceContext The [TraceContext] instance associated with the flow event
- * @param metadata Metadata associated with the checkpoint in state storage
  */
 data class FlowEventContext<T>(
     val checkpoint: FlowCheckpoint,
@@ -37,6 +35,5 @@ data class FlowEventContext<T>(
     val sendToDlq: Boolean = false,
     val mdcProperties: Map<String, String>,
     val flowMetrics: FlowMetrics,
-    val flowTraceContext: TraceContext,
-    val metadata: Metadata?
+    val flowTraceContext: TraceContext
 )

@@ -13,7 +13,6 @@ import net.corda.messaging.api.chunking.ChunkSerializerService
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
-import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
@@ -277,7 +276,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         val state = updatedStates[event.partition]?.get(event.key)
         val partitionId = event.partition
         val thisEventUpdates = getUpdatesForEvent(state, event)
-        val updatedState = thisEventUpdates?.updatedState?.value
+        val updatedState = thisEventUpdates?.updatedState
 
 
         when {
@@ -330,12 +329,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
     private fun getUpdatesForEvent(state: S?, event: CordaConsumerRecord<K, E>): StateAndEventProcessor.Response<S>? {
         val future = stateAndEventConsumer.waitForFunctionToFinish(
-            {
-                processor.onNext(
-                    State(state, metadata = null),
-                    event.toRecord()
-                )
-            }, config.processorTimeout.toMillis(),
+            { processor.onNext(state, event.toRecord()) }, config.processorTimeout.toMillis(),
             "Failed to finish within the time limit for state: $state and event: $event"
         )
         @Suppress("unchecked_cast")

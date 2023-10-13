@@ -8,7 +8,6 @@ import net.corda.data.membership.async.request.SentToMgmWaitingForNetwork
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Resource
 import net.corda.messaging.api.processor.StateAndEventProcessor
-import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -47,11 +46,11 @@ internal class CommandsRetryManager(
     private val timers = ConcurrentHashMap<String, ScheduledFuture<*>>()
 
     override fun onNext(
-        state: State<MembershipAsyncRequestState>?,
+        state: MembershipAsyncRequestState?,
         event: Record<String, MembershipAsyncRequestState>,
     ): StateAndEventProcessor.Response<MembershipAsyncRequestState> {
         return StateAndEventProcessor.Response(
-            updatedState = State(event.value, state?.metadata),
+            updatedState = event.value,
             responseEvents = emptyList(),
             markForDLQ = false,
         )
