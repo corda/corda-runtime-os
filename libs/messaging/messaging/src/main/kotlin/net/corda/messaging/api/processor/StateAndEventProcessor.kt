@@ -1,6 +1,5 @@
 package net.corda.messaging.api.processor
 
-import net.corda.libs.statemanager.api.Metadata
 import net.corda.messaging.api.records.Record
 
 /**
@@ -18,13 +17,6 @@ import net.corda.messaging.api.records.Record
  * [CordaFatalException] and will cause the subscription to close.
  */
 interface StateAndEventProcessor<K : Any, S : Any, E : Any> {
-    /**
-     * State and metadata stored alongside the state.
-     */
-    data class State<S : Any>(
-        val value: S?,
-        val metadata: Metadata?,
-    )
 
     /**
      * This class encapsulates the responses that will be returned (from [onNext]) to the subscription for
@@ -33,12 +25,8 @@ interface StateAndEventProcessor<K : Any, S : Any, E : Any> {
     data class Response<S : Any>(
         /**
          * The updated state in response to an incoming event from [onNext].
-         *
-         * Both the state and its associated metadata will be overwritten in storage by this new state when provided by
-         * the processor. It is the processor's responsibility to ensure that any required metadata is preserved across
-         * processing.
          */
-        val updatedState: State<S>?,
+        val updatedState: S?,
 
         /**
          * A list of events to be published in response to an incoming event from [onNext].
@@ -50,7 +38,7 @@ interface StateAndEventProcessor<K : Any, S : Any, E : Any> {
         /**
          * Flag to indicate processing failed and the State and Event should be moved to the Dead Letter Queue
          */
-        val markForDLQ: Boolean = false,
+        val markForDLQ: Boolean = false
     )
 
     /**
@@ -67,7 +55,7 @@ interface StateAndEventProcessor<K : Any, S : Any, E : Any> {
      * NOTE: The returned events will be published and the processed events will be consumed atomically as a
      * single transaction.
      */
-    fun onNext(state: State<S>?, event: Record<K, E>): Response<S>
+    fun onNext(state: S?, event: Record<K, E>): Response<S>
 
     /**
      * [keyClass], [stateValueClass] and [eventValueClass] to easily get the class types the processor operates upon.

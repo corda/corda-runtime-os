@@ -4,7 +4,6 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.pipeline.FlowEventPipeline
 import net.corda.libs.configuration.SmartConfig
-import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.tracing.TraceContext
 
 /**
@@ -16,7 +15,7 @@ interface FlowEventPipelineFactory {
     /**
      * Creates a [FlowEventPipeline] instance.
      *
-     * @param state The [Checkpoint] and metadata passed through the pipeline.
+     * @param checkpoint The [Checkpoint] passed through the pipeline.
      * @param event The [FlowEvent] passed through the pipeline.
      * @param config The [SmartConfig] containing the settings used in the pipeline factory.
      * @param mdcProperties properties to set the flow fibers MDC with.
@@ -26,7 +25,7 @@ interface FlowEventPipelineFactory {
      * @return A new [FlowEventPipeline] instance.
      */
     fun create(
-        state: State<Checkpoint>?,
+        checkpoint: Checkpoint?,
         event: FlowEvent,
         configs: Map<String, SmartConfig>,
         mdcProperties: Map<String, String>,

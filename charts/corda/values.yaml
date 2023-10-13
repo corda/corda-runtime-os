@@ -143,6 +143,45 @@ db:
     # -- the schema in which the cluster database config entities will be stored, passed to workers on startup
     schema: CONFIG
 
+# State Manager configuration
+stateManager:
+  # Type of State Manager
+  type: DATABASE
+  # State Manager database configuration
+  db:
+    # -- the State Manager database host
+    host: null
+    # -- the State Manager database type
+    type: "postgresql"
+    # -- the State Manager database port
+    port: 5432
+    # the State Manager database user configuration
+    username:
+      # -- the State Manager database user
+      value: ""
+      # the State Manager database user secret configuration; used in preference to value if name is set
+      valueFrom:
+        # the State Manager database user secret key reference
+        secretKeyRef:
+          # -- the State Manager database user secret name
+          name: ""
+          # -- the State Manager database user secret key
+          key: ""
+    # the State Manager database password configuration
+    password:
+      # -- the State Manager database password
+      value: ""
+      # the State Manager database password secret configuration; used in preference to value if name is set
+      valueFrom:
+        # the State Manager database password secret key reference
+        secretKeyRef:
+          # -- the State Manager database password secret name
+          name: ""
+          # -- the State Manager database password secret key
+          key: ""
+    # -- the State Manager database name
+    database: state-manager
+
 # Kafka configuration
 kafka:
   # -- comma-separated list of Kafka bootstrap servers (required); for example: "broker1.example.com:9092,broker2.example.com:9092,broker3.example.com:9092"
@@ -366,20 +405,6 @@ bootstrap:
 
     # State Manager DB Bootstrap Configuration
     stateManager:
-      # JDBC connection pool configuration for state-manager DB
-      dbConnectionPool:
-        # -- maximum JDBC connection pool size for state-manager DB
-        maxSize: 5
-        # -- minimum JDBC connection pool size for state-manager DB; null value means pool's min size will default to pool's max size value
-        minSize: null
-        # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
-        idleTimeoutSeconds: 120
-        # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
-        maxLifetimeSeconds: 1800
-        # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
-        keepAliveTimeSeconds: 0
-        # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
-        validationTimeoutSeconds: 5
       # the username configuration
       username:
         # -- the username, defaults to this value

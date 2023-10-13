@@ -1,6 +1,5 @@
 package net.corda.messaging.mediator.factory
 
-
 import net.corda.messaging.api.mediator.MediatorConsumer
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
@@ -11,7 +10,6 @@ import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.mediator.factory.MessagingClientFactory
 import net.corda.messaging.api.mediator.factory.MessagingClientFinder
 import net.corda.messaging.api.processor.StateAndEventProcessor
-import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -29,12 +27,9 @@ import org.mockito.kotlin.whenever
 class MediatorComponentFactoryTest {
     private lateinit var mediatorComponentFactory: MediatorComponentFactory<String, String, String>
     private val messageProcessor = object : StateAndEventProcessor<String, String, String> {
-        override fun onNext(
-            state: State<String>?, event: Record<String, String>
-        ): StateAndEventProcessor.Response<String> {
+        override fun onNext(state: String?, event: Record<String, String>): StateAndEventProcessor.Response<String> {
             TODO("Not yet implemented")
         }
-
         override val keyClass get() = String::class.java
         override val stateValueClass get() = String::class.java
         override val eventValueClass get() = String::class.java

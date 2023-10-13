@@ -239,9 +239,11 @@ spec:
         {{- if not (($.Values).vault).url }}
         {{- include "corda.configSaltAndPassphraseEnv" $ | nindent 10 }}
         {{- end }}
-        {{- /* TODO-[CORE-16419]: isolate StateManager database from the Cluster database */ -}}
-        {{- if or $optionalArgs.clusterDbAccess $optionalArgs.stateManagerDbAccess }}
+        {{- if $optionalArgs.clusterDbAccess }}
         {{- include "corda.clusterDbEnv" $ | nindent 10 }}
+        {{- end }}
+        {{- if $optionalArgs.stateManagerDbAccess }}
+        {{- include "corda.stateManagerDbEnv" $ | nindent 10 }}
         {{- end }}
         args:
           - "--workspace-dir=/work"
@@ -287,16 +289,15 @@ spec:
           - "-ddatabase.pool.keepaliveTimeSeconds={{ .clusterDbConnectionPool.keepaliveTimeSeconds }}"
           - "-ddatabase.pool.validationTimeoutSeconds={{ .clusterDbConnectionPool.validationTimeoutSeconds }}"
           {{- end }}
-          {{- /* TODO-[CORE-16419]: isolate StateManager database from the Cluster database */ -}}
           {{- if $optionalArgs.stateManagerDbAccess }}
           - "--stateManager"
           - "type=DATABASE"
           - "--stateManager"
-          - "database.user=$(DB_CLUSTER_USERNAME)"
+          - "database.user=$(STATE_MANAGER_DB_USERNAME)"
           - "--stateManager"
-          - "database.pass=$(DB_CLUSTER_PASSWORD)"
+          - "database.pass=$(STATE_MANAGER_DB_PASSWORD)"
           - "--stateManager"
-          - "database.jdbc.url=jdbc:postgresql://{{ required "Must specify db.cluster.host" $.Values.db.cluster.host }}:{{ $.Values.db.cluster.port }}/{{ $.Values.db.cluster.database }}?currentSchema=STATE_MANAGER"
+          - "database.jdbc.url={{- include "corda.stateManagerJdbcUrl" $ -}}?currentSchema=STATE_MANAGER"
           - "--stateManager"
           - "database.jdbc.directory=/opt/jdbc-driver"
           - "--stateManager"

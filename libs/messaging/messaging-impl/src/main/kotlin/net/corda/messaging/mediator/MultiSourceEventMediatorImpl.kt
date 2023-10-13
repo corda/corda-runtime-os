@@ -1,5 +1,6 @@
 package net.corda.messaging.mediator
 
+import kotlinx.coroutines.runBlocking
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.libs.statemanager.api.StateManager
@@ -150,6 +151,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun processEvents() {
+        log.debug { "Polling and processing events" }
         val messages = pollConsumers()
         if (messages.isNotEmpty()) {
             val msgGroups = messages.groupBy { it.key }
@@ -175,13 +177,23 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 
     private fun pollConsumers(): List<CordaConsumerRecord<K, E>> {
         return consumers.map { consumer ->
-            consumer.poll(config.pollTimeout)
+            taskManager.execute(TaskType.SHORT_RUNNING) {
+                runBlocking {
+                    consumer.poll(config.pollTimeout).await()
+                }
+            }
+        }.map {
+            it.join()
         }.flatten()
     }
 
     private fun commitOffsets() {
         consumers.map { consumer ->
-            consumer.syncCommitOffsets()
+            taskManager.execute(TaskType.SHORT_RUNNING) {
+                runBlocking {
+                    consumer.asyncCommitOffsets().await()
+                }
+            }
         }
     }
 

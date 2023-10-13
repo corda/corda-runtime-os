@@ -780,6 +780,91 @@
                 }
             }]
         },
+        "stateManager": {
+            "type": "object",
+            "default": {},
+            "title": "State Manager configuration",
+            "additionalProperties": true,
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "default": "DATABASE",
+                    "title": "The type of State Manager",
+                    "examples": [
+                        "DATABASE"
+                    ],
+                    "enum": ["DATABASE"]
+                },
+                "db": {
+                    "type": "object",
+                    "default": {},
+                    "title": "State Manager database configuration",
+                    "additionalProperties": false,
+                    "properties": {
+                        "username": {
+                            "$ref": "#/$defs/config"
+                        },
+                        "password": {
+                            "$ref": "#/$defs/config"
+                        },
+                        "host": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "hostname"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "default": null,
+                            "title": "the State Manager database host",
+                            "examples": [
+                                "postgresql.example.com"
+                            ]
+                        },
+                        "type": {
+                            "type": "string",
+                            "default": "postgresql",
+                            "title": "the State Manager database type",
+                            "examples": [
+                                "postgresql"
+                            ],
+                            "enum": ["postgresql"]
+                        },
+                        "port": {
+                            "type": "integer",
+                            "default": 5432,
+                            "title": "the State Manager database port",
+                            "examples": [
+                                5432
+                            ]
+                        },
+                        "database": {
+                            "type": "string",
+                            "default": "state-manager",
+                            "title": "the name of the State Manager database",
+                            "examples": [
+                                "state-manager"
+                            ],
+                            "minLength": 1
+                        }
+                    },
+                    "examples": [{
+                        "host": "postgresql.example.com",
+                        "type": "postgresql",
+                        "port": 5432,
+                        "username": {
+                            "value": "user"
+                        },
+                        "password": {
+                            "value": "password"
+                        },
+                        "database": "state-manager"
+                    }]
+                }
+            }
+        },
         "kafka": {
             "type": "object",
             "default": {},
@@ -1262,77 +1347,12 @@
                             "type": "object",
                             "default": {},
                             "title": "State Manager db configuration",
-                            "required": [
-                                "dbConnectionPool"
-                            ],
                             "properties": {
                                 "username": {
                                     "$ref": "#/$defs/config"
                                 },
                                 "password": {
                                     "$ref": "#/$defs/config"
-                                },
-                                "dbConnectionPool": {
-                                    "type": "object",
-                                    "default": {},
-                                    "title": "JDBC connection pool configuration for State Manager DB",
-                                    "required": [
-                                        "maxSize",
-                                        "idleTimeoutSeconds",
-                                        "maxLifetimeSeconds",
-                                        "keepAliveTimeSeconds",
-                                        "validationTimeoutSeconds"
-                                    ],
-                                    "properties": {
-                                        "maxSize": {
-                                            "type": "integer",
-                                            "default": 5,
-                                            "title": "maximum JDBC connection pool size for State Manager DB",
-                                            "examples": [
-                                                5
-                                            ]
-                                        },
-                                        "minSize": {
-                                            "anyOf": [
-                                                {
-                                                    "type": "integer",
-                                                    "minimum": 0
-                                                },
-                                                {
-                                                    "type": "null"
-                                                }
-                                            ],
-                                            "default": null,
-                                            "title": "minimum JDBC connection pool size for State Manager DB; null value means pool's min size will default to pool's max size value"
-                                        },
-                                        "idleTimeoutSeconds": {
-                                            "type": "integer",
-                                            "default": 120,
-                                            "minimum": 0,
-                                            "title": "maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool"
-                                        },
-                                        "maxLifetimeSeconds": {
-                                            "type": "integer",
-                                            "default": 1800,
-                                            "minimum": 1,
-                                            "title": "maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached \"maxLifetime\" timeout, it will be removed from the pool only when it becomes idle"
-                                        },
-                                        "keepAliveTimeSeconds": {
-                                            "type": "integer",
-                                            "default": 0,
-                                            "minimum": 0,
-                                            "title": "interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled"
-                                        },
-                                        "validationTimeoutSeconds": {
-                                            "type": "integer",
-                                            "minimum": 1,
-                                            "default": 5,
-                                            "title": "maximum time (in seconds) that the pool will wait for a connection to be validated as alive"
-                                        }
-                                    },
-                                    "examples": [{
-                                        "maxSize": 5
-                                    }]
                                 }
                             },
                             "examples": [{
@@ -1341,9 +1361,6 @@
                                 },
                                 "username": {
                                     "value": "username"
-                                },
-                                "dbConnectionPool": {
-                                    "maxSize": 5
                                 }
                             }]
                         },

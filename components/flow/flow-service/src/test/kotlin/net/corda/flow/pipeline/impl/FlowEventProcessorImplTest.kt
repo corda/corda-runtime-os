@@ -31,7 +31,6 @@ import net.corda.flow.pipeline.handlers.FlowPostProcessingHandler
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.messaging.api.processor.StateAndEventProcessor
-import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
@@ -85,7 +84,6 @@ class FlowEventProcessorImplTest {
     private val flowKey = "flow id"
     private val flowCheckpoint = mock<FlowCheckpoint>()
     private val checkpoint: Checkpoint = mock()
-    private val state = State(checkpoint, metadata = null)
     private val flowState: FlowState = mock()
     private val flowStartContext: FlowStartContext = mock()
     private val externalEventState: ExternalEventState = mock()
@@ -163,9 +161,9 @@ class FlowEventProcessorImplTest {
     fun `Returns the state unaltered if no flow event supplied`() {
         val inputEvent = getFlowEventRecord(null)
 
-        val response = processor.onNext(state, inputEvent)
+        val response = processor.onNext(checkpoint, inputEvent)
 
-        assertThat(response.updatedState?.value).isSameAs(checkpoint)
+        assertThat(response.updatedState).isSameAs(checkpoint)
         assertThat(response.responseEvents).isEmpty()
         verify(flowMDCService, times(0)).getMDCLogging(anyOrNull(), any(), any())
     }
@@ -174,7 +172,7 @@ class FlowEventProcessorImplTest {
     fun `Returns a checkpoint and events to send`() {
         val inputEvent = getFlowEventRecord(FlowEvent(flowKey, payload))
 
-        val response = processor.onNext(state, inputEvent)
+        val response = processor.onNext(checkpoint, inputEvent)
 
         val expectedRecords = updatedContext.outputRecords
         verify(flowEventContextConverter).convert(argThat { outputRecords == expectedRecords })
@@ -185,7 +183,7 @@ class FlowEventProcessorImplTest {
 
     @Test
     fun `Calls the pipeline steps in order`() {
-        processor.onNext(state, getFlowEventRecord(FlowEvent(flowKey, payload)))
+        processor.onNext(checkpoint, getFlowEventRecord(FlowEvent(flowKey, payload)))
         inOrder(flowEventPipeline) {
             verify(flowEventPipeline).eventPreProcessing()
             verify(flowEventPipeline).virtualNodeFlowOperationalChecks()
@@ -201,7 +199,7 @@ class FlowEventProcessorImplTest {
         whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error)
         whenever(flowEventExceptionProcessor.process(error, flowEventPipeline.context)).thenReturn(errorContext)
 
-        val response = processor.onNext(state, getFlowEventRecord(FlowEvent(flowKey, payload)))
+        val response = processor.onNext(checkpoint, getFlowEventRecord(FlowEvent(flowKey, payload)))
 
         assertThat(response).isEqualTo(errorResponse)
     }
@@ -213,7 +211,7 @@ class FlowEventProcessorImplTest {
         whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error)
         whenever(flowEventExceptionProcessor.process(error, flowEventPipeline.context)).thenReturn(errorContext)
 
-        val response = processor.onNext(state, getFlowEventRecord(FlowEvent(flowKey, payload)))
+        val response = processor.onNext(checkpoint, getFlowEventRecord(FlowEvent(flowKey, payload)))
 
         assertThat(response).isEqualTo(errorResponse)
     }
@@ -225,7 +223,7 @@ class FlowEventProcessorImplTest {
         whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error)
         whenever(flowEventExceptionProcessor.process(error, flowEventPipeline.context)).thenReturn(errorContext)
 
-        val response = processor.onNext(state, getFlowEventRecord(FlowEvent(flowKey, payload)))
+        val response = processor.onNext(checkpoint, getFlowEventRecord(FlowEvent(flowKey, payload)))
 
         assertThat(response).isEqualTo(errorResponse)
     }
@@ -237,7 +235,7 @@ class FlowEventProcessorImplTest {
         whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error)
         whenever(flowEventExceptionProcessor.process(error, flowEventPipeline.context)).thenReturn(errorContext)
 
-        val response = processor.onNext(state, getFlowEventRecord(FlowEvent(flowKey, payload)))
+        val response = processor.onNext(checkpoint, getFlowEventRecord(FlowEvent(flowKey, payload)))
 
         assertThat(response).isEqualTo(errorResponse)
     }
@@ -249,7 +247,7 @@ class FlowEventProcessorImplTest {
         whenever(flowEventPipeline.eventPreProcessing()).thenThrow(error)
         whenever(flowEventExceptionProcessor.process(error, updatedContext)).thenReturn(errorContext)
 
-        val response = processor.onNext(state, getFlowEventRecord(FlowEvent(flowKey, payload)))
+        val response = processor.onNext(checkpoint, getFlowEventRecord(FlowEvent(flowKey, payload)))
 
         assertThat(response).isEqualTo(errorResponse)
     }
@@ -270,7 +268,7 @@ class FlowEventProcessorImplTest {
         whenever(flowEventExceptionProcessor.process(error, updatedContext)).thenReturn(flowKillErrorContext)
         whenever(flowEventContextConverter.convert(eq(flowKillErrorContext))).thenReturn(killErrorResponse)
 
-        val result = processor.onNext(state, getFlowEventRecord(FlowEvent(flowKey, payload)))
+        val result = processor.onNext(checkpoint, getFlowEventRecord(FlowEvent(flowKey, payload)))
 
         assertThat(result).isEqualTo(killErrorResponse)
     }
