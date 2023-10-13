@@ -9,10 +9,13 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
         val UNVERIFIED = TransactionStatus.UNVERIFIED.value
     }
 
-    override val findTransactionPrivacySalt: String
+    override val findTransactionPrivacySaltAndMetadata: String
         get() = """
-            SELECT privacy_salt
-            FROM {h-schema}utxo_transaction
+            SELECT privacy_salt,
+            utm.canonical_data
+            FROM {h-schema}utxo_transaction AS ut
+            JOIN {h-schema}utxo_transaction_metadata AS utm
+                ON ut.metadata_hash = utm.hash
             WHERE id = :transactionId"""
             .trimIndent()
 

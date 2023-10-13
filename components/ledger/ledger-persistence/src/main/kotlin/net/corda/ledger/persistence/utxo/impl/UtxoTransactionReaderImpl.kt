@@ -75,6 +75,9 @@ class UtxoTransactionReaderImpl(
     override val privacySalt: PrivacySalt
         get() = signedTransaction.wireTransaction.privacySalt
 
+    override val metadata: TransactionMetadataInternal
+        get() = signedTransaction.wireTransaction.metadata as TransactionMetadataInternal
+
     override val rawGroupLists: List<List<ByteArray>>
         get() = signedTransaction.wireTransaction.componentGroupLists
 
