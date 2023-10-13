@@ -1,10 +1,15 @@
 package net.corda.entityprocessor.impl
 
-import net.corda.entityprocessor.EntityProcessor
-import net.corda.entityprocessor.EntityProcessorFactory
-import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
+import net.corda.data.flow.event.FlowEvent
+import net.corda.data.persistence.EntityRequest
+import net.corda.entityprocessor.EntityRequestSubscriptionFactory
+import net.corda.entityprocessor.impl.internal.EntityRequestProcessor
+import net.corda.entityprocessor.impl.internal.EntityRpcRequestProcessor
 import net.corda.libs.configuration.SmartConfig
+import net.corda.messaging.api.subscription.RPCSubscription
+import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.config.SyncRPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.PayloadChecker
@@ -16,8 +21,8 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 @Suppress("UNUSED")
-@Component(service = [EntityProcessorFactory::class])
-class EntityProcessorFactoryImpl @Activate constructor(
+@Component(service = [EntityRequestSubscriptionFactory::class])
+class EntityRequestSubscriptionFactoryImpl @Activate constructor(
     @Reference(service = CurrentSandboxGroupContext::class)
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     @Reference(service = SubscriptionFactory::class)
@@ -26,28 +31,40 @@ class EntityProcessorFactoryImpl @Activate constructor(
     private val entitySandboxService: EntitySandboxService,
     @Reference(service = ResponseFactory::class)
     private val responseFactory: ResponseFactory
-) : EntityProcessorFactory {
+) : EntityRequestSubscriptionFactory {
     companion object {
         internal const val GROUP_NAME = "persistence.entity.processor"
+        const val SUBSCRIPTION_NAME = "Persistence"
+        const val PATH = "/persistence"
     }
 
-    override fun create(config: SmartConfig): EntityProcessor {
+    override fun create(config: SmartConfig): Subscription<String, EntityRequest> {
         val subscriptionConfig = SubscriptionConfig(GROUP_NAME, Schemas.Persistence.PERSISTENCE_ENTITY_PROCESSOR_TOPIC)
 
-        val processor = EntityMessageProcessor(
+        val processor = EntityRequestProcessor(
             currentSandboxGroupContext,
             entitySandboxService,
             responseFactory,
             PayloadChecker(config)::checkSize
         )
 
-        val subscription = subscriptionFactory.createDurableSubscription(
+        return subscriptionFactory.createDurableSubscription(
             subscriptionConfig,
             processor,
             config,
             null
         )
+    }
 
-        return EntityProcessorImpl(subscription)
+    override fun createRpcSubscription(): RPCSubscription<EntityRequest, FlowEvent> {
+        val processor = EntityRpcRequestProcessor(
+            currentSandboxGroupContext,
+            entitySandboxService,
+            responseFactory,
+            EntityRequest::class.java,
+            FlowEvent::class.java
+        )
+        val rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, PATH)
+        return subscriptionFactory.createHttpRPCSubscription(rpcConfig, processor)
     }
 }
