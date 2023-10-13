@@ -153,12 +153,12 @@ spec:
 
               JDBC_URL="jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}"
 
-              echo 'Generating DB specification'
+              echo 'Generating Cluster DB specification'
               mkdir /tmp/db
               java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar database spec \
-                -s "config,rbac,crypto,statemanager" \
-                -g "config:${DB_CLUSTER_SCHEMA},rbac:${DB_RBAC_SCHEMA},crypto:${DB_CRYPTO_SCHEMA},statemanager:STATE_MANAGER" \
-                -u "${PGUSER}" -p "${PGPASSWORD}" \
+                -s "config,rbac,crypto" \
+                -g "config:${DB_CLUSTER_SCHEMA},rbac:${DB_RBAC_SCHEMA},crypto:${DB_CRYPTO_SCHEMA}" \
+                -u "${CLUSTER_PGUSER}" -p "${CLUSTER_PGPASSWORD}" \
                 --jdbc-url "${JDBC_URL}" \
                 -c -l /tmp/db
 
@@ -225,6 +225,15 @@ spec:
               {{- end }}
                 -l /tmp/crypto
 
+              echo 'Generating State Manager DB specification'
+              STATE_MANAGER_JDBC_URL="{{- include "corda.stateManagerJdbcUrl" . -}}"
+              mkdir /tmp/stateManager
+              java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar database spec \
+                -s "statemanager" -g "statemanager:state_manager" \
+                -u "${STATE_MANAGER_PGUSER}" -p "${STATE_MANAGER_PGPASSWORD}" \
+                --jdbc-url "${STATE_MANAGER_JDBC_URL}" \
+                -c -l /tmp/stateManager
+
               echo 'Generating REST API user initial configuration'
               java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar initial-config create-user-config \
                 -u "${REST_API_ADMIN_USERNAME}" -p "${REST_API_ADMIN_PASSWORD}" \
@@ -257,6 +266,7 @@ spec:
             {{- include "corda.restApiAdminSecretEnv" . | nindent 12 }}
             {{- include "corda.cryptoDbUsernameEnv" . | nindent 12 }}
             {{- include "corda.cryptoDbPasswordEnv" . | nindent 12 }}
+            {{- include "corda.bootstrapStateManagerDbEnv" . | nindent 12 }}
       containers:
         - name: apply
           image: {{ include "corda.bootstrapDbClientImage" . }}
@@ -270,16 +280,17 @@ spec:
               set -ev
 
               echo 'Applying DB specification'
-              find /tmp/db -iname "*.sql" | xargs printf -- ' -f %s' | xargs psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" --dbname "${DB_CLUSTER_NAME}"
+              export PGPASSWORD="${CLUSTER_PGPASSWORD}"
+              find /tmp/db -iname "*.sql" | xargs printf -- ' -f %s' | xargs psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -U "${CLUSTER_PGUSER}" --dbname "${DB_CLUSTER_NAME}"
 
               echo 'Applying initial configurations'
-              psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -f /tmp/rbac/db-config.sql -f /tmp/vnodes/db-config.sql -f /tmp/crypto/db-config.sql -f /tmp/crypto-config.sql --dbname "dbname=${DB_CLUSTER_NAME} options=--search_path=${DB_CLUSTER_SCHEMA}"
+              psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -U "${CLUSTER_PGUSER}" -f /tmp/rbac/db-config.sql -f /tmp/vnodes/db-config.sql -f /tmp/crypto/db-config.sql -f /tmp/crypto-config.sql --dbname "dbname=${DB_CLUSTER_NAME} options=--search_path=${DB_CLUSTER_SCHEMA}"
 
               echo 'Applying initial RBAC configuration'
-              psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -f /tmp/rbac-config.sql --dbname "dbname=${DB_CLUSTER_NAME} options=--search_path=${DB_RBAC_SCHEMA}"
+              psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -U "${CLUSTER_PGUSER}" -f /tmp/rbac-config.sql --dbname "dbname=${DB_CLUSTER_NAME} options=--search_path=${DB_RBAC_SCHEMA}"
 
               echo 'Creating users and granting permissions'
-              psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" "${DB_CLUSTER_NAME}" << SQL
+              psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -U "${CLUSTER_PGUSER}" "${DB_CLUSTER_NAME}" << SQL
                 GRANT USAGE ON SCHEMA ${DB_CLUSTER_SCHEMA} TO "${DB_CLUSTER_USERNAME}";
                 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${DB_CLUSTER_SCHEMA} TO "${DB_CLUSTER_USERNAME}";
                 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA ${DB_CLUSTER_SCHEMA} TO "${DB_CLUSTER_USERNAME}";
@@ -289,11 +300,23 @@ spec:
                 DO \$\$ BEGIN IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${CRYPTO_DB_USER_USERNAME}') THEN RAISE NOTICE 'Role "${CRYPTO_DB_USER_USERNAME}" already exists'; ELSE CREATE USER "${CRYPTO_DB_USER_USERNAME}" WITH ENCRYPTED PASSWORD '$CRYPTO_DB_USER_PASSWORD'; END IF; END \$\$;
                 GRANT USAGE ON SCHEMA ${DB_CRYPTO_SCHEMA} TO "${CRYPTO_DB_USER_USERNAME}";
                 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${DB_CRYPTO_SCHEMA} TO "${CRYPTO_DB_USER_USERNAME}";
-                GRANT USAGE ON SCHEMA STATE_MANAGER TO "${DB_CLUSTER_USERNAME}";
-                GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA STATE_MANAGER TO "${DB_CLUSTER_USERNAME}";
               SQL
 
               echo 'DB Bootstrapped'
+
+              echo 'Applying State Manager Specification'
+              export PGPASSWORD="${STATE_MANAGER_PGPASSWORD}"
+              find /tmp/stateManager -iname "*.sql" | xargs printf -- ' -f %s' | xargs psql -v ON_ERROR_STOP=1 -h "${STATE_MANAGER_DB_HOST}" -p "${STATE_MANAGER_DB_PORT}" -U "${STATE_MANAGER_PGUSER}" --dbname "${STATE_MANAGER_DB_NAME}"
+
+              echo 'Creating users and granting permissions for State Manager'
+              psql -v ON_ERROR_STOP=1 -h "${STATE_MANAGER_DB_HOST}" -p "${STATE_MANAGER_DB_PORT}" -U "${STATE_MANAGER_PGUSER}" "${STATE_MANAGER_DB_NAME}" << SQL
+                DO \$\$ BEGIN IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${STATE_MANAGER_DB_USERNAME}') THEN RAISE NOTICE 'Role "${STATE_MANAGER_DB_USERNAME}" already exists'; ELSE CREATE USER "${STATE_MANAGER_DB_USERNAME}" WITH ENCRYPTED PASSWORD '${STATE_MANAGER_DB_PASSWORD}'; END IF; END \$\$;
+                GRANT USAGE ON SCHEMA STATE_MANAGER TO "${STATE_MANAGER_DB_USERNAME}";
+                GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA STATE_MANAGER TO "${STATE_MANAGER_DB_USERNAME}";
+                GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA STATE_MANAGER TO "${STATE_MANAGER_DB_USERNAME}";
+              SQL
+
+              echo 'State Manager Bootstrapped'
           volumeMounts:
             - mountPath: /tmp
               name: temp
@@ -310,11 +333,19 @@ spec:
               value: {{ .Values.bootstrap.db.rbac.schema | quote }}
             - name: DB_CRYPTO_SCHEMA
               value: {{ .Values.bootstrap.db.crypto.schema | quote }}
+            - name: STATE_MANAGER_DB_HOST
+              value: {{ include "corda.stateManagerDbHost" . | quote }}
+            - name: STATE_MANAGER_DB_PORT
+              value: {{ include "corda.stateManagerDbPort" . | quote }}
+            - name: STATE_MANAGER_DB_NAME
+              value: {{ include "corda.stateManagerDbName" . | quote }}
             {{- include "corda.bootstrapClusterDbEnv" . | nindent 12 }}
             {{- include "corda.rbacDbUserEnv" . | nindent 12 }}
             {{- include "corda.cryptoDbUsernameEnv" . | nindent 12 }}
             {{- include "corda.cryptoDbPasswordEnv" . | nindent 12 }}
             {{- include "corda.clusterDbEnv" . | nindent 12 }}
+            {{- include "corda.bootstrapStateManagerDbEnv" . | nindent 12 }}
+            {{- include "corda.stateManagerDbEnv" . | nindent 12 }}
       volumes:
         - name: temp
           emptyDir: {}
