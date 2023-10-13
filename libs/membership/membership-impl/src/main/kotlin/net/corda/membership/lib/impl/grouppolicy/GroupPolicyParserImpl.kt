@@ -35,7 +35,8 @@ class GroupPolicyParserImpl @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         const val EMPTY_GROUP_POLICY = "GroupPolicy file is empty."
         const val NULL_GROUP_POLICY = "GroupPolicy file is null."
-        const val FAILED_PARSING = "GroupPolicy file is incorrectly formatted and parsing failed. Caused by:"
+        const val FAILED_PARSING = "GroupPolicy file is incorrectly formatted and parsing failed."
+        private val duplicateKeyRegex = "Duplicate field '.*'".toRegex(RegexOption.IGNORE_CASE)
     }
 
     private val objectMapper = ObjectMapper().enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
@@ -59,6 +60,11 @@ class GroupPolicyParserImpl @Activate constructor(
         }
     )
 
+    private fun failedParsing(errorMessage: String): String =
+        duplicateKeyRegex.find(errorMessage)?.groupValues?.firstOrNull()?.let {
+            "$FAILED_PARSING. Caused by: $it."
+        } ?: FAILED_PARSING
+
     @Suppress("ThrowsCount")
     override fun parse(
         holdingIdentity: HoldingIdentity,
@@ -78,8 +84,8 @@ class GroupPolicyParserImpl @Activate constructor(
                 try {
                     objectMapper.readTree(groupPolicy)
                 } catch (e: Exception) {
-                    logger.error("$FAILED_PARSING ${e.message}")
-                    throw BadGroupPolicyException("$FAILED_PARSING ${e.message}", e)
+                    logger.error("$FAILED_PARSING Caused by: ${e.message}")
+                    throw BadGroupPolicyException(failedParsing("${e.message}"), e)
                 }
             }
         }
@@ -105,8 +111,8 @@ class GroupPolicyParserImpl @Activate constructor(
                 try {
                     objectMapper.readTree(groupPolicy)
                 } catch (e: Exception) {
-                    logger.error("$FAILED_PARSING ${e.message}")
-                    throw BadGroupPolicyException("$FAILED_PARSING ${e.message}", e)
+                    logger.error("$FAILED_PARSING Caused by: ${e.message}")
+                    throw BadGroupPolicyException(failedParsing("${e.message}"), e)
                 }
             }
         }
