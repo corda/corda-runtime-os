@@ -129,13 +129,6 @@ class UtxoRepositoryImpl @Activate constructor(
         return findUnconsumedVisibleStates(entityManager, queryProvider.findUnconsumedVisibleStatesByType, null)
     }
 
-    override fun findUnconsumedVisibleStatesByExactType(
-        entityManager: EntityManager,
-        stateClassType: String
-    ): List<UtxoVisibleTransactionOutputDto> {
-        return findUnconsumedVisibleStates(entityManager, queryProvider.findUnconsumedVisibleStatesByExactType, stateClassType)
-    }
-
     override fun resolveStateRefs(
         entityManager: EntityManager,
         stateRefs: List<StateRef>
