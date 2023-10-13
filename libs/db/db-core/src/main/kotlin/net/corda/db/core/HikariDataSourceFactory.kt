@@ -6,10 +6,11 @@ import org.slf4j.LoggerFactory
 import java.io.Closeable
 import java.sql.Connection
 import java.time.Duration
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.Executors
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import javax.sql.DataSource
 
 /**
@@ -37,9 +38,13 @@ class HikariDataSourceFactory(
         : CloseableDataSource, Closeable, DataSource by delegate {
         private companion object {
             private val logger = LoggerFactory.getLogger("PPP")
-            private val usedWrappers = ConcurrentHashMap.newKeySet<DataSourceWrapper>()
+            private val usedWrappers = ConcurrentLinkedDeque<DataSourceWrapper>()
+            private val maxSize = AtomicInteger()
             fun report() {
-                logger.info("We have ${usedWrappers.size} datasources")
+                val size = usedWrappers.map {
+                    it.delegate.hikariPoolMXBean.totalConnections
+                }.sum()
+                logger.info("We have ${usedWrappers.size} datasources and $size connections max so far is $maxSize")
                 usedWrappers.forEach {
                     it.report()
                 }
@@ -51,12 +56,12 @@ class HikariDataSourceFactory(
             }
         }
 
+        private val created = Exception("QQQ")
+
         init {
             usedWrappers.add(this)
         }
 
-        private val created = Exception("QQQ")
-        private val liveConnections = ConcurrentHashMap.newKeySet<MyConnection>()
         override fun close() {
             usedWrappers.remove(this)
         }
@@ -74,27 +79,33 @@ class HikariDataSourceFactory(
         ) : Connection by connection {
             val created = Exception(connection.metaData.url)
             init {
-                logger.info("Creating connection ${hashCode()}", created)
+                val size = usedWrappers.map {
+                    it.delegate.hikariPoolMXBean.totalConnections
+                }.sum()
+                logger.info("Creating connection ${hashCode()} for ${this@DataSourceWrapper.hashCode()} size is $size", created)
+                if (size > maxSize.get()) {
+                    logger.info("New max size!!! $size", created)
+                    maxSize.set(size)
+                }
             }
             override fun close() {
-                logger.info("Closing connection ${hashCode()}")
-                liveConnections.remove(connection)
+                logger.info(
+                    "Closing connection ${hashCode()} for ${this@DataSourceWrapper.hashCode()}",
+                    Exception("QQQ",
+                        created))
                 connection.close()
             }
         }
         private fun report() {
             val pool = delegate.hikariPoolMXBean
             val config = delegate.hikariConfigMXBean
-            logger.info("Datasource: ${delegate.jdbcUrl} created by:", created)
+            logger.info("Datasource: ${hashCode()} created by:", created)
             logger.info("\t activeConnections: ${pool.activeConnections}," +
                     " totalConnection: ${pool.totalConnections}, " +
                     "idleConnection: ${pool.idleConnections}")
             logger.info("\t idleTimeout: ${config.idleTimeout}, " +
                     "min: ${config.minimumIdle}," +
                     " pool size: ${config.maximumPoolSize}")
-            liveConnections.forEachIndexed { index, connection ->
-                logger.info("Live connection $index", connection.created)
-            }
         }
     }
 
@@ -116,12 +127,12 @@ class HikariDataSourceFactory(
 
         try {
             // Create and *wrap* an existing data source.
-            conf.dataSource = LogCloseableDataSource(OSGiDataSourceFactory.create(
+            conf.dataSource = OSGiDataSourceFactory.create(
                 driverClass,
                 jdbcUrl,
                 username,
                 password
-            ))
+            )
         } catch (_: UnsupportedOperationException) {
             // Defer to Hikari, and hence java.sql.DriverManager, which we don't want in production
             // code. This part should only be hit in unit tests that don't use an OSGi framework.

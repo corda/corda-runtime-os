@@ -30,8 +30,13 @@ fun DataSourceFactory.createFromConfig(config: SmartConfig): CloseableDataSource
     // We are falling back to the (same) defaults from the schema for both cluster and VNode datasource configurations
     val configWithFallback = config.withFallback(dbFallbackConfig)
 
-    DataSourceFactoryHelper.log.debug("Given configuration: ${config.toSafeConfig().root().render(ConfigRenderOptions.concise())}")
-    DataSourceFactoryHelper.log.debug("Fallback configuration: ${dbFallbackConfig.root().render(ConfigRenderOptions.concise())}")
+    DataSourceFactoryHelper.log.info(
+        "Given configuration: ${config.toSafeConfig().root().render(ConfigRenderOptions.concise())}",
+        Exception("PPP")
+    )
+    DataSourceFactoryHelper.log.info(
+        "Fallback configuration: ${dbFallbackConfig.root().render(ConfigRenderOptions.concise())}", Exception("PPP")
+    )
 
     val driver = configWithFallback.getString(DatabaseConfig.JDBC_DRIVER)
     val jdbcUrl = configWithFallback.getString(DatabaseConfig.JDBC_URL)
