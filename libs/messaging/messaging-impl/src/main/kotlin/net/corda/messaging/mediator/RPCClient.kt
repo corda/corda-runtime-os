@@ -56,12 +56,17 @@ class RPCClient(
         }
     }
 
-    private fun processMessage(message: MediatorMessage<*>): MediatorMessage<*> {
+    private fun processMessage(message: MediatorMessage<*>): MediatorMessage<*>? {
         val request = buildHttpRequest(message)
         val response = sendWithRetry(request)
 
         val deserializedResponse = deserializePayload(response.body())
-        return MediatorMessage(deserializedResponse, mutableMapOf("statusCode" to response.statusCode()))
+
+        return if(deserializedResponse==null){
+            null
+        }else {
+            MediatorMessage(deserializedResponse, mutableMapOf("statusCode" to response.statusCode()))
+        }
     }
 
 

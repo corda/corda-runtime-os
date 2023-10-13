@@ -11,4 +11,5 @@ object WorkerRPCPaths {
     const val PERSISTENCE_PATH = "/persistence"
     const val UNIQUENESS_PATH = "/uniqueness-checker"
     const val VERIFICATION_PATH = "/verification"
+    const val TOKEN_SELECTION_PATH = "/token-selection"
 }

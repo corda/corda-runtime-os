@@ -19,6 +19,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -96,6 +97,23 @@ class SyncRPCSubscriptionImplTest {
         verify(deserializer).deserialize(serialisedRequest)
         verify(processor).process(requestData)
         verify(context).result(serialisedResponse)
+    }
+
+    @Test
+    fun `when null response from the handler then return zero length byte array`() {
+        val endpointCaptor = argumentCaptor<Endpoint>()
+        doNothing().whenever(webServer).registerEndpoint(endpointCaptor.capture())
+        whenever(processor.process(requestData)).thenReturn(null)
+        rpcSubscription.start()
+
+        assertThat(endpointCaptor.allValues.size).isEqualTo(1)
+        val handler = endpointCaptor.firstValue.webHandler
+
+        handler.handle(context)
+
+        verify(deserializer).deserialize(serialisedRequest)
+        verify(processor).process(requestData)
+        verify(context).result(eq(ByteArray(0)))
     }
 
     @Test

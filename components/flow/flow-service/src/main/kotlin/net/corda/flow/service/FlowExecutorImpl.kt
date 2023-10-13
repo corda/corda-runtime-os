@@ -17,6 +17,7 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.schema.configuration.BootConfig.CRYPTO_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.PERSISTENCE_WORKER_REST_ENDPOINT
+import net.corda.schema.configuration.BootConfig.TOKEN_SELECTION_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.UNIQUENESS_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.VERIFICATION_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.ConfigKeys
@@ -148,7 +149,8 @@ class FlowExecutorImpl constructor(
             CRYPTO_WORKER_REST_ENDPOINT,
             PERSISTENCE_WORKER_REST_ENDPOINT,
             UNIQUENESS_WORKER_REST_ENDPOINT,
-            VERIFICATION_WORKER_REST_ENDPOINT
+            VERIFICATION_WORKER_REST_ENDPOINT,
+            TOKEN_SELECTION_WORKER_REST_ENDPOINT
         ).fold(this) { msgConfig: SmartConfig, endpoint: String ->
             msgConfig.withValue(endpoint, ConfigValueFactory.fromAnyRef(bootConfig.getString(endpoint)))
         }
