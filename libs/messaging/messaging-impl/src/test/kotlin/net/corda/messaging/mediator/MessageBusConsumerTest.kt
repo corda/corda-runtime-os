@@ -1,5 +1,6 @@
 package net.corda.messaging.mediator
 
+import kotlinx.coroutines.runBlocking
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
@@ -50,23 +51,30 @@ class MessageBusConsumerTest {
         doThrow(CordaRuntimeException("")).whenever(cordaConsumer).poll(any())
 
         assertThrows<CordaRuntimeException> {
-            mediatorConsumer.poll(timeout)
+            runBlocking {
+                mediatorConsumer.poll(timeout).await()
+            }
         }
     }
 
     @Test
-    fun testSyncCommitOffsets() {
-        mediatorConsumer.syncCommitOffsets()
+    fun testCommitAsyncOffsets() {
+        mediatorConsumer.asyncCommitOffsets()
 
-        verify(cordaConsumer).syncCommitOffsets()
+        verify(cordaConsumer).asyncCommitOffsets(any())
     }
 
     @Test
-    fun testSyncCommitOffsetsWithError() {
-        doThrow(CordaRuntimeException("")).whenever(cordaConsumer).syncCommitOffsets()
+    fun testCommitAsyncOffsetsWithError() {
+        whenever(cordaConsumer.asyncCommitOffsets(any<CordaConsumer.Callback>())).thenAnswer { invocation ->
+            val callback = invocation.getArgument<CordaConsumer.Callback>(0)
+            callback.onCompletion(mock(), CordaRuntimeException(""))
+        }
 
         assertThrows<CordaRuntimeException> {
-            mediatorConsumer.syncCommitOffsets()
+            runBlocking {
+                mediatorConsumer.asyncCommitOffsets().await()
+            }
         }
     }
 

@@ -7,7 +7,6 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
-import net.corda.v5.ledger.utxo.Attachment
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
@@ -49,15 +48,6 @@ class WrappedUtxoWireTransaction(
 
     val timeWindow: TimeWindow by lazy(LazyThreadSafetyMode.PUBLICATION) {
         deserialize(UtxoComponentGroup.NOTARY, timeWindowIndex)
-    }
-
-    val attachmentIds: List<SecureHash> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        deserialize(UtxoComponentGroup.DATA_ATTACHMENTS)
-    }
-
-    val attachments: List<Attachment> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        //TODO("Not yet implemented.")
-        emptyList()
     }
 
     val commands: List<Command> by lazy(LazyThreadSafetyMode.PUBLICATION) {

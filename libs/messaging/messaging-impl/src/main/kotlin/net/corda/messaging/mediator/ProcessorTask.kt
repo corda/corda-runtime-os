@@ -28,23 +28,18 @@ data class ProcessorTask<K : Any, S : Any, E : Any>(
     }
 
     override fun call(): Result<K, S, E> {
-        var state = stateManagerHelper.deserializeValue(persistedState)?.let { stateValue ->
-            StateAndEventProcessor.State(
-                stateValue,
-                persistedState?.metadata
-            )
-        }
+        var stateValue = stateManagerHelper.deserializeValue(persistedState)
 
         val outputEvents = events.map { event ->
-            val response = processor.onNext(state, event)
-            state = response.updatedState
+            val response = processor.onNext(stateValue, event)
+            stateValue = response.updatedState
             response.responseEvents
         }.flatten()
 
         val updatedState = stateManagerHelper.createOrUpdateState(
             key.toString(),
             persistedState,
-            state,
+            stateValue
         )
 
         return Result(this, outputEvents, updatedState)

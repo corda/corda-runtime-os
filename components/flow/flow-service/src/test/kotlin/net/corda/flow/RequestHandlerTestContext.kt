@@ -70,7 +70,6 @@ class RequestHandlerTestContext<PAYLOAD>(val payload: PAYLOAD) {
         recordList,
         mdcProperties = emptyMap(),
         flowMetrics =  mock(),
-        flowTraceContext = mock(),
-        metadata = null
+        flowTraceContext = mock()
     )
 }

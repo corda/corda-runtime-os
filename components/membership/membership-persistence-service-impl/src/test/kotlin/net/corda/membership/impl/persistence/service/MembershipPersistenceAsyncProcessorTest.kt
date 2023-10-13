@@ -8,7 +8,6 @@ import net.corda.data.membership.db.request.async.MembershipPersistenceAsyncRequ
 import net.corda.membership.impl.persistence.service.handler.HandlerFactories
 import net.corda.membership.impl.persistence.service.handler.PersistenceHandlerServices
 import net.corda.messaging.api.processor.StateAndEventProcessor
-import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -60,7 +59,7 @@ class MembershipPersistenceAsyncProcessorTest {
         )
 
         assertThat(reply).isEqualTo(
-            StateAndEventProcessor.Response<MembershipPersistenceAsyncRequestState>(
+            StateAndEventProcessor.Response(
                 null,
                 emptyList(),
                 true,
@@ -76,7 +75,7 @@ class MembershipPersistenceAsyncProcessorTest {
         )
 
         assertThat(reply).isEqualTo(
-            StateAndEventProcessor.Response<MembershipPersistenceAsyncRequestState>(
+            StateAndEventProcessor.Response(
                 null,
                 emptyList(),
                 false,
@@ -104,7 +103,7 @@ class MembershipPersistenceAsyncProcessorTest {
         )
 
         assertThat(reply).isEqualTo(
-            StateAndEventProcessor.Response<MembershipPersistenceAsyncRequestState>(
+            StateAndEventProcessor.Response(
                 null,
                 emptyList(),
                 true,
@@ -123,13 +122,10 @@ class MembershipPersistenceAsyncProcessorTest {
 
         assertThat(reply).isEqualTo(
             StateAndEventProcessor.Response(
-                State(
-                    MembershipPersistenceAsyncRequestState(
-                        envelope,
-                        1,
-                        now,
-                    ),
-                    metadata = null
+                MembershipPersistenceAsyncRequestState(
+                    envelope,
+                    1,
+                    now,
                 ),
                 emptyList(),
                 false,
@@ -142,26 +138,20 @@ class MembershipPersistenceAsyncProcessorTest {
         whenever(handlers.handle(any())).doThrow(OptimisticLockException("Nop"))
 
         val reply = processor.onNext(
-            State(
-                MembershipPersistenceAsyncRequestState(
-                    envelope,
-                    1,
-                    now,
-                ),
-                metadata = null
+            MembershipPersistenceAsyncRequestState(
+                envelope,
+                1,
+                now,
             ),
             Record("topic", "key", envelope)
         )
 
         assertThat(reply).isEqualTo(
             StateAndEventProcessor.Response(
-                State(
-                    MembershipPersistenceAsyncRequestState(
-                        envelope,
-                        2,
-                        now,
-                    ),
-                    metadata = null
+                MembershipPersistenceAsyncRequestState(
+                    envelope,
+                    2,
+                    now,
                 ),
                 emptyList(),
                 false,
@@ -174,19 +164,16 @@ class MembershipPersistenceAsyncProcessorTest {
         whenever(handlers.handle(any())).doThrow(RecoverableException("Nop"))
 
         val reply = processor.onNext(
-            State(
-                MembershipPersistenceAsyncRequestState(
-                    envelope,
-                    20,
-                    now,
-                ),
-                metadata = null
+            MembershipPersistenceAsyncRequestState(
+                envelope,
+                20,
+                now,
             ),
             Record("topic", "key", envelope)
         )
 
         assertThat(reply).isEqualTo(
-            StateAndEventProcessor.Response<MembershipPersistenceAsyncRequestState>(
+            StateAndEventProcessor.Response(
                 null,
                 emptyList(),
                 true,

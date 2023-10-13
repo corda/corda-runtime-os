@@ -50,7 +50,6 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
             .addReferenceState(referenceStateRef)
             .addSignatories(listOf(publicKeyExample))
             .addCommand(UtxoCommandExample())
-            .addAttachment(SecureHashImpl("SHA-256", ByteArray(12)))
             .toSignedTransaction()
         assertIs<SecureHash>(tx.id)
         assertEquals(inputStateRef, tx.inputStateRefs.single())
@@ -89,7 +88,6 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
             .addOutputState(getUtxoStateExample())
             .addSignatories(listOf(publicKeyExample))
             .addCommand(UtxoCommandExample())
-            .addAttachment(SecureHashImpl("SHA-256", ByteArray(12)))
             .toSignedTransaction() as UtxoSignedTransactionImpl
 
         val metadata = tx.wireTransaction.metadata as TransactionMetadataInternal
@@ -129,7 +127,6 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
                 .addOutputState(getUtxoStateExample())
                 .addSignatories(listOf(publicKeyExample))
                 .addCommand(UtxoCommandExample())
-                .addAttachment(SecureHashImpl("SHA-256", ByteArray(12)))
 
             builder.toSignedTransaction()
             builder.toSignedTransaction()
@@ -169,7 +166,6 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
             .addReferenceState(referenceStateRef)
             .addSignatories(listOf(publicKeyExample))
             .addCommand(UtxoCommandExample())
-            .addAttachment(SecureHashImpl("SHA-256", ByteArray(12)))
             .toSignedTransaction()
 
         assertThat(tx.outputStateAndRefs).hasSize(7)
@@ -220,24 +216,6 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
         assertThat((mutatedTransactionBuilder as UtxoTransactionBuilderInternal).timeWindow).isEqualTo(
             utxoTimeWindowExample
-        )
-        assertThat(mutatedTransactionBuilder).isEqualTo(originalTransactionBuilder)
-        assertThat(System.identityHashCode(mutatedTransactionBuilder)).isEqualTo(
-            System.identityHashCode(
-                originalTransactionBuilder
-            )
-        )
-    }
-
-    @Test
-    fun `adding attachments mutates and returns the current builder`() {
-        val attachmentId = SecureHashImpl("SHA-256", ByteArray(12))
-        val originalTransactionBuilder = utxoTransactionBuilder
-        val mutatedTransactionBuilder = utxoTransactionBuilder.addAttachment(attachmentId)
-        assertThat((mutatedTransactionBuilder as UtxoTransactionBuilderInternal).attachments).isEqualTo(
-            listOf(
-                attachmentId
-            )
         )
         assertThat(mutatedTransactionBuilder).isEqualTo(originalTransactionBuilder)
         assertThat(System.identityHashCode(mutatedTransactionBuilder)).isEqualTo(
@@ -429,17 +407,6 @@ class UtxoTransactionBuilderImplTest : UtxoLedgerTest() {
                 originalTransactionBuilder
             )
         )
-    }
-
-    @Test
-    fun `Duplicating attachments throws`() {
-        val attachmentId = SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))
-        utxoTransactionBuilder
-            .addAttachment(attachmentId)
-        assertThatThrownBy {
-            utxoTransactionBuilder
-                .addAttachment(attachmentId)
-        }.isInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test

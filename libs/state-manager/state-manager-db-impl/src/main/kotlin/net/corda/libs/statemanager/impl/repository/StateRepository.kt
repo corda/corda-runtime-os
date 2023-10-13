@@ -35,19 +35,19 @@ interface StateRepository {
      *
      * @param entityManager Used to interact with the state manager persistence context.
      * @param states Collection of states to be updated.
-     * @return Collection of states found.
+     * @return Collection of keys for states that could not be updated due to optimistic locking check failure.
      */
-    fun update(entityManager: EntityManager, states: Collection<StateEntity>)
+    fun update(entityManager: EntityManager, states: Collection<StateEntity>): Collection<String>
 
     /**
      * Delete states with the given keys from the persistence context.
      * Transaction should be controlled by the caller.
      *
      * @param entityManager Used to interact with the state manager persistence context.
-     * @param keys Collection of states to delete.
-     * @return Collection of states found.
+     * @param states Collection of states to be deleted.
+     * @return Collection of keys for states that could not be deleted due to optimistic locking check failure.
      */
-    fun delete(entityManager: EntityManager, keys: Collection<String>)
+    fun delete(entityManager: EntityManager, states: Collection<StateEntity>): Collection<String>
 
     /**
      * Retrieve entities that were lastly updated between [IntervalFilter.start] and [IntervalFilter.finish].

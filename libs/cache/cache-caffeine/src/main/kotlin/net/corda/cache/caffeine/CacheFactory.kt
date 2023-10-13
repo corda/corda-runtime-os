@@ -10,7 +10,7 @@ import com.github.benmanes.caffeine.cache.LoadingCache
  */
 interface CacheFactory {
     /**
-     * Build a Caffeine Cache
+     * Build a Caffeine Cache.
      *
      * @param name Cache name, used for logging and metrics.
      * @param caffeine Caffeine cache builder.
@@ -18,7 +18,17 @@ interface CacheFactory {
     fun <K, V> build(name: String, caffeine: Caffeine<in K, in V>): Cache<K, V>
 
     /**
-     * Build a Caffeine Loading Cache
+     * Build a Caffeine Cache which executes all actions including callbacks synchronously in the same thread
+     * the calls to the cache are made. The primary use case for this builder is adding non thread safe listeners
+     * to the cache.
+     *
+     * @param name Cache name, used for logging and metrics.
+     * @param caffeine Caffeine cache builder.
+     */
+    fun <K, V> buildNonAsync(name: String, caffeine: Caffeine<in K, in V>): Cache<K, V>
+
+    /**
+     * Build a Caffeine Loading Cache.
      *
      * @param name Cache name, used for logging and metrics.
      * @param caffeine Caffeine cache builder.

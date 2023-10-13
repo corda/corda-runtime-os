@@ -1,9 +1,15 @@
 topics:
   - name: config.management.request
+    partitions: 1
+    replicas: 1
     config: {}
   - name: config.management.request.resp
+    partitions: 1
+    replicas: 1
     config: {}
   - name: config.topic
+    partitions: 1
+    replicas: 1
     config:
       cleanup.policy: compact
       segment.ms: 600000
