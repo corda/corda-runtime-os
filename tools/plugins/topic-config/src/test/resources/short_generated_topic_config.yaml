@@ -1,5 +1,7 @@
 topics:
   - name: avro.schema
+    partitions: 5
+    replicas: 3
     config:
       cleanup.policy: compact
       segment.ms: 600000
@@ -8,6 +10,8 @@ topics:
       max.compaction.lag.ms: 604800000
       min.cleanable.dirty.ratio: 0.5
   - name: certificates.rpc.ops
+    partitions: 4
+    replicas: 2
     config: {}
 acls:
   - topic: avro.schema
