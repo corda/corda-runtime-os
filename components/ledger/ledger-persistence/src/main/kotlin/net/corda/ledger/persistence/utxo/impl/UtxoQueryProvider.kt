@@ -67,6 +67,11 @@ interface UtxoQueryProvider {
     val persistTransactionMetadata: String
 
     /**
+     * @property persistTransactionSource SQL text for [UtxoRepositoryImpl.persistTransactionSource].
+     */
+    val persistTransactionSource: String
+
+    /**
      * @property persistTransactionComponentLeaf SQL text for [UtxoRepositoryImpl.persistTransactionComponentLeaf].
      */
     val persistTransactionComponentLeaf: String

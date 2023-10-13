@@ -182,6 +182,30 @@ class UtxoPersistenceServiceImpl(
             }
         }
 
+        // Insert inputs data
+        transaction.getConsumedStateRefs().forEachIndexed { index, input ->
+            repository.persistTransactionSource(
+                em,
+                transactionIdString,
+                UtxoComponentGroup.INPUTS.ordinal,
+                index,
+                input.transactionId.toString(),
+                input.index
+            )
+        }
+
+        // Insert reference data
+        transaction.getReferenceStateRefs().forEachIndexed { index, reference ->
+            repository.persistTransactionSource(
+                em,
+                transactionIdString,
+                UtxoComponentGroup.REFERENCES.ordinal,
+                index,
+                reference.transactionId.toString(),
+                reference.index
+            )
+        }
+
         // Insert outputs data
         transaction.getVisibleStates().entries.forEach { (stateIndex, stateAndRef) ->
             val utxoToken = utxoTokenMap[stateAndRef.ref]

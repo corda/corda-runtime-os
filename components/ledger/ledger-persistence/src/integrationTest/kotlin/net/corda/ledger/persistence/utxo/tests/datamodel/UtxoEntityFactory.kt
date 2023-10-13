@@ -12,6 +12,7 @@ class UtxoEntityFactory(private val entityManagerFactory: EntityManagerFactory) 
     val utxoTransactionComponent: Class<*> get() = classFor("UtxoTransactionComponentEntity")
     val utxoVisibleTransactionOutput: Class<*> get() = classFor("UtxoVisibleTransactionOutputEntity")
     val utxoTransactionSignature: Class<*> get() = classFor("UtxoTransactionSignatureEntity")
+    val utxoTransactionSource: Class<*> get() = classFor("UtxoTransactionSourceEntity")
 
     fun createUtxoTransactionEntity(
         transactionId: String,

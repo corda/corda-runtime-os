@@ -207,7 +207,7 @@ class UtxoLedgerMessageProcessorTests {
                 listOf("4".toByteArray()),
                 listOf("5".toByteArray()),
                 emptyList(),
-                listOf("7".toByteArray()),
+                emptyList(),
                 listOf(outputState),
                 listOf("9".toByteArray())
             ),
