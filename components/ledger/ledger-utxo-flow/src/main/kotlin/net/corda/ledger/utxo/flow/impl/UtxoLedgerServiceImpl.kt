@@ -109,11 +109,6 @@ class UtxoLedgerServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun <T : ContractState> findUnconsumedStatesByExactType(type: Class<T>): List<StateAndRef<T>> {
-        return utxoLedgerStateQueryService.findUnconsumedStatesByExactType(type)
-    }
-
-    @Suspendable
     override fun <T : ContractState> findUnconsumedStatesByExactType(
         type: Class<T>,
         limit: Int,
