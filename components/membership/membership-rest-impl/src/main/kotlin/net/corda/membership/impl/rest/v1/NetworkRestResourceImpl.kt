@@ -72,11 +72,8 @@ class NetworkRestResourceImpl @Activate constructor(
         } catch (e: CertificatesResourceNotFoundException) {
             throw ResourceNotFoundException(e.message)
         } catch (e: BadRequestException) {
-            logger.warn(e.message)
-            throw e
-        } catch (e: SignatureException) {
             logger.warn("Could not $operation", e)
-            throw BadRequestException("The certificate was not signed by the correct certificate authority. ${e.message}")
+            throw e
         } catch (e: CordaRPCAPIPartitionException) {
             logger.warn("Could not $operation", e)
             throw ServiceUnavailableException("Could not $operation: Repartition Event!")

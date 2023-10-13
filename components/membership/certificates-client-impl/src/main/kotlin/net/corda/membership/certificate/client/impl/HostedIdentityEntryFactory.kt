@@ -281,7 +281,7 @@ internal class HostedIdentityEntryFactory(
                 } catch (e: SignatureException) {
                     false
                 }
-            }.firstOrNull() ?: throw CordaRuntimeException(
+            }.firstOrNull() ?: throw BadRequestException(
             "The ${certificateType.type.label} certificate was not signed by the correct certificate authority"
         )
     }
