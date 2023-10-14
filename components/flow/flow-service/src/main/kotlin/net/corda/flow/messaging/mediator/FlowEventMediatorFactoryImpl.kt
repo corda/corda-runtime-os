@@ -13,6 +13,8 @@ import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.helper.getConfig
+import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.RoutingDestination.Companion.routeTo
@@ -31,6 +33,8 @@ import net.corda.schema.Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC
 import net.corda.schema.Schemas.Services.TOKEN_CACHE_EVENT
 import net.corda.schema.Schemas.UniquenessChecker.UNIQUENESS_CHECK_TOPIC
 import net.corda.schema.Schemas.Verification.VERIFICATION_LEDGER_PROCESSOR_TOPIC
+import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.FlowConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -58,16 +62,21 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
     override fun create(
         configs: Map<String, SmartConfig>,
         messagingConfig: SmartConfig,
+        stateManager: StateManager,
     ) = eventMediatorFactory.create(
         createEventMediatorConfig(
+            configs,
             messagingConfig,
             flowEventProcessorFactory.create(configs),
+            stateManager,
         )
     )
 
     private fun createEventMediatorConfig(
+        configs: Map<String, SmartConfig>,
         messagingConfig: SmartConfig,
         messageProcessor: StateAndEventProcessor<String, Checkpoint, FlowEvent>,
+        stateManager: StateManager,
     ) = EventMediatorConfigBuilder<String, Checkpoint, FlowEvent>()
         .name("FlowEventMediator")
         .messagingConfig(messagingConfig)
@@ -83,6 +92,9 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         )
         .messageProcessor(messageProcessor)
         .messageRouterFactory(createMessageRouterFactory())
+        .threads(configs.getConfig(ConfigKeys.FLOW_CONFIG).getInt(FlowConfig.PROCESSING_THREAD_POOL_SIZE))
+        .threadName("flow-event-mediator")
+        .stateManager(stateManager)
         .build()
 
     private fun createMessageRouterFactory() = MessageRouterFactory { clientFinder ->
