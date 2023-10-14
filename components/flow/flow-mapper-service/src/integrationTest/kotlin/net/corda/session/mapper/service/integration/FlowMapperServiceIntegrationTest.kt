@@ -11,6 +11,7 @@ import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
+import net.corda.data.flow.event.mapper.ExecuteCleanup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.event.session.SessionCounterpartyInfoRequest
@@ -35,7 +36,6 @@ import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
-import net.corda.schema.configuration.BootConfig.BOOT_STATE_MANAGER_JDBC_URL
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
@@ -242,6 +242,16 @@ class FlowMapperServiceIntegrationTest {
         //assert duplicate start rpc didn't get processed (and also give Execute cleanup time to run)
         assertFalse(flowEventLatch.await(3, TimeUnit.SECONDS))
         assertThat(flowEventLatch.count).isEqualTo(1)
+
+        // Manually publish an execute cleanup event. Temporary until the full solution has been integrated.
+        val executeCleanup = Record<Any, Any>(
+            FLOW_MAPPER_EVENT_TOPIC,
+            testId,
+            FlowMapperEvent(
+                ExecuteCleanup(listOf())
+            )
+        )
+        publisher.publish(listOf(executeCleanup))
 
         //send same key start rpc again
         publisher.publish(listOf(startRPCEvent))
@@ -462,6 +472,7 @@ class FlowMapperServiceIntegrationTest {
                 producer {
                     close.timeout = 6000
                 }
+                pollTimeout = 100
             }
       """
 
