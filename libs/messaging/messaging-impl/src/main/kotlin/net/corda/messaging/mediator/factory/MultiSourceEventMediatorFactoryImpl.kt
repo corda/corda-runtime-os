@@ -1,7 +1,6 @@
 package net.corda.messaging.mediator.factory
 
 import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
@@ -15,7 +14,6 @@ import org.osgi.service.component.annotations.Reference
 @Component(service = [MultiSourceEventMediatorFactory::class])
 class MultiSourceEventMediatorFactoryImpl(
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-    private val stateManager: StateManager,
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val taskManagerFactory: TaskManagerFactory
 ): MultiSourceEventMediatorFactory {
@@ -24,13 +22,10 @@ class MultiSourceEventMediatorFactoryImpl(
     constructor(
         @Reference(service = CordaAvroSerializationFactory::class)
         cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-        @Reference(service = StateManager::class)
-        stateManager: StateManager,
         @Reference(service = LifecycleCoordinatorFactory::class)
         lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
     ) : this(
         cordaAvroSerializationFactory,
-        stateManager,
         lifecycleCoordinatorFactory,
         TaskManagerFactory.INSTANCE
     )
@@ -47,7 +42,7 @@ class MultiSourceEventMediatorFactoryImpl(
             eventMediatorConfig,
             stateSerializer,
             stateDeserializer,
-            stateManager,
+            eventMediatorConfig.stateManager,
             taskManagerFactory.createThreadPoolTaskManager(
                 name = eventMediatorConfig.name,
                 threadName = eventMediatorConfig.threadName,
