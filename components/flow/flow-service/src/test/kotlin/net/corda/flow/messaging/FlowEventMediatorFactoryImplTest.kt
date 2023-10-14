@@ -52,7 +52,8 @@ class FlowEventMediatorFactoryImplTest {
     fun `successfully creates event mediator`() {
         val mediator = flowEventMediatorFactory.create(
             mapOf(ConfigKeys.FLOW_CONFIG to flowConfig),
-            mock()
+            mock(),
+            mock(),
         )
 
         assertNotNull(mediator)

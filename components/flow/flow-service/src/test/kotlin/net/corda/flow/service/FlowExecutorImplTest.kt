@@ -7,6 +7,8 @@ import net.corda.flow.messaging.mediator.FlowEventMediatorFactory
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.statemanager.api.StateManager
+import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -19,6 +21,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
+import net.corda.schema.configuration.ConfigKeys.STATE_MANAGER_CONFIG
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
 import org.assertj.core.api.Assertions.assertThat
@@ -36,6 +39,7 @@ class FlowExecutorImplTest {
 
     private val coordinatorFactory = mock<LifecycleCoordinatorFactory>()
     private val flowEventProcessorFactory = mock<FlowEventProcessorFactory>()
+    private val stateManagerFactory = mock<StateManagerFactory>()
     private val flowEventMediatorFactory = mock<FlowEventMediatorFactory>()
     private val toMessagingConfig: (Map<String, SmartConfig>) -> SmartConfig = {
         messagingConfig
@@ -43,19 +47,23 @@ class FlowExecutorImplTest {
 
     private val config = mutableMapOf(
         BOOT_CONFIG to SmartConfigImpl.empty().withServiceEndpoints(),
-        FLOW_CONFIG to SmartConfigImpl.empty()
+        FLOW_CONFIG to SmartConfigImpl.empty(),
+        STATE_MANAGER_CONFIG to SmartConfigImpl.empty(),
     )
     private val messagingConfig = getMinimalMessagingConfig()
     private val subscriptionRegistrationHandle = mock<RegistrationHandle>()
     private val flowExecutorCoordinator = mock<LifecycleCoordinator>()
     private val multiSourceEventMediator = mock<MultiSourceEventMediator<String, Checkpoint, FlowEvent>>()
     private val flowEventProcessor = mock<StateAndEventProcessor<String, Checkpoint, FlowEvent>>()
+    private val stateManager = mock<StateManager>()
 
     @BeforeEach
     fun setup() {
         whenever(flowEventProcessorFactory.create(any())).thenReturn(flowEventProcessor)
+        whenever(stateManagerFactory.create(any())).thenReturn(stateManager)
         whenever(
             flowEventMediatorFactory.create(
+                any(),
                 any(),
                 any(),
             )
@@ -63,6 +71,7 @@ class FlowExecutorImplTest {
 
         whenever(coordinatorFactory.createCoordinator(any(), any())).thenReturn(flowExecutorCoordinator)
         whenever(flowExecutorCoordinator.followStatusChangesByName(any())).thenReturn(subscriptionRegistrationHandle)
+        whenever(flowExecutorCoordinator.createManagedResource(any(), any<() -> StateManager>())).thenReturn(stateManager)
     }
 
     @Test
@@ -140,6 +149,7 @@ class FlowExecutorImplTest {
             flowEventMediatorFactory.create(
                 any(),
                 any(),
+                any(),
             )
         ).thenReturn(multiSourceEventMediator2)
 
@@ -171,6 +181,7 @@ class FlowExecutorImplTest {
         return FlowExecutorImpl(
             coordinatorFactory,
             flowEventMediatorFactory,
+            stateManagerFactory,
             toMessagingConfig
         )
     }
