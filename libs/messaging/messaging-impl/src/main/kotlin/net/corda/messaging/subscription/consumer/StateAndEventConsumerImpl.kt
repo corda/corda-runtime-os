@@ -374,7 +374,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                 //will never be null, created on assignment in rebalance listener
                 val currentStatesByPartition = currentStates[partitionId]
                     ?: throw CordaMessageAPIFatalException("Current State map for " +
-                            "group ${config.group} on topic $stateTopic[$partitionId] is null.")
+                           "group ${config.group} on topic $stateTopic[$partitionId] is null.")
                 updatedStatesByKey[key] = value
                 if (value != null) {
                     currentStatesByPartition[key] = Pair(clock.instant().toEpochMilli(), value)
