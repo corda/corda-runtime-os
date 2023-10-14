@@ -63,7 +63,7 @@ internal class FlowMapperServiceTest {
         }
         val flowMapperEventMediatorFactory = mock<FlowMapperEventMediatorFactory>().also {
             doAnswer { mock<MultiSourceEventMediator<String, String, String>>() }
-                .whenever(it).create(any(), any())
+                .whenever(it).create(any(), any(), any())
         }
         val stateManagerFactory = mock<StateManagerFactory>().also {
             doAnswer { mock<StateManager>() }.whenever(it).create(any())
@@ -127,7 +127,7 @@ internal class FlowMapperServiceTest {
                 .thenReturn(cleanupSubscription)
         }
         val flowMapperEventMediatorFactory = mock<FlowMapperEventMediatorFactory>().apply {
-            whenever(create(any(), any()))
+            whenever(create(any(), any(), any()))
                 .thenReturn(eventMediator)
         }
         val stateManagerFactory = mock<StateManagerFactory>().also {
@@ -158,6 +158,7 @@ internal class FlowMapperServiceTest {
             verify(flowMapperEventMediatorFactory).create(
                 any(),
                 eq(messagingConfig),
+                any(),
             )
             verify(eventMediator).start()
             verifyIsUp<FlowMapperService>()
@@ -169,6 +170,7 @@ internal class FlowMapperServiceTest {
             verify(flowMapperEventMediatorFactory, times(2)).create(
                 any(),
                 eq(messagingConfig),
+                any(),
             )
             verify(eventMediator, times(2)).start()
             verifyIsUp<FlowMapperService>()
@@ -180,7 +182,7 @@ internal class FlowMapperServiceTest {
         val subName = LifecycleCoordinatorName("sub")
         val subscriptionFactory = mock<SubscriptionFactory>()
         val flowMapperEventMediatorFactory = mock<FlowMapperEventMediatorFactory>().apply {
-            whenever(create(any(), any()))
+            whenever(create(any(), any(), any()))
                 .thenThrow(CordaMessageAPIConfigException("Bad config!"))
         }
         val stateManagerFactory = mock<StateManagerFactory>().also {
@@ -211,6 +213,7 @@ internal class FlowMapperServiceTest {
             verify(flowMapperEventMediatorFactory).create(
                 any(),
                 eq(messagingConfig),
+                any(),
             )
             verifyIsInError<FlowMapperService>()
         }

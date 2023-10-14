@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
+import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -14,13 +15,16 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_CLEANUP_TOPIC
 import net.corda.schema.Schemas.ScheduledTask.SCHEDULED_TASK_TOPIC_MAPPER_PROCESSOR
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.STATE_MANAGER_CONFIG
 import net.corda.schema.configuration.FlowConfig
+import net.corda.session.mapper.messaging.mediator.FlowMapperEventMediatorFactory
 import net.corda.session.mapper.service.executor.CleanupProcessor
 import net.corda.session.mapper.service.executor.ScheduledTaskProcessor
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -30,9 +34,6 @@ import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
 import java.time.Clock
-import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
-import net.corda.schema.configuration.ConfigKeys.STATE_MANAGER_CONFIG
-import net.corda.session.mapper.messaging.mediator.FlowMapperEventMediatorFactory
 
 @Suppress("LongParameterList", "ForbiddenComment")
 @Component(service = [FlowMapperService::class])
@@ -107,15 +108,20 @@ class FlowMapperService @Activate constructor(
             val flowConfig = event.config.getConfig(FLOW_CONFIG)
             val stateManagerConfig = event.config.getConfig(STATE_MANAGER_CONFIG)
 
+            val stateManager = coordinator.createManagedResource(STATE_MANAGER) {
+                stateManagerFactory.create(stateManagerConfig)
+            }
+
             coordinator.createManagedResource(EVENT_MEDIATOR) {
                 flowMapperEventMediatorFactory.create(
                     flowConfig,
                     messagingConfig,
+                    stateManager,
                 )
             }.also {
                 it.start()
             }
-            setupCleanupTasks(messagingConfig, flowConfig, stateManagerConfig)
+            setupCleanupTasks(messagingConfig, flowConfig, stateManager)
             coordinator.updateStatus(LifecycleStatus.UP)
         } catch (e: CordaRuntimeException) {
             val errorMsg = "Error restarting flow mapper from config change"
@@ -127,12 +133,9 @@ class FlowMapperService @Activate constructor(
     private fun setupCleanupTasks(
         messagingConfig: SmartConfig,
         flowConfig: SmartConfig,
-        stateManagerConfig: SmartConfig
+        stateManager: StateManager
     ) {
         val window = flowConfig.getLong(FlowConfig.PROCESSING_FLOW_CLEANUP_TIME)
-        val stateManager = coordinator.createManagedResource(STATE_MANAGER) {
-            stateManagerFactory.create(stateManagerConfig)
-        }
         val scheduledTaskProcessor = ScheduledTaskProcessor(
             stateManager,
             Clock.systemUTC(),
