@@ -42,7 +42,7 @@ class FlowMapperEventMediatorFactoryImplTest {
 
     @Test
     fun `successfully creates event mediator`() {
-        val mediator = flowMapperEventMediatorFactory.create(flowConfig, mock())
+        val mediator = flowMapperEventMediatorFactory.create(flowConfig, mock(), mock())
 
         assertNotNull(mediator)
     }
