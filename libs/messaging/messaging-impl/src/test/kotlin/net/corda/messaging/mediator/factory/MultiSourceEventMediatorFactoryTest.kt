@@ -7,8 +7,9 @@ import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
-import net.corda.messaging.api.mediator.taskmanager.TaskManager
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.taskmanager.TaskManager
+import net.corda.taskmanager.TaskManagerFactory
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -22,16 +23,18 @@ class MultiSourceEventMediatorFactoryTest {
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory>()
     private val serializer = mock<CordaAvroSerializer<Any>>()
     private val stateDeserializer = mock<CordaAvroDeserializer<Any>>()
+    private val taskManagerFactory = mock<TaskManagerFactory>()
 
     @BeforeEach
     fun beforeEach() {
         doReturn(serializer).`when`(cordaAvroSerializationFactory).createAvroSerializer<Any>(anyOrNull())
         doReturn(stateDeserializer).`when`(cordaAvroSerializationFactory).createAvroDeserializer(any(), any<Class<Any>>())
+        doReturn(mock<TaskManager>()).`when`(taskManagerFactory).createThreadPoolTaskManager(any(), any(), any())
         multiSourceEventMediatorFactory = MultiSourceEventMediatorFactoryImpl(
             cordaAvroSerializationFactory,
-            mock<TaskManager>(),
             mock<StateManager>(),
             mock<LifecycleCoordinatorFactory>(),
+            taskManagerFactory,
         )
     }
 
@@ -43,6 +46,9 @@ class MultiSourceEventMediatorFactoryTest {
         val config = mock<EventMediatorConfig<Any, Any, Any>>()
         doReturn(messageProcessor).`when`(config).messageProcessor
         doReturn(messageRouterFactory).`when`(config).messageRouterFactory
+        doReturn("name").`when`(config).name
+        doReturn(1).`when`(config).threads
+        doReturn("name").`when`(config).threadName
 
         val mediator = multiSourceEventMediatorFactory.create(config)
 

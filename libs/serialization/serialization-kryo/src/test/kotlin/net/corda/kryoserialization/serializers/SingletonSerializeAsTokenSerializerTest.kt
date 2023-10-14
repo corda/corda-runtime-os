@@ -2,6 +2,7 @@ package net.corda.kryoserialization.serializers
 
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.util.MapReferenceResolver
+import com.esotericsoftware.kryo.util.Pool
 import net.corda.kryoserialization.CordaKryoException
 import net.corda.kryoserialization.DefaultKryoCustomizer
 import net.corda.kryoserialization.KryoCheckpointSerializer
@@ -39,7 +40,7 @@ class SingletonSerializeAsTokenSerializerTest {
                 Kryo(CordaClassResolver(sandboxGroup), MapReferenceResolver()),
                 mapOf(SingletonSerializeAsToken::class.java to SingletonSerializeAsTokenSerializer(emptyMap())),
                 ClassSerializer(sandboxGroup)
-            )
+            ).toPool()
         )
 
         assertThatExceptionOfType(CordaKryoException::class.java).isThrownBy {
@@ -59,7 +60,7 @@ class SingletonSerializeAsTokenSerializerTest {
                 Kryo(CordaClassResolver(sandboxGroup), MapReferenceResolver()),
                 emptyMap(),
                 ClassSerializer(sandboxGroup)
-            )
+            ).toPool()
         )
 
         val bytes = serializer.serialize(instance)
@@ -68,4 +69,11 @@ class SingletonSerializeAsTokenSerializerTest {
         }
     }
 
+    private fun Kryo.toPool(): Pool<Kryo> {
+        return object : Pool<Kryo>(true, false, 4) {
+            override fun create(): Kryo {
+                return this@toPool
+            }
+        }
+    }
 }
