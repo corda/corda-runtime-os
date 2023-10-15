@@ -1,5 +1,6 @@
 package net.corda.messaging.mediator
 
+import io.micrometer.core.instrument.Timer
 import net.corda.libs.statemanager.api.State
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.mediator.MediatorMessage
@@ -19,6 +20,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.concurrent.Callable
 import java.util.concurrent.CompletableFuture
 
 class TaskManagerHelperTest {
@@ -171,6 +173,11 @@ class TaskManagerHelperTest {
 
         `when`(taskManager.executeShortRunningTask(any<() -> ProcessorTask.Result<String, String, String>>()))
             .thenReturn(mock())
+        val timer = mock<Timer>()
+        whenever(timer.recordCallable(any<Callable<Any>>())).thenAnswer { invocation ->
+            invocation.getArgument<Callable<Any>>(0).call()
+        }
+        whenever(eventMediatorMetrics.processorTimer).thenReturn(timer)
 
         taskManagerHelper.executeProcessorTasks(
             listOf(processorTask1, processorTask2)
