@@ -173,11 +173,6 @@ class TaskManagerHelperTest {
 
         `when`(taskManager.executeShortRunningTask(any<() -> ProcessorTask.Result<String, String, String>>()))
             .thenReturn(mock())
-        val timer = mock<Timer>()
-        whenever(timer.recordCallable(any<Callable<Any>>())).thenAnswer { invocation ->
-            invocation.getArgument<Callable<Any>>(0).call()
-        }
-        whenever(eventMediatorMetrics.processorTimer).thenReturn(timer)
 
         taskManagerHelper.executeProcessorTasks(
             listOf(processorTask1, processorTask2)
