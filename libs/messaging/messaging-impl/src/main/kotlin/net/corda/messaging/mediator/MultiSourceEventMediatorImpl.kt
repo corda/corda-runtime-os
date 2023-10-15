@@ -18,7 +18,10 @@ import net.corda.messaging.mediator.factory.MediatorComponentFactory
 import net.corda.taskmanager.TaskManager
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
+import java.lang.Thread.sleep
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
+
 
 @Suppress("LongParameterList")
 class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
@@ -54,25 +57,33 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     override val subscriptionName: LifecycleCoordinatorName
         get() = lifecycleCoordinatorName
 
+    private val stopped = AtomicBoolean(false)
+    private val running = AtomicBoolean(false)
+
     override fun start() {
         log.debug { "Starting multi-source event mediator with config: $config" }
         lifecycleCoordinator.start()
         taskManager.executeLongRunningTask(::run)
     }
 
-    private fun stop() = Thread.currentThread().interrupt()
+    private fun stop() = stopped.set(true)
 
-    private val stopped get() = Thread.currentThread().isInterrupted
+    private fun stopped() = stopped.get()
 
     override fun close() {
+        log.debug("Closing multi-source event mediator")
         stop()
+        while (running.get()) {
+            sleep(100)
+        }
         lifecycleCoordinator.close()
     }
 
     private fun run() {
+        running.set(true)
         var attempts = 0
 
-        while (!stopped) {
+        while (!stopped()) {
             attempts++
             try {
                 consumers = mediatorComponentFactory.createConsumers(::onSerializationError)
@@ -82,7 +93,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                 consumers.forEach { it.subscribe() }
                 lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
 
-                while (!stopped) {
+                while (!stopped()) {
                     processEventsWithRetries()
                 }
 
@@ -111,11 +122,13 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                 closeConsumersAndProducers()
             }
         }
+        running.set(false)
     }
 
     private fun onSerializationError(event: ByteArray) {
-        log.debug { "Error serializing [$event] "}
-        TODO("Not yet implemented")
+        // TODO CORE-17012 Subscription error handling (DLQ)
+        log.error("Failed to deserialize event")
+        log.debug { "Failed to deserialize event: ${event.contentToString()}" }
     }
 
     private fun closeConsumersAndProducers() {
@@ -126,7 +139,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     private fun processEventsWithRetries() {
         var attempts = 0
         var keepProcessing = true
-        while (keepProcessing && !stopped) {
+        while (keepProcessing && !stopped()) {
             try {
                 processEvents()
                 keepProcessing = false
@@ -150,6 +163,9 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 
     private fun processEvents() {
         val messages = pollConsumers()
+        if (stopped()) {
+            return
+        }
         if (messages.isNotEmpty()) {
             val msgGroups = messages.groupBy { it.key }
             val persistedStates = stateManager.get(msgGroups.keys.map { it.toString() })

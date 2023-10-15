@@ -25,8 +25,9 @@ import net.corda.messaging.api.mediator.factory.MessagingClientFactoryFactory
 import net.corda.messaging.api.mediator.factory.MultiSourceEventMediatorFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.schema.Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC
-import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
-import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_OUT
+import net.corda.schema.Schemas.Flow.FLOW_SESSION
+import net.corda.schema.Schemas.Flow.FLOW_START
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
 import net.corda.schema.Schemas.Persistence.PERSISTENCE_ENTITY_PROCESSOR_TOPIC
 import net.corda.schema.Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC
@@ -82,7 +83,10 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         .messagingConfig(messagingConfig)
         .consumerFactories(
             mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                FLOW_EVENT_TOPIC, CONSUMER_GROUP, messagingConfig
+                FLOW_START, CONSUMER_GROUP, messagingConfig
+            ),
+            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
+                FLOW_SESSION, CONSUMER_GROUP, messagingConfig
             ),
         )
         .clientFactories(
@@ -104,7 +108,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
             when (val event = message.event()) {
                 // TODO Route external events to RPC client after CORE-16181 is done
                 is EntityRequest -> routeTo(messageBusClient, PERSISTENCE_ENTITY_PROCESSOR_TOPIC)
-                is FlowMapperEvent -> routeTo(messageBusClient, FLOW_MAPPER_EVENT_TOPIC)
+                is FlowMapperEvent -> routeTo(messageBusClient, FLOW_MAPPER_SESSION_OUT)
                 is FlowOpsRequest -> routeTo(messageBusClient, FLOW_OPS_MESSAGE_TOPIC)
                 is FlowStatus -> routeTo(messageBusClient, FLOW_STATUS_TOPIC)
                 is LedgerPersistenceRequest -> routeTo(messageBusClient, PERSISTENCE_LEDGER_PROCESSOR_TOPIC)

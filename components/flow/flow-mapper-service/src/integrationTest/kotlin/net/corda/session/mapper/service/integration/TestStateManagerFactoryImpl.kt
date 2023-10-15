@@ -18,10 +18,14 @@ import java.util.concurrent.ConcurrentHashMap
  */
 @Component
 class TestStateManagerFactoryImpl : StateManagerFactory {
+    companion object {
+        private val storage = ConcurrentHashMap<String, State>()
+
+        fun clear() = storage.clear()
+    }
 
     override fun create(config: SmartConfig): StateManager {
         return object : StateManager {
-            private val storage = ConcurrentHashMap<String, State>()
             override fun close() {
             }
 
@@ -51,7 +55,8 @@ class TestStateManagerFactoryImpl : StateManagerFactory {
             }
 
             override fun delete(states: Collection<State>): Map<String, State> {
-                TODO("Not yet implemented")
+                states.forEach { storage.remove(it.key) }
+                return emptyMap()
             }
 
             override fun updatedBetween(interval: IntervalFilter): Map<String, State> {
