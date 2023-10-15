@@ -454,6 +454,7 @@ class FlowMapperServiceIntegrationTest {
             }
             processing {
                 cleanupTime = 10000
+                poolSize = 1
             }
         """
 
