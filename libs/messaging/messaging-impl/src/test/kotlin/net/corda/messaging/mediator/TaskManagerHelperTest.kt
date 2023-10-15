@@ -7,6 +7,7 @@ import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_KEY
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.mediator.metrics.EventMediatorMetrics
 import net.corda.taskmanager.TaskManager
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -31,7 +32,8 @@ class TaskManagerHelperTest {
 
     private val taskManager = mock<TaskManager>()
     private val stateManagerHelper = mock<StateManagerHelper<String, String, String>>()
-    private val taskManagerHelper = TaskManagerHelper(taskManager, stateManagerHelper)
+    private val eventMediatorMetrics = mock<EventMediatorMetrics>()
+    private val taskManagerHelper = TaskManagerHelper(taskManager, stateManagerHelper, eventMediatorMetrics)
     private val messageProcessor = mock<StateAndEventProcessor<String, String, String>>()
 
     @Test
@@ -167,7 +169,8 @@ class TaskManagerHelperTest {
         val processorTask1 = mock<ProcessorTask<String, String, String>>()
         val processorTask2 = mock<ProcessorTask<String, String, String>>()
 
-        `when`(taskManager.executeShortRunningTask(any<() -> ProcessorTask.Result<String, String, String>>())).thenReturn(mock())
+        `when`(taskManager.executeShortRunningTask(any<() -> ProcessorTask.Result<String, String, String>>()))
+            .thenReturn(mock())
 
         taskManagerHelper.executeProcessorTasks(
             listOf(processorTask1, processorTask2)
@@ -248,7 +251,10 @@ class TaskManagerHelperTest {
             mapOf("1" to listOf(clientTask1), "2" to listOf(clientTask2))
         )
         assertThat(results).containsOnly(result1, result2)
-        verify(taskManager, times(2)).executeShortRunningTask(any<() -> List<ClientTask.Result<String, String, String>>>())
+        verify(
+            taskManager,
+            times(2)
+        ).executeShortRunningTask(any<() -> List<ClientTask.Result<String, String, String>>>())
     }
 
     private fun List<String>.toCordaConsumerRecords(key: String) =
