@@ -146,7 +146,7 @@ internal class InMemorySessionReplayer(
         } catch (except: BadGroupPolicyException) {
             logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName}) but" +
                 " the group policy data is unavailable or cannot be parsed for ${messageReplay.sessionCounterparties.ourId}. Error" +
-                "${except.message} The message was not replayed.")
+                " ${except.message} The message was not replayed.")
             return
         }
         if (networkType == null) {

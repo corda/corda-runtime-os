@@ -51,7 +51,7 @@ internal object SessionManagerWarnings {
         )
     }
     internal fun Logger.badGroupPolicy(messageName: String, sessionId: String, holdingIdentity: HoldingIdentity, message: String?) {
-        this.warn("The group policy data is unavailable or cannot be parsed for identity $holdingIdentity. Error: $message The " +
+        this.warn("The group policy data is unavailable or cannot be parsed for identity $holdingIdentity. Error: $message. The " +
             "$messageName for sessionId $sessionId was discarded.")
     }
 

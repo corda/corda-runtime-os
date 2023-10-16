@@ -437,7 +437,7 @@ internal class SessionManagerImpl(
         val p2pParams = try {
             groupPolicyProvider.getP2PParameters(counterparties.ourId)
         } catch (except: BadGroupPolicyException) {
-            logger.warn("The group policy data is unavailable or cannot be parsed for ${counterparties.ourId}. Error ${except.message} " +
+            logger.warn("The group policy data is unavailable or cannot be parsed for ${counterparties.ourId}. Error ${except.message}. " +
                 "The sessionInit message was not sent.")
             return emptyList()
         }
@@ -561,7 +561,7 @@ internal class SessionManagerImpl(
             groupPolicyProvider.getP2PParameters(sessionCounterparties.ourId)
         } catch (except: BadGroupPolicyException) {
             logger.warn("The group policy data is unavailable or cannot be parsed for ${sessionCounterparties.ourId}. Error: " +
-                "${except.message} The sessionInit message was not sent.")
+                "${except.message}. The sessionInit message was not sent.")
             return emptyList()
         }
         if (p2pParams == null) {

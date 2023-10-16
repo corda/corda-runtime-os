@@ -235,7 +235,7 @@ class MessageConverter {
             val p2pParams = try {
                 groupPolicyProvider.getP2PParameters(source)
             } catch (except: BadGroupPolicyException) {
-                logger.warn("The group policy data is unavailable or cannot be parsed for our identity = $source Error ${except.message}" +
+                logger.warn("The group policy data is unavailable or cannot be parsed for our identity = $source. Error ${except.message}" +
                     " The message was discarded.")
                 return null
             }
