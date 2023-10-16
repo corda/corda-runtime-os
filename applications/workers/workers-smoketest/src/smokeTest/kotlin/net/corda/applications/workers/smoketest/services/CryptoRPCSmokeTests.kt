@@ -1,13 +1,18 @@
 package net.corda.applications.workers.smoketest.services
 
 import net.corda.applications.workers.smoketest.utils.PLATFORM_VERSION
+import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.toAvro
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.SecureHashes
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
+import net.corda.data.crypto.wire.ops.flow.queries.ByIdsFlowQuery
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
@@ -61,6 +66,8 @@ class CryptoRPCSmokeTests {
     }
 
     private val testRunUniqueId = UUID.randomUUID()
+    private val requestId = UUID.randomUUID()
+    private val flowId = UUID.randomUUID()
     private val groupId = UUID.randomUUID().toString()
     private val cpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
     private val notaryCpiName = "${TEST_NOTARY_CPI_NAME}_$testRunUniqueId"
@@ -75,8 +82,22 @@ class CryptoRPCSmokeTests {
     private val charlieHoldingId: String = getHoldingIdShortHash(charlieX500, groupId)
     private val notaryHoldingId: String = getHoldingIdShortHash(notaryX500, groupId)
 
-    private var cryptoRequestContext: CryptoRequestContext = createRequestContext()
-    private var tenantId: String = UUID.randomUUID().toString()
+    private val cryptoRequestContext: CryptoRequestContext = createRequestContext()
+    private val externalEventContext: ExternalEventContext = createExternalEventContext()
+
+    private fun createExternalEventContext(): ExternalEventContext {
+        val simpleContext = KeyValuePairList(
+            listOf(
+                KeyValuePair("Hello", "World!")
+            )
+        )
+
+        return ExternalEventContext.newBuilder()
+            .setContextProperties(simpleContext)
+            .setRequestId(requestId.toString())
+            .setFlowId(flowId.toString())
+            .build()
+    }
 
     private val staticMemberList = listOf(
         aliceX500,
@@ -123,7 +144,7 @@ class CryptoRPCSmokeTests {
         val url = "${System.getProperty("cryptoWorkerUrl")}api/$PLATFORM_VERSION/crypto"
 
         logger.info("crypto url: $url")
-        val serializedPayload = avroSerializer.serialize(payloadBuilder().build())
+        val serializedPayload = avroSerializer.serialize(generateByIdsFlowOpsRequest())
 
         val request = HttpRequest.newBuilder()
             .uri(URI.create(url))
@@ -148,17 +169,26 @@ class CryptoRPCSmokeTests {
 
     private val testClock = AutoTickTestClock(Instant.MAX, Duration.ofSeconds(1))
 
-    // TODO: Create a proper builder
-    private fun payloadBuilder() : FlowOpsRequest.Builder =
-        FlowOpsRequest.newBuilder(
-            FlowOpsRequest()
-        )
+    /**
+     * Generate simple request to lookup for keys by their full key ids.
+     * Lookup will return no items in the response.
+     */
+    private fun generateByIdsFlowOpsRequest() : FlowOpsRequest {
+        val secureHash = SecureHashImpl("algorithm", "12345678".toByteArray()).toAvro()
+        val generateByIdsRequest = ByIdsFlowQuery(SecureHashes(listOf(secureHash)))
+
+        return FlowOpsRequest.newBuilder()
+            .setContext(cryptoRequestContext)
+            .setRequest(generateByIdsRequest)
+            .setFlowExternalEventContext(externalEventContext)
+            .build()
+    }
 
     private fun createRequestContext(): CryptoRequestContext = CryptoRequestContext(
         "test-component",
         Instant.now(),
         UUID.randomUUID().toString(),
-        tenantId,
+        aliceHoldingId,
         KeyValuePairList(
             listOf(
                 KeyValuePair("key1", "value1"),
