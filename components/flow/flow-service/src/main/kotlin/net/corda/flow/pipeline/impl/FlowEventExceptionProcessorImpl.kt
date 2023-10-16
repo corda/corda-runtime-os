@@ -1,11 +1,15 @@
 package net.corda.flow.pipeline.impl
 
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowKey
+import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.event.session.SessionData
+import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.session.SessionProcessState
@@ -30,6 +34,7 @@ import net.corda.flow.utils.toMap
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.getLongOrDefault
 import net.corda.messaging.api.records.Record
+import net.corda.schema.Schemas
 import net.corda.schema.configuration.FlowConfig
 import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_WINDOW_DURATION
 import net.corda.session.manager.Constants
@@ -146,6 +151,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 
         var errorEvents: List<net.corda.messaging.api.records.Record<*, *>> = emptyList()
         var cleanupEvents: List<net.corda.messaging.api.records.Record<*, *>> = emptyList()
+        var records: List<net.corda.messaging.api.records.Record<*, *>> = emptyList()
 
         if(context.inputEventPayload is SessionEvent) {
             val inputPayload = context.inputEventPayload as SessionEvent
@@ -154,31 +160,35 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 //                val sessionData = inputPayload.payload as SessionData
                 val instant = Instant.now()
 
-                val sessionState = SessionState.newBuilder()
-                    .setSessionId(sessionId)
-                    .setSessionStartTime(instant)
-                    .setLastReceivedMessageTime(instant)
-                    .setCounterpartyIdentity(inputPayload.initiatingIdentity)
-                    .setReceivedEventsState(SessionProcessState(0, mutableListOf()))
-                    .setSendEventsState(SessionProcessState(0, mutableListOf()))
-                    .setSessionProperties(inputPayload.contextSessionProperties)
-                    .setStatus(SessionStateType.CREATED)
-                    .setHasScheduledCleanup(false)
-                    .setRequireClose(inputPayload.contextSessionProperties.toMap()[Constants.FLOW_SESSION_REQUIRE_CLOSE].toBoolean())
-                    .build()
-
-                val holdingIdentity = inputPayload.initiatedIdentity
+//                val sessionState = SessionState.newBuilder()
+//                    .setSessionId(sessionId)
+//                    .setSessionStartTime(instant)
+//                    .setLastReceivedMessageTime(instant)
+//                    .setCounterpartyIdentity(inputPayload.initiatingIdentity)
+//                    .setReceivedEventsState(SessionProcessState(0, mutableListOf()))
+//                    .setSendEventsState(SessionProcessState(0, mutableListOf()))
+//                    .setSessionProperties(inputPayload.contextSessionProperties)
+//                    .setStatus(SessionStateType.CREATED)
+//                    .setHasScheduledCleanup(false)
+//                    .setRequireClose(inputPayload.contextSessionProperties.toMap()[Constants.FLOW_SESSION_REQUIRE_CLOSE].toBoolean())
+//                    .build()
+//
+//                val holdingIdentity = inputPayload.initiatedIdentity
 
 //                context.checkpoint.putSessionStates(
-                flowSessionManager.sendErrorMessages(
-                    context.checkpoint,
-                    listOf(sessionId),
-                    exception,
-                    Instant.now(),
-                    sessionState,
-                    holdingIdentity
-                )
+//                flowSessionManager.sendErrorMessages(
+//                    context.checkpoint,
+//                    listOf(sessionId),
+//                    exception,
+//                    Instant.now(),
+//                    sessionState,
+//                    holdingIdentity
 //                )
+//                )
+
+                val sessionError = SessionError(ExceptionEnvelope("FlowMapper-SessionError", "test error message for compatibility failure"))
+
+                records = listOf(buildSessionRecord(inputPayload, sessionError, Instant.now()))
             } else {
                 val activeSessionIds = getActiveSessionIds(checkpoint)
 
@@ -196,15 +206,14 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
                     getScheduledCleanupExpiryTime(context, exceptionHandlingStartTime),
                     checkpoint.sessions.filterNot { it.hasScheduledCleanup }
                 )
+                records = createStatusRecord(checkpoint.flowId) {
+                    flowMessageFactory.createFlowFailedStatusMessage(
+                        checkpoint,
+                        FLOW_FAILED,
+                        exception.message
+                    )
+                }
             }
-        }
-
-        val records = createStatusRecord(checkpoint.flowId) {
-            flowMessageFactory.createFlowFailedStatusMessage(
-                checkpoint,
-                FLOW_FAILED,
-                exception.message
-            )
         }
 
         context.copy(
@@ -215,6 +224,41 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         removeCachedFlowFiber(checkpoint)
         checkpoint.markDeleted()
         context
+    }
+
+    private fun buildSessionRecord(
+        sourceEvent: SessionEvent,
+        newPayload: Any,
+        timestamp: Instant,
+    ) : Record<*, *> {
+        val (newDirection, sessionId) = Pair(MessageDirection.INBOUND, toggleSessionId(sourceEvent.sessionId))
+
+        val sequenceNumber = if (newPayload is SessionError) null else sourceEvent.sequenceNum
+        val sessionEvent = SessionEvent(
+            newDirection,
+            timestamp,
+            sessionId,
+            sequenceNumber,
+            sourceEvent.initiatingIdentity,
+            sourceEvent.initiatedIdentity,
+            newPayload,
+            sourceEvent.contextSessionProperties
+        )
+        return Record(Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC, sessionEvent.sessionId, FlowMapperEvent(sessionEvent))
+    }
+
+    /**
+     * Toggle the [sessionId] to that of the other party and return it.
+     * Initiating party sessionId will be a random UUID.
+     * Initiated party sessionId will be the initiating party session id with a suffix of "-INITIATED" added.
+     * @return the toggled session id
+     */
+    private fun toggleSessionId(sessionId: String): String {
+        return if (sessionId.endsWith(Constants.INITIATED_SESSION_ID_SUFFIX)) {
+            sessionId.removeSuffix(Constants.INITIATED_SESSION_ID_SUFFIX)
+        } else {
+            "$sessionId${Constants.INITIATED_SESSION_ID_SUFFIX}"
+        }
     }
 
     private fun createStatusRecord(id: String, statusGenerator: () -> FlowStatus): List<Record<*, *>> {
