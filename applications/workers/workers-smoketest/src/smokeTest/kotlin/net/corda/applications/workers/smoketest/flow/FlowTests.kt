@@ -857,13 +857,16 @@ class FlowTests {
         val newConfigurationValue = (currentConfigValue * 1.5).toInt()
 
         managedConfig { configManager ->
+            println("Set new config")
             configManager
                 .load(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, newConfigurationValue)
                 .apply()
             // Wait for the rpc-worker to reload the configuration and come back up
+            println("Wait for the rpc-worker to reload the configuration and come back up")
             waitForConfigurationChange(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, newConfigurationValue.toString(), false)
 
             // Execute some flows which require functionality from different workers and make sure they succeed
+            println("Execute some flows which require functionality from different workers and make sure they succeed")
             val flowIds = mutableListOf(
                 startRpcFlow(
                     bobHoldingId,
@@ -890,6 +893,7 @@ class FlowTests {
                 )
             )
 
+            println("Check status of flows")
             flowIds.forEach {
                 val flowResult = awaitRestFlowResult(bobHoldingId, it)
                 assertThat(flowResult.flowError).isNull()
