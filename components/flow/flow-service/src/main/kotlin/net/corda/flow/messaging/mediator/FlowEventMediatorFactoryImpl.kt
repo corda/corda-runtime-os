@@ -15,6 +15,8 @@ import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.messaging.api.constants.WorkerRPCPaths.API_PREFIX
+import net.corda.messaging.api.constants.WorkerRPCPaths.API_VERSION
 import net.corda.messaging.api.constants.WorkerRPCPaths.LEDGER_PATH
 import net.corda.messaging.api.constants.WorkerRPCPaths.PERSISTENCE_PATH
 import net.corda.messaging.api.constants.WorkerRPCPaths.UNIQUENESS_PATH
@@ -108,7 +110,8 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         val messageBusClient = clientFinder.find(MESSAGE_BUS_CLIENT)
         val rpcClient = clientFinder.find(RPC_CLIENT)
 
-        fun rpcEndpoint(endpoint: String, path: String) = "${messagingConfig.getString(endpoint)}$path"
+        fun rpcEndpoint(endpoint: String, path: String) =
+            "http://${messagingConfig.getString(endpoint)}/$API_PREFIX/$API_VERSION$path"
 
         // @TO-DO: Replace crypto call with RPC calls once the endpoints is implemented
         MessageRouter { message ->

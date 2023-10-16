@@ -51,7 +51,7 @@ class RPCClient(
 
     private fun buildHttpRequest(message: MediatorMessage<*>): HttpRequest {
         return HttpRequest.newBuilder()
-            .uri(URI("http://${message.endpoint()}"))
+            .uri(URI(message.endpoint()))
             .PUT(HttpRequest.BodyPublishers.ofByteArray(message.payload as ByteArray))
             .build()
     }

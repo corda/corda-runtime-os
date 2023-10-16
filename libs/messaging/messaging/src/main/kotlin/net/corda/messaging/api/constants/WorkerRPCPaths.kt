@@ -11,4 +11,7 @@ object WorkerRPCPaths {
     const val PERSISTENCE_PATH = "/ledger-persistence"
     const val UNIQUENESS_PATH = "/uniqueness-checker"
     const val VERIFICATION_PATH = "/verification"
+
+    const val API_PREFIX = "api"
+    const val API_VERSION = "5.1"
 }
