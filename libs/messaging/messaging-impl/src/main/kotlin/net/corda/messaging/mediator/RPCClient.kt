@@ -6,12 +6,6 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.util.concurrent.TimeoutException
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.messaging.api.exception.CordaHTTPClientErrorException
 import net.corda.messaging.api.exception.CordaHTTPServerErrorException
@@ -35,10 +29,6 @@ class RPCClient(
             .build()
 ) : MessagingClient {
     private val httpClient: HttpClient = httpClientFactory()
-
-    private val job = Job()
-    private val scope = CoroutineScope(Dispatchers.IO + job)
-
     private val serializer = cordaAvroSerializerFactory.createAvroSerializer<Any> {}
     private val deserializer = cordaAvroSerializerFactory.createAvroDeserializer({}, Record::class.java)
 
@@ -47,22 +37,16 @@ class RPCClient(
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun send(message: MediatorMessage<*>): Deferred<MediatorMessage<*>?> {
-        val deferred = CompletableDeferred<MediatorMessage<*>?>()
-
-        scope.launch {
-            try {
-                val result = processMessage(message)
-                deferred.complete(result)
-            } catch (e: Exception) {
-                handleExceptions(e, deferred)
-            }
+    override fun send(message: MediatorMessage<*>): MediatorMessage<*>? {
+        return try {
+            processMessage(message)
+        } catch (e: Exception) {
+            handleExceptions(e)
+            null
         }
-
-        return deferred;
     }
 
-    private suspend fun processMessage(message: MediatorMessage<*>): MediatorMessage<*> {
+    private fun processMessage(message: MediatorMessage<*>): MediatorMessage<*> {
         val payload = serializePayload(message)
         val request = buildHttpRequest(payload, message.endpoint())
         val response = sendWithRetry(request)
@@ -108,7 +92,7 @@ class RPCClient(
             .build()
     }
 
-    private suspend fun sendWithRetry(request: HttpRequest): HttpResponse<ByteArray> {
+    private fun sendWithRetry(request: HttpRequest): HttpResponse<ByteArray> {
         return HTTPRetryExecutor.withConfig(retryConfig) {
             httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
         }
@@ -121,7 +105,7 @@ class RPCClient(
         }
     }
 
-    private fun handleExceptions(e: Exception, deferred: CompletableDeferred<MediatorMessage<*>?>) {
+    private fun handleExceptions(e: Exception) {
         when (e) {
             is IOException -> log.error("Network or IO operation error in RPCClient: ", e)
             is InterruptedException -> log.error("Operation was interrupted in RPCClient: ", e)
@@ -133,11 +117,11 @@ class RPCClient(
             else -> log.error("Unhandled exception in RPCClient: ", e)
         }
 
-        deferred.completeExceptionally(e)
+        throw e;
     }
 
     override fun close() {
-        job.cancel()
+        // Nothing to do here
     }
 
     private fun MediatorMessage<*>.endpoint(): String {
