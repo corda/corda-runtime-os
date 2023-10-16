@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.impl
 
+import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.mapper.FlowMapperEvent
@@ -143,8 +144,8 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         }
         log.warn(msg, exception)
 
-
-
+        var errorEvents: List<net.corda.messaging.api.records.Record<*, *>> = emptyList()
+        var cleanupEvents: List<net.corda.messaging.api.records.Record<*, *>> = emptyList()
 
         if(context.inputEventPayload is SessionEvent) {
             val inputPayload = context.inputEventPayload as SessionEvent
@@ -161,7 +162,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
                     .setReceivedEventsState(SessionProcessState(0, mutableListOf()))
                     .setSendEventsState(SessionProcessState(0, mutableListOf()))
                     .setSessionProperties(inputPayload.contextSessionProperties)
-                    .setStatus(SessionStateType.CONFIRMED)
+                    .setStatus(SessionStateType.CREATED)
                     .setHasScheduledCleanup(false)
                     .setRequireClose(inputPayload.contextSessionProperties.toMap()[Constants.FLOW_SESSION_REQUIRE_CLOSE].toBoolean())
                     .build()
@@ -189,27 +190,27 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
                     )
                 }
 
-                val errorEvents =
+                errorEvents =
                     flowSessionManager.getSessionErrorEventRecords(checkpoint, context.flowConfig, exceptionHandlingStartTime)
-                val cleanupEvents = createCleanupEventsForSessions(
+                cleanupEvents = createCleanupEventsForSessions(
                     getScheduledCleanupExpiryTime(context, exceptionHandlingStartTime),
                     checkpoint.sessions.filterNot { it.hasScheduledCleanup }
                 )
-
-                val records = createStatusRecord(checkpoint.flowId) {
-                    flowMessageFactory.createFlowFailedStatusMessage(
-                        checkpoint,
-                        FLOW_FAILED,
-                        exception.message
-                    )
-                }
-
-                context.copy(
-                    outputRecords = records + errorEvents + cleanupEvents,
-                    sendToDlq = true
-                )
             }
         }
+
+        val records = createStatusRecord(checkpoint.flowId) {
+            flowMessageFactory.createFlowFailedStatusMessage(
+                checkpoint,
+                FLOW_FAILED,
+                exception.message
+            )
+        }
+
+        context.copy(
+            outputRecords = records + errorEvents + cleanupEvents,
+            sendToDlq = true
+        )
 
         removeCachedFlowFiber(checkpoint)
         checkpoint.markDeleted()
