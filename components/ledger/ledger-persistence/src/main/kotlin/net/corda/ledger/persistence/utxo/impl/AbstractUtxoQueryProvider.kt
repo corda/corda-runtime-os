@@ -9,6 +9,13 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
         val UNVERIFIED = TransactionStatus.UNVERIFIED.value
     }
 
+    override val findTransactionIdsAndStatuses: String
+        get() = """
+            SELECT id, status 
+            FROM {h-schema}utxo_transaction 
+            WHERE id IN (:transactionIds)"""
+            .trimIndent()
+
     override val findTransactionPrivacySaltAndMetadata: String
         get() = """
             SELECT privacy_salt,
