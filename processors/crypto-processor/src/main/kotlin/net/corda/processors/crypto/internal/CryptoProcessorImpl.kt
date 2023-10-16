@@ -311,7 +311,7 @@ class CryptoProcessorImpl @Activate constructor(
     private fun startProcessors(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val cryptoConfig = event.config.getConfig(CRYPTO_CONFIG)
 
-        // crate processors
+        // create processors
         val retryingConfig = cryptoConfig.retrying()
         val flowOpsProcessor = CryptoFlowOpsRpcProcessor(
             cryptoService,
