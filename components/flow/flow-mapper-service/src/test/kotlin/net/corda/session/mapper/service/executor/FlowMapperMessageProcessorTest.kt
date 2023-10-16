@@ -145,4 +145,18 @@ class FlowMapperMessageProcessorTest {
         verify(flowMapperEventExecutorFactory, times(0)).create(any(), any(), anyOrNull(), any(), any())
         assertThat(output.updatedState).isEqualTo(state)
     }
+
+    @Test
+    fun `when input metadata is null metadata is still set`() {
+        whenever(flowMapperEventExecutor.execute()).thenReturn(FlowMapperResult(FlowMapperState().apply {
+            status = FlowMapperStateType.OPEN
+        }, listOf()))
+        val output = flowMapperMessageProcessor.onNext(
+            buildMapperState(FlowMapperStateType.OPEN),buildMapperEvent(buildSessionEvent())
+        )
+        verify(flowMapperEventExecutorFactory, times(1)).create(any(), any(), anyOrNull(), any(), any())
+        assertThat(output.updatedState?.metadata).isEqualTo(
+            Metadata(mapOf(FLOW_MAPPER_STATUS to FlowMapperStateType.OPEN.toString()))
+        )
+    }
 }

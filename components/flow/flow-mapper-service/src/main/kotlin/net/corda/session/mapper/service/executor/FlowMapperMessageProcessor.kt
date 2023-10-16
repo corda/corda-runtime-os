@@ -62,10 +62,13 @@ class FlowMapperMessageProcessor(
                 if (!isExpiredSessionEvent(value)) {
                     val executor = flowMapperEventExecutorFactory.create(key, value, state?.value, flowConfig)
                     val result = executor.execute()
+                    val newMap = result.flowMapperState?.status?.let {
+                        mapOf(FLOW_MAPPER_STATUS to it.toString())
+                    } ?: mapOf()
                     StateAndEventProcessor.Response(
                         State(result.flowMapperState, state?.metadata?.let {
-                            Metadata(it + mapOf(FLOW_MAPPER_STATUS to result.flowMapperState?.status.toString()))
-                        }),
+                            Metadata(it + newMap)
+                        } ?: Metadata(newMap)),
                         result.outputEvents
                     )
                 } else {
