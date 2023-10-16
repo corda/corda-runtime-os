@@ -15,8 +15,6 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
-import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
-import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
 import net.corda.e2etest.utilities.conditionallyUploadCpiSigningCertificate
 import net.corda.e2etest.utilities.getHoldingIdShortHash
@@ -60,7 +58,6 @@ class CryptoRPCSmokeTests {
     companion object {
         const val TEST_CPI_NAME = "ledger-utxo-demo-app"
         const val TEST_CPB_LOCATION = "/META-INF/ledger-utxo-demo-app.cpb"
-        const val NOTARY_SERVICE_X500 = "O=MyNotaryService, L=London, C=GB"
 
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -70,17 +67,10 @@ class CryptoRPCSmokeTests {
     private val flowId = UUID.randomUUID()
     private val groupId = UUID.randomUUID().toString()
     private val cpiName = "${TEST_CPI_NAME}_$testRunUniqueId"
-    private val notaryCpiName = "${TEST_NOTARY_CPI_NAME}_$testRunUniqueId"
 
     private val aliceX500 = "CN=Alice-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
-    private val bobX500 = "CN=Bob-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
-    private val charlieX500 = "CN=Charlie-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
-    private val notaryX500 = "CN=Notary-${testRunUniqueId}, OU=Application, O=R3, L=London, C=GB"
 
     private val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, groupId)
-    private val bobHoldingId: String = getHoldingIdShortHash(bobX500, groupId)
-    private val charlieHoldingId: String = getHoldingIdShortHash(charlieX500, groupId)
-    private val notaryHoldingId: String = getHoldingIdShortHash(notaryX500, groupId)
 
     private val cryptoRequestContext: CryptoRequestContext = createRequestContext()
     private val externalEventContext: ExternalEventContext = createExternalEventContext()
@@ -100,10 +90,7 @@ class CryptoRPCSmokeTests {
     }
 
     private val staticMemberList = listOf(
-        aliceX500,
-        bobX500,
-        charlieX500,
-        notaryX500
+        aliceX500
     )
 
     @BeforeAll
@@ -116,27 +103,9 @@ class CryptoRPCSmokeTests {
             groupId,
             staticMemberList
         )
-        conditionallyUploadCordaPackage(
-            notaryCpiName,
-            TEST_NOTARY_CPB_LOCATION,
-            groupId,
-            staticMemberList
-        )
-
         val aliceActualHoldingId = getOrCreateVirtualNodeFor(aliceX500, cpiName)
-        val bobActualHoldingId = getOrCreateVirtualNodeFor(bobX500, cpiName)
-        val charlieActualHoldingId = getOrCreateVirtualNodeFor(charlieX500, cpiName)
-        val notaryActualHoldingId = getOrCreateVirtualNodeFor(notaryX500, notaryCpiName)
-
         assertThat(aliceActualHoldingId).isEqualTo(aliceHoldingId)
-        assertThat(bobActualHoldingId).isEqualTo(bobHoldingId)
-        assertThat(charlieActualHoldingId).isEqualTo(charlieHoldingId)
-        assertThat(notaryActualHoldingId).isEqualTo(notaryHoldingId)
-
         registerStaticMember(aliceHoldingId)
-        registerStaticMember(bobHoldingId)
-        registerStaticMember(charlieHoldingId)
-        registerStaticMember(notaryHoldingId, NOTARY_SERVICE_X500)
     }
 
     @Test
