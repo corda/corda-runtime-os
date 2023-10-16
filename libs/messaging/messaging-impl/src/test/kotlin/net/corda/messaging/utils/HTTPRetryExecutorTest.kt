@@ -1,6 +1,5 @@
 package net.corda.messaging.utils
 
-import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -20,7 +19,7 @@ class HTTPRetryExecutorTest {
     }
 
     @Test
-    fun `successfully returns after first attempt`() = runBlocking {
+    fun `successfully returns after first attempt`() {
         val result = HTTPRetryExecutor.withConfig(retryConfig) {
             "Success"
         }
@@ -30,7 +29,7 @@ class HTTPRetryExecutorTest {
 
     @Suppress("TooGenericExceptionThrown")
     @Test
-    fun `should retry until successful`() = runBlocking {
+    fun `should retry until successful`() {
         var attempt = 0
 
         val result = HTTPRetryExecutor.withConfig(retryConfig) {
@@ -46,7 +45,7 @@ class HTTPRetryExecutorTest {
 
     @Suppress("TooGenericExceptionThrown")
     @Test
-    fun `should throw exception after max attempts`() = runBlocking {
+    fun `should throw exception after max attempts`() {
         var attempt = 0
 
         assertThrows<RuntimeException> {
@@ -59,7 +58,7 @@ class HTTPRetryExecutorTest {
 
     @Suppress("TooGenericExceptionThrown")
     @Test
-    fun `should not retry on non-retryable exception`() = runBlocking  {
+    fun `should not retry on non-retryable exception`() {
         val config = HTTPRetryConfig.Builder()
             .times(3)
             .initialDelay(100)
