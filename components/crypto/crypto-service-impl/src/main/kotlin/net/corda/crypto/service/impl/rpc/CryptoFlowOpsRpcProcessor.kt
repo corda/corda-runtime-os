@@ -6,12 +6,10 @@ import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.publicKeyIdFromBytes
-import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.impl.toMap
 import net.corda.crypto.impl.toSignatureSpec
-import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoRequestContext
 import net.corda.data.crypto.wire.CryptoResponseContext
@@ -59,7 +57,6 @@ class CryptoFlowOpsRpcProcessor(
         logger.trace { "process just started processing ${request::class.java.name}" }
 
         val clientRequestId = request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
-        val expireAt = getRequestExpireAt(request)
 
         val mdc = mapOf(
             MDC_FLOW_ID to request.flowExternalEventContext.flowId,
@@ -73,25 +70,14 @@ class CryptoFlowOpsRpcProcessor(
             logger.info("Handling ${requestPayload::class.java.name} for tenant ${request.context.tenantId}")
 
             try {
-                if (Instant.now() >= expireAt) {
-                    logger.warn(
-                        "Event ${requestPayload::class.java.name} for tenant ${request.context.tenantId} " +
-                                "is no longer valid, expired at $expireAt"
-                    )
-                    externalEventResponseFactory.transientError(
-                        request.flowExternalEventContext,
-                        ExceptionEnvelope("Expired", "Expired at $expireAt")
-                    )
-                } else {
-                    val response = executor.executeWithRetry {
-                        handleRequest(requestPayload, request.context)
-                    }
-
-                    externalEventResponseFactory.success(
-                        request.flowExternalEventContext,
-                        FlowOpsResponse(createResponseContext(request), response, null)
-                    )
+                val response = executor.executeWithRetry {
+                    handleRequest(requestPayload, request.context)
                 }
+
+                externalEventResponseFactory.success(
+                    request.flowExternalEventContext,
+                    FlowOpsResponse(createResponseContext(request), response, null)
+                )
             } catch (throwable: Throwable) {
                 logger.error(
                     "Failed to handle ${requestPayload::class.java.name} for tenant ${request.context.tenantId}",
@@ -139,15 +125,6 @@ class CryptoFlowOpsRpcProcessor(
 
             else -> throw IllegalArgumentException("Unknown request type ${request::class.java.name}")
         }
-    }
-
-    private fun getRequestExpireAt(request: FlowOpsRequest): Instant =
-        request.context.requestTimestamp.plusSeconds(getRequestValidityWindowSeconds(request))
-
-    private fun getRequestValidityWindowSeconds(request: FlowOpsRequest): Long {
-        return request.context.other.items.singleOrNull {
-            it.key == CryptoFlowOpsTransformer.REQUEST_TTL_KEY
-        }?.value?.toLong() ?: 300
     }
 
     private fun createResponseContext(request: FlowOpsRequest) = CryptoResponseContext(

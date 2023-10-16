@@ -22,7 +22,6 @@ import net.corda.crypto.service.impl.infra.ActResult
 import net.corda.crypto.service.impl.infra.ActResultTimestamps
 import net.corda.crypto.service.impl.infra.act
 import net.corda.data.ExceptionEnvelope
-import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoResponseContext
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
@@ -52,7 +51,6 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.PublicKey
@@ -427,65 +425,6 @@ import kotlin.test.assertTrue
          assertEquals(2, transformed.size)
          assertTrue(transformed.any { it.encoded.contentEquals(myPublicKeys[0].encoded) })
          assertTrue(transformed.any { it.encoded.contentEquals(myPublicKeys[1].encoded) })
-     }
-
-     @Test
-     fun `Should process list with valid event and return error for stale event`() {
-         val myPublicKeys = listOf(
-             mockPublicKey(),
-             mockPublicKey()
-         )
-         val notMyKey = mockPublicKey()
-
-         val r = doFlowOperations<ByIdsFlowQuery, CryptoSigningKeys, List<PublicKey>>(
-             myPublicKeys, listOf(
-                 { t, f ->
-                     t.createFilterMyKeys(tenantId, listOf(myPublicKeys[0], myPublicKeys[1], notMyKey), f).apply {
-                         context.other.items = context.other.items.filter {
-                             it.key != REQUEST_TTL_KEY
-                         }
-                         context.other.items.add(KeyValuePair(REQUEST_TTL_KEY, "-1"))
-                     }
-                 },
-                 { t, f -> t.createFilterMyKeys(tenantId, listOf(myPublicKeys[0], myPublicKeys[1], notMyKey), f) },
-             )
-         )
-         assertEquals(2, r.rawActResult.value?.size)
-
-         verify(externalEventResponseFactory).transientError(
-             eq(r.flowExternalEventContexts.first()),
-             any<ExceptionEnvelope>()
-         )
-
-         r.rawFlowOpsResponses.first().let { flowOpsResponse ->
-             assertInstanceOf(CryptoSigningKeys::class.java, flowOpsResponse.response)
-             val context1 = flowOpsResponse.context
-             val response1 = flowOpsResponse.response as CryptoSigningKeys
-             assertResponseContext<ByIdsFlowQuery>(r.rawActResult, context1, 123)
-             assertNotNull(response1.keys)
-             assertEquals(2, response1.keys.size)
-             assertTrue(
-                 response1.keys.any {
-                     it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[0]))
-                 }
-             )
-             assertTrue(
-                 response1.keys.any {
-                     it.publicKey.array().contentEquals(keyEncodingService.encodeAsByteArray(myPublicKeys[1]))
-                 }
-             )
-         }
-         assertEquals(1, r.capturedTenantIds.size)
-         assertEquals(tenantId, r.capturedTenantIds[0])
-         assertEquals(1, r.lookedUpSigningKeys.size)
-         val passedList = r.lookedUpSigningKeys[0]
-         assertEquals(3, passedList.size)
-         assertEquals(myPublicKeys[0].fullId(), passedList[0])
-         assertEquals(myPublicKeys[1].fullId(), passedList[1])
-         assertEquals(notMyKey.fullId(), passedList[2])
-         assertInstanceOf(List::class.java, r.transformedResponses.first())
-         assertTrue(r.transformedResponses.first().any { it.encoded.contentEquals(myPublicKeys[0].encoded) })
-         assertTrue(r.transformedResponses.first().any { it.encoded.contentEquals(myPublicKeys[1].encoded) })
      }
 
      @Suppress("UNCHECKED_CAST")
