@@ -44,6 +44,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
+@Suppress("LongParameterList")
 @Component(service = [FlowEventMediatorFactory::class])
 class FlowEventMediatorFactoryImpl @Activate constructor(
     @Reference(service = FlowEventProcessorFactory::class)
@@ -55,7 +56,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
     @Reference(service = MultiSourceEventMediatorFactory::class)
     private val eventMediatorFactory: MultiSourceEventMediatorFactory,
     @Reference(service = CordaAvroSerializationFactory::class)
-    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = PlatformInfoProvider::class)
     val platformInfoProvider: PlatformInfoProvider,
 ) : FlowEventMediatorFactory {
