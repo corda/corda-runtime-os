@@ -7,7 +7,6 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.util.concurrent.TimeoutException
 import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.data.flow.event.FlowEvent
 import net.corda.messaging.api.exception.CordaHTTPClientErrorException
 import net.corda.messaging.api.exception.CordaHTTPServerErrorException
 import net.corda.messaging.api.mediator.MediatorMessage
@@ -28,8 +27,7 @@ class RPCClient(
             .retryOn(IOException::class, TimeoutException::class)
             .build()
 ) : MessagingClient {
-    private val serializer = cordaAvroSerializerFactory.createAvroSerializer<Any> {}
-    private val deserializer = cordaAvroSerializerFactory.createAvroDeserializer({}, FlowEvent::class.java)
+    private val deserializer = cordaAvroSerializerFactory.createAvroDeserializer({}, Any::class.java)
 
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -55,7 +53,7 @@ class RPCClient(
     }
 
 
-    private fun deserializePayload(payload: ByteArray): FlowEvent {
+    private fun deserializePayload(payload: ByteArray): Any {
         return try {
             deserializer.deserialize(payload)!!
         } catch (e: Exception) {
