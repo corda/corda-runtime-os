@@ -25,7 +25,7 @@ class RPCClientTest {
     private val payload = "payload".toByteArray()
     private val message = MediatorMessage(
         payload,
-        mutableMapOf(MSG_PROP_ENDPOINT to "test-endpoint/test")
+        mutableMapOf(MSG_PROP_ENDPOINT to "http://test-endpoint/api/5.1/test")
     )
 
     data class Mocks(
