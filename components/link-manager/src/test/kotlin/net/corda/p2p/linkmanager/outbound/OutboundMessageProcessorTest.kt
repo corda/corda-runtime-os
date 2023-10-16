@@ -620,7 +620,7 @@ class OutboundMessageProcessorTest {
     }
 
     @Test
-    fun `unauthenticated messages are dropped if BadGroupPolicyException when looking up the group info`() {
+    fun `unauthenticated messages are dropped, if BadGroupPolicyException is thrown on group policy lookup`() {
         val groupPolicyProvider = mock<GroupPolicyProvider> {
             on { getP2PParameters(myIdentity) } doThrow BadGroupPolicyException("Bad Group Policy")
         }

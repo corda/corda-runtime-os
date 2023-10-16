@@ -220,7 +220,7 @@ internal class OutboundMessageProcessor(
             val p2pParams = try {
                 groupPolicyProvider.getP2PParameters(source)
             } catch (except: BadGroupPolicyException) {
-                logger.warn("The group policy data is unavailable or cannot be parsed for $source. Error ${except.message}. The message" +
+                logger.warn("The group policy data is unavailable or cannot be parsed for $source. Error: ${except.message}. The message" +
                     " ${message.header.messageId} was discarded.")
                 return emptyList()
             }

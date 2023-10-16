@@ -211,7 +211,7 @@ class InMemorySessionReplayerTest {
     }
 
     @Test
-    fun `The replaySchedular callback logs a warning when BadGroupPolicyException when querying the group policy provider for us`() {
+    fun `The replaySchedular callback logs a warning, if BadGroupPolicyException is thrown on group policy lookup`() {
         val groups = mock<GroupPolicyProvider> {
             on {getP2PParameters(any()) } doThrow BadGroupPolicyException("Bad group policy.")
         }

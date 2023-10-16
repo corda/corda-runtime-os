@@ -158,7 +158,6 @@ class MGMGroupPolicyImplTest {
             verify(propertyQuery).invoke()
             val protocolParameters = groupPolicy.protocolParameters
 
-            verify(propertyQuery).invoke()
             assertSoftly {
                 it.assertThat(protocolParameters.sessionKeyPolicy).isEqualTo(DISTINCT)
                 it.assertThat(p2pParameters.sessionPki).isEqualTo(SessionPkiMode.STANDARD_EV3)
@@ -211,7 +210,6 @@ class MGMGroupPolicyImplTest {
 
             val p2pParameters = groupPolicy.p2pParameters
 
-            verify(propertyQuery).invoke()
             assertSoftly {
                 it.assertThat(protocolParameters.sessionKeyPolicy).isEqualTo(DISTINCT)
                 it.assertThat(p2pParameters.sessionPki).isEqualTo(SessionPkiMode.STANDARD_EV3)

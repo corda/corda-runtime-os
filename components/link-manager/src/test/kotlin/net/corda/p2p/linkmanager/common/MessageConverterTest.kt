@@ -178,7 +178,7 @@ class MessageConverterTest {
     }
 
     @Test
-    fun `linkOutMessageFromAuthenticatedMessageAndKey returns null if BadGroupPolicy when look up the group policy provider for our id`() {
+    fun `linkOutMessageFromAuthenticatedMessageAndKey returns null, if BadGroupPolicy exception is thrown on group policy look up`() {
         val mac = mock<AuthenticationResult> {
             on { header } doReturn mockHeader
             on { mac } doReturn byteArrayOf()

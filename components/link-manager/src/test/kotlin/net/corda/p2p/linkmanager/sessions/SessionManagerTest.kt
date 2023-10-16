@@ -512,7 +512,7 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `when no session exists, if bad group policy exception when looking up the group policy no message is sent`() {
+    fun `when no session exists, if BadGroupPolicyException is thrown on group policy lookup, no message is sent`() {
         whenever(outboundSessionPool.constructed().first().getNextSession(counterparties))
             .thenReturn(OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded)
         val initiatorHello = mock<InitiatorHelloMessage>()
@@ -529,7 +529,7 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `when no session exists, if BadGroupPolicyException on second lookup no message is sent`() {
+    fun `when no session exists, if BadGroupPolicyException is thrown on group policy lookup again, no message is sent`() {
         whenever(outboundSessionPool.constructed().first().getNextSession(counterparties))
             .thenReturn(OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded)
         whenever(groupPolicyProvider.getP2PParameters(OUR_PARTY))
@@ -724,7 +724,7 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `when an initiator hello is received, but BadGroupPolicyException is thrown by group policy provider, then message is dropped`() {
+    fun `when an initiator hello is received, if BadGroupPolicyException is thrown on group policy lookup, then the message is dropped`() {
         val initiatorKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
         val sessionId = "some-session-id"
         val responderHello = mock<ResponderHelloMessage>()
@@ -898,7 +898,7 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `when responder hello is received, but BadGroupPolicyException is thrown by group policy provider, message is dropped`() {
+    fun `when responder hello is received, if BadGroupPolicyException is thrown on group policy lookup, message is dropped`() {
         val sessionId = "some-session"
         whenever(outboundSessionPool.constructed().first().getSession(sessionId)).thenReturn(
             OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
@@ -1279,7 +1279,7 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `when initiator handshake is received, but BadGroupPolicyException is thrown by group policy provider, the message is dropped`() {
+    fun `when initiator handshake is received, if BadGroupPolicyException is thrown on group policy lookup, the message is dropped`() {
         val sessionId = "some-session-id"
         val initiatorPublicKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
         val responderPublicKeyHash = messageDigest.hash(OUR_KEY.public.encoded)
@@ -2169,7 +2169,7 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `sessions are removed even if BadGroupPolicyException groupInfo is missing`() {
+    fun `sessions are removed even if BadGroupPolicyException is thrown on group policy lookup`() {
         whenever(outboundSessionPool.constructed().first().getSession(protocolInitiator.sessionId)).thenReturn(
             OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
         )
