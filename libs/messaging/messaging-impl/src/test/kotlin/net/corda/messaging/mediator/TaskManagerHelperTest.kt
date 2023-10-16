@@ -1,5 +1,6 @@
 package net.corda.messaging.mediator
 
+import io.micrometer.core.instrument.Timer
 import net.corda.libs.statemanager.api.State
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.mediator.MediatorMessage
@@ -7,6 +8,7 @@ import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_KEY
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.mediator.metrics.EventMediatorMetrics
 import net.corda.taskmanager.TaskManager
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -18,6 +20,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.concurrent.Callable
 import java.util.concurrent.CompletableFuture
 
 class TaskManagerHelperTest {
@@ -31,7 +34,8 @@ class TaskManagerHelperTest {
 
     private val taskManager = mock<TaskManager>()
     private val stateManagerHelper = mock<StateManagerHelper<String, String, String>>()
-    private val taskManagerHelper = TaskManagerHelper(taskManager, stateManagerHelper)
+    private val eventMediatorMetrics = mock<EventMediatorMetrics>()
+    private val taskManagerHelper = TaskManagerHelper(taskManager, stateManagerHelper, eventMediatorMetrics)
     private val messageProcessor = mock<StateAndEventProcessor<String, String, String>>()
 
     @Test
@@ -167,7 +171,13 @@ class TaskManagerHelperTest {
         val processorTask1 = mock<ProcessorTask<String, String, String>>()
         val processorTask2 = mock<ProcessorTask<String, String, String>>()
 
-        `when`(taskManager.executeShortRunningTask(any<() -> ProcessorTask.Result<String, String, String>>())).thenReturn(mock())
+        `when`(taskManager.executeShortRunningTask(any<() -> ProcessorTask.Result<String, String, String>>()))
+            .thenReturn(mock())
+        val timer = mock<Timer>()
+        whenever(timer.recordCallable(any<Callable<Any>>())).thenAnswer { invocation ->
+            invocation.getArgument<Callable<Any>>(0).call()
+        }
+        whenever(eventMediatorMetrics.processorTimer).thenReturn(timer)
 
         taskManagerHelper.executeProcessorTasks(
             listOf(processorTask1, processorTask2)
@@ -248,7 +258,10 @@ class TaskManagerHelperTest {
             mapOf("1" to listOf(clientTask1), "2" to listOf(clientTask2))
         )
         assertThat(results).containsOnly(result1, result2)
-        verify(taskManager, times(2)).executeShortRunningTask(any<() -> List<ClientTask.Result<String, String, String>>>())
+        verify(
+            taskManager,
+            times(2)
+        ).executeShortRunningTask(any<() -> List<ClientTask.Result<String, String, String>>>())
     }
 
     private fun List<String>.toCordaConsumerRecords(key: String) =
