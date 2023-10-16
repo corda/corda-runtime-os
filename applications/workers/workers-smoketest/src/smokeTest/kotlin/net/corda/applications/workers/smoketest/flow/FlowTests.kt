@@ -45,7 +45,6 @@ import kotlin.text.Typography.quote
 // solution to this is a larger effort to have components listen to their messaging pattern lifecycle status and for them to go DOWN when
 // their patterns are DOWN - CORE-8015
 @Order(999)
-@TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 @TestInstance(Lifecycle.PER_CLASS)
 class FlowTests {
 
