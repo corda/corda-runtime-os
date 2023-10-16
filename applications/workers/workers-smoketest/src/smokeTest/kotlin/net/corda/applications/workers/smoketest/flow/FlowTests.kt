@@ -29,7 +29,6 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertAll
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -160,7 +159,6 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
     fun `start RPC flow`() {
         val requestBody = RpcSmokeTestInput().apply {
             command = "echo"
@@ -178,7 +176,6 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
     fun `Init Session - initiate two sessions`() {
 
         val requestBody = RpcSmokeTestInput().apply {
@@ -202,7 +199,6 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
     fun `Persistence - persist a single entity`() {
         val id = UUID.randomUUID()
         val flowResult = persistDog(id)
@@ -210,7 +206,6 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
     fun `Persistence - persist multiple entities`() {
         val id = UUID.randomUUID()
         val id2 = UUID.randomUUID()
@@ -229,7 +224,6 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
     fun `Persistence - merge a single entity`() {
         val id = UUID.randomUUID()
         persistDog(id)
@@ -238,7 +232,6 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
     fun `Persistence - merge multiple entities`() {
         val id = UUID.randomUUID()
         val id2 = UUID.randomUUID()
@@ -263,7 +256,6 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
     fun `Persistence - find a single entity`() {
         val id = UUID.randomUUID()
         val name = "new name"
@@ -286,7 +278,6 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
     fun `Persistence - find multiple entities`() {
         val id = UUID.randomUUID()
         val id2 = UUID.randomUUID()
@@ -311,7 +302,6 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
     fun `Persistence - find all entities`() {
         persistDog(UUID.randomUUID())
 
@@ -328,7 +318,6 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
     fun `Persistence - delete a single entity`() {
         val id = UUID.randomUUID()
 
@@ -350,7 +339,6 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
     fun `Persistence - delete multiple entities`() {
         val id = UUID.randomUUID()
         val id2 = UUID.randomUUID()
@@ -372,7 +360,6 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
     fun `CPI metadata is available in a flow`() {
         val requestBody = RpcSmokeTestInput().apply {
             command = "get_cpi_metadata"
@@ -425,7 +412,6 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
     fun `Crypto - Sign and verify bytes`() {
         val requestBody = RpcSmokeTestInput().apply {
             command = "crypto_sign_and_verify"
@@ -444,7 +430,6 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
     fun `Crypto - Verify invalid signature`() {
         val requestBody = RpcSmokeTestInput().apply {
             command = "crypto_verify_invalid_signature"
@@ -463,7 +448,6 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
     fun `Crypto - Get default signature spec`() {
         // Call get default signature spec api with public key and digest algorithm name
         val requestBody = RpcSmokeTestInput()
@@ -495,7 +479,6 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
     fun `Crypto - Get compatible signature specs`() {
         // Call get compatible signature specs api with public key only
         val requestBody = RpcSmokeTestInput()
@@ -534,7 +517,6 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
     fun `Crypto - Signing service finds my signing keys`() {
         val requestBody = RpcSmokeTestInput()
         requestBody.command = "crypto_find_my_signing_keys"
@@ -547,7 +529,6 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
     fun `Crypto - CompositeKeyGenerator works in flows`() {
         val requestBody = RpcSmokeTestInput()
         requestBody.command = "crypto_CompositeKeyGenerator_works_in_flows"
@@ -560,7 +541,6 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
     fun `Crypto - Get default digest algorithm`() {
         val requestBody = RpcSmokeTestInput()
         requestBody.command = "crypto_get_default_digest_algorithm"
@@ -573,7 +553,6 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
     fun `Crypto - Get supported digest algorithms`() {
         val requestBody = RpcSmokeTestInput()
         requestBody.command = "crypto_get_supported_digest_algorithms"
@@ -586,7 +565,6 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
     fun `Notary - Non-validating plugin executes successfully when using issuance transaction`() {
         issueStatesAndValidateResult(3) { issuanceResult ->
             // 1. Make sure the states were issued
@@ -605,7 +583,6 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
     fun `Notary - Non-validating plugin returns error when time window invalid`() {
         issueStatesAndValidateResult(
             3,
@@ -621,7 +598,6 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
     fun `Notary - Non-validating plugin executes successfully and returns signatures when consuming a valid transaction`() {
         // 1. Issue 1 state
         val issuedStates = mutableListOf<String>()
@@ -669,7 +645,6 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
     fun `Notary - Non-validating plugin returns error on double spend`() {
         // 1. Issue 1 state
         val issuedStates = mutableListOf<String>()
@@ -718,7 +693,6 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
     fun `Notary - Non-validating plugin returns error when trying to spend unknown reference state`() {
         // Random unknown StateRef
         val unknownStateRef = "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0"
@@ -763,7 +737,6 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
     fun `Notary - Non-validating plugin returns error when using the same state for input and ref`() {
         // 1. Issue 1 state
         val issuedStates = mutableListOf<String>()
@@ -807,7 +780,6 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
     fun `Notary - Non-validating plugin returns error when trying to spend unknown input state`() {
         // Random unknown StateRef
         val unknownStateRef = "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0"
@@ -831,7 +803,6 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
     fun `Notary - Non-validating plugin returns error when referencing spent state`() {
         // 1. Issue 2 states
         val issuedStates = mutableListOf<String>()
@@ -931,7 +902,6 @@ class FlowTests {
     }
 
     @Test
-    @Disabled
     fun `Json serialisation`() {
         val requestBody = RpcSmokeTestInput().apply {
             command = "json_serialization"

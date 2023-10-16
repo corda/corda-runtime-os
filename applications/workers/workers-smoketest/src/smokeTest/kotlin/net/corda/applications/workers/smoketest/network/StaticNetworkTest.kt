@@ -10,11 +10,9 @@ import net.corda.e2etest.utilities.conditionallyUploadCpiSigningCertificate
 import net.corda.e2etest.utilities.containsExactlyInAnyOrderActiveMembers
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
 import net.corda.e2etest.utilities.registerStaticMember
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.util.*
 
-@Disabled
 class StaticNetworkTest {
 
     private val testRunUniqueId = UUID.randomUUID()

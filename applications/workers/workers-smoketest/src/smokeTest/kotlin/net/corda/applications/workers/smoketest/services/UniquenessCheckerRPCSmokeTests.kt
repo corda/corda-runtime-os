@@ -24,7 +24,6 @@ import net.corda.uniqueness.utils.UniquenessAssertions
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.slf4j.LoggerFactory
@@ -44,7 +43,6 @@ import kotlin.random.Random
  * Tests for the UniquenessChecker RPC service
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@Disabled
 class UniquenessCheckerRPCSmokeTests {
     private val httpClient: HttpClient = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(30))
