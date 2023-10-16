@@ -16,6 +16,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.messaging.api.constants.WorkerRPCPaths.CRYPTO_PATH
 import net.corda.messaging.api.constants.WorkerRPCPaths.LEDGER_PATH
 import net.corda.messaging.api.constants.WorkerRPCPaths.PERSISTENCE_PATH
 import net.corda.messaging.api.constants.WorkerRPCPaths.UNIQUENESS_PATH
@@ -29,11 +30,11 @@ import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.mediator.factory.MessagingClientFactoryFactory
 import net.corda.messaging.api.mediator.factory.MultiSourceEventMediatorFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
-import net.corda.schema.Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
 import net.corda.schema.Schemas.Services.TOKEN_CACHE_EVENT
+import net.corda.schema.configuration.BootConfig.CRYPTO_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.PERSISTENCE_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.UNIQUENESS_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.VERIFICATION_WORKER_REST_ENDPOINT
@@ -116,13 +117,11 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
             return "http://${messagingConfig.getString(endpoint)}/api/${platformVersion}$path"
         }
 
-        // @TO-DO: Replace crypto call with RPC calls once the endpoints is implemented
         MessageRouter { message ->
             when (val event = message.event()) {
                 is EntityRequest -> routeTo(rpcClient, rpcEndpoint(PERSISTENCE_WORKER_REST_ENDPOINT, PERSISTENCE_PATH))
                 is FlowMapperEvent -> routeTo(messageBusClient, FLOW_MAPPER_EVENT_TOPIC)
-                is FlowOpsRequest -> routeTo(messageBusClient, FLOW_OPS_MESSAGE_TOPIC)
-                // is FlowOpsRequest -> routeTo(rpcClient, rpcEndpoint(CRYPTO_WORKER_REST_ENDPOINT, CRYPTO_PATH))
+                is FlowOpsRequest -> routeTo(rpcClient, rpcEndpoint(CRYPTO_WORKER_REST_ENDPOINT, CRYPTO_PATH))
                 is FlowStatus -> routeTo(messageBusClient, FLOW_STATUS_TOPIC)
                 is LedgerPersistenceRequest -> routeTo(rpcClient, rpcEndpoint(PERSISTENCE_WORKER_REST_ENDPOINT, LEDGER_PATH))
                 is TokenPoolCacheEvent -> routeTo(messageBusClient, TOKEN_CACHE_EVENT)
