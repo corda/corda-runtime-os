@@ -197,7 +197,6 @@ class CryptoRPCSmokeTests {
         )
     )
 
-    // TODO: Move all methods below to a CryptoAssertions utility class
     private fun assertResponseContext(expected: CryptoRequestContext, actual: CryptoResponseContext) {
         val now = Instant.now()
         assertEquals(expected.tenantId, actual.tenantId)
