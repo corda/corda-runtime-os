@@ -24,10 +24,11 @@ import net.corda.messagebus.kafka.serialization.CordaAvroSerializationFactoryImp
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.test.util.time.AutoTickTestClock
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.slf4j.LoggerFactory
@@ -72,8 +73,8 @@ class CryptoRPCSmokeTests {
 
     private val aliceHoldingId: String = getHoldingIdShortHash(aliceX500, groupId)
 
-    private val cryptoRequestContext: CryptoRequestContext = createRequestContext()
     private val externalEventContext: ExternalEventContext = createExternalEventContext()
+    private lateinit var cryptoRequestContext: CryptoRequestContext
 
     private fun createExternalEventContext(): ExternalEventContext {
         val simpleContext = KeyValuePairList(
@@ -108,6 +109,11 @@ class CryptoRPCSmokeTests {
         registerStaticMember(aliceHoldingId)
     }
 
+    @BeforeEach
+    fun setup() {
+        cryptoRequestContext = createRequestContext()
+    }
+
     @Test
     fun `RPC endpoint accepts a request and returns back a response`() {
         val url = "${System.getProperty("cryptoWorkerUrl")}api/$PLATFORM_VERSION/crypto"
@@ -136,15 +142,62 @@ class CryptoRPCSmokeTests {
         assertResponseContext(cryptoRequestContext, deserializedExternalEventResponse.context)
     }
 
+    @Test
+    fun `RPC endpoint accepts a request and returns back an error response with 200 status`() {
+        val url = "${System.getProperty("cryptoWorkerUrl")}api/$PLATFORM_VERSION/crypto"
+
+        logger.info("crypto url: $url")
+        val serializedPayload = avroSerializer.serialize(generateByIdsFlowOpsRequest(returnError = true))
+
+        val request = HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .headers("Content-Type", "application/octet-stream")
+            .POST(HttpRequest.BodyPublishers.ofByteArray(serializedPayload))
+            .build()
+        val response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
+
+        assertThat(response.statusCode()).isEqualTo(200).withFailMessage("status code on response: ${response.statusCode()} url: $url")
+
+        val responseBody: ByteArray = response.body()
+        val responseEvent = avroFlowEventDeserializer.deserialize(responseBody)
+
+        assertThat(responseEvent).isNotNull
+
+        val externalEventResponse = responseEvent?.payload as ExternalEventResponse
+        assertThat(externalEventResponse.payload).isNull()
+        assertThat(externalEventResponse.error).isNotNull()
+    }
+
+    @Test
+    fun `RPC endpoint does not accept request and returns back a 500 error`() {
+        val url = "${System.getProperty("cryptoWorkerUrl")}api/$PLATFORM_VERSION/crypto"
+
+        logger.info("crypto url: $url")
+        val serializedPayload = avroSerializer.serialize(generateByIdsFlowOpsRequest())
+
+        val request = HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .headers("Content-Type", "application/octet-stream")
+            .PUT(HttpRequest.BodyPublishers.ofByteArray(serializedPayload))
+            .build()
+        val response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
+
+        assertThat(response.statusCode()).isEqualTo(404).withFailMessage("status code on response: ${response.statusCode()} url: $url")
+    }
+
     private val testClock = AutoTickTestClock(Instant.MAX, Duration.ofSeconds(1))
 
     /**
      * Generate simple request to lookup for keys by their full key ids.
      * Lookup will return no items in the response.
      */
-    private fun generateByIdsFlowOpsRequest() : FlowOpsRequest {
+    private fun generateByIdsFlowOpsRequest(returnError: Boolean = false) : FlowOpsRequest {
         val secureHash = SecureHashImpl("algorithm", "12345678".toByteArray()).toAvro()
         val generateByIdsRequest = ByIdsFlowQuery(SecureHashes(listOf(secureHash)))
+
+        if (returnError) {
+            cryptoRequestContext.tenantId = UUID.randomUUID().toString()
+        }
 
         return FlowOpsRequest.newBuilder()
             .setContext(cryptoRequestContext)
@@ -175,11 +228,11 @@ class CryptoRPCSmokeTests {
         assertThat(actual.responseTimestamp.epochSecond)
             .isGreaterThanOrEqualTo(expected.requestTimestamp.epochSecond)
             .isLessThanOrEqualTo(now.epochSecond)
-        assertTrue(
-            actual.other.items.size == expected.other.items.size &&
-                    actual.other.items.containsAll(expected.other.items) &&
-                    expected.other.items.containsAll(actual.other.items)
-        )
+        assertSoftly { softly ->
+            softly.assertThat(actual.other.items.size == expected.other.items.size)
+            softly.assertThat(actual.other.items.containsAll(expected.other.items))
+            softly.assertThat(expected.other.items.containsAll(actual.other.items))
+        }
     }
 
     private fun assertStandardSuccessResponse(
