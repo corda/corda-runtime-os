@@ -1,7 +1,6 @@
 package net.corda.messaging.mediator
 
 import java.io.IOException
-import kotlinx.coroutines.runBlocking
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
@@ -101,14 +100,12 @@ class RPCClientTest {
 
     @Test
     fun `send() processes message and returns result`() {
-        runBlocking {
-            val result = client.send(message).await()
-            assertNotNull(result?.payload)
-            assertEquals(
-                Record("topic", "key", "responsePayload"),
-                result!!.payload
-            )
-        }
+        val result = client.send(message)
+        assertNotNull(result?.payload)
+        assertEquals(
+            Record("topic", "key", "responsePayload"),
+            result!!.payload
+        )
     }
 
     @Test
@@ -118,10 +115,8 @@ class RPCClientTest {
 
         val client = createClient(environment.mocks)
 
-        runBlocking {
-            assertThrows<CordaHTTPClientErrorException> {
-                client.send(message).await()
-            }
+        assertThrows<CordaHTTPClientErrorException> {
+            client.send(message)
         }
     }
 
@@ -132,10 +127,8 @@ class RPCClientTest {
 
         val client = createClient(environment.mocks)
 
-        runBlocking  {
-            assertThrows<CordaHTTPServerErrorException> {
-                client.send(message).await()
-            }
+        assertThrows<CordaHTTPServerErrorException> {
+            client.send(message)
         }
     }
 
@@ -150,13 +143,11 @@ class RPCClientTest {
 
         val client = createClient(environment.mocks, onSerializationError)
 
-        runBlocking {
-            assertThrows<IllegalArgumentException> {
-                client.send(message).await()
-            }
-
-            verify(onSerializationError).invoke(any())
+        assertThrows<IllegalArgumentException> {
+            client.send(message)
         }
+
+        verify(onSerializationError).invoke(any())
     }
 
     @Test
@@ -170,13 +161,11 @@ class RPCClientTest {
 
         val client = createClient(environment.mocks, onSerializationError)
 
-        runBlocking {
-            assertThrows<IllegalArgumentException> {
-                client.send(message).await()
-            }
-
-            verify(onSerializationError).invoke(any())
+        assertThrows<IllegalArgumentException> {
+            client.send(message)
         }
+
+        verify(onSerializationError).invoke(any())
     }
 
     @Test
@@ -190,13 +179,11 @@ class RPCClientTest {
 
         val client = createClient(environment.mocks)
 
-        runBlocking {
-            val result = client.send(message).await()
-            assertEquals(
-                Record("topic", "key", "responsePayload"),
-                result!!.payload
-            )
-        }
+        val result = client.send(message)
+        assertEquals(
+            Record("topic", "key", "responsePayload"),
+            result!!.payload
+        )
     }
 
     @Test
@@ -208,11 +195,8 @@ class RPCClientTest {
 
         val client = createClient(environment.mocks)
 
-        runBlocking {
-            val deferred = client.send(message)
-            assertThrows<IOException> {
-                deferred.await()
-            }
+        assertThrows<IOException> {
+            client.send(message)
         }
     }
 
@@ -225,14 +209,11 @@ class RPCClientTest {
 
         val client = createClient(environment.mocks)
 
-        runBlocking {
-            val deferred = client.send(message)
-            assertThrows<IOException> {
-                deferred.await()
-            }
-
-            verify(environment.mockHttpClient, times(3))
-                .send(any<HttpRequest>(), any<HttpResponse.BodyHandler<*>>())
+        assertThrows<IOException> {
+            client.send(message)
         }
+
+        verify(environment.mockHttpClient, times(3))
+            .send(any<HttpRequest>(), any<HttpResponse.BodyHandler<*>>())
     }
 }

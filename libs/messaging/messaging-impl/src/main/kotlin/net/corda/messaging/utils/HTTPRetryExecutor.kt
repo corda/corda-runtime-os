@@ -1,6 +1,5 @@
 package net.corda.messaging.utils
 
-import kotlinx.coroutines.delay
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -8,14 +7,13 @@ class HTTPRetryExecutor {
     companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
-        suspend fun <T> withConfig(config: HTTPRetryConfig, block: suspend () -> T): T {
+        fun <T> withConfig(config: HTTPRetryConfig, block: () -> T): T {
             var currentDelay = config.initialDelay
-            repeat(config.times - 1) {
+            for (i in 0 until config.times - 1) {
                 try {
-                    log.info("HTTPRetryExecutor making attempt #${it + 1}.")
+                    log.info("HTTPRetryExecutor making attempt #${i + 1}.")
                     val result = block()
-
-                    log.info("Operation successful after #${it + 1} attempt/s.")
+                    log.info("Operation successful after #${i + 1} attempt/s.")
                     return result
                 } catch (e: Exception) {
                     if (config.retryOn.none { it.isInstance(e) }) {
@@ -23,8 +21,8 @@ class HTTPRetryExecutor {
                         throw e
                     }
 
-                    log.warn("Attempt #${it + 1} failed due to ${e.message}. Retrying in $currentDelay ms...")
-                    delay(currentDelay)
+                    log.warn("Attempt #${i + 1} failed due to ${e.message}. Retrying in $currentDelay ms...")
+                    Thread.sleep(currentDelay)
                     currentDelay = (currentDelay * config.factor).toLong()
                 }
             }
