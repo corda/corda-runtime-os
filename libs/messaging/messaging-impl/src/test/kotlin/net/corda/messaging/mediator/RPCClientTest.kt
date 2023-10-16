@@ -58,12 +58,11 @@ class RPCClientTest {
 
 
     private fun createClient(
-        mocks: Mocks,
-        httpClientFactory: () -> HttpClient = { mocks.httpClient }
+        mocks: Mocks
     ): RPCClient {
         return RPCClient(
             "TestRPCClient1",
-            httpClientFactory
+            mocks.httpClient
         )
     }
 
