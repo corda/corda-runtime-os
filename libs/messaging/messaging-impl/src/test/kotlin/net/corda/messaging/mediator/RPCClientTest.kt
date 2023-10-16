@@ -4,22 +4,17 @@ import java.io.IOException
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-import net.corda.avro.serialization.CordaAvroDeserializer
-import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.messaging.api.exception.CordaHTTPClientErrorException
 import net.corda.messaging.api.exception.CordaHTTPServerErrorException
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_ENDPOINT
-import net.corda.messaging.api.records.Record
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.times
 import org.mockito.kotlin.any
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -27,31 +22,22 @@ import org.mockito.kotlin.whenever
 class RPCClientTest {
 
     private lateinit var client: RPCClient
+    private val payload = "payload".toByteArray()
     private val message = MediatorMessage(
-        Record("topic", "key", "testPayload"),
+        payload,
         mutableMapOf(MSG_PROP_ENDPOINT to "test-endpoint/test")
     )
 
     data class Mocks(
-        val serializer: CordaAvroSerializer<Any>,
-        val deserializer: CordaAvroDeserializer<Record<*,*>>,
         val httpClient: HttpClient,
         val httpResponse: HttpResponse<ByteArray>
     )
 
     private inner class MockEnvironment(
-        val mockSerializer: CordaAvroSerializer<Any> = mock(),
-        val mockDeserializer: CordaAvroDeserializer<Record<*,*>> = mock(),
         val mockHttpClient: HttpClient = mock(),
         val mockHttpResponse: HttpResponse<ByteArray> = mock()
     ) {
         init {
-            whenever(mockSerializer.serialize(any<Record<*,*>>()))
-                .thenReturn("testPayload".toByteArray())
-
-            whenever(mockDeserializer.deserialize(any<ByteArray>()))
-                .thenReturn(Record("topic", "key", "responsePayload"))
-
             whenever(mockHttpResponse.statusCode())
                 .thenReturn(200)
 
@@ -67,27 +53,16 @@ class RPCClientTest {
         }
 
         val mocks: Mocks
-            get() = Mocks(mockSerializer, mockDeserializer, mockHttpClient, mockHttpResponse)
+            get() = Mocks(mockHttpClient, mockHttpResponse)
     }
 
 
     private fun createClient(
         mocks: Mocks,
-        onSerializationError: (ByteArray) -> Unit = mock(),
         httpClientFactory: () -> HttpClient = { mocks.httpClient }
     ): RPCClient {
-        val mockSerializationFactory: CordaAvroSerializationFactory = mock()
-
-        whenever(mockSerializationFactory.createAvroSerializer<Any>(any()))
-            .thenReturn(mocks.serializer)
-
-        whenever(mockSerializationFactory.createAvroDeserializer(any(), eq(Record::class.java)))
-            .thenReturn(mocks.deserializer)
-
         return RPCClient(
             "TestRPCClient1",
-            mockSerializationFactory,
-            onSerializationError,
             httpClientFactory
         )
     }
@@ -102,9 +77,9 @@ class RPCClientTest {
     fun `send() processes message and returns result`() {
         val result = client.send(message)
         assertNotNull(result?.payload)
-        assertEquals(
-            Record("topic", "key", "responsePayload"),
-            result!!.payload
+        assertTrue("responsePayload"
+            .toByteArray()
+            .contentEquals(result!!.payload as ByteArray)
         )
     }
 
@@ -133,42 +108,6 @@ class RPCClientTest {
     }
 
     @Test
-    fun `send() handles serialization error`() {
-        val onSerializationError: (ByteArray) -> Unit = mock()
-
-        val environment = MockEnvironment().apply {
-            whenever(mockSerializer.serialize(any<Record<*,*>>()))
-                .thenThrow(IllegalArgumentException("Serialization error"))
-        }
-
-        val client = createClient(environment.mocks, onSerializationError)
-
-        assertThrows<IllegalArgumentException> {
-            client.send(message)
-        }
-
-        verify(onSerializationError).invoke(any())
-    }
-
-    @Test
-    fun `send() handles deserialization error`() {
-        val onSerializationError: (ByteArray) -> Unit = mock()
-
-        val environment = MockEnvironment().apply {
-            whenever(mockSerializer.serialize(any<Record<*,*>>()))
-                .thenThrow(IllegalArgumentException("Deserialization error"))
-        }
-
-        val client = createClient(environment.mocks, onSerializationError)
-
-        assertThrows<IllegalArgumentException> {
-            client.send(message)
-        }
-
-        verify(onSerializationError).invoke(any())
-    }
-
-    @Test
     fun `send retries on IOException and eventually succeeds`() {
         val environment = MockEnvironment().apply {
             whenever(mockHttpClient.send(any(), any<HttpResponse.BodyHandler<*>>()))
@@ -178,11 +117,12 @@ class RPCClientTest {
         }
 
         val client = createClient(environment.mocks)
-
         val result = client.send(message)
-        assertEquals(
-            Record("topic", "key", "responsePayload"),
-            result!!.payload
+
+        assertNotNull(result?.payload)
+        assertTrue("responsePayload"
+            .toByteArray()
+            .contentEquals(result!!.payload as ByteArray)
         )
     }
 
