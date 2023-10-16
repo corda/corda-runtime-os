@@ -36,14 +36,14 @@ class RPCClientTest {
 
     data class Mocks(
         val serializer: CordaAvroSerializer<Any>,
-        val deserializer: CordaAvroDeserializer<FlowEvent>,
+        val deserializer: CordaAvroDeserializer<Any>,
         val httpClient: HttpClient,
         val httpResponse: HttpResponse<ByteArray>
     )
 
     private inner class MockEnvironment(
         val mockSerializer: CordaAvroSerializer<Any> = mock(),
-        val mockDeserializer: CordaAvroDeserializer<FlowEvent> = mock(),
+        val mockDeserializer: CordaAvroDeserializer<Any> = mock(),
         val mockHttpClient: HttpClient = mock(),
         val mockHttpResponse: HttpResponse<ByteArray> = mock()
     ) {
@@ -51,7 +51,7 @@ class RPCClientTest {
             whenever(mockSerializer.serialize(any<Record<*,*>>()))
                 .thenReturn("testPayload".toByteArray())
 
-            whenever(mockDeserializer.deserialize(any<ByteArray>()))
+            whenever(mockDeserializer.deserialize(any()))
                 .thenReturn(FlowEvent())
 
             whenever(mockHttpResponse.statusCode())
@@ -82,7 +82,7 @@ class RPCClientTest {
         whenever(mockSerializationFactory.createAvroSerializer<Any>(any()))
             .thenReturn(mocks.serializer)
 
-        whenever(mockSerializationFactory.createAvroDeserializer(any(), eq(FlowEvent::class.java)))
+        whenever(mockSerializationFactory.createAvroDeserializer(any(), eq(Any::class.java)))
             .thenReturn(mocks.deserializer)
 
         return RPCClient(
