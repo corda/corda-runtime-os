@@ -6,13 +6,11 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.util.concurrent.TimeoutException
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.messaging.api.exception.CordaHTTPClientErrorException
 import net.corda.messaging.api.exception.CordaHTTPServerErrorException
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_ENDPOINT
-import net.corda.messaging.api.records.Record
 import net.corda.messaging.utils.HTTPRetryConfig
 import net.corda.messaging.utils.HTTPRetryExecutor
 import org.slf4j.Logger
@@ -20,8 +18,6 @@ import org.slf4j.LoggerFactory
 
 class RPCClient(
     override val id: String,
-    cordaAvroSerializerFactory: CordaAvroSerializationFactory,
-    private val onSerializationError: ((ByteArray) -> Unit)?,
     httpClientFactory: () -> HttpClient = { HttpClient.newBuilder().build() },
     private val retryConfig: HTTPRetryConfig =
         HTTPRetryConfig.Builder()
@@ -29,9 +25,6 @@ class RPCClient(
             .build()
 ) : MessagingClient {
     private val httpClient: HttpClient = httpClientFactory()
-    private val serializer = cordaAvroSerializerFactory.createAvroSerializer<Any> {}
-    private val deserializer = cordaAvroSerializerFactory.createAvroDeserializer({}, Record::class.java)
-
 
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -47,48 +40,19 @@ class RPCClient(
     }
 
     private fun processMessage(message: MediatorMessage<*>): MediatorMessage<*> {
-        val payload = serializePayload(message)
-        val request = buildHttpRequest(payload, message.endpoint())
+        val request = buildHttpRequest(message)
         val response = sendWithRetry(request)
 
         checkResponseStatus(response.statusCode())
 
-        val deserializedResponse = deserializePayload(response.body())
-        return MediatorMessage(deserializedResponse, mutableMapOf("statusCode" to response.statusCode()))
+        return MediatorMessage(response.body(), mutableMapOf("statusCode" to response.statusCode()))
     }
 
-    private fun serializePayload(message: MediatorMessage<*>): ByteArray {
-        val payload = message.payload
 
-        if (payload is ByteArray) return payload
-
-         try {
-             return serializer.serialize(message.payload as Record<*, *>)!!
-        } catch (e: Exception) {
-            val errorMsg = "Failed to serialize instance of class type ${
-                message.payload?.let { it::class.java.name } ?: "null"
-            }."
-            log.error(errorMsg)
-            onSerializationError?.invoke(errorMsg.toByteArray())
-            throw(e)
-        }
-    }
-
-    private fun deserializePayload(payload: ByteArray): Record<*,*> {
-        return try {
-            deserializer.deserialize(payload)!!
-        } catch (e: Exception) {
-            val errorMsg = "Failed to deserialize payload of size ${payload.size} bytes due to: ${e.message}"
-            log.error(errorMsg)
-            onSerializationError?.invoke(errorMsg.toByteArray())
-            throw(e)
-        }
-    }
-
-    private fun buildHttpRequest(payload: ByteArray, endpoint: String): HttpRequest {
+    private fun buildHttpRequest(message: MediatorMessage<*>): HttpRequest {
         return HttpRequest.newBuilder()
-            .uri(URI("http://$endpoint"))
-            .PUT(HttpRequest.BodyPublishers.ofByteArray(payload))
+            .uri(URI("http://${message.endpoint()}"))
+            .PUT(HttpRequest.BodyPublishers.ofByteArray(message.payload as ByteArray))
             .build()
     }
 

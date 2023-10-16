@@ -1,6 +1,5 @@
 package net.corda.messaging.mediator.factory
 
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import org.junit.jupiter.api.Assertions
@@ -11,14 +10,12 @@ import org.mockito.kotlin.mock
 class MessagingClientFactoryFactoryTest {
     private lateinit var messagingClientFactoryFactory: MessagingClientFactoryFactoryImpl
     private val cordaProducerBuilder = mock<CordaProducerBuilder>()
-    private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory>()
     private val messageBusConfig = mock<SmartConfig>()
 
     @BeforeEach
     fun beforeEach() {
         messagingClientFactoryFactory = MessagingClientFactoryFactoryImpl(
-            cordaProducerBuilder,
-            cordaAvroSerializationFactory
+            cordaProducerBuilder
         )
     }
 
