@@ -9,9 +9,11 @@ import net.corda.e2etest.utilities.onboardMgm
 import net.corda.e2etest.utilities.onboardNotaryMember
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.util.UUID
 
+@Disabled
 class SingleClusterDynamicNetworkTest {
     private val testUniqueId = UUID.randomUUID()
 

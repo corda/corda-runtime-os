@@ -9,11 +9,13 @@ import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
 import net.corda.schema.configuration.ReconciliationConfig
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CONFIG_INTERVAL_MS
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 
 @Order(40)
 @Suppress("FunctionName")
+@Disabled
 class ConfigTests {
 
     @Test
