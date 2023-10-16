@@ -6,6 +6,8 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.util.concurrent.TimeoutException
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.data.flow.event.FlowEvent
 import net.corda.messaging.api.exception.CordaHTTPClientErrorException
 import net.corda.messaging.api.exception.CordaHTTPServerErrorException
 import net.corda.messaging.api.mediator.MediatorMessage
@@ -18,12 +20,17 @@ import org.slf4j.LoggerFactory
 
 class RPCClient(
     override val id: String,
+    cordaAvroSerializerFactory: CordaAvroSerializationFactory,
+    private val onSerializationError: ((ByteArray) -> Unit)?,
     private val httpClient: HttpClient,
     private val retryConfig: HTTPRetryConfig =
         HTTPRetryConfig.Builder()
             .retryOn(IOException::class, TimeoutException::class)
             .build()
 ) : MessagingClient {
+    private val serializer = cordaAvroSerializerFactory.createAvroSerializer<Any> {}
+    private val deserializer = cordaAvroSerializerFactory.createAvroDeserializer({}, FlowEvent::class.java)
+
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -43,9 +50,21 @@ class RPCClient(
 
         checkResponseStatus(response.statusCode())
 
-        return MediatorMessage(response.body(), mutableMapOf("statusCode" to response.statusCode()))
+        val deserializedResponse = deserializePayload(response.body())
+        return MediatorMessage(deserializedResponse, mutableMapOf("statusCode" to response.statusCode()))
     }
 
+
+    private fun deserializePayload(payload: ByteArray): FlowEvent {
+        return try {
+            deserializer.deserialize(payload)!!
+        } catch (e: Exception) {
+            val errorMsg = "Failed to deserialize payload of size ${payload.size} bytes due to: ${e.message}"
+            log.error(errorMsg)
+            onSerializationError?.invoke(errorMsg.toByteArray())
+            throw(e)
+        }
+    }
 
     private fun buildHttpRequest(message: MediatorMessage<*>): HttpRequest {
         return HttpRequest.newBuilder()
