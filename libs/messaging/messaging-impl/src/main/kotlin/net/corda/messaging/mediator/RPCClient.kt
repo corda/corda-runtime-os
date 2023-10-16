@@ -18,14 +18,12 @@ import org.slf4j.LoggerFactory
 
 class RPCClient(
     override val id: String,
-    httpClientFactory: () -> HttpClient = { HttpClient.newBuilder().build() },
+    private val httpClient: HttpClient,
     private val retryConfig: HTTPRetryConfig =
         HTTPRetryConfig.Builder()
             .retryOn(IOException::class, TimeoutException::class)
             .build()
 ) : MessagingClient {
-    private val httpClient: HttpClient = httpClientFactory()
-
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
