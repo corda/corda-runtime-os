@@ -7,6 +7,7 @@ import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
+import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.WaitingFor
@@ -24,11 +25,13 @@ import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.utils.toMap
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.getLongOrDefault
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig
 import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_WINDOW_DURATION
+import net.corda.session.manager.Constants
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -142,20 +145,39 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
 
 
 
+
         if(context.inputEventPayload is SessionEvent) {
             val inputPayload = context.inputEventPayload as SessionEvent
             val sessionId = inputPayload.sessionId
             if(inputPayload.payload is SessionData) {
-                val sessionData = inputPayload.payload as SessionData
-                sessionData.sessionInit
-                context.checkpoint.putSessionStates(
-                    flowSessionManager.sendErrorMessages(
-                        context.checkpoint,
-                        listOf(sessionId),
-                        exception,
-                        Instant.now()
-                    )
+//                val sessionData = inputPayload.payload as SessionData
+                val instant = Instant.now()
+
+                val sessionState = SessionState.newBuilder()
+                    .setSessionId(sessionId)
+                    .setSessionStartTime(instant)
+                    .setLastReceivedMessageTime(instant)
+                    .setCounterpartyIdentity(inputPayload.initiatingIdentity)
+                    .setReceivedEventsState(SessionProcessState(0, mutableListOf()))
+                    .setSendEventsState(SessionProcessState(0, mutableListOf()))
+                    .setSessionProperties(inputPayload.contextSessionProperties)
+                    .setStatus(SessionStateType.CONFIRMED)
+                    .setHasScheduledCleanup(false)
+                    .setRequireClose(inputPayload.contextSessionProperties.toMap()[Constants.FLOW_SESSION_REQUIRE_CLOSE].toBoolean())
+                    .build()
+
+                val holdingIdentity = inputPayload.initiatedIdentity
+
+//                context.checkpoint.putSessionStates(
+                flowSessionManager.sendErrorMessages(
+                    context.checkpoint,
+                    listOf(sessionId),
+                    exception,
+                    Instant.now(),
+                    sessionState,
+                    holdingIdentity
                 )
+//                )
             } else {
                 val activeSessionIds = getActiveSessionIds(checkpoint)
 
