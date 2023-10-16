@@ -87,21 +87,10 @@ class CryptoFlowOpsRpcProcessor(
                         handleRequest(requestPayload, request.context)
                     }
 
-                    if (Instant.now() >= expireAt) {
-                        logger.warn(
-                            "Event ${requestPayload::class.java.name} for tenant ${request.context.tenantId} " +
-                                    "is no longer valid, expired at $expireAt"
-                        )
-                        externalEventResponseFactory.transientError(
-                            request.flowExternalEventContext,
-                            ExceptionEnvelope("Expired", "Expired at $expireAt")
-                        )
-                    } else {
-                        externalEventResponseFactory.success(
-                            request.flowExternalEventContext,
-                            FlowOpsResponse(createResponseContext(request), response, null)
-                        )
-                    }
+                    externalEventResponseFactory.success(
+                        request.flowExternalEventContext,
+                        FlowOpsResponse(createResponseContext(request), response, null)
+                    )
                 }
             } catch (throwable: Throwable) {
                 logger.error(
