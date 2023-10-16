@@ -30,7 +30,7 @@ import java.util.UUID
 //The flow tests must go last as one test updates the messaging config which is highly disruptive to subsequent test runs. The real
 // solution to this is a larger effort to have components listen to their messaging pattern lifecycle status and for them to go DOWN when
 // their patterns are DOWN - CORE-8015
-@Order(999)
+@Order(Int.MAX_VALUE)
 @TestInstance(Lifecycle.PER_CLASS)
 class ConfigurationChangeTest {
 
