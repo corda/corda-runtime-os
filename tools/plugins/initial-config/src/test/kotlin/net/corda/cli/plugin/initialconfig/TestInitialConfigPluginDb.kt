@@ -149,12 +149,14 @@ class TestInitialConfigPluginDb {
         val vaultKey = "corda-config-database-password"
         val secretsService: SecretsCreateService = EncryptionSecretsServiceImpl(passphrase, salt)
 
-        val outText = createConfigDbConfig(jdbcUrl, username, password, vaultKey, jdbcPoolMaxSize, jdbcPoolMinSize, idleTimeout, maxLifetime, keepaliveTime, validationTimeout, secretsService)
+        val outText = createConfigDbConfig(jdbcUrl, username, password, vaultKey, jdbcPoolMaxSize, jdbcPoolMinSize,
+            idleTimeout, maxLifetime, keepaliveTime, validationTimeout, secretsService)
 
         println(outText)
         assertThat(outText).contains("\"user\":\"test\\\"user\"")
     }
 
+    // Running the command via command line applies additional escaping
     @Test
     fun `test DbConfig creation via command line with escaped string`() {
         val app = InitialConfigPlugin.PluginEntryPoint()
