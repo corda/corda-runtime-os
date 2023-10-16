@@ -10,8 +10,10 @@ class RPCClientFactory(
 ): MessagingClientFactory {
 
     override fun create(config: MessagingClientConfig): MessagingClient {
+        val httpClient = HttpClientFactory.getClient()
         return RPCClient(
-            id
+            id,
+            httpClient
         )
     }
 }
