@@ -6,11 +6,10 @@ import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_KEY
-import net.corda.messaging.api.mediator.taskmanager.TaskManager
-import net.corda.messaging.api.mediator.taskmanager.TaskType
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.utils.toRecord
+import net.corda.taskmanager.TaskManager
 
 /**
  * Helper that creates and executes various tasks used by [MultiSourceEventMediatorImpl].
@@ -99,7 +98,7 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
         processorTasks: Collection<ProcessorTask<K, S, E>>
     ): List<ProcessorTask.Result<K, S, E>> {
         return processorTasks.map { processorTask ->
-            taskManager.execute(TaskType.SHORT_RUNNING, processorTask::call)
+            taskManager.executeShortRunningTask(processorTask::call)
         }.map {
             it.join()
         }
@@ -116,30 +115,32 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
     fun createClientTasks(
         processorTaskResults: List<ProcessorTask.Result<K, S, E>>,
         messageRouter: MessageRouter,
-    ): List<ClientTask<K, S, E>> {
-        return processorTaskResults.map { result ->
-            result.outputEvents.map { event ->
+    ): Map<K, List<ClientTask<K, S, E>>> {
+        return processorTaskResults.associate { result ->
+            result.key to result.outputEvents.map { event ->
                 ClientTask(
                     event.toMessage(),
                     messageRouter,
                     result,
                 )
             }
-        }.flatten()
+        }
     }
 
     /**
      * Executes given [ClientTask]s and waits for all to finish.
      *
-     * @param clientTasks Tasks to execute.
+     * @param clientTaskMap Tasks to execute.
      * @return Result of task executions.
      */
     fun executeClientTasks(
-        clientTasks: Collection<ClientTask<K, S, E>>
+        clientTaskMap: Map<K, List<ClientTask<K, S, E>>>
     ): List<ClientTask.Result<K, S, E>> {
-        return clientTasks.map { clientTask ->
-            taskManager.execute(TaskType.SHORT_RUNNING, clientTask::call)
-        }.map {
+        return clientTaskMap.map { (_, clientTasks) ->
+            taskManager.executeShortRunningTask {
+                clientTasks.map { it.call() }
+            }
+        }.flatMap {
             it.join()
         }
     }

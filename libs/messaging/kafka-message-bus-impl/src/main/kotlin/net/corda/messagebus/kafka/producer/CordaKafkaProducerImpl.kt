@@ -391,7 +391,7 @@ class CordaKafkaProducerImpl(
                 throw CordaMessageAPIProducerRequiresReset("Error occurred $errorString", ex)
             }
 
-           in transientExceptions -> {
+            in transientExceptions -> {
                 if (abortTransaction) {
                     abortTransaction()
                 }

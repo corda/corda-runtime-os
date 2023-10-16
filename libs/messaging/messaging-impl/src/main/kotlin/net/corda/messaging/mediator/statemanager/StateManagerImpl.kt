@@ -6,11 +6,12 @@ import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import java.util.concurrent.ConcurrentHashMap
 
 // TODO This is used temporarily until State Manager implementation is finished
 @Component(service = [StateManager::class])
 class StateManagerImpl @Activate constructor() : StateManager {
-    private val storage = mutableMapOf<String, State>()
+    private val storage = ConcurrentHashMap<String, State>()
 
     override fun create(states: Collection<State>): Map<String, Exception> {
         return states.mapNotNull {
@@ -24,14 +25,16 @@ class StateManagerImpl @Activate constructor() : StateManager {
 
     override fun update(states: Collection<State>): Map<String, State> {
         return states.mapNotNull {
-            val existingState = storage[it.key]
-            if (existingState?.version == it.version) {
-                val updatedState = it.copy(version = it.version + 1)
-                storage[it.key] = updatedState
-                null
-            } else {
-                it
+            var output: State? = null
+            storage.compute(it.key) { _, existingState ->
+                if (existingState?.version == it.version) {
+                    it.copy(version = it.version + 1)
+                } else {
+                    output = it
+                    it
+                }
             }
+            output
         }.associateBy { it.key }
     }
 
