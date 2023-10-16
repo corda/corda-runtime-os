@@ -9,7 +9,6 @@ import java.security.PublicKey
 
 interface UtxoTransactionBuilderData {
     val timeWindow: TimeWindow?
-    val attachments: List<SecureHash>
     val commands: List<Command>
     val signatories: List<PublicKey>
     val inputStateRefs: List<StateRef>

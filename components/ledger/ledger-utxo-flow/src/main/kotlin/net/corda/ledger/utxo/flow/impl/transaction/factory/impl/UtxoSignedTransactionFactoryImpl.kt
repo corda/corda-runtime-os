@@ -176,7 +176,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
                 UtxoComponentGroup.SIGNATORIES -> utxoTransactionBuilder.signatories
                 UtxoComponentGroup.OUTPUTS_INFO -> outputsInfo
                 UtxoComponentGroup.COMMANDS_INFO -> commandsInfo
-                UtxoComponentGroup.DATA_ATTACHMENTS -> utxoTransactionBuilder.attachments
+                UtxoComponentGroup.UNUSED -> emptyList()
                 UtxoComponentGroup.INPUTS -> utxoTransactionBuilder.inputStateRefs
                 UtxoComponentGroup.OUTPUTS -> outputTransactionStates.map {
                     it.contractState

@@ -37,12 +37,6 @@ interface UtxoRepository {
         entityManager: EntityManager
     ):  List<UtxoVisibleTransactionOutputDto>
 
-    /** Retrieves transaction component leaves related to visible unspent states */
-    fun findUnconsumedVisibleStatesByExactType(
-        entityManager: EntityManager,
-        stateClassType: String
-    ):  List<UtxoVisibleTransactionOutputDto>
-
     /** Retrieves transaction component leafs related to specific StateRefs */
     fun resolveStateRefs(
         entityManager: EntityManager,

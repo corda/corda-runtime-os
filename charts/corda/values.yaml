@@ -78,6 +78,9 @@ metrics:
     enabled: false
     # -- Labels that can be used so PodMonitor is discovered by Prometheus
     labels: {}
+    # -- A list of regular expressions for the names of metrics that Prometheus should keep; if empty, all metrics are kept
+    keepNames: []
+    # - "jvm_.*"
 
 # Distributed tracing configuration
 tracing:

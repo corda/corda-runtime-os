@@ -6,7 +6,6 @@ import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransaction
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoTransactionBuilderVerifier
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
@@ -25,7 +24,6 @@ class UtxoTransactionBuilderImpl(
     private var notaryName: MemberX500Name? = null,
     private var notaryKey: PublicKey? = null,
     override var timeWindow: TimeWindow? = null,
-    override val attachments: MutableList<SecureHash> = mutableListOf(),
     override val commands: MutableList<Command> = mutableListOf(),
     override val signatories: MutableList<PublicKey> = mutableListOf(),
     override val inputStateRefs: MutableList<StateRef> = mutableListOf(),
@@ -34,14 +32,6 @@ class UtxoTransactionBuilderImpl(
 ) : UtxoTransactionBuilderInternal {
 
     private var alreadySigned = false
-
-    override fun addAttachment(attachmentId: SecureHash): UtxoTransactionBuilder {
-        require(attachmentId !in attachments) {
-            "Duplicating attachments is not allowed."
-        }
-        this.attachments += attachmentId
-        return this
-    }
 
     override fun addCommand(command: Command): UtxoTransactionBuilder {
         this.commands += command
@@ -183,7 +173,6 @@ class UtxoTransactionBuilderImpl(
         return UtxoTransactionBuilderContainer(
             notaryName,
             timeWindow,
-            attachments.toMutableList(),
             commands.toMutableList(),
             signatories.toMutableList(),
             inputStateRefs.toMutableList(),
@@ -213,7 +202,6 @@ class UtxoTransactionBuilderImpl(
                 && other.notaryName == notaryName
                 && other.notaryKey == notaryKey
                 && other.timeWindow == timeWindow
-                && other.attachments == attachments
                 && other.commands == commands
                 && other.inputStateRefs == inputStateRefs
                 && other.referenceStateRefs == referenceStateRefs
@@ -225,7 +213,6 @@ class UtxoTransactionBuilderImpl(
         notaryName,
         notaryKey,
         timeWindow,
-        attachments,
         commands,
         signatories,
         inputStateRefs,
@@ -237,7 +224,6 @@ class UtxoTransactionBuilderImpl(
         return "UtxoTransactionBuilderImpl(" +
                 "notary=$notaryName (key: $notaryKey), " +
                 "timeWindow=$timeWindow, " +
-                "attachments=$attachments, " +
                 "commands=$commands, " +
                 "signatories=$signatories, " +
                 "inputStateRefs=$inputStateRefs, " +
@@ -251,7 +237,6 @@ class UtxoTransactionBuilderImpl(
      * Also, notary and time window of the original takes precedence.
      * Those will not be overwritten regardless of there are new values.
      * It de-duplicates the
-     *  - attachments
      *  - signatories
      *  - inputStateRefs
      *  - referenceStateRefs
@@ -264,7 +249,6 @@ class UtxoTransactionBuilderImpl(
             this.notaryName ?: other.getNotaryName(),
             this.notaryKey ?: lookUpNotaryKey(other.getNotaryName()),
             this.timeWindow ?: other.timeWindow,
-            (this.attachments + other.attachments).distinct().toMutableList(),
             (this.commands + other.commands).toMutableList(),
             (this.signatories + other.signatories).distinct().toMutableList(),
             (this.inputStateRefs + other.inputStateRefs).distinct().toMutableList(),
