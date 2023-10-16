@@ -3,21 +3,29 @@ package net.corda.session.mapper.service
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.flow.event.mapper.ExecuteCleanup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.state.mapper.FlowMapperState
+import net.corda.data.scheduler.ScheduledTaskTrigger
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.statemanager.api.StateManager
+import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.test.impl.LifecycleTest
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.messaging.api.exception.CordaMessageAPIConfigException
-import net.corda.messaging.api.subscription.StateAndEventSubscription
+import net.corda.messaging.api.mediator.MultiSourceEventMediator
+import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.STATE_MANAGER_CONFIG
 import net.corda.schema.configuration.FlowConfig
+import net.corda.session.mapper.messaging.mediator.FlowMapperEventMediatorFactory
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -29,6 +37,7 @@ internal class FlowMapperServiceTest {
 
     private val configFactory = SmartConfigFactory.createWithoutSecurityServices()
     private val flowConfig = SmartConfigImpl.empty().withValue(FlowConfig.SESSION_P2P_TTL, ConfigValueFactory.fromAnyRef(10000))
+        .withValue(FlowConfig.PROCESSING_FLOW_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(1000L))
 
     private val messagingConfig = configFactory.create(
         ConfigFactory.parseString(
@@ -36,12 +45,30 @@ internal class FlowMapperServiceTest {
         )
     )
 
+    private val stateManagerConfig = configFactory.create(
+        ConfigFactory.parseString("")
+    )
+
+    private val configMap = mapOf(
+        FLOW_CONFIG to flowConfig,
+        MESSAGING_CONFIG to messagingConfig,
+        STATE_MANAGER_CONFIG to stateManagerConfig
+    )
+
     @Test
     fun `flow mapper service correctly responds to dependencies changes`() {
         val subscriptionFactory = mock<SubscriptionFactory>().also {
-            doAnswer { mock<StateAndEventSubscription<String, String, String>>() }
-                .whenever(it).createStateAndEventSubscription<String, String, String>(any(), any(), any(), any())
+            doAnswer { mock<Subscription<String, String>>() }
+                .whenever(it).createDurableSubscription<String, String>(any(), any(), any(), anyOrNull())
         }
+        val flowMapperEventMediatorFactory = mock<FlowMapperEventMediatorFactory>().also {
+            doAnswer { mock<MultiSourceEventMediator<String, String, String>>() }
+                .whenever(it).create(any(), any(), any())
+        }
+        val stateManagerFactory = mock<StateManagerFactory>().also {
+            doAnswer { mock<StateManager>() }.whenever(it).create(any())
+        }
+
         LifecycleTest {
             addDependency<ConfigurationReadService>()
             addDependency<LocallyHostedIdentitiesService>()
@@ -50,8 +77,8 @@ internal class FlowMapperServiceTest {
                 coordinatorFactory,
                 configReadService,
                 subscriptionFactory,
-                mock(),
-                mock()
+                flowMapperEventMediatorFactory,
+                stateManagerFactory,
             )
         }.run {
 
@@ -60,7 +87,7 @@ internal class FlowMapperServiceTest {
             bringDependenciesUp()
             verifyIsDown<FlowMapperService>()
 
-            sendConfigUpdate<FlowMapperService>(mapOf(FLOW_CONFIG to flowConfig, MESSAGING_CONFIG to messagingConfig))
+            sendConfigUpdate<FlowMapperService>(configMap)
 
             verifyIsUp<FlowMapperService>()
 
@@ -82,12 +109,29 @@ internal class FlowMapperServiceTest {
     @Test
     fun `flow mapper service correctly reacts to config changes`() {
         val subName = LifecycleCoordinatorName("sub")
-        val subscription = mock<StateAndEventSubscription<String, FlowMapperState, FlowMapperEvent>>().apply {
+        val eventMediator = mock<MultiSourceEventMediator<String, FlowMapperState, FlowMapperEvent>>().apply {
             whenever(subscriptionName).thenReturn(subName)
         }
+        val scheduledTaskSubName = LifecycleCoordinatorName("scheduledSub")
+        val scheduledTaskSubscription = mock<Subscription<String, ScheduledTaskTrigger>>().apply {
+            whenever(subscriptionName).thenReturn(scheduledTaskSubName)
+        }
+        val cleanupTaskSubName = LifecycleCoordinatorName("cleanup")
+        val cleanupSubscription = mock<Subscription<String, ExecuteCleanup>>().apply {
+            whenever(subscriptionName).thenReturn(cleanupTaskSubName)
+        }
         val subscriptionFactory = mock<SubscriptionFactory>().apply {
-            whenever(createStateAndEventSubscription<String, FlowMapperState, FlowMapperEvent>(any(), any(), any(), any()))
-                .thenReturn(subscription)
+            whenever(createDurableSubscription<String, ScheduledTaskTrigger>(any(), any(), any(), anyOrNull()))
+                .thenReturn(scheduledTaskSubscription)
+            whenever(createDurableSubscription<String, ExecuteCleanup>(any(), any(), any(), anyOrNull()))
+                .thenReturn(cleanupSubscription)
+        }
+        val flowMapperEventMediatorFactory = mock<FlowMapperEventMediatorFactory>().apply {
+            whenever(create(any(), any(), any()))
+                .thenReturn(eventMediator)
+        }
+        val stateManagerFactory = mock<StateManagerFactory>().also {
+            doAnswer { mock<StateManager>() }.whenever(it).create(any())
         }
 
         LifecycleTest {
@@ -99,8 +143,8 @@ internal class FlowMapperServiceTest {
                 coordinatorFactory,
                 configReadService,
                 subscriptionFactory,
-                mock(),
-                mock()
+                flowMapperEventMediatorFactory,
+                stateManagerFactory,
             )
         }.run {
             testClass.start()
@@ -108,29 +152,27 @@ internal class FlowMapperServiceTest {
             bringDependenciesUp()
             verifyIsDown<FlowMapperService>()
 
-            sendConfigUpdate<FlowMapperService>(mapOf(FLOW_CONFIG to flowConfig, MESSAGING_CONFIG to messagingConfig))
+            sendConfigUpdate<FlowMapperService>(configMap)
 
-            // Create and start the subscription (using the message config)
-            verify(subscriptionFactory).createStateAndEventSubscription<String, FlowMapperState, FlowMapperEvent>(
-                any(),
+            // Create and start the event mediator (using the message config)
+            verify(flowMapperEventMediatorFactory).create(
                 any(),
                 eq(messagingConfig),
-                any()
+                any(),
             )
-            verify(subscription).start()
+            verify(eventMediator).start()
             verifyIsUp<FlowMapperService>()
 
-            sendConfigUpdate<FlowMapperService>(mapOf(FLOW_CONFIG to flowConfig, MESSAGING_CONFIG to messagingConfig))
+            sendConfigUpdate<FlowMapperService>(configMap)
 
-            // Close, recreate and start the subscription (using the message config)
-            verify(subscription).close()
-            verify(subscriptionFactory, times(2)).createStateAndEventSubscription<String, FlowMapperState, FlowMapperEvent>(
-                any(),
+            // Close, recreate and start the event mediator (using the message config)
+            verify(eventMediator).close()
+            verify(flowMapperEventMediatorFactory, times(2)).create(
                 any(),
                 eq(messagingConfig),
-                any()
+                any(),
             )
-            verify(subscription, times(2)).start()
+            verify(eventMediator, times(2)).start()
             verifyIsUp<FlowMapperService>()
         }
     }
@@ -138,9 +180,13 @@ internal class FlowMapperServiceTest {
     @Test
     fun `flow mapper service correctly handles bad config`() {
         val subName = LifecycleCoordinatorName("sub")
-        val subscriptionFactory = mock<SubscriptionFactory>().apply {
-            whenever(createStateAndEventSubscription<String, FlowMapperState, FlowMapperEvent>(any(), any(), any(), any()))
+        val subscriptionFactory = mock<SubscriptionFactory>()
+        val flowMapperEventMediatorFactory = mock<FlowMapperEventMediatorFactory>().apply {
+            whenever(create(any(), any(), any()))
                 .thenThrow(CordaMessageAPIConfigException("Bad config!"))
+        }
+        val stateManagerFactory = mock<StateManagerFactory>().also {
+            doAnswer { mock<StateManager>() }.whenever(it).create(any())
         }
 
         LifecycleTest {
@@ -152,8 +198,8 @@ internal class FlowMapperServiceTest {
                 coordinatorFactory,
                 configReadService,
                 subscriptionFactory,
-                mock(),
-                mock()
+                flowMapperEventMediatorFactory,
+                stateManagerFactory,
             )
         }.run {
             testClass.start()
@@ -161,14 +207,13 @@ internal class FlowMapperServiceTest {
             bringDependenciesUp()
             verifyIsDown<FlowMapperService>()
 
-            sendConfigUpdate<FlowMapperService>(mapOf(FLOW_CONFIG to flowConfig, MESSAGING_CONFIG to messagingConfig))
+            sendConfigUpdate<FlowMapperService>(configMap)
 
             // Create and start the subscription (using the message config)
-            verify(subscriptionFactory).createStateAndEventSubscription<String, FlowMapperState, FlowMapperEvent>(
-                any(),
+            verify(flowMapperEventMediatorFactory).create(
                 any(),
                 eq(messagingConfig),
-                any()
+                any(),
             )
             verifyIsInError<FlowMapperService>()
         }

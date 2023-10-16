@@ -11,6 +11,7 @@ import net.corda.ledger.utxo.token.cache.services.TokenFilterStrategy
 import net.corda.messaging.api.records.Record
 import java.math.BigDecimal
 import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
+import org.slf4j.LoggerFactory
 
 class TokenClaimQueryEventHandler(
     private val filterStrategy: TokenFilterStrategy,
@@ -19,11 +20,30 @@ class TokenClaimQueryEventHandler(
     private val serviceConfiguration: ServiceConfiguration
 ) : TokenEventHandler<ClaimQuery> {
 
+    private companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        var claimIdSeen: String? = null
+    }
+
     override fun handle(
         tokenCache: TokenCache,
         state: PoolCacheState,
         event: ClaimQuery
     ): Record<String, FlowEvent> {
+
+        val claimId = event.externalEventRequestId
+        val claim = state.claim(claimId)
+        if(claim != null) {
+
+            logger.warn("A token claim is being processed more than once. ClaimId: $claimId")
+
+            return recordFactory.getSuccessfulClaimResponseWithListTokens(
+                event.flowId,
+                event.externalEventRequestId,
+                event.poolKey,
+                claim.claimedTokens
+            )
+        }
 
         // Attempt to select the tokens from the current cache
         var selectionResult = selectTokens(tokenCache, state, event)
@@ -50,7 +70,7 @@ class TokenClaimQueryEventHandler(
         return if (selectedAmount >= event.targetAmount) {
             // Claimed tokens should not be stored in the token cache
             tokenCache.removeAll(selectedTokens.map { it.stateRef }.toSet())
-            state.addNewClaim(event.externalEventRequestId, selectedTokens)
+            state.addNewClaim(claimId, selectedTokens)
             recordFactory.getSuccessfulClaimResponse(
                 event.flowId,
                 event.externalEventRequestId,

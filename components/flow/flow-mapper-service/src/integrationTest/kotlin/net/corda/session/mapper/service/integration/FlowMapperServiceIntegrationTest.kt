@@ -11,6 +11,7 @@ import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
+import net.corda.data.flow.event.mapper.ExecuteCleanup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.event.session.SessionCounterpartyInfoRequest
@@ -39,6 +40,7 @@ import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.STATE_MANAGER_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.session.mapper.service.FlowMapperService
@@ -241,6 +243,16 @@ class FlowMapperServiceIntegrationTest {
         assertFalse(flowEventLatch.await(3, TimeUnit.SECONDS))
         assertThat(flowEventLatch.count).isEqualTo(1)
 
+        // Manually publish an execute cleanup event. Temporary until the full solution has been integrated.
+        val executeCleanup = Record<Any, Any>(
+            FLOW_MAPPER_EVENT_TOPIC,
+            testId,
+            FlowMapperEvent(
+                ExecuteCleanup(listOf())
+            )
+        )
+        publisher.publish(listOf(executeCleanup))
+
         //send same key start rpc again
         publisher.publish(listOf(startRPCEvent))
 
@@ -418,6 +430,15 @@ class FlowMapperServiceIntegrationTest {
                 )
             )
         )
+        publisher.publish(
+            listOf(
+                Record(
+                    CONFIG_TOPIC,
+                    STATE_MANAGER_CONFIG,
+                    Configuration(stateManagerConf, stateManagerConf, 0, schemaVersion)
+                )
+            )
+        )
     }
 
     private val bootConf = """
@@ -430,6 +451,10 @@ class FlowMapperServiceIntegrationTest {
     private val flowConf = """
             session {
                 p2pTTL = 500000
+            }
+            processing {
+                cleanupTime = 10000
+                poolSize = 1
             }
         """
 
@@ -448,6 +473,11 @@ class FlowMapperServiceIntegrationTest {
                 producer {
                     close.timeout = 6000
                 }
+                pollTimeout = 100
             }
       """
+
+    private val stateManagerConf = """
+        
+    """.trimIndent()
 }

@@ -26,14 +26,17 @@ class CreateConnectTest {
 
     @Test
     fun `validate new topic with no config`() {
-        assertThat(getCommandWithGeneratedConfig().getTopics(listOf(Create.PreviewTopicConfiguration("topic", emptyMap()))))
-            .containsEntry("topic", NewTopic("topic", 1, 1).configs(emptyMap()))
+        assertThat(getCommandWithGeneratedConfig().getTopics(listOf(Create.PreviewTopicConfiguration("topic", 5, 3, emptyMap()))))
+            .containsEntry("topic", NewTopic("topic", 5, 3).configs(emptyMap()))
     }
 
     @Test
     fun `validate new topic with config`() {
-        assertThat(getCommandWithGeneratedConfig().getTopics(listOf(Create.PreviewTopicConfiguration("topic", mapOf("key" to "value")))))
-            .containsEntry("topic", NewTopic("topic", 1, 1).configs(mapOf("key" to "value")))
+        assertThat(
+            getCommandWithGeneratedConfig().getTopics(
+                listOf(Create.PreviewTopicConfiguration("topic", 5, 3, mapOf("key" to "value")))
+            )
+        ).containsEntry("topic", NewTopic("topic", 5, 3).configs(mapOf("key" to "value")))
     }
 
     @Test
@@ -58,6 +61,60 @@ class CreateConnectTest {
                     AccessControlEntry("User:Dan", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW))
 
             )
+    }
+
+    @Test
+    fun `validate acls created from config file with overrides`() {
+        val cmd = getCommandWithConfigAndOverrideFiles()
+        val acls = cmd.getGeneratedTopicConfigs().acls
+        assertThat(cmd.getAclBindings(acls))
+            .containsExactly(
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "avro.schema", PatternType.LITERAL),
+                    AccessControlEntry("User:Chris", "*", AclOperation.READ, AclPermissionType.ALLOW)),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "avro.schema", PatternType.LITERAL),
+                    AccessControlEntry("User:Chris", "*", AclOperation.WRITE, AclPermissionType.ALLOW)),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "avro.schema", PatternType.LITERAL),
+                    AccessControlEntry("User:Chris", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW)),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "avro.schema", PatternType.LITERAL),
+                    AccessControlEntry("User:Mo", "*", AclOperation.READ, AclPermissionType.ALLOW)),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "avro.schema", PatternType.LITERAL),
+                    AccessControlEntry("User:Mo", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW)),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "avro.schema", PatternType.LITERAL),
+                    AccessControlEntry("User:Mo", "*", AclOperation.WRITE, AclPermissionType.ALLOW)),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "certificates.rpc.ops", PatternType.LITERAL),
+                    AccessControlEntry("User:Dan", "*", AclOperation.READ, AclPermissionType.ALLOW)),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "certificates.rpc.ops", PatternType.LITERAL),
+                    AccessControlEntry("User:Dan", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW)),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "certificates.rpc.ops", PatternType.LITERAL),
+                    AccessControlEntry("User:George", "*", AclOperation.READ, AclPermissionType.ALLOW))
+
+            )
+    }
+
+    @Test
+    fun `validate topics created from config file`() {
+        val cmd = getCommandWithConfigFile()
+        val topics = cmd.getGeneratedTopicConfigs().topics
+        assertThat(cmd.getTopics(topics))
+            .containsEntry("avro.schema", NewTopic("avro.schema", 5, 3)
+                .configs(mapOf("cleanup.policy" to "compact", "segment.ms" to "600000",
+                    "delete.retention.ms" to "300000", "min.compaction.lag.ms" to "60000",
+                    "max.compaction.lag.ms" to "604800000", "min.cleanable.dirty.ratio" to "0.5")))
+            .containsEntry("certificates.rpc.ops", NewTopic("certificates.rpc.ops", 4, 2)
+                .configs(emptyMap()))
+    }
+
+    @Test
+    fun `validate topics created from config file with overrides`() {
+        val cmd = getCommandWithConfigAndOverrideFiles()
+        val topics = cmd.getGeneratedTopicConfigs().topics
+        assertThat(cmd.getTopics(topics))
+            .containsEntry("avro.schema", NewTopic("avro.schema", 8, 3)
+                .configs(mapOf("cleanup.policy" to "compact", "segment.ms" to "600000",
+                    "delete.retention.ms" to "300000", "min.compaction.lag.ms" to "60000",
+                    "max.compaction.lag.ms" to "604800000", "min.cleanable.dirty.ratio" to "0.7")))
+            .containsEntry("certificates.rpc.ops", NewTopic("certificates.rpc.ops", 4, 2)
+                .configs(emptyMap()))
     }
 
     @Test
@@ -86,5 +143,14 @@ class CreateConnectTest {
         configFilePath = Paths.get(configFile).toString()
         create = Create()
         create!!.topic = TopicPlugin.Topic()
+    }
+
+    private fun getCommandWithConfigAndOverrideFiles() = CreateConnect().apply {
+        val configFile = this::class.java.classLoader.getResource("short_generated_topic_config.yaml")!!.toURI()
+        configFilePath = Paths.get(configFile).toString()
+        create = Create()
+        create!!.topic = TopicPlugin.Topic()
+        val overrideFile = this::class.java.classLoader.getResource("override_topic_config.yaml")!!.toURI()
+        create!!.overrideFilePath = Paths.get(overrideFile).toString()
     }
 }

@@ -20,7 +20,7 @@ abstract class AbstractQueryProvider : QueryProvider {
 
     override val deleteStatesByKey: String
         get() = """
-            DELETE FROM $STATE_MANAGER_TABLE s WHERE s.key IN (:$KEYS_PARAMETER_NAME)
+            DELETE FROM $STATE_MANAGER_TABLE s WHERE s.key = :$KEY_PARAMETER_NAME AND s.version = :$VERSION_PARAMETER_NAME
         """.trimIndent()
 
     override val findStatesUpdatedBetween: String

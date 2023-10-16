@@ -12,7 +12,7 @@ import java.util.concurrent.Callable
  */
 @Suppress("LongParameterList")
 data class ProcessorTask<K : Any, S : Any, E : Any>(
-    val key: String,
+    val key: K,
     val persistedState: State?,
     val events: Collection<Record<K, E>>,
     private val processor: StateAndEventProcessor<K, S, E>,
@@ -28,18 +28,23 @@ data class ProcessorTask<K : Any, S : Any, E : Any>(
     }
 
     override fun call(): Result<K, S, E> {
-        var stateValue = stateManagerHelper.deserializeValue(persistedState)
+        var state = stateManagerHelper.deserializeValue(persistedState)?.let { stateValue ->
+            StateAndEventProcessor.State(
+                stateValue,
+                persistedState?.metadata
+            )
+        }
 
         val outputEvents = events.map { event ->
-            val response = processor.onNext(stateValue, event)
-            response.updatedState?.let { stateValue = it }
+            val response = processor.onNext(state, event)
+            state = response.updatedState
             response.responseEvents
         }.flatten()
 
         val updatedState = stateManagerHelper.createOrUpdateState(
-            key,
+            key.toString(),
             persistedState,
-            stateValue
+            state,
         )
 
         return Result(this, outputEvents, updatedState)

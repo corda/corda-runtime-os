@@ -7,6 +7,13 @@ bootstrap:
         valueFrom:
           secretKeyRef:
             key: "postgres-password"
+    stateManager:
+      username:
+        value: "state-manager-user"
+      password:
+        valueFrom:
+          secretKeyRef:
+            key: "password"
   kafka:
     sasl:
       username:
@@ -29,6 +36,15 @@ db:
           key: "password"
     username:
       value: "user"
+
+stateManager:
+  db:
+    username:
+      value: "state-manager-user"
+    password:
+      valueFrom:
+        secretKeyRef:
+          key: "password"
 
 kafka:
   bootstrapServers: "prereqs-kafka:9092"
@@ -133,6 +149,16 @@ workers:
             secretKeyRef:
               name: "kafka-credentials"
               key: "persistence"
+  tokenSelection:
+    kafka:
+      sasl:
+        username:
+          value: "tokenSelection"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "kafka-credentials"
+              key: "tokenSelection"
   rest:
     kafka:
       sasl:

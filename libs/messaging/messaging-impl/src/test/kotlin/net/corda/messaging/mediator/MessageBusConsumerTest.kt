@@ -1,8 +1,6 @@
 package net.corda.messaging.mediator
 
-import kotlinx.coroutines.runBlocking
 import net.corda.messagebus.api.consumer.CordaConsumer
-import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -24,15 +22,6 @@ class MessageBusConsumerTest {
 
     private lateinit var cordaConsumer: CordaConsumer<String, String>
     private lateinit var mediatorConsumer: MessageBusConsumer<String, String>
-
-    private val defaultHeaders: List<Pair<String, String>> = emptyList()
-    private val messageProps: MutableMap<String, Any> = mutableMapOf(
-        "topic" to "topic",
-        "key" to "key",
-        "headers" to defaultHeaders
-    )
-    private val message: MediatorMessage<Any> = MediatorMessage("value", messageProps)
-
 
     @BeforeEach
     fun setup() {
@@ -61,27 +50,23 @@ class MessageBusConsumerTest {
         doThrow(CordaRuntimeException("")).whenever(cordaConsumer).poll(any())
 
         assertThrows<CordaRuntimeException> {
-            runBlocking {
-                mediatorConsumer.poll(timeout).await()
-            }
+            mediatorConsumer.poll(timeout)
         }
     }
 
     @Test
-    fun testCommitAsyncOffsets() {
-        mediatorConsumer.asyncCommitOffsets()
+    fun testSyncCommitOffsets() {
+        mediatorConsumer.syncCommitOffsets()
 
-        verify(cordaConsumer).asyncCommitOffsets(any())
+        verify(cordaConsumer).syncCommitOffsets()
     }
 
     @Test
-    fun testCommitAsyncOffsetsWithError() {
-        doThrow(CordaRuntimeException("")).whenever(cordaConsumer).asyncCommitOffsets(any())
+    fun testSyncCommitOffsetsWithError() {
+        doThrow(CordaRuntimeException("")).whenever(cordaConsumer).syncCommitOffsets()
 
         assertThrows<CordaRuntimeException> {
-            runBlocking {
-                mediatorConsumer.asyncCommitOffsets().await()
-            }
+            mediatorConsumer.syncCommitOffsets()
         }
     }
 

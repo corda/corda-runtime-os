@@ -1,7 +1,5 @@
 package net.corda.messaging.mediator
 
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.runBlocking
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
@@ -25,7 +23,6 @@ class ClientTaskTest {
     private val messageRouter = mock<MessageRouter>()
     private val routingDestination = mock<RoutingDestination>()
     private val messagingClient = mock<MessagingClient>()
-    private val clientDeferredReply = mock<Deferred<MediatorMessage<*>>>()
     private val clientReply = mock<MediatorMessage<*>>()
 
     @BeforeEach
@@ -37,13 +34,8 @@ class ClientTaskTest {
             messagingClient
         )
         `when`(messagingClient.send(any())).thenReturn(
-            clientDeferredReply
+            clientReply
         )
-        runBlocking {
-            `when`(clientDeferredReply.await()).thenReturn(
-                clientReply
-            )
-        }
     }
 
     @Test
@@ -56,9 +48,7 @@ class ClientTaskTest {
             mock(),
         )
 
-        val result = runBlocking {
-            task.call()
-        }
+        val result = task.call()
 
         assertNotNull(result)
         verify(messageRouter).getDestination(message)

@@ -196,8 +196,8 @@ class FlowRunnerImpl @Activate constructor(
                 this[FlowContextPropertyKeys.CPI_NAME] = metadata.cpiId.name
                 this[FlowContextPropertyKeys.CPI_VERSION] = metadata.cpiId.version
                 this[FlowContextPropertyKeys.CPI_SIGNER_SUMMARY_HASH] =
-                    metadata.cpiId.signerSummaryHash.toHexString()
-                this[FlowContextPropertyKeys.CPI_FILE_CHECKSUM] = metadata.fileChecksum.toHexString()
+                    metadata.cpiId.signerSummaryHash.toString()
+                this[FlowContextPropertyKeys.CPI_FILE_CHECKSUM] = metadata.fileChecksum.toString()
 
                 this[FlowContextPropertyKeys.INITIAL_PLATFORM_VERSION] =
                     platformInfoProvider.localWorkerPlatformVersion.toString()

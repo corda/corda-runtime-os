@@ -1,7 +1,5 @@
 package net.corda.messaging.api.mediator
 
-import kotlinx.coroutines.Deferred
-
 /**
  * Multi-source event mediator messaging client.
  */
@@ -9,6 +7,9 @@ interface MessagingClient : AutoCloseable {
     companion object {
         /** Name of the property for specifying the endpoint string */
         const val MSG_PROP_ENDPOINT = "clientEndpoint"
+
+        /** Name of the property for specifying the message key */
+        const val MSG_PROP_KEY = "key"
     }
 
     /**
@@ -17,11 +18,10 @@ interface MessagingClient : AutoCloseable {
     val id: String
 
     /**
-     * Asynchronously sends a generic [MediatorMessage], and returns any result/error through a [Deferred] response.
+     * Sends a generic [MediatorMessage] and returns any result/error through a response.
      *
      * @param message The [MediatorMessage] to send.
-     * @return [Deferred] instance representing the asynchronous computation result, or null if the destination doesn't
-     * provide a response.
+     * @return Computation result, or null if the destination doesn't provide a response.
      * */
-    fun send(message: MediatorMessage<*>): Deferred<MediatorMessage<*>?>
+    fun send(message: MediatorMessage<*>): MediatorMessage<*>?
 }
