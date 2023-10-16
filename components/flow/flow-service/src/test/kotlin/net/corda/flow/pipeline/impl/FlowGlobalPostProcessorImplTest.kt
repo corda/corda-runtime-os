@@ -19,7 +19,6 @@ import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.state.FlowCheckpoint
-import net.corda.flow.state.impl.CheckpointMetadataKeys
 import net.corda.flow.state.impl.CheckpointMetadataKeys.STATE_META_SESSION_EXPIRY_KEY
 import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.libs.statemanager.api.Metadata
