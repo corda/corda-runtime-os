@@ -95,8 +95,10 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReentrantReadWriteLock
+import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.p2p.crypto.protocol.api.InvalidSelectedModeError
 import net.corda.p2p.crypto.protocol.api.NoCommonModeError
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.badGroupPolicy
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
@@ -418,8 +420,15 @@ internal class SessionManagerImpl(
         if (groupPolicy == null) {
             logger.warn(
                 "Could not find the group information in the GroupPolicyProvider for ${counterparties.ourId}." +
-                    " The sessionInit message was not sent."
+                        " The sessionInit message was not sent."
             )
+            return emptyList()
+        }
+        try {
+            groupPolicy.p2pParameters
+        } catch (except: BadGroupPolicyException) {
+            logger.warn("The group policy data is unavailable or cannot be parsed for ${counterparties.ourId}. Error: ${except.message}. " +
+                "The sessionInit message was not sent.")
             return emptyList()
         }
 
@@ -535,8 +544,15 @@ internal class SessionManagerImpl(
         if (groupPolicy == null) {
             logger.warn(
                 "Could not find the group information in the GroupPolicyProvider for ${sessionCounterparties.ourId}." +
-                    " The sessionInit message was not sent."
+                        " The sessionInit message was not sent."
             )
+            return emptyList()
+        }
+        try {
+            groupPolicy.p2pParameters
+        } catch (except: BadGroupPolicyException) {
+            logger.warn("The group policy data is unavailable or cannot be parsed for ${sessionCounterparties.ourId}. Error: " +
+                "${except.message}. The sessionInit message was not sent.")
             return emptyList()
         }
 
@@ -636,6 +652,13 @@ internal class SessionManagerImpl(
             logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, ourIdentityInfo.holdingIdentity)
             return null
         }
+        try {
+            groupPolicy.p2pParameters
+        } catch (except: BadGroupPolicyException) {
+            logger.badGroupPolicy(message::class.java.simpleName, message.header.sessionId, ourIdentityInfo.holdingIdentity, except.message)
+            return null
+        }
+
         heartbeatManager.sessionMessageSent(
             sessionInfo,
             message.header.sessionId,
@@ -749,6 +772,13 @@ internal class SessionManagerImpl(
             logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, hostedIdentityInSameGroup)
             return null
         }
+        try {
+            groupPolicy.p2pParameters
+        } catch (except: BadGroupPolicyException) {
+            logger.badGroupPolicy(message::class.java.simpleName, message.header.sessionId, hostedIdentityInSameGroup, except.message)
+            return null
+        }
+
         val pkiMode = pkiMode(groupPolicy, sessionManagerConfig) ?: return null
 
         val session = pendingInboundSessions.computeIfAbsent(message.header.sessionId) { sessionId ->
@@ -818,6 +848,12 @@ internal class SessionManagerImpl(
         val groupPolicy = groupPolicyProvider.getGroupPolicy(ourIdentityInfo.holdingIdentity)
         if (groupPolicy == null) {
             logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, ourIdentityInfo.holdingIdentity)
+            return null
+        }
+         try {
+            groupPolicy.p2pParameters
+        } catch (except: BadGroupPolicyException) {
+            logger.badGroupPolicy(message::class.java.simpleName, message.header.sessionId, ourIdentityInfo.holdingIdentity, except.message)
             return null
         }
 

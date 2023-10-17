@@ -41,6 +41,8 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.security.KeyPairGenerator
 import java.util.UUID
+import net.corda.membership.lib.exceptions.BadGroupPolicyException
+import org.mockito.kotlin.doThrow
 
 class InMemorySessionReplayerTest {
 
@@ -179,7 +181,7 @@ class InMemorySessionReplayerTest {
     }
 
     @Test
-    fun `The replaySchedular callback logs a warning when our network type is not in the network map`() {
+    fun `The replaySchedular callback logs a warning when our network type is not in the group policy provider`() {
         val parameters = mock<GroupPolicy.P2PParameters> {
             on { tlsPki } doReturn GroupPolicyConstants.PolicyValues.P2PParameters.TlsPkiMode.STANDARD
         }
@@ -187,7 +189,7 @@ class InMemorySessionReplayerTest {
             on { p2pParameters } doReturn parameters
         }
         val groups = mock<GroupPolicyProvider> {
-            on {getGroupPolicy(any()) } doReturnConsecutively listOf(null, groupPolicy)
+            on { getGroupPolicy(any()) } doReturnConsecutively listOf(null, groupPolicy)
         }
 
         InMemorySessionReplayer(mock(), mock(), mock(), mock(), groups, groupsAndMembers.first, mockTimeFacilitiesProvider.clock)
@@ -207,6 +209,32 @@ class InMemorySessionReplayerTest {
         loggingInterceptor.assertSingleWarning("Attempted to replay a session negotiation message (type " +
             "${InitiatorHelloMessage::class.java.simpleName}) but could not find the network type in the GroupPolicyProvider for" +
             " $US. The message was not replayed.")
+    }
+
+    @Test
+    fun `The replaySchedular callback logs a warning, if BadGroupPolicyException is thrown on group policy lookup`() {
+        val groupPolicy = mock<GroupPolicy> {
+            on { p2pParameters } doThrow BadGroupPolicyException("Bad group policy.")
+        }
+        val groups = mock<GroupPolicyProvider> {
+            on { getGroupPolicy(any()) } doReturn groupPolicy
+        }
+
+        InMemorySessionReplayer(mock(), mock(), mock(), mock(), groups, groupsAndMembers.first, mockTimeFacilitiesProvider.clock)
+        val helloMessage = AuthenticationProtocolInitiator(
+            id,
+            setOf(ProtocolMode.AUTHENTICATION_ONLY),
+            MAX_MESSAGE_SIZE,
+            KEY_PAIR.public,
+            GROUP_ID,
+            CertificateCheckMode.NoCertificate
+        ).generateInitiatorHello()
+
+        setRunning()
+        val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, SESSION_COUNTERPARTIES) { _,_ -> }
+        replayCallback(messageReplay, "foo-bar")
+
+        loggingInterceptor.assertSingleWarningContains("Bad group policy.")
     }
 
     @Test

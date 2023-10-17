@@ -35,6 +35,7 @@ import org.apache.avro.AvroRuntimeException
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.nio.ByteBuffer
+import net.corda.membership.lib.exceptions.BadGroupPolicyException
 
 /**
  * This class contains code which can be used to convert between [LinkOutMessage]/[LinkInMessage] and
@@ -232,12 +233,16 @@ class MessageConverter {
                         "which is not in the network map. The message was discarded.")
                 return null
             }
-            val groupPolicy = groupPolicyProvider.getGroupPolicy(source)
-            if (groupPolicy == null) {
-                logger.warn(
-                    "Could not find the group info in the " +
-                        "GroupPolicyProvider for our identity = $source. The message was discarded."
-                )
+            val networkType = try {
+                groupPolicyProvider.getGroupPolicy(source)?.networkType
+            } catch (except: BadGroupPolicyException) {
+                logger.warn("The group policy data is unavailable or cannot be parsed for our identity = $source. Error:" +
+                    " ${except.message}. The message was discarded.")
+                return null
+            }
+            if (networkType == null) {
+                logger.warn("Could not find the group info in the GroupPolicyProvider for our identity = $source." +
+                    " The message was discarded.")
                 return null
             }
 
@@ -245,7 +250,7 @@ class MessageConverter {
                 result,
                 source,
                 destMemberInfo,
-                groupPolicy.networkType,
+                networkType,
             )
         }
 

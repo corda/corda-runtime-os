@@ -40,6 +40,7 @@ import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Instant
+import net.corda.membership.lib.exceptions.BadGroupPolicyException
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class OutboundMessageProcessor(
@@ -211,6 +212,13 @@ internal class OutboundMessageProcessor(
                     "Could not find the group information in the GroupPolicyProvider for $source. " +
                     "The message ${message.header.messageId} was discarded."
                 )
+                return emptyList()
+            }
+            try {
+                groupPolicy.p2pParameters
+            } catch (except: BadGroupPolicyException) {
+                logger.warn("The group policy data is unavailable or cannot be parsed for $source. Error: ${except.message}. The message" +
+                            " ${message.header.messageId} was discarded.")
                 return emptyList()
             }
 
