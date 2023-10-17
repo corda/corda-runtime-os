@@ -1,5 +1,6 @@
 package net.corda.messaging.utils
 
+import net.corda.utilities.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -11,9 +12,9 @@ class HTTPRetryExecutor {
             var currentDelay = config.initialDelay
             for (i in 0 until config.times - 1) {
                 try {
-                    log.trace("HTTPRetryExecutor making attempt #${i + 1}.")
+                    log.trace { "HTTPRetryExecutor making attempt #${i + 1}." }
                     val result = block()
-                    log.trace("Operation successful after #${i + 1} attempt/s.")
+                    log.trace { "Operation successful after #${i + 1} attempt/s." }
                     return result
                 } catch (e: Exception) {
                     if (config.retryOn.none { it.isInstance(e) }) {
@@ -21,7 +22,7 @@ class HTTPRetryExecutor {
                         throw e
                     }
 
-                    log.trace("Attempt #${i + 1} failed due to ${e.message}. Retrying in $currentDelay ms...")
+                    log.trace { "Attempt #${i + 1} failed due to ${e.message}. Retrying in $currentDelay ms..." }
                     Thread.sleep(currentDelay)
                     currentDelay = (currentDelay * config.factor).toLong()
                 }
@@ -31,10 +32,10 @@ class HTTPRetryExecutor {
 
             try {
                 val result = block()
-                log.trace("Operation successful after #${config.times} attempt/s.")
+                log.trace { "Operation successful after #${config.times} attempt/s." }
                 return result
             } catch (e: Exception) {
-                log.trace("Operation failed after ${config.times} attempt/s.")
+                log.trace { "Operation failed after ${config.times} attempt/s." }
                 throw e
             }
         }

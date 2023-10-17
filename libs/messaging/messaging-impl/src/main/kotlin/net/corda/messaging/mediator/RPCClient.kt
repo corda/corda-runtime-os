@@ -8,6 +8,7 @@ import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_ENDPOINT
 import net.corda.messaging.utils.HTTPRetryConfig
 import net.corda.messaging.utils.HTTPRetryExecutor
+import net.corda.utilities.trace
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
 import org.slf4j.Logger
@@ -41,7 +42,7 @@ class RPCClient(
 
     override fun send(message: MediatorMessage<*>): MediatorMessage<*>? {
         return try {
-            log.trace("Received RPC external event send request for endpoint ${message.endpoint()}")
+            log.trace { "Received RPC external event send request for endpoint ${message.endpoint()}" }
             processMessage(message)
         } catch (e: Exception) {
             handleExceptions(e)
@@ -64,7 +65,7 @@ class RPCClient(
         return try {
             deserializer.deserialize(payload)!!
         } catch (e: Exception) {
-            val errorMsg = "Failed to deserialize payload of size ${payload.size} bytes due to: ${e.message}"
+            val errorMsg = "Failed to deserialize payload of size ${payload.size} bytes due to: $e"
             log.warn(errorMsg)
             onSerializationError?.invoke(errorMsg.toByteArray())
             throw e
