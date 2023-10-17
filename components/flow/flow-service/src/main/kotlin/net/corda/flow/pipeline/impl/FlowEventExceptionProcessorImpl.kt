@@ -149,10 +149,9 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         var records: List<Record<*, *>> = emptyList()
 
         val inputPayload = context.inputEventPayload as? SessionEvent
-
-        if(context.inputEventPayload is SessionEvent && inputPayload?.payload is SessionData ) {
+        if(inputPayload?.payload is SessionData ) {
             val sessionError = createSessionErrorRecord(
-                context.inputEventPayload as SessionEvent,
+                inputPayload,
                 SessionError(ExceptionEnvelope(FlowFatalException::class.qualifiedName, exception.message)),
                 Instant.now()
             )
