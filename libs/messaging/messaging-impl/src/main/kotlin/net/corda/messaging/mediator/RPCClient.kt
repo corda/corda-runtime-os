@@ -108,14 +108,14 @@ class RPCClient(
             .build()
             .record(endTime - startTime, TimeUnit.MILLISECONDS)
 
-        if (operationStatus == SUCCESS) {
+        if (response != null) {
             CordaMetrics.Metric.Messaging.HTTPRPCResponseSize.builder()
                 .withTag(CordaMetrics.Tag.OperationStatus, operationStatus)
                 .withTag(CordaMetrics.Tag.HttpMethod, request.method())
                 .withTag(CordaMetrics.Tag.HttpRequestUri, request.uri().toString())
-                .withTag(CordaMetrics.Tag.HttpResponseCode, response?.statusCode().toString())
+                .withTag(CordaMetrics.Tag.HttpResponseCode, response.statusCode().toString())
                 .build()
-                .record(response?.body()?.size?.toDouble() ?: 0.0)
+                .record(response.body().size.toDouble())
         }
     }
 
