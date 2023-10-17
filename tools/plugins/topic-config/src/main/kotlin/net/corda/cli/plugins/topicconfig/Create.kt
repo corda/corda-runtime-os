@@ -192,8 +192,17 @@ class Create(
         if (overrideFilePath == null) {
             config
         } else {
-            mergeConfigurations(config, mapper.readValue(Files.readString(Paths.get(overrideFilePath!!))))
+            mergeConfigurations(
+                config,
+                applyPrefix(mapper.readValue(Files.readString(Paths.get(overrideFilePath!!))))
+            )
         }
+
+    private fun applyPrefix(overrides: OverrideTopicConfigurations): OverrideTopicConfigurations =
+        OverrideTopicConfigurations(
+            overrides.topics.map { it.copy(name = topic!!.namePrefix + it.name) },
+            overrides.acls.map { it.copy(topic = topic!!.namePrefix + it.topic) }
+        )
 
     fun getTopicConfigsForPreview(topicConfigurations: List<TopicConfig>): PreviewTopicConfigurations {
         val topicConfigs = mutableListOf<PreviewTopicConfiguration>()
