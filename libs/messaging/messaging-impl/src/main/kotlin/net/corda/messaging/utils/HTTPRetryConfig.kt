@@ -29,7 +29,6 @@ data class HTTPRetryConfig(
 
         fun build(): HTTPRetryConfig {
             return HTTPRetryConfig(times, initialDelay, factor, retryOn)
-
         }
     }
 }
