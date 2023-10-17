@@ -12,6 +12,7 @@ import net.corda.messaging.mediator.metrics.EventMediatorMetrics
 import net.corda.taskmanager.TaskManager
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.`when`
 import org.mockito.kotlin.any
@@ -34,9 +35,18 @@ class TaskManagerHelperTest {
 
     private val taskManager = mock<TaskManager>()
     private val stateManagerHelper = mock<StateManagerHelper<String, String, String>>()
-    private val eventMediatorMetrics = mock<EventMediatorMetrics>()
-    private val taskManagerHelper = TaskManagerHelper(taskManager, stateManagerHelper, eventMediatorMetrics)
+    private val metrics = mock<EventMediatorMetrics>()
+    private val taskManagerHelper = TaskManagerHelper(taskManager, stateManagerHelper, metrics)
     private val messageProcessor = mock<StateAndEventProcessor<String, String, String>>()
+
+    @BeforeEach
+    fun setup() {
+        val timer = mock<Timer>()
+        whenever(timer.recordCallable(any<Callable<Any>>())).thenAnswer { invocation ->
+            invocation.getArgument<Callable<Any>>(0).call()
+        }
+        whenever(metrics.processorTimer).thenReturn(timer)
+    }
 
     @Test
     fun `successfully creates message processor tasks from states and events`() {
@@ -60,6 +70,7 @@ class TaskManagerHelperTest {
                 listOf(EVENT1).toRecords(KEY1),
                 messageProcessor,
                 stateManagerHelper,
+                metrics
             ),
             ProcessorTask(
                 KEY2,
@@ -67,6 +78,7 @@ class TaskManagerHelperTest {
                 listOf(EVENT2, EVENT3).toRecords(KEY2),
                 messageProcessor,
                 stateManagerHelper,
+                metrics
             ),
         )
         assertEquals(expectedProcessorTasks, processorTasks)
@@ -84,7 +96,7 @@ class TaskManagerHelperTest {
             replyMessage: MediatorMessage<String>?,
         ): ClientTask.Result<String, String, String> {
             val processorTask = ProcessorTask(
-                key, null, events.toRecords(key), messageProcessor, stateManagerHelper
+                key, null, events.toRecords(key), messageProcessor, stateManagerHelper, metrics
             )
             val processorTaskResult = ProcessorTask.Result(
                 processorTask, listOf(), updateState
@@ -113,7 +125,8 @@ class TaskManagerHelperTest {
                 updateState.copy(version = updateState.version + 1),
                 listOf(replyMessage.payload!!).toRecords(KEY2),
                 messageProcessor,
-                stateManagerHelper
+                stateManagerHelper,
+                metrics
             ),
         )
         assertEquals(expectedProcessorTasks, processorTasks)
@@ -126,14 +139,16 @@ class TaskManagerHelperTest {
             persistedState = mock(),
             events = mock(),
             messageProcessor,
-            stateManagerHelper
+            stateManagerHelper,
+            metrics
         )
         val processorTask2 = ProcessorTask(
             KEY2,
             persistedState = mock(),
             events = mock(),
             messageProcessor,
-            stateManagerHelper
+            stateManagerHelper,
+            metrics
         )
         val failedResults = listOf(
             ProcessorTask.Result(
@@ -173,12 +188,6 @@ class TaskManagerHelperTest {
 
         `when`(taskManager.executeShortRunningTask(any<() -> ProcessorTask.Result<String, String, String>>()))
             .thenReturn(mock())
-        val timer = mock<Timer>()
-        whenever(timer.recordCallable(any<Callable<Any>>())).thenAnswer { invocation ->
-            invocation.getArgument<Callable<Any>>(0).call()
-        }
-        whenever(eventMediatorMetrics.processorTimer).thenReturn(timer)
-
         taskManagerHelper.executeProcessorTasks(
             listOf(processorTask1, processorTask2)
         )

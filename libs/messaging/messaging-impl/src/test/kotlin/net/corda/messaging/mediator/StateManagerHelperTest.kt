@@ -1,11 +1,13 @@
 package net.corda.messaging.mediator
 
+import io.micrometer.core.instrument.Timer
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.mediator.metrics.EventMediatorMetrics
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -17,6 +19,9 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
+import org.mockito.kotlin.any
+import java.util.concurrent.Callable
 
 class StateManagerHelperTest {
 
@@ -29,6 +34,7 @@ class StateManagerHelperTest {
     private class EventType
 
     private val stateManager = mock<StateManager>()
+    private val metrics = mock<EventMediatorMetrics>()
     private val stateSerializer = mock<CordaAvroSerializer<StateType>>()
     private val stateDeserializer = mock<CordaAvroDeserializer<StateType>>()
 
@@ -44,6 +50,11 @@ class StateManagerHelperTest {
             val value = invocation.getArgument<Any>(0)
             serialized(value)
         }
+        val timer = mock<Timer>()
+        whenever(timer.recordCallable(any<Callable<Any>>())).thenAnswer { invocation ->
+            invocation.getArgument<Callable<Any>>(0).call()
+        }
+        whenever(metrics.processorTimer).thenReturn(timer)
     }
 
     private fun serialized(value: Any) = value.toString().toByteArray()
@@ -119,7 +130,7 @@ class StateManagerHelperTest {
         stateManagerHelper.persistStates(
             states.map { (persistedState, updatedState) ->
                 val task = ProcessorTask<String, StateType, EventType>(
-                    updatedState.key, persistedState, mock(), mock(), mock()
+                    updatedState.key, persistedState, mock(), mock(), mock(), metrics
                 )
                 ProcessorTask.Result(task, mock(), updatedState)
             }

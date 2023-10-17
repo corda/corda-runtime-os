@@ -1,9 +1,11 @@
 package net.corda.messaging.mediator
 
+import io.micrometer.core.instrument.Timer
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.mediator.metrics.EventMediatorMetrics
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
@@ -16,6 +18,8 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
+import java.util.concurrent.Callable
 
 class ProcessorTaskTest {
 
@@ -29,6 +33,7 @@ class ProcessorTaskTest {
     }
 
     private val processor = mock<StateAndEventProcessor<String, StateType, EventType>>()
+    private val metrics = mock<EventMediatorMetrics>()
     private val stateManagerHelper = mock<StateManagerHelper<String, StateType, EventType>>()
 
     @Captor
@@ -53,6 +58,12 @@ class ProcessorTaskTest {
         `when`(stateManagerHelper.createOrUpdateState(any(), anyOrNull(), anyOrNull())).thenReturn(
             mock()
         )
+
+        val timer = mock<Timer>()
+        whenever(timer.recordCallable(any<Callable<Any>>())).thenAnswer { invocation ->
+            invocation.getArgument<Callable<Any>>(0).call()
+        }
+        whenever(metrics.processorTimer).thenReturn(timer)
     }
 
     @Test
@@ -69,10 +80,10 @@ class ProcessorTaskTest {
             inputEventRecords,
             processor,
             stateManagerHelper,
+            metrics
         )
 
         val result = task.call()
-
         verify(processor, times(inputEventRecords.size)).onNext(
             stateCaptor.capture(), eventCaptor.capture()
         )
