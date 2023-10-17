@@ -24,7 +24,7 @@ class RPCClient(
     private val httpClient: HttpClient,
     private val retryConfig: HTTPRetryConfig =
         HTTPRetryConfig.Builder()
-            .retryOn(IOException::class, TimeoutException::class)
+            .retryOn(IOException::class.java, TimeoutException::class.java)
             .build()
 ) : MessagingClient {
     private val deserializer = cordaAvroSerializerFactory.createAvroDeserializer({}, Any::class.java)
@@ -35,6 +35,7 @@ class RPCClient(
 
     override fun send(message: MediatorMessage<*>): MediatorMessage<*>? {
         return try {
+            log.trace("Received RPC external event send request for endpoint ${message.endpoint()}")
             processMessage(message)
         } catch (e: Exception) {
             handleExceptions(e)
@@ -58,9 +59,9 @@ class RPCClient(
             deserializer.deserialize(payload)!!
         } catch (e: Exception) {
             val errorMsg = "Failed to deserialize payload of size ${payload.size} bytes due to: ${e.message}"
-            log.error(errorMsg)
+            log.warn(errorMsg)
             onSerializationError?.invoke(errorMsg.toByteArray())
-            throw(e)
+            throw e
         }
     }
 
@@ -78,6 +79,7 @@ class RPCClient(
     }
 
     private fun checkResponseStatus(statusCode: Int) {
+        log.trace("Received response with status code $statusCode")
         when (statusCode) {
             in 400..499 -> throw CordaHTTPClientErrorException(statusCode, "Server returned status code $statusCode.")
             in 500..599 -> throw CordaHTTPServerErrorException(statusCode, "Server returned status code $statusCode.")
@@ -86,17 +88,17 @@ class RPCClient(
 
     private fun handleExceptions(e: Exception) {
         when (e) {
-            is IOException -> log.error("Network or IO operation error in RPCClient: ", e)
-            is InterruptedException -> log.error("Operation was interrupted in RPCClient: ", e)
-            is IllegalArgumentException -> log.error("Invalid argument provided in RPCClient call: ", e)
-            is SecurityException -> log.error("Security violation detected in RPCClient: ", e)
-            is IllegalStateException -> log.error("Coroutine state error in RPCClient: ", e)
-            is CordaHTTPClientErrorException -> log.error("Client-side HTTP error in RPCClient: ", e)
-            is CordaHTTPServerErrorException -> log.error("Server-side HTTP error in RPCClient: ", e)
-            else -> log.error("Unhandled exception in RPCClient: ", e)
+            is IOException -> log.warn("Network or IO operation error in RPCClient: ", e)
+            is InterruptedException -> log.warn("Operation was interrupted in RPCClient: ", e)
+            is IllegalArgumentException -> log.warn("Invalid argument provided in RPCClient call: ", e)
+            is SecurityException -> log.warn("Security violation detected in RPCClient: ", e)
+            is IllegalStateException -> log.warn("Coroutine state error in RPCClient: ", e)
+            is CordaHTTPClientErrorException -> log.warn("Client-side HTTP error in RPCClient: ", e)
+            is CordaHTTPServerErrorException -> log.warn("Server-side HTTP error in RPCClient: ", e)
+            else -> log.warn("Unhandled exception in RPCClient: ", e)
         }
 
-        throw e;
+        throw e
     }
 
     override fun close() {

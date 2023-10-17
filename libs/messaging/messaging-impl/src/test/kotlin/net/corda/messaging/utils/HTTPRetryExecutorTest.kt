@@ -14,7 +14,7 @@ class HTTPRetryExecutorTest {
             .times(3)
             .initialDelay(100)
             .factor(2.0)
-            .retryOn(RuntimeException::class)
+            .retryOn(RuntimeException::class.java)
             .build()
     }
 
@@ -63,7 +63,7 @@ class HTTPRetryExecutorTest {
             .times(3)
             .initialDelay(100)
             .factor(2.0)
-            .retryOn(SpecificException::class)
+            .retryOn(SpecificException::class.java)
             .build()
 
         assertThrows<RuntimeException> {
