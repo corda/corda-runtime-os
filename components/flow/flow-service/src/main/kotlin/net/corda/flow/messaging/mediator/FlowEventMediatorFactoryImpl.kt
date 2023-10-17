@@ -2,6 +2,7 @@ package net.corda.flow.messaging.mediator
 
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
+import net.corda.data.deadletter.StateAndEventDeadLetterRecord
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.output.FlowStatus
@@ -15,6 +16,7 @@ import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.messaging.api.mediator.MSG_PROP_DLQ_TOPIC
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.RoutingDestination.Companion.routeTo
@@ -33,6 +35,7 @@ import net.corda.schema.Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC
 import net.corda.schema.Schemas.Services.TOKEN_CACHE_EVENT
 import net.corda.schema.Schemas.UniquenessChecker.UNIQUENESS_CHECK_TOPIC
 import net.corda.schema.Schemas.Verification.VERIFICATION_LEDGER_PROCESSOR_TOPIC
+import net.corda.schema.Schemas.getDLQTopic
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.FlowConfig
 import org.osgi.service.component.annotations.Activate
@@ -111,6 +114,8 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
                 is TokenPoolCacheEvent -> routeTo(messageBusClient, TOKEN_CACHE_EVENT)
                 is TransactionVerificationRequest -> routeTo(messageBusClient, VERIFICATION_LEDGER_PROCESSOR_TOPIC)
                 is UniquenessCheckRequestAvro -> routeTo(messageBusClient, UNIQUENESS_CHECK_TOPIC)
+                is StateAndEventDeadLetterRecord ->
+                    routeTo(messageBusClient, getDLQTopic(message.getProperty<String>(MSG_PROP_DLQ_TOPIC)))
                 else -> {
                     val eventType = event?.let { it::class.java }
                     throw IllegalStateException("No route defined for event type [$eventType]")

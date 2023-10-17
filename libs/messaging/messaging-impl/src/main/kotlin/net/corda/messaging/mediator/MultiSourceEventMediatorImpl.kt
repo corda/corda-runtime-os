@@ -24,15 +24,13 @@ import java.util.UUID
 @Suppress("LongParameterList")
 class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     private val config: EventMediatorConfig<K, S, E>,
-    stateSerializer: CordaAvroSerializer<S>,
+    serializer: CordaAvroSerializer<Any>,
     stateDeserializer: CordaAvroDeserializer<S>,
     private val stateManager: StateManager,
     private val taskManager: TaskManager,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
 ) : MultiSourceEventMediator<K, S, E> {
-
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.name}")
-
     private var consumers = listOf<MediatorConsumer<K, E>>()
     private var clients = listOf<MessagingClient>()
     private lateinit var messageRouter: MessageRouter
@@ -41,10 +39,10 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     )
     private val metrics = EventMediatorMetrics(config.name)
     private val stateManagerHelper = StateManagerHelper<K, S, E>(
-        stateManager, stateSerializer, stateDeserializer
+        stateManager, serializer, stateDeserializer
     )
     private val taskManagerHelper = TaskManagerHelper(
-        taskManager, stateManagerHelper, metrics
+        taskManager, stateManagerHelper, serializer, metrics
     )
     private val uniqueId = UUID.randomUUID().toString()
     private val lifecycleCoordinatorName = LifecycleCoordinatorName(

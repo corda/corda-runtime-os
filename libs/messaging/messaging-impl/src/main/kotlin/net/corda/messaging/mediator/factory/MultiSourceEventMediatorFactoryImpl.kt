@@ -33,7 +33,7 @@ class MultiSourceEventMediatorFactoryImpl(
     override fun <K : Any, S : Any, E : Any> create(
         eventMediatorConfig: EventMediatorConfig<K, S, E>,
     ): MultiSourceEventMediator<K, S, E> {
-        val stateSerializer = cordaAvroSerializationFactory.createAvroSerializer<S> { }
+        val stateSerializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
         val stateDeserializer = cordaAvroSerializationFactory.createAvroDeserializer(
             {},
             eventMediatorConfig.messageProcessor.stateValueClass

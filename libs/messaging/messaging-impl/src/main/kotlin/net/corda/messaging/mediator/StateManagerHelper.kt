@@ -12,7 +12,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
  */
 class StateManagerHelper<K : Any, S : Any, E : Any>(
     private val stateManager: StateManager,
-    private val stateSerializer: CordaAvroSerializer<S>,
+    private val stateSerializer: CordaAvroSerializer<Any>,
     private val stateDeserializer: CordaAvroDeserializer<S>,
 ) {
 

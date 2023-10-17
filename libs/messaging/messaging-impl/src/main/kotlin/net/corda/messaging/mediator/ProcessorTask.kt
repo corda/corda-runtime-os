@@ -1,8 +1,13 @@
 package net.corda.messaging.mediator
 
+import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.data.deadletter.StateAndEventDeadLetterRecord
 import net.corda.libs.statemanager.api.State
+import net.corda.messaging.api.mediator.MSG_PROP_DLQ_TOPIC
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
+import java.nio.ByteBuffer
+import java.time.Instant
 import java.util.concurrent.Callable
 
 /**
@@ -17,6 +22,7 @@ data class ProcessorTask<K : Any, S : Any, E : Any>(
     val events: Collection<Record<K, E>>,
     private val processor: StateAndEventProcessor<K, S, E>,
     private val stateManagerHelper: StateManagerHelper<K, S, E>,
+    private val serializer: CordaAvroSerializer<Any>,
 ) : Callable<ProcessorTask.Result<K, S, E>> {
 
     class Result<K : Any, S : Any, E : Any>(
@@ -37,8 +43,12 @@ data class ProcessorTask<K : Any, S : Any, E : Any>(
 
         val outputEvents = events.map { event ->
             val response = processor.onNext(state, event)
-            state = response.updatedState
-            response.responseEvents
+            if (response.markForDLQ) {
+                listOf(generateDeadLetterRecord(state?.value, event))
+            } else {
+                state = response.updatedState
+                response.responseEvents
+            }
         }.flatten()
 
         val updatedState = stateManagerHelper.createOrUpdateState(
@@ -48,5 +58,17 @@ data class ProcessorTask<K : Any, S : Any, E : Any>(
         )
 
         return Result(this, outputEvents, updatedState)
+    }
+
+    private fun generateDeadLetterRecord(state: S?, event: Record<K, E>): Record<*, *> {
+        val keyBytes = ByteBuffer.wrap(serializer.serialize(event.key))
+        val stateBytes = state?.let { ByteBuffer.wrap(serializer.serialize(it)) }
+        val eventBytes = event.value?.let { ByteBuffer.wrap(serializer.serialize(it)) }
+        return Record(
+            "",
+            event.key,
+            StateAndEventDeadLetterRecord(Instant.now(), keyBytes, stateBytes, eventBytes),
+            headers = listOf(MSG_PROP_DLQ_TOPIC to event.topic)
+        )
     }
 }

@@ -1,5 +1,6 @@
 package net.corda.messaging.mediator
 
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
@@ -18,6 +19,7 @@ import net.corda.taskmanager.TaskManager
 internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
     private val taskManager: TaskManager,
     private val stateManagerHelper: StateManagerHelper<K, S, E>,
+    private val serializer: CordaAvroSerializer<Any>,
     private val metrics: EventMediatorMetrics,
 ) {
 
@@ -43,6 +45,7 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
                 events,
                 messageProcessor,
                 stateManagerHelper,
+                serializer,
             )
         }
     }
