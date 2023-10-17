@@ -11,9 +11,9 @@ class HTTPRetryExecutor {
             var currentDelay = config.initialDelay
             for (i in 0 until config.times - 1) {
                 try {
-                    log.info("HTTPRetryExecutor making attempt #${i + 1}.")
+                    log.trace("HTTPRetryExecutor making attempt #${i + 1}.")
                     val result = block()
-                    log.info("Operation successful after #${i + 1} attempt/s.")
+                    log.trace("Operation successful after #${i + 1} attempt/s.")
                     return result
                 } catch (e: Exception) {
                     if (config.retryOn.none { it.isInstance(e) }) {
@@ -21,20 +21,20 @@ class HTTPRetryExecutor {
                         throw e
                     }
 
-                    log.warn("Attempt #${i + 1} failed due to ${e.message}. Retrying in $currentDelay ms...")
+                    log.trace("Attempt #${i + 1} failed due to ${e.message}. Retrying in $currentDelay ms...")
                     Thread.sleep(currentDelay)
                     currentDelay = (currentDelay * config.factor).toLong()
                 }
             }
 
-            log.warn("All retry attempts exhausted. Making the final call.")
+            log.trace("All retry attempts exhausted. Making the final call.")
 
             try {
                 val result = block()
-                log.info("Operation successful after #${config.times} attempt/s.")
+                log.trace("Operation successful after #${config.times} attempt/s.")
                 return result
             } catch (e: Exception) {
-                log.error("Operation failed after ${config.times} attempt/s.")
+                log.trace("Operation failed after ${config.times} attempt/s.")
                 throw e
             }
         }
