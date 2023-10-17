@@ -9,7 +9,6 @@ import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
-import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig
@@ -140,9 +139,7 @@ interface FlowSessionManager {
         checkpoint: FlowCheckpoint,
         sessionIds: List<String>,
         throwable: Throwable,
-        instant: Instant,
-        sessionState: SessionState? = null,
-        holdingIdentity: HoldingIdentity? = null
+        instant: Instant
     ): List<SessionState>
 
     /**

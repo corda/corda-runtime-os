@@ -178,9 +178,7 @@ class FlowSessionManagerImpl @Activate constructor(
         checkpoint: FlowCheckpoint,
         sessionIds: List<String>,
         throwable: Throwable,
-        instant: Instant,
-        sessionState: SessionState?,
-        holdingIdentity: HoldingIdentity?
+        instant: Instant
     ): List<SessionState> {
         val errorMessage = throwable.message ?: "No exception message provided."
         return sessionIds.map { sessionId ->
@@ -188,9 +186,7 @@ class FlowSessionManagerImpl @Activate constructor(
                 checkpoint,
                 sessionId,
                 payload = SessionError(ExceptionEnvelope(throwable::class.qualifiedName, errorMessage)),
-                instant,
-                sessionState = sessionState,
-                holdingIdentity = holdingIdentity
+                instant
             )
         }
     }
@@ -333,20 +329,16 @@ class FlowSessionManagerImpl @Activate constructor(
         sessionId: String,
         payload: Any,
         instant: Instant,
-        contextSessionProperties: KeyValuePairList? = null,
-        sessionState : SessionState? = null,
-        holdingIdentity: HoldingIdentity? = null
+        contextSessionProperties: KeyValuePairList? = null
     ): SessionState {
-        val gotSessionState = sessionState ?: getAndRequireSession(checkpoint, sessionId)
-        val gotHoldingIdentity = holdingIdentity ?: checkpoint.holdingIdentity.toAvro()
-
+        val sessionState = getAndRequireSession(checkpoint, sessionId)
         val (initiatingIdentity, initiatedIdentity) = getInitiatingAndInitiatedParties(
-            gotSessionState, gotHoldingIdentity
+            sessionState, checkpoint.holdingIdentity.toAvro()
         )
 
         return sessionManager.processMessageToSend(
             key = checkpoint.flowId,
-            sessionState = gotSessionState,
+            sessionState = sessionState,
             event = SessionEvent.newBuilder()
                 .setSessionId(sessionId)
                 .setMessageDirection(MessageDirection.OUTBOUND)
