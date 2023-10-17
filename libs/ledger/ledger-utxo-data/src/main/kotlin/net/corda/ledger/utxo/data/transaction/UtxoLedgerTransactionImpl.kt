@@ -6,7 +6,6 @@ import net.corda.ledger.utxo.data.transaction.verifier.verifyMetadata
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
-import net.corda.v5.ledger.utxo.Attachment
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
@@ -53,16 +52,6 @@ class UtxoLedgerTransactionImpl(
 
     override fun getSignatories(): List<PublicKey> {
         return wrappedWireTransaction.signatories
-    }
-
-    override fun getAttachments(): List<Attachment> {
-        return wrappedWireTransaction.attachments
-    }
-
-    override fun getAttachment(id: SecureHash): Attachment {
-        return requireNotNull(attachments.singleOrNull { it.id == id }) {
-            "Failed to find a single attachment with id: $id."
-        }
     }
 
     override fun getCommands(): List<Command> {

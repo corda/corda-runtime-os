@@ -1,6 +1,7 @@
 package net.corda.membership.impl.read
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
@@ -44,6 +45,8 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
     private val memberInfoFactory: MemberInfoFactory,
     @Reference(service = GroupParametersReaderService::class)
     private val groupParametersReaderService: GroupParametersReaderService,
+    @Reference(service = PlatformInfoProvider::class)
+    private val platformInfoProvider: PlatformInfoProvider,
 ) : MembershipGroupReaderProvider {
 
     companion object {
@@ -113,8 +116,9 @@ class MembershipGroupReaderProviderImpl @Activate constructor(
         private val membershipGroupReadCache: MembershipGroupReadCache,
     ) : InnerMembershipGroupReaderProvider {
         // Factory responsible for creating group readers or taking existing instances from the cache.
-        private val membershipGroupReaderFactory: MembershipGroupReaderFactory =
-            MembershipGroupReaderFactory.Impl(membershipGroupReadCache, groupParametersReaderService)
+        private val membershipGroupReaderFactory: MembershipGroupReaderFactory = MembershipGroupReaderFactory.Impl(
+            membershipGroupReadCache, groupParametersReaderService, memberInfoFactory, platformInfoProvider
+        )
 
         /**
          * Get the [MembershipGroupReader] instance for the given holding identity.

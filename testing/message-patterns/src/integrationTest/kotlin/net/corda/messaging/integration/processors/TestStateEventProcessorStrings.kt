@@ -3,6 +3,7 @@ package net.corda.messaging.integration.processors
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.Response
+import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
 import java.util.concurrent.CountDownLatch
 
@@ -23,7 +24,9 @@ class TestStateEventProcessorStrings(
     override val eventValueClass: Class<String>
         get() = String::class.java
 
-    override fun onNext(state: String?, event: Record<String, String>): Response<String> {
+    override fun onNext(
+        state: State<String>?, event: Record<String, String>
+    ): Response<String> {
         onNextLatch.countDown()
 
         if (delayProcessorOnFirst != null) {
@@ -48,6 +51,9 @@ class TestStateEventProcessorStrings(
             emptyList()
         }
 
-        return Response(newState, outputRecordList)
+        return Response(
+            State(newState, metadata = null),
+            outputRecordList
+        )
     }
 }

@@ -19,7 +19,13 @@ class CacheFactoryImpl: CacheFactory {
             .build()
         return CaffeineCacheMetrics.monitor(CordaMetrics.registry, cache, name)
     }
-
+    override fun <K, V> buildNonAsync(name: String, caffeine: Caffeine<in K, in V>): Cache<K, V> {
+        val cache: Cache<K, V> = caffeine
+            .executor(Runnable::run)
+            .recordStats()
+            .build()
+        return CaffeineCacheMetrics.monitor(CordaMetrics.registry, cache, name)
+    }
     override fun <K, V> build(name: String, caffeine: Caffeine<in K, in V>, loader: CacheLoader<K, V>): LoadingCache<K, V> {
         val cache: LoadingCache<K, V> = caffeine
             .executor(SecManagerForkJoinPool.pool)

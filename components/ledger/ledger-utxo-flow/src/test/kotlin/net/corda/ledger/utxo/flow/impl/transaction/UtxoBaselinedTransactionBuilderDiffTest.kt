@@ -74,29 +74,6 @@ class UtxoBaselinedTransactionBuilderDiffTest : UtxoLedgerTest() {
     }
 
     @Test
-    fun `diff - attachments do not get set if they are the same`() {
-        val result =
-            UtxoBaselinedTransactionBuilder(
-                utxoTransactionBuilder.addAttachment(hash1).addAttachment(hash2) as UtxoTransactionBuilderInternal
-            )
-                .diff()
-        assertEquals(UtxoTransactionBuilderContainer(), result)
-    }
-
-
-    @Test
-    fun `diff - attachments get set when there is a new one`() {
-        val result =
-            UtxoBaselinedTransactionBuilder(
-                utxoTransactionBuilder.addAttachment(hash1) as UtxoTransactionBuilderInternal
-            )
-                .addAttachment(hash2)
-                .diff()
-
-        assertContentEquals(listOf(hash2), result.attachments)
-    }
-
-    @Test
     fun `diff - commands get added regardless of previous same ones or duplications`() {
         val result =
             UtxoBaselinedTransactionBuilder(

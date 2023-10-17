@@ -173,9 +173,9 @@ class DeliveryTrackerTest {
         tracker.stop()
 
         assertEquals(0, response.responseEvents.size)
-        assertNotNull(response.updatedState)
-        assertSame(messageAndKey, response.updatedState!!.message)
-        assertEquals(timeStamp, response.updatedState!!.timestamp)
+        assertNotNull(response.updatedState?.value)
+        assertSame(messageAndKey, response.updatedState!!.value!!.message)
+        assertEquals(timeStamp, response.updatedState!!.value!!.timestamp)
     }
 
     @Test
@@ -188,7 +188,7 @@ class DeliveryTrackerTest {
         tracker.stop()
 
         assertEquals(0, response.responseEvents.size)
-        assertNull(response.updatedState)
+        assertNull(response.updatedState?.value)
     }
 
     @Test

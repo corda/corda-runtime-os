@@ -7,11 +7,14 @@ import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
+import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.helper.getConfig
+import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.RoutingDestination.Companion.routeTo
@@ -27,8 +30,11 @@ import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
 import net.corda.schema.Schemas.Persistence.PERSISTENCE_ENTITY_PROCESSOR_TOPIC
 import net.corda.schema.Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC
+import net.corda.schema.Schemas.Services.TOKEN_CACHE_EVENT
 import net.corda.schema.Schemas.UniquenessChecker.UNIQUENESS_CHECK_TOPIC
 import net.corda.schema.Schemas.Verification.VERIFICATION_LEDGER_PROCESSOR_TOPIC
+import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.FlowConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -56,16 +62,21 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
     override fun create(
         configs: Map<String, SmartConfig>,
         messagingConfig: SmartConfig,
+        stateManager: StateManager,
     ) = eventMediatorFactory.create(
         createEventMediatorConfig(
+            configs,
             messagingConfig,
             flowEventProcessorFactory.create(configs),
+            stateManager,
         )
     )
 
     private fun createEventMediatorConfig(
+        configs: Map<String, SmartConfig>,
         messagingConfig: SmartConfig,
         messageProcessor: StateAndEventProcessor<String, Checkpoint, FlowEvent>,
+        stateManager: StateManager,
     ) = EventMediatorConfigBuilder<String, Checkpoint, FlowEvent>()
         .name("FlowEventMediator")
         .messagingConfig(messagingConfig)
@@ -81,6 +92,9 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         )
         .messageProcessor(messageProcessor)
         .messageRouterFactory(createMessageRouterFactory())
+        .threads(configs.getConfig(ConfigKeys.FLOW_CONFIG).getInt(FlowConfig.PROCESSING_THREAD_POOL_SIZE))
+        .threadName("flow-event-mediator")
+        .stateManager(stateManager)
         .build()
 
     private fun createMessageRouterFactory() = MessageRouterFactory { clientFinder ->
@@ -94,6 +108,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
                 is FlowOpsRequest -> routeTo(messageBusClient, FLOW_OPS_MESSAGE_TOPIC)
                 is FlowStatus -> routeTo(messageBusClient, FLOW_STATUS_TOPIC)
                 is LedgerPersistenceRequest -> routeTo(messageBusClient, PERSISTENCE_LEDGER_PROCESSOR_TOPIC)
+                is TokenPoolCacheEvent -> routeTo(messageBusClient, TOKEN_CACHE_EVENT)
                 is TransactionVerificationRequest -> routeTo(messageBusClient, VERIFICATION_LEDGER_PROCESSOR_TOPIC)
                 is UniquenessCheckRequestAvro -> routeTo(messageBusClient, UNIQUENESS_CHECK_TOPIC)
                 else -> {

@@ -3,9 +3,12 @@ package net.corda.flow.service
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
+import net.corda.flow.messaging.mediator.FlowEventMediatorFactory
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.statemanager.api.StateManager
+import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -13,12 +16,12 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.StopEvent
+import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.messaging.api.processor.StateAndEventProcessor
-import net.corda.messaging.api.subscription.StateAndEventSubscription
-import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
+import net.corda.schema.configuration.ConfigKeys.STATE_MANAGER_CONFIG
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
 import org.assertj.core.api.Assertions.assertThat
@@ -26,7 +29,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.inOrder
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -37,35 +39,39 @@ class FlowExecutorImplTest {
 
     private val coordinatorFactory = mock<LifecycleCoordinatorFactory>()
     private val flowEventProcessorFactory = mock<FlowEventProcessorFactory>()
-    private val subscriptionFactory = mock<SubscriptionFactory>()
+    private val stateManagerFactory = mock<StateManagerFactory>()
+    private val flowEventMediatorFactory = mock<FlowEventMediatorFactory>()
     private val toMessagingConfig: (Map<String, SmartConfig>) -> SmartConfig = {
         messagingConfig
     }
 
     private val config = mutableMapOf(
         BOOT_CONFIG to SmartConfigImpl.empty().withServiceEndpoints(),
-        FLOW_CONFIG to SmartConfigImpl.empty()
+        FLOW_CONFIG to SmartConfigImpl.empty(),
+        STATE_MANAGER_CONFIG to SmartConfigImpl.empty(),
     )
     private val messagingConfig = getMinimalMessagingConfig()
     private val subscriptionRegistrationHandle = mock<RegistrationHandle>()
     private val flowExecutorCoordinator = mock<LifecycleCoordinator>()
-    private val subscription = mock<StateAndEventSubscription<String, Checkpoint, FlowEvent>>()
+    private val multiSourceEventMediator = mock<MultiSourceEventMediator<String, Checkpoint, FlowEvent>>()
     private val flowEventProcessor = mock<StateAndEventProcessor<String, Checkpoint, FlowEvent>>()
+    private val stateManager = mock<StateManager>()
 
     @BeforeEach
     fun setup() {
         whenever(flowEventProcessorFactory.create(any())).thenReturn(flowEventProcessor)
+        whenever(stateManagerFactory.create(any())).thenReturn(stateManager)
         whenever(
-            subscriptionFactory.createStateAndEventSubscription<String, Checkpoint, FlowEvent>(
+            flowEventMediatorFactory.create(
                 any(),
                 any(),
                 any(),
-                anyOrNull()
             )
-        ).thenReturn(subscription)
+        ).thenReturn(multiSourceEventMediator)
 
         whenever(coordinatorFactory.createCoordinator(any(), any())).thenReturn(flowExecutorCoordinator)
         whenever(flowExecutorCoordinator.followStatusChangesByName(any())).thenReturn(subscriptionRegistrationHandle)
+        whenever(flowExecutorCoordinator.createManagedResource(any(), any<() -> StateManager>())).thenReturn(stateManager)
     }
 
     @Test
@@ -76,7 +82,7 @@ class FlowExecutorImplTest {
     }
 
     @Test
-    fun `lifecycle - flow executor signals error if it fails to create a subscription`() {
+    fun `lifecycle - flow executor signals error if it fails to create event mediator`() {
         val invalidConfig = mapOf<String, SmartConfig>()
 
         val flowExecutor = getFlowExecutor()
@@ -89,9 +95,9 @@ class FlowExecutorImplTest {
     }
 
     @Test
-    fun `lifecycle - flow executor signals error if the subscription signals error`() {
+    fun `lifecycle - flow executor signals error if event mediator signals error`() {
         val name = LifecycleCoordinatorName("", "")
-        whenever(subscription.subscriptionName).thenReturn(name)
+        whenever(multiSourceEventMediator.subscriptionName).thenReturn(name)
 
         val flowExecutor = getFlowExecutor()
         flowExecutor.start()
@@ -108,7 +114,7 @@ class FlowExecutorImplTest {
     }
 
     @Test
-    fun `lifecycle - flow executor stops subscription when stopped`() {
+    fun `lifecycle - flow executor stops event mediator when stopped`() {
         val flowExecutor = getFlowExecutor()
         flowExecutor.onConfigChange(config)
 
@@ -119,7 +125,7 @@ class FlowExecutorImplTest {
         }
 
         verify(subscriptionRegistrationHandle).close()
-        verify(subscription).close()
+        verify(multiSourceEventMediator).close()
     }
 
     @Test
@@ -127,10 +133,10 @@ class FlowExecutorImplTest {
         val name1 = LifecycleCoordinatorName("", "")
         val name2 = LifecycleCoordinatorName("", "")
         val subscriptionRegistrationHandle2 = mock<RegistrationHandle>()
-        val subscription2 = mock<StateAndEventSubscription<String, Checkpoint, FlowEvent>>()
+        val multiSourceEventMediator2 = mock<MultiSourceEventMediator<String, Checkpoint, FlowEvent>>()
 
-        whenever(subscription.subscriptionName).thenReturn(name1)
-        whenever(subscription2.subscriptionName).thenReturn(name2)
+        whenever(multiSourceEventMediator.subscriptionName).thenReturn(name1)
+        whenever(multiSourceEventMediator2.subscriptionName).thenReturn(name2)
 
         // First config change gets us subscribed
         val flowExecutor = getFlowExecutor()
@@ -140,29 +146,28 @@ class FlowExecutorImplTest {
         // now we change config and should see the subscription registration removed,
         // the subscription re-created and then the subscription registered again
         whenever(
-            subscriptionFactory.createStateAndEventSubscription<String, Checkpoint, FlowEvent>(
+            flowEventMediatorFactory.create(
                 any(),
                 any(),
                 any(),
-                anyOrNull()
             )
-        ).thenReturn(subscription2)
+        ).thenReturn(multiSourceEventMediator2)
 
         whenever(flowExecutorCoordinator.followStatusChangesByName(any())).thenReturn(subscriptionRegistrationHandle2)
 
         flowExecutor.onConfigChange(config)
 
         inOrder(
-            subscription,
-            subscription2,
+            multiSourceEventMediator,
+            multiSourceEventMediator2,
             subscriptionRegistrationHandle,
             subscriptionRegistrationHandle2,
             flowExecutorCoordinator
         ).apply {
             verify(subscriptionRegistrationHandle).close()
-            verify(subscription).close()
+            verify(multiSourceEventMediator).close()
             verify(flowExecutorCoordinator).followStatusChangesByName(eq(setOf(name2)))
-            verify(subscription2).start()
+            verify(multiSourceEventMediator2).start()
         }
     }
 
@@ -175,13 +180,13 @@ class FlowExecutorImplTest {
     private fun getFlowExecutor(): FlowExecutorImpl {
         return FlowExecutorImpl(
             coordinatorFactory,
-            subscriptionFactory,
-            flowEventProcessorFactory,
+            flowEventMediatorFactory,
+            stateManagerFactory,
             toMessagingConfig
         )
     }
 
-    private fun getMinimalMessagingConfig() : SmartConfig {
+    private fun getMinimalMessagingConfig(): SmartConfig {
         return SmartConfigImpl.empty()
             .withValue(PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(5000))
             .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(1000000000))

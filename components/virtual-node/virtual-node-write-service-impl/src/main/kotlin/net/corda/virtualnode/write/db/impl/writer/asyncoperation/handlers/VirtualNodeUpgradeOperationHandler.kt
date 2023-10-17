@@ -227,11 +227,11 @@ internal class VirtualNodeUpgradeOperationHandler(
 
         val records = if (mgmInfo == null) {
             logger.info("No MGM information found in group policy. MGM member info not published.")
-            mutableListOf()
+            emptyList()
         } else {
             val oldMgmMemberInfo = membershipGroupReader.lookup(mgmInfo.name)
             if (mgmInfo != oldMgmMemberInfo) {
-                mutableListOf(recordFactory.createMgmInfoRecord(holdingIdentity, mgmInfo))
+                listOf(recordFactory.createMgmInfoRecord(holdingIdentity, mgmInfo))
             } else {
                 emptyList()
             }
@@ -248,7 +248,7 @@ internal class VirtualNodeUpgradeOperationHandler(
                 if (registrationRequest.payload.isNotEmpty()) {
                     try {
                         // Get the latest registration request
-                        val registrationRequestDetails = registrationRequest.payload.last()
+                        val registrationRequestDetails = registrationRequest.payload.sortedBy { it.serial }.last()
 
                         val updatedSerial = registrationRequestDetails.serial + 1
                         val registrationContext = registrationRequestDetails
@@ -258,10 +258,9 @@ internal class VirtualNodeUpgradeOperationHandler(
 
                         registrationContext[MemberInfoExtension.SERIAL] = updatedSerial.toString()
 
-                        memberResourceClient.startRegistration(
-                            holdingIdentity.shortHash,
-                            registrationContext,
-                        )
+                        logger.info("Starting MGM re-registration for holdingIdentity=$holdingIdentity, " +
+                                "shortHash=${holdingIdentity.shortHash}, registrationContext=$registrationContext")
+                        memberResourceClient.startRegistration(holdingIdentity.shortHash, registrationContext)
                     } catch (e: ContextDeserializationException) {
                         logger.warn(
                             "Could not deserialize previous registration context for ${holdingIdentity.shortHash}. " +

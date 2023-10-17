@@ -406,7 +406,6 @@ class UtxoPersistenceServiceImplTest {
         // Verify persisted data
         entityManagerFactory.transaction { em ->
             val dbTransaction = em.find(entityFactory.utxoTransaction, signedTransaction.id.toString())
-
             assertThat(dbTransaction).isNotNull
             val txPrivacySalt = dbTransaction.field<ByteArray>("privacySalt")
             val txAccountId = dbTransaction.field<String>("accountId")
@@ -416,25 +415,72 @@ class UtxoPersistenceServiceImplTest {
             assertThat(txAccountId).isEqualTo(account)
             assertThat(txCreatedTs).isNotNull
 
-            val componentGroupLists = signedTransaction.wireTransaction.componentGroupLists
+            val componentGroupListsWithoutMetadata = signedTransaction.wireTransaction.componentGroupLists.drop(1)
             val txComponents = dbTransaction.field<Collection<Any>?>("components")
             assertThat(txComponents).isNotNull
-                .hasSameSizeAs(componentGroupLists.flatten().filter { it.isNotEmpty() })
+                .hasSameSizeAs(componentGroupListsWithoutMetadata.flatten().filter { it.isNotEmpty() })
             txComponents!!
                 .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
                 .groupBy { it.field<Int>("groupIndex") }.values
-                .zip(componentGroupLists)
+                .zip(componentGroupListsWithoutMetadata)
                 .forEachIndexed { groupIndex, (dbComponentGroup, componentGroup) ->
                     assertThat(dbComponentGroup).hasSameSizeAs(componentGroup)
                     dbComponentGroup.zip(componentGroup)
                         .forEachIndexed { leafIndex, (dbComponent, component) ->
-                            assertThat(dbComponent.field<Int>("groupIndex")).isEqualTo(groupIndex)
+                            assertThat(dbComponent.field<Int>("groupIndex")).isEqualTo(groupIndex +1 )
                             assertThat(dbComponent.field<Int>("leafIndex")).isEqualTo(leafIndex)
                             assertThat(dbComponent.field<ByteArray>("data")).isEqualTo(component)
                             assertThat(dbComponent.field<String>("hash")).isEqualTo(
                                 digest("SHA-256", component).toString()
                             )
                         }
+                }
+
+            val dbMetadata = dbTransaction.field<Any>("metadata")
+            assertThat(dbMetadata).isNotNull
+            assertThat(dbMetadata.field<ByteArray>("canonicalData"))
+                .isEqualTo(signedTransaction.wireTransaction.componentGroupLists[0][0])
+            assertThat(dbMetadata.field<String>("groupParametersHash")).isNotNull
+            assertThat(dbMetadata.field<String>("cpiFileChecksum")).isNotNull
+
+            val dbTransactionSources = em.createNamedQuery(
+                "UtxoTransactionSourceEntity.findByTransactionId",
+                entityFactory.utxoTransactionSource
+            )
+                .setParameter("transactionId", signedTransaction.id.toString())
+                .resultList
+
+            assertThat(dbTransactionSources).allMatch {
+                it.field<Int>("groupIndex") == UtxoComponentGroup.INPUTS.ordinal
+                        || it.field<Int>("groupIndex") == UtxoComponentGroup.REFERENCES.ordinal
+            }
+
+            val (dbTransactionInputs, dbTransactionReferences) = dbTransactionSources.partition {
+                it.field<Int>("groupIndex") == UtxoComponentGroup.INPUTS.ordinal
+            }
+
+            assertThat(dbTransactionInputs).isNotNull
+                .hasSameSizeAs(defaultInputStateRefs)
+
+            assertThat(dbTransactionReferences).isNotNull
+                .hasSameSizeAs(defaultReferenceStateRefs)
+
+            dbTransactionInputs
+                .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
+                .zip(defaultInputStateRefs)
+                .forEachIndexed { leafIndex, (dbInput, transactionInput) ->
+                    assertThat(dbInput.field<Int>("leafIndex")).isEqualTo(leafIndex)
+                    assertThat(dbInput.field<String>("refTransactionId")).isEqualTo(transactionInput.transactionId.toString())
+                    assertThat(dbInput.field<Int>("refLeafIndex")).isEqualTo(transactionInput.index)
+                }
+
+            dbTransactionReferences
+                .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
+                .zip(defaultReferenceStateRefs)
+                .forEachIndexed { leafIndex, (dbInput, transactionInput) ->
+                    assertThat(dbInput.field<Int>("leafIndex")).isEqualTo(leafIndex)
+                    assertThat(dbInput.field<String>("refTransactionId")).isEqualTo(transactionInput.transactionId.toString())
+                    assertThat(dbInput.field<Int>("refLeafIndex")).isEqualTo(transactionInput.index)
                 }
 
             val dbTransactionOutputs = em.createNamedQuery(
@@ -444,7 +490,7 @@ class UtxoPersistenceServiceImplTest {
                 .setParameter("transactionId", signedTransaction.id.toString())
                 .resultList
             assertThat(dbTransactionOutputs).isNotNull
-                .hasSameSizeAs(componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal])
+                .hasSameSizeAs(componentGroupListsWithoutMetadata[UtxoComponentGroup.OUTPUTS.ordinal-1])
             dbTransactionOutputs
                 .sortedWith(compareBy<Any> { it.field<Int>("groupIndex") }.thenBy { it.field<Int>("leafIndex") })
                 .zip(defaultVisibleTransactionOutputs)
@@ -556,25 +602,38 @@ class UtxoPersistenceServiceImplTest {
         createdTs: Instant = testClock.instant(),
         status: TransactionStatus = UNVERIFIED
     ): Any {
+        val metadataBytes = signedTransaction.wireTransaction.componentGroupLists[0][0]
+        val metadata = entityFactory.createOrFindUtxoTransactionMetadataEntity(
+            digest("SHA-256", metadataBytes).toString(),
+            metadataBytes,
+            "fakeGroupParametersHash",
+            "fakeCpiFileChecksum"
+        )
+
         return entityFactory.createUtxoTransactionEntity(
             signedTransaction.id.toString(),
             signedTransaction.wireTransaction.privacySalt.bytes,
             account,
             createdTs,
             status.value,
-            createdTs
+            createdTs,
+            metadata
         ).also { transaction ->
             transaction.field<MutableCollection<Any>>("components").addAll(
                 signedTransaction.wireTransaction.componentGroupLists.flatMapIndexed { groupIndex, componentGroup ->
                     componentGroup.mapIndexed { leafIndex: Int, component ->
-                        entityFactory.createUtxoTransactionComponentEntity(
-                            transaction,
-                            groupIndex,
-                            leafIndex,
-                            component,
-                            digest("SHA-256", component).toString()
-                        )
-                    }
+                        if (groupIndex != 0 || leafIndex != 0) {
+                            entityFactory.createUtxoTransactionComponentEntity(
+                                transaction,
+                                groupIndex,
+                                leafIndex,
+                                component,
+                                digest("SHA-256", component).toString()
+                            )
+                        } else {
+                            null
+                        }
+                    }.filterNotNull()
                 }
             )
             transaction.field<MutableCollection<Any>>("signatures").addAll(
@@ -658,6 +717,8 @@ class UtxoPersistenceServiceImplTest {
             get() = transactionContainer.id
         override val privacySalt: PrivacySalt
             get() = transactionContainer.wireTransaction.privacySalt
+        override val metadata: TransactionMetadataInternal
+            get() = transactionContainer.wireTransaction.metadata as TransactionMetadataInternal
         override val rawGroupLists: List<List<ByteArray>>
             get() = transactionContainer.wireTransaction.componentGroupLists
         override val signatures: List<DigitalSignatureAndMetadata>
@@ -674,6 +735,10 @@ class UtxoPersistenceServiceImplTest {
 
         override fun getConsumedStates(persistenceService: UtxoPersistenceService): List<StateAndRef<ContractState>> {
             TODO("Not yet implemented")
+        }
+
+        override fun getReferenceStateRefs(): List<StateRef> {
+            return listOf(StateRef(SecureHashImpl("SHA-256", ByteArray(34)), 2))
         }
 
         override fun getConsumedStateRefs(): List<StateRef> {
