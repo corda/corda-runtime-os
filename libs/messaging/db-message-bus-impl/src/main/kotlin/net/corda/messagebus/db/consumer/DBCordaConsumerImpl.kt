@@ -1,6 +1,11 @@
 package net.corda.messagebus.db.consumer
 
+import java.time.Duration
+import java.time.Instant
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.messagebus.api.CordaOffsetAndMetadata
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
@@ -16,10 +21,6 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.time.Duration
-import java.time.Instant
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
 
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
@@ -203,9 +204,11 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
         }
     }
 
-    override fun syncCommitOffsets() {
+    override fun syncCommitOffsets(offsets: Map<CordaTopicPartition, CordaOffsetAndMetadata>?) {
+        val offsetsToCommit = offsets?.mapValues { it.value.offset } ?: lastReadOffset
+
         dbAccess.writeOffsets(
-            lastReadOffset.map { (cordaTopicPartition, offset) ->
+            offsetsToCommit.map { (cordaTopicPartition, offset) ->
                 CommittedPositionEntry(
                     cordaTopicPartition.topic,
                     groupId,

@@ -1,8 +1,10 @@
 package net.corda.messagebus.kafka.consumer
 
 import io.micrometer.core.instrument.binder.MeterBinder
+import java.time.Duration
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
+import net.corda.messagebus.api.CordaOffsetAndMetadata
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
@@ -37,7 +39,6 @@ import org.apache.kafka.common.errors.InterruptException
 import org.apache.kafka.common.errors.TimeoutException
 import org.apache.kafka.common.errors.WakeupException
 import org.slf4j.LoggerFactory
-import java.time.Duration
 
 
 /**
@@ -304,12 +305,12 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
-    override fun syncCommitOffsets() {
+    override fun syncCommitOffsets(offsets: Map<CordaTopicPartition, CordaOffsetAndMetadata>?) {
         var attemptCommit = true
 
         while (attemptCommit) {
             try {
-                consumer.commitSync()
+                offsets?.let { consumer.commitSync(it.toKafkaOffsets()) } ?: consumer.commitSync()
                 attemptCommit = false
             } catch (ex: Exception) {
                 when (ex::class.java) {
@@ -751,5 +752,11 @@ fun CordaConsumerRebalanceListener.toKafkaListener(topicPrefix: String): Consume
                 partitions.toCordaTopicPartitions(topicPrefix)
             )
         }
+    }
+}
+
+fun Map<CordaTopicPartition, CordaOffsetAndMetadata>.toKafkaOffsets(): Map<TopicPartition, OffsetAndMetadata> {
+    return this.entries.associate { (key, value) ->
+        TopicPartition(key.topic, key.partition) to OffsetAndMetadata(value.offset, value.metadata)
     }
 }

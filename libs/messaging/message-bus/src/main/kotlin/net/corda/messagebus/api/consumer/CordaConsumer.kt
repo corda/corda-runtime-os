@@ -1,7 +1,8 @@
 package net.corda.messagebus.api.consumer
 
-import net.corda.messagebus.api.CordaTopicPartition
 import java.time.Duration
+import net.corda.messagebus.api.CordaOffsetAndMetadata
+import net.corda.messagebus.api.CordaTopicPartition
 
 
 /**
@@ -149,7 +150,7 @@ interface CordaConsumer<K : Any, V : Any> : AutoCloseable {
      * Synchronously commit the consumer offsets.
      * @throws CordaMessageAPIFatalException fatal error occurred attempting to commit offsets.
      */
-    fun syncCommitOffsets()
+    fun syncCommitOffsets(offsets: Map<CordaTopicPartition, CordaOffsetAndMetadata>? = null)
 
     /**
      * Synchronously commit the consumer offset for this [event] back to the topic partition.
