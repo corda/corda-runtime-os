@@ -33,7 +33,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.FlowConfig
 import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_WINDOW_DURATION
-import net.corda.session.manager.Constants
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -145,14 +144,14 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         }
         log.warn(msg, exception)
 
-        var errorEvents: List<Record<*, *>> = emptyList()
+        val errorEvents: List<Record<*, *>>
         var cleanupEvents: List<Record<*, *>> = emptyList()
         var records: List<Record<*, *>> = emptyList()
 
         val inputPayload = context.inputEventPayload as? SessionEvent
 
         if(context.inputEventPayload is SessionEvent && inputPayload?.payload is SessionData ) {
-            val sessionError = buildSessionRecord(
+            val sessionError = createSessionErrorRecord(
                 context.inputEventPayload as SessionEvent,
                 SessionError(ExceptionEnvelope("net.corda.flow.pipeline.exceptions.FlowFatalException", "no responder configured")),
                 Instant.now()
@@ -193,39 +192,22 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         )
     }
 
-    private fun buildSessionRecord(
+    private fun createSessionErrorRecord(
         sourceEvent: SessionEvent,
-        newPayload: Any,
+        sessionError: SessionError,
         timestamp: Instant,
     ) : Record<*, *> {
-        val (newDirection, sessionId) = Pair(MessageDirection.OUTBOUND, sourceEvent.sessionId)
-
-        val sequenceNumber = if (newPayload is SessionError) null else sourceEvent.sequenceNum
         val sessionEvent = SessionEvent(
-            newDirection,
+            MessageDirection.OUTBOUND,
             timestamp,
-            sessionId,
-            sequenceNumber,
+            sourceEvent.sessionId,
+            null,
             sourceEvent.initiatingIdentity,
             sourceEvent.initiatedIdentity,
-            newPayload,
+            sessionError,
             sourceEvent.contextSessionProperties
         )
         return Record(Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC, sessionEvent.sessionId, FlowMapperEvent(sessionEvent))
-    }
-
-    /**
-     * Toggle the [sessionId] to that of the other party and return it.
-     * Initiating party sessionId will be a random UUID.
-     * Initiated party sessionId will be the initiating party session id with a suffix of "-INITIATED" added.
-     * @return the toggled session id
-     */
-    private fun toggleSessionId(sessionId: String): String {
-        return if (sessionId.endsWith(Constants.INITIATED_SESSION_ID_SUFFIX)) {
-            sessionId.removeSuffix(Constants.INITIATED_SESSION_ID_SUFFIX)
-        } else {
-            "$sessionId${Constants.INITIATED_SESSION_ID_SUFFIX}"
-        }
     }
 
     private fun createStatusRecord(id: String, statusGenerator: () -> FlowStatus): List<Record<*, *>> {

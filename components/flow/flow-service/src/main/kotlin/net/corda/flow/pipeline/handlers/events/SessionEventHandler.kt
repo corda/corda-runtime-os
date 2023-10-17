@@ -180,7 +180,8 @@ class SessionEventHandler @Activate constructor(
                 )
             }
 
-            initiatedFlowNameAndProtocolResult = protocolStore.responderForProtocol(requestedProtocolName, initiatorVersionsSupported, context)
+            initiatedFlowNameAndProtocolResult =
+                protocolStore.responderForProtocol(requestedProtocolName, initiatorVersionsSupported, context)
 
             FlowStartContext.newBuilder()
                 .setStatusKey(FlowKey(sessionId, initiatedIdentity))
