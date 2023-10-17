@@ -153,7 +153,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         if(context.inputEventPayload is SessionEvent && inputPayload?.payload is SessionData ) {
             val sessionError = createSessionErrorRecord(
                 context.inputEventPayload as SessionEvent,
-                SessionError(ExceptionEnvelope("net.corda.flow.pipeline.exceptions.FlowFatalException", "no responder configured")),
+                SessionError(ExceptionEnvelope(FlowFatalException::class.qualifiedName, exception.message)),
                 Instant.now()
             )
 

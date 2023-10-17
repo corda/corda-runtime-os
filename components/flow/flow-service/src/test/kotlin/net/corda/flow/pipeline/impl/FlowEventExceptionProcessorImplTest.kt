@@ -4,13 +4,17 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.MessageDirection
+import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.mapper.FlowMapperEvent
+import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.WaitingFor
+import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
 import net.corda.flow.pipeline.events.FlowEventContext
@@ -195,6 +199,31 @@ class FlowEventExceptionProcessorImplTest {
         assertThat(result.outputRecords).contains(flowStatusUpdateRecord, flowMapperRecord)
         assertThat(result.sendToDlq).isTrue
         verify(flowFiberCache).remove(key)
+    }
+
+    @Test
+    fun `flow fatal exception before flow initialized marks flow for dlq and publishes SessionError event`() {
+        val error = FlowFatalException("error")
+        val initiatingIdentity = HoldingIdentity("O=Alice,L=London,C=GB", "12345")
+        val initiatedIdentity = HoldingIdentity("O=Bob,L=London,C=GB", "12345")
+
+        context.inputEventPayload = SessionEvent(
+            MessageDirection.OUTBOUND,
+            Instant.now(),
+            sessionIdOpen,
+            null,
+            initiatingIdentity,
+            initiatedIdentity,
+            SessionData(),
+            null
+        )
+
+        val result = target.process(error, context)
+
+        verify(result.checkpoint).markDeleted()
+        verify(flowSessionManager, times(0)).sendErrorMessages(any(), any(), any(), any())
+        verify(flowSessionManager, times(0)).getSessionErrorEventRecords(any(), any(), any())
+        assertThat(result.sendToDlq).isTrue
     }
 
     @Test
