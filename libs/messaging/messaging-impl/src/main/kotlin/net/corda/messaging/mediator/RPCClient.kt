@@ -19,13 +19,17 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Instant
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 class RPCClient(
     override val id: String,
     cordaAvroSerializerFactory: CordaAvroSerializationFactory,
     private val onSerializationError: ((ByteArray) -> Unit)?,
     private val httpClient: HttpClient,
-    private val retryConfig: HTTPRetryConfig = HTTPRetryConfig.Builder().build()
+    private val retryConfig: HTTPRetryConfig =
+        HTTPRetryConfig.Builder()
+            .retryOn(IOException::class.java, TimeoutException::class.java)
+            .build()
 ) : MessagingClient {
     private val deserializer = cordaAvroSerializerFactory.createAvroDeserializer({}, Any::class.java)
 
