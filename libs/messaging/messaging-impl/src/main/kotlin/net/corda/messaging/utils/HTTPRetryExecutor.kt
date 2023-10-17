@@ -18,7 +18,7 @@ class HTTPRetryExecutor {
                     return result
                 } catch (e: Exception) {
                     if (config.retryOn.none { it.isInstance(e) }) {
-                        log.warn("HTTPRetryExecutor caught a non-retryable exception")
+                        log.warn("HTTPRetryExecutor caught a non-retryable exception: ${e.message}", e)
                         throw e
                     }
 
