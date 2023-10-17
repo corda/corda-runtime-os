@@ -73,7 +73,6 @@ dependencies {
     testImplementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
     testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     testImplementation project(":components:interop:interop-group-policy-read-service")
-    testImplementation project(":components:interop:interop-group-policy-read-service-impl")
 
     integrationTestImplementation project(":components:gateway")
     integrationTestImplementation project(":testing:db-message-bus-testkit")

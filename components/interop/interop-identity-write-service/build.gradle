@@ -3,17 +3,42 @@ plugins {
     id 'corda.common-library'
 }
 
-description 'Interop identity write service'
+description 'Interop identity write service implementation'
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-
+    implementation project(":libs:packaging:packaging")
     implementation "net.corda:corda-base"
+    implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-config-schema"
+    implementation "net.corda:corda-topic-schema"
 
-    implementation project(':libs:lifecycle:lifecycle')
+    implementation project(":libs:configuration:configuration-core")
+    implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:messaging:messaging")
+    implementation project(':libs:utilities')
+    implementation project(':libs:virtual-node:virtual-node-info')
     implementation project(':libs:interop:interop-core')
-    implementation project(':libs:crypto:crypto-core')
+    implementation project(":libs:membership:membership-common")
+
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+
+    implementation project(":components:interop:interop-identity-registry-service")
+    implementation project(":components:virtual-node:virtual-node-info-read-service")
+
+    implementation project(":libs:configuration:configuration-core")
+
+    implementation project(":components:configuration:configuration-read-service")
+
+    runtimeOnly project(":components:configuration:configuration-read-service-impl")
+
+    testImplementation project(":libs:lifecycle:lifecycle-impl")
+    testImplementation project(":libs:lifecycle:registry")
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

@@ -28,10 +28,15 @@ import java.time.Instant
 
 
 data class CreateLockFlowArgs(val newOwner: String, val stateId: String, val transactionId: SecureHash,
-                              val publickKey: ByteBuffer
+                              val publickKey: ByteBuffer, val timeWindow: String)
 )
 
-data class CreateLockFlowResult(val transactionId: String, val stateId: String, val ownerPublicKey: String)
+data class CreateLockFlowResult(
+    val transactionId: String,
+    val signedTransactionId: SecureHash,
+    val stateId: String,
+    val ownerPublicKey: String
+)
 
 
 class CreateLockFlow : ClientStartableFlow {
@@ -92,6 +97,7 @@ class CreateLockFlow : ClientStartableFlow {
                 inputState.owner,
                 newOwnerInfo.ledgerKeys.first(),
                 inputState.assetId,
+                Instant.parse(flowArgs.timeWindow),
                 listOf(inputState.owner, newOwnerInfo.ledgerKeys.first()),
                 flowArgs.transactionId,
                 publicKey
@@ -127,6 +133,7 @@ class CreateLockFlow : ClientStartableFlow {
             return jsonMarshallingService.format(
                 CreateLockFlowResult(
                     transactionId,
+                    signedTransaction.id,
                     outputState.assetId,
                     outputState.owner.toString()
                 )

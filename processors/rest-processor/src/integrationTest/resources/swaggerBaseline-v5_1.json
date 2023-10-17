@@ -1230,6 +1230,106 @@
         }
       }
     },
+    "/interop/{holdingidentityshorthash}/delete/identity/{interopidentityshorthash}" : {
+      "delete" : {
+        "tags" : [ "Interop API" ],
+        "description" : "Delete an interop identity.",
+        "operationId" : "delete_interop__holdingidentityshorthash__delete_identity__interopidentityshorthash_",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "View owning holding identity short hash.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "View owning holding identity short hash.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "interopidentityshorthash",
+          "in" : "path",
+          "description" : "Short hash of the interop identity to delete.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Short hash of the interop identity to delete.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Response entity with the status of the request.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string",
+                  "nullable" : false,
+                  "example" : "No example available for this type"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/interop/{holdingidentityshorthash}/enable/identity/{interopidentityshorthash}" : {
+      "get" : {
+        "tags" : [ "Interop API" ],
+        "description" : "Enables a suspended interop identity so that it is available for lookups at the flow level.",
+        "operationId" : "get_interop__holdingidentityshorthash__enable_identity__interopidentityshorthash_",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "View owning holding identity short hash.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "View owning holding identity short hash.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "interopidentityshorthash",
+          "in" : "path",
+          "description" : "Short hash of the interop identity to delete.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Short hash of the interop identity to delete.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Response entity with the status of the request.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string",
+                  "nullable" : false,
+                  "example" : "No example available for this type"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
     "/interop/{holdingidentityshorthash}/export/identity/{interopidentityshorthash}" : {
       "get" : {
         "tags" : [ "Interop API" ],
@@ -1448,6 +1548,56 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/Response"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/interop/{holdingidentityshorthash}/suspend/identity/{interopidentityshorthash}" : {
+      "get" : {
+        "tags" : [ "Interop API" ],
+        "description" : "Suspends an interop identity. Prevents more lookups at the flow level withoutdisrupting active flow sessions.",
+        "operationId" : "get_interop__holdingidentityshorthash__suspend_identity__interopidentityshorthash_",
+        "parameters" : [ {
+          "name" : "holdingidentityshorthash",
+          "in" : "path",
+          "description" : "View owning holding identity short hash.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "View owning holding identity short hash.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "interopidentityshorthash",
+          "in" : "path",
+          "description" : "Short hash of the interop identity to delete.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Short hash of the interop identity to delete.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Response entity with the status of the request.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string",
+                  "nullable" : false,
+                  "example" : "No example available for this type"
                 }
               }
             }
@@ -5081,13 +5231,18 @@
         }
       },
       "InteropIdentityResponse" : {
-        "required" : [ "applicationName", "endpointProtocol", "endpointUrl", "facadeIds", "groupId", "owningVirtualNodeShortHash", "x500Name" ],
+        "required" : [ "applicationName", "enabled", "endpointProtocol", "endpointUrl", "facadeIds", "groupId", "owningVirtualNodeShortHash", "x500Name" ],
         "type" : "object",
         "properties" : {
           "applicationName" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
+          },
+          "enabled" : {
+            "type" : "boolean",
+            "nullable" : false,
+            "example" : true
           },
           "endpointProtocol" : {
             "type" : "string",
