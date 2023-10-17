@@ -10,6 +10,7 @@ import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.FLOW_TIMEOUT_TOPIC
 import net.corda.schema.Schemas.ScheduledTask
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
@@ -39,8 +40,7 @@ class SessionTimeoutTaskProcessor(
                 logger.trace("No flows to time out")
                 emptyList()
             } else {
-                // TODO - take log message out when everything plumbed in.
-                logger.info("Trigger cleanup of $checkpoints")
+                logger.debug { "Trigger cleanup of $checkpoints" }
                 checkpoints.map { kvp ->
                     val instant = (kvp.value.metadata[STATE_META_SESSION_EXPIRY_KEY] as Number).toLong()
                     Record(FLOW_TIMEOUT_TOPIC, kvp.key,
