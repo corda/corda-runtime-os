@@ -45,19 +45,19 @@ class CreateConnectTest {
         val acls = cmd.getGeneratedTopicConfigs().acls
         assertThat(cmd.getAclBindings(acls))
             .containsExactly(
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "avro.schema", PatternType.LITERAL),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
                     AccessControlEntry("User:Chris", "*", AclOperation.READ, AclPermissionType.ALLOW)),
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "avro.schema", PatternType.LITERAL),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
                     AccessControlEntry("User:Chris", "*", AclOperation.WRITE, AclPermissionType.ALLOW)),
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "avro.schema", PatternType.LITERAL),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
                     AccessControlEntry("User:Chris", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW)),
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "avro.schema", PatternType.LITERAL),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
                     AccessControlEntry("User:Mo", "*", AclOperation.READ, AclPermissionType.ALLOW)),
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "avro.schema", PatternType.LITERAL),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
                     AccessControlEntry("User:Mo", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW)),
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "certificates.rpc.ops", PatternType.LITERAL),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.certificates.rpc.ops", PatternType.LITERAL),
                     AccessControlEntry("User:Dan", "*", AclOperation.READ, AclPermissionType.ALLOW)),
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "certificates.rpc.ops", PatternType.LITERAL),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.certificates.rpc.ops", PatternType.LITERAL),
                     AccessControlEntry("User:Dan", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW))
 
             )
@@ -69,23 +69,23 @@ class CreateConnectTest {
         val acls = cmd.getGeneratedTopicConfigs().acls
         assertThat(cmd.getAclBindings(acls))
             .containsExactly(
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "avro.schema", PatternType.LITERAL),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
                     AccessControlEntry("User:Chris", "*", AclOperation.READ, AclPermissionType.ALLOW)),
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "avro.schema", PatternType.LITERAL),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
                     AccessControlEntry("User:Chris", "*", AclOperation.WRITE, AclPermissionType.ALLOW)),
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "avro.schema", PatternType.LITERAL),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
                     AccessControlEntry("User:Chris", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW)),
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "avro.schema", PatternType.LITERAL),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
                     AccessControlEntry("User:Mo", "*", AclOperation.READ, AclPermissionType.ALLOW)),
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "avro.schema", PatternType.LITERAL),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
                     AccessControlEntry("User:Mo", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW)),
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "avro.schema", PatternType.LITERAL),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.avro.schema", PatternType.LITERAL),
                     AccessControlEntry("User:Mo", "*", AclOperation.WRITE, AclPermissionType.ALLOW)),
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "certificates.rpc.ops", PatternType.LITERAL),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.certificates.rpc.ops", PatternType.LITERAL),
                     AccessControlEntry("User:Dan", "*", AclOperation.READ, AclPermissionType.ALLOW)),
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "certificates.rpc.ops", PatternType.LITERAL),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.certificates.rpc.ops", PatternType.LITERAL),
                     AccessControlEntry("User:Dan", "*", AclOperation.DESCRIBE, AclPermissionType.ALLOW)),
-                AclBinding(ResourcePattern(ResourceType.TOPIC, "certificates.rpc.ops", PatternType.LITERAL),
+                AclBinding(ResourcePattern(ResourceType.TOPIC, "prefix.certificates.rpc.ops", PatternType.LITERAL),
                     AccessControlEntry("User:George", "*", AclOperation.READ, AclPermissionType.ALLOW))
 
             )
@@ -96,11 +96,11 @@ class CreateConnectTest {
         val cmd = getCommandWithConfigFile()
         val topics = cmd.getGeneratedTopicConfigs().topics
         assertThat(cmd.getTopics(topics))
-            .containsEntry("avro.schema", NewTopic("avro.schema", 5, 3)
+            .containsEntry("prefix.avro.schema", NewTopic("prefix.avro.schema", 5, 3)
                 .configs(mapOf("cleanup.policy" to "compact", "segment.ms" to "600000",
                     "delete.retention.ms" to "300000", "min.compaction.lag.ms" to "60000",
                     "max.compaction.lag.ms" to "604800000", "min.cleanable.dirty.ratio" to "0.5")))
-            .containsEntry("certificates.rpc.ops", NewTopic("certificates.rpc.ops", 4, 2)
+            .containsEntry("prefix.certificates.rpc.ops", NewTopic("prefix.certificates.rpc.ops", 4, 2)
                 .configs(emptyMap()))
     }
 
@@ -109,11 +109,11 @@ class CreateConnectTest {
         val cmd = getCommandWithConfigAndOverrideFiles()
         val topics = cmd.getGeneratedTopicConfigs().topics
         assertThat(cmd.getTopics(topics))
-            .containsEntry("avro.schema", NewTopic("avro.schema", 8, 3)
+            .containsEntry("prefix.avro.schema", NewTopic("prefix.avro.schema", 8, 3)
                 .configs(mapOf("cleanup.policy" to "compact", "segment.ms" to "600000",
                     "delete.retention.ms" to "300000", "min.compaction.lag.ms" to "60000",
                     "max.compaction.lag.ms" to "604800000", "min.cleanable.dirty.ratio" to "0.7")))
-            .containsEntry("certificates.rpc.ops", NewTopic("certificates.rpc.ops", 4, 2)
+            .containsEntry("prefix.certificates.rpc.ops", NewTopic("prefix.certificates.rpc.ops", 4, 2)
                 .configs(emptyMap()))
     }
 
@@ -135,6 +135,7 @@ class CreateConnectTest {
     private fun getCommandWithGeneratedConfig() = CreateConnect().apply {
         create = Create()
         create!!.topic = TopicPlugin.Topic()
+        create!!.topic!!.namePrefix = "prefix."
         create!!.kafkaUsers = mapOf("crypto" to "Chris", "db" to "Dan", "flow" to "Fiona", "membership" to "Mo")
     }
 
@@ -143,6 +144,7 @@ class CreateConnectTest {
         configFilePath = Paths.get(configFile).toString()
         create = Create()
         create!!.topic = TopicPlugin.Topic()
+        create!!.topic!!.namePrefix = "prefix."
     }
 
     private fun getCommandWithConfigAndOverrideFiles() = CreateConnect().apply {
@@ -150,6 +152,7 @@ class CreateConnectTest {
         configFilePath = Paths.get(configFile).toString()
         create = Create()
         create!!.topic = TopicPlugin.Topic()
+        create!!.topic!!.namePrefix = "prefix."
         val overrideFile = this::class.java.classLoader.getResource("override_topic_config.yaml")!!.toURI()
         create!!.overrideFilePath = Paths.get(overrideFile).toString()
     }
