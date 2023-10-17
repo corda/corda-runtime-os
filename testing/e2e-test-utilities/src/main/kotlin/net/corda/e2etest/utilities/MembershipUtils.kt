@@ -33,6 +33,7 @@ const val CERT_ALIAS_P2P = "p2p-tls-cert"
 const val CERT_ALIAS_SESSION = "p2p-session-cert"
 const val DEFAULT_KEY_SCHEME = "CORDA.ECDSA.SECP256R1"
 const val DEFAULT_SIGNATURE_SPEC = "SHA256withECDSA"
+const val DEFAULT_NOTARY_SERVICE = "O=NotaryService, L=London, C=GB"
 
 /**
  * Onboard a member by uploading a CPI if it doesn't exist, creating a vnode if it doesn't exist, configuring the
@@ -151,7 +152,8 @@ fun ClusterInfo.onboardNotaryMember(
     x500Name: String,
     wait: Boolean = true,
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null,
-    tlsCertificateUploadedCallback: (String) -> Unit = {}
+    tlsCertificateUploadedCallback: (String) -> Unit = {},
+    notaryServiceName: String = DEFAULT_NOTARY_SERVICE
 ) = onboardMember(
     resourceName,
     cpiName,
@@ -164,7 +166,7 @@ fun ClusterInfo.onboardNotaryMember(
 
         mapOf(
             "corda.roles.0" to "notary",
-            "corda.notary.service.name" to MemberX500Name.parse("O=NotaryService, L=London, C=GB").toString(),
+            "corda.notary.service.name" to MemberX500Name.parse(notaryServiceName).toString(),
             "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.nonvalidating",
             "corda.notary.service.flow.protocol.version.0" to "1",
             "corda.notary.keys.0.id" to notaryKeyId,

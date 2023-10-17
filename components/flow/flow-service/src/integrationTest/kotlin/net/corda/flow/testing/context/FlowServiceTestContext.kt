@@ -54,6 +54,7 @@ import net.corda.libs.packaging.core.CpkManifest
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
 import net.corda.sandboxgroupcontext.SandboxGroupType.FLOW
 import net.corda.sandboxgroupcontext.VirtualNodeContext
@@ -445,10 +446,13 @@ class FlowServiceTestContext @Activate constructor(
             log.info("Start test run for input/output set $iteration")
             flowFiberFactory.fiber.reset()
             flowFiberFactory.fiber.setIoRequests(testRun.ioRequests)
-            val response = flowEventProcessor.onNext(lastPublishedState, testRun.event)
+            val response = flowEventProcessor.onNext(
+                State(lastPublishedState, metadata = null),
+                testRun.event
+            )
             testRun.flowContinuation = flowFiberFactory.fiber.flowContinuation
             testRun.response = response
-            lastPublishedState = response.updatedState
+            lastPublishedState = response.updatedState?.value
         }
     }
 

@@ -95,8 +95,10 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReentrantReadWriteLock
+import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.p2p.crypto.protocol.api.InvalidSelectedModeError
 import net.corda.p2p.crypto.protocol.api.NoCommonModeError
+import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.badGroupPolicy
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
@@ -432,7 +434,13 @@ internal class SessionManagerImpl(
         multiplicity: Int
     ): List<Pair<AuthenticationProtocolInitiator, InitiatorHelloMessage>> {
 
-        val p2pParams = groupPolicyProvider.getP2PParameters(counterparties.ourId)
+        val p2pParams = try {
+            groupPolicyProvider.getP2PParameters(counterparties.ourId)
+        } catch (except: BadGroupPolicyException) {
+            logger.warn("The group policy data is unavailable or cannot be parsed for ${counterparties.ourId}. Error: ${except.message}. " +
+                "The sessionInit message was not sent.")
+            return emptyList()
+        }
         if (p2pParams == null) {
             logger.warn(
                 "Could not find the p2p parameters in the GroupPolicyProvider for ${counterparties.ourId}." +
@@ -549,7 +557,13 @@ internal class SessionManagerImpl(
             return null
         }
 
-        val p2pParams = groupPolicyProvider.getP2PParameters(sessionCounterparties.ourId)
+        val p2pParams = try {
+            groupPolicyProvider.getP2PParameters(sessionCounterparties.ourId)
+        } catch (except: BadGroupPolicyException) {
+            logger.warn("The group policy data is unavailable or cannot be parsed for ${sessionCounterparties.ourId}. Error: " +
+                "${except.message}. The sessionInit message was not sent.")
+            return emptyList()
+        }
         if (p2pParams == null) {
             logger.warn(
                 "Could not find the group information in the GroupPolicyProvider for ${sessionCounterparties.ourId}." +
@@ -649,7 +663,12 @@ internal class SessionManagerImpl(
             sessionInfo
         )
 
-        val p2pParams = groupPolicyProvider.getP2PParameters(ourIdentityInfo.holdingIdentity)
+        val p2pParams = try {
+            groupPolicyProvider.getP2PParameters(ourIdentityInfo.holdingIdentity)
+        } catch (except: BadGroupPolicyException) {
+            logger.badGroupPolicy(message::class.java.simpleName, message.header.sessionId, ourIdentityInfo.holdingIdentity, except.message)
+            return null
+        }
         if (p2pParams == null) {
             logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, ourIdentityInfo.holdingIdentity)
             return null
@@ -762,7 +781,12 @@ internal class SessionManagerImpl(
         }
 
         val (hostedIdentityInSameGroup, peerMemberInfo) = locallyHostedIdentityWithPeerMemberInfo
-        val p2pParams = groupPolicyProvider.getP2PParameters(hostedIdentityInSameGroup)
+        val p2pParams = try {
+            groupPolicyProvider.getP2PParameters(hostedIdentityInSameGroup)
+        } catch (except: BadGroupPolicyException) {
+            logger.badGroupPolicy(message::class.java.simpleName, message.header.sessionId, hostedIdentityInSameGroup, except.message)
+            return null
+        }
         if (p2pParams == null) {
             logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, hostedIdentityInSameGroup)
             return null
@@ -827,7 +851,12 @@ internal class SessionManagerImpl(
             return null
         }
 
-        val p2pParams = groupPolicyProvider.getP2PParameters(ourIdentityInfo.holdingIdentity)
+        val p2pParams = try {
+            groupPolicyProvider.getP2PParameters(ourIdentityInfo.holdingIdentity)
+        } catch (except: BadGroupPolicyException) {
+            logger.badGroupPolicy(message::class.java.simpleName, message.header.sessionId, ourIdentityInfo.holdingIdentity, except.message)
+            return null
+        }
         if (p2pParams == null) {
             logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, ourIdentityInfo.holdingIdentity)
             return null

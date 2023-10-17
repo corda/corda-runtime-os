@@ -7,6 +7,7 @@ import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
 import org.osgi.service.component.annotations.Component
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * The real state manager implementation requires postgres to run. As a result, it is impossible to plug it into the
@@ -20,19 +21,33 @@ class TestStateManagerFactoryImpl : StateManagerFactory {
 
     override fun create(config: SmartConfig): StateManager {
         return object : StateManager {
+            private val storage = ConcurrentHashMap<String, State>()
             override fun close() {
             }
 
             override fun create(states: Collection<State>): Map<String, Exception> {
-                TODO("Not yet implemented")
+                return states.mapNotNull {
+                    storage.putIfAbsent(it.key, it)
+                }.associate { it.key to RuntimeException("State already exists [$it]") }
             }
 
             override fun get(keys: Collection<String>): Map<String, State> {
-                TODO("Not yet implemented")
+                return keys.mapNotNull { storage[it] }.associateBy { it.key }
             }
 
             override fun update(states: Collection<State>): Map<String, State> {
-                TODO("Not yet implemented")
+                return states.mapNotNull {
+                    var output: State? = null
+                    storage.compute(it.key) { _, existingState ->
+                        if (existingState?.version == it.version) {
+                            it.copy(version = it.version + 1)
+                        } else {
+                            output = it
+                            it
+                        }
+                    }
+                    output
+                }.associateBy { it.key }
             }
 
             override fun delete(states: Collection<State>): Map<String, State> {

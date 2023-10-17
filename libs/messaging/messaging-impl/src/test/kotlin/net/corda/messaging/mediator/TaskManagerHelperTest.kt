@@ -1,21 +1,27 @@
 package net.corda.messaging.mediator
 
+import io.micrometer.core.instrument.Timer
 import net.corda.libs.statemanager.api.State
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_KEY
-import net.corda.messaging.api.mediator.taskmanager.TaskManager
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.records.Record
+import net.corda.messaging.mediator.metrics.EventMediatorMetrics
+import net.corda.taskmanager.TaskManager
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.mock
-import net.corda.messaging.api.records.Record
 import org.mockito.Mockito.`when`
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
+import java.util.concurrent.Callable
+import java.util.concurrent.CompletableFuture
 
 class TaskManagerHelperTest {
     private companion object {
@@ -28,7 +34,8 @@ class TaskManagerHelperTest {
 
     private val taskManager = mock<TaskManager>()
     private val stateManagerHelper = mock<StateManagerHelper<String, String, String>>()
-    private val taskManagerHelper = TaskManagerHelper(taskManager, stateManagerHelper)
+    private val eventMediatorMetrics = mock<EventMediatorMetrics>()
+    private val taskManagerHelper = TaskManagerHelper(taskManager, stateManagerHelper, eventMediatorMetrics)
     private val messageProcessor = mock<StateAndEventProcessor<String, String, String>>()
 
     @Test
@@ -164,27 +171,39 @@ class TaskManagerHelperTest {
         val processorTask1 = mock<ProcessorTask<String, String, String>>()
         val processorTask2 = mock<ProcessorTask<String, String, String>>()
 
-        `when`(taskManager.execute(any(), any<() -> ProcessorTask.Result<String, String, String>>())).thenReturn(mock())
+        `when`(taskManager.executeShortRunningTask(any<() -> ProcessorTask.Result<String, String, String>>()))
+            .thenReturn(mock())
+        val timer = mock<Timer>()
+        whenever(timer.recordCallable(any<Callable<Any>>())).thenAnswer { invocation ->
+            invocation.getArgument<Callable<Any>>(0).call()
+        }
+        whenever(eventMediatorMetrics.processorTimer).thenReturn(timer)
 
         taskManagerHelper.executeProcessorTasks(
             listOf(processorTask1, processorTask2)
         )
 
         val commandCaptor = argumentCaptor<() -> ProcessorTask.Result<String, String, String>>()
-        verify(taskManager, times(2)).execute(any(), commandCaptor.capture())
+        verify(taskManager, times(2)).executeShortRunningTask(commandCaptor.capture())
         assertEquals(processorTask1::call, commandCaptor.firstValue)
         assertEquals(processorTask2::call, commandCaptor.secondValue)
     }
 
     @Test
     fun `successfully creates client tasks from message processor tasks`() {
+        val key1 = "key1"
+        val key2 = "key2"
         val processorTaskResult1 = ProcessorTask.Result(
-            mock<ProcessorTask<String, String, String>>(),
+            mock<ProcessorTask<String, String, String>>().apply {
+                whenever(this.key).thenReturn(key1)
+            },
             outputEvents = listOf(EVENT1).toRecords(KEY1),
             mock<State>(),
         )
         val processorTaskResult2 = ProcessorTask.Result(
-            mock<ProcessorTask<String, String, String>>(),
+            mock<ProcessorTask<String, String, String>>().apply {
+                whenever(this.key).thenReturn(key2)
+            },
             outputEvents = listOf(EVENT2, EVENT3).toRecords(KEY2),
             mock<State>(),
         )
@@ -195,21 +214,25 @@ class TaskManagerHelperTest {
             messageRouter,
         )
 
-        val expectedClientTasks = listOf(
-            ClientTask(
-                MediatorMessage(EVENT1, mutableMapOf(MSG_PROP_KEY to KEY1)),
-                messageRouter,
-                processorTaskResult1,
+        val expectedClientTasks = mapOf(
+            key1 to listOf(
+                ClientTask(
+                    MediatorMessage(EVENT1, mutableMapOf(MSG_PROP_KEY to KEY1)),
+                    messageRouter,
+                    processorTaskResult1,
+                )
             ),
-            ClientTask(
-                MediatorMessage(EVENT2, mutableMapOf(MSG_PROP_KEY to KEY2)),
-                messageRouter,
-                processorTaskResult2,
-            ),
-            ClientTask(
-                MediatorMessage(EVENT3, mutableMapOf(MSG_PROP_KEY to KEY2)),
-                messageRouter,
-                processorTaskResult2,
+            key2 to listOf(
+                ClientTask(
+                    MediatorMessage(EVENT2, mutableMapOf(MSG_PROP_KEY to KEY2)),
+                    messageRouter,
+                    processorTaskResult2,
+                ),
+                ClientTask(
+                    MediatorMessage(EVENT3, mutableMapOf(MSG_PROP_KEY to KEY2)),
+                    messageRouter,
+                    processorTaskResult2,
+                )
             ),
         )
         assertEquals(expectedClientTasks, clientTasks)
@@ -219,17 +242,26 @@ class TaskManagerHelperTest {
     fun `successfully executes client tasks`() {
         val clientTask1 = mock<ClientTask<String, String, String>>()
         val clientTask2 = mock<ClientTask<String, String, String>>()
+        val result1 = ClientTask.Result(clientTask1, null)
+        val result2 = ClientTask.Result(clientTask2, null)
+        val future1 = mock<CompletableFuture<List<ClientTask.Result<String, String, String>>>>()
+        val future2 = mock<CompletableFuture<List<ClientTask.Result<String, String, String>>>>()
+        whenever(future1.join()).thenReturn(listOf(result1))
+        whenever(future2.join()).thenReturn(listOf(result2))
 
-        `when`(taskManager.execute(any(), any<() -> ClientTask.Result<String, String, String>>())).thenReturn(mock())
-
-        taskManagerHelper.executeClientTasks(
-            listOf(clientTask1, clientTask2)
+        `when`(taskManager.executeShortRunningTask(any<() -> List<ClientTask.Result<String, String, String>>>())).thenReturn(
+            future1,
+            future2
         )
 
-        val commandCaptor = argumentCaptor<() -> ClientTask.Result<String, String, String>>()
-        verify(taskManager, times(2)).execute(any(), commandCaptor.capture())
-        assertEquals(clientTask1::call, commandCaptor.firstValue)
-        assertEquals(clientTask2::call, commandCaptor.secondValue)
+        val results = taskManagerHelper.executeClientTasks(
+            mapOf("1" to listOf(clientTask1), "2" to listOf(clientTask2))
+        )
+        assertThat(results).containsOnly(result1, result2)
+        verify(
+            taskManager,
+            times(2)
+        ).executeShortRunningTask(any<() -> List<ClientTask.Result<String, String, String>>>())
     }
 
     private fun List<String>.toCordaConsumerRecords(key: String) =

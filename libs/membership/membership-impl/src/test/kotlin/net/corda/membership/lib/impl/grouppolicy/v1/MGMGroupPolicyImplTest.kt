@@ -127,7 +127,7 @@ class MGMGroupPolicyImplTest {
         }
 
         @Test
-        fun `persisted properties are not queried until they are needed`() {
+        fun `persisted properties are queried once when the p2pParameters are accessed`() {
             val propertyQuery: () -> LayeredPropertyMap = mock {
                 on { invoke() } doReturn persistedProperties
             }
@@ -152,18 +152,76 @@ class MGMGroupPolicyImplTest {
                 it.assertThat(groupPolicy.synchronisationProtocol).isEqualTo(TEST_SYNC_PROTOCOL)
             }
             verify(propertyQuery, never()).invoke()
+
+            val p2pParameters = groupPolicy.p2pParameters
+
+            verify(propertyQuery).invoke()
+            val protocolParameters = groupPolicy.protocolParameters
+
             assertSoftly {
-                it.assertThat(groupPolicy.protocolParameters.sessionKeyPolicy).isEqualTo(DISTINCT)
-                it.assertThat(groupPolicy.p2pParameters.sessionPki).isEqualTo(SessionPkiMode.STANDARD_EV3)
-                it.assertThat(groupPolicy.p2pParameters.sessionTrustRoots).isNotNull
-                it.assertThat(groupPolicy.p2pParameters.sessionTrustRoots?.size).isEqualTo(1)
-                it.assertThat(groupPolicy.p2pParameters.sessionTrustRoots?.first()).isEqualTo(TEST_CERT)
-                it.assertThat(groupPolicy.p2pParameters.tlsTrustRoots.size).isEqualTo(1)
-                it.assertThat(groupPolicy.p2pParameters.tlsTrustRoots.first()).isEqualTo(TEST_CERT)
-                it.assertThat(groupPolicy.p2pParameters.tlsPki).isEqualTo(TlsPkiMode.STANDARD_EV3)
-                it.assertThat(groupPolicy.p2pParameters.tlsVersion).isEqualTo(VERSION_1_2)
-                it.assertThat(groupPolicy.p2pParameters.protocolMode).isEqualTo(AUTH)
-                it.assertThat(groupPolicy.p2pParameters.mgmClientCertificateSubject).isEqualTo(null)
+                it.assertThat(protocolParameters.sessionKeyPolicy).isEqualTo(DISTINCT)
+                it.assertThat(p2pParameters.sessionPki).isEqualTo(SessionPkiMode.STANDARD_EV3)
+                it.assertThat(p2pParameters.sessionTrustRoots).isNotNull
+                it.assertThat(p2pParameters.sessionTrustRoots?.size).isEqualTo(1)
+                it.assertThat(p2pParameters.sessionTrustRoots?.first()).isEqualTo(TEST_CERT)
+                it.assertThat(p2pParameters.tlsTrustRoots.size).isEqualTo(1)
+                it.assertThat(p2pParameters.tlsTrustRoots.first()).isEqualTo(TEST_CERT)
+                it.assertThat(p2pParameters.tlsPki).isEqualTo(TlsPkiMode.STANDARD_EV3)
+                it.assertThat(p2pParameters.tlsVersion).isEqualTo(VERSION_1_2)
+                it.assertThat(p2pParameters.protocolMode).isEqualTo(AUTH)
+                it.assertThat(p2pParameters.mgmClientCertificateSubject).isEqualTo(null)
+
+                it.assertThat(groupPolicy.mgmInfo).isNull()
+                it.assertThat(groupPolicy.cipherSuite.entries).isEmpty()
+            }
+            verify(propertyQuery).invoke()
+        }
+
+        @Test
+        fun `persisted properties are queried once when the protocolParameters are accessed`() {
+            val propertyQuery: () -> LayeredPropertyMap = mock {
+                on { invoke() } doReturn persistedProperties
+            }
+            val groupPolicy: GroupPolicy = assertDoesNotThrow {
+                MGMGroupPolicyImpl(
+                    holdingIdentity,
+                    buildGroupPolicyNode(
+                        groupIdOverride = MGM_DEFAULT_GROUP_ID,
+                        protocolParametersOverride = null,
+                        p2pParametersOverride = null,
+                        mgmInfoOverride = null,
+                        cipherSuiteOverride = null
+                    ),
+                    propertyQuery
+                )
+            }
+            verify(propertyQuery, never()).invoke()
+            assertSoftly {
+                it.assertThat(groupPolicy.fileFormatVersion).isEqualTo(TEST_FILE_FORMAT_VERSION)
+                it.assertThat(groupPolicy.groupId).isEqualTo(TEST_GROUP_ID)
+                it.assertThat(groupPolicy.registrationProtocol).isEqualTo(TEST_REG_PROTOCOL)
+                it.assertThat(groupPolicy.synchronisationProtocol).isEqualTo(TEST_SYNC_PROTOCOL)
+            }
+            verify(propertyQuery, never()).invoke()
+
+            val protocolParameters = groupPolicy.protocolParameters
+
+            verify(propertyQuery).invoke()
+
+            val p2pParameters = groupPolicy.p2pParameters
+
+            assertSoftly {
+                it.assertThat(protocolParameters.sessionKeyPolicy).isEqualTo(DISTINCT)
+                it.assertThat(p2pParameters.sessionPki).isEqualTo(SessionPkiMode.STANDARD_EV3)
+                it.assertThat(p2pParameters.sessionTrustRoots).isNotNull
+                it.assertThat(p2pParameters.sessionTrustRoots?.size).isEqualTo(1)
+                it.assertThat(p2pParameters.sessionTrustRoots?.first()).isEqualTo(TEST_CERT)
+                it.assertThat(p2pParameters.tlsTrustRoots.size).isEqualTo(1)
+                it.assertThat(p2pParameters.tlsTrustRoots.first()).isEqualTo(TEST_CERT)
+                it.assertThat(p2pParameters.tlsPki).isEqualTo(TlsPkiMode.STANDARD_EV3)
+                it.assertThat(p2pParameters.tlsVersion).isEqualTo(VERSION_1_2)
+                it.assertThat(p2pParameters.protocolMode).isEqualTo(AUTH)
+                it.assertThat(p2pParameters.mgmClientCertificateSubject).isEqualTo(null)
 
                 it.assertThat(groupPolicy.mgmInfo).isNull()
                 it.assertThat(groupPolicy.cipherSuite.entries).isEmpty()
@@ -171,7 +229,6 @@ class MGMGroupPolicyImplTest {
             verify(propertyQuery).invoke()
         }
     }
-
 
     @Test
     fun `mgmClientCertificateSubject is extracted correctly`() {

@@ -7,6 +7,7 @@ object MetricsConstants {
     const val DURABLE_PATTERN_TYPE = "Durable"
     const val RPC_PATTERN_TYPE = "RPC"
     const val STATE_AND_EVENT_PATTERN_TYPE = "StateAndEvent"
+    const val EVENT_MEDIATOR_TYPE = "EventMediator"
 
     // Operation types, to use with OperationName tag
     const val ON_NEXT_OPERATION = "onNext"

@@ -28,8 +28,10 @@ import net.corda.membership.lib.impl.grouppolicy.v1.TEST_CERT
 import net.corda.membership.lib.impl.grouppolicy.v1.TEST_FILE_FORMAT_VERSION
 import net.corda.membership.lib.impl.grouppolicy.v1.TEST_GROUP_ID
 import net.corda.membership.lib.impl.grouppolicy.v1.buildPersistedProperties
+import net.corda.utilities.rootMessage
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -101,6 +103,17 @@ class GroupPolicyParserImplTest {
     @Test
     fun `Invalid format group policy throws corda runtime exception`() {
         assertThrows<BadGroupPolicyException> { groupPolicyParser.parse(holdingIdentity, INVALID_FORMAT_GROUP_POLICY) { null } }
+    }
+
+    @Test
+    fun `Duplicate keys in group policy throws corda runtime exception`() {
+        val groupPolicyWithDuplicateKey =
+            "{ \"fileFormatVersion\": 5, ${getSampleGroupPolicy(GroupPolicyType.STATIC).substringAfter("{")}"
+
+        val exception = assertThrows<BadGroupPolicyException> {
+            groupPolicyParser.parse(holdingIdentity, groupPolicyWithDuplicateKey) { null }
+        }
+        assertThat(exception.rootMessage).contains("Duplicate field 'fileFormatVersion'")
     }
 
     @Test

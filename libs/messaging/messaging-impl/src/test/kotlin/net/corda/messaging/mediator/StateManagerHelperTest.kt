@@ -5,6 +5,7 @@ import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.messaging.api.processor.StateAndEventProcessor
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -51,7 +52,10 @@ class StateManagerHelperTest {
     fun `successfully creates new state`() {
 
         val persistedState: State? = null
-        val newValue = StateType(1)
+        val newState = StateAndEventProcessor.State(
+            StateType(1),
+            mock<Metadata>(),
+        )
         val stateManagerHelper = StateManagerHelper<String, StateType, EventType>(
             stateManager,
             stateSerializer,
@@ -59,14 +63,14 @@ class StateManagerHelperTest {
         )
 
         val state = stateManagerHelper.createOrUpdateState(
-            TEST_KEY, persistedState, newValue
+            TEST_KEY, persistedState, newState
         )
 
         assertNotNull(state)
         assertEquals(TEST_KEY, state!!.key)
-        assertArrayEquals(serialized(newValue), state.value)
+        assertArrayEquals(serialized(newState.value!!), state.value)
         assertEquals(State.VERSION_INITIAL_VALUE, state.version)
-        assertNotNull(state.metadata)
+        assertEquals(newState.metadata, state.metadata)
     }
 
     @Test
@@ -78,7 +82,10 @@ class StateManagerHelperTest {
             stateVersion,
             mock<Metadata>()
         )
-        val updatedValue = StateType(TEST_STATE_VALUE.id + 1)
+        val updatedState = StateAndEventProcessor.State(
+            StateType(TEST_STATE_VALUE.id + 1),
+            mock<Metadata>(),
+        )
         val stateManagerHelper = StateManagerHelper<String, StateType, EventType>(
             stateManager,
             stateSerializer,
@@ -86,14 +93,14 @@ class StateManagerHelperTest {
         )
 
         val state = stateManagerHelper.createOrUpdateState(
-            TEST_KEY, persistedState, updatedValue
+            TEST_KEY, persistedState, updatedState
         )
 
         assertNotNull(state)
         assertEquals(persistedState.key, state!!.key)
-        assertArrayEquals(serialized(updatedValue), state.value)
+        assertArrayEquals(serialized(updatedState.value!!), state.value)
         assertEquals(persistedState.version, state.version)
-        assertEquals(persistedState.metadata, state.metadata)
+        assertEquals(updatedState.metadata, state.metadata)
     }
 
     @Test

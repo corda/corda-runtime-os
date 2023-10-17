@@ -1,6 +1,5 @@
 package net.corda.messaging.mediator
 
-import kotlinx.coroutines.runBlocking
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.libs.statemanager.api.StateManager
@@ -15,9 +14,9 @@ import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
-import net.corda.messaging.api.mediator.taskmanager.TaskManager
-import net.corda.messaging.api.mediator.taskmanager.TaskType
 import net.corda.messaging.mediator.factory.MediatorComponentFactory
+import net.corda.messaging.mediator.metrics.EventMediatorMetrics
+import net.corda.taskmanager.TaskManager
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.util.UUID
@@ -40,11 +39,12 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     private val mediatorComponentFactory = MediatorComponentFactory(
         config.messageProcessor, config.consumerFactories, config.clientFactories, config.messageRouterFactory
     )
+    private val metrics = EventMediatorMetrics(config.name)
     private val stateManagerHelper = StateManagerHelper<K, S, E>(
         stateManager, stateSerializer, stateDeserializer
     )
     private val taskManagerHelper = TaskManagerHelper(
-        taskManager, stateManagerHelper
+        taskManager, stateManagerHelper, metrics
     )
     private val uniqueId = UUID.randomUUID().toString()
     private val lifecycleCoordinatorName = LifecycleCoordinatorName(
@@ -59,7 +59,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     override fun start() {
         log.debug { "Starting multi-source event mediator with config: $config" }
         lifecycleCoordinator.start()
-        taskManager.execute(TaskType.LONG_RUNNING, ::run)
+        taskManager.executeLongRunningTask(::run)
     }
 
     private fun stop() = Thread.currentThread().interrupt()
@@ -151,7 +151,6 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun processEvents() {
-        log.debug { "Polling and processing events" }
         val messages = pollConsumers()
         if (messages.isNotEmpty()) {
             val msgGroups = messages.groupBy { it.key }
@@ -176,23 +175,17 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun pollConsumers(): List<CordaConsumerRecord<K, E>> {
-        return consumers.map { consumer ->
-            taskManager.execute(TaskType.SHORT_RUNNING) {
-                runBlocking {
-                    consumer.poll(config.pollTimeout).await()
-                }
-            }
-        }.map {
-            it.join()
-        }.flatten()
+        return metrics.pollTimer.recordCallable {
+            consumers.map { consumer ->
+                consumer.poll(config.pollTimeout)
+            }.flatten()
+        }!!
     }
 
     private fun commitOffsets() {
-        consumers.map { consumer ->
-            taskManager.execute(TaskType.SHORT_RUNNING) {
-                runBlocking {
-                    consumer.asyncCommitOffsets().await()
-                }
+        metrics.commitTimer.recordCallable {
+            consumers.map { consumer ->
+                consumer.syncCommitOffsets()
             }
         }
     }

@@ -1,6 +1,7 @@
 package net.corda.messaging.api.mediator.config
 
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
@@ -22,6 +23,9 @@ class EventMediatorConfigBuilder<K: Any, S: Any, E: Any> {
     private var clientFactories = emptyArray<MessagingClientFactory>()
     private var messageProcessor : StateAndEventProcessor<K, S, E>? = null
     private var messageRouterFactory: MessageRouterFactory? = null
+    private var threads: Int? = null
+    private var threadName: String? = null
+    private var stateManager: StateManager? = null
 
     /** Sets name for [MultiSourceEventMediator]. */
     fun name(name: String) =
@@ -47,21 +51,32 @@ class EventMediatorConfigBuilder<K: Any, S: Any, E: Any> {
     fun messageRouterFactory(messageRouterFactory: MessageRouterFactory) =
         apply { this.messageRouterFactory = messageRouterFactory }
 
+    /** Sets number of threads for task manager. */
+    fun threads(threads: Int) =
+        apply { this.threads = threads }
+
+    /** Sets name preix for task manager threads. */
+    fun threadName(threadName: String) =
+        apply { this.threadName = threadName }
+
+    /** Sets state manager. */
+    fun stateManager(stateManager: StateManager) =
+        apply { this.stateManager = stateManager }
+
     /** Builds [EventMediatorConfig]. */
     fun build(): EventMediatorConfig<K, S, E> {
-        check(name != null) { "Name not set" }
-        check(messagingConfig != null) { "Messaging configuration not set" }
         check(consumerFactories.isNotEmpty()) { "At least on consumer factory has to be set" }
         check(clientFactories.isNotEmpty()) { "At least on messaging client factory has to be set" }
-        check(messageProcessor != null) { "Message processor not set" }
-        check(messageRouterFactory != null) { "Message router factory not set" }
         return EventMediatorConfig(
-            name!!,
-            messagingConfig!!,
+            name = checkNotNull(name) { "Name not set" },
+            messagingConfig = checkNotNull(messagingConfig) { "Messaging configuration not set" },
             consumerFactories.asList(),
             clientFactories.asList(),
-            messageProcessor!!,
-            messageRouterFactory!!
+            messageProcessor = checkNotNull(messageProcessor) { "Message processor not set" },
+            messageRouterFactory = checkNotNull(messageRouterFactory) { "Message router factory not set" },
+            threads = checkNotNull(threads) { "Number of threads not set" },
+            threadName = checkNotNull(threadName) { "Thread name not set" },
+            stateManager = checkNotNull(stateManager) { "State manager not set" },
         )
     }
 }

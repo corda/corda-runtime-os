@@ -1,6 +1,7 @@
 package net.corda.messaging.emulation.subscription.stateandevent
 
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
@@ -34,9 +35,14 @@ class EventSubscriptionTest {
         on { stateSubscriptionConfig } doReturn SubscriptionConfig("group1", "topic1")
         on { stateSubscription } doReturn stateSubscription
         on { processor } doReturn object : StateAndEventProcessor<String, String, String> {
-            override fun onNext(state: String?, event: Record<String, String>): StateAndEventProcessor.Response<String> {
-                received.add(state to event)
-                return StateAndEventProcessor.Response(newState, response)
+            override fun onNext(
+                state: State<String>?, event: Record<String, String>
+            ): StateAndEventProcessor.Response<String> {
+                received.add(state?.value to event)
+                return StateAndEventProcessor.Response(
+                    State(newState, metadata = null),
+                    response
+                )
             }
 
             override val keyClass = String::class.java
