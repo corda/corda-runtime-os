@@ -29,14 +29,14 @@ dependencies {
     implementation 'net.corda:corda-base'
     implementation "net.corda:corda-config-schema"
     implementation "net.corda:corda-topic-schema"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation 'org.apache.servicemix.bundles:org.apache.servicemix.bundles.okhttp:4.10.0_3'
 
-
-    implementation project(':libs:interop:evm-service')
-    implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation project(':libs:lifecycle:lifecycle')
     implementation project(':components:configuration:configuration-read-service')
+    implementation project(':libs:flows:external-event-responses')
+    implementation project(':libs:interop:evm-service')
+    implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-datamodel')
     implementation project(":libs:messaging:messaging")

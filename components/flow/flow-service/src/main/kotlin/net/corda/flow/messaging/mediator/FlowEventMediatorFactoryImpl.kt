@@ -6,6 +6,7 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.checkpoint.Checkpoint
+import net.corda.data.interop.evm.EvmRequest
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.data.persistence.EntityRequest
@@ -38,6 +39,12 @@ import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_OUT
 import net.corda.schema.Schemas.Flow.FLOW_SESSION
 import net.corda.schema.Schemas.Flow.FLOW_START
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
+import net.corda.schema.Schemas.Interop.EVM_REQUEST
+import net.corda.schema.Schemas.Persistence.PERSISTENCE_ENTITY_PROCESSOR_TOPIC
+import net.corda.schema.Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC
+import net.corda.schema.Schemas.Services.TOKEN_CACHE_EVENT
+import net.corda.schema.Schemas.UniquenessChecker.UNIQUENESS_CHECK_TOPIC
+import net.corda.schema.Schemas.Verification.VERIFICATION_LEDGER_PROCESSOR_TOPIC
 import net.corda.schema.configuration.BootConfig.CRYPTO_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.PERSISTENCE_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.TOKEN_SELECTION_WORKER_REST_ENDPOINT
@@ -133,6 +140,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
             when (val event = message.event()) {
                 is EntityRequest -> routeTo(rpcClient,
                     rpcEndpoint(PERSISTENCE_WORKER_REST_ENDPOINT, PERSISTENCE_PATH), SYNCHRONOUS)
+                is EvmRequest -> routeTo(messageBusClient, EVM_REQUEST)
                 is FlowMapperEvent -> routeTo(messageBusClient,
                     FLOW_MAPPER_SESSION_OUT, ASYNCHRONOUS)
                 is FlowOpsRequest -> routeTo(rpcClient,

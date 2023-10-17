@@ -50,6 +50,7 @@ class EvmCallExternalEventFactory @Activate constructor(
             .setTo(parameters.to)
             .setReturnType(parameters.returnType.name)
             .setPayload(call)
+            .setFlowExternalEventContext(flowExternalEventContext)
             .build()
 
         return ExternalEventRecord(

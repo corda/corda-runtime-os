@@ -50,6 +50,7 @@ class EvmTransactionExternalEventFactory @Activate constructor(
             .setTo(parameters.to)
             .setReturnType(String::class.java.name)
             .setPayload(transaction)
+            .setFlowExternalEventContext(flowExternalEventContext)
             .build()
 
         return ExternalEventRecord(

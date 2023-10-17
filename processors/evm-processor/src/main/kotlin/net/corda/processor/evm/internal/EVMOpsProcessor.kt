@@ -1,22 +1,24 @@
 package net.corda.processor.evm.internal
 
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import net.corda.data.flow.event.FlowEvent
 import net.corda.data.interop.evm.EvmRequest
-import net.corda.data.interop.evm.EvmResponse
 import net.corda.data.interop.evm.request.Call
 import net.corda.data.interop.evm.request.GetTransactionReceipt
 import net.corda.data.interop.evm.request.Transaction
-import net.corda.libs.configuration.SmartConfig
-import net.corda.messaging.api.processor.RPCResponderProcessor
-import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.interop.evm.dispatcher.factory.DispatcherFactory
-import net.corda.interop.evm.dispatcher.EvmDispatcher
+import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.interop.evm.EVMErrorException
 import net.corda.interop.evm.EthereumConnector
 import net.corda.interop.evm.EvmRPCCall
-
+import net.corda.interop.evm.dispatcher.EvmDispatcher
+import net.corda.interop.evm.dispatcher.factory.DispatcherFactory
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.getIntOrDefault
+import net.corda.libs.configuration.getLongOrDefault
+import net.corda.messaging.api.processor.DurableProcessor
+import net.corda.messaging.api.records.Record
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import okhttp3.OkHttpClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -30,8 +32,9 @@ import kotlin.reflect.KClass
 class EVMOpsProcessor(
     factory: DispatcherFactory,
     httpClient: OkHttpClient,
-    config: SmartConfig
-) : RPCResponderProcessor<EvmRequest, EvmResponse> {
+    config: SmartConfig,
+    private val externalEventResponseFactory: ExternalEventResponseFactory,
+) : DurableProcessor<String, EvmRequest> {
 
     private var dispatcher: Map<KClass<*>, EvmDispatcher>
 
@@ -42,9 +45,9 @@ class EVMOpsProcessor(
         )
     }
 
-    private val maxRetries = config.getInt("maxRetryAttempts")
-    private val retryDelayMs = config.getLong("maxRetryDelay")
-    private val fixedThreadPool = Executors.newFixedThreadPool(config.getInt("threadPoolSize"))
+    private val maxRetries = config.getIntOrDefault("maxRetryAttempts", 3)
+    private val retryDelayMs = config.getLongOrDefault("maxRetryDelay", 3000)
+    private val fixedThreadPool = Executors.newFixedThreadPool(config.getIntOrDefault("threadPoolSize", 3))
 
 
     init {
@@ -58,15 +61,17 @@ class EVMOpsProcessor(
 
     // This is blocking
     // Make this asynchronous
-    private fun handleRequest(request: EvmRequest, respFuture: CompletableFuture<EvmResponse>) {
-        dispatcher[request.payload::class]
-            ?.dispatch(request).apply {
-                respFuture.complete(this)
-            }
-            ?: throw CordaRuntimeException("Unregistered EVM operation: ${request.payload.javaClass}")
-
+    private fun handleRequest(request: EvmRequest): Record<String, FlowEvent> {
+        val response = dispatcher[request.payload::class]?.dispatch(request)
+        return if (response != null) {
+            externalEventResponseFactory.success(request.flowExternalEventContext, this)
+        } else {
+            externalEventResponseFactory.platformError(
+                request.flowExternalEventContext,
+                CordaRuntimeException("Unregistered EVM operation: ${request.payload.javaClass}")
+            )
+        }
     }
-
 
     /**
      * The Retry Policy is responsibly for retrying an ethereum call, given that the ethereum error is transient
@@ -76,43 +81,44 @@ class EVMOpsProcessor(
      * @return The balance of the specified Ethereum address as a string.
      */
     inner class RetryPolicy(private val maxRetries: Int, private val delayMs: Long) {
-        fun execute(action: () -> Unit) {
-            var retries = 0
-            while (retries <= maxRetries) {
+        fun <T> execute(action: () -> T): T {
+            var lastException: Exception? = null
+            repeat(maxRetries) {
                 try {
                     return action()
                 } catch (e: EVMErrorException) {
+                    lastException = e
                     if (e.errorResponse.error.code in transientEthereumErrorCodes) {
-                        retries++
                         log.warn(e.message)
-                        if (retries <= maxRetries) {
-                            TimeUnit.MILLISECONDS.sleep(delayMs)
-                        } else {
-                            throw CordaRuntimeException(e.message)
-
-                        }
+                        TimeUnit.MILLISECONDS.sleep(delayMs)
                     } else {
                         throw CordaRuntimeException(e.message)
                     }
                 }
             }
+            throw CordaRuntimeException("Reached max retries for EvmRequest", lastException)
         }
     }
 
 
-    override fun onNext(request: EvmRequest, respFuture: CompletableFuture<EvmResponse>) {
-
-        fixedThreadPool.submit {
-            try {
-                RetryPolicy(maxRetries, retryDelayMs).execute {
-                    handleRequest(request, respFuture)
+    override fun onNext(events: List<Record<String, EvmRequest>>): List<Record<*, *>> {
+        return try {
+            events
+                .filter { it.value != null }
+                .map {
+                    val request = it.value!!
+                    RetryPolicy(maxRetries, retryDelayMs).execute {
+                        handleRequest(request)
+                    }
                 }
-            } catch (e: Exception) {
-                respFuture.completeExceptionally(e)
-            }
+        } catch (e: Exception) {
+            log.error("Unexpected error while processing the flow", e)
+            emptyList()
         }
-
     }
+
+    override val keyClass: Class<String> = String::class.java
+    override val valueClass: Class<EvmRequest> = EvmRequest::class.java
 
 }
 

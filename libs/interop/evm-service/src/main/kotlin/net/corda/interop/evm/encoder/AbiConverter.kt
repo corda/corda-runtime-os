@@ -25,7 +25,7 @@ class AbiConverter {
          */
         fun getType(type: String, value: String): Any {
             return when (type.lowercase()) {
-                "address" -> Address(value)
+                "address" -> Address(value.removeSurrounding("\""))
                 "bool", "boolean" -> Bool(value.toBoolean())
                 "string" -> Utf8String(value)
                 "bytes" -> DynamicBytes(value.toByteArray())

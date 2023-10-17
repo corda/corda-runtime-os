@@ -49,6 +49,7 @@ class EvmTransactionReceiptExternalEventFactory @Activate constructor(
             .setTo("")
             .setReturnType(TransactionReceipt::class.java.name)
             .setPayload(transactionReceipt)
+            .setFlowExternalEventContext(flowExternalEventContext)
             .build()
         return ExternalEventRecord(
             topic = Schemas.Interop.EVM_REQUEST,
