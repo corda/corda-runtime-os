@@ -2,21 +2,20 @@ package net.corda.rest.server.impl.apigen.processing
 
 import io.javalin.websocket.WsConfig
 import net.corda.rest.annotations.RestApiVersion
+import net.corda.rest.durablestream.api.isFiniteDurableStreamsMethod
+import net.corda.rest.durablestream.api.returnsDurableCursorBuilder
 import net.corda.rest.server.impl.apigen.models.Endpoint
 import net.corda.rest.server.impl.apigen.models.EndpointMethod
 import net.corda.rest.server.impl.apigen.models.EndpointParameter
 import net.corda.rest.server.impl.apigen.models.Resource
-import net.corda.rest.server.impl.websocket.WebSocketRouteAdaptor
 import net.corda.rest.server.impl.internal.HttpExceptionMapper
 import net.corda.rest.server.impl.security.RestAuthenticationProvider
 import net.corda.rest.server.impl.security.provider.credentials.DefaultCredentialResolver
+import net.corda.rest.server.impl.websocket.WebSocketCloserService
+import net.corda.rest.server.impl.websocket.WebSocketRouteAdaptor
 import net.corda.rest.tools.HttpPathUtils.joinResourceAndEndpointPaths
 import net.corda.rest.tools.isDuplexChannel
 import net.corda.rest.tools.isStaticallyExposedGet
-import net.corda.rest.durablestream.api.isFiniteDurableStreamsMethod
-import net.corda.rest.durablestream.api.returnsDurableCursorBuilder
-import net.corda.rest.server.impl.websocket.WebSocketCloserService
-import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.lang.reflect.InvocationTargetException
