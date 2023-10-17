@@ -7,6 +7,7 @@ import net.corda.flow.messaging.mediator.FlowEventMediatorFactory
 import net.corda.flow.messaging.mediator.FlowEventMediatorFactoryImpl
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactoryFactory
 import net.corda.messaging.api.mediator.factory.MessagingClientFactoryFactory
@@ -27,6 +28,7 @@ class FlowEventMediatorFactoryImplTest {
     private val messagingClientFactoryFactory = mock<MessagingClientFactoryFactory>()
     private val multiSourceEventMediatorFactory = mock<MultiSourceEventMediatorFactory>()
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory>()
+    private val platformInfoProvider = mock<PlatformInfoProvider>()
     private val flowConfig = mock<SmartConfig>()
 
     @BeforeEach
@@ -45,6 +47,7 @@ class FlowEventMediatorFactoryImplTest {
             messagingClientFactoryFactory,
             multiSourceEventMediatorFactory,
             cordaAvroSerializationFactory,
+            platformInfoProvider
         )
     }
 
