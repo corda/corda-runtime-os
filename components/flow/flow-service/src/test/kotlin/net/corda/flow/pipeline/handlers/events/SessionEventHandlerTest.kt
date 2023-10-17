@@ -17,6 +17,7 @@ import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.pipeline.CheckpointInitializer
 import net.corda.flow.pipeline.exceptions.FlowEventException
+import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.handlers.waiting.WaitingForStartFlow
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
@@ -147,7 +148,7 @@ class SessionEventHandlerTest {
     }
 
     @Test
-    fun `Receiving a counterparty request payload sends an error message if there is no matching initiated flow`() {
+    fun `Receiving a counterparty request payload throws a FlowFatalException if there is no matching initiated flow`() {
         val sessionEvent = createCounterpartyRequest()
         val inputContext = buildFlowEventContext(checkpoint = expectedCheckpoint, inputEventPayload = sessionEvent)
 
@@ -158,8 +159,9 @@ class SessionEventHandlerTest {
         val sessionEventHandler = SessionEventHandler(
             flowSandboxService, sessionManager, fakeCheckpointInitializerService, flowSessionManager)
 
-        sessionEventHandler.preProcess(inputContext)
-        verify(flowSessionManager, times(1)).sendErrorMessages(any(), any(), anyOrNull(), any())
+        assertThrows<FlowFatalException> {
+            sessionEventHandler.preProcess(inputContext)
+        }
     }
 
     @ParameterizedTest(name = "Receiving a {0} payload when a checkpoint does not exist throws an exception")
