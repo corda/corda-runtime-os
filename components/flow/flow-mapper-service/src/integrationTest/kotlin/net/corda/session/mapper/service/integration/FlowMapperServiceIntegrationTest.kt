@@ -142,7 +142,7 @@ class FlowMapperServiceIntegrationTest {
         val testCpiId = "testCpi1"
         val publisher = publisherFactory.createPublisher(PublisherConfig(testId), messagingConfig)
 
-        //send 2 session init, 1 is duplicate
+        //send 2 session init
         val sessionDataAndInitEvent = Record<Any, Any>(
             FLOW_MAPPER_EVENT_TOPIC, testSessionId, FlowMapperEvent(
                 buildSessionEvent(
@@ -161,7 +161,7 @@ class FlowMapperServiceIntegrationTest {
         val p2pLatch = CountDownLatch(1)
         val p2pOutSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$testId-p2p-out", P2P_OUT_TOPIC),
-            TestP2POutProcessor(testSessionId, p2pLatch, 1), messagingConfig, null
+            TestP2POutProcessor(testSessionId, p2pLatch, 2), messagingConfig, null
         )
         p2pOutSub.start()
         assertTrue(p2pLatch.await(20, TimeUnit.SECONDS))
