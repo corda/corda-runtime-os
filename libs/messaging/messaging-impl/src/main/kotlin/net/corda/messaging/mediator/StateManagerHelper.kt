@@ -45,7 +45,7 @@ class StateManagerHelper<K : Any, S : Any, E : Any>(
      */
     fun persistStates(processorTaskResults: Collection<ProcessorTask.Result<K, S, E>>): Map<String, State?> {
         val (newStateTasks, existingStateTasks) = processorTaskResults.partition { result ->
-            result.processorTask.persistedState == null
+            result.processorTask.noInitialState
         }
         val latestValuesForFailedStates = mutableMapOf<String, State?>()
         if (newStateTasks.isNotEmpty()) {

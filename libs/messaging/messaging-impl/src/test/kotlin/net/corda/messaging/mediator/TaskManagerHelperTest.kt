@@ -57,6 +57,7 @@ class TaskManagerHelperTest {
             ProcessorTask(
                 KEY1,
                 state1,
+                noInitialState = false,
                 listOf(EVENT1).toRecords(KEY1),
                 messageProcessor,
                 stateManagerHelper,
@@ -64,6 +65,7 @@ class TaskManagerHelperTest {
             ProcessorTask(
                 KEY2,
                 null,
+                noInitialState = true,
                 listOf(EVENT2, EVENT3).toRecords(KEY2),
                 messageProcessor,
                 stateManagerHelper,
@@ -84,7 +86,7 @@ class TaskManagerHelperTest {
             replyMessage: MediatorMessage<String>?,
         ): ClientTask.Result<String, String, String> {
             val processorTask = ProcessorTask(
-                key, null, events.toRecords(key), messageProcessor, stateManagerHelper
+                key, null, true, events.toRecords(key), messageProcessor, stateManagerHelper
             )
             val processorTaskResult = ProcessorTask.Result(
                 processorTask, listOf(), updateState
@@ -99,7 +101,6 @@ class TaskManagerHelperTest {
 
         val replyMessage = MediatorMessage("replyMessage")
         val clientResults = listOf(
-            clientTaskResult(KEY1, listOf(EVENT1), replyMessage = null),
             clientTaskResult(KEY2, listOf(EVENT2, EVENT3), replyMessage),
         )
 
@@ -110,7 +111,8 @@ class TaskManagerHelperTest {
         val expectedProcessorTasks = listOf(
             ProcessorTask(
                 KEY2,
-                updateState.copy(version = updateState.version + 1),
+                updateState,
+                noInitialState = true,
                 listOf(replyMessage.payload!!).toRecords(KEY2),
                 messageProcessor,
                 stateManagerHelper
@@ -124,6 +126,7 @@ class TaskManagerHelperTest {
         val processorTask1 = ProcessorTask(
             KEY1,
             persistedState = mock(),
+            noInitialState = false,
             events = mock(),
             messageProcessor,
             stateManagerHelper
@@ -131,6 +134,7 @@ class TaskManagerHelperTest {
         val processorTask2 = ProcessorTask(
             KEY2,
             persistedState = mock(),
+            noInitialState = false,
             events = mock(),
             messageProcessor,
             stateManagerHelper

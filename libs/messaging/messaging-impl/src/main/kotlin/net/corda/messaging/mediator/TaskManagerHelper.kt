@@ -36,10 +36,12 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
     ): List<ProcessorTask<K, S, E>> {
         return messageGroups.map { msgGroup ->
             val key = msgGroup.key
+            val state = persistedStates[key.toString()]
             val events = msgGroup.value.map { it.toRecord() }
             ProcessorTask(
                 key,
-                persistedStates[key.toString()],
+                state,
+                state == null,
                 events,
                 messageProcessor,
                 stateManagerHelper,
@@ -58,14 +60,12 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
     fun createMessageProcessorTasks(
         clientResults: List<ClientTask.Result<K, S, E>>,
     ): List<ProcessorTask<K, S, E>> {
-        return clientResults.filter { it.hasReply }
-            .groupBy { it.key }
+        return clientResults.groupBy { it.key }
             .map { (_, clientTaskResults) ->
                 val groupedEvents = clientTaskResults.map { it.toRecord() }
                 with(clientTaskResults.first()) {
-                    val persistedState = processorTaskResult.updatedState!!
                     processorTask.copy(
-                        persistedState = persistedState.copy(version = persistedState.version + 1),
+                        persistedState = processorTaskResult.updatedState!!,
                         events = groupedEvents
                     )
                 }

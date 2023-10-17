@@ -66,6 +66,7 @@ class ProcessorTaskTest {
         val task = ProcessorTask(
             TEST_KEY,
             persistedState,
+            noInitialState = true,
             inputEventRecords,
             processor,
             stateManagerHelper,

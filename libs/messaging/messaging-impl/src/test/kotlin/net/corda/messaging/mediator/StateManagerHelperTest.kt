@@ -119,7 +119,7 @@ class StateManagerHelperTest {
         stateManagerHelper.persistStates(
             states.map { (persistedState, updatedState) ->
                 val task = ProcessorTask<String, StateType, EventType>(
-                    updatedState.key, persistedState, mock(), mock(), mock()
+                    updatedState.key, persistedState, persistedState == null, mock(), mock(), mock()
                 )
                 ProcessorTask.Result(task, mock(), updatedState)
             }

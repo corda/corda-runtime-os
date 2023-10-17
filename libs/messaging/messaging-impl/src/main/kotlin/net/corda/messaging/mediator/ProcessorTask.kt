@@ -14,6 +14,7 @@ import java.util.concurrent.Callable
 data class ProcessorTask<K : Any, S : Any, E : Any>(
     val key: K,
     val persistedState: State?,
+    val noInitialState: Boolean,
     val events: Collection<Record<K, E>>,
     private val processor: StateAndEventProcessor<K, S, E>,
     private val stateManagerHelper: StateManagerHelper<K, S, E>,

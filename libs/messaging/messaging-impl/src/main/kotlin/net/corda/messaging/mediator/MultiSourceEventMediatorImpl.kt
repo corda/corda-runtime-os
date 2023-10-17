@@ -152,26 +152,32 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 
     private fun processEvents() {
         val messages = pollConsumers()
-        if (messages.isNotEmpty()) {
-            val msgGroups = messages.groupBy { it.key }
-            val persistedStates = stateManager.get(msgGroups.keys.map { it.toString() })
-            var msgProcessorTasks = taskManagerHelper.createMessageProcessorTasks(
-                msgGroups, persistedStates, config.messageProcessor
-            )
+        if (messages.isEmpty()) {
+            return
+        }
+        val msgGroups = messages.groupBy { it.key }
+        val persistedStates = stateManager.get(msgGroups.keys.map { it.toString() })
+        var msgProcessorTasks = taskManagerHelper.createMessageProcessorTasks(
+            msgGroups, persistedStates, config.messageProcessor
+        )
+        do {
+            val finishedProcessingResults = mutableMapOf<K, ProcessorTask.Result<K, S, E>>()
             do {
                 val processingResults = taskManagerHelper.executeProcessorTasks(msgProcessorTasks)
-                val conflictingStates = stateManagerHelper.persistStates(processingResults)
-                val (successResults, failResults) = processingResults.partition {
-                    !conflictingStates.contains(it.key.toString())
-                }
-                val clientTasks = taskManagerHelper.createClientTasks(successResults, messageRouter)
+                val clientTasks = taskManagerHelper.createClientTasks(processingResults, messageRouter)
                 val clientResults = taskManagerHelper.executeClientTasks(clientTasks)
-                msgProcessorTasks =
-                    taskManagerHelper.createMessageProcessorTasks(clientResults) +
-                            taskManagerHelper.createMessageProcessorTasks(failResults, conflictingStates)
+                val (unfinishedResults, finishedResults) = clientResults.partition { it.hasReply }
+                finishedResults.forEach { finishedProcessingResults[it.key] = it.processorTaskResult }
+                msgProcessorTasks = taskManagerHelper.createMessageProcessorTasks(unfinishedResults)
             } while (msgProcessorTasks.isNotEmpty())
-            commitOffsets()
-        }
+
+            val conflictingStates = stateManagerHelper.persistStates(finishedProcessingResults.values)
+            val failedResults = finishedProcessingResults.values.filter {
+                conflictingStates.contains(it.key.toString())
+            }
+            msgProcessorTasks = taskManagerHelper.createMessageProcessorTasks(failedResults, conflictingStates)
+        } while (msgProcessorTasks.isNotEmpty())
+        commitOffsets()
     }
 
     private fun pollConsumers(): List<CordaConsumerRecord<K, E>> {
