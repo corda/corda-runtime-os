@@ -9,7 +9,7 @@
       "in": {
         "denomination": "denomination",
         "amount": "decimal",
-        "notary-keys": "string",
+        "notary-keys": "bytes",
         "draft" : "string"
       },
       "out": {
@@ -19,8 +19,7 @@
     "unlock": {
       "in": {
         "reservation-ref": "uuid",
-        "signed-tx": "signed_tx",
-        "key" : "bytes"
+        "signed-tx": "signed_tx"
       },
       "out": {
         "amount": "decimal"

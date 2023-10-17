@@ -64,15 +64,15 @@
       "facade-method-mapping": [
         {
           "facade-method": "unlock",
-          "flow-name": "com.r3.corda.demo.interop.tokens.workflows.interop.LockFlow"
+          "flow-name": "com.r3.corda.atomic.swap.workflows.inter.LockFlow"
         },
         {
-          "facade-method": "createLock",
-          "flow-name": "com.r3.corda.demo.interop.tokens.workflows.interop.LockFlow"
+          "facade-method": "create-lock",
+          "flow-name": "com.r3.corda.atomic.swap.workflows.inter.LockFlow"
         },
         {
           "facade-method": "send-proof",
-          "flow-name": "com.r3.corda.demo.interop.tokens.workflows.interop.LockFlow"
+          "flow-name": "com.r3.corda.atomic.swap.workflows.inter.LockFlow"
         }
       ]
     }

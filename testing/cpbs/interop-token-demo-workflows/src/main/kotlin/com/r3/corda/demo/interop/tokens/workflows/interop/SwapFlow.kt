@@ -2,6 +2,7 @@ package com.r3.corda.demo.interop.tokens.workflows.interop
 
 import com.r3.corda.demo.interop.tokens.contracts.TokenContract
 import com.r3.corda.demo.interop.tokens.states.TokenState
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
@@ -16,9 +17,10 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import org.slf4j.LoggerFactory
-import java.math.BigDecimal
+import java.nio.ByteBuffer
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
@@ -44,6 +46,12 @@ class SwapFlow : ClientStartableFlow {
 
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
+
+    @CordaInject
+    lateinit var notaryLookup: NotaryLookup
+
+    @CordaInject
+    lateinit var flowEngine: FlowEngine
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
@@ -74,9 +82,6 @@ class SwapFlow : ClientStartableFlow {
                 throw CordaRuntimeException("Only the owner of a state can transfer it to a new owner.")
             }
 
-            val session = flowMessaging.initiateFlow(newOwnerInfo.name)
-            val reservation : UUID = session.sendAndReceive(UUID::class.java,
-                Payment(flowArgs.applicationName, BigDecimal(100)))
 
             val outputState =
                 inputState.withNewOwner(newOwnerInfo.name, listOf(ownerInfo.ledgerKeys[0], newOwnerInfo.ledgerKeys[0]))
@@ -91,8 +96,22 @@ class SwapFlow : ClientStartableFlow {
 
             val signedTransaction = txBuilder.toSignedTransaction()
 
+            val notaries = notaryLookup.notaryServices
+            require(notaries.isNotEmpty()) { "No notaries are available." }
+            require(notaries.size == 1) { "Too many notaries $notaries." }
+            val notary = notaryLookup.notaryServices.single()
+            val byteArrayKey: ByteArray = notary.publicKey.encoded
+            //val byteBuffer: ByteBuffer = ByteBuffer.wrap(byteArrayKey)
+
+            val session = flowMessaging.initiateFlow(newOwnerInfo.name)
+            val reservation : UUID = session.sendAndReceive(UUID::class.java,
+                DraftTx(flowArgs.applicationName, signedTransaction.id, byteArrayKey))
+
+            //ledgerService.sendAndReceiveTransactionBuilder() //TODO use this so other party can inspect and reason
+
             log.info("Reserved $reservation")
 
+            //TODO check my alter ego / pool for confirmation about a receive of locked state
             val finalizationResult = ledgerService.finalize(
                 signedTransaction,
                 listOf(session)
@@ -100,6 +119,10 @@ class SwapFlow : ClientStartableFlow {
             val userResult = finalizationResult.transaction.id.toString().also {
                 log.info("Success! Response: $it")
             }
+
+            val notarySignature: DigitalSignatureAndMetadata = finalizationResult.transaction.signatures.first { it.proof != null }
+            val result = flowEngine.subFlow(SwapUnlockSubFlow(flowArgs.applicationName, notarySignature))
+            log.info("SwapFlow - unlocking success! Response: $result")
 
             return userResult
         } catch (e: Exception) {
@@ -125,10 +148,10 @@ class SwapResponderFlow : ResponderFlow {
     @Suspendable
     override fun call(session: FlowSession) {
 
-        val msg = session.receive(Payment::class.java)
+        val msg = session.receive(DraftTx::class.java)
         log.info("Received message: $msg")
 
-        val result = flowEngine.subFlow(SwapResponderSubFlow(msg))
+        val result = flowEngine.subFlow(SwapResponderSubFlow(msg.applicationName, ByteBuffer.wrap(msg.notaryKey), msg.draftTxId))
         session.send(result)
 
         try {

@@ -1,5 +1,6 @@
 package com.r3.corda.demo.interop.tokens.workflows.interop
 
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.SubFlow
@@ -7,17 +8,13 @@ import net.corda.v5.application.interop.FacadeService
 import net.corda.v5.application.interop.InterOpIdentityInfo
 import net.corda.v5.application.interop.InteropIdentityLookup
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.NotaryLookup
 import org.slf4j.LoggerFactory
-import java.math.BigDecimal
-import java.nio.ByteBuffer
 import java.util.UUID
 
 
-@InitiatingFlow(protocol = "swap-responder-sub-flow")
-class SwapResponderSubFlow(private val applicationName: String, private val notaryKey: ByteBuffer,
-                           private val draftHash: SecureHash):
+@InitiatingFlow(protocol = "swap-unlock-sub-flow")
+class SwapUnlockSubFlow(private val applicationName: String, private val proof: DigitalSignatureAndMetadata):
+                               //  private val lockedTxId: SecureHash):
     SubFlow<UUID> {
 
     @CordaInject
@@ -25,9 +22,6 @@ class SwapResponderSubFlow(private val applicationName: String, private val nota
 
     @CordaInject
     lateinit var interopIdentityLookUp : InteropIdentityLookup
-
-    @CordaInject
-    lateinit var notaryLookup: NotaryLookup
 
     @Suspendable
     override fun call(): UUID {
@@ -41,16 +35,11 @@ class SwapResponderSubFlow(private val applicationName: String, private val nota
         val lockFacade: LockFacade =
             facadeService.getProxy(facadeId, LockFacade::class.java, myInteropInfo)
 
-        val notaries = notaryLookup.notaryServices
-        require(notaries.isNotEmpty()) { "No notaries are available." }
-        require(notaries.size == 1) { "Too many notaries $notaries." }
-       // val byteArrayKey: ByteArray = notaryKey.encoded
-       // val byteBuffer: ByteBuffer = ByteBuffer.wrap(byteArrayKey)
-        val response = lockFacade.createLock("USD", BigDecimal(1000), notaryKey, draftHash.toString())
+        val response = lockFacade.unlock(UUID.randomUUID(), proof)
 
         log.info("Interop call returned: $response")
 
-        return response
+        return UUID.randomUUID()
     }
 
     private companion object {

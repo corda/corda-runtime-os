@@ -1,4 +1,4 @@
-package com.r3.corda.demo.interop.tokens.workflows.interop
+package com.r3.corda.atomic.swap.workflows.inter
 
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -9,8 +9,6 @@ import net.corda.v5.ledger.common.transaction.TransactionSignatureVerificationSe
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 import java.nio.ByteBuffer
-import java.security.KeyFactory
-import java.security.spec.X509EncodedKeySpec
 import java.util.*
 
 @InitiatingFlow(protocol = "lock-responder-sub-flow")
@@ -26,13 +24,21 @@ class LockFlow: FacadeDispatcherFlow(), LockFacade{
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
+    @Suspendable
     override fun createLock(denomination: String, amount: BigDecimal, notaryKeys: ByteBuffer, draft: String): UUID {
-        return UUID.randomUUID()
+        log.info("calling LockFlow.createLock $draft")
+        //do transaction giving assted + lock
+
+
+        //val secureHash = digestService.parseSecureHash(signableData)
+        val result = UUID.randomUUID()
+        log.info("returning LockFlow.createLock $result")
+        return result
     }
 
     @Suspendable
     override fun unlock(reservationRef: UUID, proof: DigitalSignatureAndMetadata): BigDecimal {
-//        log.info("Here is the secure hash" + proof.by.toString())
+        log.info("calling LockFlow.unlock $proof")
 //        val x509publicKey = X509EncodedKeySpec(key.array())
 //        val kf: KeyFactory = KeyFactory.getInstance("EC")
 //        val publicKey = kf.generatePublic(x509publicKey)
@@ -47,25 +53,27 @@ class LockFlow: FacadeDispatcherFlow(), LockFacade{
 //        log.info("Transaction id ${proof.by} is matching the proof $proof signed by " +
 //                Base64.getEncoder().encodeToString(publicKey.encoded)
 //        )
-        return BigDecimal.ONE
+        val result = BigDecimal.ONE
+        log.info("returning LockFlow.unlock $result")
+        return result
     }
 
-    @Suspendable
-    override fun sendProof(signableData: String, proof: DigitalSignatureAndMetadata, key: ByteBuffer): BigDecimal {
-        val secureHash = digestService.parseSecureHash(signableData)
-        val x509publicKey = X509EncodedKeySpec(key.array())
-        val kf: KeyFactory = KeyFactory.getInstance("EC")
-        val publicKey = kf.generatePublic(x509publicKey)
-        try {
-            transactionSignatureVerificationService.verifySignature(secureHash, proof, publicKey)
-        } catch (e: Exception) {
-            log.error("Transaction id $secureHash doesn't match the proof $proof signed by" +
-                    " ${Base64.getEncoder().encodeToString(publicKey.encoded)}, reason: ${e.message}")
-            throw e
-        }
-        log.info("Transaction id $secureHash is matching the proof $proof signed by " +
-                Base64.getEncoder().encodeToString(publicKey.encoded)
-        )
-        return BigDecimal.ONE
-    }
+//    @Suspendable
+//    override fun sendProof(signableData: String, proof: DigitalSignatureAndMetadata, key: ByteBuffer): BigDecimal {
+//        val secureHash = digestService.parseSecureHash(signableData)
+//        val x509publicKey = X509EncodedKeySpec(key.array())
+//        val kf: KeyFactory = KeyFactory.getInstance("EC")
+//        val publicKey = kf.generatePublic(x509publicKey)
+//        try {
+//            transactionSignatureVerificationService.verifySignature(secureHash, proof, publicKey)
+//        } catch (e: Exception) {
+//            log.error("Transaction id $secureHash doesn't match the proof $proof signed by" +
+//                    " ${Base64.getEncoder().encodeToString(publicKey.encoded)}, reason: ${e.message}")
+//            throw e
+//        }
+//        log.info("Transaction id $secureHash is matching the proof $proof signed by " +
+//                Base64.getEncoder().encodeToString(publicKey.encoded)
+//        )
+//        return BigDecimal.ONE
+//    }
 }
