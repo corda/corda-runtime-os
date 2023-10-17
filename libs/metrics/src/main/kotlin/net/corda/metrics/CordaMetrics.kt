@@ -661,6 +661,9 @@ object CordaMetrics {
                 computation
             )
 
+            /**
+             * Record how long a HTTP RPC call from the messaging library takes to receive a response
+             */
             object HTTPRPCResponseTime : Metric<Timer>("rpc.http.response.time", CordaMetrics::timer)
 
         }
