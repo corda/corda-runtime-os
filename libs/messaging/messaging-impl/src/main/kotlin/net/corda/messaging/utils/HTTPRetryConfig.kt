@@ -1,7 +1,5 @@
 package net.corda.messaging.utils
 
-import kotlin.reflect.KClass
-
 /**
  * Configuration class for HTTP retry parameters.
  *
@@ -16,18 +14,18 @@ data class HTTPRetryConfig(
     val times: Int = 3,
     val initialDelay: Long = 100,
     val factor: Double = 2.0,
-    val retryOn: Set<KClass<out Exception>> = setOf(Exception::class)
+    val retryOn: Set<Class<out Exception>> = setOf(Exception::class.java)
 ) {
     class Builder {
         private var times: Int = 3
         private var initialDelay: Long = 100
         private var factor: Double = 2.0
-        private var retryOn: Set<KClass<out Exception>> = setOf(Exception::class)
+        private var retryOn: Set<Class<out Exception>> = setOf(Exception::class.java)
 
         fun times(times: Int) = apply { this.times = times }
         fun initialDelay(delay: Long) = apply { this.initialDelay = delay }
         fun factor(factor: Double) = apply { this.factor = factor }
-        fun retryOn(vararg exceptions: KClass<out Exception>) = apply { this.retryOn = exceptions.toSet() }
+        fun retryOn(vararg exceptions: Class<out Exception>) = apply { this.retryOn = exceptions.toSet() }
 
         fun build(): HTTPRetryConfig {
             return HTTPRetryConfig(times, initialDelay, factor, retryOn)

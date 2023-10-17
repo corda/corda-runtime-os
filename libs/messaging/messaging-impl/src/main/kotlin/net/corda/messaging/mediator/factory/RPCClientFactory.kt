@@ -1,5 +1,7 @@
 package net.corda.messaging.mediator.factory
 
+import java.net.http.HttpClient
+import java.time.Duration
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.config.MessagingClientConfig
@@ -10,9 +12,13 @@ class RPCClientFactory(
     private val id: String,
     private val cordaSerializationFactory: CordaAvroSerializationFactory
 ): MessagingClientFactory {
+    private val httpClient: HttpClient by lazy {
+        HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(30))
+            .build()
+    }
 
     override fun create(config: MessagingClientConfig): MessagingClient {
-        val httpClient = HttpClientFactory.getClient()
         return RPCClient(
             id,
             cordaSerializationFactory,
