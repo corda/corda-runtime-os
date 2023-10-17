@@ -9,7 +9,11 @@ import net.corda.db.schema.CordaDb
 import net.corda.metrics.CordaMetrics
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
 
+private val logger = LoggerFactory.getLogger("QQQ")
+private val openConnections = ConcurrentHashMap<String, Long>()
 fun getEntityManagerFactory(
     tenantId: String,
     dbConnectionManager: DbConnectionManager,
@@ -32,7 +36,17 @@ fun getEntityManagerFactory(
                 }
             } else {
                 // tenantID is a virtual node; let's connect to one of the virtual node Crypto databases
-                dbConnectionManager.createEntityManagerFactory(
+                val created = Exception("YYY")
+                logger.info("creating Manager for $tenantId, threadId: ${Thread.currentThread().id}", created)
+                openConnections.compute(tenantId) { k, v ->
+                    if (v == null) {
+                        0
+                    } else {
+                        logger.info("Connections for $k was created while another one is alive", Exception("TTT"))
+                        v + 1
+                    }
+                }
+                val manager = dbConnectionManager.createEntityManagerFactory(
                     connectionId = virtualNodeInfoReadService.getByHoldingIdentityShortHash(
                         ShortHash.of(
                             tenantId
@@ -46,6 +60,19 @@ fun getEntityManagerFactory(
                             "persistenceUnitName ${CordaDb.Crypto.persistenceUnitName} is not registered."
                         )
                 )
+                object : EntityManagerFactory by manager {
+                    override fun close() {
+                        logger.info("Closing Manager for $tenantId, threadId: ${Thread.currentThread().id}", Exception("PPP", created))
+                        openConnections.compute(tenantId) { _, v ->
+                            if ((v == null) || (v <= 1)) {
+                                null
+                            } else {
+                                v - 1
+                            }
+                        }
+                        manager.close()
+                    }
+                }
             }
             entityManagerFactory
         }!!
