@@ -7,7 +7,6 @@ import io.micrometer.core.instrument.Meter
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Metrics
 import io.micrometer.core.instrument.Tags
-import io.micrometer.core.instrument.Tag as micrometerTag
 import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.binder.BaseUnits
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry
@@ -19,6 +18,7 @@ import java.nio.file.Path
 import java.util.function.Supplier
 import java.util.function.ToDoubleFunction
 import java.util.function.ToLongFunction
+import io.micrometer.core.instrument.Tag as micrometerTag
 
 
 object CordaMetrics {
@@ -660,6 +660,9 @@ object CordaMetrics {
                 "consumer.partitioned.inmemory.store",
                 computation
             )
+
+            object HTTPRPCResponseTime : Metric<Timer>("rpc.http.response.time", CordaMetrics::timer)
+
         }
 
         object TaskManager {
@@ -691,6 +694,21 @@ object CordaMetrics {
          * Http method for which the metric is applicable.
          */
         HttpMethod("http.method"),
+
+        /**
+         * The size of a http response, measured in size of byte array
+         */
+        HttpResponseSize("http.response.size"),
+
+        /**
+         * The URI that a HTTP request was sent to
+         */
+        HttpRequestUri("http.request.uri"),
+
+        /**
+         * Response code received for a HTTP response
+         */
+        HttpResponseCode("http.response.code"),
 
         /**
          * Type of the SandboxGroup to which the metric applies.
