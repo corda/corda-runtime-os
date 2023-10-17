@@ -103,10 +103,19 @@ class RPCClient(
             .withTag(CordaMetrics.Tag.OperationStatus, operationStatus)
             .withTag(CordaMetrics.Tag.HttpMethod, request.method())
             .withTag(CordaMetrics.Tag.HttpRequestUri, request.uri().toString())
-            .withTag(CordaMetrics.Tag.HttpResponseSize, response?.body()?.size.toString())
             .withTag(CordaMetrics.Tag.HttpResponseCode, response?.statusCode().toString())
             .build()
             .record(endTime - startTime, TimeUnit.MILLISECONDS)
+
+        if (operationStatus == SUCCESS) {
+            CordaMetrics.Metric.Messaging.HTTPRPCResponseSize.builder()
+                .withTag(CordaMetrics.Tag.OperationStatus, operationStatus)
+                .withTag(CordaMetrics.Tag.HttpMethod, request.method())
+                .withTag(CordaMetrics.Tag.HttpRequestUri, request.uri().toString())
+                .withTag(CordaMetrics.Tag.HttpResponseCode, response?.statusCode().toString())
+                .build()
+                .record(response?.body()?.size?.toDouble() ?: 0.0)
+        }
     }
 
     private fun checkResponseStatus(statusCode: Int) {

@@ -666,6 +666,11 @@ object CordaMetrics {
              */
             object HTTPRPCResponseTime : Metric<Timer>("rpc.http.response.time", CordaMetrics::timer)
 
+            /**
+             * Record the size of HTTP RPC responses
+             */
+            object HTTPRPCResponseSize : Metric<DistributionSummary>("rpc.http.response.size", Metrics::summary)
+
         }
 
         object TaskManager {
@@ -697,11 +702,6 @@ object CordaMetrics {
          * Http method for which the metric is applicable.
          */
         HttpMethod("http.method"),
-
-        /**
-         * The size of a http response, measured in size of byte array
-         */
-        HttpResponseSize("http.response.size"),
 
         /**
          * The URI that a HTTP request was sent to
