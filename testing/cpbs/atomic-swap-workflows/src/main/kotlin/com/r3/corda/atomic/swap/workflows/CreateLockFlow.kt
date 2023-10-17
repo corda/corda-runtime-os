@@ -29,7 +29,6 @@ import java.time.Instant
 
 data class CreateLockFlowArgs(val newOwner: String, val stateId: String, val transactionId: SecureHash,
                               val publickKey: ByteBuffer, val timeWindow: String)
-)
 
 data class CreateLockFlowResult(
     val transactionId: String,
