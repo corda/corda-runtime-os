@@ -3,6 +3,7 @@ package net.corda.messaging.mediator
 import net.corda.libs.statemanager.api.State
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.mediator.metrics.EventMediatorMetrics
 import java.util.concurrent.Callable
 
 /**
@@ -17,6 +18,7 @@ data class ProcessorTask<K : Any, S : Any, E : Any>(
     val events: Collection<Record<K, E>>,
     private val processor: StateAndEventProcessor<K, S, E>,
     private val stateManagerHelper: StateManagerHelper<K, S, E>,
+    private val metrics: EventMediatorMetrics,
 ) : Callable<ProcessorTask.Result<K, S, E>> {
 
     class Result<K : Any, S : Any, E : Any>(
@@ -28,25 +30,27 @@ data class ProcessorTask<K : Any, S : Any, E : Any>(
     }
 
     override fun call(): Result<K, S, E> {
-        var state = stateManagerHelper.deserializeValue(persistedState)?.let { stateValue ->
-            StateAndEventProcessor.State(
-                stateValue,
-                persistedState?.metadata
+        return metrics.processorTimer.recordCallable {
+            var state = stateManagerHelper.deserializeValue(persistedState)?.let { stateValue ->
+                StateAndEventProcessor.State(
+                    stateValue,
+                    persistedState?.metadata
+                )
+            }
+
+            val outputEvents = events.map { event ->
+                val response = processor.onNext(state, event)
+                state = response.updatedState
+                response.responseEvents
+            }.flatten()
+
+            val updatedState = stateManagerHelper.createOrUpdateState(
+                key.toString(),
+                persistedState,
+                state,
             )
-        }
 
-        val outputEvents = events.map { event ->
-            val response = processor.onNext(state, event)
-            state = response.updatedState
-            response.responseEvents
-        }.flatten()
-
-        val updatedState = stateManagerHelper.createOrUpdateState(
-            key.toString(),
-            persistedState,
-            state,
-        )
-
-        return Result(this, outputEvents, updatedState)
+            Result(this, outputEvents, updatedState)
+        }!!
     }
 }

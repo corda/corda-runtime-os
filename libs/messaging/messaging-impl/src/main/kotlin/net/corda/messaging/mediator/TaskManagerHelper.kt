@@ -43,6 +43,7 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
                 events,
                 messageProcessor,
                 stateManagerHelper,
+                metrics
             )
         }
     }
@@ -99,13 +100,11 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
     fun executeProcessorTasks(
         processorTasks: Collection<ProcessorTask<K, S, E>>
     ): List<ProcessorTask.Result<K, S, E>> {
-        return metrics.processorTimer.recordCallable {
-            processorTasks.map { processorTask ->
+        return processorTasks.map { processorTask ->
                 taskManager.executeShortRunningTask(processorTask::call)
             }.map {
                 it.join()
             }
-        }!!
     }
 
     /**
