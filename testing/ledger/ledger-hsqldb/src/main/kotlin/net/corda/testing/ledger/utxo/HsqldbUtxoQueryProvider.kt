@@ -16,7 +16,11 @@ class HsqldbUtxoQueryProvider @Activate constructor(
     databaseTypeProvider: DatabaseTypeProvider
 ): AbstractUtxoQueryProvider() {
     init {
-        LoggerFactory.getLogger(this::class.java).info("Activated for {}", databaseTypeProvider.databaseType)
+        LoggerFactory.getLogger(this::class.java).run {
+            if (isDebugEnabled) {
+                debug("Activated for {}", databaseTypeProvider.databaseType)
+            }
+        }
     }
 
     override val persistTransaction: String

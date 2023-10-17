@@ -45,7 +45,11 @@ class HsqldbVaultNamedQueryConverter @Activate constructor(
     }
 
     init {
-        LoggerFactory.getLogger(this::class.java).info("Activated for {}", databaseTypeProvider.databaseType)
+        LoggerFactory.getLogger(this::class.java).run {
+            if (isDebugEnabled) {
+                debug("Activated for {}", databaseTypeProvider.databaseType)
+            }
+        }
     }
 
     private fun writeWithCast(output: StringBuilder, tokens: List<Token>) {
