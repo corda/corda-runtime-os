@@ -9,7 +9,6 @@ import net.corda.ledger.persistence.query.registration.VaultNamedQueryRegistry
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.orm.utils.transaction
-import net.corda.persistence.common.exceptions.NullParameterException
 import net.corda.utilities.debug
 import net.corda.utilities.serialization.deserialize
 import net.corda.utilities.trace
@@ -132,8 +131,8 @@ class VaultNamedQueryExecutorImpl(
         }
 
         // Deserialize the parameters into readable objects instead of bytes
-        val deserializedParams = request.parameters.mapValues {
-            serializationService.deserialize<Any>(it.value.array())
+        val deserializedParams = request.parameters.mapValues { (_, param) ->
+            param?.let { serializationService.deserialize<Any>(it.array()) }
         }
 
         // Fetch and filter the results and try to fill up the page size then map the results
@@ -190,7 +189,7 @@ class VaultNamedQueryExecutorImpl(
     private fun filterResultsAndFillPageSize(
         request: FindWithNamedQuery,
         vaultNamedQuery: VaultNamedQuery,
-        deserializedParams: Map<String, Any>
+        deserializedParams: Map<String, Any?>
     ): ProcessedQueryResults {
         val filteredRawData = mutableListOf<RawQueryData>()
 
@@ -277,9 +276,6 @@ class VaultNamedQueryExecutorImpl(
         whereJson: String?,
         resumePoint: ResumePoint?
     ): RawQueryResults {
-
-        validateParameters(request)
-
         @Suppress("UNCHECKED_CAST")
         val resultList = entityManagerFactory.transaction { em ->
 
@@ -321,9 +317,8 @@ class VaultNamedQueryExecutorImpl(
                 query.setParameter("leafIdx", resumePoint.leafIdx)
             }
 
-            request.parameters.filter { it.value != null }.forEach { rec ->
-                val bytes = rec.value.array()
-                query.setParameter(rec.key, serializationService.deserialize(bytes))
+            request.parameters.forEach { rec ->
+                query.setParameter(rec.key, rec.value?.let { serializationService.deserialize(it.array()) })
             }
 
             query.firstResult = request.offset
@@ -340,16 +335,6 @@ class VaultNamedQueryExecutorImpl(
             RawQueryResults(resultList.subList(0, request.limit).map { RawQueryData(it) }, hasMore = true)
         } else {
             RawQueryResults(resultList.map { RawQueryData(it) }, hasMore = false)
-        }
-    }
-
-    private fun validateParameters(request: FindWithNamedQuery) {
-        val nullParamNames = request.parameters.filter { it.value == null }.map { it.key }
-
-        if (nullParamNames.isNotEmpty()) {
-            val msg = "Null value found for parameters ${nullParamNames.joinToString(", ")}"
-            log.error(msg)
-            throw NullParameterException(msg)
         }
     }
 }

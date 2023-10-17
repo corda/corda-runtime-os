@@ -57,7 +57,7 @@ class VaultNamedQueryExternalEventFactory(
 
 data class VaultNamedQueryEventParams(
     val queryName: String,
-    val queryParameters: Map<String, ByteBuffer>,
+    val queryParameters: Map<String, ByteBuffer?>,
     val limit: Int,
     val resumePoint: ByteBuffer?
 )

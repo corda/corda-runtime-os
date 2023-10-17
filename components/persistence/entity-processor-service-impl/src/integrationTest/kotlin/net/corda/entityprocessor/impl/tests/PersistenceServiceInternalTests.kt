@@ -93,7 +93,7 @@ import javax.persistence.EntityManagerFactory
  */
 
 sealed class QuerySetup {
-    data class NamedQuery(val params: Map<String, String>, val query: String = "Dog.summon") : QuerySetup()
+    data class NamedQuery(val params: Map<String, String?>, val query: String = "Dog.summon") : QuerySetup()
     data class All(val className: String) : QuerySetup()
 }
 
@@ -763,6 +763,27 @@ class PersistenceServiceInternalTests {
         assertQuery(QuerySetup.NamedQuery(mapOf(), query = "Dog.all"), expectFailure = "Too large", sizeLimit = 10)
     }
 
+    @Test
+    fun `find with named query can handle null parameters and returns result`() {
+        persistDogs()
+
+        val resultsWithNull = assertQuery(
+            QuerySetup.NamedQuery(params = mapOf("nullableParam" to null), query = "Dog.nullableParam"),
+            0,
+            100
+        )
+
+        assertThat(resultsWithNull).isNotEmpty
+
+        val resultsWithNotNull = assertQuery(
+            QuerySetup.NamedQuery(params = mapOf("nullableParam" to "something"), query = "Dog.nullableParam"),
+            0,
+            100
+        )
+
+        assertThat(resultsWithNotNull).isEmpty()
+    }
+
 
     private fun createEntitySandbox(dbConnectionManager: DbConnectionManager) =
         EntitySandboxServiceFactory().create(
@@ -826,7 +847,9 @@ class PersistenceServiceInternalTests {
     ): List<*> {
         val rec = when (querySetup) {
             is QuerySetup.NamedQuery -> {
-                val paramsSerialized = querySetup.params.mapValues { v -> sandbox.serialize(v.value) }
+                val paramsSerialized = querySetup.params.mapValues {
+                        (_, param) -> param?.let { sandbox.serialize(it) }
+                }
                 FindWithNamedQuery(querySetup.query, paramsSerialized, offset, limit, null)
             }
             is QuerySetup.All -> {

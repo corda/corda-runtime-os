@@ -112,11 +112,11 @@ class VaultNamedQueryBuilderImplTest {
     }
 
     private class DummyFilter : VaultNamedQueryFilter<String> {
-        override fun filter(data: String, parameters: MutableMap<String, Any>) = true
+        override fun filter(data: String, parameters: MutableMap<String, Any?>) = true
     }
 
     private class DummyMapper : VaultNamedQueryTransformer<Any, Any> {
-        override fun transform(data: Any, parameters: MutableMap<String, Any>): Any {
+        override fun transform(data: Any, parameters: MutableMap<String, Any?>): Any {
             return ""
         }
     }
@@ -124,7 +124,7 @@ class VaultNamedQueryBuilderImplTest {
     private class DummyCollector : VaultNamedQueryCollector<Any, Any> {
         override fun collect(
             resultSet: MutableList<Any>,
-            parameters: MutableMap<String, Any>
+            parameters: MutableMap<String, Any?>
         ): VaultNamedQueryCollector.Result<Any> {
             return object : VaultNamedQueryCollector.Result<Any>(emptyList(), true) {}
         }
