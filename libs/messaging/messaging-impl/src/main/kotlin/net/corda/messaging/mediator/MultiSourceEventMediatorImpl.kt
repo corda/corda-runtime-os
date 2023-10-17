@@ -15,6 +15,7 @@ import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.mediator.factory.MediatorComponentFactory
+import net.corda.messaging.mediator.metrics.EventMediatorMetrics
 import net.corda.taskmanager.TaskManager
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
@@ -41,11 +42,12 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     private val mediatorComponentFactory = MediatorComponentFactory(
         config.messageProcessor, config.consumerFactories, config.clientFactories, config.messageRouterFactory
     )
+    private val metrics = EventMediatorMetrics(config.name)
     private val stateManagerHelper = StateManagerHelper<K, S, E>(
         stateManager, stateSerializer, stateDeserializer
     )
     private val taskManagerHelper = TaskManagerHelper(
-        taskManager, stateManagerHelper
+        taskManager, stateManagerHelper, metrics
     )
     private val uniqueId = UUID.randomUUID().toString()
     private val lifecycleCoordinatorName = LifecycleCoordinatorName(
@@ -189,14 +191,18 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun pollConsumers(): List<CordaConsumerRecord<K, E>> {
-        return consumers.map { consumer ->
-            consumer.poll(config.pollTimeout)
-        }.flatten()
+        return metrics.pollTimer.recordCallable {
+            consumers.map { consumer ->
+                consumer.poll(config.pollTimeout)
+            }.flatten()
+        }!!
     }
 
     private fun commitOffsets() {
-        consumers.map { consumer ->
-            consumer.syncCommitOffsets()
+        metrics.commitTimer.recordCallable {
+            consumers.map { consumer ->
+                consumer.syncCommitOffsets()
+            }
         }
     }
 

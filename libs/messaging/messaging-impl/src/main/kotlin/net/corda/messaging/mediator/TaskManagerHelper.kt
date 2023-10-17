@@ -8,6 +8,7 @@ import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_KEY
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.mediator.metrics.EventMediatorMetrics
 import net.corda.messaging.utils.toRecord
 import net.corda.taskmanager.TaskManager
 
@@ -17,6 +18,7 @@ import net.corda.taskmanager.TaskManager
 internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
     private val taskManager: TaskManager,
     private val stateManagerHelper: StateManagerHelper<K, S, E>,
+    private val metrics: EventMediatorMetrics,
 ) {
 
     /**
@@ -97,11 +99,13 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
     fun executeProcessorTasks(
         processorTasks: Collection<ProcessorTask<K, S, E>>
     ): List<ProcessorTask.Result<K, S, E>> {
-        return processorTasks.map { processorTask ->
-            taskManager.executeShortRunningTask(processorTask::call)
-        }.map {
-            it.join()
-        }
+        return metrics.processorTimer.recordCallable {
+            processorTasks.map { processorTask ->
+                taskManager.executeShortRunningTask(processorTask::call)
+            }.map {
+                it.join()
+            }
+        }!!
     }
 
     /**
