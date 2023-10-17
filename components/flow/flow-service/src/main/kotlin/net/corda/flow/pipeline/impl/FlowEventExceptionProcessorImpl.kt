@@ -1,8 +1,6 @@
 package net.corda.flow.pipeline.impl
 
 import net.corda.data.ExceptionEnvelope
-import net.corda.data.flow.FlowKey
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
@@ -12,7 +10,6 @@ import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
-import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.WaitingFor
@@ -30,7 +27,6 @@ import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.state.FlowCheckpoint
-import net.corda.flow.utils.toMap
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.getLongOrDefault
 import net.corda.messaging.api.records.Record
@@ -156,15 +152,13 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         val inputPayload = context.inputEventPayload as? SessionEvent
 
         if(context.inputEventPayload is SessionEvent && inputPayload?.payload is SessionData ) {
-            if(inputPayload.payload is SessionData) {
-                val sessionError = buildSessionRecord(
-                    context.inputEventPayload as SessionEvent,
-                    SessionError(ExceptionEnvelope("net.corda.flow.pipeline.exceptions.FlowFatalException", "no responder configured")),
-                    Instant.now()
-                )
+            val sessionError = buildSessionRecord(
+                context.inputEventPayload as SessionEvent,
+                SessionError(ExceptionEnvelope("net.corda.flow.pipeline.exceptions.FlowFatalException", "no responder configured")),
+                Instant.now()
+            )
 
-                errorEvents = listOf(sessionError)
-            }
+            errorEvents = listOf(sessionError)
         } else {
             val activeSessionIds = getActiveSessionIds(checkpoint)
 
