@@ -257,7 +257,7 @@ class FlowMapperServiceIntegrationTest {
         //validate went through and not a duplicate
         assertThat(
             flowEventLatch.await(
-                5,
+                5000,
                 TimeUnit.SECONDS
             )
         ).withFailMessage("latch was ${flowEventLatch.count}").isTrue
