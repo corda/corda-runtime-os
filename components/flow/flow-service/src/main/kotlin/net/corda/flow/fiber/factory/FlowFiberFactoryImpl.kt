@@ -70,13 +70,13 @@ class FlowFiberFactoryImpl @Activate constructor(
     }
 
     private fun getFromCacheOrDeserialize(flowFiberExecutionContext: FlowFiberExecutionContext): FlowFiberImpl {
-        val cachedFiber: FlowFiberImpl? = try {
-            flowFiberCache.get(flowFiberExecutionContext.flowCheckpoint.flowKey)
-        } catch (e: Exception) {
-            logger.warn("Exception when getting from flow fiber cache.", e)
-            null
-        }
-        return cachedFiber ?: flowFiberExecutionContext.sandboxGroupContext.checkpointSerializer.deserialize(
+//        val cachedFiber: FlowFiberImpl? = try {
+//            flowFiberCache.get(flowFiberExecutionContext.flowCheckpoint.flowKey)
+//        } catch (e: Exception) {
+//            logger.warn("Exception when getting from flow fiber cache.", e)
+//            null
+//        }
+        return flowFiberExecutionContext.sandboxGroupContext.checkpointSerializer.deserialize(
             flowFiberExecutionContext.flowCheckpoint.serializedFiber.array(),
             FlowFiberImpl::class.java
         )

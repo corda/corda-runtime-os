@@ -150,6 +150,43 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     }
 
     @Suspendable
+    fun findSignedLedgerTransactionContainerWithStatus(
+        id: SecureHash,
+        transactionStatus: TransactionStatus
+    ): Pair<SignedLedgerTransactionContainer?, TransactionStatus>? {
+        return recordSuspendable({ ledgerPersistenceFlowTimer(FindSignedLedgerTransactionWithStatus) }) @Suspendable {
+            wrapWithPersistenceException {
+                externalEventExecutor.execute(
+                    FindSignedLedgerTransactionExternalEventFactory::class.java,
+                    FindSignedLedgerTransactionParameters(id.toString(), transactionStatus)
+                )
+            }.firstOrNull()?.let {
+                val (transaction, status) = serializationService.deserialize<Pair<SignedLedgerTransactionContainer?, String?>>(it.array())
+                if (status == null)
+                    return@let null
+
+                transaction to status.toTransactionStatus()
+            }
+        }
+    }
+
+    fun turnContainerIntoTransaction(transactionContainer: SignedLedgerTransactionContainer): UtxoSignedLedgerTransaction {
+        val signedLedgerTransaction = transactionContainer.toSignedLedgerTransaction()
+
+        // Add resolved input state and refs to the cache, so it can be used in other places
+        signedLedgerTransaction.inputStateAndRefs.let { inputStateAndRefs ->
+            stateAndRefCache.putAll(inputStateAndRefs)
+        }
+
+        // Add resolved reference state and refs to the cache, so it can be used in other places
+        signedLedgerTransaction.referenceStateAndRefs.let { referenceStateAndRefs ->
+            stateAndRefCache.putAll(referenceStateAndRefs)
+        }
+
+        return signedLedgerTransaction
+    }
+
+    @Suspendable
     override fun persist(
         transaction: UtxoSignedTransaction,
         transactionStatus: TransactionStatus,
@@ -160,6 +197,22 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
                 externalEventExecutor.execute(
                     PersistTransactionExternalEventFactory::class.java,
                     PersistTransactionParameters(serialize(transaction.toContainer()), transactionStatus, visibleStatesIndexes)
+                )
+            }.map { serializationService.deserialize(it.array()) }
+        }
+    }
+
+    @Suspendable
+    fun persistFromContainer(
+        transactionContainer: SignedTransactionContainer,
+        transactionStatus: TransactionStatus,
+        visibleStatesIndexes: List<Int>
+    ): List<CordaPackageSummary> {
+        return recordSuspendable({ ledgerPersistenceFlowTimer(PersistTransaction)}) @Suspendable {
+            wrapWithPersistenceException {
+                externalEventExecutor.execute(
+                    PersistTransactionExternalEventFactory::class.java,
+                    PersistTransactionParameters(serialize(transactionContainer), transactionStatus, visibleStatesIndexes)
                 )
             }.map { serializationService.deserialize(it.array()) }
         }
