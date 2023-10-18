@@ -1,6 +1,7 @@
 package net.corda.membership.impl.read
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
@@ -58,6 +59,7 @@ class MembershipGroupReaderProviderImplTest {
     }
     private val memberInfoFactory: MemberInfoFactory = mock()
     private val groupParametersReaderService: GroupParametersReaderService = mock()
+    private val platformInfoProvider: PlatformInfoProvider = mock()
 
     @BeforeEach
     fun setUp() {
@@ -66,7 +68,8 @@ class MembershipGroupReaderProviderImplTest {
             subscriptionFactory,
             lifecycleCoordinatorFactory,
             memberInfoFactory,
-            groupParametersReaderService
+            groupParametersReaderService,
+            platformInfoProvider,
         )
     }
 

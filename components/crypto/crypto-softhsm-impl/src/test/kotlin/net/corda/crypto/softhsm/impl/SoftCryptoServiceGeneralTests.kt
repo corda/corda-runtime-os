@@ -435,6 +435,28 @@ class SoftCryptoServiceGeneralTests {
         assertThat(exception.message).contains("was not found")
     }
 
+    @Test
+    fun `Should close the repo after use`() {
+        val repo = mock<SigningRepository> {
+            on { findKey(any<PublicKey>()) } doReturn null
+        }
+        val cryptoService = makeSoftCryptoService(signingRepository = repo)
+        val publicKey = mock<PublicKey> {
+            on { encoded } doReturn UUID.randomUUID().toString().toByteArray()
+        }
+        assertThrows<IllegalArgumentException> {
+            cryptoService.sign(
+                tenantId = tenantId,
+                publicKey = publicKey,
+                signatureSpec = SignatureSpecImpl("NONE"),
+                data = ByteArray(2),
+                context = emptyMap()
+            )
+        }
+
+        verify(repo).close()
+    }
+
     private fun mockDigestService() = mock<PlatformDigestService> {
         on { hash(any<ByteArray>(), any()) } doReturn SecureHashUtils.randomSecureHash()
     }
