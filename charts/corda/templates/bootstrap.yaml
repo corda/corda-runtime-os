@@ -2,3 +2,8 @@
 {{- include "corda.bootstrapDbJob" . }}
 {{- include "corda.bootstrapKafkaJob" . }}
 {{- include "corda.bootstrapRbacJob" . }}
+{{- if .Values.bootstrap.db.enabled }}
+  {{- range $config := .Values.bootstrap.db.stateManager }}
+  {{- include "corda.bootstrapStateManagerDbJob" ( list $ (index $.Values.workers $config.worker) $config ) }}
+  {{- end }}
+{{- end }}

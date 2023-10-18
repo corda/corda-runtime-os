@@ -630,165 +630,119 @@ data:
   {{ $caSecretKey }}: {{ $caSecretValue }}
 {{- end }}
 
+
 {{/*
-Default name for State Manager DB secret
+State Manager Database Host.
 */}}
-{{- define "corda.stateManagerDbDefaultSecretName" -}}
-{{- if $.Values.stateManager.db.host -}}
-{{ printf "%s-statemanager-db" (include "corda.fullname" .) }}
+{{- define "corda.stateManagerDbHost" -}}
+{{- $ := index . 0 }}
+{{- $worker := index . 1 }}
+{{- if $worker.stateManager.db.host -}}
+{{- $worker.stateManager.db.host -}}
 {{- else -}}
-{{ printf "%s" (include "corda.clusterDbDefaultSecretName" .) }}
+{{- $.Values.db.cluster.host -}}
 {{- end -}}
+{{- end -}}
+
+{{/*
+State Manager Database port
+*/}}
+{{- define "corda.stateManagerDbPort" -}}
+{{- $ := index . 0 }}
+{{- $worker := index . 1 }}
+{{- if $worker.stateManager.db.host -}}
+{{- $worker.stateManager.db.port | default "5432" -}}
+{{- else }}
+{{- include "corda.clusterDbPort" $ -}}
 {{- end }}
+{{- end -}}
+
+{{/*
+State Manager Database Name
+*/}}
+{{- define "corda.stateManagerDbName" -}}
+{{- $ := index . 0 }}
+{{- $worker := index . 1 }}
+{{- if $worker.stateManager.db.host -}}
+{{- $worker.stateManager.db.name | default "state-manager" -}}
+{{- else }}
+{{- include "corda.clusterDbName" $ -}}
+{{- end }}
+{{- end -}}
+
 
 {{/*
 State Manager JDBC URL. If no state-manager host is provided, it will default to use a state_manager schema in
 the Corda cluster.
 */}}
 {{- define "corda.stateManagerJdbcUrl" -}}
-{{- if $.Values.stateManager.db.host -}}
-jdbc:{{- include "corda.stateManagerDbType" . -}}://{{- .Values.stateManager.db.host -}}:{{- include "corda.stateManagerDbPort" . -}}/{{- include "corda.stateManagerDbName" . -}}
+{{- $ := index . 0 }}
+{{- $worker := index . 1 }}
+{{- if $worker.stateManager.db.host -}}
+jdbc:{{- $worker.stateManager.db.type -}}://{{- $worker.stateManager.db.host -}}:{{- $worker.stateManager.db.port | default "5432" -}}/{{- $worker.stateManager.db.name | default "state-manager" -}}
 {{- else -}}
-jdbc:{{- include "corda.clusterDbType" . -}}://{{- .Values.db.cluster.host -}}:{{- include "corda.clusterDbPort" . -}}/{{- include "corda.clusterDbName" . -}}
+jdbc:{{- include "corda.clusterDbType" $ -}}://{{- $.Values.db.cluster.host -}}:{{- include "corda.clusterDbPort" $ -}}/{{- include "corda.clusterDbName" $ -}}
 {{- end -}}
 {{- end -}}
 
 {{/*
-State Manager DB type
-*/}}
-{{- define "corda.stateManagerDbType" -}}
-{{- if $.Values.stateManager.db.host -}}
-{{- .Values.stateManager.db.type | default "postgresql" -}}
-{{- else -}}
-{{- include "corda.clusterDbType" . -}}
-{{- end -}}
-{{- end -}}
-
-{{/*
-State Manager DB host
-*/}}
-{{- define "corda.stateManagerDbHost" -}}
-{{- if .Values.stateManager.db.host -}}
-{{- .Values.stateManager.db.host -}}
-{{- else -}}
-{{- .Values.db.cluster.host -}}
-{{- end -}}
-{{- end -}}
-
-{{/*
-State Manager DB port
-*/}}
-{{- define "corda.stateManagerDbPort" -}}
-{{- if $.Values.stateManager.db.host }}
-{{- .Values.stateManager.db.port | default "5432" -}}
-{{- else }}
-{{- include "corda.clusterDbPort" . -}}
-{{- end }}
-{{- end -}}
-
-{{/*
-State Manager DB name
-*/}}
-{{- define "corda.stateManagerDbName" -}}
-{{- if $.Values.stateManager.db.host }}
-{{- .Values.stateManager.db.database | default "state-manager" -}}
-{{- else }}
-{{- include "corda.clusterDbName" . -}}
-{{- end }}
-{{- end -}}
-
-
-{{/*
-State Manager DB credentials environment variables.
-STATE_MANAGER_DB_USERNAME falls back to the cluster database if no stateManager credentials are supplied, and if no
-stateManager host is supplied.
+State Manager Database Credentials environment variables.
+Credentials fall back to the cluster database credentials if and only if:
+    - No host is provided at the worker configuration level.
+    - No secret name is provided at the worker configuration level.
+TODO: the "value" field is not being used at all (stateManager secrets removed from secrets.yaml)
 */}}
 {{- define "corda.stateManagerDbEnv" -}}
-- name: STATE_MANAGER_DB_USERNAME
+{{- $ := index . 0 }}
+{{- $worker := index . 1 }}
+- name: STATE_MANAGER_USERNAME
   valueFrom:
     secretKeyRef:
-      {{- if .Values.stateManager.db.host }}
-      {{- if .Values.stateManager.db.username.valueFrom.secretKeyRef.name }}
-      name: {{ .Values.stateManager.db.username.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required "Must specify stateManager.db.username.valueFrom.secretKeyRef.key" .Values.stateManager.db.username.valueFrom.secretKeyRef.key | quote }}
+      {{- if and ($worker.stateManager.db.host) ($worker.stateManager.db.username.valueFrom.secretKeyRef.name) }}
+      name: {{ $worker.stateManager.db.username.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify $worker.stateManager.db.username.valueFrom.secretKeyRef.key" $worker.stateManager.db.username.valueFrom.secretKeyRef.key | quote }}
       {{- else }}
-      name: {{ include "corda.stateManagerDbDefaultSecretName" . | quote }}
-      key: "username"
+      {{- include "corda.clusterDbUsername" $ | nindent 6 }}
       {{- end }}
-      {{- else }}
-      {{- include "corda.clusterDbUsername" . | nindent 6 }}
-      {{- end }}
-- name: STATE_MANAGER_DB_PASSWORD
+- name: STATE_MANAGER_PASSWORD
   valueFrom:
     secretKeyRef:
-      {{- if .Values.stateManager.db.host }}
-      {{- if .Values.stateManager.db.password.valueFrom.secretKeyRef.name }}
-      name: {{ .Values.stateManager.db.password.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required "Must specify stateManager.db.password.valueFrom.secretKeyRef.key" .Values.stateManager.db.password.valueFrom.secretKeyRef.key | quote }}
+      {{- if and ($worker.stateManager.db.host) ($worker.stateManager.db.password.valueFrom.secretKeyRef.name) }}
+      name: {{ $worker.stateManager.db.password.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify $worker.stateManager.db.password.valueFrom.secretKeyRef.key" $worker.stateManager.db.password.valueFrom.secretKeyRef.key | quote }}
       {{- else }}
-      name: {{ include "corda.stateManagerDbDefaultSecretName" . | quote }}
-      key: "password"
-      {{- end }}
-      {{- else }}
-      {{- include "corda.clusterDbPassword" . | nindent 6 }}
+      {{- include "corda.clusterDbPassword" $ | nindent 6 }}
       {{- end }}
 {{- end -}}
 
 {{/*
-Default name for bootstrap State Manager DB secret
-*/}}
-{{- define "corda.bootstrapStateManagerDbDefaultSecretName" -}}
-{{- if .Values.stateManager.db.host -}}
-{{ printf "%s-bootstrap-statemanager-db" (include "corda.fullname" .) }}
-{{- else -}}
-{{ printf "%s" (include "corda.bootstrapClusterDbDefaultSecretName" .) }}
-{{- end }}
-{{- end }}
-
-{{/*
-Bootstrap State Manager DB credentials environment variables. If there is no other host defined for state manager, the
-cluster db user and password are used.
+State Manager Database Bootstrap Credentials environment variables.
+Credentials fall back to the cluster database credentials if and only if:
+    - No host is provided at the worker configuration level.
+    - No secret name is provided at the worker configuration level.
+TODO: the "value" field is not being used at all (stateManager secrets removed from secrets.yaml)
 */}}
 {{- define "corda.bootstrapStateManagerDbEnv" -}}
+{{- $ := index . 0 }}
+{{- $worker := index . 1 }}
+{{- $bootConfig := index . 2 }}
 - name: STATE_MANAGER_PGUSER
   valueFrom:
     secretKeyRef:
-      {{- if .Values.stateManager.db.host }}
-      {{- if .Values.bootstrap.db.stateManager.username.valueFrom.secretKeyRef.name }}
-      name: {{ .Values.bootstrap.db.stateManager.username.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required "Must specify bootstrap.db.stateManager.username.valueFrom.secretKeyRef.key" .Values.bootstrap.db.stateManager.username.valueFrom.secretKeyRef.key | quote }}
-      {{- else if .Values.bootstrap.db.stateManager.username.value }}
-      name: {{ include "corda.bootstrapStateManagerDbDefaultSecretName" . | quote }}
-      key: "username"
-      {{- else if .Values.stateManager.db.username.valueFrom.secretKeyRef.name }}
-      name: {{ .Values.stateManager.db.username.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required "Must specify stateManager.db.username.valueFrom.secretKeyRef.key" .Values.stateManager.db.username.valueFrom.secretKeyRef.key | quote }}
+      {{- if and ($worker.stateManager.db.host) ($bootConfig.username.valueFrom.secretKeyRef.name) }}
+      name: {{ $bootConfig.username.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify $bootConfig.username.valueFrom.secretKeyRef.key" $bootConfig.username.valueFrom.secretKeyRef.key | quote }}
       {{- else }}
-      name: {{ include "corda.stateManagerDbDefaultSecretName" . | quote }}
-      key: "username"
-      {{- end }}
-      {{- else }}
-      {{- include "corda.bootstrapClusterPgUser" . | nindent 6 }}
+      {{- include "corda.bootstrapClusterPgUser" $ | nindent 6 }}
       {{- end }}
 - name: STATE_MANAGER_PGPASSWORD
   valueFrom:
     secretKeyRef:
-      {{- if .Values.stateManager.db.host }}
-      {{- if .Values.bootstrap.db.stateManager.password.valueFrom.secretKeyRef.name }}
-      name: {{ .Values.bootstrap.db.stateManager.password.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required "Must specify bootstrap.db.stateManager.password.valueFrom.secretKeyRef.key" .Values.bootstrap.db.stateManager.password.valueFrom.secretKeyRef.key | quote }}
-      {{- else if .Values.bootstrap.db.stateManager.password.value }}
-      name: {{ include "corda.bootstrapStateManagerDbDefaultSecretName" . | quote }}
-      key: "password"
-      {{- else if .Values.stateManager.db.password.valueFrom.secretKeyRef.name }}
-      name: {{ .Values.stateManager.db.password.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required "Must specify stateManager.db.password.valueFrom.secretKeyRef.key" .Values.stateManager.db.password.valueFrom.secretKeyRef.key | quote }}
+      {{- if and ($worker.stateManager.db.host) ($bootConfig.password.valueFrom.secretKeyRef.name) }}
+      name: {{ $bootConfig.password.valueFrom.secretKeyRef.name | quote }}
+      key: {{ required "Must specify $bootConfig.password.valueFrom.secretKeyRef.key" $bootConfig.password.valueFrom.secretKeyRef.key | quote }}
       {{- else }}
-      name: {{ include "corda.stateManagerDbDefaultSecretName" . | quote }}
-      key: "password"
-      {{- end }}
-      {{- else }}
-      {{- include "corda.bootstrapClusterPgPassword" . | nindent 6 }}
+      {{- include "corda.bootstrapClusterPgPassword" $ | nindent 6 }}
       {{- end }}
 {{- end -}}
 

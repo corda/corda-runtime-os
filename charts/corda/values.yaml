@@ -146,45 +146,6 @@ db:
     # -- the schema in which the cluster database config entities will be stored, passed to workers on startup
     schema: CONFIG
 
-# State Manager configuration
-stateManager:
-  # Type of State Manager
-  type: DATABASE
-  # State Manager database configuration
-  db:
-    # -- the State Manager database host
-    host: null
-    # -- the State Manager database type
-    type: "postgresql"
-    # -- the State Manager database port
-    port: 5432
-    # the State Manager database user configuration
-    username:
-      # -- the State Manager database user
-      value: ""
-      # the State Manager database user secret configuration; used in preference to value if name is set
-      valueFrom:
-        # the State Manager database user secret key reference
-        secretKeyRef:
-          # -- the State Manager database user secret name
-          name: ""
-          # -- the State Manager database user secret key
-          key: ""
-    # the State Manager database password configuration
-    password:
-      # -- the State Manager database password
-      value: ""
-      # the State Manager database password secret configuration; used in preference to value if name is set
-      valueFrom:
-        # the State Manager database password secret key reference
-        secretKeyRef:
-          # -- the State Manager database password secret name
-          name: ""
-          # -- the State Manager database password secret key
-          key: ""
-    # -- the State Manager database name
-    database: state-manager
-
 # Kafka configuration
 kafka:
   # -- comma-separated list of Kafka bootstrap servers (required); for example: "broker1.example.com:9092,broker2.example.com:9092,broker3.example.com:9092"
@@ -254,7 +215,7 @@ kafka:
 
 # Configuration for cluster bootstrap
 bootstrap:
-  # Configuration for the preinstall check
+  # Configuration for the pre-installation check
   preinstallCheck:
     # -- indicates whether the preinstall check is enabled
     enabled: true
@@ -264,6 +225,7 @@ bootstrap:
       create: true
       # -- name of the service account, if not set and create is true, a name is generated from a template
       name: ""
+
   # Configuration for the REST API admin to be created during cluster bootstrap
   restApiAdmin:
     # the username configuration for the REST API admin to be created during cluster bootstrap
@@ -290,8 +252,12 @@ bootstrap:
           name: ""
           # -- the key for the field in the secret containing the password for the REST API admin created during cluster bootstrap
           key: ""
+
   # Configuration for database bootstrap
   db:
+    # -- Indicates whether DB bootstrap is enabled as part of installation
+    enabled: true
+
     # Bootstrap cluster database configuration
     cluster:
       # the bootstrap cluster database password configuration
@@ -318,8 +284,7 @@ bootstrap:
             name: ""
             # -- the bootstrap cluster database user secret key
             key: ""
-    # -- Indicates whether DB bootstrap is enabled as part of installation
-    enabled: true
+
     # crypto configuration
     crypto:
       # -- the schema in which the cluster database crypto entities will be stored
@@ -408,30 +373,56 @@ bootstrap:
 
     # State Manager DB Bootstrap Configuration
     stateManager:
-      # the username configuration
-      username:
-        # -- the username, defaults to this value
-        value: "state_manager_user"
-        # the username secret configuration; used in preference to value if name is set
-        valueFrom:
-          # the username secret key reference
-          secretKeyRef:
-            # -- the username secret name
-            name: ""
-            # -- the username secret key
-            key: ""
-      # password configuration
-      password:
-        # -- the password, defaults to a value randomly-generated on install
-        value: ""
-        # the password secret configuration
-        valueFrom:
-          # the password secret key reference
-          secretKeyRef:
-            # -- the password secret name
-            name: ""
-            # -- the password secret key
-            key: ""
+      - worker: flow
+        # the username configuration
+        username:
+          # -- the username, defaults to this value
+          value: "state_manager_user"
+          # the username secret configuration; used in preference to value if name is set
+          valueFrom:
+            # the username secret key reference
+            secretKeyRef:
+              # -- the username secret name
+              name: ""
+              # -- the username secret key
+              key: ""
+        # password configuration
+        password:
+          # -- the password, defaults to a value randomly-generated on install
+          value: ""
+          # the password secret configuration
+          valueFrom:
+            # the password secret key reference
+            secretKeyRef:
+              # -- the password secret name
+              name: ""
+              # -- the password secret key
+              key: ""
+      - worker: flowMapper
+        # the username configuration
+        username:
+          # -- the username, defaults to this value
+          value: "state_manager_user"
+          # the username secret configuration; used in preference to value if name is set
+          valueFrom:
+            # the username secret key reference
+            secretKeyRef:
+              # -- the username secret name
+              name: ""
+              # -- the username secret key
+              key: ""
+        # password configuration
+        password:
+          # -- the password, defaults to a value randomly-generated on install
+          value: ""
+          # the password secret configuration
+          valueFrom:
+            # the password secret key reference
+            secretKeyRef:
+              # -- the password secret name
+              name: ""
+              # -- the password secret key
+              key: ""
 
     # Image containing DB client, used to set up the DB
     clientImage:
@@ -738,20 +729,58 @@ workers:
       limits: {}
     # -- run flow worker with Quasar's verifyInstrumentation enabled
     verifyInstrumentation: false
-    # flow worker JDBC connection pool configuration for State Manager DB
-    stateManagerDbConnectionPool:
-      # -- flow worker maximum JDBC connection pool size for state manager DB
-      maxSize: 5
-      # -- flow worker minimum JDBC connection pool size for state manager DB; null value means pool's min size will default to pool's max size value
-      minSize: null
-      # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
-      idleTimeoutSeconds: 120
-      # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
-      maxLifetimeSeconds: 1800
-      # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
-      keepAliveTimeSeconds: 0
-      # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
-      validationTimeoutSeconds: 5
+    # Flow Worker State Manager configuration
+    stateManager:
+      # Type of State Manager
+      type: DATABASE
+      # State Manager database configuration
+      db:
+        # -- the State Manager database host
+        host: null
+        # -- the State Manager database type
+        type: "postgresql"
+        # -- the State Manager database port
+        port: 5432
+        # -- the State Manager database name
+        name: flow_state_manager
+        # the State Manager database user configuration
+        username:
+          # -- the State Manager database user
+          value: ""
+          # the State Manager database user secret configuration; used in preference to value if name is set
+          valueFrom:
+            # the State Manager database user secret key reference
+            secretKeyRef:
+              # -- the State Manager database user secret name
+              name: ""
+              # -- the State Manager database user secret key
+              key: ""
+        # the State Manager database password configuration
+        password:
+          # -- the State Manager database password
+          value: ""
+          # the State Manager database password secret configuration; used in preference to value if name is set
+          valueFrom:
+            # the State Manager database password secret key reference
+            secretKeyRef:
+              # -- the State Manager database password secret name
+              name: ""
+              # -- the State Manager database password secret key
+              key: ""
+        # flow worker JDBC connection pool configuration for State Manager DB
+        connectionPool:
+          # -- flow worker maximum JDBC connection pool size for state manager DB
+          maxSize: 5
+          # -- flow worker minimum JDBC connection pool size for state manager DB; null value means pool's min size will default to pool's max size value
+          minSize: null
+          # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
+          idleTimeoutSeconds: 120
+          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+          maxLifetimeSeconds: 1800
+          # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
+          keepAliveTimeSeconds: 0
+          # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
+          validationTimeoutSeconds: 5
     # flow worker Kafka configuration
     kafka:
       # if kafka.sasl.enabled, the credentials to connect to Kafka with for the flow worker
@@ -820,20 +849,58 @@ workers:
       limits: { }
     # -- run flow mapper worker with Quasar's verifyInstrumentation enabled
     verifyInstrumentation: false
-    # flow mapper worker JDBC connection pool configuration for State Manager DB
-    stateManagerDbConnectionPool:
-      # -- flow mapper worker maximum JDBC connection pool size for state manager DB
-      maxSize: 5
-      # -- flow mapper worker minimum JDBC connection pool size for state manager DB; null value means pool's min size will default to pool's max size value
-      minSize: null
-      # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
-      idleTimeoutSeconds: 120
-      # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
-      maxLifetimeSeconds: 1800
-      # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
-      keepAliveTimeSeconds: 0
-      # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
-      validationTimeoutSeconds: 5
+    # Flow Mapper Worker State Manager configuration
+    stateManager:
+      # Type of State Manager
+      type: DATABASE
+      # State Manager database configuration
+      db:
+        # -- the State Manager database host
+        host: null
+        # -- the State Manager database type
+        type: "postgresql"
+        # -- the State Manager database port
+        port: 5432
+        # -- the State Manager database name
+        name: flow_mapper_state_manager
+        # the State Manager database user configuration
+        username:
+          # -- the State Manager database user
+          value: ""
+          # the State Manager database user secret configuration; used in preference to value if name is set
+          valueFrom:
+            # the State Manager database user secret key reference
+            secretKeyRef:
+              # -- the State Manager database user secret name
+              name: ""
+              # -- the State Manager database user secret key
+              key: ""
+        # the State Manager database password configuration
+        password:
+          # -- the State Manager database password
+          value: ""
+          # the State Manager database password secret configuration; used in preference to value if name is set
+          valueFrom:
+            # the State Manager database password secret key reference
+            secretKeyRef:
+              # -- the State Manager database password secret name
+              name: ""
+              # -- the State Manager database password secret key
+              key: ""
+        # flow mapper worker JDBC connection pool configuration for State Manager DB
+        connectionPool:
+          # -- flow mapper worker maximum JDBC connection pool size for state manager DB
+          maxSize: 5
+          # -- flow mapper worker minimum JDBC connection pool size for state manager DB; null value means pool's min size will default to pool's max size value
+          minSize: null
+          # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
+          idleTimeoutSeconds: 120
+          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+          maxLifetimeSeconds: 1800
+          # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
+          keepAliveTimeSeconds: 0
+          # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
+          validationTimeoutSeconds: 5
     # flow mapper worker Kafka configuration
     kafka:
       # if kafka.sasl.enabled, the credentials to connect to Kafka with for the flow mapper worker
