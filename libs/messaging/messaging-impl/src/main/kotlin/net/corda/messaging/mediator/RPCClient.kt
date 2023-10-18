@@ -8,9 +8,9 @@ import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_ENDPOINT
 import net.corda.messaging.utils.HTTPRetryConfig
 import net.corda.messaging.utils.HTTPRetryExecutor
-import net.corda.utilities.trace
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
+import net.corda.utilities.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.IOException
@@ -18,8 +18,7 @@ import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-import java.time.Instant
-import java.util.concurrent.TimeUnit
+import java.time.Duration
 import java.util.concurrent.TimeoutException
 
 class RPCClient(
@@ -80,7 +79,7 @@ class RPCClient(
     }
 
     private fun sendWithRetry(request: HttpRequest): HttpResponse<ByteArray> {
-        val startTime = Instant.now().toEpochMilli()
+        val startTime = System.nanoTime()
         return try {
             val response = HTTPRetryExecutor.withConfig(retryConfig) {
                 httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
@@ -100,21 +99,18 @@ class RPCClient(
         request: HttpRequest,
         response: HttpResponse<ByteArray>? = null
     ) {
-        val endTime = Instant.now().toEpochMilli()
-        CordaMetrics.Metric.Messaging.HTTPRPCResponseTime.builder()
+        val endTime = System.nanoTime()
+        val uri = request.method() + request.uri().toString()
+            CordaMetrics.Metric.Messaging.HTTPRPCResponseTime.builder()
             .withTag(CordaMetrics.Tag.OperationStatus, operationStatus)
-            .withTag(CordaMetrics.Tag.HttpMethod, request.method())
-            .withTag(CordaMetrics.Tag.HttpRequestUri, request.uri().toString())
+            .withTag(CordaMetrics.Tag.HttpRequestUri, uri)
             .withTag(CordaMetrics.Tag.HttpResponseCode, response?.statusCode().toString())
             .build()
-            .record(endTime - startTime, TimeUnit.MILLISECONDS)
+            .record(Duration.ofNanos(endTime - startTime))
 
         if (response != null) {
             CordaMetrics.Metric.Messaging.HTTPRPCResponseSize.builder()
-                .withTag(CordaMetrics.Tag.OperationStatus, operationStatus)
-                .withTag(CordaMetrics.Tag.HttpMethod, request.method())
-                .withTag(CordaMetrics.Tag.HttpRequestUri, request.uri().toString())
-                .withTag(CordaMetrics.Tag.HttpResponseCode, response.statusCode().toString())
+                .withTag(CordaMetrics.Tag.HttpRequestUri, uri)
                 .build()
                 .record(response.body().size.toDouble())
         }
