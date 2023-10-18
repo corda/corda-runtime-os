@@ -1,6 +1,5 @@
 package net.corda.messagebus.db.consumer
 
-import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
@@ -10,6 +9,7 @@ import net.corda.messagebus.db.datamodel.TopicRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
+import net.corda.messagebus.db.serialization.CordaDBAvroDeserializer
 import net.corda.messagebus.db.serialization.MessageHeaderSerializerImpl
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import org.assertj.core.api.Assertions.assertThat
@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 import org.mockito.Mock
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -58,12 +59,12 @@ internal class DBCordaConsumerImplTest {
     val dbAccess = mock<DBAccess>()
 
     private fun makeConsumer(config: ResolvedConsumerConfig = defaultConfig): DBCordaConsumerImpl<String, String> {
-        val keyDeserializer = mock<CordaAvroDeserializer<String>>()
-        val valueDeserializer = mock<CordaAvroDeserializer<String>>()
-        whenever(keyDeserializer.deserialize(eq(serializedKey))).thenAnswer { "key" }
-        whenever(valueDeserializer.deserialize(eq(serializedValue))).thenAnswer { "value" }
-        whenever(valueDeserializer.deserialize(eq(invalidSerializedValue))).thenAnswer { null }
-        whenever(valueDeserializer.deserialize(eq(nullValue))).thenAnswer { null }
+        val keyDeserializer = mock<CordaDBAvroDeserializer<String>>()
+        val valueDeserializer = mock<CordaDBAvroDeserializer<String>>()
+        whenever(keyDeserializer.deserialize(eq(serializedKey), anyOrNull())).thenAnswer { "key" }
+        whenever(valueDeserializer.deserialize(eq(serializedValue),  anyOrNull())).thenAnswer { "value" }
+        whenever(valueDeserializer.deserialize(eq(invalidSerializedValue), anyOrNull())).thenAnswer { null }
+        whenever(valueDeserializer.deserialize(eq(nullValue),  anyOrNull())).thenAnswer { null }
         return DBCordaConsumerImpl(
             config,
             dbAccess,
@@ -425,10 +426,10 @@ internal class DBCordaConsumerImplTest {
     @Test
     fun `consumer returns correct position when not available based on auto_offset_reset`() {
         fun createAutoResetConsumer(strategy: CordaOffsetResetStrategy): CordaConsumer<String, String> {
-            val keyDeserializer = mock<CordaAvroDeserializer<String>>()
-            val valueDeserializer = mock<CordaAvroDeserializer<String>>()
-            whenever(keyDeserializer.deserialize(eq(serializedKey))).thenAnswer { "key" }
-            whenever(valueDeserializer.deserialize(eq(serializedValue))).thenAnswer { "value" }
+            val keyDeserializer = mock<CordaDBAvroDeserializer<String>>()
+            val valueDeserializer = mock<CordaDBAvroDeserializer<String>>()
+            whenever(keyDeserializer.deserialize(eq(serializedKey), anyOrNull())).thenAnswer { "key" }
+            whenever(valueDeserializer.deserialize(eq(serializedValue), anyOrNull())).thenAnswer { "value" }
             whenever(dbAccess.getEarliestRecordOffset(any())).thenAnswer { mapOf(partition0 to 0) }
             whenever(dbAccess.getLatestRecordOffset(any())).thenAnswer { mapOf(partition0 to 5) }
             val config = defaultConfig.copy(offsetResetStrategy = strategy)

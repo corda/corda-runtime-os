@@ -1,5 +1,6 @@
 package net.corda.messaging.mediator
 
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
 import net.corda.messaging.api.processor.StateAndEventProcessor
@@ -37,6 +38,8 @@ class ProcessorTaskTest {
     @Captor
     private val eventCaptor = argumentCaptor<Record<String, EventType>>()
 
+    private val serializer: CordaAvroSerializer<Any> = mock()
+
     @BeforeEach
     fun setup() {
         `when`(processor.onNext(anyOrNull(), any())).thenAnswer { invocation ->
@@ -69,6 +72,7 @@ class ProcessorTaskTest {
             inputEventRecords,
             processor,
             stateManagerHelper,
+            serializer
         )
 
         val result = task.call()

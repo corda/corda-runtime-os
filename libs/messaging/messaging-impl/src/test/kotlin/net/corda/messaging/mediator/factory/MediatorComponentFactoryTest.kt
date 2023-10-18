@@ -78,7 +78,7 @@ class MediatorComponentFactoryTest {
 
     @Test
     fun `successfully creates consumers`() {
-        val onSerializationError: (ByteArray) -> Unit = {}
+        val onSerializationError: (ByteArray, String?) -> Unit = { _,_ -> }
 
         val mediatorConsumers = mediatorComponentFactory.createConsumers(onSerializationError)
 
@@ -107,7 +107,7 @@ class MediatorComponentFactoryTest {
         )
 
         assertThrows<IllegalStateException> {
-            mediatorComponentFactory.createConsumers { }
+            mediatorComponentFactory.createConsumers { _,_ -> }
         }
     }
 

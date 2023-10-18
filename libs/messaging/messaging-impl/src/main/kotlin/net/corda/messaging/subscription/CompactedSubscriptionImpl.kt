@@ -115,8 +115,9 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
         latestValues = null
     }
 
-    private fun onError(bytes: ByteArray) {
-        log.error("Failed to deserialize record from ${config.topic} with bytes $bytes")
+
+    private fun onError(bytes: ByteArray, topic: String?) {
+        log.error("Failed to deserialize record from ${topic ?: config.topic} with bytes $bytes")
     }
 
     private fun getLatestValues(): MutableMap<K, V> {

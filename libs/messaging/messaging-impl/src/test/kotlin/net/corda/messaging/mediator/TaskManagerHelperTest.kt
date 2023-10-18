@@ -1,6 +1,7 @@
 package net.corda.messaging.mediator
 
 import io.micrometer.core.instrument.Timer
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.libs.statemanager.api.State
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.mediator.MediatorMessage
@@ -35,7 +36,8 @@ class TaskManagerHelperTest {
     private val taskManager = mock<TaskManager>()
     private val stateManagerHelper = mock<StateManagerHelper<String, String, String>>()
     private val eventMediatorMetrics = mock<EventMediatorMetrics>()
-    private val taskManagerHelper = TaskManagerHelper(taskManager, stateManagerHelper, eventMediatorMetrics)
+    private val serializer: CordaAvroSerializer<Any> = mock()
+    private val taskManagerHelper = TaskManagerHelper(taskManager, stateManagerHelper, serializer, eventMediatorMetrics)
     private val messageProcessor = mock<StateAndEventProcessor<String, String, String>>()
 
     @Test
@@ -60,6 +62,7 @@ class TaskManagerHelperTest {
                 listOf(EVENT1).toRecords(KEY1),
                 messageProcessor,
                 stateManagerHelper,
+                serializer
             ),
             ProcessorTask(
                 KEY2,
@@ -67,6 +70,7 @@ class TaskManagerHelperTest {
                 listOf(EVENT2, EVENT3).toRecords(KEY2),
                 messageProcessor,
                 stateManagerHelper,
+                serializer
             ),
         )
         assertEquals(expectedProcessorTasks, processorTasks)
@@ -84,7 +88,7 @@ class TaskManagerHelperTest {
             replyMessage: MediatorMessage<String>?,
         ): ClientTask.Result<String, String, String> {
             val processorTask = ProcessorTask(
-                key, null, events.toRecords(key), messageProcessor, stateManagerHelper
+                key, null, events.toRecords(key), messageProcessor, stateManagerHelper, serializer
             )
             val processorTaskResult = ProcessorTask.Result(
                 processorTask, listOf(), updateState
@@ -113,7 +117,8 @@ class TaskManagerHelperTest {
                 updateState.copy(version = updateState.version + 1),
                 listOf(replyMessage.payload!!).toRecords(KEY2),
                 messageProcessor,
-                stateManagerHelper
+                stateManagerHelper,
+                serializer
             ),
         )
         assertEquals(expectedProcessorTasks, processorTasks)
@@ -126,14 +131,16 @@ class TaskManagerHelperTest {
             persistedState = mock(),
             events = mock(),
             messageProcessor,
-            stateManagerHelper
+            stateManagerHelper,
+            serializer
         )
         val processorTask2 = ProcessorTask(
             KEY2,
             persistedState = mock(),
             events = mock(),
             messageProcessor,
-            stateManagerHelper
+            stateManagerHelper,
+            serializer
         )
         val failedResults = listOf(
             ProcessorTask.Result(

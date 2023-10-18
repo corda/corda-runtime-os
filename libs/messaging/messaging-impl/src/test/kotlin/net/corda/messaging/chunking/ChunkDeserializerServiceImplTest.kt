@@ -1,11 +1,10 @@
 package net.corda.messaging.chunking
 
-import java.nio.ByteBuffer
+import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.chunking.Checksum
 import net.corda.chunking.impl.ChunkBuilderServiceImpl
-import net.corda.crypto.core.toAvro
 import net.corda.crypto.cipher.suite.PlatformDigestService
-import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.crypto.core.toAvro
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import org.assertj.core.api.Assertions.assertThat
@@ -14,6 +13,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 
 class ChunkDeserializerServiceImplTest {
     private lateinit var valueDeserializer: CordaAvroDeserializer<String>
@@ -46,7 +46,7 @@ class ChunkDeserializerServiceImplTest {
         valueDeserializer = mock()
         keyDeserializer = mock()
         platformDigestService = mock()
-        chunkDeserializerService = ChunkDeserializerServiceImpl(keyDeserializer, valueDeserializer, { }, platformDigestService)
+        chunkDeserializerService = ChunkDeserializerServiceImpl(keyDeserializer, valueDeserializer, {_, _ -> }, platformDigestService)
         whenever(keyDeserializer.deserialize(realKeyBytes)).thenReturn(realKey)
         whenever(valueDeserializer.deserialize(fullBytes)).thenReturn(completeValue)
         val digest = Checksum.digestForBytes(fullBytes)

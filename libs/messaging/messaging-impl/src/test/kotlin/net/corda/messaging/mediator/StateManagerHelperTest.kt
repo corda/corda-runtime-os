@@ -29,7 +29,7 @@ class StateManagerHelperTest {
     private class EventType
 
     private val stateManager = mock<StateManager>()
-    private val stateSerializer = mock<CordaAvroSerializer<StateType>>()
+    private val stateSerializer = mock<CordaAvroSerializer<Any>>()
     private val stateDeserializer = mock<CordaAvroDeserializer<StateType>>()
 
     @Captor
@@ -119,7 +119,7 @@ class StateManagerHelperTest {
         stateManagerHelper.persistStates(
             states.map { (persistedState, updatedState) ->
                 val task = ProcessorTask<String, StateType, EventType>(
-                    updatedState.key, persistedState, mock(), mock(), mock()
+                    updatedState.key, persistedState, mock(), mock(), mock(), mock()
                 )
                 ProcessorTask.Result(task, mock(), updatedState)
             }

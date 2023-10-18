@@ -36,7 +36,7 @@ class MessageBusConsumerFactoryTest {
         val config = MediatorConsumerConfig(
             Any::class.java,
             Any::class.java,
-        ) {}
+        ) { _,_ -> }
 
         val messageBusConsumer = messageBusConsumerFactory.create(config)
 
