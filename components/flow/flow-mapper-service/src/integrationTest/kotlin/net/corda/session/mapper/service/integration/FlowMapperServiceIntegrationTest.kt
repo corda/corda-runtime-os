@@ -13,7 +13,6 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.mapper.ExecuteCleanup
 import net.corda.data.flow.event.mapper.FlowMapperEvent
-import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.event.session.SessionCounterpartyInfoRequest
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
@@ -37,7 +36,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Config.CONFIG_TOPIC
-import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_MAPPER_CLEANUP_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import net.corda.schema.Schemas.ScheduledTask
@@ -63,7 +62,6 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
-import java.lang.System.currentTimeMillis
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.time.Duration
@@ -91,6 +89,9 @@ class FlowMapperServiceIntegrationTest {
     lateinit var subscriptionFactory: SubscriptionFactory
 
     @InjectService(timeout = 4000)
+    lateinit var flowEventMediatorFactory: TestFlowEventMediatorFactory
+
+    @InjectService(timeout = 4000)
     lateinit var configService: ConfigurationReadService
 
     @InjectService(timeout = 4000)
@@ -108,6 +109,8 @@ class FlowMapperServiceIntegrationTest {
         .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("INMEMORY"))
         .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(100000000))
 
+    private val stateManagerConfig = SmartConfigImpl.empty()
+
     private val schemaVersion = ConfigurationSchemaVersion(1, 0)
 
     private val aliceHoldingIdentity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group1")
@@ -117,6 +120,7 @@ class FlowMapperServiceIntegrationTest {
 
     @BeforeEach
     fun setup() {
+        TestStateManagerFactoryImpl.clear()
         if (!setup) {
             setup = true
             val publisher = publisherFactory.createPublisher(PublisherConfig(clientId), messagingConfig)
@@ -145,14 +149,17 @@ class FlowMapperServiceIntegrationTest {
     fun `Test first session event outbound sets up flow mapper state, verify subsequent messages received are passed to flow event topic`
                 () {
         val testId = "test1"
+        val testSessionId = "testSession1"
+        val testFlowId = "testFlow1"
+        val testCpiId = "testCpi1"
         val publisher = publisherFactory.createPublisher(PublisherConfig(testId), messagingConfig)
 
-        //send 2 session init, 1 is duplicate
+        //send 2 session init
         val sessionDataAndInitEvent = Record<Any, Any>(
-            FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
+            FLOW_MAPPER_EVENT_TOPIC, testSessionId, FlowMapperEvent(
                 buildSessionEvent(
-                    MessageDirection.OUTBOUND, testId, 1, SessionData(ByteBuffer.wrap("bytes".toByteArray()), SessionInit(
-                        testId, testId, emptyKeyValuePairList(), emptyKeyValuePairList()
+                    MessageDirection.OUTBOUND, testSessionId, 1, SessionData(ByteBuffer.wrap("bytes".toByteArray()), SessionInit(
+                        testCpiId, testFlowId, emptyKeyValuePairList(), emptyKeyValuePairList()
                     )),
                     initiatedIdentity = charlieHoldingIdentity,
                     contextSessionProps = emptyKeyValuePairList()
@@ -166,7 +173,7 @@ class FlowMapperServiceIntegrationTest {
         val p2pLatch = CountDownLatch(1)
         val p2pOutSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$testId-p2p-out", P2P_OUT_TOPIC),
-            TestP2POutProcessor(testId, p2pLatch, 1), messagingConfig, null
+            TestP2POutProcessor(testSessionId, p2pLatch, 2), messagingConfig, null
         )
         p2pOutSub.start()
         assertTrue(p2pLatch.await(20, TimeUnit.SECONDS))
@@ -174,10 +181,10 @@ class FlowMapperServiceIntegrationTest {
 
         //send data back
         val sessionDataEvent = Record<Any, Any>(
-            FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
+            FLOW_MAPPER_EVENT_TOPIC, testSessionId, FlowMapperEvent(
                 buildSessionEvent(
                     MessageDirection.INBOUND,
-                    testId,
+                    testSessionId,
                     2,
                     SessionData(ByteBuffer.wrap("".toByteArray()), null),
                     contextSessionProps = emptyKeyValuePairList()
@@ -189,16 +196,15 @@ class FlowMapperServiceIntegrationTest {
         //validate flow event topic
         val flowEventLatch = CountDownLatch(1)
         val testProcessor = TestFlowMessageProcessor(flowEventLatch, 1, SessionEvent::class.java)
-        val flowEventSub = subscriptionFactory.createStateAndEventSubscription(
-            SubscriptionConfig("$testId-flow-event", FLOW_EVENT_TOPIC),
-            testProcessor,
+        val flowEventMediator = flowEventMediatorFactory.create(
             messagingConfig,
-            null
+            stateManagerConfig,
+            testProcessor,
         )
 
-        flowEventSub.start()
+        flowEventMediator.start()
         assertTrue(flowEventLatch.await(5, TimeUnit.SECONDS))
-        flowEventSub.close()
+        flowEventMediator.close()
     }
 
     @Test
@@ -234,36 +240,28 @@ class FlowMapperServiceIntegrationTest {
         //flow event subscription to validate outputs
         val flowEventLatch = CountDownLatch(2)
         val testProcessor = TestFlowMessageProcessor(flowEventLatch, 2, StartFlow::class.java)
-        val flowEventSub = subscriptionFactory.createStateAndEventSubscription(
-            SubscriptionConfig("$testId-flow-event", FLOW_EVENT_TOPIC),
-            testProcessor,
+        val flowEventMediator = flowEventMediatorFactory.create(
             messagingConfig,
-            null
+            stateManagerConfig,
+            testProcessor,
         )
 
-        flowEventSub.start()
+        flowEventMediator.start()
 
-        //cleanup
-        val cleanup = Record<Any, Any>(
-            FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
-                ScheduleCleanup(currentTimeMillis())
-            )
-        )
-        publisher.publish(listOf(cleanup))
-
-        //assert duplicate start rpc didn't get processed (and also give Execute cleanup time to run)
+        //assert duplicate start rpc didn't get processed
         assertFalse(flowEventLatch.await(3, TimeUnit.SECONDS))
         assertThat(flowEventLatch.count).isEqualTo(1)
 
         // Manually publish an execute cleanup event. Temporary until the full solution has been integrated.
         val executeCleanup = Record<Any, Any>(
-            FLOW_MAPPER_EVENT_TOPIC,
+            FLOW_MAPPER_CLEANUP_TOPIC,
             testId,
-            FlowMapperEvent(
-                ExecuteCleanup(listOf())
-            )
+            ExecuteCleanup(listOf(testId))
         )
         publisher.publish(listOf(executeCleanup))
+
+        // give Execute cleanup time to run
+        assertFalse(flowEventLatch.await(3, TimeUnit.SECONDS))
 
         //send same key start rpc again
         publisher.publish(listOf(startRPCEvent))
@@ -276,7 +274,7 @@ class FlowMapperServiceIntegrationTest {
             )
         ).withFailMessage("latch was ${flowEventLatch.count}").isTrue
 
-        flowEventSub.close()
+        flowEventMediator.close()
     }
 
     @Test
@@ -312,14 +310,17 @@ class FlowMapperServiceIntegrationTest {
     @Test
     fun `flow mapper still works after config update`() {
         val testId = "test4"
+        val testSessionId = "testSession4"
+        val testFlowId = "testFlow4"
+        val testCpiId = "testCpi4"
         val publisher = publisherFactory.createPublisher(PublisherConfig(testId), messagingConfig)
 
         //send 2 session init, 1 is duplicate
         val sessionInitEvent = Record<Any, Any>(
-            FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
+            FLOW_MAPPER_EVENT_TOPIC, testSessionId, FlowMapperEvent(
                 buildSessionEvent(
-                    MessageDirection.OUTBOUND, testId, 1, SessionCounterpartyInfoRequest(SessionInit(
-                        testId, testId, emptyKeyValuePairList(), emptyKeyValuePairList()
+                    MessageDirection.OUTBOUND, testSessionId, 1, SessionCounterpartyInfoRequest(SessionInit(
+                        testCpiId, testFlowId, emptyKeyValuePairList(), emptyKeyValuePairList()
                     )),
                     initiatedIdentity = charlieHoldingIdentity,
                     contextSessionProps = emptyKeyValuePairList()
@@ -333,7 +334,7 @@ class FlowMapperServiceIntegrationTest {
         val p2pLatch = CountDownLatch(1)
         val p2pOutSub = subscriptionFactory.createDurableSubscription(
             SubscriptionConfig("$testId-p2p-out", P2P_OUT_TOPIC),
-            TestP2POutProcessor(testId, p2pLatch, 1), messagingConfig, null
+            TestP2POutProcessor(testSessionId, p2pLatch, 1), messagingConfig, null
         )
         p2pOutSub.start()
         assertTrue(p2pLatch.await(10, TimeUnit.SECONDS))
@@ -344,10 +345,10 @@ class FlowMapperServiceIntegrationTest {
 
         //send data back
         val sessionDataEvent = Record<Any, Any>(
-            FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
+            FLOW_MAPPER_EVENT_TOPIC, testSessionId, FlowMapperEvent(
                 buildSessionEvent(
                     MessageDirection.INBOUND,
-                    testId,
+                    testSessionId,
                     2,
                     SessionData(ByteBuffer.wrap("".toByteArray()), null),
                     initiatedIdentity = charlieHoldingIdentity,
@@ -360,16 +361,15 @@ class FlowMapperServiceIntegrationTest {
         //validate flow event topic
         val flowEventLatch = CountDownLatch(1)
         val testProcessor = TestFlowMessageProcessor(flowEventLatch, 1, SessionEvent::class.java)
-        val flowEventSub = subscriptionFactory.createStateAndEventSubscription(
-            SubscriptionConfig("$testId-flow-event", FLOW_EVENT_TOPIC),
-            testProcessor,
+        val flowEventMediator = flowEventMediatorFactory.create(
             messagingConfig,
-            null
+            stateManagerConfig,
+            testProcessor,
         )
 
-        flowEventSub.start()
+        flowEventMediator.start()
         assertTrue(flowEventLatch.await(5, TimeUnit.SECONDS))
-        flowEventSub.close()
+        flowEventMediator.close()
     }
 
 
