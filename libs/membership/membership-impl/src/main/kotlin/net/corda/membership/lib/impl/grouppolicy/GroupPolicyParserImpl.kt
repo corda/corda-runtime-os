@@ -1,5 +1,6 @@
 package net.corda.membership.lib.impl.grouppolicy
 
+import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATION_TIME
@@ -35,9 +36,10 @@ class GroupPolicyParserImpl @Activate constructor(
         const val EMPTY_GROUP_POLICY = "GroupPolicy file is empty."
         const val NULL_GROUP_POLICY = "GroupPolicy file is null."
         const val FAILED_PARSING = "GroupPolicy file is incorrectly formatted and parsing failed."
+        private val duplicateKeyRegex = "Duplicate field '.*'".toRegex(RegexOption.IGNORE_CASE)
     }
 
-    private val objectMapper = ObjectMapper()
+    private val objectMapper = ObjectMapper().enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
     private val clock = UTCClock()
 
     private val mgmVersions = mapOf(
@@ -57,6 +59,11 @@ class GroupPolicyParserImpl @Activate constructor(
             net.corda.membership.lib.impl.grouppolicy.v1.MemberGroupPolicyImpl(root)
         }
     )
+
+    private fun failedParsing(errorMessage: String): String =
+        duplicateKeyRegex.find(errorMessage)?.groupValues?.firstOrNull()?.let {
+            "$FAILED_PARSING Caused by: $it."
+        } ?: FAILED_PARSING
 
     @Suppress("ThrowsCount")
     override fun parse(
@@ -78,7 +85,7 @@ class GroupPolicyParserImpl @Activate constructor(
                     objectMapper.readTree(groupPolicy)
                 } catch (e: Exception) {
                     logger.error("$FAILED_PARSING Caused by: ${e.message}")
-                    throw BadGroupPolicyException(FAILED_PARSING, e)
+                    throw BadGroupPolicyException(failedParsing("${e.message}"), e)
                 }
             }
         }
@@ -105,7 +112,7 @@ class GroupPolicyParserImpl @Activate constructor(
                     objectMapper.readTree(groupPolicy)
                 } catch (e: Exception) {
                     logger.error("$FAILED_PARSING Caused by: ${e.message}")
-                    throw BadGroupPolicyException(FAILED_PARSING, e)
+                    throw BadGroupPolicyException(failedParsing("${e.message}"), e)
                 }
             }
         }

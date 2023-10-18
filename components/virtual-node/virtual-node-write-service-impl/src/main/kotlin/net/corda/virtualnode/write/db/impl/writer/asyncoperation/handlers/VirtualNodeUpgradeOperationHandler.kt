@@ -293,6 +293,8 @@ internal class VirtualNodeUpgradeOperationHandler(
                 targetCpi.cpksMetadata
             )
 
+            logger.info("Generated upgraded ExternalMessagingRouteConfig as: $externalMessagingRouteConfig")
+
             upgradeVirtualNodeEntity(em, request, requestId, requestTimestamp, targetCpi, externalMessagingRouteConfig)
         }
         return Triple(upgradedVNodeInfo, cpkChangelogs, targetCpi)
