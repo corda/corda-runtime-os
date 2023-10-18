@@ -1,6 +1,5 @@
 package net.corda.messaging.subscription.consumer.builder
 
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.constants.ConsumerRoles
@@ -23,6 +22,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [StateAndEventBuilder::class])
 class StateAndEventBuilderImpl @Activate constructor(
@@ -52,8 +52,8 @@ class StateAndEventBuilderImpl @Activate constructor(
         sClazz: Class<S>,
         eClazz: Class<E>,
         stateAndEventListener: StateAndEventListener<K, S>?,
-        onStateError: (ByteArray) -> Unit,
-        onEventError: (ByteArray) -> Unit,
+        onStateError: (ByteArray, String?) -> Unit,
+        onEventError: (ByteArray, String?) -> Unit,
     ): Pair<StateAndEventConsumer<K, S, E>, StateAndEventConsumerRebalanceListener> {
         val stateConsumerConfig =
             ConsumerConfig(config.group, "${config.clientId}-stateConsumer", ConsumerRoles.SAE_STATE)

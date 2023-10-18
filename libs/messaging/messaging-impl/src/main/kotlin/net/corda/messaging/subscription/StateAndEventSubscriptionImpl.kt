@@ -129,15 +129,14 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     processor.stateValueClass,
                     processor.eventValueClass,
                     stateAndEventListener,
-                    { data ->
+                    { data, _ ->
                         log.error("Failed to deserialize state record from $stateTopic")
                         deadLetterRecords.add(data)
-                    },
-                    { data ->
-                        log.error("Failed to deserialize event record from $eventTopic")
-                        deadLetterRecords.add(data)
                     }
-                )
+                ) { data, _ ->
+                    log.error("Failed to deserialize event record from $eventTopic")
+                    deadLetterRecords.add(data)
+                }
                 nullableRebalanceListener = rebalanceListener
                 val eventConsumerTmp = stateAndEventConsumerTmp.eventConsumer
                 nullableStateAndEventConsumer = stateAndEventConsumerTmp
