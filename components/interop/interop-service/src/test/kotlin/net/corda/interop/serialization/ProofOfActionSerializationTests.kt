@@ -44,7 +44,6 @@ import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.spec.ECGenParameterSpec
 import java.util.TimeZone
-import java.util.UUID
 import kotlin.test.assertEquals
 
 class ProofOfActionSerializationTests : UtxoLedgerTest() {
@@ -168,9 +167,9 @@ class ProofOfActionSerializationTests : UtxoLedgerTest() {
         }
         val dispatcher = TestLockServer().buildDispatcher(facade, jsonMapper)
         val client = facade.getClientProxy<LockFacade>(jsonMapper, MessagingWithoutWebIntermediary(dispatcher))
-        val result = client.unlock(UUID.randomUUID(), signature, ByteBuffer.wrap(byteArrayOf(65, 66, 67, 68)))
+        val result = client.unlock("not-a-random-string", signature, ByteBuffer.wrap(byteArrayOf(65, 66, 67, 68)))
 
-        assertEquals(result, BigDecimal.ONE)
+        assertEquals(result, "confirmation")
     }
 
     @Test
@@ -192,9 +191,9 @@ class ProofOfActionSerializationTests : UtxoLedgerTest() {
         val webServer = WebServer(dispatcher,jsonMarshallingService)
         val webClient = WebClient(webServer, jsonMarshallingService)
         val client = facade.getClientProxy<LockFacade>(jsonMapper, webClient)
-        val result = client.unlock(UUID.randomUUID(), signature, ByteBuffer.wrap(byteArrayOf(65, 66, 67, 68)))
+        val result = client.unlock("not-a-random-string", signature, ByteBuffer.wrap(byteArrayOf(65, 66, 67, 68)))
 
-        assertEquals(result, BigDecimal.ONE)
+        assertEquals(result, "confirmation")
     }
 }
 
@@ -237,21 +236,23 @@ interface LockFacade {
     @Suspendable
     fun createLock(@Denomination denomination: String,
                    amount: BigDecimal,
+                   otherParty: String,
                    @BindsFacadeParameter("notary-keys") notaryKeys: String,
-                   @BindsFacadeParameter("draft") draft: String) : UUID
+                   @BindsFacadeParameter("draft") draft: String) : String
 
     @FacadeVersions("v1.0")
     @BindsFacadeMethod("unlock")
     @Suspendable
-    fun unlock(reservationRef: UUID,
+    fun unlock(reservationRef: String,
                @BindsFacadeParameter("signed-tx") proof: DigitalSignatureAndMetadata,
-               key: ByteBuffer) : BigDecimal
+               key: ByteBuffer) : String
 }
 
 class TestLockServer : LockFacade {
 
-    override fun createLock(denomination: String, amount: BigDecimal, notaryKeys: String, draft: String): UUID  = UUID.randomUUID()
+    override fun createLock(denomination: String, amount: BigDecimal, otherParty: String, notaryKeys: String,
+                            draft: String): String = "not-a-random-string"
 
-    override fun unlock(reservationRef: UUID, proof: DigitalSignatureAndMetadata, key: ByteBuffer): BigDecimal = BigDecimal.ONE
+    override fun unlock(reservationRef: String, proof: DigitalSignatureAndMetadata, key: ByteBuffer): String = "confirmation"
 
 }

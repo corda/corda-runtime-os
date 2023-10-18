@@ -97,7 +97,8 @@ class UnlockFlowDispatcher: ClientStartableFlow {
             val byteArrayKey: ByteArray = notary.publicKey.encoded
             val byteBuffer: ByteBuffer = ByteBuffer.wrap(byteArrayKey)  //This is good
             //lockFacade.unlock(UUID.randomUUID(), notarySig, byteBuffer)
-            lockFacade.createLock(signedTransaction.id.toString(), BigDecimal(1000), byteBuffer, signedTransaction.id.toString())
+            lockFacade.createLock(signedTransaction.id.toString(), BigDecimal(1000), "",
+                byteBuffer, signedTransaction.id.toString())
             return jsonMarshallingService.format(IssueFlowResult("124", outputState.linearId.toString()))
 
         } catch (e: Exception) {

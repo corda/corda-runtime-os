@@ -19,16 +19,17 @@ interface LockFacade {
     @Suspendable
     fun createLock(@Denomination denomination: String,
                    amount: BigDecimal,
+                   otherParty: String,
                    @BindsFacadeParameter("notary-keys") notaryKeys: ByteBuffer,
-                   @BindsFacadeParameter("draft") draft: String): UUID
+                   @BindsFacadeParameter("draft") draft: String): String
 
     @FacadeVersions("v1.0")
     @BindsFacadeMethod("unlock")
     @Suspendable
     fun unlock(
-        reservationRef: UUID,
+        reservationRef: String,
         @BindsFacadeParameter("signed-tx") proof: DigitalSignatureAndMetadata
-    ):BigDecimal
+    ): String
 
     @FacadeVersions("v1.0")
     @BindsFacadeMethod("send-proof")
@@ -37,6 +38,6 @@ interface LockFacade {
         @BindsFacadeParameter("signable-data") signableData: String,
         @BindsFacadeParameter("signed-tx") proof: DigitalSignatureAndMetadata,
         key: ByteBuffer
-    ):BigDecimal
+    ): String
 
 }

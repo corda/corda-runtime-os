@@ -9,20 +9,21 @@
       "in": {
         "denomination": "denomination",
         "amount": "decimal",
+        "other-party": "string",
         "notary-keys": "bytes",
         "draft" : "string"
       },
       "out": {
-        "reservation-ref": "uuid"
+        "reservation-ref": "string"
       }
     },
     "unlock": {
       "in": {
-        "reservation-ref": "uuid",
+        "reservation-ref": "string",
         "signed-tx": "signed_tx"
       },
       "out": {
-        "amount": "decimal"
+        "confirmation": "string"
       }
     },
     "send-proof": {
@@ -32,7 +33,7 @@
         "key" : "bytes"
       },
       "out": {
-        "amount": "decimal"
+        "confirmation": "string"
       }
     }
   }

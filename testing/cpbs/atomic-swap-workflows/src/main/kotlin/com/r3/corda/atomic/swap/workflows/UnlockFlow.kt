@@ -93,7 +93,6 @@ class UnlockFlow : ClientStartableFlow {
                 .addSignatories(newState.owner)
 
             val signedTransaction = txBuilder.toSignedTransaction()
-            log.info("The signatories on unlock transaction are: ${signedTransaction.signatories}")
 
             val transactionId =
                 flowEngine.subFlow(FinalizeFlow(signedTransaction, listOf(ownerInfo.name, newOwnerInfo.name)))

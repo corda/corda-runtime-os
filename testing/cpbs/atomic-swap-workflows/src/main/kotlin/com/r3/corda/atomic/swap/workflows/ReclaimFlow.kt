@@ -82,7 +82,6 @@ class ReclaimFlow : ClientStartableFlow {
                 .addSignatories(myInfo.ledgerKeys.first())
 
             val signedTransaction = txBuilder.toSignedTransaction()
-            log.info("The signatories on unlock transaction are: ${signedTransaction.signatories}")
 
             val transactionId =
                 flowEngine.subFlow(FinalizeFlow(signedTransaction, listOf(myInfo.name)))

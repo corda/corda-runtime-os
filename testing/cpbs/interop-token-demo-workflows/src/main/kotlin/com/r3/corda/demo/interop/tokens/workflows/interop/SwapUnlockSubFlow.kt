@@ -13,8 +13,8 @@ import java.util.UUID
 
 
 @InitiatingFlow(protocol = "swap-unlock-sub-flow")
-class SwapUnlockSubFlow(private val applicationName: String, private val proof: DigitalSignatureAndMetadata):
-                               //  private val lockedTxId: SecureHash):
+class SwapUnlockSubFlow(private val applicationName: String, private val proof: DigitalSignatureAndMetadata,
+                                 private val lockedState: String):
     SubFlow<UUID> {
 
     @CordaInject
@@ -31,11 +31,11 @@ class SwapUnlockSubFlow(private val applicationName: String, private val proof: 
         val facadeId = "org.corda.interop/platform/lock/v1.0"
         log.info("Interop call: facadeId=$facadeId, interopIdentity=${myInteropInfo.applicationName}," +
                 " interopGroupId=${myInteropInfo.groupId}")
-
+        log.info("unlocking send to $myInteropInfo")
         val lockFacade: LockFacade =
             facadeService.getProxy(facadeId, LockFacade::class.java, myInteropInfo)
 
-        val response = lockFacade.unlock(UUID.randomUUID(), proof)
+        val response = lockFacade.unlock(lockedState, proof)
 
         log.info("Interop call returned: $response")
 

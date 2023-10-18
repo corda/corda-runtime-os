@@ -35,6 +35,7 @@ class LockContract : Contract {
                 "There should be no lock input states" using (transaction.getInputStates(LockState::class.java)
                     .isEmpty())
                 "There should be only one lock output state" using (transaction.getOutputStates(LockState::class.java).size == 1)
+            //
             }
 
             is LockCommands.Unlock -> {

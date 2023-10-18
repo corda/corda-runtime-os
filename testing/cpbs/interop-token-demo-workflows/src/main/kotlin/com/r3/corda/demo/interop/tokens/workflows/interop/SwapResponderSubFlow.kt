@@ -12,13 +12,12 @@ import net.corda.v5.ledger.common.NotaryLookup
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 import java.nio.ByteBuffer
-import java.util.UUID
 
 
 @InitiatingFlow(protocol = "swap-responder-sub-flow")
-class SwapResponderSubFlow(private val applicationName: String, private val notaryKey: ByteBuffer,
-                           private val draftHash: SecureHash):
-    SubFlow<UUID> {
+class SwapResponderSubFlow(private val applicationName: String, private val recipientOnOtherLedger: String,
+                           private val notaryKey: ByteBuffer, private val draftHash: SecureHash):
+    SubFlow<String> {
 
     @CordaInject
     lateinit var facadeService: FacadeService
@@ -30,7 +29,7 @@ class SwapResponderSubFlow(private val applicationName: String, private val nota
     lateinit var notaryLookup: NotaryLookup
 
     @Suspendable
-    override fun call(): UUID {
+    override fun call(): String {
 
         val myInteropInfo : InterOpIdentityInfo? = interopIdentityLookUp.lookup(applicationName)
         require(myInteropInfo != null) { "Can't get InteropIdentityInfo for ${applicationName}." }
@@ -46,7 +45,9 @@ class SwapResponderSubFlow(private val applicationName: String, private val nota
         require(notaries.size == 1) { "Too many notaries $notaries." }
        // val byteArrayKey: ByteArray = notaryKey.encoded
        // val byteBuffer: ByteBuffer = ByteBuffer.wrap(byteArrayKey)
-        val response = lockFacade.createLock("USD", BigDecimal(1000), notaryKey, draftHash.toString())
+        log.info("locking send to $myInteropInfo")
+        val response = lockFacade.createLock("USD", BigDecimal(1000),
+            recipientOnOtherLedger, notaryKey, draftHash.toString())
 
         log.info("Interop call returned: $response")
 

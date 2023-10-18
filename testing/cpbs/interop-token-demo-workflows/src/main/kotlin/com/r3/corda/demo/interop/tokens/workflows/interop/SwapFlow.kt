@@ -26,7 +26,8 @@ import java.time.Instant
 import java.util.UUID
 
 
-data class SwapFlowArgs(val newOwner: String, val stateId: UUID, val applicationName: String)
+data class SwapFlowArgs(val newOwner: String, val stateId: UUID, val applicationName: String,
+                        val recipientOnOtherLedger: String)
 
 @InitiatingFlow(protocol = "interop-sample-swap-protocol")
 class SwapFlow : ClientStartableFlow {
@@ -63,13 +64,9 @@ class SwapFlow : ClientStartableFlow {
             val stateId = flowArgs.stateId
 
             val unconsumedStates = ledgerService.findUnconsumedStatesByType(TokenState::class.java)
-            val unconsumedStatesWithId = unconsumedStates.filter { it.state.contractState.linearId == stateId }
+            val stateAndRef = unconsumedStates.firstOrNull { it.state.contractState.linearId == stateId }
+                ?:  throw CordaRuntimeException("Multiple or zero states with id '$stateId' found")
 
-            if (unconsumedStatesWithId.size != 1) {
-                throw CordaRuntimeException("Multiple or zero states with id '$stateId' found")
-            }
-
-            val stateAndRef = unconsumedStatesWithId.first()
             val inputState = stateAndRef.state.contractState
 
             val myInfo = memberLookup.myInfo()
@@ -81,7 +78,6 @@ class SwapFlow : ClientStartableFlow {
             if (myInfo.name != ownerInfo.name) {
                 throw CordaRuntimeException("Only the owner of a state can transfer it to a new owner.")
             }
-
 
             val outputState =
                 inputState.withNewOwner(newOwnerInfo.name, listOf(ownerInfo.ledgerKeys[0], newOwnerInfo.ledgerKeys[0]))
@@ -101,27 +97,25 @@ class SwapFlow : ClientStartableFlow {
             require(notaries.size == 1) { "Too many notaries $notaries." }
             val notary = notaryLookup.notaryServices.single()
             val byteArrayKey: ByteArray = notary.publicKey.encoded
-            //val byteBuffer: ByteBuffer = ByteBuffer.wrap(byteArrayKey)
 
             val session = flowMessaging.initiateFlow(newOwnerInfo.name)
-            val reservation : UUID = session.sendAndReceive(UUID::class.java,
-                DraftTx(flowArgs.applicationName, signedTransaction.id, byteArrayKey))
+            val reservation : String = session.sendAndReceive(String::class.java,
+                DraftTx(flowArgs.applicationName, flowArgs.recipientOnOtherLedger, signedTransaction.id, byteArrayKey))
 
             //ledgerService.sendAndReceiveTransactionBuilder() //TODO use this so other party can inspect and reason
 
             log.info("Reserved $reservation")
 
             //TODO check my alter ego / pool for confirmation about a receive of locked state
-            val finalizationResult = ledgerService.finalize(
-                signedTransaction,
-                listOf(session)
-            )
+            val finalizationResult = ledgerService.finalize(signedTransaction, listOf(session))
+
             val userResult = finalizationResult.transaction.id.toString().also {
                 log.info("Success! Response: $it")
             }
 
             val notarySignature: DigitalSignatureAndMetadata = finalizationResult.transaction.signatures.first { it.proof != null }
-            val result = flowEngine.subFlow(SwapUnlockSubFlow(flowArgs.applicationName, notarySignature))
+
+            val result = flowEngine.subFlow(SwapUnlockSubFlow(flowArgs.applicationName, notarySignature, reservation))
             log.info("SwapFlow - unlocking success! Response: $result")
 
             return userResult
@@ -145,13 +139,17 @@ class SwapResponderFlow : ResponderFlow {
     @CordaInject
     lateinit var flowEngine: FlowEngine
 
+    @CordaInject
+    lateinit var memberLookup: MemberLookup
+
     @Suspendable
     override fun call(session: FlowSession) {
 
         val msg = session.receive(DraftTx::class.java)
         log.info("Received message: $msg")
-
-        val result = flowEngine.subFlow(SwapResponderSubFlow(msg.applicationName, ByteBuffer.wrap(msg.notaryKey), msg.draftTxId))
+        log.info("locking send by ${memberLookup.myInfo().name}")
+        val result = flowEngine.subFlow(SwapResponderSubFlow(msg.applicationName, msg.recipientOnOtherLedger,
+            ByteBuffer.wrap(msg.notaryKey), msg.draftTxId))
         session.send(result)
 
         try {
