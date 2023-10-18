@@ -10,7 +10,7 @@ import net.corda.messagebus.db.datamodel.CommittedPositionEntry
 import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.persistence.DBAccess.Companion.ATOMIC_TRANSACTION
-import net.corda.messagebus.db.serialization.CordaAvroDBDeserializer
+import net.corda.messagebus.db.serialization.CordaDBAvroDeserializer
 import net.corda.messagebus.db.serialization.MessageHeaderSerializer
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -26,8 +26,8 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
     consumerConfig: ResolvedConsumerConfig,
     private val dbAccess: DBAccess,
     private val consumerGroup: ConsumerGroup,
-    private val keyDeserializer: CordaAvroDBDeserializer<K>,
-    private val valueDeserializer: CordaAvroDBDeserializer<V>,
+    private val keyDeserializer: CordaDBAvroDeserializer<K>,
+    private val valueDeserializer: CordaDBAvroDeserializer<V>,
     private var defaultListener: CordaConsumerRebalanceListener?,
     private var headerSerializer: MessageHeaderSerializer
 ) : CordaConsumer<K, V> {

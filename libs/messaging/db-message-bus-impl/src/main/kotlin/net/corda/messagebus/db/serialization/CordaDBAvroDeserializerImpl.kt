@@ -12,7 +12,7 @@ class CordaDBAvroDeserializerImpl<T : Any>(
     private val schemaRegistry: AvroSchemaRegistry,
     private val onError: (ByteArray, String?) -> Unit,
     private val expectedClass: Class<T>
-) : CordaAvroDeserializer<T>, CordaAvroDBDeserializer<T> {
+) : CordaAvroDeserializer<T>, CordaDBAvroDeserializer<T> {
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)

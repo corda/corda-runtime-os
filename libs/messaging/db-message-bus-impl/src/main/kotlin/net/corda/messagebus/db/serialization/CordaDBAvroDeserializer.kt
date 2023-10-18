@@ -1,6 +1,6 @@
 package net.corda.messagebus.db.serialization
 
-interface CordaAvroDBDeserializer<T> {
+interface CordaDBAvroDeserializer<T> {
     /**
      * Deserialize the given `data` into an object of type `T`.
      *
