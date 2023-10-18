@@ -7,17 +7,15 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
-import org.mockito.kotlin.any
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.times
-import org.mockito.kotlin.verify
+import org.mockito.kotlin.*
+import javax.crypto.AEADBadTagException
 
 class SecretEncryptionUtilTest {
     // encryptor unfortunately doesn't have an interface, so creating a real one, but only once.
-    private val encryptor = AesKey.derive("p", "s").encryptor
     private val encryptorFactoryMock = mock<(p: String, s: String) -> Encryptor>() {
-        on { invoke(any(), any()) } doReturn (encryptor)
+        on { invoke(any(), any()) } doAnswer {
+            AesKey.derive(it.getArgument(0), it.getArgument(1)).encryptor
+        }
     }
 
     private val util = SecretEncryptionUtil(encryptorFactoryMock)
@@ -32,6 +30,17 @@ class SecretEncryptionUtilTest {
         assertThat(decrypted).isEqualTo(plain)
     }
 
+    @Test
+    fun `when encrypt can decrypt again with different KDF parameters`() {
+        val plain = "plain text"
+        val encrypted = util.encrypt(plain, "salt", "pass")
+        val encrypted2 = util.encrypt(plain,  "pepper", "friend")
+        assertThat(encrypted).isNotEqualTo(encrypted2)
+        val thrown = assertThrows<IllegalArgumentException> {
+            util.decrypt(encrypted, "pepper", "friend")
+        }
+        assertThat(thrown.cause).isEqualTo(AEADBadTagException(plain))
+    }
     @Test
     fun `when encrypting twice only create encryptor once`() {
         util.encrypt("hello", "salt", "pass")

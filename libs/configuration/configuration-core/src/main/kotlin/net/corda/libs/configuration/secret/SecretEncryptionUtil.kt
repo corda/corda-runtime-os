@@ -34,5 +34,7 @@ class SecretEncryptionUtil(
     }
 
     private fun getOrCreateEncryptor(passphrase: String, salt: String): Encryptor =
-        encryptors.computeIfAbsent(Pair(salt, passphrase)) { encryptorFactory(passphrase, salt) }
+        encryptors.computeIfAbsent(Pair(salt, passphrase)) {
+            encryptorFactory(passphrase, salt)
+        }
 }
