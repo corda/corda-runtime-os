@@ -30,6 +30,8 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import java.nio.ByteBuffer
+import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.lib.exceptions.BadGroupPolicyException
 
 class MessageConverterTest {
 
@@ -100,7 +102,7 @@ class MessageConverterTest {
     }
 
     @Test
-    fun `createLinkOutMessageFromFlowMessage returns null (with appropriate logging) if the destination is not in the network map`() {
+    fun `linkOutMessageFromAuthenticatedMessageAndKey returns null if the destination is not in the network map`() {
         val mac = mock<AuthenticationResult> {
             on { header } doReturn mockHeader
             on { mac } doReturn byteArrayOf()
@@ -127,7 +129,7 @@ class MessageConverterTest {
     }
 
     @Test
-    fun `createLinkOutMessageFromFlowMessage returns null if the destination does not have the expected serial`() {
+    fun `linkOutMessageFromAuthenticatedMessageAndKey returns null if the destination does not have the expected serial`() {
         val mac = mock<AuthenticationResult> {
             on { header } doReturn mockHeader
             on { mac } doReturn byteArrayOf()
@@ -154,7 +156,7 @@ class MessageConverterTest {
     }
 
     @Test
-    fun `createLinkOutMessageFromFlowMessage returns null (with appropriate logging) if our network type is not in the network map`() {
+    fun `linkOutMessageFromAuthenticatedMessageAndKey returns null if our p2p params is not in the group policy provider`() {
         val mac = mock<AuthenticationResult> {
             on { header } doReturn mockHeader
             on { mac } doReturn byteArrayOf()
@@ -173,6 +175,27 @@ class MessageConverterTest {
             "Could not find the group info in the GroupPolicyProvider for our identity = $us." +
                 " The message was discarded."
         )
+    }
+
+    @Test
+    fun `linkOutMessageFromAuthenticatedMessageAndKey returns null, if BadGroupPolicy exception is thrown on group policy look up`() {
+        val mac = mock<AuthenticationResult> {
+            on { header } doReturn mockHeader
+            on { mac } doReturn byteArrayOf()
+        }
+        val session = mock<AuthenticatedSession> {
+            on { createMac(any()) } doReturn mac
+        }
+        val groupId = "group-1"
+        val peer = createTestHoldingIdentity("CN=Impostor, O=Evil Corp, L=LDN, C=GB", groupId)
+        val us = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", groupId)
+        val members = mockMembers(listOf(us, peer))
+        val groups = mock<GroupPolicyProvider> {
+            on { getP2PParameters(us) } doThrow BadGroupPolicyException("Bad group policy.")
+        }
+        val flowMessage = authenticatedMessageAndKey(us, peer, ByteBuffer.wrap("DATA".toByteArray()))
+        assertThat(MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(flowMessage, session, groups, members, 1)).isNull()
+        loggingInterceptor.assertSingleWarningContains("Bad group policy.")
     }
 
     @Test
