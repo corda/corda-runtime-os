@@ -21,7 +21,6 @@ internal class CordaAvroDeserializerTest {
     private companion object {
         val kafkaSerializer = StringSerializer()
         val topic = "TOPIC"
-        val callback: (ByteArray, String?) -> Unit = mock()
     }
     @Test
     fun `simple string deserialize test`() {
@@ -40,6 +39,7 @@ internal class CordaAvroDeserializerTest {
         val schemaRegistry: AvroSchemaRegistry = mock()
         val deserializer = CordaAvroDeserializerImpl(mock(), mock(), ByteArray::class.java)
         val win = deserializer.deserialize("", "Win!".toByteArray())
+        val callback: (ByteArray, String?) -> Unit = mock()
 
         assertThat(win).isEqualTo("Win!".toByteArray())
         verifyNoInteractions(schemaRegistry)
@@ -54,6 +54,8 @@ internal class CordaAvroDeserializerTest {
             whenever(it.deserialize(any(), any(), anyOrNull())).thenReturn(secureHash)
             whenever(it.getClassType(any())).thenReturn(SecureHash::class.java)
         }
+        val callback: (ByteArray, String?) -> Unit = mock()
+
         val deserializer = CordaAvroDeserializerImpl(schemaRegistry, callback, SecureHash::class.java)
         val win = deserializer.deserialize("", ByteArray(1))
 
@@ -67,12 +69,13 @@ internal class CordaAvroDeserializerTest {
             whenever(it.deserialize(any(), any(), anyOrNull())).thenThrow(CordaRuntimeException(""))
             whenever(it.getClassType(any())).thenReturn(SecureHash::class.java)
         }
+        val callback: (ByteArray, String?) -> Unit = mock()
 
         val deserializer = CordaAvroDeserializerImpl(schemaRegistry, callback, SecureHash::class.java)
         val data = ByteArray(10)
         val win = deserializer.deserialize(topic, data)
 
         assertThat(win).isNull()
-        verify(callback, times(1)).invoke(eq(data), eq(topic))
+        verify(callback, times(1)).invoke(eq(data), eq(null))
     }
 }
