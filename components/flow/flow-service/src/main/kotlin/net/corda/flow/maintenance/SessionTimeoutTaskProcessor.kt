@@ -2,6 +2,7 @@ package net.corda.flow.maintenance
 
 import net.corda.data.flow.FlowTimeout
 import net.corda.data.scheduler.ScheduledTaskTrigger
+import net.corda.flow.state.impl.CheckpointMetadataKeys.STATE_META_SESSION_EXPIRY_KEY
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.StateManager
@@ -18,8 +19,6 @@ class SessionTimeoutTaskProcessor(
 ) : DurableProcessor<String, ScheduledTaskTrigger> {
     companion object {
         private val logger = LoggerFactory.getLogger(SessionTimeoutTaskProcessor::class.java)
-        // TODO - this may need to move out somewhere else.
-        const val STATE_META_SESSION_EXPIRY_KEY = "session.expiry"
     }
     override val keyClass: Class<String>
         get() = String::class.java

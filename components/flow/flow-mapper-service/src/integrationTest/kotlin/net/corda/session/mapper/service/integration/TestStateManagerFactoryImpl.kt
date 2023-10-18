@@ -55,8 +55,18 @@ class TestStateManagerFactoryImpl : StateManagerFactory {
             }
 
             override fun delete(states: Collection<State>): Map<String, State> {
-                states.forEach { storage.remove(it.key) }
-                return emptyMap()
+                return states.mapNotNull {
+                    var output: State? = null
+                    storage.compute(it.key) { _, existingState ->
+                        if (existingState?.version == it.version) {
+                            null
+                        } else {
+                            output = it
+                            existingState
+                        }
+                    }
+                    output
+                }.associateBy { it.key }
             }
 
             override fun updatedBetween(interval: IntervalFilter): Map<String, State> {
@@ -71,11 +81,16 @@ class TestStateManagerFactoryImpl : StateManagerFactory {
                 TODO("Not yet implemented")
             }
 
+            // Only supporting equals for now.
             override fun findUpdatedBetweenWithMetadataFilter(
                 intervalFilter: IntervalFilter,
                 metadataFilter: MetadataFilter
             ): Map<String, State> {
-                TODO("Not yet implemented")
+                return storage.filter { (_, state) ->
+                    state.modifiedTime >= intervalFilter.start && state.modifiedTime <= intervalFilter.finish
+                }.filter { (_, state) ->
+                    state.metadata.containsKey(metadataFilter.key) && state.metadata[metadataFilter.key] == metadataFilter.value
+                }
             }
         }
     }
