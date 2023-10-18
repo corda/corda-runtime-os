@@ -9,6 +9,8 @@ import java.util.concurrent.TimeoutException
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.messaging.api.exception.CordaHTTPClientErrorException
 import net.corda.messaging.api.exception.CordaHTTPServerErrorException
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_ENDPOINT
@@ -25,7 +27,10 @@ class RPCClient(
     private val httpClient: HttpClient,
     private val retryConfig: HTTPRetryConfig =
         HTTPRetryConfig.Builder()
-            .retryOn(IOException::class.java, TimeoutException::class.java, CordaHTTPClientErrorException::class.java)
+            .retryOn(IOException::class.java,
+                TimeoutException::class.java,
+                CordaHTTPClientErrorException::class.java,
+                CordaHTTPServerErrorException::class.java)
             .build()
 ) : MessagingClient {
     private val deserializer = cordaAvroSerializerFactory.createAvroDeserializer({}, Any::class.java)
@@ -40,7 +45,6 @@ class RPCClient(
             processMessage(message)
         } catch (e: Exception) {
             handleExceptions(e)
-            null
         }
     }
 
@@ -77,19 +81,30 @@ class RPCClient(
         }
     }
 
-    private fun handleExceptions(e: Exception) {
-        when (e) {
-            is IOException -> log.warn("Network or IO operation error in RPCClient: ", e)
-            is InterruptedException -> log.warn("Operation was interrupted in RPCClient: ", e)
-            is IllegalArgumentException -> log.warn("Invalid argument provided in RPCClient call: ", e)
-            is SecurityException -> log.warn("Security violation detected in RPCClient: ", e)
-            is IllegalStateException -> log.warn("Coroutine state error in RPCClient: ", e)
-            is CordaHTTPClientErrorException -> log.warn("Client-side HTTP error in RPCClient: ", e)
-            is CordaHTTPServerErrorException -> log.warn("Server-side HTTP error in RPCClient: ", e)
-            else -> log.warn("Unhandled exception in RPCClient: ", e)
+    private fun handleExceptions(e: Exception): Nothing {
+        val exceptionToThrow = when (e) {
+            is IOException,
+            is InterruptedException,
+            is TimeoutException,
+            is CordaHTTPClientErrorException,
+            is CordaHTTPServerErrorException -> {
+                log.warn("Intermittent error in RPCClient: ", e)
+                CordaMessageAPIIntermittentException(e.message, e)
+            }
+
+            is IllegalArgumentException,
+            is SecurityException -> {
+                log.warn("Fatal error in RPCClient: ", e)
+                CordaMessageAPIFatalException(e.message, e)
+            }
+
+            else -> {
+                log.warn("Unhandled exception in RPCClient: ", e)
+                e
+            }
         }
 
-        throw e
+        throw exceptionToThrow
     }
 
     override fun close() {
