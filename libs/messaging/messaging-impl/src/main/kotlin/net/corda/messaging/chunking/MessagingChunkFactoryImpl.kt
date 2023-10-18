@@ -25,14 +25,14 @@ class MessagingChunkFactoryImpl @Activate constructor(
     override fun <K : Any, V : Any> createConsumerChunkDeserializerService(
         keyDeserializer: CordaAvroDeserializer<K>,
         valueDeserializer: CordaAvroDeserializer<V>,
-        onError: (ByteArray) -> Unit,
+        onError: (ByteArray, String?) -> Unit,
     ): ConsumerChunkDeserializerService<K, V> {
         return ChunkDeserializerServiceImpl(keyDeserializer, valueDeserializer, onError, platformDigestService)
     }
 
     override fun <V : Any> createChunkDeserializerService(
         expectedType: Class<V>,
-        onError: (ByteArray) -> Unit,
+        onError: (ByteArray, String?) -> Unit,
     ): ChunkDeserializerService<V> {
         val deserializer = cordaAvroSerializationFactory.createAvroDeserializer(onError, expectedType)
         return ChunkDeserializerServiceImpl(deserializer, deserializer, onError, platformDigestService)

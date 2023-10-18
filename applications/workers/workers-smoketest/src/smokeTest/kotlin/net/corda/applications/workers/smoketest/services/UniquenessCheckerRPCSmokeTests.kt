@@ -52,8 +52,8 @@ class UniquenessCheckerRPCSmokeTests {
     )
 
     private val avroSerializer = serializationFactory.createAvroSerializer<UniquenessCheckRequestAvro> { }
-    private val avroFlowEventDeserializer = serializationFactory.createAvroDeserializer({}, FlowEvent::class.java)
-    private val avroUniquenessDeserializer = serializationFactory.createAvroDeserializer({}, UniquenessCheckResponseAvro::class.java)
+    private val avroFlowEventDeserializer = serializationFactory.createAvroDeserializer({_,_ ->}, FlowEvent::class.java,)
+    private val avroUniquenessDeserializer = serializationFactory.createAvroDeserializer({_,_ ->}, UniquenessCheckResponseAvro::class.java,)
 
     companion object {
         const val TEST_CPI_NAME = "ledger-utxo-demo-app"

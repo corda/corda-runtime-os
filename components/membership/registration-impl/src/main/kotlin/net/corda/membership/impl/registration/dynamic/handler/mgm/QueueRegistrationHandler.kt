@@ -52,10 +52,10 @@ internal class QueueRegistrationHandler(
 
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
         cordaAvroSerializationFactory.createAvroDeserializer(
-            {
+            { _, _ ->
                 logger.error("Failed to deserialize key value pair list.")
             },
-            KeyValuePairList::class.java
+            KeyValuePairList::class.java,
         )
     }
 

@@ -31,10 +31,10 @@ internal class UpdateGroupParametersHandler(
 
     private val deserializer: CordaAvroDeserializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroDeserializer(
-            {
+            { _, _ ->
                 logger.error("Failed to deserialize key value pair list.")
             },
-            KeyValuePairList::class.java
+            KeyValuePairList::class.java,
         )
 
     private fun Map<String, String>.toKeyValuePairs() = entries.map { KeyValuePair(it.key, it.value) }

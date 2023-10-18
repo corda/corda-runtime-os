@@ -17,7 +17,7 @@ interface MessagingChunkFactory {
     fun <K: Any, V: Any> createConsumerChunkDeserializerService(
         keyDeserializer: CordaAvroDeserializer<K>,
         valueDeserializer: CordaAvroDeserializer<V>,
-        onError: (ByteArray) -> Unit,
+        onError: (ByteArray, String?) -> Unit,
     ): ConsumerChunkDeserializerService<K, V>
 
     /**
@@ -28,7 +28,7 @@ interface MessagingChunkFactory {
      */
     fun <V: Any> createChunkDeserializerService(
         expectedType: Class<V>,
-        onError: (ByteArray) -> Unit = {_ ->}
+        onError: (ByteArray, String?) -> Unit = { _, _ ->}
     ): ChunkDeserializerService<V>
 
     /**

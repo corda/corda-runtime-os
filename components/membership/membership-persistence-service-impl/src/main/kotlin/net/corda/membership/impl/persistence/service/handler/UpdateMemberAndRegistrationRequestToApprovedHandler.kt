@@ -1,6 +1,5 @@
 package net.corda.membership.impl.persistence.service.handler
 
-import javax.persistence.LockModeType
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePair
@@ -20,6 +19,7 @@ import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.registration.RegistrationStatusExt.canMoveToStatus
 import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.virtualnode.toCorda
+import javax.persistence.LockModeType
 
 internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
     persistenceHandlerServices: PersistenceHandlerServices
@@ -31,10 +31,10 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
 
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
         cordaAvroSerializationFactory.createAvroDeserializer(
-            {
+            { _, _ ->
                 logger.error("Failed to deserialize key value pair list.")
             },
-            KeyValuePairList::class.java
+            KeyValuePairList::class.java,
         )
     }
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> by lazy {

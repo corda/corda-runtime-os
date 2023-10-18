@@ -155,7 +155,7 @@ class PersistenceServiceInternalTests {
             virtualNodeInfoReadService = setup.fetchService(TIMEOUT_MILLIS)
             responseFactory = setup.fetchService(TIMEOUT_MILLIS)
             deserializer = setup.fetchService<CordaAvroSerializationFactory>(TIMEOUT_MILLIS)
-                .createAvroDeserializer({}, EntityResponse::class.java)
+                .createAvroDeserializer({_,_ ->}, EntityResponse::class.java,)
         }
     }
 

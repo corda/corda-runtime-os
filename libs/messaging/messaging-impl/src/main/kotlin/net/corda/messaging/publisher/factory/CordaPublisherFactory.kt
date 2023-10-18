@@ -62,7 +62,7 @@ class CordaPublisherFactory @Activate constructor(
             UUID.randomUUID().toString()
         )
         val serializer = avroSerializationFactory.createAvroSerializer<REQUEST> { }
-        val deserializer = avroSerializationFactory.createAvroDeserializer({}, rpcConfig.responseType)
+        val deserializer = avroSerializationFactory.createAvroDeserializer({_,_ ->}, rpcConfig.responseType,)
 
         return CordaRPCSenderImpl(
             config = config,

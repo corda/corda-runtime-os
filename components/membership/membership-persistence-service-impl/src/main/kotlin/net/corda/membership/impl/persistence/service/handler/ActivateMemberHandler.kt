@@ -1,7 +1,5 @@
 package net.corda.membership.impl.persistence.service.handler
 
-import javax.persistence.EntityManager
-import javax.persistence.PessimisticLockException
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
@@ -17,6 +15,8 @@ import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.toCorda
+import javax.persistence.EntityManager
+import javax.persistence.PessimisticLockException
 
 internal class ActivateMemberHandler(
     persistenceHandlerServices: PersistenceHandlerServices,
@@ -31,7 +31,7 @@ internal class ActivateMemberHandler(
     override val operation = ActivateMember::class.java
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
         cordaAvroSerializationFactory.createAvroDeserializer(
-            {
+            { _, _ ->
                 logger.error("Failed to deserialize key value pair list.")
             },
             KeyValuePairList::class.java

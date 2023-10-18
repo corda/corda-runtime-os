@@ -14,8 +14,10 @@ import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
+import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.factory.MediatorComponentFactory
 import net.corda.messaging.mediator.metrics.EventMediatorMetrics
+import net.corda.schema.Schemas
 import net.corda.taskmanager.TaskManager
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
@@ -34,6 +36,8 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     private var consumers = listOf<MediatorConsumer<K, E>>()
     private var clients = listOf<MessagingClient>()
     private lateinit var messageRouter: MessageRouter
+    private lateinit var deadLetterRecords: MutableList<Record<*, *>>
+
     private val mediatorComponentFactory = MediatorComponentFactory(
         config.messageProcessor, config.consumerFactories, config.clientFactories, config.messageRouterFactory
     )
@@ -75,7 +79,8 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         while (!stopped) {
             attempts++
             try {
-                consumers = mediatorComponentFactory.createConsumers(::onSerializationError)
+                deadLetterRecords = mutableListOf()
+                consumers = mediatorComponentFactory.createConsumers(::onDeserializationError)
                 clients = mediatorComponentFactory.createClients(::onSerializationError)
                 messageRouter = mediatorComponentFactory.createRouter(clients)
 
@@ -115,7 +120,13 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 
     private fun onSerializationError(event: ByteArray) {
         log.debug { "Error serializing [$event] "}
-        TODO("Not yet implemented")
+    }
+
+    private fun onDeserializationError(event: ByteArray, topic: String?) {
+        log.debug { "Error deserializing [$event] "}
+        if (topic != null) {
+            deadLetterRecords.add(Record(Schemas.getDLQTopic(topic), UUID.randomUUID().toString(), event))
+        }
     }
 
     private fun closeConsumersAndProducers() {
@@ -162,6 +173,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                 val (successResults, failResults) = processingResults.partition {
                     !conflictingStates.contains(it.key.toString())
                 }
+                sendSerializationDeadletterRecords()
                 val clientTasks = taskManagerHelper.createClientTasks(successResults, messageRouter)
                 val clientResults = taskManagerHelper.executeClientTasks(clientTasks)
                 msgProcessorTasks =
@@ -169,6 +181,14 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                             taskManagerHelper.createMessageProcessorTasks(failResults, conflictingStates)
             } while (msgProcessorTasks.isNotEmpty())
             commitOffsets()
+        }
+    }
+
+    private fun sendSerializationDeadletterRecords() {
+        if (deadLetterRecords.isNotEmpty()) {
+            val sendRecordsTask = SendRecordsTask(deadLetterRecords, messageRouter)
+            taskManagerHelper.executeSendRecordsTask(sendRecordsTask)
+            deadLetterRecords.clear()
         }
     }
 

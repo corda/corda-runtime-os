@@ -1,9 +1,9 @@
 package net.corda.messagebus.kafka.serialization
 
-import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.schema.registry.AvroSchemaRegistry
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -18,7 +18,7 @@ class CordaAvroSerializationFactoryImpl @Activate constructor(
     private val avroSchemaRegistry: AvroSchemaRegistry,
 ) : CordaAvroSerializationFactory {
     override fun <T : Any> createAvroDeserializer(
-        onError: (ByteArray) -> Unit,
+        onError: (ByteArray, String?) -> Unit,
         expectedClass: Class<T>
     ): CordaAvroDeserializer<T> {
         return CordaAvroDeserializerImpl(

@@ -44,9 +44,9 @@ class ExternalEventManagerImpl(
         cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     ) : this(
         cordaAvroSerializationFactory.createAvroSerializer<Any> {},
-        cordaAvroSerializationFactory.createAvroDeserializer({}, String::class.java),
-        cordaAvroSerializationFactory.createAvroDeserializer({}, ByteArray::class.java),
-        cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
+        cordaAvroSerializationFactory.createAvroDeserializer({_,_ ->}, String::class.java,),
+        cordaAvroSerializationFactory.createAvroDeserializer({_,_ ->}, ByteArray::class.java,),
+        cordaAvroSerializationFactory.createAvroDeserializer({_,_ ->}, Any::class.java,)
     )
 
     override fun processEventToSend(

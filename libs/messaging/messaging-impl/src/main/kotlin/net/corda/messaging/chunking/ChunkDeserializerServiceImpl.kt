@@ -1,10 +1,10 @@
 package net.corda.messaging.chunking
 
+import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.chunking.Checksum
 import net.corda.chunking.Constants
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.core.SecureHashImpl
-import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import net.corda.messaging.api.chunking.ChunkDeserializerService
@@ -14,7 +14,6 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.LoggerFactory
 import java.io.ByteArrayOutputStream
-import java.util.function.Consumer
 
 /**
  * Service to reassemble chunked messages into their original values.
@@ -24,7 +23,7 @@ import java.util.function.Consumer
 class ChunkDeserializerServiceImpl<K : Any, V : Any>(
     private val keyDeserializer: CordaAvroDeserializer<K>,
     private val valueDeserializer: CordaAvroDeserializer<V>,
-    private val onError: Consumer<ByteArray>,
+    private val onError: (ByteArray, String?) -> Unit,
     private val platformDigestService: PlatformDigestService
 ) : ConsumerChunkDeserializerService<K, V>, ChunkDeserializerService<V> {
 
@@ -48,7 +47,7 @@ class ChunkDeserializerServiceImpl<K : Any, V : Any>(
             valueDeserializer.deserialize(dataSingleArray)
         } catch (ex: IllegalArgumentException) {
             logger.warn("Failed to deserialize chunks due to: ${ex.message} ")
-            onError.accept(dataSingleArray)
+            onError.invoke(dataSingleArray, null)
             null
         }
     }

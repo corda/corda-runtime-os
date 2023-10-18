@@ -1,6 +1,5 @@
 package net.corda.messaging.subscription
 
-import java.util.UUID
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -31,6 +30,7 @@ import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.getDLQTopic
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
+import java.util.UUID
 
 /**
  * Implementation of an EventLogSubscription.
@@ -112,7 +112,7 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                     config.messageBusConfig,
                     processor.keyClass,
                     processor.valueClass,
-                    { data ->
+                    { data, _ ->
                         log.error("Failed to deserialize record from ${config.topic}")
                         deadLetterRecords.add(data)
                     },
@@ -121,7 +121,9 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                     cordaConsumer.subscribe(config.topic)
                     val producerConfig =
                         ProducerConfig(config.clientId, config.instanceId, true, ProducerRoles.EVENT_LOG, false)
-                    cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig) { data ->
+                    cordaProducerBuilder.createProducer(
+                        producerConfig, config.messageBusConfig,
+                    ) { data ->
                         log.warn("Failed to serialize record from ${config.topic}")
                         deadLetterRecords.add(data)
                     }.use { cordaProducer ->

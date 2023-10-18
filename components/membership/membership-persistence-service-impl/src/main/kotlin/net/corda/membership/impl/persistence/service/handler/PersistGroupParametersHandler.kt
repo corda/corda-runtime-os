@@ -19,10 +19,10 @@ internal class PersistGroupParametersHandler(
     override val operation = PersistGroupParameters::class.java
     private val deserializer: CordaAvroDeserializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroDeserializer(
-            {
+            { _, _ ->
                 logger.error("Failed to deserialize key value pair list.")
             },
-            KeyValuePairList::class.java
+            KeyValuePairList::class.java,
         )
 
     override fun invoke(

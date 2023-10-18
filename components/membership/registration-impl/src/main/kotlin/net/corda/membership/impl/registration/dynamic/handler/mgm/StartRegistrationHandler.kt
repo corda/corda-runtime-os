@@ -89,10 +89,10 @@ internal class StartRegistrationHandler(
 
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroDeserializer(
-            {
+            { _, _ ->
                 logger.error("Failed to deserialize key value pair list.")
             },
-            KeyValuePairList::class.java
+            KeyValuePairList::class.java,
         )
 
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =

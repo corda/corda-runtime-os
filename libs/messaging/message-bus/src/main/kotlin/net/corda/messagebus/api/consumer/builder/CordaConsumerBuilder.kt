@@ -16,6 +16,7 @@ interface CordaConsumerBuilder {
      * @param vClazz the class type of the value for this subscription
      * @param onSerializationError a callback to receive messages that fail to deserialize.  In the consumer feed
      * these will show up as records with a null value, which means they should be removed from any maps.
+     * @param listener listener executed on rebalance
      * @return CordaConsumer
      * @throws CordaMessageAPIFatalException if fatal error occurs during construction of the consumer
      */
@@ -25,7 +26,7 @@ interface CordaConsumerBuilder {
         messageBusConfig: SmartConfig,
         kClazz: Class<K>,
         vClazz: Class<V>,
-        onSerializationError: (ByteArray) -> Unit = {_ ->},
+        onSerializationError: (ByteArray, String?) -> Unit = { _, _ -> },
         listener: CordaConsumerRebalanceListener? = null
     ) : CordaConsumer<K, V>
 }

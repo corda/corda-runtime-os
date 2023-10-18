@@ -27,7 +27,7 @@ internal class MediatorComponentFactory<K : Any, S : Any, E : Any>(
      * @return List of created [MediatorConsumer]s.
      */
     fun createConsumers(
-        onSerializationError: (ByteArray) -> Unit
+        onSerializationError: (ByteArray, String?) -> Unit
     ): List<MediatorConsumer<K, E>> {
         check(consumerFactories.isNotEmpty()) {
             "No consumer factory set in configuration"

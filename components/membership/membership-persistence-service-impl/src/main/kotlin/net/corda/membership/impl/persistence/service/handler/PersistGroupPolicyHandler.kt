@@ -1,6 +1,5 @@
 package net.corda.membership.impl.persistence.service.handler
 
-import javax.persistence.LockModeType
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
@@ -10,6 +9,7 @@ import net.corda.membership.datamodel.GroupPolicyEntity
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.virtualnode.toCorda
+import javax.persistence.LockModeType
 
 internal class PersistGroupPolicyHandler(
     persistenceHandlerServices: PersistenceHandlerServices
@@ -21,8 +21,8 @@ internal class PersistGroupPolicyHandler(
         }
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroDeserializer(
-            { logger.error("Failed to deserialize key value pair list.") },
-            KeyValuePairList::class.java
+            { _, _ -> logger.error("Failed to deserialize key value pair list.") },
+            KeyValuePairList::class.java,
         )
 
     private fun serializeProperties(context: KeyValuePairList): ByteArray {

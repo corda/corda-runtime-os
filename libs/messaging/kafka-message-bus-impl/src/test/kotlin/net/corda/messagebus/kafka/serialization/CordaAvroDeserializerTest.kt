@@ -20,12 +20,14 @@ internal class CordaAvroDeserializerTest {
 
     private companion object {
         val kafkaSerializer = StringSerializer()
+        val topic = "TOPIC"
+        val callback: (ByteArray, String?) -> Unit = mock()
     }
     @Test
     fun `simple string deserialize test`() {
         val schemaRegistry: AvroSchemaRegistry = mock()
         val callback: (String, ByteArray) -> Unit = mock()
-        val deserializer = CordaAvroDeserializerImpl( mock(),  mock(), String::class.java)
+        val deserializer = CordaAvroDeserializerImpl(mock(), mock(), String::class.java)
         val win = deserializer.deserialize("", kafkaSerializer.serialize("","Win!"))
 
         assertThat(win).isEqualTo("Win!")
@@ -36,8 +38,7 @@ internal class CordaAvroDeserializerTest {
     @Test
     fun `simple byte array deserialize test`() {
         val schemaRegistry: AvroSchemaRegistry = mock()
-        val callback: (String, ByteArray) -> Unit = mock()
-        val deserializer = CordaAvroDeserializerImpl( mock(),  mock(), ByteArray::class.java)
+        val deserializer = CordaAvroDeserializerImpl(mock(), mock(), ByteArray::class.java)
         val win = deserializer.deserialize("", "Win!".toByteArray())
 
         assertThat(win).isEqualTo("Win!".toByteArray())
@@ -53,7 +54,6 @@ internal class CordaAvroDeserializerTest {
             whenever(it.deserialize(any(), any(), anyOrNull())).thenReturn(secureHash)
             whenever(it.getClassType(any())).thenReturn(SecureHash::class.java)
         }
-        val callback: (ByteArray) -> Unit = mock()
         val deserializer = CordaAvroDeserializerImpl(schemaRegistry, callback, SecureHash::class.java)
         val win = deserializer.deserialize("", ByteArray(1))
 
@@ -68,13 +68,11 @@ internal class CordaAvroDeserializerTest {
             whenever(it.getClassType(any())).thenReturn(SecureHash::class.java)
         }
 
-        val callback: (ByteArray) -> Unit = mock()
         val deserializer = CordaAvroDeserializerImpl(schemaRegistry, callback, SecureHash::class.java)
-        val topic = "topic"
         val data = ByteArray(10)
         val win = deserializer.deserialize(topic, data)
 
         assertThat(win).isNull()
-        verify(callback, times(1)).invoke(eq(data))
+        verify(callback, times(1)).invoke(eq(data), eq(topic))
     }
 }

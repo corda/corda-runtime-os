@@ -53,8 +53,8 @@ class CryptoRPCSmokeTests {
     )
 
     private val avroSerializer = serializationFactory.createAvroSerializer<FlowOpsRequest> { }
-    private val avroFlowEventDeserializer = serializationFactory.createAvroDeserializer({}, FlowEvent::class.java)
-    private val avroCryptoDeserializer = serializationFactory.createAvroDeserializer({}, FlowOpsResponse::class.java)
+    private val avroFlowEventDeserializer = serializationFactory.createAvroDeserializer({_,_ ->}, FlowEvent::class.java,)
+    private val avroCryptoDeserializer = serializationFactory.createAvroDeserializer({_,_ ->}, FlowOpsResponse::class.java,)
 
     companion object {
         const val TEST_CPI_NAME = "ledger-utxo-demo-app"

@@ -12,5 +12,5 @@ import net.corda.messaging.api.mediator.MediatorConsumer
 class MediatorConsumerConfig<K, V> (
     val keyClass: Class<K>,
     val valueClass: Class<V>,
-    val onSerializationError: (ByteArray) -> Unit,
+    val onSerializationError: (ByteArray, String?) -> Unit
 )

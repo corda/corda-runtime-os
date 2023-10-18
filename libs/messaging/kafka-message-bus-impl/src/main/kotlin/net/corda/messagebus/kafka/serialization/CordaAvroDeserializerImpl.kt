@@ -1,7 +1,5 @@
 package net.corda.messagebus.kafka.serialization
 
-import java.nio.ByteBuffer
-import java.util.function.Consumer
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
@@ -10,6 +8,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.apache.kafka.common.serialization.Deserializer
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
 
 /**
  * Corda avro serializer impl
@@ -21,7 +20,7 @@ import org.slf4j.LoggerFactory
  */
 class CordaAvroDeserializerImpl<T: Any>(
     private val schemaRegistry: AvroSchemaRegistry,
-    private val onError: Consumer<ByteArray>,
+    private val onError: (ByteArray, String?) -> Unit,
     private val expectedClass: Class<T>
 ) : CordaAvroDeserializer<T>, Deserializer<Any> {
 
@@ -31,7 +30,7 @@ class CordaAvroDeserializerImpl<T: Any>(
         const val errorMsg = "Failed to deserialize bytes returned"
     }
 
-    private fun deserialize(data: ByteArray, allowChunks: Boolean = false): Any? {
+    private fun deserialize(data: ByteArray, allowChunks: Boolean = false, topic: String? = null): Any? {
         val isChunkType  = allowChunks && isChunkType(data)
         @Suppress("unchecked_cast")
         return when {
@@ -42,13 +41,13 @@ class CordaAvroDeserializerImpl<T: Any>(
                 data
             }
             else -> {
-                deserializeAvro(data, allowChunks)
+                deserializeAvro(data, allowChunks, topic)
             }
         }
     }
 
     @Suppress("ComplexCondition")
-    private fun deserializeAvro(data: ByteArray, allowChunks: Boolean) : Any? = try {
+    private fun deserializeAvro(data: ByteArray, allowChunks: Boolean, topic: String?) : Any? = try {
         val dataBuffer = ByteBuffer.wrap(data)
         val clazz = schemaRegistry.getClassType(dataBuffer)
 
@@ -66,7 +65,7 @@ class CordaAvroDeserializerImpl<T: Any>(
         // We don't want to throw as that would mean the entire poll (with possibly
         // many records) would fail, and keep failing.  So we'll just callback to note the bad deserialize
         // and return a null.  This will mean the record gets treated as 'deleted' in the processors
-        onError.accept(data)
+        onError.invoke(data, topic)
         null
     }
 

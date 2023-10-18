@@ -32,8 +32,8 @@ class FlowP2PFilterProcessor(cordaAvroSerializationFactory: CordaAvroSerializati
 
     private val cordaAvroDeserializer: CordaAvroDeserializer<SessionEvent> =
         cordaAvroSerializationFactory.createAvroDeserializer(
-            {},
-            SessionEvent::class.java
+            {_,_ ->},
+            SessionEvent::class.java,
         )
 
     override fun onNext(

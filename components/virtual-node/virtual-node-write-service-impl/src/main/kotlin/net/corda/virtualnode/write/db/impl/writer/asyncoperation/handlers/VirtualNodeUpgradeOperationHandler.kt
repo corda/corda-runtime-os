@@ -8,6 +8,7 @@ import net.corda.data.membership.common.v2.RegistrationStatus.APPROVED
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
+import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.libs.external.messaging.ExternalMessagingRouteConfigGenerator
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.virtualnode.common.exception.LiquibaseDiffCheckFailedException
@@ -15,7 +16,14 @@ import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationStateDto
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
+import net.corda.membership.client.MemberResourceClient
+import net.corda.membership.lib.ContextDeserializationException
+import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.lib.deserializeContext
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.persistence.client.MembershipQueryResult
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
@@ -29,20 +37,12 @@ import net.corda.virtualnode.write.db.impl.writer.asyncoperation.MigrationUtilit
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationHandler
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.exception.MigrationsFailedException
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.exception.VirtualNodeUpgradeRejectedException
+import net.corda.virtualnode.write.db.impl.writer.asyncoperation.factories.RecordFactory
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
-import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
-import net.corda.membership.client.MemberResourceClient
-import net.corda.membership.lib.ContextDeserializationException
-import net.corda.membership.lib.MemberInfoExtension
-import net.corda.membership.lib.deserializeContext
-import net.corda.membership.persistence.client.MembershipQueryClient
-import net.corda.membership.persistence.client.MembershipQueryResult
-import net.corda.membership.read.MembershipGroupReaderProvider
-import net.corda.virtualnode.write.db.impl.writer.asyncoperation.factories.RecordFactory
 
 @Suppress("LongParameterList")
 internal class VirtualNodeUpgradeOperationHandler(
@@ -67,10 +67,10 @@ internal class VirtualNodeUpgradeOperationHandler(
 
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
         cordaAvroSerializationFactory.createAvroDeserializer(
-            {
+            { _, _ ->
                 logger.error("Failed to deserialize key value pair list.")
             },
-            KeyValuePairList::class.java
+            KeyValuePairList::class.java,
         )
     }
 

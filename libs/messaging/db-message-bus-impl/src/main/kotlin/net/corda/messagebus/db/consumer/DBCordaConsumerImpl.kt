@@ -1,6 +1,5 @@
 package net.corda.messagebus.db.consumer
 
-import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRebalanceListener
@@ -11,6 +10,7 @@ import net.corda.messagebus.db.datamodel.CommittedPositionEntry
 import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messagebus.db.persistence.DBAccess
 import net.corda.messagebus.db.persistence.DBAccess.Companion.ATOMIC_TRANSACTION
+import net.corda.messagebus.db.serialization.CordaAvroDBDeserializer
 import net.corda.messagebus.db.serialization.MessageHeaderSerializer
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
@@ -26,8 +26,8 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
     consumerConfig: ResolvedConsumerConfig,
     private val dbAccess: DBAccess,
     private val consumerGroup: ConsumerGroup,
-    private val keyDeserializer: CordaAvroDeserializer<K>,
-    private val valueDeserializer: CordaAvroDeserializer<V>,
+    private val keyDeserializer: CordaAvroDBDeserializer<K>,
+    private val valueDeserializer: CordaAvroDBDeserializer<V>,
     private var defaultListener: CordaConsumerRebalanceListener?,
     private var headerSerializer: MessageHeaderSerializer
 ) : CordaConsumer<K, V> {
@@ -171,7 +171,7 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
             .filter { it.transactionId.state != TransactionState.ABORTED }
 
         val result = dbRecords.mapNotNull { dbRecord ->
-            val deserializedValue = deserializeValue(dbRecord.value)
+            val deserializedValue = deserializeValue(dbRecord.value, dbRecord.topic)
             val isDeserialized = deserializedValue != null || dbRecord.value == null
 
             if (isDeserialized) {
@@ -179,7 +179,7 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
                     dbRecord.topic,
                     dbRecord.partition,
                     dbRecord.recordOffset,
-                    deserializeKey(dbRecord.key),
+                    deserializeKey(dbRecord.key, dbRecord.topic),
                     deserializedValue,
                     dbRecord.timestamp.toEpochMilli(),
                     headerSerializer.deserialize(dbRecord.headers ?: "{}")
@@ -326,14 +326,14 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
         return next
     }
 
-    private fun deserializeKey(bytes: ByteArray): K {
-        return keyDeserializer.deserialize(bytes)
+    private fun deserializeKey(bytes: ByteArray, topic: String): K {
+        return keyDeserializer.deserialize(bytes, topic)
             ?: throw CordaMessageAPIFatalException("Should never get null result from key deserialize")
     }
 
-    private fun deserializeValue(bytes: ByteArray?): V? {
+    private fun deserializeValue(bytes: ByteArray?, topic: String): V? {
         return if (bytes != null) {
-            valueDeserializer.deserialize(bytes)
+            valueDeserializer.deserialize(bytes, topic)
         } else {
             null
         }

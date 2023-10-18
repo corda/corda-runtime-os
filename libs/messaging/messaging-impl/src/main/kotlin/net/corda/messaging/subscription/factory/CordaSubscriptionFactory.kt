@@ -173,7 +173,7 @@ class CordaSubscriptionFactory @Activate constructor(
     ): RPCSubscription<REQUEST, RESPONSE> {
         val config = getConfig(SubscriptionType.RPC_RESPONDER, rpcConfig, messagingConfig)
         val cordaAvroSerializer = cordaAvroSerializationFactory.createAvroSerializer<RESPONSE> { }
-        val cordaAvroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({ }, rpcConfig.requestType)
+        val cordaAvroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({_,_ ->}, rpcConfig.requestType,)
 
         return RPCSubscriptionImpl(
             config,
@@ -192,7 +192,7 @@ class CordaSubscriptionFactory @Activate constructor(
     ): RPCSubscription<REQUEST, RESPONSE> {
 
         val cordaAvroSerializer = cordaAvroSerializationFactory.createAvroSerializer<RESPONSE> { }
-        val cordaAvroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({ }, processor.requestClass)
+        val cordaAvroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({_,_ ->}, processor.requestClass,)
 
         return SyncRPCSubscriptionImpl(rpcConfig, processor,
             lifecycleCoordinatorFactory, webServer, cordaAvroSerializer, cordaAvroDeserializer)

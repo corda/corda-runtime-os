@@ -166,7 +166,7 @@ class PersistenceExceptionTests {
         }
 
         deserializerFactory = sandboxSetup.fetchService(timeout = 5000)
-        deserializer = deserializerFactory.createAvroDeserializer({}, EntityResponse::class.java)
+        deserializer = deserializerFactory.createAvroDeserializer({_,_ ->}, EntityResponse::class.java,)
     }
 
     @AfterEach

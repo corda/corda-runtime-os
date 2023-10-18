@@ -60,7 +60,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         private const val MESSAGE_BUS_CLIENT = "MessageBusClient"
     }
 
-    private val deserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
+    private val deserializer = cordaAvroSerializationFactory.createAvroDeserializer({_,_ ->}, Any::class.java,)
 
     override fun create(
         configs: Map<String, SmartConfig>,

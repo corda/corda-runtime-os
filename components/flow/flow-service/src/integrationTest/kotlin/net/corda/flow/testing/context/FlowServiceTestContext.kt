@@ -120,9 +120,9 @@ class FlowServiceTestContext @Activate constructor(
     )
 
     private val serializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
-    private val stringDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, String::class.java)
-    private val byteArrayDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, ByteArray::class.java)
-    private val anyDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
+    private val stringDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({_,_ ->}, String::class.java,)
+    private val byteArrayDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({_,_ ->}, ByteArray::class.java,)
+    private val anyDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({_,_ ->}, Any::class.java,)
 
     private val testRuns = mutableListOf<TestRun>()
     private val assertions = mutableListOf<OutputAssertionsImpl>()

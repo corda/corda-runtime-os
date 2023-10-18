@@ -89,7 +89,6 @@ import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.toMap
-import net.corda.membership.lib.toSortedMap
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -457,7 +456,7 @@ class MembershipPersistenceTest {
             coordinator.start()
             cordaAvroSerializer = cordaAvroSerializationFactory.createAvroSerializer { }
             cordaAvroDeserializer =
-                cordaAvroSerializationFactory.createAvroDeserializer({ }, KeyValuePairList::class.java)
+                cordaAvroSerializationFactory.createAvroDeserializer({_, _ ->}, KeyValuePairList::class.java,)
             val dbInstaller = DatabaseInstaller(entityManagerFactoryFactory, lbm, entitiesRegistry)
             vnodeEmf = dbInstaller.setupDatabase(vnodeDbInfo, "vnode-vault", MembershipEntities.vnodeClasses)
             clusterEmf = dbInstaller.setupClusterDatabase(clusterDbInfo, "config",

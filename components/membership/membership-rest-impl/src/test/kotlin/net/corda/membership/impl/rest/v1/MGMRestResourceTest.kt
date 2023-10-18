@@ -113,7 +113,7 @@ class MGMRestResourceTest {
     private val manualDeclinationReason = REASON
     private val suspensionActivationParameters = SuspensionActivationParameters(subject, 1, REASON)
     private val deprecatedSuspensionActivationParameters
-        = net.corda.membership.rest.v1.types.request.SuspensionActivationParameters(subject, 1, REASON)
+            = net.corda.membership.rest.v1.types.request.SuspensionActivationParameters(subject, 1, REASON)
     private val deserializer = mock<CordaAvroDeserializer<KeyValuePairList>>()
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroDeserializer(any(), eq(KeyValuePairList::class.java)) } doReturn deserializer
@@ -443,7 +443,7 @@ class MGMRestResourceTest {
                 HOLDING_IDENTITY_ID,
                 1,
                 mock {
-                     on { data } doReturn ByteBuffer.wrap(byteArrayOf(0))
+                    on { data } doReturn ByteBuffer.wrap(byteArrayOf(0))
                 },
                 mock(),
                 null,

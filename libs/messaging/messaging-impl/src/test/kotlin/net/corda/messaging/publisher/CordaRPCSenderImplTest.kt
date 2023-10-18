@@ -95,7 +95,7 @@ class CordaRPCSenderImplTest {
     fun `test producer is closed properly`() {
         doAnswer { cordaProducer }.whenever(cordaProducerBuilder).createProducer(any(), any(), anyOrNull())
         doThrow(CordaMessageAPIFatalException("Bail out here")).whenever(cordaConsumerBuilder)
-            .createConsumer<Any, Any>(any(), any(), any(), any(), any(), any())
+            .createConsumer<Any, Any>(any(), any(), any(), any(), any(), anyOrNull())
 
         val cordaSenderImpl = CordaRPCSenderImpl(
             config,
@@ -277,7 +277,7 @@ class CordaRPCSenderImplTest {
         }.whenever(cordaProducerBuilder).createProducer(any(), any(), anyOrNull())
 
         doThrow(CordaMessageAPIFatalException("bail out here")).whenever(cordaConsumerBuilder)
-            .createConsumer<Any, Any>(any(), any(), any(), any(), any(), any())
+            .createConsumer<Any, Any>(any(), any(), any(), any(), any(), anyOrNull())
 
         val cordaSenderImpl = CordaRPCSenderImpl(
             config,
@@ -319,7 +319,7 @@ class CordaRPCSenderImplTest {
             @Suppress("TooGenericExceptionThrown")
             throw Throwable()
         }.whenever(cordaConsumerBuilder)
-            .createConsumer<Any, Any>(any(), any(), any(), any(), any(), any())
+            .createConsumer<Any, Any>(any(), any(), any(), any(), any(), anyOrNull())
 
         val cordaSenderImpl = CordaRPCSenderImpl(
             config,

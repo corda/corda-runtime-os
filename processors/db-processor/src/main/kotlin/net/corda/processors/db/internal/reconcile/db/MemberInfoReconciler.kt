@@ -2,9 +2,6 @@ package net.corda.processors.db.internal.reconcile.db
 
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
-import java.util.concurrent.ConcurrentHashMap
-import java.util.stream.Stream
-import javax.persistence.EntityManager
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.KeyValuePairList
@@ -51,6 +48,9 @@ import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
+import java.util.stream.Stream
+import javax.persistence.EntityManager
 
 @Suppress("LongParameterList")
 class MemberInfoReconciler(
@@ -127,10 +127,10 @@ class MemberInfoReconciler(
 
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
         cordaAvroSerializationFactory.createAvroDeserializer(
-            {
+            { _, _ ->
                 logger.error("Failed to deserialize key value pair list.")
             },
-            KeyValuePairList::class.java
+            KeyValuePairList::class.java,
         )
     }
     @VisibleForTesting

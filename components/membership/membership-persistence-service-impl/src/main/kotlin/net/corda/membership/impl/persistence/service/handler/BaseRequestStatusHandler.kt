@@ -18,7 +18,7 @@ internal abstract class BaseRequestStatusHandler<REQUEST, RESPONSE>(persistenceH
     }
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
         cordaAvroSerializationFactory.createAvroDeserializer(
-            {
+            { _, _ ->
                 logger.error("Failed to deserialize key value pair list.")
             },
             KeyValuePairList::class.java

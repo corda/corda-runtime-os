@@ -1,8 +1,8 @@
 package net.corda.ledger.persistence.consensual.tests
 
-import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
@@ -115,7 +115,7 @@ class ConsensualLedgerMessageProcessorTests {
             responseFactory = setup.fetchService(TIMEOUT_MILLIS)
             virtualNode = setup.fetchService(TIMEOUT_MILLIS)
             deserializer = setup.fetchService<CordaAvroSerializationFactory>(TIMEOUT_MILLIS)
-                .createAvroDeserializer({}, EntityResponse::class.java)
+                .createAvroDeserializer({_,_ ->}, EntityResponse::class.java)
             delegatedRequestHandlerSelector = setup.fetchService(TIMEOUT_MILLIS)
             cpiInfoReadService = setup.fetchService(TIMEOUT_MILLIS)
         }

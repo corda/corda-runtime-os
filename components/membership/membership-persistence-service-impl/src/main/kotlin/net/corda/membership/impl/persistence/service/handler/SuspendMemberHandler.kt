@@ -1,8 +1,5 @@
 package net.corda.membership.impl.persistence.service.handler
 
-import javax.persistence.EntityManager
-import javax.persistence.LockModeType
-import javax.persistence.PessimisticLockException
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
@@ -28,7 +25,9 @@ import net.corda.utilities.mapNotNull
 import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.toCorda
-import kotlin.streams.toList
+import javax.persistence.EntityManager
+import javax.persistence.LockModeType
+import javax.persistence.PessimisticLockException
 
 internal class SuspendMemberHandler(
     persistenceHandlerServices: PersistenceHandlerServices,
@@ -49,10 +48,10 @@ internal class SuspendMemberHandler(
 
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
         cordaAvroSerializationFactory.createAvroDeserializer(
-            {
+            { _, _ ->
                 logger.error("Failed to deserialize key value pair list.")
             },
-            KeyValuePairList::class.java
+            KeyValuePairList::class.java,
         )
     }
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> by lazy {

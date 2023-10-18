@@ -11,9 +11,12 @@ internal class QueryStaticNetworkInfoHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<QueryStaticNetworkInfo, StaticNetworkInfoQueryResponse>(persistenceHandlerServices) {
     override val operation = QueryStaticNetworkInfo::class.java
-    private val deserializer = cordaAvroSerializationFactory.createAvroDeserializer({
-        logger.error("Failed to deserialize KeyValuePairList.")
-    }, KeyValuePairList::class.java)
+    private val deserializer = cordaAvroSerializationFactory.createAvroDeserializer(
+        { _, _ ->
+            logger.error("Failed to deserialize KeyValuePairList.")
+        },
+        KeyValuePairList::class.java,
+    )
 
     override fun invoke(
         context: MembershipRequestContext,

@@ -36,7 +36,7 @@ class DBCordaConsumerBuilderImpl @Activate constructor(
         messageBusConfig: SmartConfig,
         kClazz: Class<K>,
         vClazz: Class<V>,
-        onSerializationError: (ByteArray) -> Unit,
+        onSerializationError: (ByteArray, String?) -> Unit,
         listener: CordaConsumerRebalanceListener?
     ): CordaConsumer<K, V> {
         val resolver = MessageBusConfigResolver(messageBusConfig.factory)

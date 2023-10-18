@@ -152,6 +152,12 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
         }
     }
 
+    fun executeSendRecordsTask(tasks: SendRecordsTask) {
+        taskManager.executeShortRunningTask {
+            tasks.call()
+        }.join()
+    }
+
     /**
      * Converts [ClientTask.Result] to [Record].
      */
@@ -161,16 +167,16 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
             processorTask.events.first().key,
             replyMessage!!.payload,
         )
-
-    /**
-     * Converts [Record] to [MediatorMessage].
-     */
-    private fun Record<*, *>.toMessage() =
-        MediatorMessage(
-            value!!,
-            headers.toMessageProperties().also { it[MSG_PROP_KEY] = key },
-        )
-
-    private fun List<Pair<String, String>>.toMessageProperties() =
-        associateTo(mutableMapOf()) { (key, value) -> key to (value as Any) }
 }
+
+/**
+ * Converts [Record] to [MediatorMessage].
+ */
+fun Record<*, *>.toMessage() =
+    MediatorMessage(
+        value!!,
+        headers.toMessageProperties().also { it[MSG_PROP_KEY] = key },
+    )
+
+private fun List<Pair<String, String>>.toMessageProperties() =
+    associateTo(mutableMapOf()) { (key, value) -> key to (value as Any) }

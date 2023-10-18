@@ -17,7 +17,7 @@ class CordaDBAvroSerializationFactoryImpl @Activate constructor(
     private val avroSchemaRegistry: AvroSchemaRegistry,
 ) : CordaAvroSerializationFactory {
     override fun <T : Any> createAvroDeserializer(
-        onError: (ByteArray) -> Unit,
+        onError: (ByteArray, String?) -> Unit,
         expectedClass: Class<T>
     ): CordaAvroDeserializer<T> {
         return CordaDBAvroDeserializerImpl(

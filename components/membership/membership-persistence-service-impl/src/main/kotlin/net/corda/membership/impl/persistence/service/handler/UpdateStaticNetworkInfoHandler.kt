@@ -1,6 +1,5 @@
 package net.corda.membership.impl.persistence.service.handler
 
-import javax.persistence.LockModeType
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.UpdateStaticNetworkInfo
@@ -10,15 +9,19 @@ import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.network.writer.staticnetwork.StaticNetworkInfoMappingUtils.toAvro
 import net.corda.utilities.serialization.wrapWithNullErrorHandling
+import javax.persistence.LockModeType
 
 internal class UpdateStaticNetworkInfoHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<UpdateStaticNetworkInfo, StaticNetworkInfoQueryResponse>(persistenceHandlerServices) {
     override val operation = UpdateStaticNetworkInfo::class.java
 
-    private val deserializer = cordaAvroSerializationFactory.createAvroDeserializer({
-        logger.error("Failed to deserialize KeyValuePairList.")
-    }, KeyValuePairList::class.java)
+    private val deserializer = cordaAvroSerializationFactory.createAvroDeserializer(
+        { _, _ ->
+            logger.error("Failed to deserialize KeyValuePairList.")
+        },
+        KeyValuePairList::class.java,
+    )
 
     private val serializer = cordaAvroSerializationFactory.createAvroSerializer<KeyValuePairList> {
         logger.error("Failed to serialize KeyValuePairList.")
