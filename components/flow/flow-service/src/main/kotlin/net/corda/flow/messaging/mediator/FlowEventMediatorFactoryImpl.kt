@@ -73,7 +73,6 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         stateManager: StateManager,
     ) = eventMediatorFactory.create(
         createEventMediatorConfig(
-            configs,
             messagingConfig,
             flowEventProcessorFactory.create(configs),
             stateManager,
@@ -81,7 +80,6 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
     )
 
     private fun createEventMediatorConfig(
-        configs: Map<String, SmartConfig>,
         messagingConfig: SmartConfig,
         messageProcessor: StateAndEventProcessor<String, Checkpoint, FlowEvent>,
         stateManager: StateManager,
