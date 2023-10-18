@@ -42,10 +42,12 @@ class SessionTimeoutTaskProcessor(
                 // TODO - take log message out when everything plumbed in.
                 logger.info("Trigger cleanup of $checkpoints")
                 checkpoints.map { kvp ->
+                    val instant = (kvp.value.metadata[STATE_META_SESSION_EXPIRY_KEY] as Number).toLong()
                     Record(FLOW_TIMEOUT_TOPIC, kvp.key,
                         FlowTimeout(
                             kvp.value.key,
-                            Instant.ofEpochSecond(kvp.value.metadata[STATE_META_SESSION_EXPIRY_KEY] as Long))
+                            Instant.ofEpochSecond(instant)
+                        )
                     )
                 }
             }
