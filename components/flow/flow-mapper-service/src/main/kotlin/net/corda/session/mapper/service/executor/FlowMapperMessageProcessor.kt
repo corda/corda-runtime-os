@@ -6,11 +6,13 @@ import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.statemanager.api.Metadata
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
 import net.corda.metrics.CordaMetrics
 import net.corda.schema.configuration.FlowConfig
+import net.corda.session.mapper.service.state.StateMetadataKeys.FLOW_MAPPER_STATUS
 import net.corda.tracing.traceStateAndEventExecution
 import net.corda.utilities.debug
 import net.corda.utilities.time.UTCClock
@@ -60,8 +62,13 @@ class FlowMapperMessageProcessor(
                 if (!isExpiredSessionEvent(value)) {
                     val executor = flowMapperEventExecutorFactory.create(key, value, state?.value, flowConfig)
                     val result = executor.execute()
+                    val newMap = result.flowMapperState?.status?.let {
+                        mapOf(FLOW_MAPPER_STATUS to it.toString())
+                    } ?: mapOf()
                     StateAndEventProcessor.Response(
-                        State(result.flowMapperState, state?.metadata),
+                        State(result.flowMapperState, state?.metadata?.let {
+                            Metadata(it + newMap)
+                        } ?: Metadata(newMap)),
                         result.outputEvents
                     )
                 } else {

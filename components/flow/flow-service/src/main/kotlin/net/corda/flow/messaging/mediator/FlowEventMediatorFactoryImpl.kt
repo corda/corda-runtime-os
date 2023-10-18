@@ -111,6 +111,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
                 is TokenPoolCacheEvent -> routeTo(messageBusClient, TOKEN_CACHE_EVENT)
                 is TransactionVerificationRequest -> routeTo(messageBusClient, VERIFICATION_LEDGER_PROCESSOR_TOPIC)
                 is UniquenessCheckRequestAvro -> routeTo(messageBusClient, UNIQUENESS_CHECK_TOPIC)
+                is FlowEvent -> routeTo(messageBusClient, FLOW_EVENT_TOPIC)
                 else -> {
                     val eventType = event?.let { it::class.java }
                     throw IllegalStateException("No route defined for event type [$eventType]")
