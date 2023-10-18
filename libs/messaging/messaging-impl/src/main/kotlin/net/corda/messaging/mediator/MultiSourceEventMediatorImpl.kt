@@ -161,6 +161,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 
     private fun processEvents() {
         val messages = pollConsumers()
+        sendDeserializationDeadletterRecords()
         if (messages.isNotEmpty()) {
             val msgGroups = messages.groupBy { it.key }
             val persistedStates = stateManager.get(msgGroups.keys.map { it.toString() })
@@ -173,7 +174,6 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                 val (successResults, failResults) = processingResults.partition {
                     !conflictingStates.contains(it.key.toString())
                 }
-                sendSerializationDeadletterRecords()
                 val clientTasks = taskManagerHelper.createClientTasks(successResults, messageRouter)
                 val clientResults = taskManagerHelper.executeClientTasks(clientTasks)
                 msgProcessorTasks =
@@ -184,7 +184,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    private fun sendSerializationDeadletterRecords() {
+    private fun sendDeserializationDeadletterRecords() {
         if (deadLetterRecords.isNotEmpty()) {
             val sendRecordsTask = SendRecordsTask(deadLetterRecords, messageRouter)
             taskManagerHelper.executeSendRecordsTask(sendRecordsTask)
