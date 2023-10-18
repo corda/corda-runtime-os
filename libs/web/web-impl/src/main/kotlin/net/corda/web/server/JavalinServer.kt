@@ -11,6 +11,7 @@ import net.corda.web.api.Endpoint
 import net.corda.web.api.HTTPMethod
 import net.corda.web.api.WebServer
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory
+import org.osgi.framework.Bundle
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
 import org.osgi.service.component.annotations.Activate
@@ -41,6 +42,7 @@ class JavalinServer(
     private val apiPathPrefix: String = "/api/${platformInfoProvider.localWorkerSoftwareShortVersion}"
     private var server: Javalin? = null
     private val coordinator = coordinatorFactory.createCoordinator<WebServer> { _, _ -> }
+    private var bundle: Bundle? = null
 
     override val endpoints: MutableSet<Endpoint> = mutableSetOf<Endpoint>()
 
@@ -54,16 +56,17 @@ class JavalinServer(
         log.info("Starting Worker Web Server on port: $port")
         server = javalinFactory()
         endpoints.forEach {
+            log.info("Registering endpoint to web server: $it")
             registerEndpointInternal(it)
         }
 
-        val bundle = FrameworkUtil.getBundle(WebSocketServletFactory::class.java)
+        if (null == bundle) bundle = FrameworkUtil.getBundle(WebSocketServletFactory::class.java)
 
         if (bundle == null) {
             server?.start(port)
         } else {
             // We temporarily switch the context class loader to allow Javalin to find `WebSocketServletFactory`.
-            executeWithThreadContextClassLoader(bundle.adapt(BundleWiring::class.java).classLoader) {
+            executeWithThreadContextClassLoader(bundle!!.adapt(BundleWiring::class.java).classLoader) {
                 // Required because Javalin prints an error directly to stderr if it cannot find a logging
                 // implementation via standard class loading mechanism. This mechanism is not appropriate for OSGi.
                 // The logging implementation is found correctly in practice.
