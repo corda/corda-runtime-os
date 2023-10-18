@@ -2,6 +2,7 @@ package net.corda.messaging.mediator
 
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.data.deadletter.StateAndEventDeadLetterRecord
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -17,10 +18,10 @@ import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.factory.MediatorComponentFactory
 import net.corda.messaging.mediator.metrics.EventMediatorMetrics
-import net.corda.schema.Schemas
 import net.corda.taskmanager.TaskManager
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
+import java.time.Instant
 import java.util.UUID
 
 @Suppress("LongParameterList")
@@ -125,7 +126,8 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     private fun onDeserializationError(event: ByteArray, topic: String?) {
         log.debug { "Error deserializing [$event] "}
         if (topic != null) {
-            deadLetterRecords.add(Record(Schemas.getDLQTopic(topic), UUID.randomUUID().toString(), event))
+            val stateAndEventDeadLetterRecord = StateAndEventDeadLetterRecord(Instant.now(), "UNKNOWN", null, event)
+            deadLetterRecords.add(Record(topic, UUID.randomUUID().toString(), stateAndEventDeadLetterRecord))
         }
     }
 
