@@ -22,10 +22,10 @@ class CurrentSandboxGroupContextImpl : CurrentSandboxGroupContext, SingletonSeri
     private val currentSandboxGroupContext = ThreadLocal<SandboxGroupContext?>()
 
     override fun set(sandboxGroupContext: SandboxGroupContext) {
-        log.info (
-            "@@@ Setting current sandbox group context [$sandboxGroupContext] on thread [${Thread.currentThread().name}] for holding " +
+        log.trace {
+            "Setting current sandbox group context [$sandboxGroupContext] on thread [${Thread.currentThread().name}] for holding " +
                     "identity [${sandboxGroupContext.virtualNodeContext.holdingIdentity}]"
-        )
+        }
         currentSandboxGroupContext.set(sandboxGroupContext)
     }
 
@@ -48,17 +48,15 @@ class CurrentSandboxGroupContextImpl : CurrentSandboxGroupContext, SingletonSeri
         currentSandboxGroupContext.set(null)
 
         if (current != null) {
-            log.info (
-                "@@@ Removed current sandbox group context [$current] for thread [${Thread.currentThread().name}] with holding identity " +
+            log.trace {
+                "Removed current sandbox group context [$current] for thread [${Thread.currentThread().name}] with holding identity " +
                         "[${current.virtualNodeContext.holdingIdentity}]"
-            )
+            }
         } else {
             // An exception is created here, so that the warning provides a stacktrace that can be used to determine where the thread
             // local is being incorrectly set or removed.
-            // If the fiber fails to deserialize on
-            log.info(
-                "@@@ No current sandbox group context to remove for thread [${Thread.currentThread().name}]. This can happen if the fiber failed" +
-                        "to deserialize on resume.",
+            log.warn(
+                "No current sandbox group context to remove for thread [${Thread.currentThread().name}]",
                 IllegalStateException("No current sandbox group context to remove for thread")
             )
         }

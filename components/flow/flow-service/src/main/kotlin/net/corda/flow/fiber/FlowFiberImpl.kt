@@ -45,8 +45,6 @@ class FlowFiberImpl(
     override fun startFlow(flowFiberExecutionContext: FlowFiberExecutionContext): Future<FlowIORequest<*>> {
         this.flowFiberExecutionContext = flowFiberExecutionContext
 
-        log.info("@@@ startFlow")
-
         start()
         return flowCompletion
     }
@@ -118,25 +116,17 @@ class FlowFiberImpl(
         suspensionOutcome: FlowContinuation,
         scheduler: FiberScheduler
     ): Future<FlowIORequest<*>> {
-
-        log.info("@@@ resume flow")
-
         this.flowFiberExecutionContext = flowFiberExecutionContext
         this.suspensionOutcome = suspensionOutcome
         this.flowCompletion = CompletableFuture<FlowIORequest<*>>()
-
-        log.info("@@@ unpark before")
         unparkDeserialized(this, scheduler)
-        log.info("@@@ unpark after")
         return flowCompletion
     }
 
     @Suspendable
     override fun <SUSPENDRETURN> suspend(request: FlowIORequest<SUSPENDRETURN>): SUSPENDRETURN {
-        log.info("@@@ suspended")
         removeCurrentSandboxGroupContext()
         parkAndCustomSerialize { _ ->
-            log.info("@@@ serializing")
             resetLoggingContext()
             log.trace { "Parking..." }
             val fiberState = CordaMetrics.Metric.FlowFiberSerializationTime.builder()
@@ -147,15 +137,10 @@ class FlowFiberImpl(
                     getExecutionContext().sandboxGroupContext.checkpointSerializer.serialize(this)
                 }!!
             flowCompletion.complete(FlowIORequest.FlowSuspended(ByteBuffer.wrap(fiberState), request, prepareForCaching()))
-            log.info("@@@ finished serializing")
         }
-
-        log.info("@@@ resumed 1")
 
         resetLoggingContext()
         setCurrentSandboxGroupContext()
-
-        log.info("@@@ resumed 2")
 
         @Suppress("unchecked_cast")
         return when (val outcome = suspensionOutcome ?: throw IllegalStateException("FlowFiber suspensionOutcome is missing!")) {
