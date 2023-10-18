@@ -1,6 +1,10 @@
 package net.corda.messaging.utils
 
+import java.net.http.HttpResponse
+import net.corda.messaging.api.exception.CordaHTTPClientErrorException
+import net.corda.messaging.api.exception.CordaHTTPServerErrorException
 import net.corda.utilities.trace
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -8,17 +12,25 @@ class HTTPRetryExecutor {
     companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
-        fun <T> withConfig(config: HTTPRetryConfig, block: () -> T): T {
+        fun <T> withConfig(config: HTTPRetryConfig, block: () -> HttpResponse<T>): HttpResponse<T> {
             var currentDelay = config.initialDelay
-            for (i in 0 until config.times - 1) {
+            for (i in 0 until config.times) {
                 try {
                     log.trace { "HTTPRetryExecutor making attempt #${i + 1}." }
                     val result = block()
+                    checkResponseStatus(result.statusCode())
                     log.trace { "Operation successful after #${i + 1} attempt/s." }
                     return result
                 } catch (e: Exception) {
-                    if (config.retryOn.none { it.isInstance(e) }) {
-                        log.warn("HTTPRetryExecutor caught a non-retryable exception: ${e.message}", e)
+                    val isFinalAttempt = i == config.times - 1
+                    val isRetryable = config.retryOn.any { it.isInstance(e) }
+
+                    if (!isRetryable || isFinalAttempt) {
+                        val errorMsg = when {
+                            isFinalAttempt -> "Operation failed after ${config.times} attempts."
+                            else -> "HTTPRetryExecutor caught a non-retryable exception: ${e.message}"
+                        }
+                        log.trace { errorMsg }
                         throw e
                     }
 
@@ -28,16 +40,18 @@ class HTTPRetryExecutor {
                 }
             }
 
-            log.trace("All retry attempts exhausted. Making the final call.")
+            val errorMsg = "Retry logic exhausted all attempts without a valid return or rethrow, though this shouldn't be possible."
+            log.trace { errorMsg }
+            throw CordaRuntimeException(errorMsg)
+        }
 
-            try {
-                val result = block()
-                log.trace { "Operation successful after #${config.times} attempt/s." }
-                return result
-            } catch (e: Exception) {
-                log.trace { "Operation failed after ${config.times} attempt/s." }
-                throw e
+        private fun checkResponseStatus(statusCode: Int) {
+            log.trace { "Received response with status code $statusCode" }
+            when (statusCode) {
+                in 400..499 -> throw CordaHTTPClientErrorException(statusCode, "Server returned status code $statusCode.")
+                in 500..599 -> throw CordaHTTPServerErrorException(statusCode, "Server returned status code $statusCode.")
             }
         }
     }
 }
+

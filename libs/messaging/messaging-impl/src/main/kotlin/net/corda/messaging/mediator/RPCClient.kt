@@ -25,7 +25,7 @@ class RPCClient(
     private val httpClient: HttpClient,
     private val retryConfig: HTTPRetryConfig =
         HTTPRetryConfig.Builder()
-            .retryOn(IOException::class.java, TimeoutException::class.java)
+            .retryOn(IOException::class.java, TimeoutException::class.java, CordaHTTPClientErrorException::class.java)
             .build()
 ) : MessagingClient {
     private val deserializer = cordaAvroSerializerFactory.createAvroDeserializer({}, Any::class.java)
@@ -47,8 +47,6 @@ class RPCClient(
     private fun processMessage(message: MediatorMessage<*>): MediatorMessage<*> {
         val request = buildHttpRequest(message)
         val response = sendWithRetry(request)
-
-        checkResponseStatus(response.statusCode())
 
         val deserializedResponse = deserializePayload(response.body())
         return MediatorMessage(deserializedResponse, mutableMapOf("statusCode" to response.statusCode()))
@@ -76,14 +74,6 @@ class RPCClient(
     private fun sendWithRetry(request: HttpRequest): HttpResponse<ByteArray> {
         return HTTPRetryExecutor.withConfig(retryConfig) {
             httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
-        }
-    }
-
-    private fun checkResponseStatus(statusCode: Int) {
-        log.trace("Received response with status code $statusCode")
-        when (statusCode) {
-            in 400..499 -> throw CordaHTTPClientErrorException(statusCode, "Server returned status code $statusCode.")
-            in 500..599 -> throw CordaHTTPServerErrorException(statusCode, "Server returned status code $statusCode.")
         }
     }
 
