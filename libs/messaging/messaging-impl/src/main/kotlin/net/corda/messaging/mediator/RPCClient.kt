@@ -1,11 +1,5 @@
 package net.corda.messaging.mediator
 
-import java.io.IOException
-import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
-import java.util.concurrent.TimeoutException
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.messaging.api.exception.CordaHTTPClientErrorException
 import net.corda.messaging.api.exception.CordaHTTPServerErrorException
@@ -17,6 +11,12 @@ import net.corda.messaging.utils.HTTPRetryExecutor
 import net.corda.utilities.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.io.IOException
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
+import java.util.concurrent.TimeoutException
 
 class RPCClient(
     override val id: String,
@@ -28,7 +28,7 @@ class RPCClient(
             .retryOn(IOException::class.java, TimeoutException::class.java)
             .build()
 ) : MessagingClient {
-    private val deserializer = cordaAvroSerializerFactory.createAvroDeserializer({}, Any::class.java)
+    private val deserializer = cordaAvroSerializerFactory.createAvroDeserializer({_, _ ->}, Any::class.java)
 
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
