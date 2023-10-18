@@ -19,7 +19,6 @@ import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.LoggerFactory
-import java.math.BigDecimal
 import java.nio.ByteBuffer
 import java.time.Duration
 import java.time.Instant
@@ -95,9 +94,8 @@ class UnlockFlowDispatcher: ClientStartableFlow {
                 facadeService.getProxy(facadeId, LockFacade::class.java, interopIdentity)
 
             val byteArrayKey: ByteArray = notary.publicKey.encoded
-            val byteBuffer: ByteBuffer = ByteBuffer.wrap(byteArrayKey)  //This is good
-            //lockFacade.unlock(UUID.randomUUID(), notarySig, byteBuffer)
-            lockFacade.createLock(signedTransaction.id.toString(), BigDecimal(1000), "",
+            val byteBuffer: ByteBuffer = ByteBuffer.wrap(byteArrayKey)
+            lockFacade.createLock("stateId", "recipient",
                 byteBuffer, signedTransaction.id.toString())
             return jsonMarshallingService.format(IssueFlowResult("124", outputState.linearId.toString()))
 

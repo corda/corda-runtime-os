@@ -27,7 +27,7 @@ import java.util.UUID
 
 
 data class SwapFlowArgs(val newOwner: String, val stateId: UUID, val applicationName: String,
-                        val recipientOnOtherLedger: String)
+                        val otherLedgerRecipient: String, val otherLedgerAssetId: String)
 
 @InitiatingFlow(protocol = "interop-sample-swap-protocol")
 class SwapFlow : ClientStartableFlow {
@@ -96,11 +96,12 @@ class SwapFlow : ClientStartableFlow {
             require(notaries.isNotEmpty()) { "No notaries are available." }
             require(notaries.size == 1) { "Too many notaries $notaries." }
             val notary = notaryLookup.notaryServices.single()
-            val byteArrayKey: ByteArray = notary.publicKey.encoded
+            val encodedNotaryKey: ByteArray = notary.publicKey.encoded
 
             val session = flowMessaging.initiateFlow(newOwnerInfo.name)
             val reservation : String = session.sendAndReceive(String::class.java,
-                DraftTx(flowArgs.applicationName, flowArgs.recipientOnOtherLedger, signedTransaction.id, byteArrayKey))
+                DraftTx(flowArgs.applicationName, flowArgs.otherLedgerRecipient, flowArgs.otherLedgerAssetId,
+                    signedTransaction.id, encodedNotaryKey))
 
             //ledgerService.sendAndReceiveTransactionBuilder() //TODO use this so other party can inspect and reason
 
@@ -148,8 +149,8 @@ class SwapResponderFlow : ResponderFlow {
         val msg = session.receive(DraftTx::class.java)
         log.info("Received message: $msg")
         log.info("locking send by ${memberLookup.myInfo().name}")
-        val result = flowEngine.subFlow(SwapResponderSubFlow(msg.applicationName, msg.recipientOnOtherLedger,
-            ByteBuffer.wrap(msg.notaryKey), msg.draftTxId))
+        val result = flowEngine.subFlow(SwapResponderSubFlow(msg.applicationName, msg.otherLedgerRecipient,
+            msg.otherLedgerAssetId, ByteBuffer.wrap(msg.notaryKey), msg.draftTxId))
         session.send(result)
 
         try {

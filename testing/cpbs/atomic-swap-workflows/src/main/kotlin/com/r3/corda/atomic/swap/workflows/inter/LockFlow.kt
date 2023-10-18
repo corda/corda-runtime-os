@@ -18,7 +18,6 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import org.slf4j.LoggerFactory
-import java.math.BigDecimal
 import java.nio.ByteBuffer
 import java.security.KeyFactory
 import java.security.spec.X509EncodedKeySpec
@@ -49,9 +48,8 @@ class LockFlow : FacadeDispatcherFlow(), LockFacade {
 
     @Suspendable
     override fun createLock(
-        denomination: String,
-        amount: BigDecimal,
-        otherParty: String,
+        assetId: String,
+        recipient: String,
         notaryKeys: ByteBuffer,
         draft: String
     ): String {
@@ -59,13 +57,15 @@ class LockFlow : FacadeDispatcherFlow(), LockFacade {
         log.info("locking received by ${memberLookup.myInfo().name}")
 
         val unconsumedStates = ledgerService.findUnconsumedStatesByType(Asset::class.java)
-        val stateAndRef = unconsumedStates.first()
+        val stateAndRef = unconsumedStates.firstOrNull { it.state.contractState.assetId == assetId }
+            ?:  throw CordaRuntimeException("Multiple or zero states with id '$assetId' found")
+
         val inputState = stateAndRef.state.contractState
 
         val myInfo = memberLookup.myInfo()
         val ownerInfo = memberLookup.lookup(inputState.owner)
             ?: throw CordaRuntimeException("MemberLookup can't find current state owner.")
-        val newOwnerInfo = memberLookup.lookup(MemberX500Name.parse(otherParty))
+        val newOwnerInfo = memberLookup.lookup(MemberX500Name.parse(recipient))
             ?: throw CordaRuntimeException("MemberLookup can't find new state owner.")
 
         if (myInfo.name != ownerInfo.name) {

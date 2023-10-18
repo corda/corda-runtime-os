@@ -18,7 +18,7 @@ import java.util.UUID
 
 data class IssueAssetFlowArgs(val assetName: String)
 
-data class IssueAssetFlowResult(val transactionId: String, val stateId: String, val ownerPublicKey: String)
+data class IssueAssetFlowResult(val transactionId: String, val assetId: String, val ownerPublicKey: String)
 
 
 class IssueAssetFlow : ClientStartableFlow {

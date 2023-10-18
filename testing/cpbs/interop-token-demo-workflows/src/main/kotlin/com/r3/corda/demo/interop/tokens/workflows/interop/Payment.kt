@@ -13,7 +13,8 @@ data class Payment(
 @CordaSerializable
 data class DraftTx(
     val applicationName : String,
-    val recipientOnOtherLedger: String,
+    val otherLedgerRecipient: String,
+    val otherLedgerAssetId: String,
     val draftTxId : SecureHash,
     val notaryKey : ByteArray
 )

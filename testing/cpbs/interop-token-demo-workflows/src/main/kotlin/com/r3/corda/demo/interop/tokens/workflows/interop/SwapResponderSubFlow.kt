@@ -10,12 +10,13 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.NotaryLookup
 import org.slf4j.LoggerFactory
-import java.math.BigDecimal
 import java.nio.ByteBuffer
+import java.util.*
 
 
 @InitiatingFlow(protocol = "swap-responder-sub-flow")
-class SwapResponderSubFlow(private val applicationName: String, private val recipientOnOtherLedger: String,
+class SwapResponderSubFlow(private val applicationName: String, private val otherLedgerRecipient: String,
+                           private val otherLedgerAssetId: String,
                            private val notaryKey: ByteBuffer, private val draftHash: SecureHash):
     SubFlow<String> {
 
@@ -43,11 +44,10 @@ class SwapResponderSubFlow(private val applicationName: String, private val reci
         val notaries = notaryLookup.notaryServices
         require(notaries.isNotEmpty()) { "No notaries are available." }
         require(notaries.size == 1) { "Too many notaries $notaries." }
-       // val byteArrayKey: ByteArray = notaryKey.encoded
-       // val byteBuffer: ByteBuffer = ByteBuffer.wrap(byteArrayKey)
+
         log.info("locking send to $myInteropInfo")
-        val response = lockFacade.createLock("USD", BigDecimal(1000),
-            recipientOnOtherLedger, notaryKey, draftHash.toString())
+        val response = lockFacade.createLock(otherLedgerAssetId,
+            otherLedgerRecipient, notaryKey, draftHash.toString())
 
         log.info("Interop call returned: $response")
 
