@@ -33,6 +33,10 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     private val taskManager: TaskManager,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
 ) : MultiSourceEventMediator<K, S, E> {
+
+    private companion object {
+        const val UNKNOWN_DESERIALIZATION_ERROR = "UNKNOWN-DESERIALIZATION-ERROR"
+    }
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.name}")
     private var consumers = listOf<MediatorConsumer<K, E>>()
     private var clients = listOf<MessagingClient>()
@@ -126,7 +130,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     private fun onDeserializationError(event: ByteArray, topic: String?) {
         log.debug { "Error deserializing [$event] "}
         if (topic != null) {
-            val stateAndEventDeadLetterRecord = StateAndEventDeadLetterRecord(Instant.now(), "UNKNOWN", null, event)
+            val stateAndEventDeadLetterRecord = StateAndEventDeadLetterRecord(Instant.now(), UNKNOWN_DESERIALIZATION_ERROR, null, event)
             deadLetterRecords.add(Record(topic, UUID.randomUUID().toString(), stateAndEventDeadLetterRecord))
         }
     }
