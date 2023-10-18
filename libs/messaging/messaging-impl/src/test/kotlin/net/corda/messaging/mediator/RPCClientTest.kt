@@ -8,8 +8,8 @@ import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.flow.event.FlowEvent
-import net.corda.messaging.api.exception.CordaHTTPClientErrorException
-import net.corda.messaging.api.exception.CordaHTTPServerErrorException
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_ENDPOINT
 import net.corda.messaging.api.records.Record
@@ -116,7 +116,7 @@ class RPCClientTest {
 
         val client = createClient(environment.mocks)
 
-        assertThrows<CordaHTTPClientErrorException> {
+        assertThrows<CordaMessageAPIIntermittentException> {
             client.send(message)
         }
     }
@@ -128,7 +128,7 @@ class RPCClientTest {
 
         val client = createClient(environment.mocks)
 
-        assertThrows<CordaHTTPServerErrorException> {
+        assertThrows<CordaMessageAPIIntermittentException> {
             client.send(message)
         }
     }
@@ -144,7 +144,7 @@ class RPCClientTest {
 
         val client = createClient(environment.mocks, onSerializationError)
 
-        assertThrows<IllegalArgumentException> {
+        assertThrows<CordaMessageAPIFatalException> {
             client.send(message)
         }
 
@@ -179,7 +179,7 @@ class RPCClientTest {
 
         val client = createClient(environment.mocks)
 
-        assertThrows<IOException> {
+        assertThrows<CordaMessageAPIIntermittentException> {
             client.send(message)
         }
     }
@@ -193,7 +193,7 @@ class RPCClientTest {
 
         val client = createClient(environment.mocks)
 
-        assertThrows<IOException> {
+        assertThrows<CordaMessageAPIIntermittentException> {
             client.send(message)
         }
 
