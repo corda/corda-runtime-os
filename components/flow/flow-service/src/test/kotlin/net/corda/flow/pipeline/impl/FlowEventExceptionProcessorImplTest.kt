@@ -9,6 +9,7 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionData
+import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.session.SessionState
@@ -202,7 +203,7 @@ class FlowEventExceptionProcessorImplTest {
     }
 
     @Test
-    fun `flow fatal exception before flow initialized marks flow for dlq and publishes SessionError event`() {
+    fun `flow fatal exception before flow initialized marks flow for dlq and publishes SessionError record`() {
         val error = FlowFatalException("error")
         val initiatingIdentity = HoldingIdentity("O=Alice,L=London,C=GB", "12345")
         val initiatedIdentity = HoldingIdentity("O=Bob,L=London,C=GB", "12345")
@@ -221,6 +222,9 @@ class FlowEventExceptionProcessorImplTest {
         val result = target.process(error, context)
 
         verify(result.checkpoint).markDeleted()
+
+        val resultRecord = (result.outputRecords.first().value as FlowMapperEvent).payload as SessionEvent
+        assert(resultRecord.payload is SessionError)
         verify(flowSessionManager, times(0)).sendErrorMessages(any(), any(), any(), any())
         verify(flowSessionManager, times(0)).getSessionErrorEventRecords(any(), any(), any())
         assertThat(result.sendToDlq).isTrue
