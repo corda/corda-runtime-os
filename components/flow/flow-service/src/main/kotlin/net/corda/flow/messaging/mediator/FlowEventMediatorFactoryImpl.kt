@@ -2,6 +2,7 @@ package net.corda.flow.messaging.mediator
 
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
+import net.corda.data.deadletter.StateAndEventDeadLetterRecord
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.output.FlowStatus
@@ -19,6 +20,9 @@ import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.constants.WorkerRPCPaths.CRYPTO_PATH
 import net.corda.messaging.api.constants.WorkerRPCPaths.LEDGER_PATH
 import net.corda.messaging.api.constants.WorkerRPCPaths.PERSISTENCE_PATH
+import net.corda.messaging.api.constants.WorkerRPCPaths.UNIQUENESS_PATH
+import net.corda.messaging.api.constants.WorkerRPCPaths.VERIFICATION_PATH
+import net.corda.messaging.api.mediator.MSG_PROP_DLQ_TOPIC
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.RoutingDestination.Companion.routeTo
@@ -28,22 +32,20 @@ import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.mediator.factory.MessagingClientFactoryFactory
 import net.corda.messaging.api.mediator.factory.MultiSourceEventMediatorFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
 import net.corda.schema.Schemas.Services.TOKEN_CACHE_EVENT
-import net.corda.schema.Schemas.UniquenessChecker.UNIQUENESS_CHECK_TOPIC
-import net.corda.schema.Schemas.Verification.VERIFICATION_LEDGER_PROCESSOR_TOPIC
 import net.corda.schema.configuration.BootConfig.CRYPTO_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.PERSISTENCE_WORKER_REST_ENDPOINT
+import net.corda.schema.configuration.BootConfig.UNIQUENESS_WORKER_REST_ENDPOINT
+import net.corda.schema.configuration.BootConfig.VERIFICATION_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.FlowConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import net.corda.data.deadletter.StateAndEventDeadLetterRecord
-import net.corda.messaging.api.mediator.MSG_PROP_DLQ_TOPIC
-import net.corda.schema.Schemas
 
 @Suppress("LongParameterList")
 @Component(service = [FlowEventMediatorFactory::class])
