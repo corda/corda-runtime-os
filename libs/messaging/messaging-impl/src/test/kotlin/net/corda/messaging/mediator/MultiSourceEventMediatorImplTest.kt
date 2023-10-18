@@ -23,6 +23,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.taskmanager.TaskManager
 import net.corda.test.util.waitWhile
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.atLeast
@@ -154,6 +155,57 @@ class MultiSourceEventMediatorImplTest {
         verify(consumer, atLeast(eventBatches.size)).poll(any())
         verify(consumer, times(eventBatches.size)).syncCommitOffsets()
         verify(messagingClient, times(events.size)).send(any())
+    }
+
+    @Test
+    fun `mediator retries after intermittent exception`() {
+        //                  test setup
+        //supply constructor args:
+/*        private val config: EventMediatorConfig<K, S, E>,
+        stateSerializer: CordaAvroSerializer<S>,
+        stateDeserializer: CordaAvroDeserializer<S>,
+        private val stateManager: StateManager,
+        private val taskManager: TaskManager,
+        lifecycleCoordinatorFactory: LifecycleCoordinatorFactory*/
+
+        //set up mock return values for calls to these three apis
+        //e.g. check consumers list to check each item is closed
+        //e.g. check clients list to check each item is closed
+
+/*        consumers = mediatorComponentFactory.createConsumers(::onSerializationError)
+        clients = mediatorComponentFactory.createClients(::onSerializationError)
+        messageRouter = mediatorComponentFactory.createRouter(clients)*/
+
+        //set up message processor that tells us when we've processed the right number of events (the signal from one thread to the test thread)
+        //private val messageProcessor = mock<StateAndEventProcessor<Any, Any, Any>>()
+
+
+
+        //              test execution
+        //start mediator
+        //wait for signal
+
+        //              test verification
+        //1) all events processed - e.g. push 5, process 5
+        //2) verify mocks recreated by apis being called again:
+        //consumer mock, client mock, message router mock
+        //verify status = UP
+        //verify mediator.start is called
+    }
+
+    @Test
+    fun `mediator closes after interrupted exception`() {
+
+    }
+
+    @Test
+    fun `mediator closes and updates status after other exception`() {
+
+    }
+
+    @Test
+    fun `mediator retries `() {
+
     }
 
     private fun cordaConsumerRecords(key: String, event: String) =
