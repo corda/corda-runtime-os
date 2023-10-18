@@ -84,7 +84,7 @@ metadata:
 spec:
   type: ClusterIP
   selector:
-    app: {{ $workerName }}
+    app.kubernetes.io/component: {{ include "corda.workerComponent" $worker }}
   ports:
       - protocol: TCP
         port: {{ include "corda.workerServicePort" . }}

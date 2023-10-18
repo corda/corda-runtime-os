@@ -332,7 +332,7 @@ class GroupPolicyProviderImpl @Activate constructor(
                 ) {
                     val holdingIdentity = member.viewOwningMember.toCorda()
                     val gp = parseGroupPolicy(holdingIdentity)
-                    if (gp is MGMGroupPolicy) {
+                    if (gp is MGMGroupPolicy && gp.validate(holdingIdentity)) {
                         groupPolicies[holdingIdentity] = gp
                         callBack(holdingIdentity, gp)
                     } else {
@@ -341,6 +341,18 @@ class GroupPolicyProviderImpl @Activate constructor(
                 }
             } catch (e: Exception) {
                 logger.warn("Could not process events, caused by: $e")
+            }
+        }
+
+        private fun MGMGroupPolicy.validate(holdingIdentity: HoldingIdentity): Boolean {
+            return try {
+                this.p2pParameters
+                true
+            } catch (e: BadGroupPolicyException) {
+                logger.warn("Something went wrong while parsing the group policy for virtual node with holding identity" +
+                    " [$holdingIdentity]. Error: ${e.message} The group policy will be removed from the cache, to be parsed and cached on" +
+                    " the next read.")
+                false
             }
         }
 
