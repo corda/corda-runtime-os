@@ -95,6 +95,8 @@ internal class CreateVirtualNodeOperationHandler(
                 cpiMetadata.cpiId,
                 cpiMetadata.cpksMetadata
             )
+            
+            logger.info("Generated new ExternalMessagingRouteConfig as: $externalMessagingRouteConfig")
 
             val vNodeConnections = execLog.measureExecTime("persist holding ID and virtual node") {
                 createVirtualNodeService.persistHoldingIdAndVirtualNode(

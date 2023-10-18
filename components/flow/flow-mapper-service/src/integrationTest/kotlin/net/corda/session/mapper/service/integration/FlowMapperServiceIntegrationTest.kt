@@ -17,11 +17,16 @@ import net.corda.data.flow.event.session.SessionCounterpartyInfoRequest
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
+import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.scheduler.ScheduledTaskTrigger
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.statemanager.api.Metadata
+import net.corda.libs.statemanager.api.State
+import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.membership.locally.hosted.identities.IdentityInfo
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.messaging.api.publisher.Publisher
@@ -36,6 +41,7 @@ import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_IN
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_OUT
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_START
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
+import net.corda.schema.Schemas.ScheduledTask
 import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
@@ -45,7 +51,9 @@ import net.corda.schema.configuration.ConfigKeys.STATE_MANAGER_CONFIG
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.session.mapper.service.FlowMapperService
+import net.corda.session.mapper.service.state.StateMetadataKeys
 import net.corda.test.flow.util.buildSessionEvent
+import net.corda.test.util.eventually
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -58,6 +66,7 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
+import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -92,6 +101,9 @@ class FlowMapperServiceIntegrationTest {
 
     @InjectService(timeout = 4000)
     lateinit var locallyHostedIdentityService: LocallyHostedIdentitiesService
+
+    @InjectService(timeout = 4000)
+    lateinit var stateManagerFactory: StateManagerFactory
 
     private val messagingConfig = SmartConfigImpl.empty()
         .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
@@ -395,6 +407,39 @@ class FlowMapperServiceIntegrationTest {
         assertThat(event.messageDirection).isEqualTo(MessageDirection.INBOUND)
         assertThat(event.sessionId).isEqualTo("$testId-INITIATED")
         assertThat(event.payload).isInstanceOf(SessionError::class.java)
+    }
+
+    @Test
+    fun `mapper state cleanup correctly cleans up old states`() {
+
+        // Create a state in the state manager. Note the modified time has to be further in the past than the configured
+        // flow processing time.
+        val stateKey = "foo"
+        val config = SmartConfigImpl.empty()
+        val stateManager = stateManagerFactory.create(config)
+        stateManager.create(listOf(
+            State(
+                stateKey,
+                byteArrayOf(),
+                metadata = Metadata(mapOf(StateMetadataKeys.FLOW_MAPPER_STATUS to FlowMapperStateType.CLOSING.toString())),
+                modifiedTime = Instant.now().minusSeconds(20)
+            )
+        ))
+
+        // Publish a scheduled task trigger.
+        val testId = "test6"
+        val publisher = publisherFactory.createPublisher(PublisherConfig(testId), messagingConfig)
+        publisher.publish(listOf(
+            Record(
+                ScheduledTask.SCHEDULED_TASK_TOPIC_MAPPER_PROCESSOR,
+                "foo",
+                ScheduledTaskTrigger(ScheduledTask.SCHEDULED_TASK_NAME_MAPPER_CLEANUP, Instant.now()))
+        ))
+
+        eventually(duration = Duration.ofMinutes(1)) {
+            val states = stateManager.get(listOf(stateKey))
+            assertThat(states[stateKey]).isNull()
+        }
     }
 
     private fun setupConfig(publisher: Publisher) {

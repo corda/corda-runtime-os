@@ -21,7 +21,7 @@ fun startRpcFlow(
 ): String {
 
     return DEFAULT_CLUSTER.cluster {
-        assertWithRetry {
+        assertWithRetryIgnoringExceptions {
             timeout(RETRY_TIMEOUT)
             command {
                 flowStart(

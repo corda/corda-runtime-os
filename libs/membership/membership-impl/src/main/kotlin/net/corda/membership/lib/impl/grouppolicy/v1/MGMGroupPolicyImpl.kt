@@ -64,22 +64,20 @@ class MGMGroupPolicyImpl(
 
     override val synchronisationProtocol = rootNode.getMandatoryString(SYNC_PROTOCOL)
 
-    override val protocolParameters: GroupPolicy.ProtocolParameters = ProtocolParametersImpl()
+    override val protocolParameters: GroupPolicy.ProtocolParameters by lazy {
+        ProtocolParametersImpl()
+    }
 
-    override val p2pParameters: GroupPolicy.P2PParameters = P2PParametersImpl()
+    override val p2pParameters: GroupPolicy.P2PParameters by lazy {
+        P2PParametersImpl()
+    }
 
     override val mgmInfo: GroupPolicy.MGMInfo? = null
 
     override val cipherSuite: GroupPolicy.CipherSuite = CipherSuiteImpl()
 
     internal inner class ProtocolParametersImpl : GroupPolicy.ProtocolParameters {
-        override val sessionKeyPolicy by lazy {
-            SessionKeyPolicy.fromString(
-                getPersistedString(
-                    PropertyKeys.SESSION_KEY_POLICY
-                )
-            ) ?: COMBINED
-        }
+        override val sessionKeyPolicy = SessionKeyPolicy.fromString(getPersistedString(PropertyKeys.SESSION_KEY_POLICY)) ?: COMBINED
 
         override val staticNetworkMembers: List<Map<String, Any>>? = null
 
@@ -88,55 +86,40 @@ class MGMGroupPolicyImpl(
 
     internal inner class P2PParametersImpl : GroupPolicy.P2PParameters {
 
-        override val sessionPki by lazy {
-            SessionPkiMode.fromString(
-                getPersistedString(
-                    PropertyKeys.SESSION_PKI_MODE
-                )
-            ) ?: NO_PKI
+        override val sessionPki = SessionPkiMode.fromString(getPersistedString(PropertyKeys.SESSION_PKI_MODE)) ?: NO_PKI
+
+        override val sessionTrustRoots = if (!persistedProperties.entries.any { it.key.startsWith(PropertyKeys.SESSION_TRUST_ROOTS) }) {
+            null
+        } else {
+            persistedProperties.parseList(PropertyKeys.SESSION_TRUST_ROOTS, String::class.java)
         }
 
-        override val sessionTrustRoots by lazy {
-            if (!persistedProperties.entries.any { it.key.startsWith(PropertyKeys.SESSION_TRUST_ROOTS) }) {
-                null
-            } else {
-                persistedProperties.parseList(PropertyKeys.SESSION_TRUST_ROOTS, String::class.java)
-            }
+        override val tlsTrustRoots = if (!persistedProperties.entries.any { it.key.startsWith(PropertyKeys.TLS_TRUST_ROOTS) }) {
+            emptyList()
+        } else {
+            persistedProperties.parseList(PropertyKeys.TLS_TRUST_ROOTS, String::class.java)
         }
 
-        override val tlsTrustRoots by lazy {
-            if (!persistedProperties.entries.any { it.key.startsWith(PropertyKeys.TLS_TRUST_ROOTS) }) {
-                emptyList()
-            } else {
-                persistedProperties.parseList(PropertyKeys.TLS_TRUST_ROOTS, String::class.java)
-            }
-        }
 
-        override val tlsPki by lazy {
-            TlsPkiMode.fromString(
-                getPersistedString(PropertyKeys.TLS_PKI_MODE)
-            ) ?: STANDARD
-        }
-        override val tlsVersion by lazy {
-            TlsVersion.fromString(
-                getPersistedString(PropertyKeys.TLS_VERSION)
-            ) ?: VERSION_1_3
-        }
-        override val protocolMode by lazy {
-            ProtocolMode.fromString(
-                getPersistedString(PropertyKeys.P2P_PROTOCOL_MODE)
-            ) ?: AUTH_ENCRYPT
-        }
-        override val tlsType by lazy {
-            TlsType.fromString(
-                getPersistedString(PropertyKeys.TLS_TYPE)
-            ) ?: TlsType.ONE_WAY
-        }
+        override val tlsPki = TlsPkiMode.fromString(
+            getPersistedString(PropertyKeys.TLS_PKI_MODE)
+        ) ?: STANDARD
 
-        override val mgmClientCertificateSubject by lazy {
-            getPersistedString(PropertyKeys.MGM_CLIENT_CERTIFICATE_SUBJECT)?.let {
-                MemberX500Name.parse(it)
-            }
+        override val tlsVersion = TlsVersion.fromString(
+            getPersistedString(PropertyKeys.TLS_VERSION)
+        ) ?: VERSION_1_3
+
+        override val protocolMode = ProtocolMode.fromString(
+            getPersistedString(PropertyKeys.P2P_PROTOCOL_MODE)
+        ) ?: AUTH_ENCRYPT
+
+        override val tlsType = TlsType.fromString(
+            getPersistedString(PropertyKeys.TLS_TYPE)
+        ) ?: TlsType.ONE_WAY
+
+
+        override val mgmClientCertificateSubject = getPersistedString(PropertyKeys.MGM_CLIENT_CERTIFICATE_SUBJECT)?.let {
+            MemberX500Name.parse(it)
         }
     }
 
