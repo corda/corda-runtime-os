@@ -64,8 +64,8 @@ class RPCClient(
         return try {
             deserializer.deserialize(payload)!!
         } catch (e: Exception) {
-            val errorMsg = "Failed to deserialize payload of size ${payload.size} bytes due to: $e"
-            log.warn(errorMsg)
+            val errorMsg = "Failed to deserialize payload of size ${payload.size} bytes due to: ${e.message}"
+            log.warn(errorMsg, e)
             onSerializationError?.invoke(errorMsg.toByteArray())
             throw e
         }
