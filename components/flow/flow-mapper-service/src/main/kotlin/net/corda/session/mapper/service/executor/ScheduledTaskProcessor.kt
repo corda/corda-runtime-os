@@ -33,7 +33,7 @@ class ScheduledTaskProcessor(
     override fun onNext(events: List<Record<String, ScheduledTaskTrigger>>): List<Record<*, *>> {
         return if (events.any { it.value?.name == Schemas.ScheduledTask.SCHEDULED_TASK_NAME_MAPPER_CLEANUP }) {
             process().map {
-                Record(Schemas.Flow.FLOW_MAPPER_CLEANUP_TOPIC, UUID.randomUUID(), it)
+                Record(Schemas.Flow.FLOW_MAPPER_CLEANUP_TOPIC, UUID.randomUUID().toString(), it)
             }
         } else {
             listOf()
