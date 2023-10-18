@@ -110,7 +110,7 @@ class TaskManagerHelperTest {
         val expectedProcessorTasks = listOf(
             ProcessorTask(
                 KEY2,
-                updateState.copy(version = updateState.version + 1),
+                updateState.copy(version = updateState.version),
                 listOf(replyMessage.payload!!).toRecords(KEY2),
                 messageProcessor,
                 stateManagerHelper

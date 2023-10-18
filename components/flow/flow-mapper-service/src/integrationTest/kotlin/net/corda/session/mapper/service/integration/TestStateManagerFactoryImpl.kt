@@ -20,6 +20,8 @@ import java.util.concurrent.ConcurrentHashMap
 class TestStateManagerFactoryImpl : StateManagerFactory {
     private val storage = ConcurrentHashMap<String, State>()
 
+    private val storage = ConcurrentHashMap<String, State>()
+
     override fun create(config: SmartConfig): StateManager {
         return object : StateManager {
             override fun close() {
@@ -51,7 +53,18 @@ class TestStateManagerFactoryImpl : StateManagerFactory {
             }
 
             override fun delete(states: Collection<State>): Map<String, State> {
-                TODO("Not yet implemented")
+                return states.mapNotNull {
+                    var output: State? = null
+                    storage.compute(it.key) { _, existingState ->
+                        if (existingState?.version == it.version) {
+                            null
+                        } else {
+                            output = it
+                            existingState
+                        }
+                    }
+                    output
+                }.associateBy { it.key }
             }
 
             override fun updatedBetween(interval: IntervalFilter): Map<String, State> {
@@ -66,11 +79,16 @@ class TestStateManagerFactoryImpl : StateManagerFactory {
                 TODO("Not yet implemented")
             }
 
+            // Only supporting equals for now.
             override fun findUpdatedBetweenWithMetadataFilter(
                 intervalFilter: IntervalFilter,
                 metadataFilter: MetadataFilter
             ): Map<String, State> {
-                TODO("Not yet implemented")
+                return storage.filter { (_, state) ->
+                    state.modifiedTime >= intervalFilter.start && state.modifiedTime <= intervalFilter.finish
+                }.filter { (_, state) ->
+                    state.metadata.containsKey(metadataFilter.key) && state.metadata[metadataFilter.key] == metadataFilter.value
+                }
             }
         }
     }
