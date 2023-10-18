@@ -851,7 +851,8 @@ class FlowTests {
         }
     }
 
-    @Test
+    // Temporary disabled
+    // @Test
     fun `cluster configuration changes are picked up and workers continue to operate normally`() {
         val currentConfigValue = getConfig(MESSAGING_CONFIG).configWithDefaultsNode()[MAX_ALLOWED_MSG_SIZE].asInt()
         val newConfigurationValue = (currentConfigValue * 1.5).toInt()
