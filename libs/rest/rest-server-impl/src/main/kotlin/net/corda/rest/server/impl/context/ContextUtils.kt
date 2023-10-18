@@ -128,14 +128,9 @@ internal object ContextUtils {
                     ctx.header(Header.CACHE_CONTROL, "no-cache")
                     methodLogger.debug { "Invoke method \"${this.method.method.name}\" for route info completed." }
                 } catch (e: Exception) {
-                    // Should really only log at debug for all exceptions except for unexpected exceptions
-                    // We should filter out most calls to log here.
-                    "Failed while invoking path '${this.fullPath}' - ${e.message}".let {
-                        // removed info log for now until filtering by exception can be achieved.
-//                        methodLogger.info(it)
-                        if (methodLogger.isDebugEnabled) {
-                            methodLogger.debug(it, e)
-                        }
+                    "Error invoking path '${this.fullPath}' - ${e.message}".let {
+                        methodLogger.info(it)
+                        methodLogger.debug(it, e)
                     }
                     throw HttpExceptionMapper.mapToResponse(e)
                 } finally {
