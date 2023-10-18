@@ -8,6 +8,7 @@ import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -140,7 +141,14 @@ internal class InMemorySessionReplayer(
             return
         }
 
-        val networkType = groupPolicyProvider.getP2PParameters(messageReplay.sessionCounterparties.ourId)?.networkType
+        val networkType = try {
+            groupPolicyProvider.getP2PParameters(messageReplay.sessionCounterparties.ourId)?.networkType
+        } catch (except: BadGroupPolicyException) {
+            logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName}) but" +
+                " the group policy data is unavailable or cannot be parsed for ${messageReplay.sessionCounterparties.ourId}. Error:" +
+                " ${except.message}. The message was not replayed.")
+            return
+        }
         if (networkType == null) {
             logger.warn("Attempted to replay a session negotiation message (type ${messageReplay.message::class.java.simpleName}) but" +
                 " could not find the network type in the GroupPolicyProvider for ${messageReplay.sessionCounterparties.ourId}." +

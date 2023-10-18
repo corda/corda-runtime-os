@@ -45,6 +45,8 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
+import net.corda.membership.lib.exceptions.BadGroupPolicyException
+import org.mockito.kotlin.doThrow
 
 class OutboundMessageProcessorTest {
     private val myIdentity = createTestHoldingIdentity("CN=PartyA, O=Corp, L=LDN, C=GB", "Group")
@@ -576,7 +578,51 @@ class OutboundMessageProcessorTest {
     @Test
     fun `unauthenticated messages are dropped if group info is not available`() {
         val groupPolicyProvider = mock<GroupPolicyProvider> {
-            on { getP2PParameters(localIdentity) } doReturn null
+            on { getP2PParameters(myIdentity) } doReturn null
+        }
+
+        val processor = OutboundMessageProcessor(
+            sessionManager,
+            hostingMap,
+            groupPolicyProvider,
+            membersAndGroups.first,
+            assignedListener,
+            messagesPendingSession,
+            mockTimeFacilitiesProvider.clock,
+            networkMessagingValidator,
+        )
+
+        val payload = "test"
+        val unauthenticatedMsg = OutboundUnauthenticatedMessage(
+            OutboundUnauthenticatedMessageHeader(
+                remoteIdentity.toAvro(),
+                myIdentity.toAvro(),
+                "subsystem",
+                "messageId",
+            ),
+            ByteBuffer.wrap(payload.toByteArray()),
+        )
+        val appMessage = AppMessage(unauthenticatedMsg)
+
+        val records = processor.onNext(
+            listOf(
+                EventLogRecord(
+                    Schemas.P2P.P2P_OUT_TOPIC,
+                    "key",
+                    appMessage,
+                    1,
+                    0
+                )
+            )
+        )
+
+        assertThat(records).isEmpty()
+    }
+
+    @Test
+    fun `unauthenticated messages are dropped, if BadGroupPolicyException is thrown on group policy lookup`() {
+        val groupPolicyProvider = mock<GroupPolicyProvider> {
+            on { getP2PParameters(myIdentity) } doThrow BadGroupPolicyException("Bad Group Policy")
         }
 
         val processor = OutboundMessageProcessor(
