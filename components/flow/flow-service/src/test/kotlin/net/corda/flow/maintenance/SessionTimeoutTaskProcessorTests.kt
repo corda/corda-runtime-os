@@ -26,7 +26,7 @@ class SessionTimeoutTaskProcessorTests {
             "foo",
             randomBytes(),
             0,
-            Metadata(mapOf(STATE_META_SESSION_EXPIRY_KEY to now.minusSeconds(1).epochSecond)))
+            Metadata(mapOf(STATE_META_SESSION_EXPIRY_KEY to now.minusSeconds(1).epochSecond.toInt())))
     private val states = mapOf(
         state1.key to state1,
     )
@@ -65,13 +65,15 @@ class SessionTimeoutTaskProcessorTests {
     fun `when state found return`() {
         val processor = SessionTimeoutTaskProcessor(stateManager) { now }
         val output = processor.onNext(listOf(record1))
+        val outputInstant = (state1.metadata[STATE_META_SESSION_EXPIRY_KEY] as Number).toLong()
         assertThat(output).containsExactly(
             Record(
                 Schemas.Flow.FLOW_TIMEOUT_TOPIC,
                 state1.key,
                 FlowTimeout(
                     state1.key,
-                    Instant.ofEpochSecond(state1.metadata[STATE_META_SESSION_EXPIRY_KEY] as Long))
+                    Instant.ofEpochSecond(outputInstant)
+                )
             )
         )
     }
