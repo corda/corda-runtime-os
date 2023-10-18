@@ -4,7 +4,9 @@ import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
+import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorConsumer
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
@@ -22,17 +24,21 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.taskmanager.TaskManager
 import net.corda.test.util.waitWhile
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.atLeast
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 class MultiSourceEventMediatorImplTest {
     companion object {
@@ -167,30 +173,53 @@ class MultiSourceEventMediatorImplTest {
         private val stateManager: StateManager,
         private val taskManager: TaskManager,
         lifecycleCoordinatorFactory: LifecycleCoordinatorFactory*/
+        val eventsToBeProcessed = 5
+        val events = (1..5).map {
+            cordaConsumerRecords(it.toString(), "test + $it")
+        }
+        whenever(consumer.poll(any())).thenReturn(events)
 
-        //set up mock return values for calls to these three apis
-        //e.g. check consumers list to check each item is closed
-        //e.g. check clients list to check each item is closed
-
+        var exceptionThrown = false
+        whenever(consumer.subscribe()).doAnswer {
+            if (!exceptionThrown) {
+                exceptionThrown = true
+                throw CordaMessageAPIIntermittentException("test")
+            }
+        }
 /*        consumers = mediatorComponentFactory.createConsumers(::onSerializationError)
         clients = mediatorComponentFactory.createClients(::onSerializationError)
         messageRouter = mediatorComponentFactory.createRouter(clients)*/
 
+        //make a msg processor that takes a latch
+        val latch = CountDownLatch(eventsToBeProcessed)
+        whenever(messageProcessor.onNext(any(), any())).then {
+            latch.countDown()
+        }
+
         //set up message processor that tells us when we've processed the right number of events (the signal from one thread to the test thread)
         //private val messageProcessor = mock<StateAndEventProcessor<Any, Any, Any>>()
 
-
+        //e.g. check consumers list to check each item is closed
+        //e.g. check clients list to check each item is closed
 
         //              test execution
         //start mediator
+        mediator.start()
         //wait for signal
+        latch.await(10, TimeUnit.SECONDS)
 
         //              test verification
         //1) all events processed - e.g. push 5, process 5
         //2) verify mocks recreated by apis being called again:
         //consumer mock, client mock, message router mock
         //verify status = UP
+
+        val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(mock(), mock())
+        assertThat (lifecycleCoordinator.status).isEqualTo(LifecycleStatus.UP)
         //verify mediator.start is called
+        verify(mediator).start()
+        verify(consumer).close()
+        verify(messagingClient).close()
     }
 
     @Test
@@ -203,12 +232,7 @@ class MultiSourceEventMediatorImplTest {
 
     }
 
-    @Test
-    fun `mediator retries `() {
-
-    }
-
-    private fun cordaConsumerRecords(key: String, event: String) =
+    private fun cordaConsumerRecords(key: String, event: String): CordaConsumerRecord<Any, Any> =
         CordaConsumerRecord(
             topic = "", partition = 0, offset = 0, key, event, timestamp = 0
         )
