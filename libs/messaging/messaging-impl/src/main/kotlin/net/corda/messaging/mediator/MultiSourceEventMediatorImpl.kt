@@ -23,7 +23,6 @@ import java.lang.Thread.sleep
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 
-
 @Suppress("LongParameterList")
 class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     private val config: EventMediatorConfig<K, S, E>,
@@ -129,7 +128,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 
     private fun onSerializationError(event: ByteArray) {
         // TODO CORE-17012 Subscription error handling (DLQ)
-        log.error("Failed to deserialize event")
+        log.warn("Failed to deserialize event")
         log.debug { "Failed to deserialize event: ${event.contentToString()}" }
     }
 
