@@ -1,5 +1,6 @@
 package net.corda.flow.maintenance
 
+import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
@@ -34,7 +35,8 @@ class CheckpointCleanupHandlerImpl(
         val time = Instant.now()
         val records = errorActiveSessions(checkpoint, config, exception, time) +
                 cleanupSessions(checkpoint, config, time) +
-                generateStatus(checkpoint, exception)
+                generateStatus(checkpoint, exception) +
+                cleanupInitiatingFlow(checkpoint, config, time)
         checkpoint.markDeleted()
         return records
     }
@@ -93,6 +95,23 @@ class CheckpointCleanupHandlerImpl(
             }
             listOf(flowRecordFactory.createFlowStatusRecord(status))
         } catch (e: Exception) {
+            listOf()
+        }
+    }
+
+    private fun cleanupInitiatingFlow(
+        checkpoint: FlowCheckpoint,
+        config: SmartConfig,
+        currentTime: Instant
+    ): List<Record<*, *>> {
+        return if (checkpoint.flowStartContext.initiatorType == FlowInitiatorType.RPC) {
+            val cleanupWindow = config.getLong(FlowConfig.PROCESSING_FLOW_CLEANUP_TIME)
+            val expiryTime = currentTime.plusMillis(cleanupWindow).toEpochMilli()
+            listOf(flowRecordFactory.createFlowMapperEventRecord(
+                checkpoint.flowKey.toString(),
+                ScheduleCleanup(expiryTime)
+            ))
+        } else {
             listOf()
         }
     }
