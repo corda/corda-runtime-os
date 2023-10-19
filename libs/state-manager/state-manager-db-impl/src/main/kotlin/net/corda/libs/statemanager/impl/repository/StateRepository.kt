@@ -31,22 +31,24 @@ interface StateRepository {
     fun get(entityManager: EntityManager, keys: Collection<String>): Collection<StateEntity>
 
     /**
-     * Update states within the persistence context.
-     * Transaction should be controlled by the caller.
+     * Update a collection of states within the database using JDBC connection.
      *
-     * @param connection Used to interact with the state manager persistence context.
-     * @param states Collection of states to be updated.
-     * @return Collection of keys for states that could not be updated due to optimistic locking check failure.
+     * Note: Transaction should be controlled by the caller.
+     *
+     * @param connection The JDBC connection used to interact with the database.
+     * @param states A collection of states to be updated in the database.
+     * @return A collection of keys for states that could not be updated due to optimistic locking check failure.
      */
     fun update(connection: Connection, states: Collection<StateEntity>): Collection<String>
 
     /**
-     * Delete states with the given keys from the persistence context.
-     * Transaction should be controlled by the caller.
+     * Delete a collection of states from the database using JDBC connection.
      *
-     * @param connection Used to interact with the state manager persistence context.
-     * @param states Collection of states to be deleted.
-     * @return Collection of keys for states that could not be deleted due to optimistic locking check failure.
+     * Note: Transaction should be controlled by the caller.
+     *
+     * @param connection The JDBC connection used to interact with the database.
+     * @param states A collection of states to be deleted from the database.
+     * @return A collection of keys for states that could not be deleted due to optimistic locking check failure.
      */
     fun delete(connection: Connection, states: Collection<StateEntity>): Collection<String>
 

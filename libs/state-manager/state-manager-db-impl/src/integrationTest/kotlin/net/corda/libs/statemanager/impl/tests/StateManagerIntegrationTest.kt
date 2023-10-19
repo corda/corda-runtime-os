@@ -246,12 +246,7 @@ class StateManagerIntegrationTest {
             )
         }
 
-        val start = System.nanoTime()
         val failedUpdates = stateManager.update(statesToUpdate)
-        val end = System.nanoTime()
-        val total: Long = (end - start)
-        val totalMs = total/1_000_000
-        println("Elapsed time for $stateCount states: $totalMs ms")
 
         assertThat(failedUpdates).isEmpty()
         softlyAssertPersistedStateEntities(
