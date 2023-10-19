@@ -2,14 +2,16 @@ package net.corda.messaging.mediator
 
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
-import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorConsumer
 import net.corda.messaging.api.mediator.MessageRouter
@@ -42,6 +44,8 @@ class MultiSourceEventMediatorImplTest {
         private const val TEST_TIMEOUT_SECONDS = 20L
         const val KEY1 = "key1"
         const val KEY2 = "key2"
+
+        const val PROCESSOR_RETRIES = 2
     }
 
     private lateinit var mediator: MultiSourceEventMediatorImpl<Any, Any, Any>
@@ -89,7 +93,7 @@ class MultiSourceEventMediatorImplTest {
     }
 
     private fun createMockConfig() : EventMediatorConfig<Any, Any, Any> {
-        whenever(messagingConfig.getInt(MessagingConfig.Subscription.PROCESSOR_RETRIES)).thenReturn(3)
+        whenever(messagingConfig.getInt(MessagingConfig.Subscription.PROCESSOR_RETRIES)).thenReturn(PROCESSOR_RETRIES)
 
         whenever(messageProcessor.keyClass).thenReturn(Any::class.java)
         whenever(messageProcessor.eventValueClass).thenReturn(Any::class.java)
@@ -187,74 +191,42 @@ class MultiSourceEventMediatorImplTest {
 
     @Test
     fun `processEventWithRetries retries correct number of times`() {
+        val latch = CountDownLatch(1)
+        whenever(consumer.close()).then { latch.countDown() }
+
         whenever(consumer.poll(any()))
-            .thenThrow(CordaMessageAPIIntermittentException("test"))
-//            .thenReturn(listOf(cordaConsumerRecords("key", "event" )))
-//            .thenThrow(CordaMessageAPIFatalException("FATAL"))
+            .thenThrow(CordaMessageAPIIntermittentException("Intermittent"))
 
         mediator.start()
 
-        verify(consumerFactory, times(2)).create<Any, Any>(any())
-        verify(clientFactory, times(2)).create(any())
-        verify(messageRouterFactory, times(2)).create(any())
+        latch.await(5L, TimeUnit.SECONDS)
+
+        mediator.close()
+
+        verify(consumer, times(PROCESSOR_RETRIES + 1)).poll(any())
     }
 
     @Test
-    fun `mediator retries after intermittent exception`() {
+    fun `mediator recreates components and continues after intermittent exception`() {
+        // Once for the initial creation, once for the recreation
+        val latch = CountDownLatch(2)
+        whenever(lifecycleCoordinator.updateStatus(LifecycleStatus.UP)).then { latch.countDown() }
+
+        // Exhaust the internal retries so that the components are reset
         whenever(consumer.poll(any()))
-            .thenThrow(CordaMessageAPIIntermittentException("intermittent 1"))
-            .thenThrow(CordaMessageAPIIntermittentException("intermittent 2"))
-            .thenThrow(CordaMessageAPIIntermittentException("intermittent 3"))
-            .thenThrow(CordaMessageAPIFatalException("fatal"))
+            .thenThrow(CordaMessageAPIIntermittentException("Intermittent 1..."))
+            .thenThrow(CordaMessageAPIIntermittentException("Intermittent 2..."))
+            .thenThrow(CordaMessageAPIIntermittentException("Intermittent 3..."))
 
         mediator.start()
+
+        latch.await(5L, TimeUnit.SECONDS)
+
+        mediator.close()
 
         verify(consumerFactory, times(2)).create<Any, Any>(any())
         verify(clientFactory, times(2)).create(any())
         verify(messageRouterFactory, times(2)).create(any())
-
-
-//        //set up message processor that tells us when we've processed the right number of events (the signal from one thread to the test thread)
-//        //make a msg processor that takes a latch
-//        val latch = CountDownLatch(eventsToBeProcessed)
-//        whenever(messageProcessor.onNext(any(), any())).then {
-//            latch.countDown()
-//        }.thenAnswer {
-//            StateAndEventProcessor.Response<Any>(
-//                updatedState = mock(),
-//                responseEvents = listOf(
-//                    Record(
-//                        topic = "", "key", value = mock(), timestamp = 0
-//                    )
-//                ),
-//            )
-//        }
-
-        //              test execution
-//        //start mediator
-//        mediator.start()
-//        //wait for signal - true for success, false for timeout
-////        assertTrue(latch.await(10, TimeUnit.SECONDS))
-//
-//        mediator.close()
-//
-//        //              test verification
-//        //check consumers list to check each item is closed
-//        //check clients list to check each item is closed
-//        verify(consumer).close()
-//        verify(messagingClient).close()
-//        //1) all events processed - e.g. push 5, process 5
-//        verify(messageProcessor, times(5)).onNext(any(), any())
-//
-//        //2) verify mocks recreated by apis being called again
-//        //consumer mock, client mock, message router mock:
-//
-//        verify(consumerFactory, times(2)).create<Any, Any>(any())
-//        verify(clientFactory, times(2)).create(any())
-//        verify(messageRouterFactory, times(2)).create(any())
-//
-//        //3) verify api that sets it to up is called
-//        verify(lifecycleCoordinator).updateStatus(LifecycleStatus.UP)
     }
 
     @Test
