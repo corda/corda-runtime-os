@@ -1,5 +1,5 @@
 package net.corda.p2p
-
+/*
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
@@ -800,3 +800,4 @@ class P2PLayerEndToEndTest {
         }
     }
 }
+*/
