@@ -57,7 +57,10 @@ class RPCClient(
 
     private fun deserializePayload(payload: ByteArray): Any? {
         return try {
-            deserializer.deserialize(payload)
+            when {
+                payload.isEmpty() -> null
+                else -> deserializer.deserialize(payload)
+            }
         } catch (e: Exception) {
             val errorMsg = "Failed to deserialize payload of size ${payload.size} bytes due to: ${e.message}"
             log.warn(errorMsg, e)

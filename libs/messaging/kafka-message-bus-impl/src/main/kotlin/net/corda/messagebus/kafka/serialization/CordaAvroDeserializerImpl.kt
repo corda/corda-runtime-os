@@ -80,12 +80,9 @@ class CordaAvroDeserializerImpl<T: Any>(
         }
     }
 
-    @Suppress("unchecked_cast")
     override fun deserialize(data: ByteArray): T? {
-        return when {
-            data.isEmpty() -> null
-            else -> deserialize(data, false) as? T
-        }
+        @Suppress("unchecked_cast")
+        return deserialize(data, false) as? T
     }
 
     override fun deserialize(topic: String?, data: ByteArray?): Any? {
