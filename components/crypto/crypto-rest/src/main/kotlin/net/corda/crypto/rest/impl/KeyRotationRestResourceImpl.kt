@@ -1,11 +1,7 @@
 package net.corda.crypto.rest.impl
 
-import com.typesafe.config.Config
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.config.impl.ALIAS
-import net.corda.crypto.config.impl.HSM
-import net.corda.crypto.config.impl.WRAPPING_KEYS
 import net.corda.crypto.rest.KeyRotationRestResource
 import net.corda.crypto.rest.response.KeyRotationResponse
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
@@ -27,7 +23,6 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.rest.PluggableRestResource
-import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.rest.response.ResponseEntity
 import net.corda.schema.Schemas.Crypto.REKEY_MESSAGE_TOPIC
