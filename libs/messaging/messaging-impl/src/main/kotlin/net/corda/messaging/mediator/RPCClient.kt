@@ -18,6 +18,8 @@ import net.corda.utilities.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+typealias HeadersMap = Map<String, String>
+
 class RPCClient(
     override val id: String,
     cordaAvroSerializerFactory: CordaAvroSerializationFactory,
@@ -77,9 +79,10 @@ class RPCClient(
             .POST(HttpRequest.BodyPublishers.ofByteArray(message.payload as ByteArray))
 
         // Add HTTP headers
-        val headers = message.getProperty<Map<String, String>>(HEADERS_PROPERTY)
-        for ((name, value) in headers) {
-            builder.header(name, value)
+        message.getPropertyOrNull<HeadersMap>(HEADERS_PROPERTY)?.let { headers ->
+            for ((name, value) in headers) {
+                builder.header(name, value)
+            }
         }
 
         return builder.build()
