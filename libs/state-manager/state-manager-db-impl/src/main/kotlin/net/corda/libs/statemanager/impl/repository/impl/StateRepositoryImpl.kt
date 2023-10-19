@@ -32,8 +32,8 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
             .resultListAsStateEntityCollection()
 
     override fun update(connection: Connection, states: Collection<StateEntity>): Collection<String> {
-        return connection.transaction {
-            it.prepareStatement(queryProvider.updateState).use { preparedStatement ->
+        return connection.transaction { conn ->
+            conn.prepareStatement(queryProvider.updateState).use { preparedStatement ->
                 for (s in states) {
                     preparedStatement.setString(1, s.key)
                     preparedStatement.setBytes(2, s.value)
@@ -64,22 +64,24 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
         return failed
     }
 
-    override fun delete(entityManager: EntityManager, states: Collection<StateEntity>): Collection<String> {
-        val failedKeys = mutableListOf<String>()
-
-        states.forEach { state ->
-            entityManager
-                .createNativeQuery(queryProvider.deleteStatesByKey)
-                .setParameter(KEY_PARAMETER_NAME, state.key)
-                .setParameter(VERSION_PARAMETER_NAME, state.version)
-                .executeUpdate().also {
-                    if (it == 0) {
-                        failedKeys.add(state.key)
-                    }
+    override fun delete(connection: Connection, states: Collection<StateEntity>): Collection<String> {
+        return connection.transaction { conn ->
+            conn.prepareStatement(queryProvider.deleteStatesByKey).use { preparedStatement ->
+                for (s in states) {
+                    preparedStatement.setString(1, s.key)
+                    preparedStatement.setInt(2, s.version)
+                    preparedStatement.addBatch()
                 }
+                // Execute the batch of prepared statements.
+                // The elements in the 'results' array correspond to the commands in the batch.
+                // The order of elements in 'results' follows the order in which the statements were added to the batch.
+                // - An update count greater than or equal to zero indicates that the command was processed successfully,
+                //   and it represents the number of rows in the database affected by the command.
+                // - If optimistic locking check fails for a statement in the batch, that statement will have a '0' in the 'results' array.
+                val results = preparedStatement.executeBatch()
+                getFailedKeysFromResults(results, states.map { it.key })
+            }
         }
-
-        return failedKeys
     }
 
     override fun updatedBetween(entityManager: EntityManager, interval: IntervalFilter): Collection<StateEntity> =
