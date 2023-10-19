@@ -28,6 +28,7 @@ class StartFlowExecutor(
                 .withTag(CordaMetrics.Tag.FlowEvent, startRPCFlow::class.java.name)
                 .build().increment()
             val flowId = generateFlowId()
+            log.info("QQQ Creating FlowMapperState($flowId, OPEN)", Exception("QQQ $flowId"))
             val newState = FlowMapperState(flowId, null, FlowMapperStateType.OPEN)
             val flowEvent = FlowEvent(flowId, startRPCFlow)
             FlowMapperResult(

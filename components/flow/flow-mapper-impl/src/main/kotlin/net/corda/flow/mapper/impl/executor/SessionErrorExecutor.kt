@@ -57,6 +57,7 @@ class SessionErrorExecutor(
             }
             FlowMapperStateType.OPEN -> {
                 log.debug(defaultMsg.format(FORWARDING))
+                log.info("QQQ Setting state to ERROR: ${flowMapperState.flowId}", Exception("QQQ ${flowMapperState.flowId}"))
                 flowMapperState.status = FlowMapperStateType.ERROR
                 val payload = if (sessionEvent.messageDirection == MessageDirection.OUTBOUND) {
                     ExceptionEnvelope(
@@ -80,6 +81,7 @@ class SessionErrorExecutor(
             }
             FlowMapperStateType.CLOSING -> {
                 log.debug(defaultMsg.format(IGNORING))
+                log.info("QQQ Setting state to ERROR: ${flowMapperState.flowId}", Exception("QQQ ${flowMapperState.flowId}"))
                 flowMapperState.status = FlowMapperStateType.ERROR
                 FlowMapperResult(flowMapperState, listOf())
             }

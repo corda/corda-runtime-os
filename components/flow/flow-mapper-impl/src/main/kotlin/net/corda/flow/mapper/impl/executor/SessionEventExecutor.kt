@@ -91,6 +91,7 @@ class SessionEventExecutor(
                 FlowMapperResult(null, listOf())
             }
             FlowMapperStateType.CLOSING, FlowMapperStateType.ERROR -> {
+                log.info("QQQ Oops: ${flowMapperState.status}; ${flowMapperState.flowId}")
                 log.warn("Attempted to process a message ${sessionEvent.messageDirection} but flow mapper state is " +
                         "in ${flowMapperState.status}. Session ID: ${sessionEvent.sessionId}. Ignoring Event")
                 FlowMapperResult(flowMapperState, listOf())

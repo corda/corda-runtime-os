@@ -25,6 +25,7 @@ class ScheduleCleanupEventExecutor(
             FlowMapperResult(state, emptyList())
         } else {
             if (state.status != FlowMapperStateType.ERROR) {
+                log.info("QQQ Setting state from ERROR to CLOSING: ${state.flowId}", Exception("QQQ ${state.flowId}"))
                 state.status = FlowMapperStateType.CLOSING
             }
             state.expiryTime = scheduleCleanup.expiryTime

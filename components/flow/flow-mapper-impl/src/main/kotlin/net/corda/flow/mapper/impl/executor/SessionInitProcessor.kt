@@ -13,6 +13,7 @@ import net.corda.metrics.CordaMetrics
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.time.Instant
 
 /**
@@ -23,6 +24,9 @@ class SessionInitProcessor @Activate constructor(
     @Reference(service = RecordFactory::class)
     private val recordFactory: RecordFactory
 ) {
+    private companion object {
+        val logger = LoggerFactory.getLogger("QQQ")
+    }
 
     /**
      * Process a [sessionEvent] and [sessionInit] payload to produce a flow mapper state
@@ -52,6 +56,7 @@ class SessionInitProcessor @Activate constructor(
                 instant
             )
 
+        logger.info("Creating FlowMapperState($flowId, OPEN)", Exception("QQQ $flowId"))
         return FlowMapperResult(
             FlowMapperState(flowId, null, FlowMapperStateType.OPEN),
             listOf(outputRecord)
