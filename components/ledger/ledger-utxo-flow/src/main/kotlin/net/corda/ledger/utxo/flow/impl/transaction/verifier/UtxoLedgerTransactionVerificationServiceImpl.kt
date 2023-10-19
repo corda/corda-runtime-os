@@ -82,12 +82,10 @@ class UtxoLedgerTransactionVerificationServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    fun verify(bytes: ByteArray, utxoLedgerPersistenceService: UtxoLedgerPersistenceService) {
-        log.info("@@@ verify")
-
+    fun verify(transactionContainer: SignedLedgerTransactionContainer, utxoLedgerPersistenceService: UtxoLedgerPersistenceService) {
         recordSuspendable(::transactionVerificationFlowTimer) @Suspendable {
-            val transactionContainer = serializationService.deserialize<SignedLedgerTransactionContainer>(bytes)
-            val (container, cpkMetadata, transactionId) = extractTransactionData(utxoLedgerPersistenceService, transactionContainer)
+            val (container, cpkMetadata, transactionId) =
+                extractTransactionData(utxoLedgerPersistenceService, transactionContainer)
 
             val verificationResult = externalEventExecutor.execute(
                 TransactionVerificationExternalEventFactory::class.java,

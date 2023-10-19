@@ -86,6 +86,8 @@ class TransactionBackchainVerifierImpl @Activate constructor(
                     try {
                         log.trace { "Backchain resolution of $initialTransactionIds - Verifying transaction $transactionId" }
 
+                        // This functionality needs to deal in UtxoSignedLedgerTransaction types, move it into a local function to
+                        // ensure they never end up on the stack at the point of calling a suspendable
                         verifyTransactionSignatures(interalPersistenceService, transactionContainer)
 
                         // Hack so I didn't have to change the api
@@ -94,9 +96,7 @@ class TransactionBackchainVerifierImpl @Activate constructor(
                         // replace the call to verify with our new one which takes only a "safe" transaction container
                         //utxoLedgerTransactionVerificationService.verify(transaction)
 
-                        log.info("@@@ about to call verify")
-
-                        internalService.verify(serializationService.serialize(transactionContainer).bytes, utxoLedgerPersistenceService)
+                        internalService.verify(transactionContainer, utxoLedgerPersistenceService)
 
                         log.trace { "Backchain resolution of $initialTransactionIds - Verified transaction $transactionId" }
                     } catch (e: Exception) {
@@ -107,11 +107,15 @@ class TransactionBackchainVerifierImpl @Activate constructor(
                         )
                         return false
                     }
+
+                    // This functionality needs to deal in UtxoSignedLedgerTransaction types, move it into a local function to
+                    // ensure they never end up on the stack at the point of calling a suspendable
                     val (signedTransactionContainer, visibleStatesIndexes) = getTransactionContainerAndVisibileStatebIndexes(
                         interalPersistenceService,
                         transactionContainer
                     )
 
+                    // replace the call to persistFromContainer with our new one which takes only a "safe" transaction container
                     interalPersistenceService.persistFromContainer(signedTransactionContainer, VERIFIED, visibleStatesIndexes)
                     log.trace { "Backchain resolution of $initialTransactionIds - Stored transaction $transactionId as verified" }
                 }
@@ -130,6 +134,10 @@ class TransactionBackchainVerifierImpl @Activate constructor(
         return true
     }
 
+    /**
+     * There's some complexity here as contract.isVisible is a suspendable, so we have to isolate that and ensure no
+     * UtxoSignedLedgerTransaction ends up on the stack at the point it's called.
+     */
     @Suspendable
     private fun getTransactionContainerAndVisibileStatebIndexes(
         interalPersistenceService: UtxoLedgerPersistenceServiceImpl,
