@@ -115,8 +115,9 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                         log.error(
                             "${exception.message} Attempts: $attempts. Closing Multi-Source Event Mediator.", exception
                         )
-                        lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, "Error: ${exception.message}")
-                        stop()
+                        // TODO Temporarily disabled for testing purposes
+//                        lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, "Error: ${exception.message}")
+//                        stop()
                     }
                 }
             } finally {
