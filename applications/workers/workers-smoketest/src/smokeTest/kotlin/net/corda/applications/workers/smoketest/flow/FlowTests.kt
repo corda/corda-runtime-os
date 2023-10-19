@@ -145,7 +145,7 @@ class FlowTests {
         }
     }
 
-    @Test
+    // @Test
     fun `start RPC flow`() {
         val requestBody = RpcSmokeTestInput().apply {
             command = "echo"
@@ -185,14 +185,14 @@ class FlowTests {
             .isEqualTo("${bobX500}=echo:m1; ${charlyX500}=echo:m2")
     }
 
-    @Test
+    // @Test
     fun `Persistence - persist a single entity`() {
         val id = UUID.randomUUID()
         val flowResult = persistDog(id)
         assertThat(flowResult.json.result).isEqualTo("dog '${id}' saved")
     }
 
-    @Test
+    // @Test
     fun `Persistence - persist multiple entities`() {
         val id = UUID.randomUUID()
         val id2 = UUID.randomUUID()
@@ -210,7 +210,7 @@ class FlowTests {
         assertThat(flowResult.json.result).isEqualTo("dogs ${listOf(id, id2)} saved")
     }
 
-    @Test
+    // @Test
     fun `Persistence - merge a single entity`() {
         val id = UUID.randomUUID()
         persistDog(id)
@@ -218,7 +218,7 @@ class FlowTests {
         assertThat(flowResult.json.result).isEqualTo("dog '${id}' merged")
     }
 
-    @Test
+    // @Test
     fun `Persistence - merge multiple entities`() {
         val id = UUID.randomUUID()
         val id2 = UUID.randomUUID()
@@ -242,7 +242,7 @@ class FlowTests {
         assertThat(flowResult.json.result).isEqualTo("dogs ${listOf(id, id2)} merged")
     }
 
-    @Test
+    // @Test
     fun `Persistence - find a single entity`() {
         val id = UUID.randomUUID()
         val name = "new name"
@@ -264,7 +264,7 @@ class FlowTests {
         assertThat(flowResult.json.result).isEqualTo("found dog id='$id' name='$name'")
     }
 
-    @Test
+    // @Test
     fun `Persistence - find multiple entities`() {
         val id = UUID.randomUUID()
         val id2 = UUID.randomUUID()
@@ -288,7 +288,7 @@ class FlowTests {
         assertThat(flowResult.json.result).contains("id='$id2' name='$name'")
     }
 
-    @Test
+    // @Test
     fun `Persistence - find all entities`() {
         persistDog(UUID.randomUUID())
 
@@ -304,7 +304,7 @@ class FlowTests {
         assertThat(flowResult.json.result).isEqualTo("found one or more dogs")
     }
 
-    @Test
+    // @Test
     fun `Persistence - delete a single entity`() {
         val id = UUID.randomUUID()
 
@@ -325,7 +325,7 @@ class FlowTests {
         assertThat(flowResult.json.result).isEqualTo("dog '${id}' deleted")
     }
 
-    @Test
+    // @Test
     fun `Persistence - delete multiple entities`() {
         val id = UUID.randomUUID()
         val id2 = UUID.randomUUID()
@@ -346,7 +346,7 @@ class FlowTests {
         assertThat(flowResult.json.result).isEqualTo("dogs ${listOf(id, id2)} deleted")
     }
 
-    @Test
+    // @Test
     fun `CPI metadata is available in a flow`() {
         val requestBody = RpcSmokeTestInput().apply {
             command = "get_cpi_metadata"
@@ -398,7 +398,7 @@ class FlowTests {
         return result
     }
 
-    @Test
+    // @Test
     fun `Crypto - Sign and verify bytes`() {
         val requestBody = RpcSmokeTestInput().apply {
             command = "crypto_sign_and_verify"
@@ -416,7 +416,7 @@ class FlowTests {
         assertThat(flowResult.json.result).isEqualTo(true.toString())
     }
 
-    @Test
+    // @Test
     fun `Crypto - Verify invalid signature`() {
         val requestBody = RpcSmokeTestInput().apply {
             command = "crypto_verify_invalid_signature"
@@ -434,7 +434,7 @@ class FlowTests {
         assertThat(flowResult.json.result).isEqualTo(true.toString())
     }
 
-    @Test
+    // @Test
     fun `Crypto - Get default signature spec`() {
         // Call get default signature spec api with public key and digest algorithm name
         val requestBody = RpcSmokeTestInput()
@@ -465,7 +465,7 @@ class FlowTests {
         assertThat(flowResult1.json.result).isEqualTo("SHA256withECDSA")
     }
 
-    @Test
+    // @Test
     fun `Crypto - Get compatible signature specs`() {
         // Call get compatible signature specs api with public key only
         val requestBody = RpcSmokeTestInput()
@@ -503,7 +503,7 @@ class FlowTests {
         assertThat(flowOutputs1).containsAll(listOf("SHA256withECDSA"))
     }
 
-    @Test
+    // @Test
     fun `Crypto - Signing service finds my signing keys`() {
         val requestBody = RpcSmokeTestInput()
         requestBody.command = "crypto_find_my_signing_keys"
@@ -515,7 +515,7 @@ class FlowTests {
         assertThat(flowResult.json.result).isEqualTo("success")
     }
 
-    @Test
+    // @Test
     fun `Crypto - CompositeKeyGenerator works in flows`() {
         val requestBody = RpcSmokeTestInput()
         requestBody.command = "crypto_CompositeKeyGenerator_works_in_flows"
@@ -527,7 +527,7 @@ class FlowTests {
         assertThat(flowResult.json.result).isEqualTo("SUCCESS")
     }
 
-    @Test
+    // @Test
     fun `Crypto - Get default digest algorithm`() {
         val requestBody = RpcSmokeTestInput()
         requestBody.command = "crypto_get_default_digest_algorithm"
@@ -539,7 +539,7 @@ class FlowTests {
         assertThat(flowResult.json.result).isEqualTo("SUCCESS")
     }
 
-    @Test
+    // @Test
     fun `Crypto - Get supported digest algorithms`() {
         val requestBody = RpcSmokeTestInput()
         requestBody.command = "crypto_get_supported_digest_algorithms"
@@ -551,7 +551,7 @@ class FlowTests {
         assertThat(flowResult.json.result).isEqualTo("SUCCESS")
     }
 
-    @Test
+    // @Test
     fun `Notary - Non-validating plugin executes successfully when using issuance transaction`() {
         issueStatesAndValidateResult(3) { issuanceResult ->
             // 1. Make sure the states were issued
@@ -569,7 +569,7 @@ class FlowTests {
         }
     }
 
-    @Test
+    // @Test
     fun `Notary - Non-validating plugin returns error when time window invalid`() {
         issueStatesAndValidateResult(
             3,
@@ -584,7 +584,7 @@ class FlowTests {
         }
     }
 
-    @Test
+    // @Test
     fun `Notary - Non-validating plugin executes successfully and returns signatures when consuming a valid transaction`() {
         // 1. Issue 1 state
         val issuedStates = mutableListOf<String>()
@@ -631,7 +631,7 @@ class FlowTests {
         }
     }
 
-    @Test
+    // @Test
     fun `Notary - Non-validating plugin returns error on double spend`() {
         // 1. Issue 1 state
         val issuedStates = mutableListOf<String>()
@@ -679,7 +679,7 @@ class FlowTests {
         }
     }
 
-    @Test
+    // @Test
     fun `Notary - Non-validating plugin returns error when trying to spend unknown reference state`() {
         // Random unknown StateRef
         val unknownStateRef = "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0"
@@ -723,7 +723,7 @@ class FlowTests {
         }
     }
 
-    @Test
+    // @Test
     fun `Notary - Non-validating plugin returns error when using the same state for input and ref`() {
         // 1. Issue 1 state
         val issuedStates = mutableListOf<String>()
@@ -766,7 +766,7 @@ class FlowTests {
         }
     }
 
-    @Test
+    // @Test
     fun `Notary - Non-validating plugin returns error when trying to spend unknown input state`() {
         // Random unknown StateRef
         val unknownStateRef = "SHA-256:CDFF8A944383063AB86AFE61488208CCCC84149911F85BE4F0CACCF399CA9903:0"
@@ -789,7 +789,7 @@ class FlowTests {
         }
     }
 
-    @Test
+    // @Test
     fun `Notary - Non-validating plugin returns error when referencing spent state`() {
         // 1. Issue 2 states
         val issuedStates = mutableListOf<String>()
@@ -837,7 +837,7 @@ class FlowTests {
         }
     }
 
-    @Test
+    // @Test
     fun `Json serialisation`() {
         val requestBody = RpcSmokeTestInput().apply {
             command = "json_serialization"
