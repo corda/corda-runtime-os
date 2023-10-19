@@ -72,16 +72,17 @@ class RPCClient(
 
     private fun buildHttpRequest(message: MediatorMessage<*>): HttpRequest {
 
-        val headers = message.getProperty<Map<String, String>>(HEADERS_PROPERTY)
-            .flatMap { (key, value) -> listOf(key, value) }
-            .toTypedArray()
-
-        @Suppress("SpreadOperator")
-        return HttpRequest.newBuilder()
+        val builder = HttpRequest.newBuilder()
             .uri(URI(message.endpoint()))
-            .headers(*headers)
             .POST(HttpRequest.BodyPublishers.ofByteArray(message.payload as ByteArray))
-            .build()
+
+        // Add HTTP headers
+        val headers = message.getProperty<Map<String, String>>(HEADERS_PROPERTY)
+        for ((name, value) in headers) {
+            builder.header(name, value)
+        }
+
+        return builder.build()
     }
 
     private fun sendWithRetry(request: HttpRequest): HttpResponse<ByteArray> {
