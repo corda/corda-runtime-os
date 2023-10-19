@@ -125,7 +125,7 @@ jdbc:{{- include "corda.clusterDbType" $ -}}://{{- $.Values.db.cluster.host -}}:
         key: {{ required (printf "Must specify bootstrap.db.stateManager.%s.password.valueFrom.secretKeyRef.key" $workerKey) $bootConfig.password.valueFrom.secretKeyRef.key | quote }}
         {{-   else -}}
         name: {{ include "corda.stateManagerDefaultSecretName" ( list $ $workerKey ) | quote }}
-        key: "username"
+        key: "password"
         {{-  end }}
         {{- else -}}
         {{- include "corda.bootstrapClusterPgPassword" $ | nindent 6 }}
