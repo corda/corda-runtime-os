@@ -63,6 +63,7 @@ data class ProcessorTask<K : Any, S : Any, E : Any>(
                 }
             }
             val response = processor.onNext(state, event)
+            log.info("Processing event resulted with [${response.responseEvents.size}] output events")
             state = response.updatedState
             response.responseEvents
         }.flatten()

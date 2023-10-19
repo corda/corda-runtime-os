@@ -169,18 +169,24 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         }
         if (messages.isNotEmpty()) {
             val msgGroups = messages.groupBy { it.key }
+            log.info("Retrieving states")
             val persistedStates = stateManager.get(msgGroups.keys.map { it.toString() })
             var msgProcessorTasks = taskManagerHelper.createMessageProcessorTasks(
                 msgGroups, persistedStates, config.messageProcessor
             )
             do {
+                log.info("Executing processor tasks")
                 val processingResults = taskManagerHelper.executeProcessorTasks(msgProcessorTasks)
+                log.info("Persisting states")
                 val conflictingStates = stateManagerHelper.persistStates(processingResults)
+                log.info("Conflicting states count [${conflictingStates.size}]")
                 val (successResults, failResults) = processingResults.partition {
                     !conflictingStates.contains(it.key.toString())
                 }
                 val clientTasks = taskManagerHelper.createClientTasks(successResults, messageRouter)
+                log.info("Executing client tasks")
                 val clientResults = taskManagerHelper.executeClientTasks(clientTasks)
+                log.info("Client tasks executed")
                 msgProcessorTasks =
                     taskManagerHelper.createMessageProcessorTasks(clientResults) +
                             taskManagerHelper.createMessageProcessorTasks(failResults, conflictingStates)
