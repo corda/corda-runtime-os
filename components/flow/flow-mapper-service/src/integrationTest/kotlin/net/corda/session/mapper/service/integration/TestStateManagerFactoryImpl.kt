@@ -18,12 +18,16 @@ import java.util.concurrent.ConcurrentHashMap
  */
 @Component
 class TestStateManagerFactoryImpl : StateManagerFactory {
+    companion object {
+        private val storage = ConcurrentHashMap<String, State>()
+
+        fun clear() = storage.clear()
+    }
 
     private val storage = ConcurrentHashMap<String, State>()
 
     override fun create(config: SmartConfig): StateManager {
         return object : StateManager {
-            private val storage = ConcurrentHashMap<String, State>()
             override fun close() {
             }
 
