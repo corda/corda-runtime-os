@@ -67,8 +67,9 @@ jdbc:{{- include "corda.clusterDbType" $ -}}://{{- $.Values.db.cluster.host -}}:
 {{/* State Manager Default Worker Secret Name */}}
 {{- define "corda.stateManagerDefaultSecretName" -}}
 {{- $ := index . 0 }}
-{{- $workerName := index . 1 }}
-{{ printf "%s-%s-state-manager-db" (include "corda.fullname" $) $workerName }}
+{{- $workerKey := index . 1 }}
+{{- $workerName := printf "%s-worker" ( include "corda.workerTypeKebabCase" $workerKey ) }}
+{{- printf "%s-%s-state-manager-secret" (include "corda.fullname" $) $workerName  }}
 {{- end -}}
 
 
@@ -96,28 +97,37 @@ jdbc:{{- include "corda.clusterDbType" $ -}}://{{- $.Values.db.cluster.host -}}:
       {{- end }}
 {{- end -}}
 
-
-{{/* State Manager Database Credentials Environment Variables for Bootstrap Process */}}
 {{- define "corda.bootstrapStateManagerDbEnv" -}}
 {{- $ := index . 0 }}
 {{- $worker := index . 1 }}
-{{- $bootConfig := index . 2 }}
+{{- $workerKey := index . 2 }}
+{{- $bootConfig := index . 3 }}
 - name: STATE_MANAGER_PGUSER
   valueFrom:
     secretKeyRef:
-      {{- if and ($worker.stateManager.db.host) ($bootConfig.username.valueFrom.secretKeyRef.name) }}
-      name: {{ $bootConfig.username.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required "Must specify $bootConfig.username.valueFrom.secretKeyRef.key" $bootConfig.username.valueFrom.secretKeyRef.key | quote }}
-      {{- else }}
-      {{- include "corda.bootstrapClusterPgUser" $ | nindent 6 }}
-      {{- end }}
+        {{ if $worker.stateManager.db.host -}}
+        {{   if $bootConfig.username.valueFrom.secretKeyRef.name -}}
+        name: {{ $bootConfig.username.valueFrom.secretKeyRef.name | quote }}
+        key: {{ required (printf "Must specify bootstrap.db.stateManager.%s.username.valueFrom.secretKeyRef.key" $workerKey) $bootConfig.username.valueFrom.secretKeyRef.key | quote }}
+        {{-   else -}}
+        name: {{ include "corda.stateManagerDefaultSecretName" ( list $ $workerKey ) | quote }}
+        key: "username"
+        {{-  end }}
+        {{- else -}}
+        {{- include "corda.bootstrapClusterPgUser" $ | nindent 6 }}
+        {{- end }}
 - name: STATE_MANAGER_PGPASSWORD
   valueFrom:
     secretKeyRef:
-      {{- if and ($worker.stateManager.db.host) ($bootConfig.password.valueFrom.secretKeyRef.name) }}
-      name: {{ $bootConfig.password.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required "Must specify $bootConfig.password.valueFrom.secretKeyRef.key" $bootConfig.password.valueFrom.secretKeyRef.key | quote }}
-      {{- else }}
-      {{- include "corda.bootstrapClusterPgPassword" $ | nindent 6 }}
-      {{- end }}
+        {{ if $worker.stateManager.db.host -}}
+        {{   if $bootConfig.password.valueFrom.secretKeyRef.name -}}
+        name: {{ $bootConfig.password.valueFrom.secretKeyRef.name | quote }}
+        key: {{ required (printf "Must specify bootstrap.db.stateManager.%s.password.valueFrom.secretKeyRef.key" $workerKey) $bootConfig.password.valueFrom.secretKeyRef.key | quote }}
+        {{-   else -}}
+        name: {{ include "corda.stateManagerDefaultSecretName" ( list $ $workerKey ) | quote }}
+        key: "username"
+        {{-  end }}
+        {{- else -}}
+        {{- include "corda.bootstrapClusterPgPassword" $ | nindent 6 }}
+        {{- end }}
 {{- end -}}

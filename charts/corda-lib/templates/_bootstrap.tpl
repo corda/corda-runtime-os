@@ -363,7 +363,7 @@ spec:
           {{- include "corda.containerSecurityContext" . | nindent 10 }}
           env:
             {{- include "corda.bootstrapCliEnv" . | nindent 12 }}
-            {{- include "corda.bootstrapStateManagerDbEnv" ( list $ $worker $authConfig ) | nindent 12 }}
+            {{- include "corda.bootstrapStateManagerDbEnv" ( list $ $worker $workerKey $authConfig ) | nindent 12 }}
           command: [ 'sh', '-c', '-e' ]
           args:
             - |
@@ -398,7 +398,7 @@ spec:
             - name: STATE_MANAGER_DB_NAME
               value: {{ include "corda.stateManagerDbName" ( list . $worker ) | quote }}
             {{- include "corda.stateManagerDbEnv" ( list $ $worker ) | nindent 12 }}
-            {{- include "corda.bootstrapStateManagerDbEnv" ( list $ $worker $authConfig ) | nindent 12 }}
+            {{- include "corda.bootstrapStateManagerDbEnv" ( list $ $worker $workerKey $authConfig ) | nindent 12 }}
           command: [ 'sh', '-c', '-e' ]
           args:
             - |
