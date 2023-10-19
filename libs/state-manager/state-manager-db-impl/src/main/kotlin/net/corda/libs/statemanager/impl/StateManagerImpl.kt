@@ -2,6 +2,7 @@ package net.corda.libs.statemanager.impl
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.db.core.CloseableDataSource
+import net.corda.db.core.utils.transaction
 import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
@@ -61,7 +62,9 @@ class StateManagerImpl(
 
     override fun update(states: Collection<State>): Map<String, State> {
         try {
-            val failedUpdates = stateRepository.update(dataSource.connection, states.map { it.toPersistentEntity() })
+            val failedUpdates = dataSource.connection.transaction { conn ->
+                stateRepository.update(conn, states.map { it.toPersistentEntity() })
+            }
 
             return if (failedUpdates.isEmpty()) {
                 emptyMap()
@@ -77,7 +80,9 @@ class StateManagerImpl(
 
     override fun delete(states: Collection<State>): Map<String, State> {
         try {
-            val failedDeletes = stateRepository.delete(dataSource.connection, states.map { it.toPersistentEntity() })
+            val failedDeletes = dataSource.connection.transaction { conn ->
+                stateRepository.delete(conn, states.map { it.toPersistentEntity() })
+            }
 
             return if (failedDeletes.isEmpty()) {
                 emptyMap()
