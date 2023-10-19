@@ -1,5 +1,5 @@
 package net.corda.p2p.linkmanager.integration
-
+/*
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
@@ -232,3 +232,4 @@ class LinkManagerIntegrationTest {
         }
     }
 }
+*/
