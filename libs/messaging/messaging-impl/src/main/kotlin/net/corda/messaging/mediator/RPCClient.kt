@@ -32,6 +32,7 @@ class RPCClient(
 
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        const val HEADERS_PROPERTY = "headers"
     }
 
     override fun send(message: MediatorMessage<*>): MediatorMessage<*>? {
@@ -70,8 +71,14 @@ class RPCClient(
     }
 
     private fun buildHttpRequest(message: MediatorMessage<*>): HttpRequest {
+
+        val headers = message.getProperty<Map<String, String>>(HEADERS_PROPERTY)
+            .flatMap { (key, value) -> listOf(key, value) }
+            .toTypedArray()
+
         return HttpRequest.newBuilder()
             .uri(URI(message.endpoint()))
+            .headers(*headers)
             .POST(HttpRequest.BodyPublishers.ofByteArray(message.payload as ByteArray))
             .build()
     }
