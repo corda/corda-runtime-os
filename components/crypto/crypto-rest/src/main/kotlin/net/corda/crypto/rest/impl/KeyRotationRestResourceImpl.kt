@@ -56,7 +56,6 @@ class KeyRotationRestResourceImpl @Activate constructor(
 
     private val uploadTopic = REKEY_MESSAGE_TOPIC
     private var publisher: Publisher? = null
-    private lateinit var unmanagedWrappingKeyAliases: Set<String>
 
     override val targetInterface: Class<KeyRotationRestResource> = KeyRotationRestResource::class.java
     override val protocolVersion: Int = platformInfoProvider.localWorkerPlatformVersion
@@ -64,18 +63,10 @@ class KeyRotationRestResourceImpl @Activate constructor(
     private val requestId = UUID.randomUUID().toString()
     override fun initialise(config: Map<String, SmartConfig>) {
         val messagingConfig = config.getConfig(ConfigKeys.MESSAGING_CONFIG)
-        val cryptoConfig = config.getConfig(ConfigKeys.CRYPTO_CONFIG)
 
         // Initialise publisher with messaging config
         publisher?.close()
         publisher = publisherFactory.createPublisher(PublisherConfig(requestId), messagingConfig)
-
-        // Initialise unmanaged wrapping keys from the crypto config
-        val keysList: List<Config> = cryptoConfig.getConfig(HSM).getConfigList(WRAPPING_KEYS)
-        unmanagedWrappingKeyAliases =
-            keysList.map {
-                it.getString(ALIAS)
-            }.toSet()
     }
 
 
@@ -93,12 +84,8 @@ class KeyRotationRestResourceImpl @Activate constructor(
         if (publisher == null) {
             throw ServiceUnavailableException("Key rotation resource has not been initialised.")
         }
-
-        if (oldKeyAlias !in unmanagedWrappingKeyAliases)
-            throw InvalidInputDataException("Old key alias is not part of the configuration.")
-
-        if (newKeyAlias !in unmanagedWrappingKeyAliases)
-            throw InvalidInputDataException("New key alias is not part of the configuration.")
+        // We cannot validate oldKeyAlias or newKeyAlias early here on the client side of the RPC since
+        // those values are considered sensitive.
 
         // We need to create a Record that tells Crypto processor to do key rotation
         // Do we need to start the publisher? FlowRestResource is not starting its publisher for some reason
