@@ -15,8 +15,8 @@ class PostgresQueryProvider : AbstractQueryProvider() {
     override val updateState: String
         get() = """
             UPDATE $STATE_MANAGER_TABLE SET
-            key = :$KEY_PARAMETER_NAME, value = :$VALUE_PARAMETER_NAME, version = version + 1, metadata = CAST(:$METADATA_PARAMETER_NAME as JSONB), modified_time = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-            WHERE key = :$KEY_PARAMETER_NAME AND version = :$VERSION_PARAMETER_NAME
+            key = ?, value = ?, version = ? + 1, metadata = CAST(? as JSONB), modified_time = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+            WHERE key = ? AND version = ?
         """.trimIndent()
 
     override fun findStatesByMetadataMatchingAll(filters: Collection<MetadataFilter>) =
