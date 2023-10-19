@@ -64,8 +64,9 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
                 val groupedEvents = clientTaskResults.map { it.toRecord() }
                 with(clientTaskResults.first()) {
                     val persistedState = processorTaskResult.updatedState!!
+                    val incrementVersion = if (processorTaskResult.processorTask.persistedState == null) 0 else 1
                     processorTask.copy(
-                        persistedState = persistedState.copy(version = persistedState.version + 1),
+                        persistedState = persistedState.copy(version = persistedState.version + incrementVersion),
                         events = groupedEvents
                     )
                 }
