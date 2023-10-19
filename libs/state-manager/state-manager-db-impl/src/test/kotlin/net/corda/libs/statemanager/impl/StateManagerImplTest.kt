@@ -102,7 +102,7 @@ class StateManagerImplTest {
 
         val result = stateManager.delete(listOf(apiStateOne, apiStateTwo, apiStateThree))
         assertThat(result).isEmpty()
-        verify(stateRepository).delete(entityManager, listOf(persistentStateOne, persistentStateTwo, persistentStateThree))
+        verify(stateRepository).delete(connection, listOf(persistentStateOne, persistentStateTwo, persistentStateThree))
         verifyNoMoreInteractions(stateRepository)
     }
 
@@ -115,7 +115,7 @@ class StateManagerImplTest {
         val result = stateManager.delete(listOf(apiStateOne, apiStateTwo, apiStateThree))
         assertThat(result).containsExactly(entry(persistedStateThree.key, persistedStateThree.toState()))
         verify(stateRepository).get(entityManager, listOf(apiStateThree.key))
-        verify(stateRepository).delete(entityManager, listOf(persistentStateOne, persistentStateTwo, persistentStateThree))
+        verify(stateRepository).delete(connection, listOf(persistentStateOne, persistentStateTwo, persistentStateThree))
         verifyNoMoreInteractions(stateRepository)
     }
 }

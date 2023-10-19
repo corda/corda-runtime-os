@@ -19,6 +19,11 @@ class PostgresQueryProvider : AbstractQueryProvider() {
             WHERE key = ? AND version = ?
         """.trimIndent()
 
+    override val deleteStatesByKey: String
+        get() = """
+            DELETE FROM $STATE_MANAGER_TABLE s WHERE s.key = ? AND s.version = ?
+        """.trimIndent()
+
     override fun findStatesByMetadataMatchingAll(filters: Collection<MetadataFilter>) =
         """
             SELECT s.key, s.value, s.metadata, s.version, s.modified_time 
