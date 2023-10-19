@@ -21,6 +21,28 @@ internal class MediatorComponentFactory<K : Any, S : Any, E : Any>(
 ) {
 
     /**
+     * Creates message consumer.
+     *
+     * @param onSerializationError Function for handling serialization errors.
+     * @return Created [MediatorConsumer].
+     */
+    fun createConsumer(
+        consumerFactory: MediatorConsumerFactory,
+        onSerializationError: (ByteArray) -> Unit
+    ): MediatorConsumer<K, E> {
+        check(consumerFactories.isNotEmpty()) {
+            "No consumer factory set in configuration"
+        }
+        return consumerFactory.create(
+            MediatorConsumerConfig(
+                messageProcessor.keyClass,
+                messageProcessor.eventValueClass,
+                onSerializationError
+            )
+        )
+    }
+
+    /**
      * Creates message consumers.
      *
      * @param onSerializationError Function for handling serialization errors.
