@@ -8,3 +8,8 @@ class EvmDemoInput {
     var fractionPurchased: Int? = null
     var purchasePrice: Int? = null
 }
+
+class EvmDemoTxnReceiptInput {
+    var rpcUrl: String? = null
+    var hash: String? = null
+}

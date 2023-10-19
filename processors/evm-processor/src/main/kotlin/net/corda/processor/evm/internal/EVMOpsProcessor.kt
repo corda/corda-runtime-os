@@ -64,7 +64,7 @@ class EVMOpsProcessor(
     private fun handleRequest(request: EvmRequest): Record<String, FlowEvent> {
         val response = dispatcher[request.payload::class]?.dispatch(request)
         return if (response != null) {
-            externalEventResponseFactory.success(request.flowExternalEventContext, this)
+            externalEventResponseFactory.success(request.flowExternalEventContext, response)
         } else {
             externalEventResponseFactory.platformError(
                 request.flowExternalEventContext,

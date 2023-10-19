@@ -86,7 +86,10 @@ class EvmServiceImpl @Activate constructor(
             externalEventExecutor.execute(
                 EvmTransactionExternalEventFactory::class.java,
                 EvmTransactionExternalEventParams(
-                    options, to, functionName, parameters
+                    transactionOptions = options,
+                    functionName = functionName,
+                    to = to,
+                    parameters = parameters
                 )
             )
         } catch (e: ClassCastException) {
