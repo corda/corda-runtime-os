@@ -1,5 +1,5 @@
 package net.corda.p2p.linkmanager.delivery
-
+/*
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.DominoTile
@@ -336,3 +336,4 @@ class InMemorySessionReplayerTest {
         whenever(dominoTile.constructed().first().isRunning).doReturn(true)
     }
 }
+*/

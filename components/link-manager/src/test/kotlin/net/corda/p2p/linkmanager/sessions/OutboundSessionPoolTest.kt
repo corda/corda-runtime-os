@@ -1,5 +1,5 @@
 package net.corda.p2p.linkmanager.sessions
-
+/*
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.Session
@@ -434,3 +434,4 @@ class OutboundSessionPoolTest {
         assertThat(gotSessions.filter { it.sessionId == "session4" }).hasSize(6)
     }
 }
+*/

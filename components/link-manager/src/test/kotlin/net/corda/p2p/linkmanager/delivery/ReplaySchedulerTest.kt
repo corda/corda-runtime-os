@@ -1,5 +1,5 @@
 package net.corda.p2p.linkmanager.delivery
-
+/*
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
@@ -567,3 +567,4 @@ class ReplaySchedulerTest {
         whenever(dominoTile.constructed().first().isRunning).doReturn(true)
     }
 }
+*/

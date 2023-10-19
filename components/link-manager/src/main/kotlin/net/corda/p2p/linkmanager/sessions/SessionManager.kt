@@ -30,6 +30,7 @@ internal interface SessionManager : LifecycleWithDominoTile {
         override val counterpartyId: HoldingIdentity,
         val status: MembershipStatusFilter,
         val serial: Long,
+        val communicationWithMgm: Boolean,
     ): BaseCounterparties
 
     data class Counterparties(
