@@ -3,6 +3,7 @@ package net.corda.messaging.mediator
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
@@ -24,7 +25,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.taskmanager.TaskManager
 import net.corda.test.util.waitWhile
-import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -60,6 +61,7 @@ class MultiSourceEventMediatorImplTest {
     private val stateManager = mock<StateManager>()
     private val taskManager = mock<TaskManager>()
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
+    private val lifecycleCoordinator = mock<LifecycleCoordinator>()
 
     @BeforeEach
     fun beforeEach() {
@@ -73,21 +75,7 @@ class MultiSourceEventMediatorImplTest {
 
         whenever(messageProcessor.keyClass).thenReturn(Any::class.java)
         whenever(messageProcessor.eventValueClass).thenReturn(Any::class.java)
-        whenever(
-            messageProcessor.onNext(
-                anyOrNull(),
-                any()
-            )
-        ).thenAnswer {
-            StateAndEventProcessor.Response<Any>(
-                updatedState = mock(),
-                responseEvents = listOf(
-                    Record(
-                        topic = "", "key", value = mock(), timestamp = 0
-                    )
-                ),
-            )
-        }
+
 
         val messageRouter = MessageRouter { _ ->
             RoutingDestination.routeTo(messagingClient, "endpoint")
@@ -101,16 +89,11 @@ class MultiSourceEventMediatorImplTest {
             CompletableFuture.supplyAsync(command)
         }
 
-        whenever(lifecycleCoordinatorFactory.createCoordinator(any(), anyOrNull())).thenReturn(mock())
+        whenever(lifecycleCoordinatorFactory.createCoordinator(any(), anyOrNull())).thenReturn(lifecycleCoordinator)
 
-        config = EventMediatorConfigBuilder<Any, Any, Any>()
-            .name("Test")
-            .messagingConfig(mock())
-            .consumerFactories(mediatorConsumerFactory)
-            .clientFactories(messagingClientFactory)
-            .messageProcessor(messageProcessor)
-            .messageRouterFactory(messageRouterFactory)
-            .build()
+        config = EventMediatorConfigBuilder<Any, Any, Any>().name("Test").messagingConfig(mock())
+            .consumerFactories(mediatorConsumerFactory).clientFactories(messagingClientFactory)
+            .messageProcessor(messageProcessor).messageRouterFactory(messageRouterFactory).build()
 
         mediator = MultiSourceEventMediatorImpl(
             config,
@@ -166,13 +149,6 @@ class MultiSourceEventMediatorImplTest {
     @Test
     fun `mediator retries after intermittent exception`() {
         //                  test setup
-        //supply constructor args:
-/*        private val config: EventMediatorConfig<K, S, E>,
-        stateSerializer: CordaAvroSerializer<S>,
-        stateDeserializer: CordaAvroDeserializer<S>,
-        private val stateManager: StateManager,
-        private val taskManager: TaskManager,
-        lifecycleCoordinatorFactory: LifecycleCoordinatorFactory*/
         val eventsToBeProcessed = 5
         val events = (1..5).map {
             cordaConsumerRecords(it.toString(), "test + $it")
@@ -186,40 +162,46 @@ class MultiSourceEventMediatorImplTest {
                 throw CordaMessageAPIIntermittentException("test")
             }
         }
-/*        consumers = mediatorComponentFactory.createConsumers(::onSerializationError)
-        clients = mediatorComponentFactory.createClients(::onSerializationError)
-        messageRouter = mediatorComponentFactory.createRouter(clients)*/
 
+        //set up message processor that tells us when we've processed the right number of events (the signal from one thread to the test thread)
         //make a msg processor that takes a latch
         val latch = CountDownLatch(eventsToBeProcessed)
         whenever(messageProcessor.onNext(any(), any())).then {
             latch.countDown()
+        }.thenAnswer {
+            StateAndEventProcessor.Response<Any>(
+                updatedState = mock(),
+                responseEvents = listOf(
+                    Record(
+                        topic = "", "key", value = mock(), timestamp = 0
+                    )
+                ),
+            )
         }
-
-        //set up message processor that tells us when we've processed the right number of events (the signal from one thread to the test thread)
-        //private val messageProcessor = mock<StateAndEventProcessor<Any, Any, Any>>()
-
-        //e.g. check consumers list to check each item is closed
-        //e.g. check clients list to check each item is closed
 
         //              test execution
         //start mediator
         mediator.start()
-        //wait for signal
-        latch.await(10, TimeUnit.SECONDS)
+        //wait for signal - true for success, false for timeout
+        assertTrue(latch.await(10, TimeUnit.SECONDS))
 
         //              test verification
-        //1) all events processed - e.g. push 5, process 5
-        //2) verify mocks recreated by apis being called again:
-        //consumer mock, client mock, message router mock
-        //verify status = UP
-
-        val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(mock(), mock())
-        assertThat (lifecycleCoordinator.status).isEqualTo(LifecycleStatus.UP)
-        //verify mediator.start is called
-        verify(mediator).start()
+        //check consumers list to check each item is closed
+        //check clients list to check each item is closed
         verify(consumer).close()
         verify(messagingClient).close()
+        //1) all events processed - e.g. push 5, process 5
+        verify(messageProcessor, times(5)).onNext(any(), any())
+
+        //2) verify mocks recreated by apis being called again
+        //consumer mock, client mock, message router mock:
+
+        verify(mediatorConsumerFactory, times(2)).create<Any, Any>(any())
+        verify(messagingClientFactory, times(2)).create(any())
+        verify(messageRouterFactory, times(2)).create(any())
+
+        //3) verify api that sets it to up is called
+        verify(lifecycleCoordinator).updateStatus(LifecycleStatus.UP)
     }
 
     @Test
@@ -232,8 +214,7 @@ class MultiSourceEventMediatorImplTest {
 
     }
 
-    private fun cordaConsumerRecords(key: String, event: String): CordaConsumerRecord<Any, Any> =
-        CordaConsumerRecord(
-            topic = "", partition = 0, offset = 0, key, event, timestamp = 0
-        )
+    private fun cordaConsumerRecords(key: String, event: String): CordaConsumerRecord<Any, Any> = CordaConsumerRecord(
+        topic = "", partition = 0, offset = 0, key, event, timestamp = 0
+    )
 }
