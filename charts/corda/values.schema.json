@@ -1269,29 +1269,19 @@
                             }]
                         },
                         "stateManager": {
-                            "type": "array",
-                            "default": {},
-                            "uniqueItems": true,
-                            "title": "Bootstrap configuration for State Manager database(s)",
-                            "required": [ "worker" ],
-                            "additionalProperties": false,
-                            "items": {
-                                "type": "object",
-                                "properties": {
-                                    "worker": {
-                                        "type": "string",
-                                        "enum": ["flow", "flowMapper" ],
-                                        "title": "The name of the Worker that will use the State Manager Database"
-                                    },
-                                    "username": {
-                                        "$ref": "#/$defs/config"
-                                    },
-                                    "password": {
-                                        "$ref": "#/$defs/config"
+                            "flow": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/basicAuthConfig"
                                     }
-                                },
-                                "additionalProperties": false,
-                                "required": [ "worker" ]
+                                ]
+                            },
+                            "flowMapper": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/basicAuthConfig"
+                                    }
+                                ]
                             }
                         },
                         "clientImage": {
@@ -3590,6 +3580,20 @@
                         "database": "state-manager",
                         "connectionPool": {}
                     }]
+                }
+            }
+        },
+        "basicAuthConfig": {
+            "type": "object",
+            "default": {},
+            "title": "Configuration for which username and password may be provided inline or via a secret",
+            "additionalProperties": false,
+            "properties": {
+                "username": {
+                    "$ref": "#/$defs/config"
+                },
+                "password": {
+                    "$ref": "#/$defs/config"
                 }
             }
         }

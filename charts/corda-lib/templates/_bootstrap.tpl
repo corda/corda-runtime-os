@@ -327,9 +327,10 @@ spec:
 {{/* State Manager Database Bootstrap job */}}
 {{- define "corda.bootstrapStateManagerDbJob" -}}
 {{- $ := index . 0 }}
-{{- $worker := index . 1 }}
-{{- $bootConfig := index . 2 }}
-{{- $workerName := printf "%s-worker" ( include "corda.workerTypeKebabCase" $bootConfig.worker ) }}
+{{- $workerKey := index . 1 }}
+{{- $authConfig := index . 2 }}
+{{- $worker := (index $.Values.workers $workerKey) }}
+{{- $workerName := printf "%s-worker" ( include "corda.workerTypeKebabCase" $workerKey ) }}
 {{- with index . 0 }}
 {{- if .Values.bootstrap.db.enabled }}
 ---
@@ -362,7 +363,7 @@ spec:
           {{- include "corda.containerSecurityContext" . | nindent 10 }}
           env:
             {{- include "corda.bootstrapCliEnv" . | nindent 12 }}
-            {{- include "corda.bootstrapStateManagerDbEnv" ( list $ $worker $bootConfig ) | nindent 12 }}
+            {{- include "corda.bootstrapStateManagerDbEnv" ( list $ $worker $authConfig ) | nindent 12 }}
           command: [ 'sh', '-c', '-e' ]
           args:
             - |
@@ -397,7 +398,7 @@ spec:
             - name: STATE_MANAGER_DB_NAME
               value: {{ include "corda.stateManagerDbName" ( list . $worker ) | quote }}
             {{- include "corda.stateManagerDbEnv" ( list $ $worker ) | nindent 12 }}
-            {{- include "corda.bootstrapStateManagerDbEnv" ( list $ $worker $bootConfig ) | nindent 12 }}
+            {{- include "corda.bootstrapStateManagerDbEnv" ( list $ $worker $authConfig ) | nindent 12 }}
           command: [ 'sh', '-c', '-e' ]
           args:
             - |
@@ -408,7 +409,7 @@ spec:
               find /tmp/stateManager -iname "*.sql" | xargs printf -- ' -f %s' | xargs psql -v ON_ERROR_STOP=1 -h "${STATE_MANAGER_DB_HOST}" -p "${STATE_MANAGER_DB_PORT}" -U "${STATE_MANAGER_PGUSER}" --dbname "${STATE_MANAGER_DB_NAME}"
               echo 'Applying State Manager Specification for {{ $workerName }}... Done!'
 
-              echo 'Creating users and granting permissions for State Manager in {{ $workerName }}-worker...'
+              echo 'Creating users and granting permissions for State Manager in {{ $workerName }}...'
               psql -v ON_ERROR_STOP=1 -h "${STATE_MANAGER_DB_HOST}" -p "${STATE_MANAGER_DB_PORT}" -U "${STATE_MANAGER_PGUSER}" "${STATE_MANAGER_DB_NAME}" << SQL
                 DO \$\$ BEGIN IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${STATE_MANAGER_USERNAME}') THEN RAISE NOTICE 'Role "${STATE_MANAGER_USERNAME}" already exists'; ELSE CREATE USER "${STATE_MANAGER_USERNAME}" WITH ENCRYPTED PASSWORD '${STATE_MANAGER_PASSWORD}'; END IF; END \$\$;
                 GRANT USAGE ON SCHEMA STATE_MANAGER TO "${STATE_MANAGER_USERNAME}";
@@ -416,7 +417,7 @@ spec:
                 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA STATE_MANAGER TO "${STATE_MANAGER_USERNAME}";
               SQL
 
-              echo 'Creating users and granting permissions for State Manager in {{ $workerName }}-worker... Done!'
+              echo 'Creating users and granting permissions for State Manager in {{ $workerName }}... Done!'
           volumeMounts:
             - mountPath: /tmp
               name: temp
