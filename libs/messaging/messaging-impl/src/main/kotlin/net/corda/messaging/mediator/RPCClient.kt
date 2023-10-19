@@ -76,6 +76,7 @@ class RPCClient(
             .flatMap { (key, value) -> listOf(key, value) }
             .toTypedArray()
 
+        @Suppress("SpreadOperator")
         return HttpRequest.newBuilder()
             .uri(URI(message.endpoint()))
             .headers(*headers)
