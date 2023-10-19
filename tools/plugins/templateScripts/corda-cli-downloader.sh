@@ -3,7 +3,7 @@
 # cli install location
 cliHome="/opt/corda/cli"
 # cli symlink for script
-cliSymlink="/usr/bin/corda-cli.sh"
+cliSymlink="/usr/local/bin/corda-cli.sh"
 # temp dir
 tempDir=$(mktemp -d)
 # base s3 url
@@ -52,7 +52,7 @@ sudo bash -c """
 mkdir -p $cliHome
 cp -R . $cliHome
 
-# symlink to /usr/bin
+# symlink to /usr/local/bin
 ln -s $cliHome/corda-cli.sh $cliSymlink
 
 chown $usr:$grp -R $cliHome

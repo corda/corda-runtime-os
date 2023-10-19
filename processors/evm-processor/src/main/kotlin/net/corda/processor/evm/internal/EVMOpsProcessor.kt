@@ -102,19 +102,22 @@ class EVMOpsProcessor(
 
 
     override fun onNext(events: List<Record<String, EvmRequest>>): List<Record<*, *>> {
-        return try {
-            events
+        return events
                 .filter { it.value != null }
-                .map {
-                    val request = it.value!!
-                    RetryPolicy(maxRetries, retryDelayMs).execute {
-                        handleRequest(request)
+                .mapNotNull {
+                    try {
+                        val request = it.value!!
+                        RetryPolicy(maxRetries, retryDelayMs).execute {
+                            handleRequest(request)
+                        }
+                    } catch (e: Exception) {
+                        externalEventResponseFactory.platformError(
+                            it.value!!.flowExternalEventContext,
+                            CordaRuntimeException("Unexpected error while processing the flow", e)
+                        )
+                        null
                     }
                 }
-        } catch (e: Exception) {
-            log.error("Unexpected error while processing the flow", e)
-            emptyList()
-        }
     }
 
     override val keyClass: Class<String> = String::class.java

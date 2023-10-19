@@ -7,6 +7,7 @@ class EvmDemoInput {
     var sellerAddress: String? = null
     var fractionPurchased: Int? = null
     var purchasePrice: Int? = null
+    var contractAddress: String? = null
 }
 
 class EvmDemoTxnReceiptInput {

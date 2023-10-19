@@ -46,12 +46,12 @@ class EvmDemoFlow : ClientStartableFlow {
 
 
             // Step 2.  Call to the Evm to do the asset transfer
-            val dummyGasNumber = BigInteger("47b760", 16)
+            val dummyGasNumber = BigInteger("a41c5", 16)
             val transactionOptions = TransactionOptions(
                 dummyGasNumber,
-                dummyGasNumber,
-                dummyGasNumber,
-                dummyGasNumber,
+                0.toBigInteger(),
+                20000000000.toBigInteger(),
+                20000000000.toBigInteger(),
                 inputs.rpcUrl!!,
                 inputs.buyerAddress!!,
             )
@@ -59,12 +59,12 @@ class EvmDemoFlow : ClientStartableFlow {
             val parameters = listOf(
                 Parameter.of("from", Type.ADDRESS, inputs.buyerAddress!!),
                 Parameter.of("to", Type.ADDRESS, inputs.sellerAddress!!),
-                Parameter.of("value", inputs.fractionPurchased!!.toBigInteger()),
+                Parameter.of("amount", Type.UINT256, inputs.fractionPurchased!!.toBigInteger()),
             )
 
             val hash = evmService.transaction(
                 TRANSFER_FUNCTION,
-                inputs.sellerAddress!!,
+                inputs.contractAddress!!,
                 transactionOptions,
                 parameters
             )
