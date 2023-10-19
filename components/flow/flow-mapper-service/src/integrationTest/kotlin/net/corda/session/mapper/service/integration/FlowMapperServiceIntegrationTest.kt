@@ -158,7 +158,7 @@ class FlowMapperServiceIntegrationTest {
 
         //send 2 session init
         val sessionDataAndInitEvent = Record<Any, Any>(
-            FLOW_MAPPER_SESSION_OUT, testId, FlowMapperEvent(
+            FLOW_MAPPER_SESSION_OUT, testSessionId, FlowMapperEvent(
                 buildSessionEvent(
                     MessageDirection.OUTBOUND, testSessionId, 1, SessionData(ByteBuffer.wrap("bytes".toByteArray()), SessionInit(
                         testCpiId, testFlowId, emptyKeyValuePairList(), emptyKeyValuePairList()
@@ -183,7 +183,7 @@ class FlowMapperServiceIntegrationTest {
 
         //send data back
         val sessionDataEvent = Record<Any, Any>(
-            FLOW_MAPPER_SESSION_IN, testId, FlowMapperEvent(
+            FLOW_MAPPER_SESSION_IN, testSessionId, FlowMapperEvent(
                 buildSessionEvent(
                     MessageDirection.INBOUND,
                     testSessionId,
@@ -319,7 +319,7 @@ class FlowMapperServiceIntegrationTest {
 
         //send 2 session init, 1 is duplicate
         val sessionInitEvent = Record<Any, Any>(
-            FLOW_MAPPER_SESSION_OUT, testId, FlowMapperEvent(
+            FLOW_MAPPER_SESSION_OUT, testSessionId, FlowMapperEvent(
                 buildSessionEvent(
                     MessageDirection.OUTBOUND, testSessionId, 1, SessionCounterpartyInfoRequest(SessionInit(
                         testCpiId, testFlowId, emptyKeyValuePairList(), emptyKeyValuePairList()
