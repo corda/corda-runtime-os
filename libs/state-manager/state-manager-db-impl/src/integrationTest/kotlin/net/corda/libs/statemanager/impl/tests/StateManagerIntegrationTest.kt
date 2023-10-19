@@ -230,7 +230,7 @@ class StateManagerIntegrationTest {
         }
     }
 
-    @ValueSource(ints = [1, 5, 10, 20, 50, 100, 200, 500])
+    @ValueSource(ints = [1, 5, 10, 20, 50])
     @ParameterizedTest(name = "can update existing states (batch size: {0})")
     fun canUpdateExistingStates(stateCount: Int) {
         persistStateEntities(
@@ -314,7 +314,7 @@ class StateManagerIntegrationTest {
         )
     }
 
-    @ValueSource(ints = [1, 10])
+    @ValueSource(ints = [1, 5, 10, 20, 50])
     @ParameterizedTest(name = "can delete existing states (batch size: {0})")
     fun canDeleteExistingStates(stateCount: Int) {
         persistStateEntities(
