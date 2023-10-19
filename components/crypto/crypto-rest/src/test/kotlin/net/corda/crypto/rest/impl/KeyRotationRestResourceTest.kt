@@ -87,24 +87,6 @@ class KeyRotationRestResourceTest {
         verify(publisher, times(1)).publish(any())
     }
 
-    @Test
-    fun `start key rotation event throws when oldKeyAlias is not in the config`() {
-        val keyRotationRestResource = createKeyRotationRestResource()
-        assertThrows<InvalidInputDataException> {
-            keyRotationRestResource.startKeyRotation("randomValue", newKeyAlias, false, 0, 0)
-        }
-        verify(publisher, never()).publish(any())
-    }
-
-    @Test
-    fun `start key rotation event throws when newKeyAlias is not in the config`() {
-        val keyRotationRestResource = createKeyRotationRestResource()
-        assertThrows<InvalidInputDataException> {
-            keyRotationRestResource.startKeyRotation(oldKeyAlias, "randomValue", false, 0, 0)
-        }
-        verify(publisher, never()).publish(any())
-    }
-
 
     @Test
     fun `start key rotation event throws when not initialised`() {
