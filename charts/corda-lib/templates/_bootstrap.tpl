@@ -324,9 +324,7 @@ spec:
 {{- end }}
 {{- end }}
 
-{{/*
-State Manager Database Bootstrap job
-*/}}
+{{/* State Manager Database Bootstrap job */}}
 {{- define "corda.bootstrapStateManagerDbJob" -}}
 {{- $ := index . 0 }}
 {{- $worker := index . 1 }}
@@ -349,8 +347,8 @@ spec:
       labels:
         {{- include "corda.selectorLabels" . | nindent 8 }}
     spec:
-      {{- include "corda.imagePullSecrets" . | indent 6 }}
       {{- include "corda.tolerations" $ | indent 6 }}
+      {{- include "corda.imagePullSecrets" . | indent 6 }}
       {{- include "corda.bootstrapServiceAccount" . | indent 6 }}
       {{- with .Values.podSecurityContext }}
       securityContext:
@@ -371,7 +369,7 @@ spec:
               #!/bin/sh
               set -ev
 
-              echo 'Generating State Manager DB specification for {{ $workerName }}-worker...'
+              echo 'Generating State Manager DB specification for {{ $workerName }}...'
               STATE_MANAGER_JDBC_URL="{{- include "corda.stateManagerJdbcUrl" ( list . $worker ) -}}"
               mkdir /tmp/stateManager
               java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar database spec \
@@ -379,7 +377,7 @@ spec:
                 -u "${STATE_MANAGER_PGUSER}" -p "${STATE_MANAGER_PGPASSWORD}" \
                 --jdbc-url "${STATE_MANAGER_JDBC_URL}" \
                 -c -l /tmp/stateManager
-              echo 'Generating State Manager DB specification for {{ $workerName }}-worker... Done'
+              echo 'Generating State Manager DB specification for {{ $workerName }}... Done'
           workingDir: /tmp
           volumeMounts:
             - mountPath: /tmp
@@ -405,10 +403,10 @@ spec:
             - |
               #!/bin/sh
               set -ev
-              echo 'Applying State Manager Specification for {{ $workerName }}-worker...'
+              echo 'Applying State Manager Specification for {{ $workerName }}...'
               export PGPASSWORD="${STATE_MANAGER_PGPASSWORD}"
               find /tmp/stateManager -iname "*.sql" | xargs printf -- ' -f %s' | xargs psql -v ON_ERROR_STOP=1 -h "${STATE_MANAGER_DB_HOST}" -p "${STATE_MANAGER_DB_PORT}" -U "${STATE_MANAGER_PGUSER}" --dbname "${STATE_MANAGER_DB_NAME}"
-              echo 'Applying State Manager Specification for {{ $workerName }}-worker... Done!'
+              echo 'Applying State Manager Specification for {{ $workerName }}... Done!'
 
               echo 'Creating users and granting permissions for State Manager in {{ $workerName }}-worker...'
               psql -v ON_ERROR_STOP=1 -h "${STATE_MANAGER_DB_HOST}" -p "${STATE_MANAGER_DB_PORT}" -U "${STATE_MANAGER_PGUSER}" "${STATE_MANAGER_DB_NAME}" << SQL

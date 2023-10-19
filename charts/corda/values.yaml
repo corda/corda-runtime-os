@@ -377,7 +377,7 @@ bootstrap:
         # the username configuration
         username:
           # -- the username, defaults to this value
-          value: "state_manager_user"
+          value: "flow_state_manager_user"
           # the username secret configuration; used in preference to value if name is set
           valueFrom:
             # the username secret key reference
@@ -402,7 +402,7 @@ bootstrap:
         # the username configuration
         username:
           # -- the username, defaults to this value
-          value: "state_manager_user"
+          value: "flow_mapper_state_manager_user"
           # the username secret configuration; used in preference to value if name is set
           valueFrom:
             # the username secret key reference
