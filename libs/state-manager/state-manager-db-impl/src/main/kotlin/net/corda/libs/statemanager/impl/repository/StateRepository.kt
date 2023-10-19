@@ -3,6 +3,7 @@ package net.corda.libs.statemanager.impl.repository
 import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
+import java.sql.Connection
 import javax.persistence.EntityManager
 
 /**
@@ -33,11 +34,11 @@ interface StateRepository {
      * Update states within the persistence context.
      * Transaction should be controlled by the caller.
      *
-     * @param entityManager Used to interact with the state manager persistence context.
+     * @param connection Used to interact with the state manager persistence context.
      * @param states Collection of states to be updated.
      * @return Collection of keys for states that could not be updated due to optimistic locking check failure.
      */
-    fun update(entityManager: EntityManager, states: Collection<StateEntity>): Collection<String>
+    fun update(connection: Connection, states: Collection<StateEntity>): Collection<String>
 
     /**
      * Delete states with the given keys from the persistence context.
