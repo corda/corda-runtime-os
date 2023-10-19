@@ -14,7 +14,6 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.test.impl.LifecycleTest
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.schema.configuration.ConfigKeys
 import org.junit.jupiter.api.BeforeEach
