@@ -34,28 +34,6 @@ data class ClientTask<K : Any, S : Any, E : Any>(
 
     override fun call(): Result<K, S, E> {
         val destination = messageRouter.getDestination(message)
-        val event = message.payload
-
-        val key = processorTaskResult.key
-        when (val eventValue = message.payload) {
-            is FlowEvent -> {
-                val eventType = eventValue.payload::class.java.simpleName
-                log.info("Sending event: FlowEvent:$eventType [${key}] to [${destination.endpoint}], event [$event]")
-            }
-
-            is FlowMapperEvent -> {
-                val eventType = eventValue.payload
-                val eventTypeName = eventType::class.java.simpleName
-                val eventSubtypeName = if (eventType is FlowEvent) ":${eventType::class.java.simpleName}" else ""
-                log.info("Sending event: FlowMapperEvent:$eventTypeName$eventSubtypeName [${key}] " +
-                        "to [${destination.endpoint}], event [$event]")
-            }
-
-            else -> {
-                val eventType = eventValue?.let { it::class.java.simpleName }
-                log.info("Sending event: $eventType [${key}] to [${destination.endpoint}]")
-            }
-        }
 
         // TODO remove logging that was added for debug purposes
         val key = processorTaskResult.key
