@@ -57,6 +57,28 @@ data class ClientTask<K : Any, S : Any, E : Any>(
             }
         }
 
+        // TODO remove logging that was added for debug purposes
+        val key = processorTaskResult.key
+        when (val eventValue = message.payload) {
+            is FlowEvent -> {
+                val eventType = eventValue.payload::class.java.simpleName
+                log.info("Sending event: FlowEvent:$eventType [${key}] to [${destination.endpoint}]")
+            }
+
+            is FlowMapperEvent -> {
+                val eventType = eventValue.payload
+                val eventTypeName = eventType::class.java.simpleName
+                val eventSubtypeName = if (eventType is FlowEvent) ":${eventType::class.java.simpleName}" else ""
+                log.info("Sending event: FlowMapperEvent:$eventTypeName$eventSubtypeName [${key}] " +
+                        "to [${destination.endpoint}]")
+            }
+
+            else -> {
+                val eventType = eventValue?.let { it::class.java.simpleName }
+                log.info("Sending event: $eventType [${key}] to [${destination.endpoint}]")
+            }
+        }
+
         @Suppress("UNCHECKED_CAST")
         val reply = with(destination) {
             message.addProperty(MSG_PROP_ENDPOINT, endpoint)
