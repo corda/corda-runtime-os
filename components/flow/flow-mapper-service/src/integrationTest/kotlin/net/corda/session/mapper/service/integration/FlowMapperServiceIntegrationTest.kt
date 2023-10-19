@@ -58,7 +58,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
@@ -418,7 +417,6 @@ class FlowMapperServiceIntegrationTest {
     }
 
     @Test
-    @Disabled
     fun `mapper state cleanup correctly cleans up old states`() {
 
         // Create a state in the state manager. Note the modified time has to be further in the past than the configured
