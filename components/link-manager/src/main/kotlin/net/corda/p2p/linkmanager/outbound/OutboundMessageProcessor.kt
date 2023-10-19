@@ -101,7 +101,6 @@ internal class OutboundMessageProcessor(
     }
 
     private fun processEvent(event: EventLogRecord<String, AppMessage>): List<Record<String, *>> {
-
         val message = event.value?.message
         if (message == null) {
             logger.error("Received null message. The message was discarded.")
@@ -110,10 +109,12 @@ internal class OutboundMessageProcessor(
 
         return when (message) {
             is AuthenticatedMessage -> {
+                logger.info("TTT processEvent ${message.header.messageId}")
                 processAuthenticatedMessage(AuthenticatedMessageAndKey(message, event.key))
                     .also { recordOutboundMessagesMetric(message) }
             }
             is OutboundUnauthenticatedMessage -> {
+                logger.info("TTT processEvent ${message.header.messageId}")
                 processUnauthenticatedMessage(message)
                     .also { recordOutboundMessagesMetric(message) }
             }
@@ -214,6 +215,7 @@ internal class OutboundMessageProcessor(
         )
         if (linkManagerHostingMap.isHostedLocallyAndSessionKeyMatch(destinationMemberInfo)) {
             recordInboundMessagesMetric(inboundMessage)
+            logger.info("TTT processUnauthenticatedMessage(${inboundMessage.header.messageId})")
             return listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(inboundMessage)))
         } else {
             val source = message.header.source.toCorda()
@@ -272,6 +274,7 @@ internal class OutboundMessageProcessor(
         }
 
         if (ttlExpired(messageAndKey.message.header.ttl)) {
+            logger.info("TTT message expirred ${messageAndKey.message.header.messageId} TTL: ${messageAndKey.message.header.ttl}")
             val expiryMarker = recordForTTLExpiredMarker(messageAndKey.message.header.messageId)
             return if (isReplay) {
                 listOf(expiryMarker)
@@ -300,10 +303,12 @@ internal class OutboundMessageProcessor(
         if (linkManagerHostingMap.isHostedLocallyAndSessionKeyMatch(destinationMemberInfo)) {
             recordInboundMessagesMetric(messageAndKey.message)
             return if (isReplay) {
+                logger.info("TTT processAuthenticatedMessage(isReplay, ${messageAndKey.message.header.messageId})")
                 listOf(Record(Schemas.P2P.P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)),
                     recordForLMReceivedMarker(messageAndKey.message.header.messageId)
                 )
             } else {
+                logger.info("TTT processAuthenticatedMessage(!isReplay, ${messageAndKey.message.header.messageId})")
                 listOf(Record(Schemas.P2P.P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)),
                     recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId),
                     recordForLMReceivedMarker(messageAndKey.message.header.messageId)

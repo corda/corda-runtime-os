@@ -24,6 +24,7 @@ import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
@@ -35,6 +36,9 @@ class RecordFactoryImpl @Activate constructor(
     @Reference(service = LocallyHostedIdentitiesService::class)
     private val locallyHostedIdentitiesService: LocallyHostedIdentitiesService
 ): RecordFactory {
+    private companion object {
+        val logger = LoggerFactory.getLogger("TTT")
+    }
     private val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
 
     override fun forwardError(
@@ -195,11 +199,14 @@ class RecordFactoryImpl @Activate constructor(
         flowConfig: SmartConfig
     ): AppMessage {
         val (sourceIdentity, destinationIdentity) = getSourceAndDestinationIdentity(sessionEvent)
+        val messageId = sessionEvent.sessionId + "-" + UUID.randomUUID()
+        logger.info("TTT generateAppMessage( sourceIdentity= $sourceIdentity," +
+                " destinationIdentity = $destinationIdentity, messageId = $messageId)")
         val header = AuthenticatedMessageHeader(
             destinationIdentity,
             sourceIdentity,
             Instant.ofEpochMilli(sessionEvent.timestamp.toEpochMilli() + flowConfig.getLong(FlowConfig.SESSION_P2P_TTL)),
-            sessionEvent.sessionId + "-" + UUID.randomUUID(),
+            messageId,
             "",
             Constants.FLOW_SESSION_SUBSYSTEM,
             MembershipStatusFilter.ACTIVE

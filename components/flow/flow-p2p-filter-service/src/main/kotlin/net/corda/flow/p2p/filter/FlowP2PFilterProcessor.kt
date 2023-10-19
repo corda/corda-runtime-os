@@ -43,6 +43,7 @@ class FlowP2PFilterProcessor(cordaAvroSerializationFactory: CordaAvroSerializati
         events.forEach { appMessage ->
             val authMessage = appMessage.value?.message
             if (authMessage != null && authMessage is AuthenticatedMessage && authMessage.header.subsystem == FLOW_SESSION_SUBSYSTEM) {
+                logger.info("TTT onNext(messageId = ${authMessage.header.messageId})")
 
                 traceEventProcessingNullableSingle(appMessage, "Flow P2P Filter Event") {
                     getOutputRecord(authMessage.payload, appMessage.key)

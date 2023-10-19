@@ -82,6 +82,7 @@ internal class InboundMessageProcessor(
                             "Processing unauthenticated message ${payload.header.messageId}"
                         }
                         recordInboundMessagesMetric(payload)
+                        logger.info("TTT onNext(${payload.header.messageId})")
                         listOf(
                             Record(
                                 Schemas.P2P.P2P_IN_TOPIC,
@@ -204,6 +205,7 @@ internal class InboundMessageProcessor(
                 "Processing message ${innerMessage.message.header.messageId} " +
                     "of type ${innerMessage.message.javaClass} from session ${session.sessionId}"
             }
+            logger.info("TTT checkIdentityBeforeProcessing(${innerMessage.message.header.messageId})")
             messages.add(Record(Schemas.P2P.P2P_IN_TOPIC, innerMessage.key, AppMessage(innerMessage.message)))
             recordInboundMessagesMetric(innerMessage.message)
             makeAckMessageForFlowMessage(innerMessage.message, session)?.let { ack -> messages.add(ack) }
