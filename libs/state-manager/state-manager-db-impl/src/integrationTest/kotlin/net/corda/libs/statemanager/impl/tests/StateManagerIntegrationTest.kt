@@ -40,7 +40,6 @@ import org.junit.jupiter.params.provider.ValueSource
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
-import javax.persistence.PersistenceException
 import kotlin.concurrent.thread
 
 // TODO-[CORE-16663]: make database provider pluggable
@@ -89,6 +88,11 @@ class StateManagerIntegrationTest {
 
     private fun buildStateKey(index: Int) = "key_$index-$testUniqueId"
 
+    private val createStateQuery = """
+            INSERT INTO ${DbSchema.STATE_MANAGER_TABLE}
+            VALUES (:$KEY_PARAMETER_NAME, :$VALUE_PARAMETER_NAME, :$VERSION_PARAMETER_NAME, CAST(:$METADATA_PARAMETER_NAME as JSONB), CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+    """.trimIndent()
+
     private fun persistStateEntities(
         indexRange: IntProgression,
         version: (index: Int, key: String) -> Int,
@@ -100,7 +104,7 @@ class StateManagerIntegrationTest {
             val stateEntity =
                 StateEntity(key, stateContent(i, key).toByteArray(), metadataContent(i, key), version(i, key))
 
-            it.createNativeQuery(queryProvider.createState)
+            it.createNativeQuery(createStateQuery)
                 .setParameter(KEY_PARAMETER_NAME, stateEntity.key)
                 .setParameter(VALUE_PARAMETER_NAME, stateEntity.value)
                 .setParameter(VERSION_PARAMETER_NAME, stateEntity.version)
@@ -175,10 +179,10 @@ class StateManagerIntegrationTest {
     @Test
     @DisplayName(value = "failures when persisting some states do not halt the entire batch")
     fun failuresWhenPersistingSomeStatesDoesNotHaltTheEntireBatch() {
-        val failedSates = 5
+        val failedStates = 5
         val totalStates = 15
         persistStateEntities(
-            (1..failedSates),
+            (1..failedStates),
             { _, _ -> State.VERSION_INITIAL_VALUE },
             { i, _ -> "existingState_$i" },
             { i, _ -> """{"k1": "v$i", "k2": $i}""" }
@@ -189,12 +193,13 @@ class StateManagerIntegrationTest {
         }
 
         val failures = stateManager.create(states)
-        assertThat(failures).hasSize(failedSates)
-        for (i in 1..failedSates) {
-            assertThat(failures[buildStateKey(i)]).isInstanceOf(PersistenceException::class.java)
-        }
+
+        val expectedFailedKeys = (1..failedStates).map { buildStateKey(it) }
+        assertThat(failures).hasSize(failedStates)
+        assertThat(failures.toSet()).isEqualTo(expectedFailedKeys.toSet())
+
         softlyAssertPersistedStateEntities(
-            (failedSates + 1..totalStates),
+            (failedStates + 1..totalStates),
             { _, _ -> State.VERSION_INITIAL_VALUE },
             { i, _ -> "newState_$i" },
             { _, _ -> metadata() }

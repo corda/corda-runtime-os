@@ -14,14 +14,24 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
     @Suppress("UNCHECKED_CAST")
     private fun Query.resultListAsStateEntityCollection() = resultList as Collection<StateEntity>
 
-    override fun create(entityManager: EntityManager, state: StateEntity) {
-        entityManager
-            .createNativeQuery(queryProvider.createState)
-            .setParameter(KEY_PARAMETER_NAME, state.key)
-            .setParameter(VALUE_PARAMETER_NAME, state.value)
-            .setParameter(VERSION_PARAMETER_NAME, state.version)
-            .setParameter(METADATA_PARAMETER_NAME, state.metadata)
-            .executeUpdate()
+    override fun create(connection: Connection, states: Collection<StateEntity>): Collection<String> {
+        return connection.prepareStatement(queryProvider.createState).use { preparedStatement ->
+            for (s in states) {
+                preparedStatement.setString(1, s.key)
+                preparedStatement.setBytes(2, s.value)
+                preparedStatement.setInt(3, s.version)
+                preparedStatement.setString(4, s.metadata)
+                preparedStatement.addBatch()
+            }
+            // Execute the batch of prepared statements.
+            // The elements in the 'results' array correspond to the commands in the batch.
+            // The order of elements in 'results' follows the order in which the statements were added to the batch.
+            // - An update count greater than or equal to zero indicates that the command was processed successfully,
+            //   and it represents the number of rows in the database affected by the command.
+            // - If optimistic locking check fails for a statement in the batch, that statement will have a '0' in the 'results' array.
+            val results = preparedStatement.executeBatch()
+            getFailedKeysFromResults(results, states.map { it.key })
+        }
     }
 
     override fun get(entityManager: EntityManager, keys: Collection<String>) =
