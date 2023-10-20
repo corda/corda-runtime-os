@@ -812,7 +812,48 @@ Get the endpoint argument for a given worker
 {{- define "corda.getWorkerEndpoint" }}
 {{- $context := .context }}
 {{- $worker := .worker }}
-{{- $workerName := printf "%s-%s-worker" (include "corda.fullname" $context) (include "corda.workerTypeKebabCase" $worker) }}
-{{- $workerServiceName := include "corda.workerInternalServiceName" $workerName }}
-{{- printf "endpoints.%s=%s:%s" $worker $workerServiceName (include "corda.workerServicePort" $) }}
+{{- $workerValues := ( index $context.Values.workers $worker ) }}
+{{- $workerName := printf "%s-%s-worker" ( include "corda.fullname" $context ) ( include "corda.workerTypeKebabCase" $worker ) }}
+{{- $workerServiceName := "" }}
+{{- if ( ( $workerValues.sharding ).enabled ) }}
+{{- $workerServiceName = include "corda.nginxName" $workerName }}
+{{- else }}
+{{- $workerServiceName = include "corda.workerInternalServiceName" $workerName }}
+{{- end }}
+{{- printf "endpoints.%s=%s:%s" $worker $workerServiceName ( include "corda.workerServicePort" $context ) }}
+{{- end }}
+
+{{/*
+Default pod affinity
+*/}}
+{{- define "corda.defaultAffinity" -}}
+{{- $weight := index . 0 }}
+{{- $component := index . 1 }}
+weight: {{ $weight}}
+podAffinityTerm:
+  labelSelector:
+    matchExpressions:
+      - key: "app.kubernetes.io/component"
+        operator: In
+        values:
+          - {{ $component | quote }}
+  topologyKey: "kubernetes.io/hostname"
+{{- end }}
+
+{{/*
+Pod affinity
+*/}}
+{{- define "corda.affinity" -}}
+{{- $ := index . 0 }}
+{{- $component := index . 1 }}
+{{- $affinity := default ( deepCopy $.Values.affinity ) dict }}
+{{- if not ($affinity.podAntiAffinity) }}
+{{- $_ := set $affinity "podAntiAffinity" dict }}
+{{- end }}
+{{- if not ($affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution) }}
+{{- $_ := set $affinity.podAntiAffinity "preferredDuringSchedulingIgnoredDuringExecution" list }}
+{{- end }}
+{{- $_ := set $affinity.podAntiAffinity "preferredDuringSchedulingIgnoredDuringExecution" ( append $affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution ( fromYaml ( include "corda.defaultAffinity" ( list ( add ( len $affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution ) 1 ) $component ) ) ) ) }}
+affinity:
+{{- toYaml $affinity | nindent 2 }}
 {{- end }}
