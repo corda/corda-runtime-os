@@ -19,6 +19,8 @@ import net.corda.utilities.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+const val CORDA_REQUEST_KEY_HEADER = "corda-request-key"
+
 class RPCClient(
     override val id: String,
     cordaAvroSerializerFactory: CordaAvroSerializationFactory,
@@ -78,7 +80,7 @@ class RPCClient(
 
         // Add key HTTP header
         message.getPropertyOrNull(MSG_PROP_KEY)?.let { value ->
-            builder.header("corda-request-key", value.toString())
+            builder.header(CORDA_REQUEST_KEY_HEADER, value.toString())
         }
 
         return builder.build()
