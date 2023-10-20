@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.CompletableFuture
 
 @Suppress("LongParameterList")
 class CryptoFlowOpsRpcProcessor(
@@ -53,46 +54,48 @@ class CryptoFlowOpsRpcProcessor(
         BackoffStrategy.createBackoff(config.maxAttempts, config.waitBetweenMills)
     )
 
-    override fun process(request: FlowOpsRequest): FlowEvent {
-        logger.trace { "process just started processing ${request::class.java.name}" }
+    override fun process(request: FlowOpsRequest): CompletableFuture<FlowEvent> {
+        return CompletableFuture<FlowEvent>().apply {
+            logger.trace { "process just started processing ${request::class.java.name}" }
 
-        val clientRequestId = request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
+            val clientRequestId = request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
 
-        val mdc = mapOf(
-            MDC_FLOW_ID to request.flowExternalEventContext.flowId,
-            MDC_CLIENT_ID to clientRequestId,
-            MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
-        ) + translateFlowContextToMDC(request.flowExternalEventContext.contextProperties.toMap())
+            val mdc = mapOf(
+                MDC_FLOW_ID to request.flowExternalEventContext.flowId,
+                MDC_CLIENT_ID to clientRequestId,
+                MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
+            ) + translateFlowContextToMDC(request.flowExternalEventContext.contextProperties.toMap())
 
-        val result = withMDC(mdc) {
-            val requestPayload = request.request
-            val startTime = System.nanoTime()
-            logger.info("Handling ${requestPayload::class.java.name} for tenant ${request.context.tenantId}")
+            val result = withMDC(mdc) {
+                val requestPayload = request.request
+                val startTime = System.nanoTime()
+                logger.info("Handling ${requestPayload::class.java.name} for tenant ${request.context.tenantId}")
 
-            try {
-                val response = executor.executeWithRetry {
-                    handleRequest(requestPayload, request.context)
+                try {
+                    val response = executor.executeWithRetry {
+                        handleRequest(requestPayload, request.context)
+                    }
+
+                    externalEventResponseFactory.success(
+                        request.flowExternalEventContext,
+                        FlowOpsResponse(createResponseContext(request), response, null)
+                    )
+                } catch (throwable: Throwable) {
+                    logger.error(
+                        "Failed to handle ${requestPayload::class.java.name} for tenant ${request.context.tenantId}",
+                        throwable
+                    )
+                    externalEventResponseFactory.platformError(request.flowExternalEventContext, throwable)
+                }.also {
+                    CordaMetrics.Metric.Crypto.FlowOpsProcessorExecutionTime.builder()
+                        .withTag(CordaMetrics.Tag.OperationName, requestPayload::class.java.simpleName)
+                        .build()
+                        .record(Duration.ofNanos(System.nanoTime() - startTime))
                 }
-
-                externalEventResponseFactory.success(
-                    request.flowExternalEventContext,
-                    FlowOpsResponse(createResponseContext(request), response, null)
-                )
-            } catch (throwable: Throwable) {
-                logger.error(
-                    "Failed to handle ${requestPayload::class.java.name} for tenant ${request.context.tenantId}",
-                    throwable
-                )
-                externalEventResponseFactory.platformError(request.flowExternalEventContext, throwable)
-            }.also {
-                CordaMetrics.Metric.Crypto.FlowOpsProcessorExecutionTime.builder()
-                    .withTag(CordaMetrics.Tag.OperationName, requestPayload::class.java.simpleName)
-                    .build()
-                    .record(Duration.ofNanos(System.nanoTime() - startTime))
             }
-        }
 
-        return result.value as FlowEvent
+            result.value as FlowEvent
+        }
     }
 
     private fun handleRequest(request: Any, context: CryptoRequestContext): Any {

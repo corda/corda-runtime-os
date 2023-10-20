@@ -12,10 +12,13 @@ import net.corda.rest.ResponseCode
 import net.corda.tracing.trace
 import net.corda.web.api.Endpoint
 import net.corda.web.api.HTTPMethod
+import net.corda.web.api.WebContext
 import net.corda.web.api.WebHandler
 import net.corda.web.api.WebServer
 import org.slf4j.LoggerFactory
 import java.util.UUID
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 
 
 /**
@@ -78,37 +81,42 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
         val operationName = "$name Request"
 
         val webHandler = WebHandler { context ->
-            trace(operationName) {
-                val payload = cordaAvroDeserializer.deserialize(context.bodyAsBytes())
+            CompletableFuture<WebContext>().apply {
+                trace(operationName) {
+                    val payload = cordaAvroDeserializer.deserialize(context.bodyAsBytes())
 
-                if (payload == null) {
-                    log.warn("Request Payload was invalid")
-                    context.result("Request Payload was invalid")
-                    context.status(ResponseCode.BAD_REQUEST)
-                    return@trace context
+                    if (payload == null) {
+                        log.warn("Request Payload was invalid")
+                        context.result("Request Payload was invalid")
+                        context.status(ResponseCode.BAD_REQUEST)
+//                        context
+                        return@trace
+                    }
+
+                    // TODO: error handling
+                    val response = try {
+                        processor.process(payload)
+                    } catch (ex: Exception) {
+                        val errorMsg = "Failed to process RPC request for $rpcEndpoint"
+                        log.warn(errorMsg, ex)
+                        context.result(errorMsg)
+                        context.status(ResponseCode.INTERNAL_SERVER_ERROR)
+//                        context
+                        return@trace
+                    }
+
+                    val serializedResponse = cordaAvroSerializer.serialize(
+                        response.get(5_000, TimeUnit.MILLISECONDS))
+                    if (serializedResponse != null) {
+                        context.result(serializedResponse)
+                    } else {
+                        val errorMsg = "Response Payload cannot be serialised: ${response.javaClass.name}"
+                        log.warn(errorMsg)
+                        context.result(errorMsg)
+                        context.status(ResponseCode.INTERNAL_SERVER_ERROR)
+                    }
+//                    context
                 }
-
-
-                val response = try {
-                    processor.process(payload)
-                } catch (ex: Exception) {
-                    val errorMsg = "Failed to process RPC request for $rpcEndpoint"
-                    log.warn(errorMsg, ex)
-                    context.result(errorMsg)
-                    context.status(ResponseCode.INTERNAL_SERVER_ERROR)
-                    return@trace context
-                }
-
-                val serializedResponse = cordaAvroSerializer.serialize(response)
-                if (serializedResponse != null) {
-                    context.result(serializedResponse)
-                } else {
-                    val errorMsg = "Response Payload cannot be serialised: ${response.javaClass.name}"
-                    log.warn(errorMsg)
-                    context.result(errorMsg)
-                    context.status(ResponseCode.INTERNAL_SERVER_ERROR)
-                }
-                context
             }
         }
 

@@ -10,6 +10,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.SyncRPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.uniqueness.checker.impl.rpc.UniquenessCheckRpcMessageProcessor
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat

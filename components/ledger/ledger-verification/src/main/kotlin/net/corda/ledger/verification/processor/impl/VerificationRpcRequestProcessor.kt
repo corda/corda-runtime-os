@@ -20,6 +20,7 @@ import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.io.NotSerializableException
 import java.time.Duration
+import java.util.concurrent.CompletableFuture
 
 /**
  * Handles incoming requests, typically from the flow worker, and sends responses.
@@ -38,34 +39,36 @@ class VerificationRpcRequestProcessor(
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun process(request: TransactionVerificationRequest): FlowEvent {
-        val startTime = System.nanoTime()
-        val clientRequestId = request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
-        val holdingIdentity = request.holdingIdentity.toCorda()
-        val result =
-            withMDC(
-                mapOf(
-                    MDC_CLIENT_ID to clientRequestId,
-                    MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
-                ) + translateFlowContextToMDC(request.flowExternalEventContext.contextProperties.toMap())
-            ) {
-                try {
-                    val sandbox = verificationSandboxService.get(holdingIdentity, request.cpkMetadata)
-                    currentSandboxGroupContext.set(sandbox)
-                    requestHandler.handleRequest(sandbox, request)
-                } catch (e: Exception) {
-                    errorResponse(request.flowExternalEventContext, e)
-                } finally {
-                    currentSandboxGroupContext.remove()
-                }.also {
-                    CordaMetrics.Metric.Ledger.TransactionVerificationTime
-                        .builder()
-                        .forVirtualNode(holdingIdentity.shortHash.toString())
-                        .build()
-                        .record(Duration.ofNanos(System.nanoTime() - startTime))
+    override fun process(request: TransactionVerificationRequest): CompletableFuture<FlowEvent> {
+        return CompletableFuture<FlowEvent>().apply {
+            val startTime = System.nanoTime()
+            val clientRequestId = request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
+            val holdingIdentity = request.holdingIdentity.toCorda()
+            val result =
+                withMDC(
+                    mapOf(
+                        MDC_CLIENT_ID to clientRequestId,
+                        MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
+                    ) + translateFlowContextToMDC(request.flowExternalEventContext.contextProperties.toMap())
+                ) {
+                    try {
+                        val sandbox = verificationSandboxService.get(holdingIdentity, request.cpkMetadata)
+                        currentSandboxGroupContext.set(sandbox)
+                        requestHandler.handleRequest(sandbox, request)
+                    } catch (e: Exception) {
+                        errorResponse(request.flowExternalEventContext, e)
+                    } finally {
+                        currentSandboxGroupContext.remove()
+                    }.also {
+                        CordaMetrics.Metric.Ledger.TransactionVerificationTime
+                            .builder()
+                            .forVirtualNode(holdingIdentity.shortHash.toString())
+                            .build()
+                            .record(Duration.ofNanos(System.nanoTime() - startTime))
+                    }
                 }
-            }
-        return result.value as FlowEvent
+            result.value as FlowEvent
+        }
     }
 
 
