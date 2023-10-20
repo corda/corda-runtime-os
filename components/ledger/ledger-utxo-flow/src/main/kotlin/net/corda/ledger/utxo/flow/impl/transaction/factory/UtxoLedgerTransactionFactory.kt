@@ -2,7 +2,7 @@ package net.corda.ledger.utxo.flow.impl.transaction.factory
 
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
-import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
+import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 
@@ -24,7 +24,7 @@ interface UtxoLedgerTransactionFactory {
 
     fun create(
         wireTransaction: WireTransaction,
-        inputStateAndRefs: List<UtxoTransactionOutputDto>,
-        referenceStateAndRefs: List<UtxoTransactionOutputDto>
+        inputStateAndRefs: List<UtxoVisibleTransactionOutputDto>,
+        referenceStateAndRefs: List<UtxoVisibleTransactionOutputDto>
     ): UtxoLedgerTransactionInternal
 }

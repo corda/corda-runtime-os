@@ -14,7 +14,6 @@ import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
-import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityVersion
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.TransactionVerificationException
@@ -1032,7 +1031,7 @@ class UtxoFinalityFlowV1Test {
     }
 
     @Test
-    fun `do not send unseen signatures to counterparties when there are only two parties for V2`() {
+    fun `do not send unseen signatures to counterparties when there are only two parties`() {
         whenever(initialTx.getMissingSignatories()).thenReturn(
             setOf(publicKeyBob)
         )
@@ -1061,14 +1060,13 @@ class UtxoFinalityFlowV1Test {
 
         whenever(visibilityChecker.containsMySigningKeys(listOf(publicKeyBob))).thenReturn(true)
 
-        callFinalityFlow(initialTx, listOf(sessionBob), UtxoFinalityVersion.V2)
+        callFinalityFlow(initialTx, listOf(sessionBob))
 
         verify(flowMessaging, never()).sendAllMap(mapOf())
     }
 
     @Test
-    fun `sending unseen signatures to counterparties when there more than two parties for V2`()
-    {
+    fun `sending unseen signatures to counterparties when there more than two parties`() {
         whenever(initialTx.getMissingSignatories()).thenReturn(
             setOf(
                 publicKeyAlice1,
@@ -1113,7 +1111,7 @@ class UtxoFinalityFlowV1Test {
         whenever(visibilityChecker.containsMySigningKeys(listOf(publicKeyAlice1))).thenReturn(true)
         whenever(visibilityChecker.containsMySigningKeys(listOf(publicKeyBob))).thenReturn(true)
 
-        callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob), UtxoFinalityVersion.V2)
+        callFinalityFlow(initialTx, listOf(sessionAlice, sessionBob))
 
         verify(flowMessaging).sendAllMap(
             mapOf(
@@ -1124,12 +1122,11 @@ class UtxoFinalityFlowV1Test {
     }
 
 
-    private fun callFinalityFlow(signedTransaction: UtxoSignedTransactionInternal, sessions: List<FlowSession>, version: UtxoFinalityVersion = UtxoFinalityVersion.V1) {
+    private fun callFinalityFlow(signedTransaction: UtxoSignedTransactionInternal, sessions: List<FlowSession>) {
         val flow = spy(UtxoFinalityFlowV1(
             signedTransaction,
             sessions,
-            pluggableNotaryClientFlow.javaClass,
-            version
+            pluggableNotaryClientFlow.javaClass
         ))
 
         doReturn(pluggableNotaryClientFlow).whenever(flow).newPluggableNotaryClientFlowInstance(any())

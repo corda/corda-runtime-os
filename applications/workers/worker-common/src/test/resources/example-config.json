@@ -38,5 +38,16 @@
       }
     }
   },
-  "topicPrefix": "prefix"
+  "topicPrefix": "prefix",
+  "stateManager": {
+    "type": "DATABASE",
+    "database": {
+      "jdbc": {
+        "url": "cnx-url",
+        "directory": "jdbc-dir"
+      },
+      "user": "cnx-user",
+      "pass": "cnx-password"
+    }
+  }
 }

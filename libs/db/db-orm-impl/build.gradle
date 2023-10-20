@@ -27,6 +27,7 @@ dependencies {
         exclude group: 'org.osgi'
     }
     runtimeOnly project(':libs:antlr')
+    runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
 
     implementation project(":libs:db:db-core")
     implementation project(":libs:db:db-orm")

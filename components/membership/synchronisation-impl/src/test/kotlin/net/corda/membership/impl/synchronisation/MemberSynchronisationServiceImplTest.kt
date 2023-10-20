@@ -120,6 +120,8 @@ class MemberSynchronisationServiceImplTest {
     private val dependentComponents = setOf(
         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
         LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
+        LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
+        LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>(),
     )
 
     private var coordinatorIsRunning = false

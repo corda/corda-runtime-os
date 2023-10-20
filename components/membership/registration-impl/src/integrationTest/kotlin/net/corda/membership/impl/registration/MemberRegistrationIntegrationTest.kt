@@ -56,6 +56,7 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.RegistrationProxy
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -77,6 +78,7 @@ import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.AfterAll
@@ -210,6 +212,12 @@ class MemberRegistrationIntegrationTest {
                             LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
                             LifecycleCoordinatorName.forComponent<RegistrationProxy>(),
                             LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
+                            LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
+                            LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
+                            LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
+                            LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>(),
+                            LifecycleCoordinatorName.forComponent<LocallyHostedIdentitiesService>(),
+                            LifecycleCoordinatorName.forComponent<HSMRegistrationClient>(),
                         )
                     )
                 } else if (e is RegistrationStatusChangeEvent) {
@@ -233,6 +241,7 @@ class MemberRegistrationIntegrationTest {
             membershipQueryClient.start()
             membershipPersistenceClient.start()
             hsmRegistrationClient.start()
+            testVirtualNodeInfoReadService.start()
 
             configurationReadService.bootstrapConfig(bootConfig)
 

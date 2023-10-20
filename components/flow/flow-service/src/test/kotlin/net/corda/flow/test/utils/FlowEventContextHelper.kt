@@ -29,6 +29,7 @@ fun <T> buildFlowEventContext(
     val configWithRequired = config.withFallback(SmartConfigImpl.empty()
         .withValue(FlowConfig.SESSION_FLOW_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(10000))
         .withValue(FlowConfig.PROCESSING_FLOW_CLEANUP_TIME, ConfigValueFactory.fromAnyRef(10000))
+        .withValue(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(100))
     )
 
     return FlowEventContext(
@@ -42,7 +43,8 @@ fun <T> buildFlowEventContext(
         sendToDlq,
         emptyMap(),
         mock(),
-        mock()
+        mock(),
+        null
     )
 }
 
@@ -66,6 +68,7 @@ fun <T> buildFlowEventContext(
         sendToDlq,
         emptyMap(),
         mock(),
-        mock()
+        mock(),
+        null
     )
 }

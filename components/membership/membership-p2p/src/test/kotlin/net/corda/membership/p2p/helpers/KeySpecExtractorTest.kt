@@ -5,7 +5,7 @@ import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.ShortHash
 import net.corda.data.crypto.wire.CryptoSigningKey
-import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.validateSpecName
+import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.validateSchemeAndSignatureSpec
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.KeySchemeCodes
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
@@ -49,49 +49,68 @@ class KeySpecExtractorTest {
     }
 
     @Test
-    fun `validateSpecName throw exception for invalid schemeCodeName`() {
+    fun `validateSchemeAndSignatureSpec throw exception for invalid schemeCodeName`() {
         val key = mock<CryptoSigningKey> {
             on { schemeCodeName } doReturn "nop"
         }
 
         val exception = assertThrows<IllegalArgumentException> {
-            key.validateSpecName(SignatureSpecs.ECDSA_SHA256.signatureName)
-        }
-        assertThat(exception).hasMessageContaining("Could not identify spec for key scheme nop")
-    }
-
-    @Test
-    fun `validateSpecName throws exception for invalid schemeCodeName for session key`() {
-        val key = mock<CryptoSigningKey> {
-            on { schemeCodeName } doReturn KeySchemeCodes.EDDSA_ED25519_CODE_NAME
-        }
-
-        val exception = assertThrows<IllegalArgumentException> {
-            key.validateSpecName(SignatureSpecs.EDDSA_ED25519.signatureName, KeySpecExtractor.KeySpecType.SESSION)
+            key.validateSchemeAndSignatureSpec(SignatureSpecs.ECDSA_SHA256.signatureName)
         }
         assertThat(exception).hasMessageContaining("Invalid key scheme")
     }
 
     @Test
-    fun `validateSpecName throws exception for invalid spec name for session key`() {
+    fun `validateSchemeAndSignatureSpec throws exception for invalid schemeCodeName for session key`() {
+        val key = mock<CryptoSigningKey> {
+            on { schemeCodeName } doReturn KeySchemeCodes.EDDSA_ED25519_CODE_NAME
+        }
+
         val exception = assertThrows<IllegalArgumentException> {
-            signingKey.validateSpecName(SignatureSpecs.EDDSA_ED25519.signatureName, KeySpecExtractor.KeySpecType.SESSION)
+            key.validateSchemeAndSignatureSpec(SignatureSpecs.EDDSA_ED25519.signatureName, KeySpecExtractor.KeySpecType.SESSION)
+        }
+        assertThat(exception).hasMessageContaining("Invalid key scheme")
+    }
+
+    @Test
+    fun `validateSchemeAndSignatureSpec throws exception for invalid spec name for session key`() {
+        val exception = assertThrows<IllegalArgumentException> {
+            signingKey.validateSchemeAndSignatureSpec(SignatureSpecs.EDDSA_ED25519.signatureName, KeySpecExtractor.KeySpecType.SESSION)
         }
         assertThat(exception).hasMessageContaining("Invalid key spec ${SignatureSpecs.EDDSA_ED25519.signatureName}.")
     }
 
     @Test
-    fun `validateSpecName throw exception for invalid spec name`() {
+    fun `validateSchemeAndSignatureSpec throw exception for invalid spec name`() {
         val exception = assertThrows<IllegalArgumentException> {
-            signingKey.validateSpecName(SignatureSpecs.RSA_SHA512.signatureName)
+            signingKey.validateSchemeAndSignatureSpec(SignatureSpecs.RSA_SHA512.signatureName)
         }
         assertThat(exception).hasMessageContaining("Invalid key spec ${SignatureSpecs.RSA_SHA512.signatureName}")
     }
 
     @Test
-    fun `validateSpecName pass with valid names`() {
+    fun `validateSchemeAndSignatureSpec pass with valid names`() {
         assertDoesNotThrow {
-            signingKey.validateSpecName(SignatureSpecs.ECDSA_SHA256.signatureName)
+            signingKey.validateSchemeAndSignatureSpec(SignatureSpecs.ECDSA_SHA256.signatureName)
         }
+    }
+
+    @Test
+    fun `validateSchemeAndSignatureSpec passes for valid key scheme when no signature spec specified`() {
+        assertDoesNotThrow {
+            signingKey.validateSchemeAndSignatureSpec(null)
+        }
+    }
+
+    @Test
+    fun `validateSchemeAndSignatureSpec throw exception for invalid schemeCodeName when no signature spec specified`() {
+        val key = mock<CryptoSigningKey> {
+            on { schemeCodeName } doReturn "nop"
+        }
+
+        val exception = assertThrows<IllegalArgumentException> {
+            key.validateSchemeAndSignatureSpec(null)
+        }
+        assertThat(exception).hasMessageContaining("Invalid key scheme")
     }
 }

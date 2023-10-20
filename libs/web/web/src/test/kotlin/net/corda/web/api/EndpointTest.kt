@@ -1,28 +1,27 @@
 package net.corda.web.api
 
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 
 class EndpointTest {
 
     private val webHandler = WebHandler { context -> context }
 
-    @Test
-    fun `test validate endpoint`() {
-        assertThrows<CordaRuntimeException> {
-            Endpoint(HTTPMethod.GET, "", webHandler).validate()
-        }
-        assertThrows<CordaRuntimeException> {
-            Endpoint(HTTPMethod.GET, "no-slash", webHandler).validate()
-        }
-        assertThrows<CordaRuntimeException> {
-            Endpoint(HTTPMethod.GET, "not a url", webHandler).validate()
-        }
-        assertDoesNotThrow {
-            Endpoint(HTTPMethod.GET, "/url", webHandler).validate()
+    @ParameterizedTest
+    @ValueSource(strings = ["", "noslash", "/not a url"])
+    fun `registering an endpoint with improper endpoint string throws`(path: String) {
+        assertThrows<IllegalArgumentException> {
+            Endpoint(HTTPMethod.GET, path, webHandler)
         }
     }
 
+    @Test
+    fun `registering an endpoint with improper endpoint string does not throw`() {
+        assertDoesNotThrow {
+            Endpoint(HTTPMethod.GET, "/url", webHandler)
+        }
+    }
 }

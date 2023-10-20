@@ -5,7 +5,7 @@ import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
-import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
+import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.flow.application.GroupParametersLookupInternal
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
@@ -69,8 +69,8 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
 
     override fun create(
         wireTransaction: WireTransaction,
-        inputStateAndRefs: List<UtxoTransactionOutputDto>,
-        referenceStateAndRefs: List<UtxoTransactionOutputDto>
+        inputStateAndRefs: List<UtxoVisibleTransactionOutputDto>,
+        referenceStateAndRefs: List<UtxoVisibleTransactionOutputDto>
     ): UtxoLedgerTransactionInternal {
         return UtxoLedgerTransactionImpl(
             WrappedUtxoWireTransaction(wireTransaction, serializationService),

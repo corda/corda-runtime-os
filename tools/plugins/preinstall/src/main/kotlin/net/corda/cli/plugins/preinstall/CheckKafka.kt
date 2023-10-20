@@ -13,7 +13,11 @@ import picocli.CommandLine
 import picocli.CommandLine.Option
 import picocli.CommandLine.Parameters
 
-@CommandLine.Command(name = "check-kafka", description = ["Check that Kafka is up and that the credentials work."])
+@CommandLine.Command(
+    name = "check-kafka",
+    description = ["Check that Kafka is up and that the credentials work."],
+    mixinStandardHelpOptions = true
+)
 class CheckKafka : Callable<Int>, PluginContext() {
 
     @Parameters(

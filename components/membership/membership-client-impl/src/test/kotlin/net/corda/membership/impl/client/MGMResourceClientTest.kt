@@ -59,6 +59,7 @@ import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
+import net.corda.membership.lib.registration.DECLINED_REASON_FOR_USER_GENERAL_MANUAL_DECLINED
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -912,7 +913,7 @@ class MGMResourceClientTest {
                     Record(
                         Schemas.Membership.REGISTRATION_COMMAND_TOPIC,
                         "$memberName-$DEFAULT_MEMBER_GROUP_ID",
-                        RegistrationCommand(DeclineRegistration(reason))
+                        RegistrationCommand(DeclineRegistration(reason, DECLINED_REASON_FOR_USER_GENERAL_MANUAL_DECLINED))
                     )
                 )
             )
@@ -1086,7 +1087,7 @@ class MGMResourceClientTest {
                     Record(
                         Schemas.Membership.REGISTRATION_COMMAND_TOPIC,
                         "$memberName-$DEFAULT_MEMBER_GROUP_ID",
-                        RegistrationCommand(DeclineRegistration("Force declined by MGM"))
+                        RegistrationCommand(DeclineRegistration("Force declined by MGM", DECLINED_REASON_FOR_USER_GENERAL_MANUAL_DECLINED))
                     )
                 )
             )

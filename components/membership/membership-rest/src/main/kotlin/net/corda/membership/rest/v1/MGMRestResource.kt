@@ -560,6 +560,7 @@ interface MGMRestResource : RestResource {
      */
     @HttpPOST(
         path = "{holdingIdentityShortHash}/group-parameters",
+        minVersion = RestApiVersion.C5_1,
         description = "This API allows you to make changes to the group parameters by submitting an updated version " +
                 "of the group parameters.",
         responseDescription = "The newly updated group parameters"

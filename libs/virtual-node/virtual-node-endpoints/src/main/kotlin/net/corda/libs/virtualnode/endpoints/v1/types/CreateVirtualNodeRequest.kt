@@ -8,11 +8,18 @@ package net.corda.libs.virtualnode.endpoints.v1.types
  */
 data class CreateVirtualNodeRequest(
     val x500Name: String,
-    val cpiFileChecksum: String,
+    var cpiFileChecksum: String,
     val vaultDdlConnection: String?,
     val vaultDmlConnection: String?,
     val cryptoDdlConnection: String?,
     val cryptoDmlConnection: String?,
     val uniquenessDdlConnection: String?,
     val uniquenessDmlConnection: String?
-)
+) {
+    init {
+        // Whilst checksum can be expressed with either upper or lower case characters and has the same logical meaning,
+        // all the cache keys using uppercase representation of CPI checksum, therefore early during processing cycle
+        // on REST server, it would make sense to switch to uppercase.
+        cpiFileChecksum = cpiFileChecksum.uppercase()
+    }
+}

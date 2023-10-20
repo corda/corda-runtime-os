@@ -10,6 +10,7 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 
@@ -40,11 +41,10 @@ class UtxoFinalityFlowVersionedFlowFactory(
     override val versionedInstanceOf: Class<UtxoFinalityFlow> = UtxoFinalityFlow::class.java
 
     override fun create(version: Int, sessions: List<FlowSession>): SubFlow<UtxoSignedTransaction> {
-        val finalityVersion = when {
-            version >= CORDA_5_1.value -> UtxoFinalityVersion.V2
-            version in 1 until CORDA_5_1.value -> UtxoFinalityVersion.V1
+        return when {
+            version >= CORDA_5_1.value -> UtxoFinalityFlowV1(transaction, sessions, pluggableNotaryClientFlow)
+            version in 1 until CORDA_5_1.value -> throw CordaRuntimeException("Flows cannot be shared between 5.0 and 5.1 vnodes.")
             else -> throw IllegalArgumentException()
         }
-        return UtxoFinalityFlowV1(transaction, sessions, pluggableNotaryClientFlow, finalityVersion)
     }
 }

@@ -62,21 +62,25 @@ class SchedulerEventHandler(
         }
     }
 
-    private fun triggerAndScheduleNext(coordinator: LifecycleCoordinator) = try {
-        schedulerLog.getLastTriggerAndLock(schedule.taskName, schedulerName).use { schedulerLock ->
-            if (schedulerLock.secondsSinceLastScheduledTrigger >= schedule.scheduleIntervalInSeconds) {
-                publisher.publish(schedule.taskName, schedule.scheduleTriggerTopic)
-                schedulerLock.updateLog(schedulerName)
-            } else {
-                logger.debug { "Skipping publishing task scheduler for ${schedule.taskName} " +
-                        "because it has only been ${schedulerLock.secondsSinceLastScheduledTrigger} " +
-                        "since the last trigger." }
+    private fun triggerAndScheduleNext(coordinator: LifecycleCoordinator) {
+        try {
+            schedulerLog.getLastTriggerAndLock(schedule.taskName, schedulerName).use { schedulerLock ->
+                if (schedulerLock.secondsSinceLastScheduledTrigger >= schedule.scheduleIntervalInSeconds) {
+                    publisher.publish(schedule.taskName, schedule.scheduleTriggerTopic)
+                    schedulerLock.updateLog(schedulerName)
+                } else {
+                    logger.debug {
+                        "Skipping publishing task scheduler for ${schedule.taskName} " +
+                                "because it has only been ${schedulerLock.secondsSinceLastScheduledTrigger} " +
+                                "since the last trigger."
+                    }
+                }
             }
+            scheduleNext(coordinator)
+        } catch (e: Throwable) {
+            logger.error("Task scheduling for ${schedule.taskName} failed. Terminating Scheduler", e)
+            coordinator.updateStatus(LifecycleStatus.ERROR)
         }
-        scheduleNext(coordinator)
-    } catch (e: Throwable) {
-        logger.warn("Task scheduling for ${schedule.taskName} failed. Terminating Scheduler", e)
-        coordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
     private fun scheduleNext(coordinator: LifecycleCoordinator) {

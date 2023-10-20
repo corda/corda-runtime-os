@@ -2,7 +2,7 @@ package net.corda.flow.application.persistence.query
 
 import net.corda.flow.application.persistence.external.events.FindAllExternalEventFactory
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.flow.persistence.query.ResultSetExecutor
+import net.corda.flow.persistence.query.OffsetResultSetExecutor
 import net.corda.flow.persistence.query.ResultSetFactory
 import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.application.persistence.PagedQuery
@@ -27,7 +27,7 @@ class PagedFindQueryTest {
     private val externalEventExecutor = mock<ExternalEventExecutor>()
     private val resultSetFactory = mock<ResultSetFactory>()
     private val resultSet = mock<PagedQuery.ResultSet<Any>>()
-    private val resultSetExecutorCaptor = argumentCaptor<ResultSetExecutor<Any>>()
+    private val resultSetExecutorCaptor = argumentCaptor<OffsetResultSetExecutor<Any>>()
 
     private val query = PagedFindQuery(
         externalEventExecutor = externalEventExecutor,

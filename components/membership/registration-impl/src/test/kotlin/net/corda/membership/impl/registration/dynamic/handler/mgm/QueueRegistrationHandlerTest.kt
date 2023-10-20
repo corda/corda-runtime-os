@@ -174,6 +174,7 @@ class QueueRegistrationHandlerTest {
                 SetOwnRegistrationStatus(
                     registrationId,
                     RegistrationStatus.RECEIVED_BY_MGM,
+                    null
                 )
             ),
             eq(5),

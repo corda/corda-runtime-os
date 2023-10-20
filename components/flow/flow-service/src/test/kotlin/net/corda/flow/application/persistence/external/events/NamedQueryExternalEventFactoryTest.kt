@@ -33,7 +33,7 @@ class NamedQueryExternalEventFactoryTest {
         assertEquals(
             EntityRequest(
                 ALICE_X500_HOLDING_IDENTITY,
-                FindWithNamedQuery("query", emptyMap(), 1, Int.MAX_VALUE),
+                FindWithNamedQuery("query", emptyMap(), 1, Int.MAX_VALUE, null),
                 externalEventContext
             ),
             externalEventRecord.payload

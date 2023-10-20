@@ -117,6 +117,7 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class SynchronisationIntegrationTest {
@@ -308,6 +309,7 @@ class SynchronisationIntegrationTest {
                                 LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
                                 LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>(),
                                 LifecycleCoordinatorName.forComponent<GroupParametersWriterService>(),
+                                LifecycleCoordinatorName.forComponent<LocallyHostedIdentitiesService>()
                             )
                         )
                     } else if (e is RegistrationStatusChangeEvent) {
@@ -335,6 +337,7 @@ class SynchronisationIntegrationTest {
                     mgmSessionKey,
                 )
             )
+            testLocallyHostedIdentitiesService.start()
 
             eventually(15.seconds) {
                 logger.info("Waiting for required services to start...")

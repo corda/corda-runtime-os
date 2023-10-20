@@ -1,0 +1,81 @@
+topics:
+  - name: config.management.request
+    config: {}
+  - name: config.management.request.resp
+    config: {}
+  - name: config.topic
+    config:
+      cleanup.policy: compact
+      segment.ms: 600000
+      delete.retention.ms: 300000
+      min.compaction.lag.ms: 60000
+      max.compaction.lag.ms: 604800000
+      min.cleanable.dirty.ratio: 0.5
+acls:
+  - topic: config.management.request
+    users:
+      - name: B
+        operations:
+          - read
+          - describe
+      - name: J
+        operations:
+          - write
+          - describe
+  - topic: config.management.request.resp
+    users:
+      - name: J
+        operations:
+          - read
+          - describe
+      - name: B
+        operations:
+          - write
+          - describe
+  - topic: config.topic
+    users:
+      - name: A
+        operations:
+          - read
+          - describe
+      - name: B
+        operations:
+          - read
+          - write
+          - describe
+      - name: C
+        operations:
+          - read
+          - describe
+      - name: D
+        operations:
+          - read
+          - describe
+      - name: E
+        operations:
+          - read
+          - describe
+      - name: F
+        operations:
+          - read
+          - describe
+      - name: G
+        operations:
+          - read
+          - describe
+      - name: H
+        operations:
+          - read
+          - describe
+      - name: I
+        operations:
+          - read
+          - describe
+      - name: J
+        operations:
+          - read
+          - describe
+      - name: K
+        operations:
+          - read
+          - describe

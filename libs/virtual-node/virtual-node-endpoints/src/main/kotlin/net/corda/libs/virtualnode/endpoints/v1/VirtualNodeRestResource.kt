@@ -11,7 +11,9 @@ import net.corda.rest.annotations.HttpGET
 import net.corda.rest.annotations.HttpPOST
 import net.corda.rest.annotations.HttpPUT
 import net.corda.rest.annotations.HttpRestResource
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.annotations.RestPathParameter
+import net.corda.rest.annotations.RestQueryParameter
 import net.corda.rest.asynchronous.v1.AsyncOperationStatus
 import net.corda.rest.asynchronous.v1.AsyncResponse
 import net.corda.rest.response.ResponseEntity
@@ -106,16 +108,42 @@ interface VirtualNodeRestResource : RestResource {
     /**
      * Asynchronous endpoint to upgrade a virtual node's CPI.
      */
+    @Deprecated("Deprecated in favour of upgradeVirtualNode")
     @HttpPUT(
         path = "{virtualNodeShortId}/cpi/{targetCpiFileChecksum}",
         title = "Upgrade a virtual node's CPI.",
         description = "This method upgrades a virtual node's CPI.",
-        responseDescription = "Identifier for the request."
+        responseDescription = "Identifier for the request.",
+        minVersion = RestApiVersion.C5_0,
+        maxVersion = RestApiVersion.C5_0
+    )
+    fun upgradeVirtualNodeDeprecated(
+        @RestPathParameter(description = "Short ID of the virtual node instance to update")
+        virtualNodeShortId: String,
+        @RestPathParameter(description = "The file checksum of the CPI to upgrade to.")
+        targetCpiFileChecksum: String
+    ): ResponseEntity<AsyncResponse>
+
+    /**
+     * Asynchronous endpoint to upgrade a virtual node's CPI.
+     */
+    @HttpPUT(
+        path = "{virtualNodeShortId}/cpi/{targetCpiFileChecksum}",
+        title = "Upgrade a virtual node's CPI.",
+        description = "This method upgrades a virtual node's CPI.",
+        responseDescription = "Identifier for the request.",
+        minVersion = RestApiVersion.C5_1
     )
     fun upgradeVirtualNode(
         @RestPathParameter(description = "Short ID of the virtual node instance to update")
         virtualNodeShortId: String,
         @RestPathParameter(description = "The file checksum of the CPI to upgrade to.")
-        targetCpiFileChecksum: String
+        targetCpiFileChecksum: String,
+        @RestQueryParameter(
+            description = "Whether this upgrade should be forced regardless of OperationInProgress.",
+            default = "false",
+            required = false
+        )
+        forceUpgrade: Boolean = false
     ): ResponseEntity<AsyncResponse>
 }

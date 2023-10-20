@@ -10,14 +10,13 @@ fun initiateNewSession(config: SmartConfig): Pair<SessionParty, SessionParty> {
     val (initiator, initiated) = SessionPartyFactory().createSessionParties(config)
 
     //send init
-    initiator.processNewOutgoingMessage(SessionMessageType.INIT, sendMessages = true)
+    initiator.processNewOutgoingMessage(SessionMessageType.COUNTERPARTY_INFO, sendMessages = true)
     initiator.assertStatus(SessionStateType.CREATED)
 
     initiated.processNextReceivedMessage(sendMessages = true)
     initiated.assertStatus(SessionStateType.CONFIRMED)
 
-    //process confirm
-    initiated.processNewOutgoingMessage(SessionMessageType.CONFIRM, sendMessages = true)
+    //process counterparty info rs
     initiator.processNextReceivedMessage()
     initiator.assertStatus(SessionStateType.CONFIRMED)
     initiated.assertStatus(SessionStateType.CONFIRMED)
