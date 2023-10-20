@@ -201,12 +201,11 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                 val updateStates = mutableMapOf<String, State?>()
                 val deleteStates = mutableMapOf<String, State?>()
                 val flowEvents = mutableMapOf<String, MutableList<Record<K, E>>>()
-                val pendingOutputRecords = mutableListOf<MediatorMessage<Any>>()
                 // Process each group on a thread
                 groups.map { group ->
                     taskManager.executeShortRunningTask {
                         // Process all same flow events in one go
-                        group.map {
+                        group.map { it ->
                             flowEvents.compute(it.key.toString()) { _, v ->
                                 if (v == null) {
                                     it.value.toMutableList()
@@ -228,27 +227,21 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                                 val response = config.messageProcessor.onNext(processorState, event)
                                 processorState = response.updatedState
                                 val output = response.responseEvents.map { taskManagerHelper.convertToMessage(it) }
-                                output.forEach {
-                                    val destination = messageRouter.getDestination(it)
-                                    if (destination.type == RoutingDestination.Type.ASYNCHRONOUS) {
-                                        // Add the async messages to be sent the last thing in the whole batch
-                                        pendingOutputRecords.add(it)
-                                    } else {
-
-                                        @Suppress("UNCHECKED_CAST")
-                                        val reply = with(destination) {
-                                            it.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
-                                            client.send(it) as MediatorMessage<E>?
-                                        }
-                                        if (reply != null) {
-                                            queue.addLast(
-                                                Record(
-                                                    "",
-                                                    event.key,
-                                                    reply.payload,
-                                                )
+                                output.forEach { message ->
+                                    val destination = messageRouter.getDestination(message)
+                                    @Suppress("UNCHECKED_CAST")
+                                    val reply = with(destination) {
+                                        message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
+                                        client.send(message) as MediatorMessage<E>?
+                                    }
+                                    if (reply != null) {
+                                        queue.addLast(
+                                            Record(
+                                                "",
+                                                event.key,
+                                                reply.payload,
                                             )
-                                        }
+                                        )
                                     }
                                 }
                             }
