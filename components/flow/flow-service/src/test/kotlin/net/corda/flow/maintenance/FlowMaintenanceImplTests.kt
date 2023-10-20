@@ -1,11 +1,13 @@
 package net.corda.flow.maintenance
 
+import net.corda.data.flow.FlowTimeout
 import net.corda.data.scheduler.ScheduledTaskTrigger
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.Resource
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
@@ -13,48 +15,68 @@ import net.corda.schema.configuration.ConfigKeys
 import org.junit.jupiter.api.Test
 import org.mockito.internal.verification.Times
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 
 class FlowMaintenanceImplTests {
-    private val subscription = mock<Subscription<String, ScheduledTaskTrigger>>()
-    private val lifecycleCoordinator = mock<LifecycleCoordinator> {
-        on { createManagedResource(any(), any<() -> Subscription<String, ScheduledTaskTrigger>>()) } doReturn (subscription)
-    }
-    private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory> {
-        on { createCoordinator(any(), any()) } doReturn (lifecycleCoordinator)
-    }
-    private val subscriptionFactory = mock<SubscriptionFactory> {
-        on { createDurableSubscription(any(), any<SessionTimeoutTaskProcessor>(), any(), any()) } doReturn(subscription)
-    }
+
     private val stateManager = mock<StateManager>()
     private val stateManagerFactory = mock<StateManagerFactory> {
         on { create(any()) } doReturn (stateManager)
     }
 
-    private val flowMaintenance = FlowMaintenanceImpl(lifecycleCoordinatorFactory, subscriptionFactory, stateManagerFactory)
+    private val subscription = mock<Subscription<String, ScheduledTaskTrigger>>()
+    private val timeoutSubscription = mock<Subscription<String, FlowTimeout>>()
+    private val lifecycleCoordinator = mock<LifecycleCoordinator> {
+        val captor = argumentCaptor<() -> Resource>()
+        on { createManagedResource(any(), captor.capture()) } doAnswer { captor.lastValue.invoke() }
+    }
+    private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory> {
+        on { createCoordinator(any(), any()) } doReturn (lifecycleCoordinator)
+    }
+    private val subscriptionFactory = mock<SubscriptionFactory> {
+        on { createDurableSubscription(any(), any<SessionTimeoutTaskProcessor>(), any(), anyOrNull()) } doReturn(subscription)
+        on { createDurableSubscription(any(), any<TimeoutEventCleanupProcessor>(), any(), anyOrNull()) } doReturn (timeoutSubscription)
+    }
+
     private val messagingConfig = mock<SmartConfig>()
     private val stateManagerConfig = mock<SmartConfig>()
+    private val flowConfig = mock<SmartConfig>()
 
     private val config = mapOf(
         ConfigKeys.MESSAGING_CONFIG to messagingConfig,
-        ConfigKeys.STATE_MANAGER_CONFIG to stateManagerConfig
+        ConfigKeys.STATE_MANAGER_CONFIG to stateManagerConfig,
+        ConfigKeys.FLOW_CONFIG to flowConfig
+    )
+
+    private val flowMaintenanceHandlersFactory = mock<FlowMaintenanceHandlersFactory> {
+        on { createScheduledTaskHandler(any()) } doReturn (SessionTimeoutTaskProcessor(stateManager))
+        on { createTimeoutEventHandler(any(), any()) } doReturn (
+            TimeoutEventCleanupProcessor(mock(), stateManager, mock(), mock(), flowConfig)
+        )
+    }
+
+    private val flowMaintenance = FlowMaintenanceImpl(
+        lifecycleCoordinatorFactory,
+        subscriptionFactory,
+        stateManagerFactory,
+        flowMaintenanceHandlersFactory
     )
 
     @Test
     fun `when config provided create subscription and start it`() {
-        val captor = argumentCaptor<() -> Subscription<String, ScheduledTaskTrigger>>()
-
         flowMaintenance.onConfigChange(config)
-        verify(lifecycleCoordinator).createManagedResource(any(), captor.capture())
-        captor.firstValue()
-        verify(subscriptionFactory).createDurableSubscription(
+        verify(lifecycleCoordinator, times(3)).createManagedResource(any(), any<() -> Resource>())
+        verify(subscriptionFactory, times(1)).createDurableSubscription(
             argThat { it ->
                 it.eventTopic == Schemas.ScheduledTask.SCHEDULED_TASK_TOPIC_FLOW_PROCESSOR
             },
@@ -62,8 +84,17 @@ class FlowMaintenanceImplTests {
             eq(messagingConfig),
             isNull()
         )
+        verify(subscriptionFactory, times(1)).createDurableSubscription(
+            argThat { it ->
+                it.eventTopic == Schemas.Flow.FLOW_TIMEOUT_TOPIC
+            },
+            any<TimeoutEventCleanupProcessor>(),
+            eq(messagingConfig),
+            isNull()
+        )
         verify(stateManagerFactory).create(stateManagerConfig)
         verify(subscription).start()
+        verify(timeoutSubscription).start()
     }
 
     @Test
@@ -90,11 +121,12 @@ class FlowMaintenanceImplTests {
             mapOf(
                 ConfigKeys.MESSAGING_CONFIG to newConfig,
                 ConfigKeys.STATE_MANAGER_CONFIG to newConfig,
+                ConfigKeys.FLOW_CONFIG to newConfig
             )
         )
 
         verify(stateManagerFactory).create(newConfig)
-        verify(stateManager).close()
+        verify(lifecycleCoordinator, times(6)).createManagedResource(any(), any<() -> Resource>())
     }
 
     @Test
@@ -102,7 +134,7 @@ class FlowMaintenanceImplTests {
         flowMaintenance.onConfigChange(config)
         flowMaintenance.stop()
 
-        verify(stateManager).close()
+        verify(lifecycleCoordinator).stop()
     }
 
     @Test
