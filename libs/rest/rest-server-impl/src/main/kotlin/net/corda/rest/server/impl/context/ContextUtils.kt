@@ -4,8 +4,6 @@ import io.javalin.core.util.Header
 import io.javalin.http.Context
 import io.javalin.http.ForbiddenResponse
 import io.javalin.http.UnauthorizedResponse
-import java.time.Duration
-import javax.security.auth.login.FailedLoginException
 import net.corda.metrics.CordaMetrics
 import net.corda.rest.exception.HttpApiException
 import net.corda.rest.exception.InvalidInputDataException
@@ -28,6 +26,8 @@ import net.corda.utilities.withMDC
 import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.time.Duration
+import javax.security.auth.login.FailedLoginException
 
 internal object ContextUtils {
 
@@ -102,7 +102,7 @@ internal object ContextUtils {
             val ctxMethod = ctx.method()
             withMDC(restContext()?.principal ?: "<anonymous>", ctxMethod, ctx.path()) {
                 val methodLogger = ctxMethod.loggerFor()
-                methodLogger.debug { "Servicing $ctxMethod request to '${ctx.path()}' and invoking  method \"${method.method.name}\"" }
+                methodLogger.info("Servicing $ctxMethod request to '${ctx.path()}' and invoking  method \"${method.method.name}\"")
                 methodLogger.trace { "Get parameter values." }
 
                 val startTime = System.nanoTime()
