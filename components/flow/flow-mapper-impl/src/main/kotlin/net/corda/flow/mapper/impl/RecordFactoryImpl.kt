@@ -202,6 +202,7 @@ class RecordFactoryImpl @Activate constructor(
         val messageId = sessionEvent.sessionId + "-" + UUID.randomUUID()
         logger.info("TTT generateAppMessage( sourceIdentity= $sourceIdentity," +
                 " destinationIdentity = $destinationIdentity, messageId = $messageId)")
+        logger.info("TTT PPP sessionEvent.timestamp - ${sessionEvent.timestamp}, now: ${Instant.now()}")
         val header = AuthenticatedMessageHeader(
             destinationIdentity,
             sourceIdentity,
