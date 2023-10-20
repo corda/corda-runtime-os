@@ -237,7 +237,7 @@ class SessionEventHandler @Activate constructor(
             emptyKeyValuePairList(),
             (context.inputEventPayload as SessionEvent).initiatingIdentity,
             Instant.now(),
-            SessionStateType.CONFIRMED
+            SessionStateType.ERROR
         ))
 
         context.checkpoint.putSessionStates(
