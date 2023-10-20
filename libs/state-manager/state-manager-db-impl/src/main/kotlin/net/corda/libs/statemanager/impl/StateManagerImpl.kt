@@ -31,23 +31,13 @@ class StateManagerImpl(
     private fun StateEntity.fromPersistentEntity() =
         State(key, value, version, objectMapper.convertToMetadata(metadata), modifiedTime)
 
-    override fun create(states: Collection<State>): Map<String, Exception> {
-        val failures = mutableMapOf<String, Exception>()
-
-        states.map {
+    override fun create(states: Collection<State>): Collection<String> {
+        val stateEntities = states.map {
             it.toPersistentEntity()
-        }.forEach {
-            try {
-                entityManagerFactory.transaction { em ->
-                    stateRepository.create(em, it)
-                }
-            } catch (e: Exception) {
-                logger.warn("Failed to create state with id ${it.key}", e)
-                failures[it.key] = e
-            }
         }
-
-        return failures
+        return dataSource.connection.transaction { conn ->
+            stateRepository.create(conn, stateEntities)
+        }
     }
 
     override fun get(keys: Collection<String>): Map<String, State> {

@@ -9,8 +9,9 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.entry
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
@@ -19,7 +20,6 @@ import java.sql.Connection
 import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
-import javax.persistence.PersistenceException
 
 class StateManagerImplTest {
     private val stateRepository: StateRepository = mock()
@@ -56,21 +56,22 @@ class StateManagerImplTest {
     private fun StateEntity.newVersion() = StateEntity(key, value, metadata, version + 1, modifiedTime)
 
     @Test
-    fun createReturnsEmptyMapWhenAllInsertsSucceed() {
+    fun createReturnsEmptyListWhenAllInsertsSucceed() {
         assertThat(stateManager.create(listOf(apiStateOne, apiStateTwo))).isEmpty()
-        verify(stateRepository).create(entityManager, persistentStateOne)
-        verify(stateRepository).create(entityManager, persistentStateTwo)
+        verify(stateRepository).create(connection, listOf(persistentStateOne, persistentStateTwo))
     }
 
     @Test
-    fun createReturnsMapWithStatesThatAlreadyExist() {
-        val persistenceException = PersistenceException("Mock Exception")
-        doThrow(persistenceException).whenever(stateRepository).create(entityManager, persistentStateOne)
+    fun createReturnsFailedKeyOfStateThatAlreadyExist() {
+        val argumentCaptor = argumentCaptor<Collection<StateEntity>>()
 
-        assertThat(stateManager.create(listOf(apiStateOne, apiStateTwo)))
-            .containsExactly(entry(apiStateOne.key, persistenceException))
-        verify(stateRepository).create(entityManager, persistentStateOne)
-        verify(stateRepository).create(entityManager, persistentStateTwo)
+        whenever(stateRepository.create(eq(connection), argumentCaptor.capture())).thenReturn(listOf(apiStateOne.key))
+        assertThat(stateManager.create(listOf(apiStateOne, apiStateTwo))).containsExactly((apiStateOne.key))
+
+        val stateEntities = argumentCaptor.firstValue.toList()
+        assertThat(stateEntities).hasSize(2)
+        assertThat(stateEntities[0].key).isEqualTo(apiStateOne.key)
+        assertThat(stateEntities[1].key).isEqualTo(apiStateTwo.key)
     }
 
     @Test
