@@ -9,6 +9,7 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import org.slf4j.LoggerFactory
 
+
 class QueryFlow : ClientStartableFlow {
 
     private companion object {
@@ -28,7 +29,8 @@ class QueryFlow : ClientStartableFlow {
         try {
             val unconsumedStates : List<TokenState> =
                 ledgerService.findUnconsumedStatesByType(TokenState::class.java).map { it.state.contractState }
-            return jsonMarshallingService.format(unconsumedStates.map { it.toString() })
+            return jsonMarshallingService.format(unconsumedStates.map {
+                TokenState(it.linearId.toString(), it.amount, it.issuer.toString(), it.owner.toString())  })
 
         } catch (e: Exception) {
             log.warn("Failed to process utxo flow for request body '$requestBody' because: '${e.message}'")
@@ -36,3 +38,11 @@ class QueryFlow : ClientStartableFlow {
         }
     }
 }
+
+data class TokenState (
+    val linearId: String,
+    val amount: Int,
+    val issuer: String,
+    val owner: String,
+)
+

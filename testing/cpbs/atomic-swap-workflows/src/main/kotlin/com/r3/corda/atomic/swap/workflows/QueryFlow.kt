@@ -29,7 +29,8 @@ class QueryFlow : ClientStartableFlow {
 
         try {
             val unconsumedStates : List<Asset> = ledgerService.findUnconsumedStatesByType(Asset::class.java).map { it.state.contractState }
-            return jsonMarshallingService.format(unconsumedStates.map { it.toString() })
+            return jsonMarshallingService.format(
+                unconsumedStates.map { AssetTO(it.owner.toString().substringAfter("[").substringBefore("]"), it.assetName, it.assetId )})
 
         } catch (e: Exception) {
             log.warn("Failed to process utxo flow for request body '$requestBody' because: '${e.message}'")
@@ -37,3 +38,9 @@ class QueryFlow : ClientStartableFlow {
         }
     }
 }
+
+data class AssetTO(
+    val owner: String,
+    val assetName: String,
+    val assetId: String
+)
