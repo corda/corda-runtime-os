@@ -16,7 +16,6 @@ import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.schema.configuration.FlowConfig
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
@@ -56,6 +55,7 @@ class CheckpointCleanupHandlerImplTest {
         assertThat(output.size).isEqualTo(6)
         verify(flowMessageFactory).createFlowFailedStatusMessage(any(), any(), any())
         verify(checkpoint).putSessionStates(any())
+        verify(checkpoint).markDeleted()
     }
 
     @Test
@@ -70,6 +70,7 @@ class CheckpointCleanupHandlerImplTest {
         assertThat(output.size).isEqualTo(5)
         verify(flowMessageFactory).createFlowFailedStatusMessage(any(), any(), any())
         verify(checkpoint).putSessionStates(any())
+        verify(checkpoint).markDeleted()
     }
 
     @Test
@@ -88,6 +89,7 @@ class CheckpointCleanupHandlerImplTest {
         assertThat(output.size).isEqualTo(5)
         verify(flowMessageFactory).createFlowFailedStatusMessage(any(), any(), any())
         verify(checkpoint, never()).putSessionStates(any())
+        verify(checkpoint).markDeleted()
     }
 
     @Test
