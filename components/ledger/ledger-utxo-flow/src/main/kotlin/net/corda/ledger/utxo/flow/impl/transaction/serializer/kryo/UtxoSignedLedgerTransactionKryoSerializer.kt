@@ -11,7 +11,6 @@ import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.serialization.checkpoint.CheckpointOutput
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
-import org.slf4j.LoggerFactory
 
 @Component(
     service = [ CheckpointInternalCustomSerializer::class, UsedByFlow::class ],
@@ -27,7 +26,6 @@ class UtxoSignedLedgerTransactionKryoSerializer : CheckpointInternalCustomSerial
     }
 
     override fun read(input: CheckpointInput, type: Class<out UtxoSignedLedgerTransaction>): UtxoSignedLedgerTransaction {
-        LoggerFactory.getLogger(UtxoSignedLedgerTransactionKryoSerializer::class.java).error("TRYING TO KRYO DESERIALIZE WITH THE CORRECT SERIALIZER")
         val ledgerTransaction = input.readClassAndObject() as UtxoLedgerTransactionInternal
         val signedTransaction = input.readClassAndObject() as UtxoSignedTransactionInternal
         return UtxoSignedLedgerTransactionImpl(ledgerTransaction, signedTransaction)
