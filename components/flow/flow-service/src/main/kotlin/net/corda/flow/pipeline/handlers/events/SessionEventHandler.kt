@@ -21,6 +21,7 @@ import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.protocol.FlowAndProtocolVersion
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.utils.KeyValueStore
+import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.flow.utils.keyValuePairListOf
 import net.corda.flow.utils.toMap
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL
@@ -231,6 +232,14 @@ class SessionEventHandler @Activate constructor(
         sessionId: String,
         exception: Throwable
     ) {
+        context.checkpoint.putSessionState(sessionManager.generateSessionState(
+            sessionId,
+            emptyKeyValuePairList(),
+            (context.inputEventPayload as SessionEvent).initiatingIdentity,
+            Instant.now(),
+            SessionStateType.CONFIRMED
+        ))
+
         context.checkpoint.putSessionStates(
             flowSessionManager.sendErrorMessages(
                 context.checkpoint,
