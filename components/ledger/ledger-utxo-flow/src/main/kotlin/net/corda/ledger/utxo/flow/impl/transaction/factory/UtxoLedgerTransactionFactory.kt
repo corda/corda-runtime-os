@@ -20,7 +20,7 @@ interface UtxoLedgerTransactionFactory {
     @Suspendable
     fun create(
         wireTransaction: WireTransaction
-    ): UtxoLedgerTransaction
+    ): UtxoLedgerTransactionInternal
 
     fun create(
         wireTransaction: WireTransaction,

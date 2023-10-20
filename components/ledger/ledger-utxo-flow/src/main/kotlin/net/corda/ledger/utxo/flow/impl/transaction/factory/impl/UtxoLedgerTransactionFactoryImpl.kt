@@ -39,7 +39,7 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
     @Suspendable
     override fun create(
         wireTransaction: WireTransaction
-    ): UtxoLedgerTransaction {
+    ): UtxoLedgerTransactionInternal {
         val wrappedUtxoWireTransaction = WrappedUtxoWireTransaction(wireTransaction, serializationService)
         val allStateRefs =
             (wrappedUtxoWireTransaction.inputStateRefs + wrappedUtxoWireTransaction.referenceStateRefs)

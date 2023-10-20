@@ -4,6 +4,7 @@ import net.corda.crypto.core.parseSecureHash
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.flow.impl.timewindow.TimeWindowBetweenImpl
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.testkit.UtxoLedgerIntegrationTest
 import net.corda.ledger.utxo.testkit.UtxoStateClassExample
 import net.corda.ledger.utxo.testkit.createExample
@@ -11,7 +12,6 @@ import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
-import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatCode
@@ -408,7 +408,7 @@ class UtxoFilteredTransactionTest : UtxoLedgerIntegrationTest() {
         assertThatCode { utxoFilteredTransaction.verify() }.doesNotThrowAnyException()
     }
     
-    private fun createSignedTransaction(numberOfInputStates: Int = 2, numberOfOutputStates: Int = 2): UtxoSignedTransaction {
+    private fun createSignedTransaction(numberOfInputStates: Int = 2, numberOfOutputStates: Int = 2): UtxoSignedTransactionInternal {
         val inputHash = parseSecureHash("SHA256:1234567890abcdef")
         val outputInfo = UtxoOutputInfoComponent(
             encumbrance = null,
