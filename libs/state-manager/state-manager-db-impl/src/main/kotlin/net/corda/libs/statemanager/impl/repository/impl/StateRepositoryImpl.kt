@@ -9,7 +9,6 @@ import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.repository.StateRepository
 import net.corda.libs.statemanager.impl.repository.impl.PreparedStatementHelper.extractFailedKeysFromBatchResults
 
-// TODO-[CORE-17733]: batch update and delete.
 class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepository {
 
     @Suppress("UNCHECKED_CAST")
@@ -24,14 +23,7 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
                 preparedStatement.setString(4, s.metadata)
                 preparedStatement.addBatch()
             }
-            // Execute the batch of prepared statements.
-            // The elements in the 'results' array correspond to the commands in the batch.
-            // The order of elements in 'results' follows the order in which the statements were added to the batch.
-            // - An update count greater than or equal to zero indicates that the command was processed successfully,
-            //   and it represents the number of rows in the database affected by the command.
-            // - If optimistic locking check fails for a statement in the batch, that statement will have a '0' in the 'results' array.
-            val results = preparedStatement.executeBatch()
-            getFailedKeysFromResults(results, states.map { it.key })
+            extractFailedKeysFromBatchResults(preparedStatement.executeBatch(), states.map { it.key })
         }
     }
 

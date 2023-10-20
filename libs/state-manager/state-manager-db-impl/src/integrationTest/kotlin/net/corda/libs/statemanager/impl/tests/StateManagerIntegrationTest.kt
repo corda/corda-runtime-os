@@ -7,8 +7,8 @@ import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.Metadata
-import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.MetadataFilter
+import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.metadata
@@ -16,12 +16,8 @@ import net.corda.libs.statemanager.impl.StateManagerImpl
 import net.corda.libs.statemanager.impl.convertToMetadata
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.model.v1.StateManagerEntities
-import net.corda.libs.statemanager.impl.repository.impl.KEY_PARAMETER_NAME
-import net.corda.libs.statemanager.impl.repository.impl.METADATA_PARAMETER_NAME
 import net.corda.libs.statemanager.impl.repository.impl.PostgresQueryProvider
 import net.corda.libs.statemanager.impl.repository.impl.StateRepositoryImpl
-import net.corda.libs.statemanager.impl.repository.impl.VALUE_PARAMETER_NAME
-import net.corda.libs.statemanager.impl.repository.impl.VERSION_PARAMETER_NAME
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
@@ -38,7 +34,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CountDownLatch
 import kotlin.concurrent.thread
 
@@ -88,11 +84,6 @@ class StateManagerIntegrationTest {
 
     private fun buildStateKey(index: Int) = "key_$index-$testUniqueId"
 
-    private val createStateQuery = """
-            INSERT INTO ${DbSchema.STATE_MANAGER_TABLE}
-            VALUES (:$KEY_PARAMETER_NAME, :$VALUE_PARAMETER_NAME, :$VERSION_PARAMETER_NAME, CAST(:$METADATA_PARAMETER_NAME as JSONB), CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
-    """.trimIndent()
-
     private fun persistStateEntities(
         indexRange: IntProgression,
         version: (index: Int, key: String) -> Int,
@@ -104,11 +95,11 @@ class StateManagerIntegrationTest {
             val stateEntity =
                 StateEntity(key, stateContent(i, key).toByteArray(), metadataContent(i, key), version(i, key))
 
-            it.createNativeQuery(createStateQuery)
-                .setParameter(KEY_PARAMETER_NAME, stateEntity.key)
-                .setParameter(VALUE_PARAMETER_NAME, stateEntity.value)
-                .setParameter(VERSION_PARAMETER_NAME, stateEntity.version)
-                .setParameter(METADATA_PARAMETER_NAME, stateEntity.metadata)
+            it.createNativeQuery(queryProvider.createState)
+                .setParameter(1, stateEntity.key)
+                .setParameter(2, stateEntity.value)
+                .setParameter(3, stateEntity.version)
+                .setParameter(4, stateEntity.metadata)
                 .executeUpdate()
 
             it.flush()
@@ -136,7 +127,7 @@ class StateManagerIntegrationTest {
         }
     }
 
-    @ValueSource(ints = [1, 10])
+    @ValueSource(ints = [1, 5, 10, 20, 50])
     @ParameterizedTest(name = "can create basic states (batch size: {0})")
     fun canCreateBasicStates(stateCount: Int) {
         val states = mutableSetOf<State>()
@@ -518,29 +509,45 @@ class StateManagerIntegrationTest {
             { i, _ -> """{ "number": $i, "boolean": ${i % 2 == 0}, "string": "random_$i" }""" }
         )
 
-        assertThat(stateManager.findByMetadataMatchingAll(listOf(
-            MetadataFilter("number", Operation.GreaterThan, 5),
-            MetadataFilter("number", Operation.LesserThan, 7),
-            MetadataFilter("boolean", Operation.Equals, true),
-            MetadataFilter("string", Operation.Equals, "random_6"),
-        ))).hasSize(1)
+        assertThat(
+            stateManager.findByMetadataMatchingAll(
+                listOf(
+                    MetadataFilter("number", Operation.GreaterThan, 5),
+                    MetadataFilter("number", Operation.LesserThan, 7),
+                    MetadataFilter("boolean", Operation.Equals, true),
+                    MetadataFilter("string", Operation.Equals, "random_6"),
+                )
+            )
+        ).hasSize(1)
 
-        assertThat(stateManager.findByMetadataMatchingAll(listOf(
-            MetadataFilter("number", Operation.GreaterThan, 5),
-            MetadataFilter("number", Operation.LesserThan, 7),
-            MetadataFilter("boolean", Operation.Equals, true),
-            MetadataFilter("string", Operation.Equals, "non_existing_value"),
-        ))).isEmpty()
+        assertThat(
+            stateManager.findByMetadataMatchingAll(
+                listOf(
+                    MetadataFilter("number", Operation.GreaterThan, 5),
+                    MetadataFilter("number", Operation.LesserThan, 7),
+                    MetadataFilter("boolean", Operation.Equals, true),
+                    MetadataFilter("string", Operation.Equals, "non_existing_value"),
+                )
+            )
+        ).isEmpty()
 
-        assertThat(stateManager.findByMetadataMatchingAll(listOf(
-            MetadataFilter("number", Operation.GreaterThan, 0),
-            MetadataFilter("boolean", Operation.Equals, true),
-        ))).hasSize(count / 2)
+        assertThat(
+            stateManager.findByMetadataMatchingAll(
+                listOf(
+                    MetadataFilter("number", Operation.GreaterThan, 0),
+                    MetadataFilter("boolean", Operation.Equals, true),
+                )
+            )
+        ).hasSize(count / 2)
 
-        assertThat(stateManager.findByMetadataMatchingAll(listOf(
-            MetadataFilter("number", Operation.NotEquals, 0),
-            MetadataFilter("string", Operation.Equals, "non_existing_key"),
-        ))).isEmpty()
+        assertThat(
+            stateManager.findByMetadataMatchingAll(
+                listOf(
+                    MetadataFilter("number", Operation.NotEquals, 0),
+                    MetadataFilter("string", Operation.Equals, "non_existing_key"),
+                )
+            )
+        ).isEmpty()
     }
 
     @Test
@@ -554,31 +561,51 @@ class StateManagerIntegrationTest {
             { i, _ -> """{ "number": $i, "boolean": ${i % 2 == 0}, "string": "random_$i" }""" }
         )
 
-        assertThat(stateManager.findByMetadataMatchingAny(listOf(
-            MetadataFilter("number", Operation.Equals, 5),
-            MetadataFilter("number", Operation.Equals, 7),
-            MetadataFilter("string", Operation.Equals, "random_6"),
-        ))).hasSize(3)
+        assertThat(
+            stateManager.findByMetadataMatchingAny(
+                listOf(
+                    MetadataFilter("number", Operation.Equals, 5),
+                    MetadataFilter("number", Operation.Equals, 7),
+                    MetadataFilter("string", Operation.Equals, "random_6"),
+                )
+            )
+        ).hasSize(3)
 
-        assertThat(stateManager.findByMetadataMatchingAny(listOf(
-            MetadataFilter("number", Operation.GreaterThan, 5),
-            MetadataFilter("number", Operation.LesserThan, 7),
-        ))).hasSize(count)
+        assertThat(
+            stateManager.findByMetadataMatchingAny(
+                listOf(
+                    MetadataFilter("number", Operation.GreaterThan, 5),
+                    MetadataFilter("number", Operation.LesserThan, 7),
+                )
+            )
+        ).hasSize(count)
 
-        assertThat(stateManager.findByMetadataMatchingAny(listOf(
-            MetadataFilter("boolean", Operation.Equals, false),
-            MetadataFilter("boolean", Operation.Equals, true),
-        ))).hasSize(count)
+        assertThat(
+            stateManager.findByMetadataMatchingAny(
+                listOf(
+                    MetadataFilter("boolean", Operation.Equals, false),
+                    MetadataFilter("boolean", Operation.Equals, true),
+                )
+            )
+        ).hasSize(count)
 
-        assertThat(stateManager.findByMetadataMatchingAny(listOf(
-            MetadataFilter("number", Operation.GreaterThan, 20),
-            MetadataFilter("boolean", Operation.Equals, true),
-        ))).hasSize(count / 2)
+        assertThat(
+            stateManager.findByMetadataMatchingAny(
+                listOf(
+                    MetadataFilter("number", Operation.GreaterThan, 20),
+                    MetadataFilter("boolean", Operation.Equals, true),
+                )
+            )
+        ).hasSize(count / 2)
 
-        assertThat(stateManager.findByMetadataMatchingAny(listOf(
-            MetadataFilter("number", Operation.Equals, 0),
-            MetadataFilter("string", Operation.Equals, "non_existing_key"),
-        ))).isEmpty()
+        assertThat(
+            stateManager.findByMetadataMatchingAny(
+                listOf(
+                    MetadataFilter("number", Operation.Equals, 0),
+                    MetadataFilter("string", Operation.Equals, "non_existing_key"),
+                )
+            )
+        ).isEmpty()
     }
 
     @Test
