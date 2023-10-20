@@ -27,6 +27,7 @@ import org.osgi.service.component.annotations.Reference
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
+import kotlin.random.Random
 
 @Component(service = [RecordFactory::class])
 class RecordFactoryImpl @Activate constructor(
@@ -147,8 +148,7 @@ class RecordFactoryImpl @Activate constructor(
                 Record(outputTopic, sessionEvent.sessionId, FlowMapperEvent(sessionEvent))
             }
             Schemas.P2P.P2P_OUT_TOPIC -> {
-                val appMessage = generateAppMessage(sessionEvent, config)
-                Record(outputTopic, sessionId, appMessage)
+                generateAppMessage(sessionEvent, config)
             }
             else -> {
                 throw IllegalArgumentException("Invalid output topic of $outputTopic was found when forwarding a session event")
@@ -188,12 +188,12 @@ class RecordFactoryImpl @Activate constructor(
      * Generate an AppMessage to send to the P2P.out topic.
      * @param sessionEvent Flow event to send
      * @param flowConfig config
-     * @return AppMessage to send to the P2P.out topic with the serialized session event as payload
+     * @return Record The record to publish to the bus
      */
     private fun generateAppMessage(
         sessionEvent: SessionEvent,
         flowConfig: SmartConfig
-    ): AppMessage {
+    ): Record<String, AppMessage> {
         val (sourceIdentity, destinationIdentity) = getSourceAndDestinationIdentity(sessionEvent)
         val header = AuthenticatedMessageHeader(
             destinationIdentity,
@@ -204,7 +204,10 @@ class RecordFactoryImpl @Activate constructor(
             Constants.FLOW_SESSION_SUBSYSTEM,
             MembershipStatusFilter.ACTIVE
         )
-        return AppMessage(AuthenticatedMessage(header, ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))))
+        val random = Random.nextInt(2)
+        val key = "${sourceIdentity.x500Name}->${destinationIdentity.x500Name}-$random"
+        val appMessage = AppMessage(AuthenticatedMessage(header, ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))))
+        return Record(Schemas.P2P.P2P_OUT_TOPIC, key, appMessage)
     }
 
     /**
