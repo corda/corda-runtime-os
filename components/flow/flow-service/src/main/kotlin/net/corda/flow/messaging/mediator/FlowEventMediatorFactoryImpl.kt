@@ -22,7 +22,6 @@ import net.corda.messaging.api.constants.WorkerRPCPaths.UNIQUENESS_PATH
 import net.corda.messaging.api.constants.WorkerRPCPaths.VERIFICATION_PATH
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
-import net.corda.messaging.api.mediator.RoutingDestination
 import net.corda.messaging.api.mediator.RoutingDestination.Companion.routeTo
 import net.corda.messaging.api.mediator.RoutingDestination.Type.ASYNCHRONOUS
 import net.corda.messaging.api.mediator.RoutingDestination.Type.SYNCHRONOUS
@@ -42,6 +41,9 @@ import net.corda.schema.configuration.BootConfig.CRYPTO_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.PERSISTENCE_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.UNIQUENESS_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.VERIFICATION_WORKER_REST_ENDPOINT
+import net.corda.schema.configuration.ConfigKeys
+import net.corda.libs.configuration.helper.getConfig
+import net.corda.schema.configuration.FlowConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -76,6 +78,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         stateManager: StateManager,
     ) = eventMediatorFactory.create(
         createEventMediatorConfig(
+            configs,
             messagingConfig,
             flowEventProcessorFactory.create(configs),
             stateManager,
@@ -83,6 +86,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
     )
 
     private fun createEventMediatorConfig(
+        configs: Map<String, SmartConfig>,
         messagingConfig: SmartConfig,
         messageProcessor: StateAndEventProcessor<String, Checkpoint, FlowEvent>,
         stateManager: StateManager,
