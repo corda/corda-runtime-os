@@ -63,6 +63,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 
     private val stopped = AtomicBoolean(false)
     private val running = AtomicBoolean(false)
+    private val pollTimeout = Duration.ofMillis(20)
 
     override fun start() {
         log.debug { "Starting multi-source event mediator with config: $config" }
@@ -296,7 +297,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     private fun pollConsumers(): List<CordaConsumerRecord<K, E>> {
         return metrics.pollTimer.recordCallable {
             consumers.map { consumer ->
-                consumer.poll(Duration.ofMillis(20))
+                consumer.poll(pollTimeout)
             }.flatten()
         }!!
     }

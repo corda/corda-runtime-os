@@ -9,16 +9,16 @@ import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.RoutingDestination
 import net.corda.messaging.api.mediator.RoutingDestination.Companion.routeTo
-import net.corda.messaging.api.mediator.RoutingDestination.Type.ASYNCHRONOUS
 import net.corda.messaging.api.mediator.config.EventMediatorConfigBuilder
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactoryFactory
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.mediator.factory.MessagingClientFactoryFactory
 import net.corda.messaging.api.mediator.factory.MultiSourceEventMediatorFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
-import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
-import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.configuration.MessagingConfig
+import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_OUT
+import net.corda.schema.Schemas.Flow.FLOW_SESSION
+import net.corda.schema.Schemas.Flow.FLOW_START
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -63,7 +63,10 @@ class TestFlowEventMediatorFactoryImpl @Activate constructor(
         .messagingConfig(messagingConfig)
         .consumerFactories(
             mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                FLOW_EVENT_TOPIC, CONSUMER_GROUP, messagingConfig
+                FLOW_START, CONSUMER_GROUP, messagingConfig
+            ),
+            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
+                FLOW_SESSION, CONSUMER_GROUP, messagingConfig
             ),
         )
         .clientFactories(
@@ -83,7 +86,9 @@ class TestFlowEventMediatorFactoryImpl @Activate constructor(
 
         MessageRouter { message ->
             when (val event = message.payload) {
-                is FlowMapperEvent -> routeTo(messageBusClient, FLOW_MAPPER_EVENT_TOPIC, ASYNCHRONOUS)
+                is FlowMapperEvent -> routeTo(messageBusClient, FLOW_MAPPER_SESSION_OUT,
+                    RoutingDestination.Type.ASYNCHRONOUS
+                )
                 else -> {
                     val eventType = event?.let { it::class.java }
                     throw IllegalStateException("No route defined for event type [$eventType]")

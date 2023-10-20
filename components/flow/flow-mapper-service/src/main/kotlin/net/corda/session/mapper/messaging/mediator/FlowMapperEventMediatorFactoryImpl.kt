@@ -1,6 +1,7 @@
 package net.corda.session.mapper.messaging.mediator
 
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.p2p.app.AppMessage
@@ -8,7 +9,6 @@ import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.mediator.MessageRouter
-import net.corda.messaging.api.mediator.RoutingDestination
 import net.corda.messaging.api.mediator.RoutingDestination.Companion.routeTo
 import net.corda.messaging.api.mediator.RoutingDestination.Type.ASYNCHRONOUS
 import net.corda.messaging.api.mediator.config.EventMediatorConfigBuilder
@@ -17,8 +17,11 @@ import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.mediator.factory.MessagingClientFactoryFactory
 import net.corda.messaging.api.mediator.factory.MultiSourceEventMediatorFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
-import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
-import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_IN
+import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_OUT
+import net.corda.schema.Schemas.Flow.FLOW_MAPPER_START
+import net.corda.schema.Schemas.Flow.FLOW_SESSION
+import net.corda.schema.Schemas.Flow.FLOW_START
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import net.corda.schema.configuration.FlowConfig
 import net.corda.session.mapper.service.executor.FlowMapperMessageProcessor
@@ -65,7 +68,13 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
         .messagingConfig(messagingConfig)
         .consumerFactories(
             mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                FLOW_MAPPER_EVENT_TOPIC, CONSUMER_GROUP, messagingConfig
+                FLOW_MAPPER_START, CONSUMER_GROUP, messagingConfig
+            ),
+            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
+                FLOW_MAPPER_SESSION_IN, CONSUMER_GROUP, messagingConfig
+            ),
+            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
+                FLOW_MAPPER_SESSION_OUT, CONSUMER_GROUP, messagingConfig
             ),
         )
         .clientFactories(
@@ -86,8 +95,14 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
         MessageRouter { message ->
             when (val event = message.payload) {
                 is AppMessage -> routeTo(messageBusClient, P2P_OUT_TOPIC, ASYNCHRONOUS)
-                is FlowEvent -> routeTo(messageBusClient, FLOW_EVENT_TOPIC, ASYNCHRONOUS)
-                is FlowMapperEvent -> routeTo(messageBusClient, FLOW_MAPPER_EVENT_TOPIC, ASYNCHRONOUS)
+                is FlowEvent -> {
+                    if (event.payload is StartFlow) {
+                        routeTo(messageBusClient, FLOW_START, ASYNCHRONOUS)
+                    } else {
+                        routeTo(messageBusClient, FLOW_SESSION, ASYNCHRONOUS)
+                    }
+                }
+                is FlowMapperEvent -> routeTo(messageBusClient, FLOW_MAPPER_SESSION_IN, ASYNCHRONOUS)
                 else -> {
                     val eventType = event?.let { it::class.java }
                     throw IllegalStateException("No route defined for event type [$eventType]")

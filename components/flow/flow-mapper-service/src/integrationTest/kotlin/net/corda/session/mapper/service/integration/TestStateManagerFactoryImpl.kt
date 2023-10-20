@@ -24,8 +24,6 @@ class TestStateManagerFactoryImpl : StateManagerFactory {
         fun clear() = storage.clear()
     }
 
-    private val storage = ConcurrentHashMap<String, State>()
-
     override fun create(config: SmartConfig): StateManager {
         return object : StateManager {
             override fun close() {

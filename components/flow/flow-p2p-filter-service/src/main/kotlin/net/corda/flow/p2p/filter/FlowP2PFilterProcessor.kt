@@ -9,7 +9,7 @@ import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_IN
 import net.corda.session.manager.Constants.Companion.FLOW_SESSION_SUBSYSTEM
 import net.corda.session.manager.Constants.Companion.INITIATED_SESSION_ID_SUFFIX
 import net.corda.tracing.traceEventProcessingNullableSingle
@@ -21,7 +21,7 @@ import java.nio.ByteBuffer
  * Processes events from the P2P.in topic.
  * If events have a subsystem of "flowSession", payloads are parsed into SessionEvents.
  * SessionEvent sessionId's are flipped to that of the counterparty, as well as the event key sessionId.
- * Messages are forwarded to the flow.mapper.event topic
+ * Messages are forwarded to the flow.mapper.session.in topic
  */
 class FlowP2PFilterProcessor(cordaAvroSerializationFactory: CordaAvroSerializationFactory) :
     DurableProcessor<String, AppMessage> {
@@ -71,7 +71,7 @@ class FlowP2PFilterProcessor(cordaAvroSerializationFactory: CordaAvroSerializati
             sessionEvent.messageDirection = MessageDirection.INBOUND
             val sessionId = toggleSessionId(key)
             sessionEvent.sessionId = sessionId
-            Record(FLOW_MAPPER_EVENT_TOPIC, sessionId, FlowMapperEvent(sessionEvent))
+            Record(FLOW_MAPPER_SESSION_IN, sessionId, FlowMapperEvent(sessionEvent))
         } else {
             null
         }

@@ -13,6 +13,6 @@ class CryptoFlowOpsTransformerService @Activate constructor(
     cryptoFlowOpsTransformerFactory: CryptoFlowOpsTransformerFactory,
 ) : CryptoFlowOpsTransformer by cryptoFlowOpsTransformerFactory.create(
     requestingComponent = "Flow worker",
-    responseTopic = Schemas.Flow.FLOW_EVENT_TOPIC,
+    responseTopic = Schemas.Flow.FLOW_SESSION,
     requestValidityWindowSeconds = 300
 )
