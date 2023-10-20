@@ -43,10 +43,6 @@ internal class MembershipPersistenceOperationImpl<T>(
             return Either.Right(MembershipPersistenceResult.Failure(failureReason))
         }
         val requestId = request.context.requestId
-        // Should really have logging in the calls that filter down to this that specify what this "persistence request" is from a
-        // customers perspective.
-        // The log lines above this would be info for important requests, like registering a member and debug for querying mgm info.
-        // We could then remove this log line or delegate it to trace.
         logger.debug { "Sending membership persistence RPC request ID: $requestId." }
         return try {
             val response = sender

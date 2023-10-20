@@ -19,8 +19,10 @@ internal class QueryRegistrationRequestsHandler(persistenceHandlerServices: Pers
         context: MembershipRequestContext,
         request: QueryRegistrationRequests,
     ): RegistrationRequestsQueryResponse {
-        // Is there more context that would be useful here?
-        logger.debug { "Retrieving registration requests." }
+        logger.debug {
+            "Retrieving registration requests. Request Subject X500 Name=${request.requestSubjectX500Name}, " +
+                    "statuses=${request.statuses}, limit=${request.limit}"
+        }
         val requestSubject = request.requestSubjectX500Name?.let {
             HoldingIdentity(MemberX500Name.parse(it), context.holdingIdentity.groupId).shortHash
         }
