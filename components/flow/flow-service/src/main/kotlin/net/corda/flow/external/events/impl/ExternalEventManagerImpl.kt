@@ -12,15 +12,13 @@ import net.corda.data.flow.state.external.ExternalEventStateType
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.messaging.api.records.Record
-import net.corda.utilities.FLOW_TRACING_MARKER
 import net.corda.utilities.debug
+import net.corda.utilities.trace
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.slf4j.Marker
-import org.slf4j.MarkerFactory
 import java.nio.ByteBuffer
 import java.time.Duration
 import java.time.Instant
@@ -35,7 +33,6 @@ class ExternalEventManagerImpl(
 
     private companion object {
         val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        val flowTraceMarker: Marker = MarkerFactory.getMarker(FLOW_TRACING_MARKER)
     }
 
     @Activate
@@ -81,10 +78,7 @@ class ExternalEventManagerImpl(
         externalEventResponse: ExternalEventResponse
     ): ExternalEventState {
         val requestId = externalEventResponse.requestId
-        // This manual tracing has been superseded by Owen/Joseph's work (talk with Juan to check, CORE-12440).
-        if (log.isTraceEnabled) {
-            log.trace(flowTraceMarker, "Processing response for external event with id '{}'", requestId)
-        }
+        log.trace { "Processing response for external event with id '$requestId'" }
 
         if (requestId == externalEventState.requestId) {
             log.debug { "External event response with id $requestId matched last sent request" }
@@ -203,14 +197,7 @@ class ExternalEventManagerImpl(
     private fun generateRecord(externalEventState: ExternalEventState, instant: Instant) : Record<*, *> {
         val eventToSend = externalEventState.eventToSend
         eventToSend.timestamp = instant
-        if (log.isDebugEnabled) {
-            log.debug(
-                flowTraceMarker,
-                "Dispatching external event with id '{}' to '{}'",
-                externalEventState.requestId,
-                eventToSend.topic
-            )
-        }
+        log.trace { "Dispatching external event with id '${externalEventState.requestId}' to '${eventToSend.topic}'" }
         return Record(eventToSend.topic, eventToSend.key.array(), eventToSend.payload.array())
     }
 }
