@@ -225,15 +225,6 @@ spec:
               {{- end }}
                 -l /tmp/crypto
 
-              echo 'Generating State Manager DB specification'
-              STATE_MANAGER_JDBC_URL="{{- include "corda.stateManagerJdbcUrl" . -}}"
-              mkdir /tmp/stateManager
-              java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar database spec \
-                -s "statemanager" -g "statemanager:state_manager" \
-                -u "${STATE_MANAGER_PGUSER}" -p "${STATE_MANAGER_PGPASSWORD}" \
-                --jdbc-url "${STATE_MANAGER_JDBC_URL}" \
-                -c -l /tmp/stateManager
-
               echo 'Generating REST API user initial configuration'
               java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar initial-config create-user-config \
                 -u "${REST_API_ADMIN_USERNAME}" -p "${REST_API_ADMIN_PASSWORD}" \
@@ -266,7 +257,6 @@ spec:
             {{- include "corda.restApiAdminSecretEnv" . | nindent 12 }}
             {{- include "corda.cryptoDbUsernameEnv" . | nindent 12 }}
             {{- include "corda.cryptoDbPasswordEnv" . | nindent 12 }}
-            {{- include "corda.bootstrapStateManagerDbEnv" . | nindent 12 }}
       containers:
         - name: apply
           image: {{ include "corda.bootstrapDbClientImage" . }}
@@ -303,20 +293,6 @@ spec:
               SQL
 
               echo 'DB Bootstrapped'
-
-              echo 'Applying State Manager Specification'
-              export PGPASSWORD="${STATE_MANAGER_PGPASSWORD}"
-              find /tmp/stateManager -iname "*.sql" | xargs printf -- ' -f %s' | xargs psql -v ON_ERROR_STOP=1 -h "${STATE_MANAGER_DB_HOST}" -p "${STATE_MANAGER_DB_PORT}" -U "${STATE_MANAGER_PGUSER}" --dbname "${STATE_MANAGER_DB_NAME}"
-
-              echo 'Creating users and granting permissions for State Manager'
-              psql -v ON_ERROR_STOP=1 -h "${STATE_MANAGER_DB_HOST}" -p "${STATE_MANAGER_DB_PORT}" -U "${STATE_MANAGER_PGUSER}" "${STATE_MANAGER_DB_NAME}" << SQL
-                DO \$\$ BEGIN IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${STATE_MANAGER_DB_USERNAME}') THEN RAISE NOTICE 'Role "${STATE_MANAGER_DB_USERNAME}" already exists'; ELSE CREATE USER "${STATE_MANAGER_DB_USERNAME}" WITH ENCRYPTED PASSWORD '${STATE_MANAGER_DB_PASSWORD}'; END IF; END \$\$;
-                GRANT USAGE ON SCHEMA STATE_MANAGER TO "${STATE_MANAGER_DB_USERNAME}";
-                GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA STATE_MANAGER TO "${STATE_MANAGER_DB_USERNAME}";
-                GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA STATE_MANAGER TO "${STATE_MANAGER_DB_USERNAME}";
-              SQL
-
-              echo 'State Manager Bootstrapped'
           volumeMounts:
             - mountPath: /tmp
               name: temp
@@ -333,19 +309,11 @@ spec:
               value: {{ .Values.bootstrap.db.rbac.schema | quote }}
             - name: DB_CRYPTO_SCHEMA
               value: {{ .Values.bootstrap.db.crypto.schema | quote }}
-            - name: STATE_MANAGER_DB_HOST
-              value: {{ include "corda.stateManagerDbHost" . | quote }}
-            - name: STATE_MANAGER_DB_PORT
-              value: {{ include "corda.stateManagerDbPort" . | quote }}
-            - name: STATE_MANAGER_DB_NAME
-              value: {{ include "corda.stateManagerDbName" . | quote }}
             {{- include "corda.bootstrapClusterDbEnv" . | nindent 12 }}
             {{- include "corda.rbacDbUserEnv" . | nindent 12 }}
             {{- include "corda.cryptoDbUsernameEnv" . | nindent 12 }}
             {{- include "corda.cryptoDbPasswordEnv" . | nindent 12 }}
             {{- include "corda.clusterDbEnv" . | nindent 12 }}
-            {{- include "corda.bootstrapStateManagerDbEnv" . | nindent 12 }}
-            {{- include "corda.stateManagerDbEnv" . | nindent 12 }}
       volumes:
         - name: temp
           emptyDir: {}
@@ -353,6 +321,115 @@ spec:
       {{- include "corda.bootstrapNodeSelector" . | indent 6 }}
       restartPolicy: Never
   backoffLimit: 0
+{{- end }}
+{{- end }}
+
+{{/*
+State Manager Database Bootstrap job
+*/}}
+{{- define "corda.bootstrapStateManagerDbJob" -}}
+{{- $ := index . 0 }}
+{{- $worker := index . 1 }}
+{{- $bootConfig := index . 2 }}
+{{- $workerName := printf "%s-worker" ( include "corda.workerTypeKebabCase" $bootConfig.worker ) }}
+{{- with index . 0 }}
+{{- if .Values.bootstrap.db.enabled }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "corda.fullname" . }}-setup-{{ $workerName }}-state-manager-db
+  labels:
+    {{- include "corda.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install
+spec:
+  template:
+    metadata:
+      labels:
+        {{- include "corda.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- include "corda.imagePullSecrets" . | indent 6 }}
+      {{- include "corda.tolerations" $ | indent 6 }}
+      {{- include "corda.bootstrapServiceAccount" . | indent 6 }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- . | toYaml | nindent 8 }}
+      {{- end }}
+      initContainers:
+        - name: generate
+          image: {{ include "corda.bootstrapCliImage" . }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
+          {{- include "corda.containerSecurityContext" . | nindent 10 }}
+          env:
+            {{- include "corda.bootstrapCliEnv" . | nindent 12 }}
+            {{- include "corda.bootstrapStateManagerDbEnv" ( list $ $worker $bootConfig ) | nindent 12 }}
+          command: [ 'sh', '-c', '-e' ]
+          args:
+            - |
+              #!/bin/sh
+              set -ev
+
+              echo 'Generating State Manager DB specification for {{ $workerName }}-worker...'
+              STATE_MANAGER_JDBC_URL="{{- include "corda.stateManagerJdbcUrl" ( list . $worker ) -}}"
+              mkdir /tmp/stateManager
+              java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar database spec \
+                -s "statemanager" -g "statemanager:state_manager" \
+                -u "${STATE_MANAGER_PGUSER}" -p "${STATE_MANAGER_PGPASSWORD}" \
+                --jdbc-url "${STATE_MANAGER_JDBC_URL}" \
+                -c -l /tmp/stateManager
+              echo 'Generating State Manager DB specification for {{ $workerName }}-worker... Done'
+          workingDir: /tmp
+          volumeMounts:
+            - mountPath: /tmp
+              name: temp
+            {{- include "corda.log4jVolumeMount" . | nindent 12 }}
+      containers:
+        - name: apply
+          image: {{ include "corda.bootstrapDbClientImage" . }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
+          {{- include "corda.containerSecurityContext" . | nindent 10 }}
+          env:
+            - name: STATE_MANAGER_DB_HOST
+              value: {{ include "corda.stateManagerDbHost" ( list . $worker ) | quote }}
+            - name: STATE_MANAGER_DB_PORT
+              value: {{ include "corda.stateManagerDbPort" ( list . $worker ) | quote }}
+            - name: STATE_MANAGER_DB_NAME
+              value: {{ include "corda.stateManagerDbName" ( list . $worker ) | quote }}
+            {{- include "corda.stateManagerDbEnv" ( list $ $worker ) | nindent 12 }}
+            {{- include "corda.bootstrapStateManagerDbEnv" ( list $ $worker $bootConfig ) | nindent 12 }}
+          command: [ 'sh', '-c', '-e' ]
+          args:
+            - |
+              #!/bin/sh
+              set -ev
+              echo 'Applying State Manager Specification for {{ $workerName }}-worker...'
+              export PGPASSWORD="${STATE_MANAGER_PGPASSWORD}"
+              find /tmp/stateManager -iname "*.sql" | xargs printf -- ' -f %s' | xargs psql -v ON_ERROR_STOP=1 -h "${STATE_MANAGER_DB_HOST}" -p "${STATE_MANAGER_DB_PORT}" -U "${STATE_MANAGER_PGUSER}" --dbname "${STATE_MANAGER_DB_NAME}"
+              echo 'Applying State Manager Specification for {{ $workerName }}-worker... Done!'
+
+              echo 'Creating users and granting permissions for State Manager in {{ $workerName }}-worker...'
+              psql -v ON_ERROR_STOP=1 -h "${STATE_MANAGER_DB_HOST}" -p "${STATE_MANAGER_DB_PORT}" -U "${STATE_MANAGER_PGUSER}" "${STATE_MANAGER_DB_NAME}" << SQL
+                DO \$\$ BEGIN IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${STATE_MANAGER_USERNAME}') THEN RAISE NOTICE 'Role "${STATE_MANAGER_USERNAME}" already exists'; ELSE CREATE USER "${STATE_MANAGER_USERNAME}" WITH ENCRYPTED PASSWORD '${STATE_MANAGER_PASSWORD}'; END IF; END \$\$;
+                GRANT USAGE ON SCHEMA STATE_MANAGER TO "${STATE_MANAGER_USERNAME}";
+                GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA STATE_MANAGER TO "${STATE_MANAGER_USERNAME}";
+                GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA STATE_MANAGER TO "${STATE_MANAGER_USERNAME}";
+              SQL
+
+              echo 'Creating users and granting permissions for State Manager in {{ $workerName }}-worker... Done!'
+          volumeMounts:
+            - mountPath: /tmp
+              name: temp
+      volumes:
+        - name: temp
+          emptyDir: {}
+        {{- include "corda.log4jVolume" . | nindent 8 }}
+      {{- include "corda.bootstrapNodeSelector" . | indent 6 }}
+      restartPolicy: Never
+  backoffLimit: 0
+{{- end }}
 {{- end }}
 {{- end }}
 
