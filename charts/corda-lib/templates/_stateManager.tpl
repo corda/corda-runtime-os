@@ -78,7 +78,7 @@ jdbc:{{- include "corda.clusterDbType" $ -}}://{{- $.Values.db.cluster.host -}}:
 {{- $ := index . 0 }}
 {{- $workerKey := index . 1 }}
 {{- $workerName := printf "%s-worker" ( include "corda.workerTypeKebabCase" $workerKey ) }}
-{{- printf "%s-%s-state-manager-secret" (include "corda.fullname" $) $workerName  }}
+{{- printf "%s-%s-state-manager-boot-secret" (include "corda.fullname" $) $workerName  }}
 {{- end -}}
 
 
@@ -95,7 +95,7 @@ jdbc:{{- include "corda.clusterDbType" $ -}}://{{- $.Values.db.cluster.host -}}:
         name: {{ $bootConfig.username.valueFrom.secretKeyRef.name | quote }}
         key: {{ required (printf "Must specify bootstrap.db.stateManager.%s.username.valueFrom.secretKeyRef.key" $workerKey) $bootConfig.username.valueFrom.secretKeyRef.key | quote }}
         {{-   else }}
-        name: {{ include "corda.stateManagerDefaultSecretName" ( list $ $workerKey ) | quote }}
+        name: {{ include "corda.stateManagerDefaultBootSecretName" ( list $ $workerKey ) | quote }}
         key: "username"
         {{-  end }}
         {{- else }}
@@ -109,7 +109,7 @@ jdbc:{{- include "corda.clusterDbType" $ -}}://{{- $.Values.db.cluster.host -}}:
         name: {{ $bootConfig.password.valueFrom.secretKeyRef.name | quote }}
         key: {{ required (printf "Must specify bootstrap.db.stateManager.%s.password.valueFrom.secretKeyRef.key" $workerKey) $bootConfig.password.valueFrom.secretKeyRef.key | quote }}
         {{-   else }}
-        name: {{ include "corda.stateManagerDefaultSecretName" ( list $ $workerKey ) | quote }}
+        name: {{ include "corda.stateManagerDefaultBootSecretName" ( list $ $workerKey ) | quote }}
         key: "password"
         {{-  end }}
         {{- else }}
