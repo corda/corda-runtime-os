@@ -9,7 +9,8 @@ class PostgresQueryProvider : AbstractQueryProvider() {
     override val createState: String
         get() = """
             INSERT INTO $STATE_MANAGER_TABLE
-            VALUES (:$KEY_PARAMETER_NAME, :$VALUE_PARAMETER_NAME, :$VERSION_PARAMETER_NAME, CAST(:$METADATA_PARAMETER_NAME as JSONB), CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+            VALUES (?, ?, ?, CAST(? as JSONB), CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+            ON CONFLICT DO NOTHING
         """.trimIndent()
 
     override val updateState: String

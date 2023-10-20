@@ -12,13 +12,15 @@ import javax.persistence.EntityManager
 interface StateRepository {
 
     /**
-     * Create state into the persistence context.
+     * Create a collection of states within the database using JDBC connection.
+     *
      * Transaction should be controlled by the caller.
      *
-     * @param entityManager Used to interact with the state manager persistence context.
-     * @param state State entity to persist.
+     * @param connection The JDBC connection used to interact with the database.
+     * @param states A collection of states to be persisted.
+     * @return A collection of keys for states that could not be inserted.
      */
-    fun create(entityManager: EntityManager, state: StateEntity)
+    fun create(connection: Connection, states: Collection<StateEntity>): Collection<String>
 
     /**
      * Get states with the given keys.
