@@ -243,7 +243,7 @@ spec:
         {{- include "corda.clusterDbEnv" $ | nindent 10 }}
         {{- end }}
         {{- if $optionalArgs.stateManagerDbAccess }}
-        {{- include "corda.stateManagerDbEnv" ( list $ . ) | nindent 10 }}
+        {{- include "corda.stateManagerDbEnv" ( list $ . $worker ) | nindent 10 }}
         {{- end }}
         args:
           - "--workspace-dir=/work"

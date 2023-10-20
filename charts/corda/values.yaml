@@ -373,11 +373,11 @@ bootstrap:
 
     # State Manager DB Bootstrap Configuration
     stateManager:
-      - worker: flow
+      flow:
         # the username configuration
         username:
           # -- the username, defaults to this value
-          value: "state_manager_user"
+          value: ""
           # the username secret configuration; used in preference to value if name is set
           valueFrom:
             # the username secret key reference
@@ -398,11 +398,11 @@ bootstrap:
               name: ""
               # -- the password secret key
               key: ""
-      - worker: flowMapper
+      flowMapper:
         # the username configuration
         username:
           # -- the username, defaults to this value
-          value: "state_manager_user"
+          value: ""
           # the username secret configuration; used in preference to value if name is set
           valueFrom:
             # the username secret key reference
@@ -746,7 +746,7 @@ workers:
         # the State Manager database user configuration
         username:
           # -- the State Manager database user
-          value: ""
+          value: "flow_state_manager_user"
           # the State Manager database user secret configuration; used in preference to value if name is set
           valueFrom:
             # the State Manager database user secret key reference
@@ -866,7 +866,7 @@ workers:
         # the State Manager database user configuration
         username:
           # -- the State Manager database user
-          value: ""
+          value: "flow_mapper_state_manager_user"
           # the State Manager database user secret configuration; used in preference to value if name is set
           valueFrom:
             # the State Manager database user secret key reference
