@@ -1,5 +1,5 @@
 package net.corda.p2p.linkmanager.sessions
-/*
+
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.messaging.api.records.Record
@@ -53,7 +53,8 @@ class PendingSessionMessageQueuesImplTest {
         createTestHoldingIdentity("CN=Carol, O=Corp, L=LDN, C=GB", "group-1"),
         createTestHoldingIdentity("CN=David, O=Corp, L=LDN, C=GB", "group-1"),
         MembershipStatusFilter.ACTIVE,
-        serial
+        serial,
+        false,
     )
 
     private val queue = PendingSessionMessageQueuesImpl(mock(), mock(), mock())
@@ -137,11 +138,11 @@ class PendingSessionMessageQueuesImplTest {
             createTestHoldingIdentity("CN=Carol, O=Corp, L=LDN, C=GB", "group-2"),
             createTestHoldingIdentity("CN=David, O=Corp, L=LDN, C=GB", "group-1"),
             MembershipStatusFilter.ACTIVE,
-            serial
+            serial,
+            false,
         )
         queue.sessionNegotiatedCallback(sessionManager, anotherSessionCounterparties, session)
 
         assertThat(publishedRecords.allValues).isEmpty()
     }
 }
-*/

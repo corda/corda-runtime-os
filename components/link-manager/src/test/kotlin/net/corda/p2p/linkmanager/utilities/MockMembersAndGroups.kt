@@ -51,14 +51,13 @@ fun mockMemberInfo(
         on { parseList(ENDPOINTS, EndpointInfo::class.java) } doReturn listOf(endpoints)
         on { parseList(SESSION_KEYS, PublicKey::class.java) } doReturn listOf(publicKey)
     }
-    val mgmContext = mock<MGMContext> {
-        on { parseOrNull(IS_MGM, Boolean::class.java) } doReturn isMgm
-    }
+    val mgmContext = mock<MGMContext>()
     return mock {
         on { memberProvidedContext } doReturn memberContext
         on { mgmProvidedContext } doReturn mgmContext
         on { name } doReturn holdingIdentity.x500Name
         on { serial } doReturn serialNumber
+        on { this.isMgm } doReturn isMgm
     }
 }
 

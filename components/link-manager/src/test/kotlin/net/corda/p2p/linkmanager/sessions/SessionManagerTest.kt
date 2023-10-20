@@ -1,5 +1,5 @@
 package net.corda.p2p.linkmanager.sessions
-/*
+
 import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.DigitalSignatureWithKey
@@ -31,7 +31,6 @@ import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
-import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.membership.read.MembershipGroupReader
@@ -133,9 +132,10 @@ class SessionManagerTest {
 
         private val OUR_PARTY = createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", GROUP_ID)
         private val OUR_KEY = keyGenerator.genKeyPair()
+        private val OUR_ENDPOINT = "http://alice.com"
         private val OUR_MEMBER_INFO = mockMemberInfo(
             OUR_PARTY,
-            "http://alice.com",
+            OUR_ENDPOINT,
             OUR_KEY.public,
         )
         private val PEER_ENDPOINT = "http://bob.com"
@@ -463,10 +463,59 @@ class SessionManagerTest {
             .thenReturn(OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded)
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
         whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(mock())
-        whenever(OUR_MEMBER_INFO.isMgm).thenReturn(true)
+        val mgmInfo = mockMemberInfo(
+            OUR_PARTY, OUR_ENDPOINT, OUR_KEY.public, isMgm = true
+        )
+        whenever(membershipGroupReader.lookup(OUR_PARTY.x500Name, MembershipStatusFilter.ACTIVE_OR_SUSPENDED))
+            .thenReturn(mgmInfo)
 
         sessionManager.processOutboundMessage(message)
         verify(protocolFactory, times(SESSIONS_PER_COUNTERPARTIES_FOR_MGM))
+            .createInitiator(any(), any(), any(), eq(OUR_KEY.public), eq(OUR_PARTY.groupId), any())
+    }
+
+    @Test
+    fun `when no session exists, config is used to determine how many sessions are needed - counterparty is MGM`() {
+        val counterparties = SessionManager.SessionCounterparties(
+            ourId = OUR_PARTY,
+            counterpartyId = PEER_PARTY,
+            status = MembershipStatusFilter.ACTIVE,
+            serial = 1L,
+            communicationWithMgm = true,
+        )
+        whenever(outboundSessionPool.constructed().first().getNextSession(counterparties))
+            .thenReturn(OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded)
+        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
+        whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(mock())
+        val counterpartyInfo = mockMemberInfo(
+            PEER_PARTY, PEER_ENDPOINT, PEER_KEY.public, isMgm = true
+        )
+        whenever(membershipGroupReader.lookup(OUR_PARTY.x500Name, MembershipStatusFilter.ACTIVE_OR_SUSPENDED))
+            .thenReturn(counterpartyInfo)
+
+        sessionManager.processOutboundMessage(message)
+        verify(protocolFactory, times(SESSIONS_PER_COUNTERPARTIES_FOR_MGM))
+            .createInitiator(any(), any(), any(), eq(OUR_KEY.public), eq(OUR_PARTY.groupId), any())
+    }
+
+    @Test
+    fun `when no session exists, config is used to determine how many sessions are needed - initiator is missing its info`() {
+        val counterparties = SessionManager.SessionCounterparties(
+            ourId = OUR_PARTY,
+            counterpartyId = PEER_PARTY,
+            status = MembershipStatusFilter.ACTIVE,
+            serial = 1L,
+            communicationWithMgm = false,
+        )
+        whenever(outboundSessionPool.constructed().first().getNextSession(counterparties))
+            .thenReturn(OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded)
+        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
+        whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(mock())
+        whenever(membershipGroupReader.lookup(OUR_PARTY.x500Name, MembershipStatusFilter.ACTIVE_OR_SUSPENDED))
+            .thenReturn(null)
+
+        sessionManager.processOutboundMessage(message)
+        verify(protocolFactory, times(SESSIONS_PER_COUNTERPARTIES_FOR_MEMBERS))
             .createInitiator(any(), any(), any(), eq(OUR_KEY.public), eq(OUR_PARTY.groupId), any())
     }
 
@@ -2446,4 +2495,3 @@ class SessionManagerTest {
         )
     }
 }
-*/

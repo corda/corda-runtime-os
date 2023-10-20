@@ -1,5 +1,5 @@
 package net.corda.p2p.linkmanager.delivery
-/*
+
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigurationReadService
@@ -35,7 +35,8 @@ class ReplaySchedulerTest {
             createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", DeliveryTrackerTest.groupId),
             createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", DeliveryTrackerTest.groupId),
             MembershipStatusFilter.ACTIVE,
-            1L
+            1L,
+            false,
         )
         lateinit var loggingInterceptor: LoggingInterceptor
 
@@ -567,4 +568,3 @@ class ReplaySchedulerTest {
         whenever(dominoTile.constructed().first().isRunning).doReturn(true)
     }
 }
-*/

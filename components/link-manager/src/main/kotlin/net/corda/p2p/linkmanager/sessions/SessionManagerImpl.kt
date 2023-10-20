@@ -253,7 +253,10 @@ internal class SessionManagerImpl(
         val peer = message.header.destination
         val us = message.header.source
         val status = message.header.statusFilter
-        val ourInfo = membershipGroupReaderProvider.lookup(us.toCorda(), us.toCorda())
+        val ourInfo = membershipGroupReaderProvider.lookup(
+            us.toCorda(), us.toCorda(), MembershipStatusFilter.ACTIVE_OR_SUSPENDED
+        )
+        // could happen when member has pending registration or something went wrong
         if (ourInfo == null) {
             logger.warn("Could not get member information about us from message sent from $us" +
                     " to $peer with ID `${message.header.messageId}`.")

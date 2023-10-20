@@ -1,5 +1,5 @@
 package net.corda.p2p.linkmanager.integration
-/*
+
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
@@ -14,7 +14,8 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_MESSAGE_PERIOD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_MESSAGE_SIZE_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_KEY
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_FOR_MEMBER_KEY
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_FOR_MGM_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_REFRESH_THRESHOLD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -112,7 +113,8 @@ class LinkManagerIntegrationTest {
             .withValue(MAX_REPLAYING_MESSAGES_PER_PEER, ConfigValueFactory.fromAnyRef(100))
             .withValue(HEARTBEAT_MESSAGE_PERIOD_KEY, ConfigValueFactory.fromAnyRef(2000))
             .withValue(SESSION_TIMEOUT_KEY, ConfigValueFactory.fromAnyRef(10000))
-            .withValue(SESSIONS_PER_PEER_KEY, ConfigValueFactory.fromAnyRef(4))
+            .withValue(SESSIONS_PER_PEER_FOR_MEMBER_KEY, ConfigValueFactory.fromAnyRef(4))
+            .withValue(SESSIONS_PER_PEER_FOR_MGM_KEY, ConfigValueFactory.fromAnyRef(1))
             .withValue(SESSION_REFRESH_THRESHOLD_KEY, ConfigValueFactory.fromAnyRef(432000))
             .withValue(
                 LinkManagerConfiguration.REPLAY_ALGORITHM_KEY,
@@ -232,4 +234,3 @@ class LinkManagerIntegrationTest {
         }
     }
 }
-*/
