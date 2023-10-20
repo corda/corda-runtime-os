@@ -60,6 +60,7 @@ class ConnectionUtilsTest {
 
     @Test
     fun `transaction rolls back and closes when block throws`() {
+        @Suppress("TooGenericExceptionThrown")
         val e = assertThrows<RuntimeException> {
             connection.transaction { _ -> throw RuntimeException("block exception") }
         }
