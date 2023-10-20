@@ -15,7 +15,7 @@ import java.sql.Connection
  * @return The result of executing [block].
  */
 inline fun <R> Connection.transaction(block: (Connection) -> R): R {
-    autoCommit = false // Start a transaction
+    autoCommit = false
     return try {
         block(this).also { commit() }
     } catch (e: Exception) {
