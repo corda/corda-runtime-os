@@ -15,9 +15,7 @@ class PostgresUtxoQueryProvider @Activate constructor(
     databaseTypeProvider: DatabaseTypeProvider
 ): AbstractUtxoQueryProvider() {
     init {
-        LoggerFactory.getLogger(this::class.java).run {
-            debug { "Activated for ${databaseTypeProvider.databaseType}" }
-        }
+        LoggerFactory.getLogger(this::class.java).debug { "Activated for ${databaseTypeProvider.databaseType}" }
     }
 
     override val persistTransaction: String

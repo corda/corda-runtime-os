@@ -19,9 +19,7 @@ class PostgresVaultNamedQueryConverter @Activate constructor(
     databaseTypeProvider: DatabaseTypeProvider
 ) : AbstractVaultNamedQueryConverterImpl() {
     init {
-        LoggerFactory.getLogger(this::class.java).run {
-            debug { "Activated for ${databaseTypeProvider.databaseType}" }
-        }
+        LoggerFactory.getLogger(this::class.java).debug { "Activated for ${databaseTypeProvider.databaseType}" }
     }
 
     override fun writeCustom(output: StringBuilder, token: Token) {
