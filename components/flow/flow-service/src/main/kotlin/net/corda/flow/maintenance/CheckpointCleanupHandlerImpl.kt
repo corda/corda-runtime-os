@@ -12,13 +12,14 @@ import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.lang.Exception
 import java.time.Instant
 
 @Component(service = [CheckpointCleanupHandler::class])
-class CheckpointCleanupHandlerImpl(
+class CheckpointCleanupHandlerImpl @Activate constructor(
     @Reference(service = FlowRecordFactory::class)
     private val flowRecordFactory: FlowRecordFactory,
     @Reference(service = FlowSessionManager::class)
