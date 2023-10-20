@@ -154,7 +154,7 @@ class MembershipPersistenceClientImpl(
         groupPolicy: LayeredPropertyMap,
         version: Long,
     ): MembershipPersistenceOperation<Unit> {
-        logger.info("Persisting group policy.")
+        logger.info("Persisting group policy for member $viewOwningIdentity. Version=$version")
         val avroViewOwningIdentity = viewOwningIdentity.toAvro()
         val request = MembershipPersistenceRequest(
             buildMembershipRequestContext(avroViewOwningIdentity),
@@ -168,11 +168,7 @@ class MembershipPersistenceClientImpl(
         viewOwningIdentity: HoldingIdentity,
         groupParameters: InternalGroupParameters,
     ): MembershipPersistenceOperation<InternalGroupParameters> {
-        // More context is needed.
-        // We could then consider putting this back to INFO based on the context it contains
-        // Generally I think whatever triggered the group parameters to be persisted should log this at info,
-        // this does seem an important thing to log generally.
-        logger.debug { "Persisting group parameters." }
+        logger.info("Persisting group parameters for member $viewOwningIdentity. Hash=${groupParameters.hash}")
         val request = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             PersistGroupParameters(
