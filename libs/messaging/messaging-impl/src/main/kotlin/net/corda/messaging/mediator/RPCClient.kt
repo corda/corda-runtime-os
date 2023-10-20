@@ -77,8 +77,8 @@ class RPCClient(
             .POST(HttpRequest.BodyPublishers.ofByteArray(message.payload as ByteArray))
 
         // Add key HTTP header
-        message.getPropertyOrNull(MSG_PROP_KEY)?.let { key ->
-            builder.header("corda-request-key", key.toString())
+        message.getPropertyOrNull(MSG_PROP_KEY)?.let { value ->
+            builder.header("corda-request-key", value.toString())
         }
 
         return builder.build()
