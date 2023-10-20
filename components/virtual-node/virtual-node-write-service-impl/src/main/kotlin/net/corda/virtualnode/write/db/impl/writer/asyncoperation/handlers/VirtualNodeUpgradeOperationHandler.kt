@@ -4,6 +4,7 @@ import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.core.ShortHash
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.v2.RegistrationStatus.APPROVED
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
@@ -245,11 +246,13 @@ internal class VirtualNodeUpgradeOperationHandler(
         )
         when (registrationRequest) {
             is MembershipQueryResult.Success -> {
-                if (registrationRequest.payload.isNotEmpty()) {
+                val payload = registrationRequest.payload
+                if (payload.isNotEmpty()) {
                     try {
                         // Get the latest registration request
-                        val registrationRequestDetails = registrationRequest.payload.sortedBy { it.serial }.last()
-
+                        val registrationRequestDetails = payload.sortedBy { it.serial }.last()
+                        checkDuplicatedSerials(payload, registrationRequestDetails.serial)
+                        
                         val updatedSerial = registrationRequestDetails.serial + 1
                         val registrationContext = registrationRequestDetails
                             .memberProvidedContext.data.array()
@@ -260,7 +263,9 @@ internal class VirtualNodeUpgradeOperationHandler(
 
                         logger.info("Starting MGM re-registration for holdingIdentity=$holdingIdentity, " +
                                 "shortHash=${holdingIdentity.shortHash}, registrationContext=$registrationContext")
-                        memberResourceClient.startRegistration(holdingIdentity.shortHash, registrationContext)
+                        val registrationProgress =
+                            memberResourceClient.startRegistration(holdingIdentity.shortHash, registrationContext)
+                        logger.info("Registration progress: $registrationProgress")
                     } catch (e: ContextDeserializationException) {
                         logger.warn(
                             "Could not deserialize previous registration context for ${holdingIdentity.shortHash}. " +
@@ -276,6 +281,16 @@ internal class VirtualNodeUpgradeOperationHandler(
                 logger.warn("Failed to query for an APPROVED previous registration request for ${holdingIdentity.shortHash}: " +
                         "${registrationRequest.errorMsg}. Re-registration will not be attempted.")
             }
+        }
+    }
+
+    private fun checkDuplicatedSerials(payload: List<RegistrationRequestDetails>, serial: Long) {
+        val sameSerialList = payload.filter { it.serial == serial }
+        if (sameSerialList.size > 1) {
+            logger.warn("Multiple registration requests found for the same serial: $serial")
+            sameSerialList.forEachIndexed { index, registrationRequestDetails ->  
+                logger.warn("${index + 1}. $registrationRequestDetails")
+            } 
         }
     }
 
