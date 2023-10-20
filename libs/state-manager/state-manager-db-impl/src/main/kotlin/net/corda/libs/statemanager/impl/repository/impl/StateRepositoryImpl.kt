@@ -4,16 +4,12 @@ import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.repository.StateRepository
-import org.slf4j.LoggerFactory
+import java.sql.Connection
 import javax.persistence.EntityManager
 import javax.persistence.Query
 
 // TODO-[CORE-17733]: batch update and delete.
 class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepository {
-
-    private companion object {
-        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
 
     @Suppress("UNCHECKED_CAST")
     private fun Query.resultListAsStateEntityCollection() = resultList as Collection<StateEntity>
@@ -34,42 +30,53 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
             .setParameter(KEYS_PARAMETER_NAME, keys)
             .resultListAsStateEntityCollection()
 
-    override fun update(entityManager: EntityManager, states: Collection<StateEntity>): Collection<String> {
-        val failedKeys = mutableListOf<String>()
-
-        states.forEach { state ->
-            entityManager
-                .createNativeQuery(queryProvider.updateState)
-                .setParameter(KEY_PARAMETER_NAME, state.key)
-                .setParameter(VALUE_PARAMETER_NAME, state.value)
-                .setParameter(VERSION_PARAMETER_NAME, state.version)
-                .setParameter(METADATA_PARAMETER_NAME, state.metadata)
-                .executeUpdate().also {
-                    if (it == 0) {
-                        failedKeys.add(state.key)
-                    }
-                }
+    override fun update(connection: Connection, states: Collection<StateEntity>): Collection<String> {
+        return connection.prepareStatement(queryProvider.updateState).use { preparedStatement ->
+            for (s in states) {
+                preparedStatement.setString(1, s.key)
+                preparedStatement.setBytes(2, s.value)
+                preparedStatement.setInt(3, s.version)
+                preparedStatement.setString(4, s.metadata)
+                preparedStatement.setString(5, s.key)
+                preparedStatement.setInt(6, s.version)
+                preparedStatement.addBatch()
+            }
+            // Execute the batch of prepared statements.
+            // The elements in the 'results' array correspond to the commands in the batch.
+            // The order of elements in 'results' follows the order in which the statements were added to the batch.
+            // - An update count greater than or equal to zero indicates that the command was processed successfully,
+            //   and it represents the number of rows in the database affected by the command.
+            // - If optimistic locking check fails for a statement in the batch, that statement will have a '0' in the 'results' array.
+            val results = preparedStatement.executeBatch()
+            getFailedKeysFromResults(results, states.map { it.key })
         }
-
-        return failedKeys
     }
 
-    override fun delete(entityManager: EntityManager, states: Collection<StateEntity>): Collection<String> {
-        val failedKeys = mutableListOf<String>()
-
-        states.forEach { state ->
-            entityManager
-                .createNativeQuery(queryProvider.deleteStatesByKey)
-                .setParameter(KEY_PARAMETER_NAME, state.key)
-                .setParameter(VERSION_PARAMETER_NAME, state.version)
-                .executeUpdate().also {
-                    if (it == 0) {
-                        failedKeys.add(state.key)
-                    }
-                }
+    private fun getFailedKeysFromResults(results: IntArray?, map: List<String>): List<String> {
+        val failed = mutableListOf<String>()
+        results?.mapIndexed { idx, result ->
+            if (result == 0)
+                failed.add(map[idx])
         }
+        return failed
+    }
 
-        return failedKeys
+    override fun delete(connection: Connection, states: Collection<StateEntity>): Collection<String> {
+        return connection.prepareStatement(queryProvider.deleteStatesByKey).use { preparedStatement ->
+            for (s in states) {
+                preparedStatement.setString(1, s.key)
+                preparedStatement.setInt(2, s.version)
+                preparedStatement.addBatch()
+            }
+            // Execute the batch of prepared statements.
+            // The elements in the 'results' array correspond to the commands in the batch.
+            // The order of elements in 'results' follows the order in which the statements were added to the batch.
+            // - An update count greater than or equal to zero indicates that the command was processed successfully,
+            //   and it represents the number of rows in the database affected by the command.
+            // - If optimistic locking check fails for a statement in the batch, that statement will have a '0' in the 'results' array.
+            val results = preparedStatement.executeBatch()
+            getFailedKeysFromResults(results, states.map { it.key })
+        }
     }
 
     override fun updatedBetween(entityManager: EntityManager, interval: IntervalFilter): Collection<StateEntity> =
