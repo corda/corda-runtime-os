@@ -12,7 +12,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
-class TimeoutCleanupProcessor(
+class TimeoutEventCleanupProcessor(
     private val checkpointCleanupHandler: CheckpointCleanupHandler,
     private val stateManager: StateManager,
     private val avroDeserializer: CordaAvroDeserializer<Checkpoint>,
