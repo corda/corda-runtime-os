@@ -83,7 +83,7 @@ class MultiSourceEventMediatorImplTest {
         }
 
         val messageRouter = MessageRouter { _ ->
-            RoutingDestination.routeTo(messagingClient, "endpoint")
+            RoutingDestination.routeTo(messagingClient, "endpoint", RoutingDestination.Type.ASYNCHRONOUS)
         }
         whenever(messageRouterFactory.create(any<MessagingClientFinder>())).thenReturn(messageRouter)
 
