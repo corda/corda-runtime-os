@@ -12,13 +12,12 @@ import net.corda.messaging.api.exception.CordaHTTPServerErrorException
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_ENDPOINT
+import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_KEY
 import net.corda.messaging.utils.HTTPRetryConfig
 import net.corda.messaging.utils.HTTPRetryExecutor
 import net.corda.utilities.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
-typealias HeadersMap = Map<String, String>
 
 class RPCClient(
     override val id: String,
@@ -34,7 +33,6 @@ class RPCClient(
 
     private companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        const val HEADERS_PROPERTY = "headers"
     }
 
     override fun send(message: MediatorMessage<*>): MediatorMessage<*>? {
@@ -78,11 +76,9 @@ class RPCClient(
             .uri(URI(message.endpoint()))
             .POST(HttpRequest.BodyPublishers.ofByteArray(message.payload as ByteArray))
 
-        // Add HTTP headers
-        message.getPropertyOrNull<HeadersMap>(HEADERS_PROPERTY)?.let { headers ->
-            for ((name, value) in headers) {
-                builder.header(name, value)
-            }
+        // Add key HTTP header
+        message.getPropertyOrNull(MSG_PROP_KEY)?.let { key ->
+            builder.header("corda-request-key", key.toString())
         }
 
         return builder.build()
