@@ -7,7 +7,9 @@ import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.messaging.api.mediator.MessageRouter
+import net.corda.messaging.api.mediator.RoutingDestination
 import net.corda.messaging.api.mediator.RoutingDestination.Companion.routeTo
+import net.corda.messaging.api.mediator.RoutingDestination.Type.ASYNCHRONOUS
 import net.corda.messaging.api.mediator.config.EventMediatorConfigBuilder
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactoryFactory
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
@@ -81,7 +83,7 @@ class TestFlowEventMediatorFactoryImpl @Activate constructor(
 
         MessageRouter { message ->
             when (val event = message.payload) {
-                is FlowMapperEvent -> routeTo(messageBusClient, FLOW_MAPPER_EVENT_TOPIC)
+                is FlowMapperEvent -> routeTo(messageBusClient, FLOW_MAPPER_EVENT_TOPIC, ASYNCHRONOUS)
                 else -> {
                     val eventType = event?.let { it::class.java }
                     throw IllegalStateException("No route defined for event type [$eventType]")
