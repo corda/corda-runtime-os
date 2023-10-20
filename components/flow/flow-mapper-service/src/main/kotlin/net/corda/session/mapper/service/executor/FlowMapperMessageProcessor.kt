@@ -65,9 +65,6 @@ class FlowMapperMessageProcessor(
                     val newMap = result.flowMapperState?.status?.let {
                         mapOf(FLOW_MAPPER_STATUS to it.toString())
                     } ?: mapOf()
-
-
-
                     StateAndEventProcessor.Response(
                         State(result.flowMapperState, state?.metadata?.let {
                             Metadata(it + newMap)
