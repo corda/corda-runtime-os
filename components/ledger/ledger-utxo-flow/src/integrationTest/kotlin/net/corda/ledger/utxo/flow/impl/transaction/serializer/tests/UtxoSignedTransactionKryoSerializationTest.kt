@@ -7,9 +7,9 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
 class UtxoSignedTransactionKryoSerializationTest: UtxoLedgerIntegrationTest() {
+
     @Test
-    @Suppress("FunctionName")
-    fun `correct serialization of a utxo Signed Transaction`() {
+    fun `correct serialization of a UtxoSignedTransaction`() {
 
         val bytes = kryoSerializer.serialize(utxoSignedTransaction)
         val deserialized = kryoSerializer.deserialize(bytes, UtxoSignedTransactionInternal::class.java)
