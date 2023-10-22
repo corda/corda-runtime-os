@@ -2,14 +2,3 @@
 {{- include "corda.bootstrapDbJob" . }}
 {{- include "corda.bootstrapKafkaJob" . }}
 {{- include "corda.bootstrapRbacJob" . }}
-{{- if .Values.bootstrap.db.enabled }}
-{{-   range $workerName, $authConfig := .Values.bootstrap.db.stateManager }}
-{{-     $workerConfig := (index $.Values.workers $workerName) }}
-{{/*    No point in trying to bootstrap the State Manager for the specific worker if the host has not been configured */}}
-{{-     if and (not $workerConfig.stateManager.db.host) (or ( $authConfig.username.value ) ( $authConfig.username.valueFrom.secretKeyRef.name ) ( $authConfig.password.value ) ( $authConfig.password.valueFrom.secretKeyRef.name ) ) -}}
-{{-       fail ( printf "Can only specify bootstrap.db.stateManager.%s when workers.%s.stateManager.host is configured" $workerName $workerName ) }}
-{{-     else -}}
-{{-       include "corda.bootstrapStateManagerDbJob" ( list $ $workerName $authConfig ) }}
-{{-     end -}}
-{{-   end }}
-{{- end }}
