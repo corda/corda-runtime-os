@@ -326,6 +326,11 @@ object CordaMetrics {
          */
         object UniquenessBackingStoreDbReadTime: Metric<Timer>("uniqueness.backingstore.db.read.time", CordaMetrics::timer)
 
+
+        object TokenSelectionExecutionTime : Metric<Timer>("token.selection.execution.time", CordaMetrics::timer)
+        object TokenSelectionDbExecutionTime : Metric<Timer>("token.selection.db.execution.time", CordaMetrics::timer)
+        object TokenSelectionEmCreationTime : Metric<Timer>("token.selection.em.creation.time", CordaMetrics::timer)
+
         object Crypto {
             private const val PREFIX = "crypto"
 
@@ -656,6 +661,18 @@ object CordaMetrics {
                 computation
             )
         }
+
+        object TaskManager {
+            /**
+             * Time it took to execute a task, includes time waiting to be scheduled.
+             */
+            object TaskCompletionTime : Metric<Timer>("taskmanager.completion.time", CordaMetrics::timer)
+
+            /**
+             * The number of live tasks running or scheduled in the task manager.
+             */
+            class LiveTasks(computation: Supplier<Number>) : ComputedValue<Nothing>("taskmanager.live.tasks", computation)
+        }
     }
 
     /**
@@ -793,6 +810,16 @@ object CordaMetrics {
         SignatureSpec("signature.spec"),
 
         /**
+         * Task manager name.
+         */
+        TaskManagerName("task.manager.name"),
+
+        /**
+         * Task type.
+         */
+        TaskType("task.type"),
+
+        /**
          * Identifier of a tenant either a virtual node identifier or cluster level tenant id.
          */
         Tenant("tenant"),
@@ -837,7 +864,17 @@ object CordaMetrics {
         /**
          * Partition of a message bus topic published to or consumed from.
          */
-        Partition("partition")
+        Partition("partition"),
+
+        /**
+         * Type of event received by the token selection processor.
+         */
+        TokenSelectionEvent("token.selection.event"),
+
+        /**
+         * Token selection database operation.
+         */
+        TokenSelectionDbOperation("token.selection.db.operation")
     }
 
     /**

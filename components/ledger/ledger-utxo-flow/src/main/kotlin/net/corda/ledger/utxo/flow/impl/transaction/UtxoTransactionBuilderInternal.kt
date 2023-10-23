@@ -15,7 +15,6 @@ interface UtxoTransactionBuilderInternal : UtxoTransactionBuilder, UtxoTransacti
      * Also, notary and time window of the original takes precedence.
      * Those will not be overwritten regardless of there are new values.
      * It de-duplicates the
-     *  - attachments
      *  - signatories
      *  - inputStateRefs
      *  - referenceStateRefs

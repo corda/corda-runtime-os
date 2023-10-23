@@ -304,14 +304,31 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
-    override fun asyncCommitOffsets(callback: CordaConsumer.Callback?) {
-        consumer.commitAsync { offsets, exception ->
-            callback?.onCompletion(
-                offsets.entries.associate {
-                    it.key!!.toCordaTopicPartition(config.topicPrefix) to it.value.offset()
-                },
-                exception
-            )
+    override fun syncCommitOffsets() {
+        var attemptCommit = true
+
+        while (attemptCommit) {
+            try {
+                consumer.commitSync()
+                attemptCommit = false
+            } catch (ex: Exception) {
+                when (ex::class.java) {
+                    in fatalExceptions -> {
+                        logErrorAndThrowFatalException(
+                            "Error attempting to commitSync offsets.",
+                            ex
+                        )
+                    }
+                    in transientExceptions -> {
+                        logWarningAndThrowIntermittentException("Failed to commitSync offsets.", ex)
+                    }
+                    else -> {
+                        logErrorAndThrowFatalException(
+                            "Unexpected error attempting to commitSync offsets .", ex
+                        )
+                    }
+                }
+            }
         }
     }
 

@@ -10,5 +10,10 @@ dependencies {
     api project(':libs:lifecycle:lifecycle')
     api project(':libs:configuration:configuration-core')
 
+    implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(':libs:messaging:messaging')
+
+    api "net.corda:corda-avro-schema"
 }

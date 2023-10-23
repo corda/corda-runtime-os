@@ -84,7 +84,7 @@ metadata:
 spec:
   type: ClusterIP
   selector:
-    app: {{ $workerName }}
+    app.kubernetes.io/component: {{ include "corda.workerComponent" $worker }}
   ports:
       - protocol: TCP
         port: {{ include "corda.workerServicePort" . }}
@@ -174,13 +174,6 @@ spec:
               fieldRef:
                 apiVersion: v1
                 fieldPath: metadata.namespace
-          - name: ENABLE_CLOUDWATCH
-            value:
-              {{- if eq $.Values.serviceAccount.name "cloudwatch-writer" }}
-                "true"
-              {{- else }}
-                "false"
-              {{- end }}
           - name: JAVA_TOOL_OPTIONS
             value:
               {{ .javaOptions }}
@@ -246,9 +239,11 @@ spec:
         {{- if not (($.Values).vault).url }}
         {{- include "corda.configSaltAndPassphraseEnv" $ | nindent 10 }}
         {{- end }}
-        {{- /* TODO-[CORE-16419]: isolate StateManager database from the Cluster database */ -}}
-        {{- if or $optionalArgs.clusterDbAccess $optionalArgs.stateManagerDbAccess }}
+        {{- if $optionalArgs.clusterDbAccess }}
         {{- include "corda.clusterDbEnv" $ | nindent 10 }}
+        {{- end }}
+        {{- if $optionalArgs.stateManagerDbAccess }}
+        {{- include "corda.stateManagerDbEnv" $ | nindent 10 }}
         {{- end }}
         args:
           - "--workspace-dir=/work"
@@ -294,22 +289,19 @@ spec:
           - "-ddatabase.pool.keepaliveTimeSeconds={{ .clusterDbConnectionPool.keepaliveTimeSeconds }}"
           - "-ddatabase.pool.validationTimeoutSeconds={{ .clusterDbConnectionPool.validationTimeoutSeconds }}"
           {{- end }}
-          {{- /* TODO-[CORE-16419]: isolate StateManager database from the Cluster database */ -}}
           {{- if $optionalArgs.stateManagerDbAccess }}
           - "--stateManager"
           - "type=DATABASE"
           - "--stateManager"
-          - "database.user=$(DB_CLUSTER_USERNAME)"
+          - "database.user=$(STATE_MANAGER_DB_USERNAME)"
           - "--stateManager"
-          - "database.pass=$(DB_CLUSTER_PASSWORD)"
+          - "database.pass=$(STATE_MANAGER_DB_PASSWORD)"
           - "--stateManager"
-          - "database.jdbc.url=jdbc:postgresql://{{ required "Must specify db.cluster.host" $.Values.db.cluster.host }}:{{ $.Values.db.cluster.port }}/{{ $.Values.db.cluster.database }}?currentSchema={{ $.Values.bootstrap.db.stateManager.schema }}"
+          - "database.jdbc.url={{- include "corda.stateManagerJdbcUrl" $ -}}?currentSchema=STATE_MANAGER"
           - "--stateManager"
           - "database.jdbc.directory=/opt/jdbc-driver"
           - "--stateManager"
           - "database.jdbc.driver=org.postgresql.Driver"
-          - "--stateManager"
-          - "database.jdbc.persistenceUnitName=corda-state-manager"
           - "--stateManager"
           - "database.pool.maxSize={{ .stateManagerDbConnectionPool.maxSize }}"
           {{- if .stateManagerDbConnectionPool.minSize }}
@@ -334,7 +326,7 @@ spec:
           {{- if $optionalArgs.servicesAccessed }}
           {{- range $worker := $optionalArgs.servicesAccessed }}
           {{- $endpoint := include "corda.getWorkerEndpoint" (dict "context" $ "worker" $worker) }}
-          - --endpoint={{ $endpoint }}
+          - --serviceEndpoint={{ $endpoint }}
           {{- end }}
           {{- end }}
           {{- range $i, $arg := $optionalArgs.additionalWorkerArgs }}

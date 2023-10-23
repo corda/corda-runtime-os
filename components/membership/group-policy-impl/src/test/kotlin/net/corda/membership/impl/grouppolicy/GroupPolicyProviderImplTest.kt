@@ -653,7 +653,42 @@ class GroupPolicyProviderImplTest {
             )
         verify(groupPolicyParser, times(2)).parse(eq(holdingIdentity5), any(), any())
 
-        // previous value was rmeoved from cache, hence re-calculating
+        // previous value was removed from cache, hence re-calculating
+        groupPolicyProvider.getGroupPolicy(holdingIdentity5)
+        verify(groupPolicyParser, times(3)).parse(eq(holdingIdentity5), any(), any())
+    }
+
+    @Test
+    fun `MGM group policy is removed from cache if exception occurs when validating`() {
+        postConfigChangedEvent()
+        startComponentAndDependencies()
+
+        groupPolicyProvider.FinishedRegistrationsProcessor(memberInfoFactory)  {_, _ -> }
+            .onNext(
+                Record("", "", mgmPersistentMemberInfo),
+                null,
+                emptyMap(),
+            )
+        verify(groupPolicyParser, times(1)).parse(eq(holdingIdentity5), any(), any())
+
+        // returns from cache
+        groupPolicyProvider.getGroupPolicy(holdingIdentity5)
+        verify(groupPolicyParser, times(1)).parse(eq(holdingIdentity5), any(), any())
+
+        // on new event we will fail parsing
+        val mgmGroupPolicy = mock<MGMGroupPolicy> {
+            on { p2pParameters } doThrow BadGroupPolicyException("Bad group policy.")
+        }
+        whenever(groupPolicyParser.parse(eq(holdingIdentity5), any(), any())).thenReturn(mgmGroupPolicy)
+        groupPolicyProvider.FinishedRegistrationsProcessor(memberInfoFactory)  {_, _ -> }
+            .onNext(
+                Record("", "", mgmPersistentMemberInfo),
+                null,
+                emptyMap(),
+            )
+        verify(groupPolicyParser, times(2)).parse(eq(holdingIdentity5), any(), any())
+
+        // previous value was removed from cache, hence re-calculating
         groupPolicyProvider.getGroupPolicy(holdingIdentity5)
         verify(groupPolicyParser, times(3)).parse(eq(holdingIdentity5), any(), any())
     }

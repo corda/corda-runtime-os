@@ -13,9 +13,13 @@ import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.statemanager.api.Metadata
+import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.FlowConfig
+import net.corda.session.mapper.service.state.StateMetadataKeys.FLOW_MAPPER_STATUS
 import net.corda.test.flow.util.buildSessionEvent
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -35,12 +39,15 @@ class FlowMapperMessageProcessorTest {
     private val config = SmartConfigImpl.empty().withValue(FlowConfig.SESSION_P2P_TTL, ConfigValueFactory.fromAnyRef(10000))
     private val flowMapperMessageProcessor = FlowMapperMessageProcessor(flowMapperEventExecutorFactory, config)
 
-    private fun buildMapperState(status: FlowMapperStateType) : FlowMapperState {
-        return FlowMapperState.newBuilder()
-            .setStatus(status)
-            .setFlowId("flowId")
-            .setExpiryTime(Instant.now().toEpochMilli())
-            .build()
+    private fun buildMapperState(status: FlowMapperStateType, metadata: Metadata = Metadata()) : State<FlowMapperState> {
+        return State(
+            FlowMapperState.newBuilder()
+                .setStatus(status)
+                .setFlowId("flowId")
+                .setExpiryTime(Instant.now().toEpochMilli())
+                .build(),
+            metadata = metadata,
+        )
     }
 
     private fun buildMapperEvent(payload: Any) : Record<String, FlowMapperEvent> {
@@ -69,8 +76,17 @@ class FlowMapperMessageProcessorTest {
 
     @Test
     fun `when state is OPEN new session events are processed`() {
-        flowMapperMessageProcessor.onNext(buildMapperState(FlowMapperStateType.OPEN), buildMapperEvent(buildSessionEvent()))
+        val metadata = Metadata(mapOf("foo" to "bar"))
+        whenever(flowMapperEventExecutor.execute()).thenReturn(FlowMapperResult(FlowMapperState().apply {
+            status = FlowMapperStateType.OPEN
+        }, listOf()))
+        val output = flowMapperMessageProcessor.onNext(
+            buildMapperState(FlowMapperStateType.OPEN, metadata),buildMapperEvent(buildSessionEvent())
+        )
         verify(flowMapperEventExecutorFactory, times(1)).create(any(), any(), anyOrNull(), any(), any())
+        assertThat(output.updatedState?.metadata).isEqualTo(
+            Metadata(metadata + mapOf(FLOW_MAPPER_STATUS to FlowMapperStateType.OPEN.toString()))
+        )
     }
 
     @Test
@@ -81,9 +97,12 @@ class FlowMapperMessageProcessorTest {
 
     @Test
     fun `when state is OPEN expired session events are not processed`() {
-        flowMapperMessageProcessor.onNext(buildMapperState(FlowMapperStateType.OPEN), buildMapperEvent(buildSessionEvent(Instant.now()
-            .minusSeconds(100000))))
+        val metadata = Metadata(mapOf("foo" to "bar"))
+        val output = flowMapperMessageProcessor.onNext(
+            buildMapperState(FlowMapperStateType.OPEN, metadata = metadata),
+            buildMapperEvent(buildSessionEvent(Instant.now().minusSeconds(100000))))
         verify(flowMapperEventExecutorFactory, times(0)).create(any(), any(), anyOrNull(), any(), any())
+        assertThat(output.updatedState?.metadata).isEqualTo(metadata)
     }
 
     @Test
@@ -116,5 +135,28 @@ class FlowMapperMessageProcessorTest {
     fun `when state is ERROR new session events are processed`() {
         flowMapperMessageProcessor.onNext(buildMapperState(FlowMapperStateType.ERROR), buildMapperEvent(buildSessionEvent(Instant.now())))
         verify(flowMapperEventExecutorFactory, times(1)).create(any(), any(), anyOrNull(), any(), any())
+    }
+
+    @Test
+    fun `when input event has no value the existing state is returned`() {
+        val metadata = Metadata(mapOf("foo" to "bar"))
+        val state = buildMapperState(FlowMapperStateType.OPEN, metadata)
+        val output = flowMapperMessageProcessor.onNext(state, Record("foo", "foo", null))
+        verify(flowMapperEventExecutorFactory, times(0)).create(any(), any(), anyOrNull(), any(), any())
+        assertThat(output.updatedState).isEqualTo(state)
+    }
+
+    @Test
+    fun `when input metadata is null metadata is still set`() {
+        whenever(flowMapperEventExecutor.execute()).thenReturn(FlowMapperResult(FlowMapperState().apply {
+            status = FlowMapperStateType.OPEN
+        }, listOf()))
+        val output = flowMapperMessageProcessor.onNext(
+            buildMapperState(FlowMapperStateType.OPEN),buildMapperEvent(buildSessionEvent())
+        )
+        verify(flowMapperEventExecutorFactory, times(1)).create(any(), any(), anyOrNull(), any(), any())
+        assertThat(output.updatedState?.metadata).isEqualTo(
+            Metadata(mapOf(FLOW_MAPPER_STATUS to FlowMapperStateType.OPEN.toString()))
+        )
     }
 }

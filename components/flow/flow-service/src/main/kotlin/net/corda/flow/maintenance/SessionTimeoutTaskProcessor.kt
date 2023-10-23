@@ -2,6 +2,7 @@ package net.corda.flow.maintenance
 
 import net.corda.data.flow.FlowTimeout
 import net.corda.data.scheduler.ScheduledTaskTrigger
+import net.corda.flow.state.impl.CheckpointMetadataKeys.STATE_META_SESSION_EXPIRY_KEY
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.StateManager
@@ -9,6 +10,7 @@ import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.FLOW_TIMEOUT_TOPIC
 import net.corda.schema.Schemas.ScheduledTask
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
@@ -18,8 +20,6 @@ class SessionTimeoutTaskProcessor(
 ) : DurableProcessor<String, ScheduledTaskTrigger> {
     companion object {
         private val logger = LoggerFactory.getLogger(SessionTimeoutTaskProcessor::class.java)
-        // TODO - this may need to move out somewhere else.
-        const val STATE_META_SESSION_EXPIRY_KEY = "session.expiry"
     }
     override val keyClass: Class<String>
         get() = String::class.java
@@ -40,13 +40,14 @@ class SessionTimeoutTaskProcessor(
                 logger.trace("No flows to time out")
                 emptyList()
             } else {
-                // TODO - take log message out when everything plumbed in.
-                logger.info("Trigger cleanup of $checkpoints")
+                logger.debug { "Trigger cleanup of $checkpoints" }
                 checkpoints.map { kvp ->
+                    val instant = (kvp.value.metadata[STATE_META_SESSION_EXPIRY_KEY] as Number).toLong()
                     Record(FLOW_TIMEOUT_TOPIC, kvp.key,
                         FlowTimeout(
                             kvp.value.key,
-                            Instant.ofEpochSecond(kvp.value.metadata[STATE_META_SESSION_EXPIRY_KEY] as Long))
+                            Instant.ofEpochSecond(instant)
+                        )
                     )
                 }
             }

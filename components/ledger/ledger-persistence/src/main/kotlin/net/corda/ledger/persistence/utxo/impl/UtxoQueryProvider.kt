@@ -11,9 +11,9 @@ package net.corda.ledger.persistence.utxo.impl
  */
 interface UtxoQueryProvider {
     /**
-     * @property findTransactionPrivacySalt SQL text for [UtxoRepositoryImpl.findTransactionPrivacySalt].
+     * @property findTransactionPrivacySaltAndMetadata SQL text for [UtxoRepositoryImpl.findTransactionPrivacySaltAndMetadata].
      */
-    val findTransactionPrivacySalt: String
+    val findTransactionPrivacySaltAndMetadata: String
 
     /**
      * @property findTransactionComponentLeafs SQL text for [UtxoRepositoryImpl.findTransactionComponentLeafs].
@@ -24,11 +24,6 @@ interface UtxoQueryProvider {
      * @property findUnconsumedVisibleStatesByType SQL text for [UtxoRepositoryImpl.findUnconsumedVisibleStatesByType].
      */
     val findUnconsumedVisibleStatesByType: String
-
-    /**
-     * @property findUnconsumedVisibleStatesByExactType SQL text for [UtxoRepositoryImpl.findUnconsumedVisibleStatesByExactType].
-     */
-    val findUnconsumedVisibleStatesByExactType: String
 
     /**
      * @property findTransactionSignatures SQL text for [UtxoRepositoryImpl.findTransactionSignatures].
@@ -60,6 +55,16 @@ interface UtxoQueryProvider {
      * @property persistTransaction SQL text for [UtxoRepositoryImpl.persistTransaction].
      */
     val persistTransaction: String
+
+    /**
+     * @property persistTransactionMetadata SQL text for [UtxoRepositoryImpl.persistTransactionMetadata].
+     */
+    val persistTransactionMetadata: String
+
+    /**
+     * @property persistTransactionSource SQL text for [UtxoRepositoryImpl.persistTransactionSource].
+     */
+    val persistTransactionSource: String
 
     /**
      * @property persistTransactionComponentLeaf SQL text for [UtxoRepositoryImpl.persistTransactionComponentLeaf].

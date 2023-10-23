@@ -29,7 +29,7 @@ class SandboxBundleDifferentLibrariesTest {
 
     @BeforeAll
     fun setup(
-        @InjectService(timeout = 1000)
+        @InjectService(timeout = 10000)
         sandboxSetup: SandboxSetup,
         @InjectBundleContext
         bundleContext: BundleContext,
@@ -37,7 +37,7 @@ class SandboxBundleDifferentLibrariesTest {
     ) {
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
-            sandboxFactory = setup.fetchService(timeout = 1000)
+            sandboxFactory = setup.fetchService(timeout = 10000)
         }
     }
 

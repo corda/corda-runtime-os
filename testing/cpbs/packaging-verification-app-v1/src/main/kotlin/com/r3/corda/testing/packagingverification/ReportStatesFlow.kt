@@ -13,6 +13,7 @@ class ReportStatesFlow : ClientStartableFlow {
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
+        @Suppress("Deprecation") // Call to be replaced in CORE-17745
         val unconsumedStates = utxoLedgerService.findUnconsumedStatesByType(SimpleState::class.java)
         val result = unconsumedStates.fold(0L) { acc, stateAndRef ->
             acc + stateAndRef.state.contractState.value

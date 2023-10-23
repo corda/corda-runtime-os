@@ -1,9 +1,7 @@
 package net.corda.libs.statemanager.impl
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import net.corda.libs.statemanager.api.IntervalFilter
-import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
@@ -11,11 +9,9 @@ import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.repository.StateRepository
 import net.corda.orm.utils.transaction
 import org.slf4j.LoggerFactory
-import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
 // TODO-[CORE-17025]: remove Hibernate.
-// TODO-[CORE-16323]: check whether the optimistic locking can be improved / merged into single SQL statement.
 class StateManagerImpl(
     private val stateRepository: StateRepository,
     private val entityManagerFactory: EntityManagerFactory,
@@ -31,29 +27,6 @@ class StateManagerImpl(
 
     private fun StateEntity.fromPersistentEntity() =
         State(key, value, version, objectMapper.convertToMetadata(metadata), modifiedTime)
-
-    internal fun checkVersionAndPrepareEntitiesForPersistence(
-        states: Collection<State>,
-        entityManager: EntityManager
-    ): Pair<List<StateEntity>, Map<String, State>> {
-        val matchedVersions = mutableListOf<StateEntity>()
-        val unmatchedVersions = mutableMapOf<String, State>()
-        val persistedStates = stateRepository.get(entityManager, states.map { it.key })
-
-        states.forEach { st ->
-            val persisted = persistedStates.find { it.key == st.key }
-
-            persisted?.let {
-                if (st.version == persisted.version) {
-                    matchedVersions.add(st.toPersistentEntity())
-                } else {
-                    unmatchedVersions[it.key] = it.fromPersistentEntity()
-                }
-            }
-        }
-
-        return Pair(matchedVersions, unmatchedVersions)
-    }
 
     override fun create(states: Collection<State>): Map<String, Exception> {
         val failures = mutableMapOf<String, Exception>()
@@ -85,28 +58,38 @@ class StateManagerImpl(
     }
 
     override fun update(states: Collection<State>): Map<String, State> {
-        entityManagerFactory.transaction { em ->
-            val (updatable, mismatchVersions) = checkVersionAndPrepareEntitiesForPersistence(states, em)
-            stateRepository.update(em, updatable)
+        try {
+            entityManagerFactory.transaction { em ->
+                val failedUpdates = stateRepository.update(em, states.map { it.toPersistentEntity() })
 
-            return mismatchVersions.also {
-                if (it.isNotEmpty()) {
-                    logger.info("Optimistic locking check failed for States ${it.entries.joinToString()}")
+                return if (failedUpdates.isEmpty()) {
+                    emptyMap()
+                } else {
+                    logger.warn("Optimistic locking check failed while updating States ${failedUpdates.joinToString()}")
+                    get(failedUpdates)
                 }
             }
+        } catch (e: Exception) {
+            logger.warn("Failed to updated batch of states - ${states.joinToString { it.key }}", e)
+            throw e
         }
     }
 
     override fun delete(states: Collection<State>): Map<String, State> {
-        entityManagerFactory.transaction { em ->
-            val (deletable, mismatchVersions) = checkVersionAndPrepareEntitiesForPersistence(states, em)
-            stateRepository.delete(em, deletable.map { it.key })
+        try {
+            entityManagerFactory.transaction { em ->
+                val failedDeletes = stateRepository.delete(em, states.map { it.toPersistentEntity() })
 
-            return mismatchVersions.also {
-                if (it.isNotEmpty()) {
-                    logger.info("Optimistic locking check failed for States ${it.entries.joinToString()}")
+                return if (failedDeletes.isEmpty()) {
+                    emptyMap()
+                } else {
+                    logger.warn("Optimistic locking check failed while deleting States ${failedDeletes.joinToString()}")
+                    get(failedDeletes)
                 }
             }
+        } catch (e: Exception) {
+            logger.warn("Failed to delete batch of states - ${states.joinToString { it.key }}", e)
+            throw e
         }
     }
 
@@ -155,6 +138,3 @@ class StateManagerImpl(
         entityManagerFactory.close()
     }
 }
-
-fun ObjectMapper.convertToMetadata(json: String)  =
-    Metadata(this.readValue(json))

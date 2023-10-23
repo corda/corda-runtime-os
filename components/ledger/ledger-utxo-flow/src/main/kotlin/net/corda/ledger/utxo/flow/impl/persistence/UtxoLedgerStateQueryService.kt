@@ -22,17 +22,6 @@ interface UtxoLedgerStateQueryService {
     fun <T: ContractState> findUnconsumedStatesByType(stateClass: Class<out T>): List<StateAndRef<T>>
 
     /**
-     * Find unconsumed visible states of type [stateClass].
-     *
-     * @param stateClass The class of the aimed states.
-     * @return The result [StateAndRef]s.
-     *
-     * @throws CordaPersistenceException if an error happens during find operation.
-     */
-    @Suspendable
-    fun <T: ContractState> findUnconsumedStatesByExactType(stateClass: Class<out T>): List<StateAndRef<T>>
-
-    /**
      * Resolve [StateRef]s to [StateAndRef]s
      *
      * @param stateRefs The [StateRef]s to be resolved.

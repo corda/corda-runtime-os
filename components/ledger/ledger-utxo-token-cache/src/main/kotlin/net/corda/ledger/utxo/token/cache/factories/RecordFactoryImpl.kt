@@ -13,6 +13,7 @@ import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 import net.corda.messaging.api.records.Record
 import java.math.BigDecimal
 import java.nio.ByteBuffer
+import net.corda.data.ledger.utxo.token.selection.data.Token
 
 class RecordFactoryImpl(private val externalEventResponseFactory: ExternalEventResponseFactory) : RecordFactory {
 
@@ -22,11 +23,20 @@ class RecordFactoryImpl(private val externalEventResponseFactory: ExternalEventR
         poolKey: TokenPoolKey,
         selectedTokens: List<CachedToken>
     ): Record<String, FlowEvent> {
+        return getSuccessfulClaimResponseWithListTokens(flowId, externalEventRequestId, poolKey, selectedTokens.map { it.toAvro() })
+    }
+
+    override fun getSuccessfulClaimResponseWithListTokens(
+        flowId: String,
+        externalEventRequestId: String,
+        poolKey: TokenPoolKey,
+        selectedTokens: List<Token>
+    ): Record<String, FlowEvent> {
         val payload = TokenClaimQueryResult().apply {
             this.poolKey = poolKey.toAvro()
             this.claimId = externalEventRequestId
             this.resultType = TokenClaimResultStatus.SUCCESS
-            this.claimedTokens = selectedTokens.map { it.toAvro() }
+            this.claimedTokens = selectedTokens
         }
 
         return externalEventResponseFactory.success(externalEventRequestId, flowId, payload)

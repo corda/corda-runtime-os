@@ -4,16 +4,29 @@ import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.app.MembershipStatusFilter.ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.impl.read.TestProperties
 import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
 import net.corda.membership.impl.read.cache.MemberListCache
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
+import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_PENDING
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
+import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
+import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS
+import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.lib.UnsignedGroupParameters
 import net.corda.membership.read.GroupParametersReaderService
@@ -26,15 +39,21 @@ import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
+import java.time.Instant
+import java.util.SortedMap
 
 class MembershipGroupReaderImplTest {
     private lateinit var membershipGroupReaderImpl: MembershipGroupReaderImpl
@@ -129,7 +148,9 @@ class MembershipGroupReaderImplTest {
         membershipGroupReaderImpl = MembershipGroupReaderImpl(
             aliceIdGroup1,
             membershipGroupCache,
-            groupParametersReaderService
+            groupParametersReaderService,
+            mock(),
+            mock(),
         )
     }
 
@@ -345,9 +366,80 @@ class MembershipGroupReaderImplTest {
         val bobGroupReader = MembershipGroupReaderImpl(
             bobIdGroup1,
             membershipGroupCache,
-            groupParametersReaderService
+            groupParametersReaderService,
+            mock(),
+            mock(),
         )
         assertThat(bobGroupReader.signedGroupParameters).isEqualTo(signedGroupParameters)
         verify(groupParametersReaderService).getSigned(eq(bobIdGroup1))
+    }
+
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    @Nested
+    inner class MGMLookupTests {
+        private val mgmName = TestProperties.charlieName
+        private val mgmIdGroup1 = HoldingIdentity(mgmName, GROUP_ID_1)
+        private val platformInfoProvider: PlatformInfoProvider = mock {
+            on { activePlatformVersion } doReturn 50100
+        }
+        private val memberContextMap: SortedMap<String, String?> = sortedMapOf(
+            PARTY_NAME to mgmName.toString(),
+            String.format(PARTY_SESSION_KEYS, 0) to "1234",
+            GROUP_ID to GROUP_ID_1,
+            URL_KEY.format(0) to "https://corda5.r3.com:10000",
+            PROTOCOL_VERSION.format(0) to "1",
+            SOFTWARE_VERSION to "5.0.0",
+            PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
+        )
+        private val mgmContextMap = sortedMapOf(
+            STATUS to MEMBER_STATUS_ACTIVE,
+            MODIFIED_TIME to Instant.now().toString(),
+            IS_MGM to "true",
+            SERIAL to "1",
+        )
+        private val mgmMemberInfo: MemberInfo = mock {
+            on { name } doReturn mgmName
+            on { memberProvidedContext } doReturn mockedActiveMemberProvidedContext
+            on { mgmProvidedContext } doReturn mockedActiveMgmProvidedContext
+            on { isActive } doReturn true
+            on { isMgm } doReturn true
+        }
+        private val mgmWithLatestPlatformVersion: MemberInfo = mock()
+        private val memberInfoFactory: MemberInfoFactory = mock {
+            on { createMemberInfo(eq(memberContextMap), any()) } doReturn mgmWithLatestPlatformVersion
+        }
+        private lateinit var mgmGroupReader: MembershipGroupReaderImpl
+
+        @BeforeAll
+        fun setup() {
+            whenever(mockedActiveMemberProvidedContext.entries).doReturn(memberContextMap.entries)
+            whenever(mockedActiveMgmProvidedContext.entries).doReturn(mgmContextMap.entries)
+            mgmGroupReader = MembershipGroupReaderImpl(
+                mgmIdGroup1,
+                membershipGroupCache,
+                groupParametersReaderService,
+                memberInfoFactory,
+                platformInfoProvider,
+            )
+        }
+
+        @Test
+        fun `lookup performed by MGM returns active platform version in its own MemberInfo`() {
+            whenever(memberCache.get(eq(mgmIdGroup1))).thenReturn(listOf(aliceActiveMemberInfo, mgmMemberInfo))
+            assertThat(mgmGroupReader.lookup())
+                .containsExactlyInAnyOrder(mgmWithLatestPlatformVersion, aliceActiveMemberInfo)
+        }
+
+        @Test
+        fun `lookup performed by MGM based on name returns active platform version in its own MemberInfo`() {
+            whenever(memberCache.get(eq(mgmIdGroup1))).thenReturn(listOf(aliceActiveMemberInfo, mgmMemberInfo))
+            assertThat(mgmGroupReader.lookup(mgmName)).isEqualTo(mgmWithLatestPlatformVersion)
+        }
+
+        @Test
+        fun `lookup performed by MGM based on session key hash returns active platform version in its own MemberInfo`() {
+            whenever(memberCache.get(eq(mgmIdGroup1))).thenReturn(listOf(mgmMemberInfo))
+            assertThat(mgmGroupReader.lookupBySessionKey(mockSessionKeyHash)).isEqualTo(mgmWithLatestPlatformVersion)
+        }
     }
 }

@@ -12,17 +12,16 @@ import net.corda.libs.statemanager.impl.repository.impl.QueryProvider
 import net.corda.libs.statemanager.impl.repository.impl.StateRepositoryImpl
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
-import net.corda.schema.configuration.MessagingConfig.StateManager.JDBC_DRIVER
-import net.corda.schema.configuration.MessagingConfig.StateManager.JDBC_PASS
-import net.corda.schema.configuration.MessagingConfig.StateManager.JDBC_PERSISTENCE_UNIT_NAME
-import net.corda.schema.configuration.MessagingConfig.StateManager.JDBC_POOL_IDLE_TIMEOUT_SECONDS
-import net.corda.schema.configuration.MessagingConfig.StateManager.JDBC_POOL_KEEP_ALIVE_TIME_SECONDS
-import net.corda.schema.configuration.MessagingConfig.StateManager.JDBC_POOL_MAX_LIFETIME_SECONDS
-import net.corda.schema.configuration.MessagingConfig.StateManager.JDBC_POOL_MAX_SIZE
-import net.corda.schema.configuration.MessagingConfig.StateManager.JDBC_POOL_MIN_SIZE
-import net.corda.schema.configuration.MessagingConfig.StateManager.JDBC_POOL_VALIDATION_TIMEOUT_SECONDS
-import net.corda.schema.configuration.MessagingConfig.StateManager.JDBC_URL
-import net.corda.schema.configuration.MessagingConfig.StateManager.JDBC_USER
+import net.corda.schema.configuration.StateManagerConfig.Database.JDBC_DRIVER
+import net.corda.schema.configuration.StateManagerConfig.Database.JDBC_PASS
+import net.corda.schema.configuration.StateManagerConfig.Database.JDBC_POOL_IDLE_TIMEOUT_SECONDS
+import net.corda.schema.configuration.StateManagerConfig.Database.JDBC_POOL_KEEP_ALIVE_TIME_SECONDS
+import net.corda.schema.configuration.StateManagerConfig.Database.JDBC_POOL_MAX_LIFETIME_SECONDS
+import net.corda.schema.configuration.StateManagerConfig.Database.JDBC_POOL_MAX_SIZE
+import net.corda.schema.configuration.StateManagerConfig.Database.JDBC_POOL_MIN_SIZE
+import net.corda.schema.configuration.StateManagerConfig.Database.JDBC_POOL_VALIDATION_TIMEOUT_SECONDS
+import net.corda.schema.configuration.StateManagerConfig.Database.JDBC_URL
+import net.corda.schema.configuration.StateManagerConfig.Database.JDBC_USER
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -39,7 +38,6 @@ class StateManagerFactoryImpl @Activate constructor(
         val pass = config.getString(JDBC_PASS)
         val jdbcUrl = config.getString(JDBC_URL)
         val jdbcDiver = config.getString(JDBC_DRIVER)
-        val persistenceUnitName = config.getString(JDBC_PERSISTENCE_UNIT_NAME)
         val maxPoolSize = config.getInt(JDBC_POOL_MAX_SIZE)
         val minPoolSize = config.getIntOrDefault(JDBC_POOL_MIN_SIZE, maxPoolSize)
         val idleTimeout = config.getInt(JDBC_POOL_IDLE_TIMEOUT_SECONDS).toLong().run(Duration::ofSeconds)
@@ -61,7 +59,8 @@ class StateManagerFactoryImpl @Activate constructor(
         )
 
         val entityManagerFactory = entityManagerFactoryFactory.create(
-            persistenceUnitName,
+            // TODO-[CORE-CORE-17025]: persistent unit name will not be required after removing Hibernate.
+            "corda-state-manager",
             StateManagerEntities.classes,
             DbEntityManagerConfiguration(dataSource)
         )

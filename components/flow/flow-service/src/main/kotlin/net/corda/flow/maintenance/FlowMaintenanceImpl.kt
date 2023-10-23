@@ -40,17 +40,16 @@ class FlowMaintenanceImpl @Activate constructor(
     private var stateManager: StateManager? = null
 
     override fun onConfigChange(config: Map<String, SmartConfig>) {
-        // TODO - fix config key (CORE-17437).
-        if(config.containsKey(ConfigKeys.MESSAGING_CONFIG)) {
+        // Top level component is using ConfigurationReadService#registerComponentForUpdates, so either both or none of the keys
+        // should be present.
+        if (config.containsKey(ConfigKeys.STATE_MANAGER_CONFIG) && config.containsKey(ConfigKeys.MESSAGING_CONFIG)) {
             val messagingConfig = config.getConfig(ConfigKeys.MESSAGING_CONFIG)
-            val newStateManagerConfig = config.getConfig(ConfigKeys.MESSAGING_CONFIG)
-            // Only re-configure the state manager if the config has changes.
-            // This should not be needed anymore once it's a separate key.
-            if(newStateManagerConfig != stateManagerConfig) {
-                stateManager?.close()
-                stateManager = stateManagerFactory.create(newStateManagerConfig)
-                stateManagerConfig = newStateManagerConfig
-            }
+            val newStateManagerConfig = config.getConfig(ConfigKeys.STATE_MANAGER_CONFIG)
+
+            stateManager?.close()
+            stateManagerConfig = newStateManagerConfig
+            stateManager = stateManagerFactory.create(newStateManagerConfig)
+
             coordinator.createManagedResource("FLOW_MAINTENANCE_SUBSCRIPTION") {
                 subscriptionFactory.createDurableSubscription(
                     SubscriptionConfig(
@@ -86,6 +85,7 @@ class FlowMaintenanceImpl @Activate constructor(
                 coordinator.updateStatus(LifecycleStatus.UP)
                 // TODO - this should register to follow the State Manager's lifecycle
             }
+
             is StopEvent -> {
                 logger.trace { "Flow maintenance is stopping..." }
             }

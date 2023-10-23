@@ -1,6 +1,5 @@
 package net.corda.messaging.mediator
 
-import kotlinx.coroutines.runBlocking
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.mediator.MediatorMessage
@@ -9,10 +8,10 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.Mockito.doThrow
+import org.mockito.Mockito
 import org.mockito.Mockito.times
-import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -27,11 +26,9 @@ class MessageBusClientTest {
     private lateinit var cordaProducer: CordaProducer
     private lateinit var messageBusClient: MessageBusClient
 
-    private val defaultHeaders: List<Pair<String, String>> = emptyList()
     private val messageProps: MutableMap<String, Any> = mutableMapOf(
         MSG_PROP_ENDPOINT to TEST_ENDPOINT,
         MSG_PROP_KEY to TEST_KEY,
-        "headers" to defaultHeaders
     )
     private val message: MediatorMessage<Any> = MediatorMessage("value", messageProps)
 
@@ -49,10 +46,11 @@ class MessageBusClientTest {
         val expected = CordaProducerRecord(
             TEST_ENDPOINT,
             TEST_KEY,
-            message.payload
+            message.payload,
+            messageProps.toHeaders(),
         )
 
-        verify(cordaProducer).send(eq(expected), any())
+        verify(cordaProducer).send(eq(expected), isNull())
     }
 
     @Test
@@ -60,14 +58,13 @@ class MessageBusClientTest {
         val record = CordaProducerRecord(
             TEST_ENDPOINT,
             TEST_KEY,
-            message.payload
+            message.payload,
+            messageProps.toHeaders(),
         )
 
-        doThrow(CordaRuntimeException("")).whenever(cordaProducer).send(eq(record), any())
+        Mockito.doThrow(CordaRuntimeException("")).whenever(cordaProducer).send(eq(record), isNull())
         assertThrows<CordaRuntimeException> {
-            runBlocking {
-                messageBusClient.send(message).await()
-            }
+            messageBusClient.send(message)
         }
     }
 
@@ -76,4 +73,7 @@ class MessageBusClientTest {
         messageBusClient.close()
         verify(cordaProducer, times(1)).close()
     }
+
+    private fun Map<String, Any>.toHeaders() =
+        map { (key, value) -> (key to value.toString()) }
 }

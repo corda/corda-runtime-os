@@ -229,13 +229,6 @@
                     "null"
                   ]
                 },
-                "persistenceUnitName": {
-                  "description": "The persistence unit name to use by the state manager when using database as the persistent storage",
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
                 "additionalProperties": false
               },
               "additionalProperties": false
@@ -317,6 +310,46 @@
         }
       },
       "additionalProperties": true
+    },
+    "worker": {
+      "description": "HTTP connection information for the Corda workers",
+      "properties": {
+        "endpoints": {
+          "description": "Internal endpoints for Corda worker load balancers",
+          "properties": {
+            "uniqueness": {
+              "description": "Endpoint for the UniquenessWorker load balancer",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "persistence": {
+              "description": "Endpoint for the PersistenceWorker load balancer",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "verification": {
+              "description": "Endpoint for the VerificationWorker load balancer",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "crypto": {
+              "description": "Endpoint for the CryptoWorker load balancer",
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false

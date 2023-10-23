@@ -80,11 +80,15 @@ internal class SandboxGroupContextCacheImpl private constructor(
 
     /**
      * Builds a cache for the specified SandboxGroup [type] with [capacity] maximum size.
+     * Uses buildNonAsync in order that the removal listener is called in the same thread as cache interactions.
+     * The removal listener interacts with both the expiryQueue and the toBeClosed list, neither of which are
+     * thread safe. This also ensures if purgeExpiryQueue closes any sandboxes they are closed in the same thread
+     * as would be the case with all other calls to the same method.
      */
     private fun buildSandboxGroupTypeCache(
         type: SandboxGroupType,
         capacity: Long
-    ): Cache<VirtualNodeContext, SandboxGroupContextWrapper> = CacheFactoryImpl().build(
+    ): Cache<VirtualNodeContext, SandboxGroupContextWrapper> = CacheFactoryImpl().buildNonAsync(
         "sandbox-cache-${type}",
         Caffeine.newBuilder()
             .maximumSize(capacity)

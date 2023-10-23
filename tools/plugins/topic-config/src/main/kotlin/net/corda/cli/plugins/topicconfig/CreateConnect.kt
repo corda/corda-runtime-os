@@ -158,14 +158,14 @@ class CreateConnect : Runnable {
 
     fun getTopics(topicConfigs: List<Create.PreviewTopicConfiguration>) =
         topicConfigs.associate { topicConfig: Create.PreviewTopicConfiguration ->
-            topicConfig.name to NewTopic(topicConfig.name, create!!.partitionOverride, create!!.replicaOverride)
+            topicConfig.name to NewTopic(topicConfig.name, topicConfig.partitions, topicConfig.replicas)
                 .configs(topicConfig.config)
         }
 
     fun getGeneratedTopicConfigs(): Create.PreviewTopicConfigurations = if (configFilePath == null) {
         create!!.getTopicConfigsForPreview()
     } else {
-        // Simply read the info from provided file
-        create!!.mapper.readValue(Files.readString(Paths.get(configFilePath!!)))
+        // Simply read the info from provided file, applying any overrides
+        create!!.applyOverrides(create!!.mapper.readValue(Files.readString(Paths.get(configFilePath!!))))
     }
 }
