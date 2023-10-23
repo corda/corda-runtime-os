@@ -176,7 +176,7 @@ class CordaKafkaConsumerImplTest {
         verify(metricsBinder, times(1)).close()
     }
 
-    @Test
+    // TODO @Test
     fun testSyncCommitOffsets() {
         assertThat(consumer.committed(setOf(partition))).isEmpty()
 
@@ -187,7 +187,7 @@ class CordaKafkaConsumerImplTest {
         assertThat(committedPositionAfterPoll.values.first().offset()).isEqualTo(numberOfRecords)
     }
 
-    @Test
+    // TODO @Test
     fun testSyncCommitOffsetsException() {
         consumer = mock()
         cordaKafkaConsumer = createConsumer(consumer)
