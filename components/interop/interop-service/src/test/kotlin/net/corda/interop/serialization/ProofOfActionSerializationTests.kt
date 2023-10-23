@@ -1,4 +1,3 @@
-@file:Suppress("WildcardImport")
 package net.corda.interop.serialization
 
 import com.fasterxml.jackson.databind.DeserializationFeature
@@ -7,25 +6,42 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.common.json.serializers.standardTypesModule
-import net.corda.crypto.impl.CompositeKeyProviderImpl
-import net.corda.flow.application.services.impl.interop.*
+import net.corda.crypto.cipher.suite.SignatureSpecs
+import net.corda.crypto.core.DigitalSignatureWithKeyId
+import net.corda.crypto.core.fullIdHash
+import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
+import net.corda.flow.application.crypto.SignatureSpecServiceImpl
+import net.corda.flow.application.services.impl.interop.ProofOfActionSerialisationModule
 import net.corda.flow.application.services.impl.interop.dispatch.buildDispatcher
 import net.corda.flow.application.services.impl.interop.facade.FacadeReaders
 import net.corda.flow.application.services.impl.interop.facade.FacadeRequestImpl
 import net.corda.flow.application.services.impl.interop.facade.FacadeResponseImpl
 import net.corda.flow.application.services.impl.interop.proxies.JsonMarshaller
 import net.corda.flow.application.services.impl.interop.proxies.getClientProxy
+import net.corda.ledger.common.flow.impl.transaction.TransactionSignatureServiceImpl
+import net.corda.ledger.common.flow.transaction.TransactionSignatureVerificationServiceInternal
+import net.corda.ledger.common.testkit.FakePlatformInfoProvider
 import net.corda.ledger.common.testkit.anotherPublicKeyExample
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.ledger.common.testkit.publicKeyExample
-import net.corda.ledger.utxo.flow.impl.transaction.*
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.getUtxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.application.interop.binding.*
+import net.corda.v5.application.crypto.SigningService
+import net.corda.v5.application.flows.FlowContextProperties
+import net.corda.v5.application.flows.FlowContextPropertyKeys
+import net.corda.v5.application.flows.FlowEngine
+import net.corda.v5.application.interop.binding.QualifiedWith
+import net.corda.v5.application.interop.binding.BindsFacade
+import net.corda.v5.application.interop.binding.FacadeVersions
+import net.corda.v5.application.interop.binding.BindsFacadeMethod
+import net.corda.v5.application.interop.binding.BindsFacadeParameter
 import net.corda.v5.application.interop.facade.FacadeRequest
 import net.corda.v5.application.interop.facade.FacadeResponse
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -34,19 +50,24 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.NotaryInfo
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertThrowsExactly
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.math.BigDecimal
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
+import java.security.PrivateKey
+import java.security.Signature
 import java.security.spec.ECGenParameterSpec
 import java.util.TimeZone
 import kotlin.test.assertEquals
 
 class ProofOfActionSerializationTests : UtxoLedgerTest() {
+
     companion object {
 
         private lateinit var signedTransaction: UtxoSignedTransactionInternal
@@ -55,11 +76,7 @@ class ProofOfActionSerializationTests : UtxoLedgerTest() {
             initialize(ECGenParameterSpec("secp256r1"))
         }
         private val notaryNode1PublicKey = kpg.generateKeyPair().public
-        private val notaryNode2PublicKey = kpg.generateKeyPair().public
-        private val notaryKey =
-            CompositeKeyProviderImpl().createFromKeys(listOf(notaryNode1PublicKey, notaryNode2PublicKey), 1).also {
-                println(it)
-            }
+
         private val notaryX500Name = MemberX500Name.parse("O=ExampleNotaryService, L=London, C=GB")
         private val notary = notaryX500Name
 
@@ -81,7 +98,7 @@ class ProofOfActionSerializationTests : UtxoLedgerTest() {
     fun beforeEach() {
         val notaryInfo = mock<NotaryInfo>().also {
             whenever(it.name).thenReturn(notaryX500Name)
-            whenever(it.publicKey).thenReturn(notaryKey)
+            whenever(it.publicKey).thenReturn(notaryKey.public)
         }
         whenever(mockNotaryLookup.lookup(notaryX500Name)).thenReturn(notaryInfo)
         signedTransaction = UtxoTransactionBuilderImpl(
@@ -159,7 +176,7 @@ class ProofOfActionSerializationTests : UtxoLedgerTest() {
         val signature: DigitalSignatureAndMetadata = batchSignatures.first().first()
 
         val facade =
-            FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/locking-facade.json")!!)
+            FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/proof-of-action-test-facade.json")!!)
         val jsonMapper = object : JsonMarshaller {
             override fun serialize(value: Any): String = jsonMarshallingService.format(value)
             override fun <T : Any> deserialize(value: String, type: Class<T>): T =
@@ -167,7 +184,7 @@ class ProofOfActionSerializationTests : UtxoLedgerTest() {
         }
         val dispatcher = TestLockServer().buildDispatcher(facade, jsonMapper)
         val client = facade.getClientProxy<LockFacade>(jsonMapper, MessagingWithoutWebIntermediary(dispatcher))
-        val result = client.unlock("not-a-random-string", signature, ByteBuffer.wrap(byteArrayOf(65, 66, 67, 68)))
+        val result = client.unlock("not-a-random-string", signature)
 
         assertEquals(result, "confirmation")
     }
@@ -191,9 +208,53 @@ class ProofOfActionSerializationTests : UtxoLedgerTest() {
         val webServer = WebServer(dispatcher,jsonMarshallingService)
         val webClient = WebClient(webServer, jsonMarshallingService)
         val client = facade.getClientProxy<LockFacade>(jsonMapper, webClient)
-        val result = client.unlock("not-a-random-string", signature, ByteBuffer.wrap(byteArrayOf(65, 66, 67, 68)))
+        val result = client.unlock("not-a-random-string", signature)
 
         assertEquals(result, "confirmation")
+    }
+
+    val realSingingService = TransactionSignatureServiceImpl(serializationServiceWithWireTx,
+        signingService = mock<SigningService>().also {
+            whenever(it.findMySigningKeys(any())).thenReturn(mapOf(notaryKey.public to notaryKey.public))
+            whenever(
+                it.sign(any(), any(), any())
+            ).thenReturn(
+                DigitalSignatureWithKeyId(
+                    notaryKey.public.fullIdHash(),
+                    signData("abcdefgsfdsf".toByteArray(), notaryKey.private)
+                    // TODO the method signs hardcoded string only,
+                    // try to change to use the actual parameter (byte array) passes to sign method
+                )
+            )
+        },
+        signatureSpecService = SignatureSpecServiceImpl(CipherSchemeMetadataImpl()),
+        merkleTreeProvider = MerkleTreeProviderImpl(digestService),
+        platformInfoProvider = FakePlatformInfoProvider(),
+        flowEngine = mock<FlowEngine>().also {
+            whenever(it.flowContextProperties).thenReturn(object : FlowContextProperties {
+                override fun put(key: String, value: String) {
+                    TODO("Not yet implemented")
+                }
+
+                override fun get(key: String): String? =
+                    when (key) {
+                        FlowContextPropertyKeys.CPI_NAME -> "Cordapp1"
+                        FlowContextPropertyKeys.CPI_VERSION -> "1"
+                        FlowContextPropertyKeys.CPI_SIGNER_SUMMARY_HASH -> "hash1234"
+                        // else FlowContextPropertyKeys.CPI_FILE_CHECKSUM
+                        else -> "1213213213"
+                    }
+            })
+        },
+        transactionSignatureVerificationServiceInternal = mock<TransactionSignatureVerificationServiceInternal>()
+    )
+
+    private fun signData(data: ByteArray, privateKey: PrivateKey): ByteArray {
+        val signature =
+            Signature.getInstance(SignatureSpecs.ECDSA_SHA256.signatureName)
+        signature.initSign(privateKey)
+        signature.update(data)
+        return signature.sign()
     }
 }
 
@@ -202,6 +263,8 @@ private class MessagingWithoutWebIntermediary(private val inner: (FacadeRequest)
         val facadeResponse = inner.invoke(facadeRequest)
         return facadeResponse
     }
+
+
 }
 
 private class WebClient(private val webClient: (String) -> String,
@@ -234,25 +297,23 @@ interface LockFacade {
     @FacadeVersions("v1.0")
     @BindsFacadeMethod("create-lock")
     @Suspendable
-    fun createLock(@Denomination denomination: String,
-                   amount: BigDecimal,
-                   otherParty: String,
-                   @BindsFacadeParameter("notary-keys") notaryKeys: String,
-                   @BindsFacadeParameter("draft") draft: String) : String
-
+    fun createLock(assetId: String,
+                   recipient: String,
+                   @BindsFacadeParameter("notary-keys") notaryKeys: ByteBuffer,
+                   @BindsFacadeParameter("draft") draft: String): String
     @FacadeVersions("v1.0")
     @BindsFacadeMethod("unlock")
     @Suspendable
     fun unlock(reservationRef: String,
-               @BindsFacadeParameter("signed-tx") proof: DigitalSignatureAndMetadata,
-               key: ByteBuffer) : String
+               @BindsFacadeParameter("signed-tx") proof: DigitalSignatureAndMetadata
+    ): String
 }
 
 class TestLockServer : LockFacade {
 
-    override fun createLock(denomination: String, amount: BigDecimal, otherParty: String, notaryKeys: String,
-                            draft: String): String = "not-a-random-string"
+    override fun createLock(assetId: String, recipient: String, notaryKeys: ByteBuffer, draft: String )
+        = "not-a-random-string"
 
-    override fun unlock(reservationRef: String, proof: DigitalSignatureAndMetadata, key: ByteBuffer): String = "confirmation"
+    override fun unlock(reservationRef: String, proof: DigitalSignatureAndMetadata): String = "confirmation"
 
 }

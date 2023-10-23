@@ -7,9 +7,8 @@
   "commands": {
     "create-lock": {
       "in": {
-        "denomination": "denomination",
-        "amount": "decimal",
-        "otherParty": "string",
+        "asset-id": "string",
+        "recipient": "string",
         "notary-keys": "bytes",
         "draft" : "string"
       },

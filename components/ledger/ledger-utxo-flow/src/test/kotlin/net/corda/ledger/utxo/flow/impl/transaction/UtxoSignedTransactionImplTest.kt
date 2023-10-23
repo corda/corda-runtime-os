@@ -27,7 +27,7 @@ internal class UtxoSignedTransactionImplTest: UtxoLedgerTest() {
     private val kpg: KeyPairGenerator = KeyPairGenerator.getInstance("EC").apply { initialize(ECGenParameterSpec("secp256r1")) }
     private val notaryNode1PublicKey = kpg.generateKeyPair().public.also{println(it)}
     private val notaryNode2PublicKey = kpg.generateKeyPair().public.also{println(it)}
-    private val notaryKey =
+    private val notaryPublicKey =
         CompositeKeyProviderImpl().createFromKeys(listOf(notaryNode1PublicKey, notaryNode2PublicKey), 1).also{println(it)}
     private val notaryX500Name = MemberX500Name.parse("O=ExampleNotaryService, L=London, C=GB")
     private val notary = notaryX500Name
@@ -36,7 +36,7 @@ internal class UtxoSignedTransactionImplTest: UtxoLedgerTest() {
     fun beforeEach() {
         val notaryInfo = mock<NotaryInfo>().also {
             whenever(it.name).thenReturn(notaryX500Name)
-            whenever(it.publicKey).thenReturn(notaryKey)
+            whenever(it.publicKey).thenReturn(notaryPublicKey)
         }
         whenever(mockNotaryLookup.lookup(notaryX500Name)).thenReturn(notaryInfo)
         signedTransaction = UtxoTransactionBuilderImpl(
