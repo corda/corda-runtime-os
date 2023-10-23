@@ -93,13 +93,13 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         .messagingConfig(messagingConfig)
         .consumerFactories(
             mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                FLOW_START, CONSUMER_GROUP, messagingConfig
-            ),
-            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                FLOW_SESSION, CONSUMER_GROUP, messagingConfig
-            ),
-            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                FLOW_EVENT_TOPIC, CONSUMER_GROUP, messagingConfig
+                listOf(
+                    FLOW_START,
+                    FLOW_SESSION,
+                    FLOW_EVENT_TOPIC,
+                ),
+                CONSUMER_GROUP,
+                messagingConfig
             ),
         )
         .clientFactories(

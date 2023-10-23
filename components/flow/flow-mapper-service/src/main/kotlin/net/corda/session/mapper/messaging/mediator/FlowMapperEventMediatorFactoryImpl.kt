@@ -67,13 +67,13 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
         .messagingConfig(messagingConfig)
         .consumerFactories(
             mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                FLOW_MAPPER_START, CONSUMER_GROUP, messagingConfig
-            ),
-            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                FLOW_MAPPER_SESSION_IN, CONSUMER_GROUP, messagingConfig
-            ),
-            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                FLOW_MAPPER_SESSION_OUT, CONSUMER_GROUP, messagingConfig
+                listOf(
+                    FLOW_MAPPER_START,
+                    FLOW_MAPPER_SESSION_IN,
+                    FLOW_MAPPER_SESSION_OUT,
+                ),
+                CONSUMER_GROUP,
+                messagingConfig
             ),
         )
         .clientFactories(

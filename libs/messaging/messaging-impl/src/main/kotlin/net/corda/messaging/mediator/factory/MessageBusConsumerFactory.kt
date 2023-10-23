@@ -14,13 +14,13 @@ import java.util.UUID
 /**
  * Factory for creating multi-source event mediator message bus consumers.
  *
- * @param topicName Topic name.
+ * @param topicNames Topic names.
  * @param groupName Consumer group name.
  * @param messageBusConfig Message bus related configuration.
  * @param cordaConsumerBuilder [CordaConsumer] builder.
  */
 class MessageBusConsumerFactory(
-    private val topicName: String,
+    private val topicNames: List<String>,
     private val groupName: String,
     private val messageBusConfig: SmartConfig,
     private val cordaConsumerBuilder: CordaConsumerBuilder,
@@ -29,7 +29,7 @@ class MessageBusConsumerFactory(
     override fun <K : Any, V : Any> create(config: MediatorConsumerConfig<K, V>): MediatorConsumer<K, V> {
         val subscriptionType = "MultiSourceSubscription"
         val uniqueId = UUID.randomUUID().toString()
-        val clientId = "$subscriptionType--$groupName--$topicName--$uniqueId"
+        val clientId = "$subscriptionType--$groupName--$uniqueId"
 
         val eventConsumerConfig = ConsumerConfig(
             groupName,
@@ -46,7 +46,7 @@ class MessageBusConsumerFactory(
         )
 
         return MessageBusConsumer(
-            topicName,
+            topicNames,
             eventConsumer,
         )
     }

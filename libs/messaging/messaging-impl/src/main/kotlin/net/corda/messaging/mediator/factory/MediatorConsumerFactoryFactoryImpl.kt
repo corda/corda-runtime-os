@@ -16,11 +16,11 @@ class MediatorConsumerFactoryFactoryImpl @Activate constructor(
     private val cordaConsumerBuilder: CordaConsumerBuilder,
 ): MediatorConsumerFactoryFactory {
     override fun createMessageBusConsumerFactory(
-        topicName: String,
+        topicNames: List<String>,
         groupName: String,
         messageBusConfig: SmartConfig
     ) = MessageBusConsumerFactory(
-        topicName,
+        topicNames,
         groupName,
         messageBusConfig,
         cordaConsumerBuilder,

@@ -82,7 +82,7 @@ class ConsumerGroup(
             return
         }
 
-        consumersToRepartition.forEach { getInternalPartitionListFor(it).clear() }
+        consumersToRepartition.forEach { getInternalPartitionListFor(it).removeIf { partition -> partition.topic == topic } }
 
         var consumerIterator = consumersToRepartition.iterator()
         topicPartitionsToUpdate.forEach { topicPartition ->

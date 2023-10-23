@@ -9,12 +9,12 @@ interface MediatorConsumerFactoryFactory {
     /**
      * Creates a message bus consumer factory.
      *
-     * @param topicName Topic name.
+     * @param topicNames Topic names.
      * @param groupName Consumer group name.
      * @param messageBusConfig Message bus related configuration.
      */
     fun createMessageBusConsumerFactory(
-        topicName: String,
+        topicNames: List<String>,
         groupName: String,
         messageBusConfig: SmartConfig,
     ) : MediatorConsumerFactory
