@@ -217,6 +217,7 @@ internal class VirtualNodeUpgradeOperationHandler(
      * after the virtual node has been upgraded, so that the member CPI version is up-to-date.
      * Republishes the MGM's Member Info, if the Group Policy was changed.
      */
+    @Suppress("NestedBlockDepth")
     private fun reRegisterMember(upgradedVNodeInfo: VirtualNodeInfo, cpiMetadata: CpiMetadata) {
         val holdingIdentity = upgradedVNodeInfo.holdingIdentity
         val membershipGroupReader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
