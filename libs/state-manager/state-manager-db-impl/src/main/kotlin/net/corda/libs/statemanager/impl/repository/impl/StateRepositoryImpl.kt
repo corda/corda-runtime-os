@@ -36,10 +36,9 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
             for (s in states) {
                 preparedStatement.setString(1, s.key)
                 preparedStatement.setBytes(2, s.value)
-                preparedStatement.setInt(3, s.version)
-                preparedStatement.setString(4, s.metadata)
-                preparedStatement.setString(5, s.key)
-                preparedStatement.setInt(6, s.version)
+                preparedStatement.setString(3, s.metadata)
+                preparedStatement.setString(4, s.key)
+                preparedStatement.setInt(5, s.version)
                 preparedStatement.addBatch()
             }
             val results = preparedStatement.executeBatch()

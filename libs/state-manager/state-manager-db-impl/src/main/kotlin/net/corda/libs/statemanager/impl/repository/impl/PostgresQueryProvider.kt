@@ -15,7 +15,7 @@ class PostgresQueryProvider : AbstractQueryProvider() {
     override val updateState: String
         get() = """
             UPDATE $STATE_MANAGER_TABLE SET
-            key = ?, value = ?, version = ? + 1, metadata = CAST(? as JSONB), modified_time = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+            key = ?, value = ?, version = version + 1, metadata = CAST(? as JSONB), modified_time = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
             WHERE key = ? AND version = ?
         """.trimIndent()
 
