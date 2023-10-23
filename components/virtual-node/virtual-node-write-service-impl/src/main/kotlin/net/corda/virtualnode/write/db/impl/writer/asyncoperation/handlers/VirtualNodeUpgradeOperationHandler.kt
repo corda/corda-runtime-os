@@ -65,7 +65,7 @@ internal class VirtualNodeUpgradeOperationHandler(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         private val Map<String, Any?>.isEnriched: Boolean
-            get() = containsKey("corda.cpi.name")
+            get() = containsKey(MemberInfoExtension.MEMBER_CPI_NAME)
     }
 
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
