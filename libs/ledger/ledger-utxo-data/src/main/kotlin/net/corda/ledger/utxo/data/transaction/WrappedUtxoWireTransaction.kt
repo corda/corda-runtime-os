@@ -89,4 +89,21 @@ class WrappedUtxoWireTransaction(
         val serializedBytes = wireTransaction.getComponentGroupList(group.ordinal)[index]
         return serializationService.deserialize(serializedBytes)
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as WrappedUtxoWireTransaction
+
+        return wireTransaction == other.wireTransaction
+    }
+
+    override fun hashCode(): Int {
+        return wireTransaction.hashCode()
+    }
+
+    override fun toString(): String {
+        return "WrappedUtxoWireTransaction(wireTransaction=$wireTransaction)"
+    }
 }
