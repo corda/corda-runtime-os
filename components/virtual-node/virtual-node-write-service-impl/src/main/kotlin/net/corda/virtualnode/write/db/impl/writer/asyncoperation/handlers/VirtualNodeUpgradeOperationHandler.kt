@@ -4,7 +4,6 @@ import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.core.ShortHash
 import net.corda.data.KeyValuePairList
-import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.v2.RegistrationStatus.APPROVED
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
@@ -64,6 +63,9 @@ internal class VirtualNodeUpgradeOperationHandler(
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+
+        private val Map<String, Any?>.isEnriched: Boolean
+            get() = containsKey("corda.cpi.name")
     }
 
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
@@ -251,14 +253,19 @@ internal class VirtualNodeUpgradeOperationHandler(
                     try {
                         // Get the latest registration request
                         val registrationRequestDetails = payload.sortedBy { it.serial }.last()
-                        checkDuplicatedSerials(payload, registrationRequestDetails.serial)
                         
-                        val updatedSerial = registrationRequestDetails.serial + 1
                         val registrationContext = registrationRequestDetails
                             .memberProvidedContext.data.array()
                             .deserializeContext(keyValuePairListDeserializer)
                             .toMutableMap()
 
+                        if (registrationContext.isEnriched) {
+                            logger.warn("Enriched registration request retrieved, which cannot be used for re-registration. " +
+                                    "Please perform MGM re-registration of vNode $holdingIdentity manually.")
+                            return
+                        }
+
+                        val updatedSerial = registrationRequestDetails.serial + 1
                         registrationContext[MemberInfoExtension.SERIAL] = updatedSerial.toString()
 
                         logger.info("Starting MGM re-registration for holdingIdentity=$holdingIdentity, " +
@@ -281,16 +288,6 @@ internal class VirtualNodeUpgradeOperationHandler(
                 logger.warn("Failed to query for an APPROVED previous registration request for ${holdingIdentity.shortHash}: " +
                         "${registrationRequest.errorMsg}. Re-registration will not be attempted.")
             }
-        }
-    }
-
-    private fun checkDuplicatedSerials(payload: List<RegistrationRequestDetails>, serial: Long) {
-        val sameSerialList = payload.filter { it.serial == serial }
-        if (sameSerialList.size > 1) {
-            logger.warn("Multiple registration requests found for the same serial: $serial")
-            sameSerialList.forEachIndexed { index, registrationRequestDetails ->  
-                logger.warn("${index + 1}. $registrationRequestDetails")
-            } 
         }
     }
 
