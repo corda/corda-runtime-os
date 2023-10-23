@@ -96,26 +96,26 @@ class ExternalEventManagerImpl(
                 val exception = error.exception
                 externalEventState.status = when (error.errorType) {
                     ExternalEventResponseErrorType.TRANSIENT -> {
-                        log.debug {
+                        log.info(
                             "Received a transient error in external event response: $exception. Updating external " +
                                     "event status to RETRY."
-                        }
+                        )
                         ExternalEventStateStatus(ExternalEventStateType.RETRY, exception)
                     }
 
                     ExternalEventResponseErrorType.PLATFORM -> {
-                        log.debug {
+                        log.info(
                             "Received a platform error in external event response: $exception. Updating external " +
                                     "event status to PLATFORM_ERROR."
-                        }
+                        )
                         ExternalEventStateStatus(ExternalEventStateType.PLATFORM_ERROR, exception)
                     }
 
                     ExternalEventResponseErrorType.FATAL -> {
-                        log.debug {
+                        log.info(
                             "Received a fatal error in external event response: $exception. Updating external event " +
                                     "status to FATAL_ERROR."
-                        }
+                        )
                         ExternalEventStateStatus(ExternalEventStateType.FATAL_ERROR, exception)
                     }
 
