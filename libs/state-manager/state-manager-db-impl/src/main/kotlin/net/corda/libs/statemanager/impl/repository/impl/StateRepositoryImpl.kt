@@ -1,12 +1,13 @@
 package net.corda.libs.statemanager.impl.repository.impl
 
+import java.sql.Connection
+import javax.persistence.EntityManager
+import javax.persistence.Query
 import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.repository.StateRepository
-import java.sql.Connection
-import javax.persistence.EntityManager
-import javax.persistence.Query
+import net.corda.libs.statemanager.impl.repository.impl.PreparedStatementHelper.extractFailedKeysFromBatchResults
 
 // TODO-[CORE-17733]: batch update and delete.
 class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepository {
@@ -41,24 +42,9 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
                 preparedStatement.setInt(6, s.version)
                 preparedStatement.addBatch()
             }
-            // Execute the batch of prepared statements.
-            // The elements in the 'results' array correspond to the commands in the batch.
-            // The order of elements in 'results' follows the order in which the statements were added to the batch.
-            // - An update count greater than or equal to zero indicates that the command was processed successfully,
-            //   and it represents the number of rows in the database affected by the command.
-            // - If optimistic locking check fails for a statement in the batch, that statement will have a '0' in the 'results' array.
             val results = preparedStatement.executeBatch()
-            getFailedKeysFromResults(results, states.map { it.key })
+            extractFailedKeysFromBatchResults(results, states.map { it.key })
         }
-    }
-
-    private fun getFailedKeysFromResults(results: IntArray?, map: List<String>): List<String> {
-        val failed = mutableListOf<String>()
-        results?.mapIndexed { idx, result ->
-            if (result == 0)
-                failed.add(map[idx])
-        }
-        return failed
     }
 
     override fun delete(connection: Connection, states: Collection<StateEntity>): Collection<String> {
@@ -68,14 +54,8 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
                 preparedStatement.setInt(2, s.version)
                 preparedStatement.addBatch()
             }
-            // Execute the batch of prepared statements.
-            // The elements in the 'results' array correspond to the commands in the batch.
-            // The order of elements in 'results' follows the order in which the statements were added to the batch.
-            // - An update count greater than or equal to zero indicates that the command was processed successfully,
-            //   and it represents the number of rows in the database affected by the command.
-            // - If optimistic locking check fails for a statement in the batch, that statement will have a '0' in the 'results' array.
             val results = preparedStatement.executeBatch()
-            getFailedKeysFromResults(results, states.map { it.key })
+            extractFailedKeysFromBatchResults(results, states.map { it.key })
         }
     }
 
