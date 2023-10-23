@@ -69,7 +69,7 @@ class FlowP2PFilterProcessor(cordaAvroSerializationFactory: CordaAvroSerializati
 
         return if (sessionEvent != null) {
             sessionEvent.messageDirection = MessageDirection.INBOUND
-            val sessionId = toggleSessionId(key)
+            val sessionId = toggleSessionId(sessionEvent.sessionId)
             sessionEvent.sessionId = sessionId
             Record(FLOW_MAPPER_EVENT_TOPIC, sessionId, FlowMapperEvent(sessionEvent))
         } else {
