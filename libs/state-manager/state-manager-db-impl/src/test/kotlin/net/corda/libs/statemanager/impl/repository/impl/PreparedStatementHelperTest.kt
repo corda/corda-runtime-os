@@ -26,7 +26,7 @@ class PreparedStatementHelperTest {
         val extracted = PreparedStatementHelper.extractFailedKeysFromBatchResults(results, keys)
 
         assertThat(extracted).hasSize(5)
-        assertThat(extracted).isEqualTo(listOf("b", "f", "g", "h", "i"))
+        assertThat(extracted).isEqualTo(setOf("b", "f", "g", "h", "i"))
     }
 
     @Test
@@ -48,6 +48,17 @@ class PreparedStatementHelperTest {
 
         assertThat(extracted).hasSize(1)
         assertThat(extracted.first()).isEqualTo("d")
+    }
+
+    @Test
+    fun `can extract execute failed codes when all results failed`() {
+        val results = intArrayOf(Statement.EXECUTE_FAILED, Statement.EXECUTE_FAILED, Statement.EXECUTE_FAILED, Statement.EXECUTE_FAILED)
+        val keys = listOf("a", "b", "c", "d")
+
+        val extracted = PreparedStatementHelper.extractFailedKeysFromBatchResults(results, keys)
+
+        assertThat(extracted).hasSize(4)
+        assertThat(extracted).isEqualTo(keys.toSet())
     }
 
     @Test

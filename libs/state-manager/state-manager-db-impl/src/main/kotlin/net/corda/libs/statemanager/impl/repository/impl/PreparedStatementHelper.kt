@@ -33,10 +33,10 @@ object PreparedStatementHelper {
      *
      * @param batchResults results from `PreparedStatement.executeBatch()`
      * @param commandKeys list of keys for each command, in the order they were added to `PreparedStatement`
-     * @return a list of commands IDs that had failures or affected zero rows
+     * @return a set of commands IDs that had failures or affected zero rows
      * @throws PreparedStatementHelperException if number of results does not match number of commands
      */
-    fun extractFailedKeysFromBatchResults(batchResults: IntArray, commandKeys: List<String>): List<String> {
+    fun extractFailedKeysFromBatchResults(batchResults: IntArray, commandKeys: List<String>): Set<String> {
         if (batchResults.size != commandKeys.size) {
             ("Number of results from batch (size: ${batchResults.size}) " +
                     "does not match number of commands in the request (size ${commandKeys.size}").let {
@@ -47,5 +47,6 @@ object PreparedStatementHelper {
         return batchResults.zip(commandKeys) { result, key -> CommandResultPair(key, result) }
             .filter { it.result == NO_RECORD_UPDATED || it.result == Statement.EXECUTE_FAILED }
             .map { it.commandKey }
+            .toSet()
     }
 }
