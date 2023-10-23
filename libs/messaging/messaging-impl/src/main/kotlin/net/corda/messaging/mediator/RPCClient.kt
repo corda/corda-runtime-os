@@ -12,11 +12,14 @@ import net.corda.messaging.api.exception.CordaHTTPServerErrorException
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_ENDPOINT
+import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_KEY
 import net.corda.messaging.utils.HTTPRetryConfig
 import net.corda.messaging.utils.HTTPRetryExecutor
 import net.corda.utilities.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+
+const val CORDA_REQUEST_KEY_HEADER = "corda-request-key"
 
 class RPCClient(
     override val id: String,
@@ -55,9 +58,12 @@ class RPCClient(
     }
 
 
-    private fun deserializePayload(payload: ByteArray): Any {
+    private fun deserializePayload(payload: ByteArray): Any? {
         return try {
-            deserializer.deserialize(payload)!!
+            when {
+                payload.isEmpty() -> null
+                else -> deserializer.deserialize(payload)
+            }
         } catch (e: Exception) {
             val errorMsg = "Failed to deserialize payload of size ${payload.size} bytes due to: ${e.message}"
             log.warn(errorMsg, e)
@@ -67,10 +73,17 @@ class RPCClient(
     }
 
     private fun buildHttpRequest(message: MediatorMessage<*>): HttpRequest {
-        return HttpRequest.newBuilder()
+
+        val builder = HttpRequest.newBuilder()
             .uri(URI(message.endpoint()))
             .POST(HttpRequest.BodyPublishers.ofByteArray(message.payload as ByteArray))
-            .build()
+
+        // Add key HTTP header
+        message.getPropertyOrNull(MSG_PROP_KEY)?.let { value ->
+            builder.header(CORDA_REQUEST_KEY_HEADER, value.toString())
+        }
+
+        return builder.build()
     }
 
     private fun sendWithRetry(request: HttpRequest): HttpResponse<ByteArray> {
