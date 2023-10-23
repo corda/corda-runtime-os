@@ -21,6 +21,7 @@ class GroupParametersNotaryUpdater(
         const val NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY = "$NOTARY_SERVICE_KEY_PREFIX.flow.protocol.version.%s"
         const val NOTARY_SERVICE_KEYS_PREFIX = "$NOTARY_SERVICE_KEY_PREFIX.keys"
         const val NOTARY_SERVICE_KEYS_KEY = "$NOTARY_SERVICE_KEYS_PREFIX.%s"
+        const val NOTARY_IS_BACKCHAIN_VERIFYING = "$NOTARY_SERVICE_KEY_PREFIX.backchain.verifying"
 
         const val EPOCH_KEY = "corda.epoch"
         const val MODIFIED_TIME_KEY = "corda.modifiedTime"
@@ -58,7 +59,8 @@ class GroupParametersNotaryUpdater(
                 )
             } + listOf(
             KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, newNotaryServiceNumber), notaryServiceName),
-            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, newNotaryServiceNumber), notaryDetails.serviceProtocol)
+            KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, newNotaryServiceNumber), notaryDetails.serviceProtocol),
+            KeyValuePair(String.format(NOTARY_IS_BACKCHAIN_VERIFYING, newNotaryServiceNumber), notaryDetails.isBackchainVerifying.toString())
         ) + protocolVersions
         val newEpoch = currentParameters[EPOCH_KEY]!!.toInt() + 1
         val parametersWithUpdatedEpoch = with(currentParameters) {

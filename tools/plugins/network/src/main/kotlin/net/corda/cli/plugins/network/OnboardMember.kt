@@ -9,6 +9,7 @@ import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_SIGNATURE_SPEC
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_IS_BACKCHAIN_VERIFYING
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEYS_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
@@ -171,7 +172,8 @@ class OnboardMember : Runnable, BaseOnboard() {
                 NOTARY_SERVICE_PROTOCOL to "com.r3.corda.notary.plugin.nonvalidating",
                 NOTARY_SERVICE_PROTOCOL_VERSIONS.format("0") to "1",
                 NOTARY_KEYS_ID.format("0") to notaryKeyId,
-                NOTARY_KEY_SPEC.format("0") to "SHA256withECDSA"
+                NOTARY_KEY_SPEC.format("0") to "SHA256withECDSA",
+                NOTARY_IS_BACKCHAIN_VERIFYING to "true"
             )
         } else {
             emptyMap()

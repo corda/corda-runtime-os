@@ -10,6 +10,7 @@ import net.corda.v5.membership.NotaryInfo
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.security.PublicKey
 
 /**
@@ -31,6 +32,7 @@ class NotaryInfoConverter @Activate constructor(
         const val PROTOCOL = "flow.protocol.name"
         const val PROTOCOL_VERSIONS_PREFIX = "flow.protocol.version"
         const val KEYS_PREFIX = "keys"
+        const val IS_BACKCHAIN_VERIFYING = "backchain.verifying"
     }
 
     override val type = NotaryInfo::class.java
@@ -44,11 +46,15 @@ class NotaryInfoConverter @Activate constructor(
         val keysWithWeight = context.map.parseList(KEYS_PREFIX, PublicKey::class.java).map {
             CompositeKeyNodeAndWeight(it, 1)
         }
+        val isBackchainVerifying = context.map.parseOrNull(IS_BACKCHAIN_VERIFYING, Boolean::class.java)
+
         return NotaryInfoImpl(
             name,
             protocol,
             protocolVersions,
-            compositeKeyProvider.create(keysWithWeight, 1)
+            compositeKeyProvider.create(keysWithWeight, 1),
+            // TODO Should we default to true or false if not provided?
+            isBackchainVerifying ?: false
         )
     }
 }
@@ -58,9 +64,11 @@ private data class NotaryInfoImpl(
     private val protocol: String,
     private val protocolVersions: Collection<Int>,
     private val publicKey: PublicKey,
+    private val isBackchainVerifying: Boolean
 ) : NotaryInfo {
     override fun getName() = name
     override fun getProtocol() = protocol
     override fun getProtocolVersions() = protocolVersions
     override fun getPublicKey() = publicKey
+    override fun isBackchainVerifying() = isBackchainVerifying
 }

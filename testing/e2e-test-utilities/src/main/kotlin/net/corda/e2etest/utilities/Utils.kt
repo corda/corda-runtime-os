@@ -25,7 +25,7 @@ const val CODE_SIGNER_CERT_ALIAS = "cordadev"
 
 // The CPB and CPI used in smoke tests
 const val TEST_NOTARY_CPI_NAME = "test-notary-server-cordapp"
-const val TEST_NOTARY_CPB_LOCATION = "/META-INF/notary-plugin-non-validating-server.cpb"
+const val TEST_NOTARY_CPB_LOCATION = "/META-INF/notary-plugin-contract-verifying-server.cpb"
 
 val DEFAULT_CLUSTER: ClusterInfo = ClusterBInfo
 

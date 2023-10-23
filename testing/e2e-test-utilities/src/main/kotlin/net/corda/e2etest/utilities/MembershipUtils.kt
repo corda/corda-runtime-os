@@ -167,10 +167,11 @@ fun ClusterInfo.onboardNotaryMember(
         mapOf(
             "corda.roles.0" to "notary",
             "corda.notary.service.name" to MemberX500Name.parse(notaryServiceName).toString(),
-            "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.nonvalidating",
+            "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.contractverifying",
             "corda.notary.service.flow.protocol.version.0" to "1",
             "corda.notary.keys.0.id" to notaryKeyId,
-            "corda.notary.keys.0.signature.spec" to DEFAULT_SIGNATURE_SPEC
+            "corda.notary.keys.0.signature.spec" to DEFAULT_SIGNATURE_SPEC,
+            "corda.notary.service.backchain.verifying" to "false"
         ) + (getAdditionalContext?.let { it(holdingId) } ?: emptyMap())
     },
     tlsCertificateUploadedCallback = tlsCertificateUploadedCallback,

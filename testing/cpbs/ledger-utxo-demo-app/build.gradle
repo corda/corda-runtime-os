@@ -27,5 +27,5 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     // Common and API packages pulled in as transitive dependencies through client
-    cordapp project(':notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-client')
+    cordapp project(':notary-plugins:notary-plugin-contract-verifying:notary-plugin-contract-verifying-client')
 }

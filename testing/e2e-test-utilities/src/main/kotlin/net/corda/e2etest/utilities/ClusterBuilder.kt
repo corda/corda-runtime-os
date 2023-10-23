@@ -274,8 +274,9 @@ class ClusterBuilder {
             "corda.key.scheme" to "CORDA.ECDSA.SECP256R1",
             "corda.roles.0" to "notary",
             "corda.notary.service.name" to "$notaryServiceName",
-            "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.nonvalidating",
+            "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.contractverifying",
             "corda.notary.service.flow.protocol.version.0" to "1",
+            "corda.notary.service.backchain.verifying" to "false"
         ) + customMetadata)
             .map { "\"${it.key}\" : \"${it.value}\"" }
             .joinToString()

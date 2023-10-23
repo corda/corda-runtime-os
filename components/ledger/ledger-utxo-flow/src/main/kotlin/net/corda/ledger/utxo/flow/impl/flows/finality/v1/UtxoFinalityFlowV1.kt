@@ -5,6 +5,7 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
+import net.corda.ledger.utxo.flow.impl.PluggableNotaryDetails
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityPayload
@@ -39,7 +40,7 @@ import java.security.PrivilegedExceptionAction
 class UtxoFinalityFlowV1(
     private val initialTransaction: UtxoSignedTransactionInternal,
     private val sessions: List<FlowSession>,
-    private val pluggableNotaryClientFlow: Class<PluggableNotaryClientFlow>
+    private val pluggableNotaryDetails: PluggableNotaryDetails
 ) : UtxoFinalityBaseV1() {
 
     private companion object {
@@ -73,7 +74,11 @@ class UtxoFinalityFlowV1(
         // Initial verifications passed, the transaction can be saved in the database.
         persistUnverifiedTransaction()
 
-        sendTransactionAndBackchainToCounterparties(transferAdditionalSignatures)
+        sendTransactionAndBackchainToCounterparties(
+            transferAdditionalSignatures,
+            pluggableNotaryDetails.isBackchainVerifying
+        )
+
         val (transaction, signaturesReceivedFromSessions) = receiveSignaturesAndAddToTransaction()
         verifyAllReceivedSignatures(transaction, signaturesReceivedFromSessions)
         persistTransactionWithCounterpartySignatures(transaction)
@@ -96,16 +101,22 @@ class UtxoFinalityFlowV1(
     }
 
     @Suspendable
-    private fun sendTransactionAndBackchainToCounterparties(transferAdditionalSignatures: Boolean) {
-        flowMessaging.sendAll(FinalityPayload(initialTransaction, transferAdditionalSignatures), sessions.toSet())
+    private fun sendTransactionAndBackchainToCounterparties(transferAdditionalSignatures: Boolean, isNotaryBackchainVerifying: Boolean) {
+        flowMessaging.sendAll(FinalityPayload(initialTransaction, transferAdditionalSignatures, isNotaryBackchainVerifying), sessions.toSet())
 
-        sessions.forEach {
-            if (initialTransaction.dependencies.isNotEmpty()) {
-                flowEngine.subFlow(TransactionBackchainSenderFlow(initialTransaction.id, it))
-            } else {
-                log.trace {
-                    "Transaction with id ${initialTransaction.id} has no dependencies so backchain resolution will not be performed."
+        if (isNotaryBackchainVerifying) {
+            sessions.forEach {
+                if (initialTransaction.dependencies.isNotEmpty()) {
+                    flowEngine.subFlow(TransactionBackchainSenderFlow(initialTransaction.id, it))
+                } else {
+                    log.trace {
+                        "Transaction with id ${initialTransaction.id} has no dependencies so backchain resolution will not be performed."
+                    }
                 }
+            }
+        } else {
+            log.trace {
+                "Transaction's notary is not backchain verifying so will not perform resolution."
             }
         }
     }
@@ -293,7 +304,7 @@ class UtxoFinalityFlowV1(
     ): PluggableNotaryClientFlow {
         @Suppress("deprecation", "removal")
         return java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
-            pluggableNotaryClientFlow.getConstructor(UtxoSignedTransaction::class.java, MemberX500Name::class.java).newInstance(
+            pluggableNotaryDetails.flowClass.getConstructor(UtxoSignedTransaction::class.java, MemberX500Name::class.java).newInstance(
                 transaction, virtualNodeSelectorService.selectVirtualNode(transaction.notaryName)
             )
         })

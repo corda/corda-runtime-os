@@ -29,6 +29,7 @@ class MemberNotaryDetailsConverter @Activate constructor(
         const val HASH = ".hash"
         const val PEM = ".pem"
         const val SIGNATURE_SPEC = ".signature.spec"
+        const val IS_BACKCHAIN_VERIFYING = "service.backchain.verifying"
     }
 
     override val type: Class<MemberNotaryDetails>
@@ -36,6 +37,10 @@ class MemberNotaryDetailsConverter @Activate constructor(
 
     override fun convert(context: ConversionContext): MemberNotaryDetails {
         val serviceName = context.value(SERVICE_NAME) ?: throw ValueNotFoundException("'$SERVICE_NAME' is null or absent.")
+
+        // TODO This will default to FALSE if null, need to review
+        val isBackchainVerifying = context.value(IS_BACKCHAIN_VERIFYING).toBoolean()
+
         val serviceProtocol = context.value(SERVICE_PROTOCOL)
         val serviceProtocolVersions = generateSequence(0) {
             it + 1
@@ -70,7 +75,8 @@ class MemberNotaryDetailsConverter @Activate constructor(
             serviceName = MemberX500Name.parse(serviceName),
             serviceProtocol = serviceProtocol,
             serviceProtocolVersions = serviceProtocolVersions,
-            keys = keys
+            keys = keys,
+            isBackchainVerifying = isBackchainVerifying
         )
     }
 }

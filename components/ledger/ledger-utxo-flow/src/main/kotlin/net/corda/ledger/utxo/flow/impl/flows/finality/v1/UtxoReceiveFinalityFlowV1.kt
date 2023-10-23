@@ -109,6 +109,7 @@ class UtxoReceiveFinalityFlowV1(
         val payload = session.receive(FinalityPayload::class.java)
         val initialTransaction = payload.initialTransaction
         val transferAdditionalSignatures = payload.transferAdditionalSignatures
+        val isNotaryBackchainVerifying = payload.isNotaryBackchainVerifying
 
         if (log.isDebugEnabled) {
             log.debug( "Beginning receive finality for transaction: ${initialTransaction.id}")
@@ -116,7 +117,7 @@ class UtxoReceiveFinalityFlowV1(
         val currentGroupParameters = verifyLatestGroupParametersAreUsed(initialTransaction)
         utxoLedgerGroupParametersPersistenceService.persistIfDoesNotExist(currentGroupParameters)
         val transactionDependencies = initialTransaction.dependencies
-        if (transactionDependencies.isNotEmpty()) {
+        if (isNotaryBackchainVerifying && transactionDependencies.isNotEmpty()) {
             try {
                 flowEngine.subFlow(TransactionBackchainResolutionFlow(transactionDependencies, session))
             } catch (e: InvalidBackchainException) {
@@ -126,9 +127,17 @@ class UtxoReceiveFinalityFlowV1(
                 throw e
             }
         } else {
-            log.trace {
-                "Transaction with id ${initialTransaction.id} has no dependencies so backchain resolution will not be performed."
+            if (isNotaryBackchainVerifying) {
+                // TODO Move to trace
+                log.info(
+                    "Transaction's notary is not backchain verifying so backchain resolution will not be performed."
+                )
+            } else {
+                log.trace {
+                    "Transaction with id ${initialTransaction.id} has no dependencies so backchain resolution will not be performed."
+                }
             }
+
         }
         return Pair(initialTransaction, transferAdditionalSignatures)
     }

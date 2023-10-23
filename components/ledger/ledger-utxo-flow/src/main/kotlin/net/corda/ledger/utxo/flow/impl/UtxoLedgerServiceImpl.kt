@@ -181,7 +181,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
     // internally.
     @VisibleForTesting
     @Suppress("ThrowsCount")
-    internal fun getPluggableNotaryClientFlow(notary: MemberX500Name): Class<PluggableNotaryClientFlow> {
+    internal fun getPluggableNotaryClientFlow(notary: MemberX500Name): PluggableNotaryDetails {
 
         val notaryInfo = notaryLookup.notaryServices.firstOrNull { it.name == notary }
             ?: throw CordaRuntimeException(
@@ -206,7 +206,10 @@ class UtxoLedgerServiceImpl @Activate constructor(
             )
         }
 
-        @Suppress("UNCHECKED_CAST") return flowClass as Class<PluggableNotaryClientFlow>
+        @Suppress("UNCHECKED_CAST") return PluggableNotaryDetails(
+            flowClass as Class<PluggableNotaryClientFlow>,
+            notaryInfo.isBackchainVerifying
+        )
     }
 
     @Suspendable

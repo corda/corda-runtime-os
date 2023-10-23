@@ -147,6 +147,7 @@ class MemberInfoExtension {
         const val NOTARY_KEY_PEM = "corda.notary.keys.%s.pem"
         const val NOTARY_KEY_HASH = "corda.notary.keys.%s.hash"
         const val NOTARY_KEY_SPEC = "corda.notary.keys.%s.signature.spec"
+        const val NOTARY_IS_BACKCHAIN_VERIFYING = "corda.notary.service.backchain.verifying"
 
         /** Key name for TLS certificate subject. */
         const val TLS_CERTIFICATE_SUBJECT = "corda.tls.certificate.subject"

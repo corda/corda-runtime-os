@@ -1,5 +1,6 @@
 package net.corda.membership.impl.registration
 
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_IS_BACKCHAIN_VERIFYING
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
@@ -65,7 +66,8 @@ internal sealed class MemberRole {
             return Notary(
                 serviceName = MemberX500Name.parse(serviceName),
                 protocol = protocol,
-                protocolVersions = protocolVersions
+                protocolVersions = protocolVersions,
+                isBackchainVerifying = context[NOTARY_IS_BACKCHAIN_VERIFYING].toBoolean()
             )
         }
     }
@@ -79,6 +81,7 @@ internal sealed class MemberRole {
         val serviceName: MemberX500Name,
         val protocol: String,
         val protocolVersions: Collection<Int>,
+        val isBackchainVerifying: Boolean
     ) : MemberRole() {
         override fun toMemberInfo(
             notariesKeysFactory: () -> List<KeyDetails>,
@@ -99,7 +102,8 @@ internal sealed class MemberRole {
             return keys + versions + listOf(
                 "$ROLES_PREFIX.$index" to NOTARY_ROLE,
                 NOTARY_SERVICE_NAME to serviceName.toString(),
-                NOTARY_SERVICE_PROTOCOL to protocol
+                NOTARY_SERVICE_PROTOCOL to protocol,
+                NOTARY_IS_BACKCHAIN_VERIFYING to isBackchainVerifying.toString()
             )
         }
     }
