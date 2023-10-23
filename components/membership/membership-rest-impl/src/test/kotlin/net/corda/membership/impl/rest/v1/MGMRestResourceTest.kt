@@ -238,6 +238,15 @@ class MGMRestResourceTest {
         }
 
         @Test
+        fun `addGroupApprovalRule throws invalid input for blank string regex`() {
+            startService()
+
+            assertThrows<BadRequestException> {
+                mgmRestResource.addGroupApprovalRule(HOLDING_IDENTITY_ID, ApprovalRuleRequestParams("  ", RULE_LABEL))
+            }
+        }
+
+        @Test
         fun `addGroupApprovalRule throws bad request if short hash is invalid`() {
             startService()
 
@@ -859,6 +868,16 @@ class MGMRestResourceTest {
                 callFunctionUnderTest(
                     HOLDING_IDENTITY_ID,
                     ApprovalRuleRequestParams(INVALID_RULE_REGEX, RULE_LABEL)
+                )
+            }
+        }
+
+        @Test
+        fun `it throws bad request for blank string regex`() {
+            assertThrows<BadRequestException> {
+                callFunctionUnderTest(
+                    HOLDING_IDENTITY_ID,
+                    ApprovalRuleRequestParams("  ", RULE_LABEL)
                 )
             }
         }

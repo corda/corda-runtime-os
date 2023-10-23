@@ -56,7 +56,15 @@ class ServiceDefinition(
     val sandboxReferences: Map<String, Set<ServiceReference<*>>>
         get() = unmodifiableMap(_references)
 
-    fun initialise(serviceIndex: Map<String, Set<ServiceReference<*>>>): ServiceDefinition {
+    /**
+     * Initialises [sandboxReferences] using the contents of [serviceIndex].
+     * Effectively, each member of [referencedServiceTypes] is assigned a [Set]
+     * of available and compatible [ServiceReference]s.
+     *
+     * We MUST invoke this before we can begin matching sandbox services to
+     * sandbox service requirements.
+     */
+    fun withServiceReferences(serviceIndex: Map<String, Set<ServiceReference<*>>>): ServiceDefinition {
         referencedServiceTypes.forEach { serviceType ->
             serviceIndex[serviceType]?.also { refs ->
                 _references[serviceType] = refs
@@ -65,11 +73,19 @@ class ServiceDefinition(
         return this
     }
 
-    fun broken(): ServiceDefinition {
+    /**
+     * Declare this [ServiceDefinition] as impossible to instantiate.
+     * This means we have tried and failed, and should not try again.
+     */
+    fun asBroken(): ServiceDefinition {
         broken = true
         return this
     }
 
+    /**
+     * Instantiate this service.
+     * @return [Pair] of both the service instance and a [Collection] of [AutoCloseable]s to destroy it.
+     */
     @Suppress("ComplexMethod", "SpreadOperator")
     fun createInstance(bundle: Bundle, sandboxServices: SatisfiedServiceReferences): Pair<Any, Collection<AutoCloseable>> {
         // Analyse what we know about these references so that we can choose the correct public constructor.
@@ -139,7 +155,7 @@ class ServiceDefinition(
             } ?: throw IllegalStateException("No suitable constructor found for ${serviceClass.name}")
         } catch (e: Exception) {
             closeables.forEach(::closeSafely)
-            broken()
+            asBroken()
             throw e
         }
     }

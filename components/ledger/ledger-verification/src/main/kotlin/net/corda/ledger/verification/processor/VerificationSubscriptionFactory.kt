@@ -1,7 +1,9 @@
 package net.corda.ledger.verification.processor
 
+import net.corda.data.flow.event.FlowEvent
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.libs.configuration.SmartConfig
+import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.Subscription
 
 /**
@@ -16,4 +18,6 @@ interface VerificationSubscriptionFactory {
      * @return A new subscription for [TransactionVerificationRequest] messages
      */
     fun create(config: SmartConfig): Subscription<String, TransactionVerificationRequest>
+
+    fun createRpcSubscription(): RPCSubscription<TransactionVerificationRequest, FlowEvent>
 }

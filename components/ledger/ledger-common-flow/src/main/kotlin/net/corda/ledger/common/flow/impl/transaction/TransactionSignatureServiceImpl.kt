@@ -2,7 +2,6 @@ package net.corda.ledger.common.flow.impl.transaction
 
 import net.corda.crypto.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.crypto.core.bytes
-import net.corda.ledger.common.data.transaction.CordaPackageSummaryImpl
 import net.corda.ledger.common.data.transaction.SignableData
 import net.corda.ledger.common.data.transaction.getBatchMerkleTreeDigestProvider
 import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
@@ -13,13 +12,10 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SignatureSpecService
 import net.corda.v5.application.crypto.SigningService
-import net.corda.v5.application.flows.FlowContextPropertyKeys
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.common.transaction.TransactionWithMetadata
@@ -125,7 +121,7 @@ class TransactionSignatureServiceImpl @Activate constructor(
         signatureSpec: SignatureSpec,
         batchSettings: Map<String, String> = emptyMap()
     ): DigitalSignatureMetadata {
-        val cpiSummary = getCpiSummary()
+        val cpiSummary = flowEngine.getCpiSummary()
         return DigitalSignatureMetadata(
             Instant.now(),
             signatureSpec,
@@ -133,22 +129,9 @@ class TransactionSignatureServiceImpl @Activate constructor(
                 "platformVersion" to platformInfoProvider.activePlatformVersion.toString(),
                 "cpiName" to cpiSummary.name,
                 "cpiVersion" to cpiSummary.version,
-                "cpiSignerSummaryHash" to cpiSummary.signerSummaryHash.toString()
+                "cpiSignerSummaryHash" to cpiSummary.signerSummaryHash.toString(),
+                "cpiFileChecksum" to cpiSummary.fileChecksum.toString()
             ) + batchSettings
         )
     }
-
-    private fun getCpiSummary(): CordaPackageSummary =
-        with(flowEngine) {
-            CordaPackageSummaryImpl(
-                name = flowContextProperties[FlowContextPropertyKeys.CPI_NAME]
-                    ?: throw CordaRuntimeException("CPI name is not accessible"),
-                version = flowContextProperties[FlowContextPropertyKeys.CPI_VERSION]
-                    ?: throw CordaRuntimeException("CPI version is not accessible"),
-                signerSummaryHash = flowContextProperties[FlowContextPropertyKeys.CPI_SIGNER_SUMMARY_HASH]
-                    ?: throw CordaRuntimeException("CPI signer summary hash is not accessible"),
-                fileChecksum = flowContextProperties[FlowContextPropertyKeys.CPI_FILE_CHECKSUM]
-                    ?: throw CordaRuntimeException("CPI file checksum is not accessible"),
-            )
-        }
 }

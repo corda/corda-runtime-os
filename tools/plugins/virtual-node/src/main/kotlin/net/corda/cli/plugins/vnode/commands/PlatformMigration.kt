@@ -17,7 +17,8 @@ import java.sql.DriverManager
 @CommandLine.Command(
     name = "platform-migration",
     description = ["Generates SQL commands to perform database schema migration of virtual nodes from one version of " +
-            "Corda Platform Liquibase files to the next."]
+            "Corda Platform Liquibase files to the next."],
+    mixinStandardHelpOptions = true
 )
 class PlatformMigration(private val config: PlatformMigrationConfig = PlatformMigrationConfig()) : Runnable {
     @CommandLine.Option(

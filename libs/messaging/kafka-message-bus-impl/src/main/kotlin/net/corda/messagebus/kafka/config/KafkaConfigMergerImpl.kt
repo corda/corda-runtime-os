@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory
 class KafkaConfigMergerImpl : BusConfigMerger {
 
     private companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     override fun getMessagingConfig(bootConfig: SmartConfig, messagingConfig: SmartConfig?): SmartConfig {

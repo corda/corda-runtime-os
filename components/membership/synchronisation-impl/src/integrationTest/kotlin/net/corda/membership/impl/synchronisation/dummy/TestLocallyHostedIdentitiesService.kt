@@ -36,7 +36,11 @@ class TestLocallyHostedIdentitiesServiceImpl @Activate constructor(
         identities[info.identity] = info
     }
 
-    override fun getIdentityInfo(identity: HoldingIdentity): IdentityInfo? {
+    override fun isHostedLocally(identity: HoldingIdentity): Boolean {
+        return identity in identities.keys
+    }
+
+    override fun pollForIdentityInfo(identity: HoldingIdentity): IdentityInfo? {
         return identities[identity]
     }
 

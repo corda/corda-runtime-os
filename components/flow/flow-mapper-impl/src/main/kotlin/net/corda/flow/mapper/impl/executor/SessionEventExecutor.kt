@@ -2,9 +2,9 @@ package net.corda.flow.mapper.impl.executor
 
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRequest
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
-import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.flow.mapper.FlowMapperResult
@@ -40,7 +40,7 @@ class SessionEventExecutor(
     }
 
     private fun getInitPayload(payload: Any) = when (payload) {
-        is SessionInit -> payload
+        is SessionCounterpartyInfoRequest -> payload.sessionInit
         is SessionData -> payload.sessionInit
         else -> null
     }
@@ -53,18 +53,29 @@ class SessionEventExecutor(
                 "Flow mapper received session event for session which does not exist. Session may have expired. Returning error to " +
                         "counterparty. Key: $eventKey, Event: class ${sessionEvent.payload::class.java}, $sessionEvent"
             )
-            val outputRecord = recordFactory.forwardError(
-                sessionEvent,
-                ExceptionEnvelope(
-                    "FlowMapper-SessionExpired",
-                    "Tried to process session event for expired session with sessionId ${sessionEvent.sessionId}"
-                ),
-                instant,
-                flowConfig,
-                "invalid-flow-id",
-                false
-            )
-            FlowMapperResult(null, listOf(outputRecord))
+
+            // In this case, the error message should not be forwarded through the mapper, and instead should be sent
+            // back from where it came. Note that at present if the flow engine sends a data message without first
+            // sending an init message this will result in failure, as the mapper has no knowledge of the flow ID to
+            // respond on.
+            val outputRecords = try {
+                val record = recordFactory.sendBackError(
+                    sessionEvent,
+                    ExceptionEnvelope(
+                        "FlowMapper-SessionExpired",
+                        "Tried to process session event for expired session with sessionId ${sessionEvent.sessionId}"
+                    ),
+                    instant,
+                    flowConfig,
+                    false
+                )
+                listOf(record)
+            } catch (e: IllegalArgumentException) {
+                log.warn("Flow mapper received an outbound session message for session ${sessionEvent.sessionId} where " +
+                        "the session does not exist. Discarding the message.")
+                listOf()
+            }
+            FlowMapperResult(null, outputRecords)
         } else {
             log.warn(
                 "Flow mapper received error event from counterparty for session which does not exist. Session may have expired. " +

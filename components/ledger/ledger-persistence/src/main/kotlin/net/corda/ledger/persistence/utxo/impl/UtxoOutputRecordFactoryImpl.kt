@@ -14,7 +14,7 @@ import net.corda.data.persistence.EntityResponse
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.persistence.utxo.UtxoOutputRecordFactory
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
-import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
+import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.ResponseFactory
 import net.corda.schema.Schemas.Services.TOKEN_CACHE_EVENT
@@ -69,7 +69,8 @@ class UtxoOutputRecordFactoryImpl(
             externalEventContext,
             EntityResponse(
                 listOf(transactionContainer to status).map { ByteBuffer.wrap(serializationService.serialize(it).bytes) },
-                KeyValuePairList(emptyList())
+                KeyValuePairList(emptyList()),
+                null
             )
         )
     }
@@ -83,13 +84,14 @@ class UtxoOutputRecordFactoryImpl(
             externalEventContext,
             EntityResponse(
                 listOf(transactionContainer to status).map { ByteBuffer.wrap(serializationService.serialize(it).bytes) },
-                KeyValuePairList(emptyList())
+                KeyValuePairList(emptyList()),
+                null
             )
         )
     }
 
     override fun getStatesSuccessRecord(
-        states: List<UtxoTransactionOutputDto>,
+        states: List<UtxoVisibleTransactionOutputDto>,
         externalEventContext: ExternalEventContext,
     ): Record<String, FlowEvent> {
         return responseFactory.successResponse(
@@ -112,7 +114,7 @@ class UtxoOutputRecordFactoryImpl(
     ): Record<String, FlowEvent> {
         return responseFactory.successResponse(
             externalEventContext,
-            EntityResponse(emptyList(), KeyValuePairList(emptyList()))
+            EntityResponse(emptyList(), KeyValuePairList(emptyList()), null),
         )
     }
 

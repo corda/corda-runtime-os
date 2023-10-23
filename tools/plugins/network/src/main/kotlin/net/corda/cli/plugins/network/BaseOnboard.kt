@@ -54,6 +54,7 @@ import java.security.cert.CertificateFactory
 import java.util.Date
 import java.net.URI
 
+@Suppress("TooManyFunctions")
 abstract class BaseOnboard : Runnable, RestCommand() {
     private companion object {
         const val P2P_TLS_KEY_ALIAS = "p2p-tls-key"
@@ -112,19 +113,13 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     lateinit var name: String
 
     @Option(
-        names = ["--ca"],
-        description = ["The CA location (default to ~/.corda/ca)"]
-    )
-    var caHome: File = File(File(File(System.getProperty("user.home")), ".corda"), "ca")
-
-    @Option(
-        names = ["--mtls", "--mutual-tls", "-m"],
+        names = ["--mutual-tls", "-m"],
         description = ["Enable mutual TLS"]
     )
     var mtls: Boolean = false
 
     @Option(
-        names = ["--tls-certificate-subject"],
+        names = ["--tls-certificate-subject", "-c"],
         description = [
             "The TLS certificate subject. Leave empty to use random certificate subject." +
                     "Will only be used on the first onboard to the cluster."
@@ -133,7 +128,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     var tlsCertificateSubject: String? = null
 
     @Option(
-        names = ["--p2p-gateway-url"],
+        names = ["--p2p-gateway-url", "-g"],
         description = ["P2P Gateway URL. Multiple URLs may be provided. Defaults to https://localhost:8080."]
     )
     var p2pGatewayUrls: List<String> = listOf("https://localhost:8080")
@@ -141,6 +136,8 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     protected val json by lazy {
         ObjectMapper()
     }
+
+    private val caHome: File = File(File(File(System.getProperty("user.home")), ".corda"), "ca")
 
     internal class OnboardException(message: String) : Exception(message)
 
@@ -184,6 +181,34 @@ abstract class BaseOnboard : Runnable, RestCommand() {
 
     protected abstract val registrationContext: Map<String, Any?>
 
+    private fun createVirtualNode(): String {
+        val request = CreateVirtualNodeRequest(
+            x500Name = name,
+            cpiFileChecksum = cpiFileChecksum,
+            vaultDdlConnection = null,
+            vaultDmlConnection = null,
+            cryptoDdlConnection = null,
+            cryptoDmlConnection = null,
+            uniquenessDdlConnection = null,
+            uniquenessDmlConnection = null
+        )
+        return createRestClient(VirtualNodeRestResource::class).use { client ->
+            checkInvariant(
+                maxAttempts = MAX_ATTEMPTS,
+                waitInterval = WAIT_INTERVAL,
+                errorMessage = "Failed to create virtual node after $MAX_ATTEMPTS attempts."
+            ) {
+                try {
+                    client.start().proxy.createVirtualNode(request)
+                } catch (e: RequestErrorException) {
+                    // This exception can be thrown while a request to create a virtual node is being made, so we
+                    // catch it and re-try.
+                    null
+                }
+            }
+        }.responseBody.requestId
+    }
+
     private fun waitForVirtualNode(shortHashId: String) {
         createRestClient(VirtualNodeRestResource::class).use { client ->
             checkInvariant(
@@ -203,25 +228,10 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     }
 
     protected val holdingId: String by lazy {
-        val request = CreateVirtualNodeRequest(
-            x500Name = name,
-            cpiFileChecksum = cpiFileChecksum,
-            vaultDdlConnection = null,
-            vaultDmlConnection = null,
-            cryptoDdlConnection = null,
-            cryptoDmlConnection = null,
-            uniquenessDdlConnection = null,
-            uniquenessDmlConnection = null
-        )
-
-        val response = createRestClient(VirtualNodeRestResource::class).use { client ->
-            client.start().proxy.createVirtualNode(request)
-        }
-
-        val shortHashId = response.responseBody.requestId
+        val shortHashId = createVirtualNode()
 
         waitForVirtualNode(shortHashId)
-        println("Onboarded member holding identity is: $shortHashId")
+        println("Holding identity short hash of '$name' is: '$shortHashId'")
 
         shortHashId
     }
@@ -372,10 +382,10 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         val submissionStatus = response.registrationStatus
 
         if (submissionStatus != "SUBMITTED") {
-            throw OnboardException("Could not submit MGM registration: ${response.memberInfoSubmitted}")
+            throw OnboardException("Could not submit registration request: ${response.memberInfoSubmitted}")
         }
 
-        println("Registration ID of $name is $registrationId")
+        println("Registration ID for '$name' is '$registrationId'")
 
         if (waitForFinalStatus) {
             waitForFinalStatus(registrationId)

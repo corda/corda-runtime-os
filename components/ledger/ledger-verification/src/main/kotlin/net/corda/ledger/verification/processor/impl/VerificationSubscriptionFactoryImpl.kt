@@ -1,12 +1,15 @@
 package net.corda.ledger.verification.processor.impl
 
+import net.corda.data.flow.event.FlowEvent
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
-import net.corda.ledger.verification.processor.VerificationSubscriptionFactory
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
+import net.corda.ledger.verification.processor.VerificationSubscriptionFactory
 import net.corda.ledger.verification.sandbox.VerificationSandboxService
 import net.corda.libs.configuration.SmartConfig
+import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.config.SyncRPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.schema.Schemas
@@ -27,6 +30,8 @@ class VerificationSubscriptionFactoryImpl @Activate constructor(
 ) : VerificationSubscriptionFactory {
     companion object {
         internal const val GROUP_NAME = "verification.ledger.processor"
+        const val SUBSCRIPTION_NAME = "Verification"
+        const val VERIFICATION_PATH = "/verification"
     }
 
     override fun create(config: SmartConfig): Subscription<String, TransactionVerificationRequest> {
@@ -46,4 +51,18 @@ class VerificationSubscriptionFactoryImpl @Activate constructor(
             null
         )
     }
+
+    override fun createRpcSubscription(): RPCSubscription<TransactionVerificationRequest, FlowEvent> {
+        val processor = VerificationRpcRequestProcessor(
+            currentSandboxGroupContext,
+            verificationSandboxService,
+            VerificationRequestHandlerImpl(responseFactory),
+            responseFactory,
+            TransactionVerificationRequest::class.java,
+            FlowEvent::class.java
+        )
+        val rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, VERIFICATION_PATH)
+        return subscriptionFactory.createHttpRPCSubscription(rpcConfig, processor)
+    }
+
 }

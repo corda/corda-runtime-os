@@ -33,7 +33,6 @@ class ConfigurationValidatorImplTest {
         private const val NO_FILE_EXISTS = "no-file-here"
 
         private const val VALID_DATA = "data/valid.conf"
-        private const val VALID_MISSING_REFERENCE_DATA = "data/valid-missing-reference.conf"
         private const val INVALID_DATA = "data/invalid.conf"
 
         private val TEST_VERSION = Version.fromString("1.0")
@@ -54,6 +53,15 @@ class ConfigurationValidatorImplTest {
         val outputConfig = validator.validate(TEST_SCHEMA, TEST_VERSION, smartConfig, true)
         assertThat(smartConfig).isNotEqualTo(outputConfig)
         assertThat(outputConfig.getInt("testInteger")).isEqualTo(7)
+    }
+
+    @Test
+    fun `valid document against test schema, applies defaults and cast types when possible`() {
+        val validator = createSchemaValidator()
+        val smartConfig = loadData(VALID_DATA)
+        val outputConfig = validator.validate(TEST_SCHEMA, TEST_VERSION, smartConfig, true)
+        assertThat(smartConfig).isNotEqualTo(outputConfig)
+        assertThat(outputConfig.getInt("anotherTestInteger")).isEqualTo(20)
     }
 
     @Test

@@ -10,6 +10,7 @@ import picocli.CommandLine.Command
     subcommands = [
         AllowClientCertificate::class,
         ExportGroupPolicy::class
-    ]
+    ],
+    mixinStandardHelpOptions = true
 )
 class Operate

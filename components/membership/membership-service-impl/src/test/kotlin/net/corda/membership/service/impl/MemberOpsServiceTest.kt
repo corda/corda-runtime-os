@@ -220,6 +220,7 @@ class MemberOpsServiceTest {
                 mock(),
                 mock(),
                 mock(),
+                mock(),
             )
         }
     }

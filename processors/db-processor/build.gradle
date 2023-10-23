@@ -23,7 +23,6 @@ dependencies {
     implementation project(':components:membership:membership-persistence-service')
     implementation project(':components:permissions:permission-storage-reader-service')
     implementation project(':components:permissions:permission-storage-writer-service')
-    implementation project(':components:persistence:entity-processor-service')
     implementation project(':components:reconciliation:reconciliation')
     implementation project(':components:uniqueness:uniqueness-checker')
     implementation project(':components:virtual-node:cpk-read-service')
@@ -70,7 +69,6 @@ dependencies {
     runtimeOnly project(':components:configuration:configuration-read-service-impl')
     runtimeOnly project(':components:db:db-connection-manager-impl')
     runtimeOnly project(':libs:flows:external-event-responses-impl')
-    runtimeOnly project(':components:persistence:entity-processor-service-impl')
     runtimeOnly project(':components:reconciliation:reconciliation-impl')
     runtimeOnly project(':components:uniqueness:uniqueness-checker-impl')
     runtimeOnly project(':components:virtual-node:cpi-info-read-service-impl')
@@ -102,12 +100,6 @@ dependencies {
     runtimeOnly project(":libs:sandbox-internal")
     runtimeOnly project(':libs:schema-registry:schema-registry-impl')
     runtimeOnly project(":libs:web:web-impl")
-
-    runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
-    runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
-    runtimeOnly "org.liquibase:liquibase-core:$liquibaseVersion"
-    // NOTE: this is needed by Liquibase but for some reason not picked up automatically.
-    runtimeOnly "commons-beanutils:commons-beanutils:$beanutilsVersion"
 
     testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 

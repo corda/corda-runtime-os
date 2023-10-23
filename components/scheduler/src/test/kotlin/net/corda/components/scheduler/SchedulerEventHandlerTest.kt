@@ -17,6 +17,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 
 class SchedulerEventHandlerTest {
     private val schedulerName = "superman"
@@ -129,5 +130,20 @@ class SchedulerEventHandlerTest {
         handler.processEvent(StopEvent(), coordinator)
 
         verify(coordinator).cancelTimer("${SchedulerEventHandler::class.java.name}-${schedule.taskName}")
+    }
+
+    @Test
+    fun `on triggerAndScheduleNext error takes coordinator to ERROR`() {
+        val schedulerLock = mock<SchedulerLock>().also {
+            whenever(it.secondsSinceLastScheduledTrigger).thenReturn(115)
+            whenever(it.updateLog(schedulerName)).thenThrow(RuntimeException())
+        }
+        val schedulerLog = mock<SchedulerLog> {
+            on { getLastTriggerAndLock(any(), any()) } doReturn schedulerLock
+        }
+
+        val handler = SchedulerEventHandler(schedule, publisher,  schedulerLog, schedulerName)
+        handler.processEvent(SchedulerEventHandler.ScheduleEvent(""), coordinator)
+        verify(coordinator, times(1)).updateStatus(LifecycleStatus.ERROR)
     }
 }

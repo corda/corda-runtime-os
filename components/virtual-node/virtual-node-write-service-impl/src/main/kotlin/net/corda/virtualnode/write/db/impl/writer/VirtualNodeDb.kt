@@ -8,11 +8,13 @@ import net.corda.db.core.DbPrivilege
  * Represents a Virtual Node Database
  *
  * @property isPlatformManagedDb true if the database objects are managed by the Corda platform
+ * @property ddlConnectionProvided true if a DDL connection string has been provided
  * @property dbConnections Map of [DbPrivilege] type to its associated connection config.
  * @property dbType DB type (usage)
  */
 internal interface VirtualNodeDb {
     val isPlatformManagedDb: Boolean
+    val ddlConnectionProvided: Boolean
     val dbConnections: Map<DbPrivilege, DbConnection?>
     val dbType: VirtualNodeDbType
 

@@ -16,7 +16,8 @@ import java.io.File
     name = "reset",
     description = ["Upload and overwrite earlier stored CPI record.",
         "The plugin purges any sandboxes running an overwritten version of a CPI and optionally ",
-        "deletes vault data for the affected Virtual Nodes."]
+        "deletes vault data for the affected Virtual Nodes."],
+    mixinStandardHelpOptions = true
 )
 class ResetCommand : RestCommand(), Runnable {
 

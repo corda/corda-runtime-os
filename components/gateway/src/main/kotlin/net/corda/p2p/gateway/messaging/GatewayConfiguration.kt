@@ -3,7 +3,7 @@ package net.corda.p2p.gateway.messaging
 import com.typesafe.config.Config
 import java.time.Duration
 
-data class GatewayConfiguration(
+internal data class GatewayConfiguration(
     /**
      * The gateway servers configurations
      */
@@ -22,7 +22,7 @@ data class GatewayConfiguration(
     val connectionConfig: ConnectionConfiguration = ConnectionConfiguration(),
 )
 
-data class GatewayServerConfiguration(
+internal data class GatewayServerConfiguration(
     /**
      * Host name or IP address used when binding the HTTP server
      */
@@ -32,10 +32,20 @@ data class GatewayServerConfiguration(
      */
     val hostPort: Int,
     /**
-     * The URL path the gateway HTTP server will listen to for requests.
+     * The URL paths the gateway HTTP server will listen to for requests.
      */
-    val urlPath: String,
-)
+    val urlPaths: Collection<String>,
+) {
+    constructor(
+        hostAddress: String,
+        hostPort: Int,
+        urlPath: String,
+    ) : this(
+        hostAddress,
+        hostPort,
+        setOf(urlPath)
+    )
+}
 
 data class ConnectionConfiguration(
     /**

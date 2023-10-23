@@ -9,7 +9,7 @@ import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.e2etest.utilities.config.SingleClusterTestConfigManager
 import net.corda.rest.ResponseCode
 import net.corda.rest.annotations.RestApiVersion
-import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.openssl.PEMParser
@@ -85,16 +85,18 @@ fun ClusterInfo.generateCsr(
 fun ClusterInfo.importCertificate(
     file: File,
     usage: String,
-    alias: String
+    alias: String,
+    holdingIdentity: String? = null
 ) {
     cluster {
         assertWithRetryIgnoringExceptions {
             interval(1.seconds)
-            command { importCertificate(file, usage, alias) }
+            command { importCertificate(file, usage, alias, holdingIdentity) }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
         }
     }
 }
+
 
 /**
  * Disable certificate revocation checks.
@@ -102,6 +104,6 @@ fun ClusterInfo.importCertificate(
  */
 fun ClusterInfo.disableCertificateRevocationChecks() {
     SingleClusterTestConfigManager(this)
-        .load(P2P_GATEWAY_CONFIG, "sslConfig.revocationCheck.mode", "OFF")
+        .load(ConfigKeys.P2P_GATEWAY_CONFIG, "sslConfig.revocationCheck.mode", "OFF")
         .apply()
 }

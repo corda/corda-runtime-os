@@ -22,7 +22,8 @@ import java.sql.DriverManager
 @CommandLine.Command(
     name = "spec",
     description = ["Does database schema generation from liquibase. Can run offline or connect to a live database for " +
-            "migration to a new version."]
+            "migration to a new version."],
+    mixinStandardHelpOptions = true
 )
 class Spec(private val config: SpecConfig = SpecConfig()) : Runnable {
     @CommandLine.Option(
@@ -99,7 +100,8 @@ class Spec(private val config: SpecConfig = SpecConfig()) : Runnable {
             "net/corda/db/schema/config/db.changelog-master.xml",
             "net/corda/db/schema/messagebus/db.changelog-master.xml",
             "net/corda/db/schema/rbac/db.changelog-master.xml",
-            "net/corda/db/schema/crypto/db.changelog-master.xml"
+            "net/corda/db/schema/crypto/db.changelog-master.xml",
+            "net/corda/db/schema/statemanager/db.changelog-master.xml"
         )
     }
 

@@ -39,7 +39,7 @@ import javax.net.ssl.X509ExtendedKeyManager
 import kotlin.concurrent.thread
 import kotlin.concurrent.withLock
 
-class HttpTest : TestBase() {
+internal class HttpTest : TestBase() {
 
     companion object {
         lateinit var loggingInterceptor: LoggingInterceptor

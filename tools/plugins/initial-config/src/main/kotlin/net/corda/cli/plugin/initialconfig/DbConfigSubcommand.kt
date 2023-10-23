@@ -16,7 +16,8 @@ import java.util.UUID
 
 @Command(
     name = "create-db-config",
-    description = ["Create the SQL statements to insert the connection manager config for database"]
+    description = ["Create the SQL statements to insert the connection manager config for database"],
+    mixinStandardHelpOptions = true
 )
 class DbConfigSubcommand : Runnable {
     enum class SecretsServiceType {

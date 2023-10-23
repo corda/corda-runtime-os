@@ -199,7 +199,7 @@ class LocallyHostedIdentitiesServiceImpl(
         }.filterIsInstance<X509Certificate>()
     }
 
-    private fun getIdentityInfo(
+    private fun pollForIdentityInfo(
         identity: HoldingIdentity,
         retries: Int,
     ): IdentityInfo? {
@@ -216,11 +216,18 @@ class LocallyHostedIdentitiesServiceImpl(
         }
         logger.info("Identity {} is unknown yet, will retry in a while", identity)
         sleeper(waitBetweenRetries.toMillis())
-        return getIdentityInfo(identity, retries - 1)
+        return pollForIdentityInfo(identity, retries - 1)
     }
 
-    override fun getIdentityInfo(identity: HoldingIdentity): IdentityInfo? =
-        getIdentityInfo(identity, defaultRetries)
+    override fun pollForIdentityInfo(identity: HoldingIdentity): IdentityInfo? =
+        pollForIdentityInfo(identity, defaultRetries)
+
+    override fun isHostedLocally(identity: HoldingIdentity): Boolean {
+        if (!isRunning) {
+            throw CordaRuntimeException("Service is not ready")
+        }
+        return identities.containsKey(identity)
+    }
 
     override val isRunning
         get() = coordinator.status == LifecycleStatus.UP

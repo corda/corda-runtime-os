@@ -1,6 +1,8 @@
 package net.corda.membership.impl.registration.dynamic.member
 
 import com.typesafe.config.ConfigFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
@@ -13,11 +15,9 @@ import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.hes.EncryptedDataWithKey
 import net.corda.crypto.hes.EphemeralKeyPairEncryptor
-import net.corda.avro.serialization.CordaAvroSerializationFactory
-import net.corda.avro.serialization.CordaAvroSerializer
-import net.corda.crypto.core.fullIdHash
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
@@ -44,11 +44,12 @@ import net.corda.membership.impl.registration.TEST_CPI_VERSION
 import net.corda.membership.impl.registration.TEST_PLATFORM_VERSION
 import net.corda.membership.impl.registration.TEST_SOFTWARE_VERSION
 import net.corda.membership.impl.registration.buildTestVirtualNodeInfo
-import net.corda.membership.impl.registration.verifiers.RegistrationContextCustomFieldsVerifier
 import net.corda.membership.impl.registration.testCpiSignerSummaryHash
+import net.corda.membership.impl.registration.verifiers.RegistrationContextCustomFieldsVerifier
 import net.corda.membership.lib.MemberInfoExtension.Companion.CUSTOM_KEY_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
+import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
@@ -60,6 +61,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS_ID
@@ -392,6 +394,7 @@ class DynamicMemberRegistrationServiceTest {
         "$CUSTOM_KEY_PREFIX.0" to "test",
         "corda.test" to "dummy"
     )
+    private val contextWithoutLedgerKey = context.filter { !it.key.contains(LEDGER_KEYS) }
 
     private val previousRegistrationContext = mapOf(
         "$CUSTOM_KEY_PREFIX.0" to "test",
@@ -600,7 +603,7 @@ class DynamicMemberRegistrationServiceTest {
             val identityInfo = mock<IdentityInfo> {
                 on { tlsCertificates } doReturn listOf(certificate)
             }
-            whenever(locallyHostedIdentitiesService.getIdentityInfo(member)).doReturn(identityInfo)
+            whenever(locallyHostedIdentitiesService.pollForIdentityInfo(member)).doReturn(identityInfo)
 
             registrationService.register(registrationResultId, member, context)
 
@@ -905,7 +908,7 @@ class DynamicMemberRegistrationServiceTest {
         fun `registration request fails when the notary key is invalid`() {
             postConfigChangedEvent()
             registrationService.start()
-            val contextWithInvalidNotaryKey = context + mapOf(
+            val contextWithInvalidNotaryKey = contextWithoutLedgerKey + mapOf(
                 String.format(ROLES_PREFIX, 0) to "notary",
                 NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
                 NOTARY_KEY_ID_KEY to " ",
@@ -1062,7 +1065,7 @@ class DynamicMemberRegistrationServiceTest {
             val identityInfo = mock<IdentityInfo> {
                 on { tlsCertificates } doReturn emptyList()
             }
-            whenever(locallyHostedIdentitiesService.getIdentityInfo(member)).doReturn(identityInfo)
+            whenever(locallyHostedIdentitiesService.pollForIdentityInfo(member)).doReturn(identityInfo)
             postConfigChangedEvent()
             registrationService.start()
 
@@ -1176,8 +1179,9 @@ class DynamicMemberRegistrationServiceTest {
                 ).entries
             }
             val newContext = mock<MemberContext> {
-                on { entries } doReturn context.entries + mapOf(
+                on { entries } doReturn contextWithoutLedgerKey.entries + mapOf(
                     String.format(ROLES_PREFIX, 0) to "notary",
+                    NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
                     NOTARY_SERVICE_NAME to "O=ChangedNotaryService, L=London, C=GB",
                     NOTARY_KEY_ID_KEY to NOTARY_KEY_ID,
                 ).entries
@@ -1287,8 +1291,9 @@ class DynamicMemberRegistrationServiceTest {
             val previous = mock<MemberContext> {
                 on { entries } doReturn previousRegistrationContext.entries
             }
-            val newContextEntries = context.toMutableMap().apply {
+            val newContextEntries = contextWithoutLedgerKey.toMutableMap().apply {
                 put(String.format(ROLES_PREFIX, 0), "notary")
+                put(NOTARY_SERVICE_PROTOCOL, "net.corda.notary.MyNotaryService")
                 put(NOTARY_SERVICE_NAME, "O=MyNotaryService, L=London, C=GB")
                 put(NOTARY_KEY_ID_KEY, NOTARY_KEY_ID)
             }.entries
@@ -1447,13 +1452,28 @@ class DynamicMemberRegistrationServiceTest {
         @Test
         fun `registration pass when notary keys are numbered correctly`() {
             val testProperties =
-                context + mapOf(
+                contextWithoutLedgerKey + mapOf(
                     String.format(ROLES_PREFIX, 0) to "notary",
+                    NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
                     NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
                     NOTARY_KEY_ID_KEY to NOTARY_KEY_ID,
                 )
 
             assertDoesNotThrow {
+                registrationService.register(registrationResultId, member, testProperties)
+            }
+        }
+
+        @Test
+        fun `registration fails when ledger keys are specified for a notary vnode`() {
+            val testProperties = context + mapOf(
+                    String.format(ROLES_PREFIX, 0) to "notary",
+                    NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
+                    NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
+                    NOTARY_KEY_ID_KEY to NOTARY_KEY_ID,
+                )
+
+            assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, testProperties)
             }
         }
@@ -1478,8 +1498,9 @@ class DynamicMemberRegistrationServiceTest {
             val memberContext = argumentCaptor<KeyValuePairList>()
             whenever(keyValuePairListSerializer.serialize(memberContext.capture())).doReturn(MEMBER_CONTEXT_BYTES)
             val testProperties =
-                context + mapOf(
+                contextWithoutLedgerKey + mapOf(
                     String.format(ROLES_PREFIX, 0) to "notary",
+                    NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
                     NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
                     NOTARY_KEY_ID_KEY to NOTARY_KEY_ID,
                 )
@@ -1536,8 +1557,9 @@ class DynamicMemberRegistrationServiceTest {
         @Test
         fun `registration pass when notary service is valid`() {
             val testProperties =
-                context + mapOf(
+                contextWithoutLedgerKey + mapOf(
                     String.format(ROLES_PREFIX, 0) to "notary",
+                    NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
                     NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
                     NOTARY_KEY_ID_KEY to NOTARY_KEY_ID,
                 )
@@ -1550,7 +1572,7 @@ class DynamicMemberRegistrationServiceTest {
         @Test
         fun `registration fails when notary keys are not provided`() {
             val testProperties =
-                context + mapOf(
+                contextWithoutLedgerKey + mapOf(
                     String.format(ROLES_PREFIX, 0) to "notary",
                     NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
                 )
@@ -1583,6 +1605,7 @@ class DynamicMemberRegistrationServiceTest {
             val testProperties =
                 context.filterNot { it.key.startsWith("corda.ledger") } + mapOf(
                     String.format(ROLES_PREFIX, 0) to "notary",
+                    NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
                     NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
                     NOTARY_KEY_ID_KEY to NOTARY_KEY_ID,
                 )

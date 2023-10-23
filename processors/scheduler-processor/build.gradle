@@ -25,6 +25,7 @@ dependencies {
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-db-schema'
     implementation 'net.corda:corda-notary-plugin'
+    implementation 'net.corda:corda-topic-schema'
 
     runtimeOnly project(':components:configuration:configuration-write-service-impl')
     runtimeOnly project(':components:configuration:configuration-read-service-impl')

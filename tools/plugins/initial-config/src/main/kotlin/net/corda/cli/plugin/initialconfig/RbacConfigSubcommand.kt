@@ -7,7 +7,8 @@ import java.io.FileWriter
 @Suppress("Unused")
 @CommandLine.Command(
     name = "create-user-config",
-    description = ["Create the SQL script for adding the RBAC configuration for an initial admin user"]
+    description = ["Create the SQL script for adding the RBAC configuration for an initial admin user"],
+    mixinStandardHelpOptions = true
 )
 class RbacConfigSubcommand : Runnable {
     @CommandLine.Option(

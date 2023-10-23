@@ -19,4 +19,8 @@ dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'org.slf4j:slf4j-api'
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

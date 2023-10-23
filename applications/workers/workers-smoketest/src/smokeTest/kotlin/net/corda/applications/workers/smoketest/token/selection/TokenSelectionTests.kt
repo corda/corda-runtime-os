@@ -128,28 +128,39 @@ class TokenSelectionTests {
 
     @Test
     @Order(2)
-    fun `create a token then select it`(){
+    fun `Claim a token in a flow and let the flow finish to validate the token claim is automatically released`(){
         // Create a simple UTXO transaction
         val input = "token test input"
         val utxoFlowRequestId = startRpcFlow(
-            aliceHoldingId,
-            mapOf("input" to input, "members" to listOf(bobX500), "notary" to NOTARY_SERVICE_X500),
+            bobHoldingId,
+            mapOf("input" to input, "members" to listOf(aliceX500), "notary" to NOTARY_SERVICE_X500),
             "com.r3.corda.demo.utxo.UtxoDemoFlow"
         )
-        val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
+        val utxoFlowResult = awaitRpcFlowFinished(bobHoldingId, utxoFlowRequestId)
         assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(utxoFlowResult.flowError).isNull()
 
         // Attempt to select the token created by the transaction
-        val tokenSelectionFlowId = startRpcFlow(
-            bobHoldingId,
+        val tokenSelectionFlowId1 = startRpcFlow(
+            aliceHoldingId,
             mapOf(),
-            "com.r3.corda.demo.utxo.token.selection.TokenSelectionFlow"
+            "com.r3.corda.demo.utxo.token.selection.TokenSelectionFlow2"
         )
-        val tokenSelectionResult = awaitRpcFlowFinished(bobHoldingId, tokenSelectionFlowId)
-        assertThat(tokenSelectionResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(tokenSelectionResult.flowError).isNull()
-        assertThat(tokenSelectionResult.flowResult).isEqualTo("1")
+        val tokenSelectionResult1 = awaitRpcFlowFinished(aliceHoldingId, tokenSelectionFlowId1)
+        assertThat(tokenSelectionResult1.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(tokenSelectionResult1.flowError).isNull()
+        assertThat(tokenSelectionResult1.flowResult).isEqualTo("SUCCESS")
+
+        // Attempt to select the token created by the transaction
+        val tokenSelectionFlowId2 = startRpcFlow(
+            aliceHoldingId,
+            mapOf(),
+            "com.r3.corda.demo.utxo.token.selection.TokenSelectionFlow2"
+        )
+        val tokenSelectionResult2 = awaitRpcFlowFinished(aliceHoldingId, tokenSelectionFlowId2)
+        assertThat(tokenSelectionResult2.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(tokenSelectionResult2.flowError).isNull()
+        assertThat(tokenSelectionResult2.flowResult).isEqualTo("SUCCESS")
     }
 }
 

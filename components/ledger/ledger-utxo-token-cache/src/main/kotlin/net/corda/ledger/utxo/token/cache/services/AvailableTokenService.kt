@@ -7,7 +7,7 @@ import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 
 interface AvailableTokenService {
 
-    fun findAvailTokens(poolKey: TokenPoolKey, ownerHash: String?, tagRegex: String?): AvailTokenQueryResult
+    fun findAvailTokens(poolKey: TokenPoolKey, ownerHash: String?, tagRegex: String?, maxTokens: Int): AvailTokenQueryResult
 
     fun queryBalance(poolKey: TokenPoolKey, ownerHash: String?, tagRegex: String?, claimedTokens: Collection<CachedToken>): TokenBalance
 

@@ -52,11 +52,7 @@ import net.corda.utilities.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.x500.X500Name
 
-open class TestBase {
-    companion object {
-        private val lastUsedPort = AtomicInteger(3000)
-    }
-
+internal open class TestBase {
     private fun readKeyStore(url: URL?, password: String = keystorePass): KeyStoreWithPassword {
         val keyStore = KeyStore.getInstance("JKS").also { keyStore ->
             url!!.openStream().use {
@@ -91,7 +87,7 @@ open class TestBase {
     protected fun getOpenPort(): Int {
         while (true) {
             try {
-                ServerSocket(lastUsedPort.incrementAndGet()).use {
+                ServerSocket(0).use {
                     return it.localPort
                 }
             } catch (e: BindException) {
@@ -177,7 +173,7 @@ open class TestBase {
                     mapOf(
                         "hostAddress" to it.hostAddress,
                         "hostPort" to it.hostPort,
-                        "urlPath" to it.urlPath,
+                        "urlPath" to it.urlPaths.first(),
                     )
                 }
             )
