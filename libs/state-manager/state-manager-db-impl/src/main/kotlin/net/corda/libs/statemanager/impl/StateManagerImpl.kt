@@ -9,6 +9,7 @@ import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.repository.StateRepository
+import net.corda.libs.statemanager.impl.repository.impl.StateManagerBatchingException
 import net.corda.orm.utils.transaction
 import org.slf4j.LoggerFactory
 import javax.persistence.EntityManagerFactory
@@ -35,8 +36,32 @@ class StateManagerImpl(
         val stateEntities = states.map {
             it.toPersistentEntity()
         }
-        return dataSource.connection.transaction { conn ->
-            stateRepository.create(conn, stateEntities)
+        return createStatesWithRetry(stateEntities)
+    }
+
+    /**
+     * Try create states in a batch in a single transaction.
+     *
+     * If an error happens that throws a [StateManagerBatchingException], attempt retry of each failed state
+     * individually.
+     *
+     * Return collection of failed keys.
+     *
+     * @param stateEntities a list of states to create
+     * @return a collection of keys of states that failed to persist
+     */
+    private fun createStatesWithRetry(stateEntities: List<StateEntity>): Collection<String> {
+        return try {
+            dataSource.connection.transaction { conn ->
+                stateRepository.create(conn, stateEntities)
+            }
+        } catch (e: StateManagerBatchingException) {
+            logger.info("Retrying creation of ${e.failedStates.size} states without batching.")
+            return e.failedStates.filterNot {
+                dataSource.connection.transaction { conn ->
+                    stateRepository.create(conn, it)
+                }
+            }.map { it.key }
         }
     }
 

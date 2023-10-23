@@ -3,6 +3,7 @@ package net.corda.libs.statemanager.impl.repository
 import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
+import net.corda.libs.statemanager.impl.repository.impl.StateManagerBatchingException
 import java.sql.Connection
 import javax.persistence.EntityManager
 
@@ -12,6 +13,17 @@ import javax.persistence.EntityManager
 interface StateRepository {
 
     /**
+     * Create a single state entity within the database using JDBC connection.
+     *
+     * Transaction should be controlled by the caller.
+     *
+     * @param connection The JDBC connection used to interact with the database.
+     * @param state A states to be persisted.
+     * @return A boolean indicating whether the state was persisted.
+     */
+    fun create(connection: Connection, state: StateEntity): Boolean
+
+    /**
      * Create a collection of states within the database using JDBC connection.
      *
      * Transaction should be controlled by the caller.
@@ -19,6 +31,7 @@ interface StateRepository {
      * @param connection The JDBC connection used to interact with the database.
      * @param states A collection of states to be persisted.
      * @return A collection of keys for states that could not be inserted.
+     * @throws StateManagerBatchingException if an error occurred executing the batch.
      */
     fun create(connection: Connection, states: Collection<StateEntity>): Collection<String>
 

@@ -1,29 +1,59 @@
 package net.corda.libs.statemanager.impl.repository.impl
 
-import java.sql.Connection
-import javax.persistence.EntityManager
-import javax.persistence.Query
 import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.repository.StateRepository
 import net.corda.libs.statemanager.impl.repository.impl.PreparedStatementHelper.extractFailedKeysFromBatchResults
+import org.slf4j.LoggerFactory
+import java.sql.BatchUpdateException
+import java.sql.Connection
+import java.sql.SQLException
+import javax.persistence.EntityManager
+import javax.persistence.Query
 
 class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepository {
+
+    private companion object {
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
     @Suppress("UNCHECKED_CAST")
     private fun Query.resultListAsStateEntityCollection() = resultList as Collection<StateEntity>
 
-    override fun create(connection: Connection, states: Collection<StateEntity>): Collection<String> {
-        return connection.prepareStatement(queryProvider.createState).use { preparedStatement ->
-            for (s in states) {
-                preparedStatement.setString(1, s.key)
-                preparedStatement.setBytes(2, s.value)
-                preparedStatement.setInt(3, s.version)
-                preparedStatement.setString(4, s.metadata)
-                preparedStatement.addBatch()
+    override fun create(connection: Connection, state: StateEntity): Boolean {
+        val rowsUpdated = try {
+            connection.prepareStatement(queryProvider.createState).use { preparedStatement ->
+                preparedStatement.setString(1, state.key)
+                preparedStatement.setBytes(2, state.value)
+                preparedStatement.setInt(3, state.version)
+                preparedStatement.setString(4, state.metadata)
+                preparedStatement.executeUpdate()
             }
-            extractFailedKeysFromBatchResults(preparedStatement.executeBatch(), states.map { it.key })
+        } catch (e: SQLException) {
+            log.debug("Error while retrying persisting state ${state.key}", e)
+            return false
+        }
+        return rowsUpdated > 0
+    }
+
+    override fun create(connection: Connection, states: Collection<StateEntity>): Collection<String> {
+        return try {
+            connection.prepareStatement(queryProvider.createState).use { preparedStatement ->
+                for (s in states) {
+                    preparedStatement.setString(1, s.key)
+                    preparedStatement.setBytes(2, s.value)
+                    preparedStatement.setInt(3, s.version)
+                    preparedStatement.setString(4, s.metadata)
+                    preparedStatement.addBatch()
+                }
+                extractFailedKeysFromBatchResults(preparedStatement.executeBatch(), states.map { it.key })
+            }
+        } catch (e: BatchUpdateException) {
+            val failedKeys = extractFailedKeysFromBatchResults(e.updateCounts, states.map { it.key })
+            val msg = "Error during batch create (batch size ${states.size}, failed keys: ${failedKeys.size})."
+            log.debug(msg, e)
+            throw StateManagerBatchingException(states.filter { it.key in failedKeys }, msg, e)
         }
     }
 

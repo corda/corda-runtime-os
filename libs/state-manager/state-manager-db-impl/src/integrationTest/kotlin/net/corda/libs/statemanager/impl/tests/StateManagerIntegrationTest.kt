@@ -82,16 +82,17 @@ class StateManagerIntegrationTest {
         cleanStates()
     }
 
-    private fun buildStateKey(index: Int) = "key_$index-$testUniqueId"
+    private fun buildStateKey(index: Int, keyPrefix: String = "key_") = "$keyPrefix$index-$testUniqueId"
 
     private fun persistStateEntities(
         indexRange: IntProgression,
         version: (index: Int, key: String) -> Int,
         stateContent: (index: Int, key: String) -> String,
         metadataContent: (index: Int, key: String) -> String,
+        keyPrefix: String = "key_"
     ) = indexRange.forEach { i ->
         entityManagerFactoryFactory.createEntityManager().transaction {
-            val key = buildStateKey(i)
+            val key = buildStateKey(i, keyPrefix)
             val stateEntity =
                 StateEntity(key, stateContent(i, key).toByteArray(), metadataContent(i, key), version(i, key))
 
@@ -168,8 +169,8 @@ class StateManagerIntegrationTest {
     }
 
     @Test
-    @DisplayName(value = "failures when persisting some states do not halt the entire batch")
-    fun failuresWhenPersistingSomeStatesDoesNotHaltTheEntireBatch() {
+    @DisplayName(value = "primary key constraint failures when persisting some states do not halt the entire batch")
+    fun primaryKeyConstraintFailuresWhenPersistingSomeStatesDoesNotHaltTheEntireBatch() {
         val failedStates = 5
         val totalStates = 15
         persistStateEntities(
@@ -191,6 +192,42 @@ class StateManagerIntegrationTest {
 
         softlyAssertPersistedStateEntities(
             (failedStates + 1..totalStates),
+            { _, _ -> State.VERSION_INITIAL_VALUE },
+            { i, _ -> "newState_$i" },
+            { _, _ -> metadata() }
+        )
+    }
+
+    @Test
+    @DisplayName(value = "primary key length failures when persisting some states do not halt the entire batch")
+    fun primaryKeyLengthFailuresWhenPersistingSomeStatesDoesNotHaltTheEntireBatch() {
+        val tooLongPrefix = "x".repeat(260)
+
+        val states = mutableSetOf<State>()
+        for (i in 1..5) {
+            states.add(State(buildStateKey(i), "newState_$i".toByteArray()))
+        }
+        for (i in 6..10) {
+            states.add(State(buildStateKey(i, "key_$tooLongPrefix"), "newState_$i".toByteArray()))
+        }
+        for (i in 11..15) {
+            states.add(State(buildStateKey(i), "newState_$i".toByteArray()))
+        }
+
+        val failures = stateManager.create(states)
+
+        val expectedFailedKeys = (6..10).map { buildStateKey(it, "key_$tooLongPrefix") }
+        assertThat(failures).hasSize(5)
+        assertThat(failures.toSet()).isEqualTo(expectedFailedKeys.toSet())
+
+        softlyAssertPersistedStateEntities(
+            (1..5),
+            { _, _ -> State.VERSION_INITIAL_VALUE },
+            { i, _ -> "newState_$i" },
+            { _, _ -> metadata() }
+        )
+        softlyAssertPersistedStateEntities(
+            (11..15),
             { _, _ -> State.VERSION_INITIAL_VALUE },
             { i, _ -> "newState_$i" },
             { _, _ -> metadata() }
