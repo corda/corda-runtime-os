@@ -742,7 +742,7 @@ workers:
         # -- the State Manager database port
         port: 5432
         # -- the State Manager database name
-        name: state-manager
+        name: flow_state_manager
         # the State Manager database user configuration
         username:
           # -- the State Manager database user
@@ -862,7 +862,7 @@ workers:
         # -- the State Manager database port
         port: 5432
         # -- the State Manager database name
-        name: state-manager
+        name: flow_mapper_state_manager
         # the State Manager database user configuration
         username:
           # -- the State Manager database user
