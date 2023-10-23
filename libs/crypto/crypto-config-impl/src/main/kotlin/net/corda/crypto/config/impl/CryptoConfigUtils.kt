@@ -250,6 +250,13 @@ fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any):
                                 "salt" to wrappingKeySalt,
                                 "passphrase" to wrappingKeyPassphrase,
                             )
+                        ),
+                        ConfigValueFactory.fromAnyRef(
+                            mapOf(
+                                "alias" to "root2",
+                                "salt" to "secondsalt",
+                                "passphrase" to "secondpassphrase",
+                            )
                         )
                     )
                 )
