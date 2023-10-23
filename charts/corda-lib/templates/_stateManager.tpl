@@ -156,12 +156,12 @@ jdbc:{{- include "corda.clusterDbType" $ -}}://{{- $.Values.db.cluster.host -}}:
 
 {{/* State Manager Containers to Create & Apply Database Schemas Within The Bootstrap Job */}}
 {{- define "corda.bootstrapStateManagerDb" -}}
-{{- $ := index . 0 }}
-{{- $workerKey := index . 1 }}
-{{- $authConfig := index . 2 }}
-{{- $worker := (index $.Values.workers $workerKey) }}
-{{- $workerName := printf "%s-worker" ( include "corda.workerTypeKebabCase" $workerKey ) }}
-{{- with index . 0 }}
+{{- $ := index . 0 -}}
+{{- $workerKey := index . 1 -}}
+{{- $authConfig := index . 2 -}}
+{{- $worker := (index $.Values.workers $workerKey) -}}
+{{- $workerName := printf "%s-worker" ( include "corda.workerTypeKebabCase" $workerKey ) -}}
+{{- with index . 0 -}}
 {{/* We use two init-containers for serial execution to prevent issues at applying the same Liquibase files at the same time (developer use case where all workers use the same state manager database)  */}}
         - name: generate-state-manager-{{ $workerName }}
           image: {{ include "corda.bootstrapCliImage" . }}

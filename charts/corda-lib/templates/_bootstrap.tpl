@@ -257,11 +257,11 @@ spec:
             {{- include "corda.restApiAdminSecretEnv" . | nindent 12 }}
             {{- include "corda.cryptoDbUsernameEnv" . | nindent 12 }}
             {{- include "corda.cryptoDbPasswordEnv" . | nindent 12 }}
-            {{- range $workerName, $authConfig := .Values.bootstrap.db.stateManager }}
-            {{-   $workerConfig := (index $.Values.workers $workerName) }}
+            {{- range $workerName, $authConfig := .Values.bootstrap.db.stateManager -}}
+            {{-   $workerConfig := (index $.Values.workers $workerName) -}}
             {{/*  No point in trying to bootstrap the State Manager for the specific worker if the host has not been configured */}}
             {{-   if and (not $workerConfig.stateManager.db.host) (or ( $authConfig.username.value ) ( $authConfig.username.valueFrom.secretKeyRef.name ) ( $authConfig.password.value ) ( $authConfig.password.valueFrom.secretKeyRef.name ) ) -}}
-            {{-     fail ( printf "Can only specify bootstrap.db.stateManager.%s when workers.%s.stateManager.host is configured" $workerName $workerName ) }}
+            {{-     fail ( printf "Can only specify bootstrap.db.stateManager.%s when workers.%s.stateManager.host is configured" $workerName $workerName ) -}}
             {{-   else -}}
             {{-     include "corda.bootstrapStateManagerDb" ( list $ $workerName $authConfig ) }}
             {{-   end -}}
