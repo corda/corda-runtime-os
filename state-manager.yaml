@@ -30,20 +30,42 @@
 bootstrap:
   db:
     stateManager:
-      password:
-        valueFrom:
-          secretKeyRef:
-            name: "state-manager-db-postgresql"
-            key: "postgres-password"
-      username:
-        value: "postgres"
-stateManager:
-  db:
-    host: "state-manager-db-postgresql"
-    password:
-      valueFrom:
-        secretKeyRef:
-          name: "state-manager-db-postgresql"
-          key: "password"
-    username:
-      value: "statemanager-user"
+      flow:
+        username:
+          value: "postgres"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "state-manager-db-postgresql"
+              key: "postgres-password"
+      flowMapper:
+        username:
+          value: "postgres"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "state-manager-db-postgresql"
+              key: "postgres-password"
+workers:
+  flow:
+    stateManager:
+      db:
+        host: "state-manager-db-postgresql"
+        username:
+          value: "statemanager-user"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "state-manager-db-postgresql"
+              key: "password"
+  flowMapper:
+    stateManager:
+      db:
+        host: "state-manager-db-postgresql"
+        username:
+          value: "statemanager-user"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "state-manager-db-postgresql"
+              key: "password"
