@@ -1,12 +1,22 @@
 package net.corda.ledger.utxo.test
 
+import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
+import net.corda.crypto.cipher.suite.SignatureSpecs
+import net.corda.crypto.core.DigitalSignatureWithKeyId
+import net.corda.crypto.core.fullIdHash
+import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
+import net.corda.flow.application.crypto.SignatureSpecServiceImpl
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.persistence.query.ResultSetFactory
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
+import net.corda.ledger.common.flow.impl.transaction.TransactionSignatureServiceImpl
 import net.corda.ledger.common.flow.impl.transaction.filtered.factory.FilteredTransactionFactoryImpl
+import net.corda.ledger.common.flow.transaction.TransactionSignatureVerificationServiceInternal
 import net.corda.ledger.common.test.CommonLedgerTest
 import net.corda.ledger.common.testkit.anotherPublicKeyExample
 import net.corda.ledger.common.testkit.fakeTransactionSignatureService
+import net.corda.ledger.common.testkit.FakePlatformInfoProvider
+import net.corda.ledger.common.testkit.keyPairExample
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.flow.impl.UtxoLedgerServiceImpl
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
@@ -24,10 +34,17 @@ import net.corda.ledger.utxo.testkit.getUtxoSignedTransactionExample
 import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
+import net.corda.v5.application.crypto.SigningService
+import net.corda.v5.application.flows.FlowContextProperties
+import net.corda.v5.application.flows.FlowContextPropertyKeys
+import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.membership.NotaryInfo
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.security.PrivateKey
+import java.security.Signature
 
 abstract class UtxoLedgerTest : CommonLedgerTest() {
     private val mockUtxoLedgerPersistenceService = mock<UtxoLedgerPersistenceService>()
@@ -118,4 +135,46 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
 
     // This is the only not stateless.
     val utxoTransactionBuilder = UtxoTransactionBuilderImpl(utxoSignedTransactionFactory, mockNotaryLookup)
+
+    val singingService = TransactionSignatureServiceImpl(serializationServiceWithWireTx,
+        signingService = mock<SigningService>().also {
+            whenever(it.findMySigningKeys(any())).thenReturn(mapOf(publicKeyExample to publicKeyExample))
+            whenever(
+                it.sign(any(), any(), any())
+            ).thenReturn(
+                DigitalSignatureWithKeyId(
+                    publicKeyExample.fullIdHash(),
+                    signData("abcdefgsfdsf".toByteArray(), keyPairExample.private)
+                    // TODO the method signs hardcoded string only,
+                    //  try to change to use the actual parameter (byte array) passes to sign method
+                )
+            )
+        },
+        signatureSpecService = SignatureSpecServiceImpl(CipherSchemeMetadataImpl()),
+        merkleTreeProvider = MerkleTreeProviderImpl(digestService),
+        platformInfoProvider = FakePlatformInfoProvider(),
+        flowEngine = mock<FlowEngine>().also {
+            whenever(it.flowContextProperties).thenReturn(object : FlowContextProperties {
+                override fun put(key: String, value: String) {
+                    TODO("Not yet implemented")
+                }
+
+                override fun get(key: String): String? =
+                    when (key) {
+                        FlowContextPropertyKeys.CPI_NAME -> "Cordapp1"
+                        FlowContextPropertyKeys.CPI_VERSION -> "1"
+                        FlowContextPropertyKeys.CPI_SIGNER_SUMMARY_HASH -> "hash1234"
+                        else -> "1213213213" //FlowContextPropertyKeys.CPI_FILE_CHECKSUM
+                    }
+            })
+        },
+        transactionSignatureVerificationServiceInternal = mock<TransactionSignatureVerificationServiceInternal>()
+    )
+
+    private fun signData(data: ByteArray, privateKey: PrivateKey): ByteArray {
+        val signature = Signature.getInstance(SignatureSpecs.ECDSA_SHA256.signatureName)
+        signature.initSign(privateKey)
+        signature.update(data)
+        return signature.sign()
+    }
 }
