@@ -597,7 +597,6 @@ class MembershipPersistenceTest {
             assertThat(first().key).isEqualTo(MEMBER_CONTEXT_KEY)
             assertThat(first().value).isEqualTo(MEMBER_CONTEXT_VALUE)
         }
-        println("before: ${persistedEntity.status} ${persistedEntity.serial} $persistedMemberContext")
 
         val persistedRegistrationContext = persistedEntity.registrationContext.deserializeContextAsMap()
         with(persistedRegistrationContext.entries) {
@@ -605,68 +604,8 @@ class MembershipPersistenceTest {
             assertThat(first().key).isEqualTo(REGISTRATION_CONTEXT_KEY)
             assertThat(first().value).isEqualTo(REGISTRATION_CONTEXT_VALUE)
         }
-
-        val test = KeyValuePair("test", "test")
-        val asd = membershipPersistenceClientWrapper.persistRegistrationRequest(
-            viewOwningHoldingIdentity,
-            RegistrationRequest(
-                RegistrationStatus.RECEIVED_BY_MGM,
-                registrationId,
-                registeringHoldingIdentity,
-                SignedData(
-                    ByteBuffer.wrap(
-                        cordaAvroSerializer.serialize(
-                            KeyValuePairList(
-                                listOf(
-                                    KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE),
-                                    test,
-                                )
-                            )
-                        )
-                    ),
-                    CryptoSignatureWithKey(
-                        ByteBuffer.wrap(byteArrayOf()),
-                        ByteBuffer.wrap(byteArrayOf())
-                    ),
-                    CryptoSignatureSpec("", null, null)
-                ),
-                SignedData(
-                    ByteBuffer.wrap(
-                        cordaAvroSerializer.serialize(
-                            KeyValuePairList(
-                                listOf(
-                                    KeyValuePair(REGISTRATION_CONTEXT_KEY, REGISTRATION_CONTEXT_VALUE)
-                                )
-                            )
-                        )
-                    ),
-                    CryptoSignatureWithKey(
-                        ByteBuffer.wrap(byteArrayOf()),
-                        ByteBuffer.wrap(byteArrayOf())
-                    ),
-                    CryptoSignatureSpec("", null, null)
-                ),
-                1L,
-            )
-        ).execute()
-
-        assertThat(asd).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-        val persistedEntityAsd = vnodeEmf.createEntityManager().use {
-            it.find(RegistrationRequestEntity::class.java, registrationId)
-        }
-        assertThat(persistedEntityAsd).isNotNull
-        assertThat(persistedEntityAsd.status).isEqualTo(RegistrationStatus.RECEIVED_BY_MGM.toString())
-        assertThat(persistedEntityAsd.serial).isEqualTo(1L)
-
-        val persistedMemberContextasd = persistedEntityAsd.memberContext.deserializeContextAsMap()
-        with(persistedMemberContextasd.entries) {
-            assertThat(size).isEqualTo(1)
-            assertThat(first().key).isEqualTo(MEMBER_CONTEXT_KEY)
-            assertThat(first().value).isEqualTo(MEMBER_CONTEXT_VALUE)
-        }
-        println("after: ${persistedEntityAsd.status} ${persistedEntityAsd.serial} $persistedMemberContextasd")
     }
-/*
+
     @Test
     fun `persistGroupPolicy can persist over RPC topic`() {
         vnodeEmf.transaction {
@@ -1900,7 +1839,7 @@ class MembershipPersistenceTest {
                 .containsExactlyInAnyOrderElementsOf(expectedGroupParameters)
             assertDoesNotThrow { Instant.parse(deserialized.toMap()[MODIFIED_TIME_KEY]) }
         }
-    }*/
+    }
 
     private fun ByteArray.deserializeContextAsMap(): Map<String, String> =
         cordaAvroDeserializer.deserialize(this)
