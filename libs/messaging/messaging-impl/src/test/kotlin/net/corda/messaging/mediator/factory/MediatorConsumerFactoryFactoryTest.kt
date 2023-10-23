@@ -22,7 +22,7 @@ class MediatorConsumerFactoryFactoryTest {
     @Test
     fun testCreateMessageBusConsumerFactory() {
         val messageBusConsumerFactory = mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-            "topic",
+            listOf("topic"),
             "consumerGroup",
             messageBusConfig,
         )

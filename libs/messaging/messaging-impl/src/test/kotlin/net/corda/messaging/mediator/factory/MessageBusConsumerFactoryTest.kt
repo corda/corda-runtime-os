@@ -24,7 +24,7 @@ class MessageBusConsumerFactoryTest {
             any(), any(), any<Class<Any>>(), any<Class<Any>>(), any(), anyOrNull()
         )
         messageBusConsumerFactory = MessageBusConsumerFactory(
-            "topic",
+            listOf("topic"),
             "group",
             messageBusConfig,
             cordaConsumerBuilder,

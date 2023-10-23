@@ -26,14 +26,14 @@ class MessageBusConsumerTest {
     @BeforeEach
     fun setup() {
         cordaConsumer = mock()
-        mediatorConsumer = MessageBusConsumer(TOPIC, cordaConsumer)
+        mediatorConsumer = MessageBusConsumer(listOf(TOPIC), cordaConsumer)
     }
 
     @Test
     fun testSubscribe() {
         mediatorConsumer.subscribe()
 
-        verify(cordaConsumer).subscribe(eq(TOPIC), anyOrNull())
+        verify(cordaConsumer).subscribe(eq(listOf(TOPIC)), anyOrNull())
     }
 
     @Test
