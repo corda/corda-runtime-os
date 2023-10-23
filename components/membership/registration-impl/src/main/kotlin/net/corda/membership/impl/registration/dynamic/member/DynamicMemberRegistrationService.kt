@@ -311,6 +311,14 @@ class DynamicMemberRegistrationService @Activate constructor(
 
                 val signedMemberContext = sign(memberId, publicKey, signatureSpec, memberContext)
                 val signedRegistrationContext = sign(memberId, publicKey, signatureSpec, registrationContext)
+                val signedRegistrationRequestMemberContext = sign(
+                    memberId,
+                    publicKey,
+                    signatureSpec,
+                    context.filterNot {
+                        it.key == SERIAL || REGISTRATION_CONTEXT_FIELDS.contains(it.key)
+                    }.toWire()
+                )
 
                 val mgm = groupReader.lookup().firstOrNull { it.isMgm }
                     ?: throw IllegalArgumentException("Failed to look up MGM information.")
@@ -366,13 +374,15 @@ class DynamicMemberRegistrationService @Activate constructor(
                     memberId.value
                 )
 
+                // This call will update the status and serial information, but the context will remain the same
+                // as it was before, because the memberContext column is not updatable.
                 val commands = membershipPersistenceClient.persistRegistrationRequest(
                     viewOwningIdentity = member,
                     registrationRequest = RegistrationRequest(
                         status = RegistrationStatus.SENT_TO_MGM,
                         registrationId = registrationId.toString(),
                         requester = member,
-                        memberContext = signedMemberContext,
+                        memberContext = signedRegistrationRequestMemberContext,
                         registrationContext = signedRegistrationContext,
                         serial = serialInfo,
                     )
