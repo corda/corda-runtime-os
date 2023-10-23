@@ -51,14 +51,14 @@ internal class VirtualNodeWriteEventHandler(
         val externalMsgConfig = event.config.getConfig(ConfigKeys.EXTERNAL_MESSAGING_CONFIG)
         val vnodeDatasourceConfig = event.config.getConfig(ConfigKeys.VNODE_DATASOURCE_CONFIG)
 
-        logger.info("Configuration changed event received. externalMsgConfig: $externalMsgConfig")
+        logger.info("Configuration changed event received")
         try {
             virtualNodeWriter?.close()
             logger.info("Current virtual node writer has been closed")
             virtualNodeWriter = virtualNodeWriterFactory
                 .create(msgConfig, externalMsgConfig, vnodeDatasourceConfig)
                 .apply { start() }
-            logger.info("New virtual node write has been created. externalMsgConfig: $externalMsgConfig")
+            logger.info("New virtual node write has been created")
 
             coordinator.updateStatus(UP)
         } catch (e: Exception) {
