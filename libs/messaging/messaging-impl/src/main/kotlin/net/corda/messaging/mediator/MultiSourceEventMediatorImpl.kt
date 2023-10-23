@@ -21,6 +21,8 @@ import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.lang.Thread.sleep
 import java.util.UUID
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 @Suppress("LongParameterList")
@@ -67,7 +69,8 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         taskManager.executeLongRunningTask(::run)
     }
 
-    private fun stop() = stopped.set(true)
+    private fun stop() =
+        stopped.set(true)
 
     private fun stopped() = stopped.get()
 
@@ -191,8 +194,13 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 
     private fun pollConsumers(): List<CordaConsumerRecord<K, E>> {
         return metrics.pollTimer.recordCallable {
+            val pollLatch = CountDownLatch(1)
+            consumers.forEach { consumer ->
+                consumer.setDataAvailableCallback { pollLatch.countDown() }
+            }
+            pollLatch.await(config.pollTimeout.toMillis(), TimeUnit.MILLISECONDS)
             consumers.map { consumer ->
-                consumer.poll(config.pollTimeout)
+                consumer.poll()
             }.flatten()
         }!!
     }

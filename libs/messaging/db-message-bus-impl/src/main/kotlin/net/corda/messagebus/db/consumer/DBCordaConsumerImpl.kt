@@ -203,13 +203,13 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
         }
     }
 
-    override fun syncCommitOffsets() {
+    override fun syncCommitOffsets(topic: String, offsets: MutableMap<Int, Long>) {
         dbAccess.writeOffsets(
-            lastReadOffset.map { (cordaTopicPartition, offset) ->
+            offsets.map { (partition, offset) ->
                 CommittedPositionEntry(
-                    cordaTopicPartition.topic,
+                    topic,
                     groupId,
-                    cordaTopicPartition.partition,
+                    partition,
                     offset,
                     ATOMIC_TRANSACTION,
                 )

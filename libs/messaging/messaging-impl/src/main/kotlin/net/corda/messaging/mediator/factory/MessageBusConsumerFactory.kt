@@ -9,6 +9,8 @@ import net.corda.messaging.api.mediator.MediatorConsumer
 import net.corda.messaging.api.mediator.config.MediatorConsumerConfig
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
 import net.corda.messaging.mediator.MessageBusConsumer
+import net.corda.schema.configuration.MessagingConfig
+import java.time.Duration
 import java.util.UUID
 
 /**
@@ -48,6 +50,7 @@ class MessageBusConsumerFactory(
         return MessageBusConsumer(
             topicName,
             eventConsumer,
+            Duration.ofMillis(messageBusConfig.getLong(MessagingConfig.Subscription.POLL_TIMEOUT)),
         )
     }
 }

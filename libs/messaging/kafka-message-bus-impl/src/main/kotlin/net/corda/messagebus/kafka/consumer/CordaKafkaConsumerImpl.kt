@@ -304,12 +304,15 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
-    override fun syncCommitOffsets() {
+    override fun syncCommitOffsets(topic: String, offsets: MutableMap<Int, Long>) {
         var attemptCommit = true
+        val kafkaOffsets = offsets.entries.associate { (partition, offset) ->
+            TopicPartition(config.topicPrefix + topic, partition) to OffsetAndMetadata(offset + 1, null)
+        }
 
         while (attemptCommit) {
             try {
-                consumer.commitSync()
+                consumer.commitSync(kafkaOffsets)
                 attemptCommit = false
             } catch (ex: Exception) {
                 when (ex::class.java) {
