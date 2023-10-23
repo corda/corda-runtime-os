@@ -30,6 +30,7 @@ import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.getDLQTopic
 import net.corda.schema.Schemas.getStateAndEventStateTopic
 import net.corda.utilities.debug
+import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Clock
@@ -187,7 +188,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         var keepProcessing = true
         while (keepProcessing && !threadLooper.loopStopped) {
             try {
-                log.debug { "Polling and processing events" }
+                log.trace { "Polling and processing events" }
                 var rebalanceOccurred = false
                 val records = stateAndEventConsumer.pollEvents()
                 val batches = getEventsByBatch(records).iterator()
