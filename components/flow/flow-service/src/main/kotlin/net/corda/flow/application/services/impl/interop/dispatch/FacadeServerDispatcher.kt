@@ -1,14 +1,11 @@
 package net.corda.flow.application.services.impl.interop.dispatch
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import net.corda.flow.application.services.impl.interop.binding.FacadeInterfaceBinding
 import net.corda.flow.application.services.impl.interop.binding.FacadeMethodBinding
 import net.corda.flow.application.services.impl.interop.binding.FacadeOutParameterBindings
 import net.corda.flow.application.services.impl.interop.binding.creation.FacadeInterfaceBindings
 import net.corda.flow.application.services.impl.interop.parameters.TypeConverter
 import net.corda.flow.application.services.impl.interop.proxies.FacadeMethodDispatchException
-import net.corda.flow.application.services.impl.interop.proxies.JacksonJsonMarshaller
 import net.corda.flow.application.services.impl.interop.proxies.JsonMarshaller
 import net.corda.v5.application.interop.binding.BindsFacade
 import net.corda.v5.application.interop.binding.FacadeVersions
@@ -44,9 +41,6 @@ fun Any.buildDispatcher(facade: Facade, typeConverter: TypeConverter): FacadeSer
 
     return FacadeServerDispatchers.buildDispatcher(facade, targetInterface as Class<Any>, this, typeConverter)
 }
-
-fun Any.buildDispatcher(facade: Facade): FacadeServerDispatcher =
-    buildDispatcher(facade, TypeConverter(JacksonJsonMarshaller(ObjectMapper().registerKotlinModule())))
 
 fun Any.buildDispatcher(facade: Facade, marshaller: JsonMarshaller): FacadeServerDispatcher =
     buildDispatcher(facade, TypeConverter(marshaller))

@@ -1,7 +1,5 @@
 package net.corda.flow.application.services.impl.interop.proxies
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import net.corda.flow.application.services.impl.interop.binding.FacadeInterfaceBinding
 import net.corda.flow.application.services.impl.interop.binding.FacadeMethodBinding
 import net.corda.flow.application.services.impl.interop.binding.FacadeOutParameterBindings
@@ -47,14 +45,6 @@ object FacadeProxies {
         }
     }
 }
-
-/**
- * Kotlin convenience method for creating a client proxy with a default [JsonMarshaller].
- */
-inline fun <reified T : Any> Facade.getClientProxy(noinline requestProcessor: (FacadeRequest) -> FacadeResponse) =
-    getClientProxy<T>(
-        JacksonJsonMarshaller(ObjectMapper().registerKotlinModule()),
-        requestProcessor)
 
 /**
  * Kotlin convenience method for creating a client proxy with the provided [JsonMarshaller].
