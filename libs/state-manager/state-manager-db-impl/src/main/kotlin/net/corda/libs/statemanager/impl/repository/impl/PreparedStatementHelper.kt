@@ -38,6 +38,7 @@ object PreparedStatementHelper {
      */
     fun extractFailedKeysFromBatchResults(batchResults: IntArray, commandKeys: List<String>): Set<String> {
         if (batchResults.size != commandKeys.size) {
+            // this shouldn't ever occur
             ("Number of results from batch (size: ${batchResults.size}) " +
                     "does not match number of commands in the request (size ${commandKeys.size}").let {
                 log.warn(it)

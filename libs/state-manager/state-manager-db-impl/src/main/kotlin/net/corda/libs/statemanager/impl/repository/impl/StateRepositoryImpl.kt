@@ -31,7 +31,7 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
                 preparedStatement.executeUpdate()
             }
         } catch (e: SQLException) {
-            log.debug("Error while retrying persisting state ${state.key}", e)
+            log.debug("Error while persisting individual state ${state.key}", e)
             return false
         }
         return rowsUpdated > 0
@@ -51,7 +51,7 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
             }
         } catch (e: BatchUpdateException) {
             val failedKeys = extractFailedKeysFromBatchResults(e.updateCounts, states.map { it.key })
-            val msg = "Error during batch create (batch size ${states.size}, failed keys: ${failedKeys.size})."
+            val msg = "Error during batch state creation (batch size ${states.size}, failed keys: ${failedKeys.size})."
             log.debug(msg, e)
             throw StateManagerBatchingException(states.filter { it.key in failedKeys }, msg, e)
         }

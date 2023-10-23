@@ -36,7 +36,7 @@ class StateManagerImpl(
         val stateEntities = states.map {
             it.toPersistentEntity()
         }
-        return createStatesWithRetry(stateEntities)
+        return createStatesWithRetryOnBatchError(stateEntities)
     }
 
     /**
@@ -50,13 +50,13 @@ class StateManagerImpl(
      * @param stateEntities a list of states to create
      * @return a collection of keys of states that failed to persist
      */
-    private fun createStatesWithRetry(stateEntities: List<StateEntity>): Collection<String> {
+    private fun createStatesWithRetryOnBatchError(stateEntities: List<StateEntity>): Collection<String> {
         return try {
             dataSource.connection.transaction { conn ->
                 stateRepository.create(conn, stateEntities)
             }
         } catch (e: StateManagerBatchingException) {
-            logger.info("Retrying creation of ${e.failedStates.size} states without batching.")
+            logger.info("Error during batch state creation. Retrying creation of ${e.failedStates.size} states without batching.", e)
             return e.failedStates.filterNot {
                 dataSource.connection.transaction { conn ->
                     stateRepository.create(conn, it)

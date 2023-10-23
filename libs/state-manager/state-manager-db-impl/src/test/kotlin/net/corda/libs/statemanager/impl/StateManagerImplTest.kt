@@ -5,6 +5,7 @@ import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.metadata
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.repository.StateRepository
+import net.corda.libs.statemanager.impl.repository.impl.StateManagerBatchingException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.entry
 import org.junit.jupiter.api.Test
@@ -69,6 +70,41 @@ class StateManagerImplTest {
         assertThat(stateManager.create(listOf(apiStateOne, apiStateTwo))).containsExactly((apiStateOne.key))
 
         val stateEntities = argumentCaptor.firstValue.toList()
+        assertThat(stateEntities).hasSize(2)
+        assertThat(stateEntities[0].key).isEqualTo(apiStateOne.key)
+        assertThat(stateEntities[1].key).isEqualTo(apiStateTwo.key)
+    }
+
+    @Test
+    fun `create states fails with batching exception and retries the failed state`() {
+        val argumentCaptor1 = argumentCaptor<Collection<StateEntity>>()
+
+        whenever(stateRepository.create(eq(connection), argumentCaptor1.capture()))
+            .thenThrow(StateManagerBatchingException(listOf(persistentStateOne), "err"))
+
+        whenever(stateRepository.create(eq(connection), eq(persistentStateOne))).thenReturn(true)
+
+        assertThat(stateManager.create(listOf(apiStateOne, apiStateTwo))).isEmpty()
+
+        val stateEntities = argumentCaptor1.firstValue.toList()
+        assertThat(stateEntities).hasSize(2)
+        assertThat(stateEntities[0].key).isEqualTo(apiStateOne.key)
+        assertThat(stateEntities[1].key).isEqualTo(apiStateTwo.key)
+    }
+
+    @Test
+    fun `create states fails both states, retries both states, fails and returns both keys`() {
+        val argumentCaptor1 = argumentCaptor<Collection<StateEntity>>()
+
+        whenever(stateRepository.create(eq(connection), argumentCaptor1.capture()))
+            .thenThrow(StateManagerBatchingException(listOf(persistentStateOne, persistentStateTwo), "err"))
+
+        whenever(stateRepository.create(eq(connection), eq(persistentStateOne))).thenReturn(false)
+        whenever(stateRepository.create(eq(connection), eq(persistentStateTwo))).thenReturn(false)
+
+        assertThat(stateManager.create(listOf(apiStateOne, apiStateTwo))).containsAll(listOf(apiStateOne.key, apiStateTwo.key))
+
+        val stateEntities = argumentCaptor1.firstValue.toList()
         assertThat(stateEntities).hasSize(2)
         assertThat(stateEntities[0].key).isEqualTo(apiStateOne.key)
         assertThat(stateEntities[1].key).isEqualTo(apiStateTwo.key)
