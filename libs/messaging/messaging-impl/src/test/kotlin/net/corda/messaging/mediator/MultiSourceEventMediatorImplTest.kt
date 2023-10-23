@@ -132,7 +132,7 @@ class MultiSourceEventMediatorImplTest {
             ),
         )
         var batchNumber = 0
-        whenever(consumer.poll(any())).thenAnswer {
+        whenever(consumer.poll()).thenAnswer {
             if (batchNumber < eventBatches.size) {
                 eventBatches[batchNumber++]
             } else {
@@ -151,7 +151,7 @@ class MultiSourceEventMediatorImplTest {
         verify(messageProcessor, times(events.size)).onNext(anyOrNull(), any())
         verify(stateManager, times(eventBatches.size)).get(any())
         verify(stateManager, times(eventBatches.size)).create(any())
-        verify(consumer, atLeast(eventBatches.size)).poll(any())
+        verify(consumer, atLeast(eventBatches.size)).poll()
         verify(consumer, times(eventBatches.size)).syncCommitOffsets()
         verify(messagingClient, times(events.size)).send(any())
     }

@@ -181,7 +181,7 @@ class CordaKafkaConsumerImplTest {
         assertThat(consumer.committed(setOf(partition))).isEmpty()
 
         cordaKafkaConsumer.poll(Duration.ZERO)
-        cordaKafkaConsumer.syncCommitOffsets()
+        cordaKafkaConsumer.syncCommitOffsets(partition.topic(), mutableMapOf(partition.partition() to numberOfRecords))
 
         val committedPositionAfterPoll = consumer.committed(setOf(partition))
         assertThat(committedPositionAfterPoll.values.first().offset()).isEqualTo(numberOfRecords)
@@ -194,7 +194,7 @@ class CordaKafkaConsumerImplTest {
 
         doThrow(CommitFailedException()).whenever(consumer).commitSync()
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
-            cordaKafkaConsumer.syncCommitOffsets()
+            cordaKafkaConsumer.syncCommitOffsets(any())
         }
         verify(consumer, times(1)).commitSync()
     }

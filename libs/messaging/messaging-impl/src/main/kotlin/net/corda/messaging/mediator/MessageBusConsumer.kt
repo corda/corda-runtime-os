@@ -4,6 +4,7 @@ import net.corda.messagebus.api.consumer.CordaConsumer
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messagebus.api.consumer.CordaOffsetResetStrategy
 import net.corda.messaging.api.mediator.MediatorConsumer
+import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.*
 import java.util.concurrent.CompletableFuture
@@ -21,10 +22,12 @@ import kotlin.concurrent.withLock
 class MessageBusConsumer<K: Any, V: Any>(
     private val topic: String,
     private val consumer: CordaConsumer<K, V>,
-    private val timeout: Duration,
+    private val timeout: Duration = DEFAULT_POLL_TIMEOUT,
     maxPollRecords: Int = DEFAULT_MAX_POLL_RECORDS,
 ): MediatorConsumer<K, V> {
     companion object {
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val DEFAULT_POLL_TIMEOUT = Duration.ofMillis(500)
         private const val DEFAULT_MAX_POLL_RECORDS = 500
         private const val BUFFER_QUEUE_TIMEOUT_MILLIS = 100L
     }
@@ -48,11 +51,15 @@ class MessageBusConsumer<K: Any, V: Any>(
     }
 
     private fun run() {
-        while (!stopped.get()) {
-            pollConsumer()
+        try {
+            while (!stopped.get()) {
+                pollConsumer()
+                commitIfNeeded()
+            }
             commitIfNeeded()
+        } catch (t: Throwable) {
+            log.warn("Error in consumer thread", t)
         }
-        commitIfNeeded()
     }
 
     override fun subscribe() {
