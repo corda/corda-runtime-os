@@ -64,8 +64,9 @@ internal class VirtualNodeUpgradeOperationHandler(
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
-        private val Map<String, Any?>.isEnriched: Boolean
-            get() = containsKey(MemberInfoExtension.MEMBER_CPI_NAME)
+        private fun isEnriched(context: Map<*, *>): Boolean {
+            return context.containsKey(MemberInfoExtension.MEMBER_CPI_NAME)
+        }
     }
 
     private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> by lazy {
@@ -260,9 +261,12 @@ internal class VirtualNodeUpgradeOperationHandler(
                             .deserializeContext(keyValuePairListDeserializer)
                             .toMutableMap()
 
-                        if (registrationContext.isEnriched) {
-                            logger.warn("Enriched registration request retrieved, which cannot be used for re-registration. " +
-                                    "Please perform MGM re-registration of vNode $holdingIdentity manually.")
+                        if (isEnriched(registrationContext)) {
+                            // In some cases, the registration request contains the platform-transformed data, 
+                            // instead of the user-provided context, so we skip re-registration. 
+                            // This is applicable only for old registration requests, as it's now fixed.
+                            logger.warn("The platform was not able to automatically re-register the vNode. " +
+                                    "Please perform re-registration of vNode $holdingIdentity manually.")
                             return
                         }
 
