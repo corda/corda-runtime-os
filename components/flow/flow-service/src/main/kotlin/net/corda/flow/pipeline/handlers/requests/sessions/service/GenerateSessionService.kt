@@ -50,16 +50,16 @@ class GenerateSessionService @Activate constructor(
      * For the given sessions in [sessionToInfo], generate session states and save them to the checkpoint.
      * @param context flow pipeline context
      * @param sessionToInfo sessions to create
-     * @param sendInit True if a SessionInit should be scheduled as part of creating the session state.
+     * @param sendCounterpartyRequest True to prepare a counterparty request to send when creating the session state.
      */
     fun generateSessions(
         context: FlowEventContext<Any>,
         sessionToInfo: Set<SessionInfo>,
-        sendInit: Boolean = false
+        sendCounterpartyRequest: Boolean = false
     ) {
         val sessionsNotGenerated = getSessionsNotGenerated(context, sessionToInfo)
         if (sessionsNotGenerated.isNotEmpty()) {
-            generateSessionStates(context, sessionsNotGenerated, sendInit)
+            generateSessionStates(context, sessionsNotGenerated, sendCounterpartyRequest)
         }
     }
 
@@ -67,7 +67,7 @@ class GenerateSessionService @Activate constructor(
     private fun generateSessionStates(
         context: FlowEventContext<Any>,
         sessionsNotGenerated: Set<SessionInfo>,
-        sendInit: Boolean
+        sendCounterpartyRequest: Boolean
     ) {
         val checkpoint = context.checkpoint
 
@@ -110,8 +110,8 @@ class GenerateSessionService @Activate constructor(
                 Instant.now()
             ).also { checkpoint.putSessionState(it) }
 
-            if (sendInit) {
-                checkpoint.putSessionState(flowSessionManager.sendInitMessage(
+            if (sendCounterpartyRequest) {
+                checkpoint.putSessionState(flowSessionManager.sendCounterpartyInfoRequest(
                     context.checkpoint,
                     sessionInfo.sessionId,
                     keyValuePairListOf(sessionInfo.contextUserProperties),

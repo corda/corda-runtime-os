@@ -30,11 +30,14 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_HASH
+import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_SIGNATURE_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.toWire
+import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.validateSchemeAndSignatureSpec
+import net.corda.membership.p2p.helpers.KeySpecExtractor.KeySpecType
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.utilities.time.Clock
@@ -86,7 +89,12 @@ internal class MGMRegistrationMemberInfoHandler(
     }
 
     @Suppress("ThrowsCount")
-    private fun getKeyFromId(keyId: String, tenantId: String, expectedCategory: String): PublicKey {
+    private fun getKeyFromId(
+        keyId: String,
+        tenantId: String,
+        expectedCategory: String,
+        signatureSpec: String? = null
+    ): PublicKey {
         val parsedKeyId =
             try {
                 ShortHash.parse(keyId)
@@ -102,6 +110,16 @@ internal class MGMRegistrationMemberInfoHandler(
                     "Wrong key category. Key ID: $keyId category is ${it.category}. please use key from the $expectedCategory category.",
                     null
                 )
+            }
+            if(expectedCategory == SESSION_INIT) {
+                try {
+                    it.validateSchemeAndSignatureSpec(signatureSpec, KeySpecType.SESSION)
+                } catch(ex: IllegalArgumentException) {
+                    throw MGMRegistrationContextValidationException(
+                        "Key scheme and/or signature spec are not valid for category $SESSION_INIT.",
+                        ex
+                    )
+                }
             }
             try {
                 keyEncodingService.decodePublicKey(it.publicKey.array())
@@ -144,9 +162,10 @@ internal class MGMRegistrationMemberInfoHandler(
         val optionalContext = mapOf(MEMBER_CPI_SIGNER_HASH to cpi.signerSummaryHash.toString())
         val sessionKeys = context.filterKeys { key ->
             sessionKeyRegex.matches(key)
-        }.values
-            .map {
-                getKeyFromId(it, holdingIdentity.shortHash.value, SESSION_INIT)
+        }.map {
+                val keyIndex = it.key.substringAfter("$SESSION_KEYS.").substringBefore('.')
+                val signatureSpec = context[SESSION_KEYS_SIGNATURE_SPEC.format(keyIndex)]
+                getKeyFromId(it.value, holdingIdentity.shortHash.value, SESSION_INIT, signatureSpec)
             }.flatMapIndexed { index, sessionKey ->
                 listOf(
                     String.format(PARTY_SESSION_KEYS_PEM, index) to sessionKey.toPem(),

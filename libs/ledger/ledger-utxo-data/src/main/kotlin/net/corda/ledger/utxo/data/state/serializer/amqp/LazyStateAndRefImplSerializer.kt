@@ -1,7 +1,7 @@
 package net.corda.ledger.utxo.data.state.serializer.amqp
 
 import net.corda.ledger.utxo.data.state.LazyStateAndRefImpl
-import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
+import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
@@ -68,5 +68,5 @@ data class LazyStateAndRefImplProxy(
     /**
      * Properties for [LazyStateAndRefImplProxy] serialisation.
      */
-    val serializedStateAndRef: UtxoTransactionOutputDto
+    val serializedStateAndRef: UtxoVisibleTransactionOutputDto
 )

@@ -19,6 +19,8 @@ import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.external.ExternalEventResponseError
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.data.flow.event.session.SessionClose
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRequest
+import net.corda.data.flow.event.session.SessionCounterpartyInfoResponse
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
@@ -37,6 +39,7 @@ import net.corda.flow.testing.fakes.FakeMembershipGroupReaderProvider
 import net.corda.flow.testing.fakes.FakeSandboxGroupContextComponent
 import net.corda.flow.testing.tests.ALL_TEST_VIRTUAL_NODES
 import net.corda.flow.testing.tests.FLOW_NAME
+import net.corda.flow.testing.tests.SESSION_PROPERTIES
 import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.flow.utils.keyValuePairListOf
@@ -51,6 +54,7 @@ import net.corda.libs.packaging.core.CpkManifest
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
@@ -270,7 +274,7 @@ class FlowServiceTestContext @Activate constructor(
         return addTestRun(createFlowEventRecord(flowId, StartFlow(flowStart, "{}")))
     }
 
-    override fun sessionInitEventReceived(
+    override fun sessionCounterpartyInfoRequestReceived(
         flowId: String,
         sessionId: String,
         cpiId: String,
@@ -284,13 +288,14 @@ class FlowServiceTestContext @Activate constructor(
             sessionId,
             initiatingIdentity,
             initiatedIdentity,
-            SessionInit.newBuilder()
+            SessionCounterpartyInfoRequest(SessionInit.newBuilder()
                 .setFlowId(flowId)
                 .setCpiId(cpiId)
                 .setContextPlatformProperties(emptyKeyValuePairList())
                 .setContextUserProperties(emptyKeyValuePairList())
-                .build(),
-            sequenceNum = 0,
+                .build()
+            ),
+            null,
             getContextSessionProps(protocol, requireClose)
         )
     }
@@ -307,16 +312,32 @@ class FlowServiceTestContext @Activate constructor(
         flowId: String,
         sessionId: String,
         data: ByteArray,
-        sequenceNum: Int
+        sequenceNum: Int,
+        sessionInit: SessionInit?
     ): FlowIoRequestSetup {
         return createAndAddSessionEvent(
             flowId,
             sessionId,
             null,
             null,
-            SessionData(ByteBuffer.wrap(data), null),
+            SessionData(ByteBuffer.wrap(data), sessionInit),
             sequenceNum,
-            null
+            SESSION_PROPERTIES
+        )
+    }
+
+    override fun sessionCounterpartyInfoResponseReceived(
+        flowId: String,
+        sessionId: String,
+    ): FlowIoRequestSetup {
+        return createAndAddSessionEvent(
+            flowId,
+            sessionId,
+            null,
+            null,
+            SessionCounterpartyInfoResponse(),
+            null,
+            emptyKeyValuePairList()
         )
     }
 
@@ -421,10 +442,13 @@ class FlowServiceTestContext @Activate constructor(
             log.info("Start test run for input/output set $iteration")
             flowFiberFactory.fiber.reset()
             flowFiberFactory.fiber.setIoRequests(testRun.ioRequests)
-            val response = flowEventProcessor.onNext(lastPublishedState, testRun.event)
+            val response = flowEventProcessor.onNext(
+                State(lastPublishedState, metadata = null),
+                testRun.event
+            )
             testRun.flowContinuation = flowFiberFactory.fiber.flowContinuation
             testRun.response = response
-            lastPublishedState = response.updatedState
+            lastPublishedState = response.updatedState?.value
         }
     }
 

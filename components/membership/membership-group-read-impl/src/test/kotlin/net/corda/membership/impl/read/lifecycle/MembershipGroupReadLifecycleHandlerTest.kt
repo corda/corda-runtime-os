@@ -5,17 +5,27 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.impl.read.cache.MembershipGroupReadCache
+import net.corda.membership.impl.read.subscription.MemberListProcessor
+import net.corda.membership.lib.MemberInfoFactory
+import net.corda.messaging.api.processor.CompactedProcessor
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -25,26 +35,40 @@ import org.mockito.kotlin.verify
 
 class MembershipGroupReadLifecycleHandlerTest {
 
-    lateinit var handler: MembershipGroupReadLifecycleHandler
+    private lateinit var handler: MembershipGroupReadLifecycleHandler
 
-    val componentRegistrationHandle: RegistrationHandle = mock()
-    val configRegistrationHandle: Resource = mock()
+    private val componentRegistrationHandle: RegistrationHandle = mock()
+    private val configRegistrationHandle: Resource = mock()
 
-    val configurationReadService: ConfigurationReadService = mock {
+    private val configurationReadService: ConfigurationReadService = mock {
         on { registerComponentForUpdates(any(), any()) } doReturn configRegistrationHandle
     }
 
-    val coordinator: LifecycleCoordinator = mock {
+    private val coordinator: LifecycleCoordinator = mock {
         on { followStatusChangesByName(any()) } doReturn componentRegistrationHandle
+        on { createManagedResource(any(), any<() -> Resource>()) } doAnswer {
+            val function: () -> Resource = it.getArgument(1)
+            function.invoke()
+        }
+        on { postEvent(any()) } doAnswer {
+            handler.processEvent(it.getArgument(0) as LifecycleEvent, mock)
+        }
     }
 
-    val activateFunction: (Map<String, SmartConfig>, String) -> Unit = mock()
-    val deactivateFunction: (String) -> Unit = mock()
+    private val subscriptionFactory: SubscriptionFactory = mock {
+        on { createCompactedSubscription(any(), any<CompactedProcessor<*, *>>(), any()) } doReturn mock()
+    }
+    private val memberInfoFactory: MemberInfoFactory = mock()
+
+    private val activateFunction: (String, MembershipGroupReadCache) -> Unit = mock()
+    private val deactivateFunction: (String) -> Unit = mock()
 
     @BeforeEach
     fun setUp() {
         handler = MembershipGroupReadLifecycleHandler.Impl(
             configurationReadService,
+            subscriptionFactory,
+            memberInfoFactory,
             activateFunction,
             deactivateFunction
         )
@@ -148,6 +172,29 @@ class MembershipGroupReadLifecycleHandlerTest {
         )
         handler.processEvent(ConfigChangedEvent(setOf(BOOT_CONFIG, MESSAGING_CONFIG), configs), coordinator)
 
-        verify(activateFunction).invoke(eq(configs), any())
+        verify(subscriptionFactory).createCompactedSubscription(
+            eq(SubscriptionConfig("MEMBERSHIP_GROUP_READER", Schemas.Membership.MEMBER_LIST_TOPIC)),
+            any<MemberListProcessor>(),
+            eq(configs[MESSAGING_CONFIG]!!)
+        )
+    }
+
+    @Test
+    fun `OnSnapshotFinished starts the component`() {
+        val messagingConfig: SmartConfig = mock()
+        val configs = mapOf(
+            MESSAGING_CONFIG to messagingConfig
+        )
+        handler.processEvent(ConfigChangedEvent(setOf(MESSAGING_CONFIG), configs), coordinator)
+
+        val capturedProcessor = argumentCaptor<MemberListProcessor>()
+        verify(subscriptionFactory).createCompactedSubscription(
+            eq(SubscriptionConfig("MEMBERSHIP_GROUP_READER", Schemas.Membership.MEMBER_LIST_TOPIC)),
+            capturedProcessor.capture(),
+            eq(configs[MESSAGING_CONFIG]!!)
+        )
+        capturedProcessor.firstValue.onSnapshot(emptyMap())
+
+        verify(activateFunction).invoke(any(), any())
     }
 }

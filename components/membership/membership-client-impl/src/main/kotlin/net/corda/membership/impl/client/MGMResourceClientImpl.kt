@@ -51,6 +51,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.deserializeContext
+import net.corda.membership.lib.registration.DECLINED_REASON_FOR_USER_GENERAL_MANUAL_DECLINED
 import net.corda.membership.lib.toPersistentGroupParameters
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -597,7 +598,8 @@ class MGMResourceClientImpl @Activate constructor(
             if (approve) {
                 publishRegistrationCommand(ApproveRegistration(), memberName, mgm.groupId)
             } else {
-                publishRegistrationCommand(DeclineRegistration(reason ?: ""), memberName, mgm.groupId)
+                publishRegistrationCommand(DeclineRegistration(reason ?: "",
+                    DECLINED_REASON_FOR_USER_GENERAL_MANUAL_DECLINED), memberName, mgm.groupId)
             }
         }
 
@@ -615,7 +617,7 @@ class MGMResourceClientImpl @Activate constructor(
                     "declined. Refer to the docs on Member Suspension to suspend approved members." }
 
             publishRegistrationCommand(
-                DeclineRegistration(FORCE_DECLINE_MESSAGE),
+                DeclineRegistration(FORCE_DECLINE_MESSAGE, DECLINED_REASON_FOR_USER_GENERAL_MANUAL_DECLINED),
                 findMemberName(requestStatus.memberProvidedContext),
                 mgm.groupId
             )

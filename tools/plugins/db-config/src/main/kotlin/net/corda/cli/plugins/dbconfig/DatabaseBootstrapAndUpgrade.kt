@@ -23,6 +23,11 @@ class DatabaseBootstrapAndUpgrade : Plugin() {
     }
 
     @Extension
-    @CommandLine.Command(name = "database", subcommands = [Spec::class], description = ["Does Database bootstrapping and upgrade"])
+    @CommandLine.Command(
+        name = "database",
+        subcommands = [Spec::class],
+        mixinStandardHelpOptions = true,
+        description = ["Does Database bootstrapping and upgrade"]
+    )
     class PluginEntryPoint : CordaCliPlugin
 }

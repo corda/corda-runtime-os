@@ -1,7 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.flows.backchain.v1
 
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
-import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackChainResolutionVersion
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainVerifier
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.sandbox.CordaSystemFlow
@@ -18,16 +17,14 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 /**
- * The V2 protocol is an extension of the V1 protocol, which can be enabled via a switch (on both sides).
- * In order to avoid huge code duplication, we kept V1 class implementing both protocols and added a switch that makes
- * it behave according to the V2 protocol.
+ * V1 changed slightly between 5.0 and 5.1. (5.1 supports distributing SignedGroupParameters.)
+ * This change is not managed through flow versioning since flow interoperability is not supported between these versions.
  */
 
 @CordaSystemFlow
 class TransactionBackchainResolutionFlowV1(
     private val initialTransactionIds: Set<SecureHash>,
-    private val session: FlowSession,
-    val version: TransactionBackChainResolutionVersion
+    private val session: FlowSession
 ) : SubFlow<Unit> {
 
     private companion object {
@@ -57,8 +54,7 @@ class TransactionBackchainResolutionFlowV1(
                 TransactionBackchainReceiverFlowV1(
                     initialTransactionIds = initialTransactionIds,
                     originalTransactionsToRetrieve,
-                    session,
-                    version
+                    session
                 )
             )
             log.debug {

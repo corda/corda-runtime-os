@@ -6,5 +6,7 @@ package net.corda.ledger.utxo.token.cache.entities
  * @property poolKey The key of the specific token pool the event is for
  */
 interface TokenEvent {
+    val externalEventRequestId: String
+    val flowId: String
     val poolKey: TokenPoolKey
 }

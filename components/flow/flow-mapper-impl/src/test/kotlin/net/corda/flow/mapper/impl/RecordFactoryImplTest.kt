@@ -21,11 +21,13 @@ import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.lang.IllegalArgumentException
 import java.nio.ByteBuffer
 import java.time.Instant
 
@@ -34,6 +36,7 @@ internal class RecordFactoryImplTest {
     companion object {
         private const val SESSION_ID = "session-id"
         private const val FLOW_ID = "flow-id"
+        private const val SEQUENCE_NUMBER = 1
         private val alice = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "1")
         private val bob = HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "1")
     }
@@ -54,10 +57,10 @@ internal class RecordFactoryImplTest {
         val byteArray = "SessionEventSerialized".toByteArray()
 
         whenever(cordaAvroSerializer.serialize(any<SessionEvent>())).thenReturn(byteArray)
-        whenever(locallyHostedIdentitiesServiceSameCluster.getIdentityInfo(any())).thenReturn(mock())
+        whenever(locallyHostedIdentitiesServiceSameCluster.isHostedLocally(any())).thenReturn(true)
 
         val locallyHostedIdentitiesServiceDifferentCluster: LocallyHostedIdentitiesService = mock()
-        whenever(locallyHostedIdentitiesServiceDifferentCluster.getIdentityInfo(any())).thenReturn(null)
+        whenever(locallyHostedIdentitiesServiceDifferentCluster.isHostedLocally(any())).thenReturn(false)
 
         recordFactoryImplSameCluster = RecordFactoryImpl(cordaAvroSerializationFactory, locallyHostedIdentitiesServiceSameCluster)
         recordFactoryImplDifferentCluster = RecordFactoryImpl(cordaAvroSerializationFactory, locallyHostedIdentitiesServiceDifferentCluster)
@@ -66,16 +69,19 @@ internal class RecordFactoryImplTest {
 
     @Test
     fun `forwardError returns record for same cluster`() {
+        val timestamp = Instant.now()
         val bobId = HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "1")
         val sessionEvent = SessionEvent(
             MessageDirection.OUTBOUND,
-            Instant.now(), SESSION_ID, null,
+            timestamp,
+            SESSION_ID,
+            null,
             alice,
             bob,
             SessionError(
                 ExceptionEnvelope(
                     "FlowMapper-SessionError",
-                    "Received SessionError with sessionId 1"
+                    "Received SessionError with sessionId $SESSION_ID"
                 )
             ),
             null
@@ -84,9 +90,10 @@ internal class RecordFactoryImplTest {
         val record = recordFactoryImplSameCluster.forwardError(
             sessionEvent,
             ExceptionEnvelope(
-            "FlowMapper-SessionError",
-            "Received SessionError with sessionId 1"),
-            Instant.now(),
+                "FlowMapper-SessionError",
+                "Received SessionError with sessionId $SESSION_ID"
+            ),
+            timestamp,
             flowConfig,
             "my-flow-id",
             false
@@ -94,7 +101,7 @@ internal class RecordFactoryImplTest {
         assertThat(record).isNotNull
         assertThat(record.topic).isEqualTo(Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC)
         assertThat(record.value!!::class).isEqualTo(FlowMapperEvent::class)
-        verify(locallyHostedIdentitiesServiceSameCluster).getIdentityInfo(bobId.toCorda())
+        verify(locallyHostedIdentitiesServiceSameCluster).isHostedLocally(bobId.toCorda())
         val sessionOutput = (record.value as FlowMapperEvent).payload as SessionEvent
         assertThat(sessionOutput.messageDirection).isEqualTo(MessageDirection.INBOUND)
         assertThat(sessionOutput.sessionId).isEqualTo("$SESSION_ID-INITIATED")
@@ -103,15 +110,18 @@ internal class RecordFactoryImplTest {
 
     @Test
     fun `forwardError returns record for different cluster`() {
+        val timestamp = Instant.now()
         val sessionEvent = SessionEvent(
             MessageDirection.OUTBOUND,
-            Instant.now(), SESSION_ID, null,
+            timestamp,
+            SESSION_ID,
+            null,
             alice,
             bob,
             SessionError(
                 ExceptionEnvelope(
                     "FlowMapper-SessionError",
-                    "Received SessionError with sessionId 1"
+                    "Received SessionError with sessionId $SESSION_ID"
                 )
             ),
             null
@@ -121,8 +131,8 @@ internal class RecordFactoryImplTest {
             sessionEvent,
             ExceptionEnvelope(
                 "FlowMapper-SessionError",
-                "Received SessionError with sessionId 1"),
-            Instant.now(),
+                "Received SessionError with sessionId $SESSION_ID"),
+            timestamp,
             flowConfig,
             FLOW_ID,
             false
@@ -137,11 +147,12 @@ internal class RecordFactoryImplTest {
 
     @Test
     fun `forwardError returns a record for the flow engine for inbound session events`() {
+        val timestamp = Instant.now()
         val sessionEvent = SessionEvent(
             MessageDirection.INBOUND,
-            Instant.now(),
+            timestamp,
             SESSION_ID,
-            1,
+            SEQUENCE_NUMBER,
             alice,
             bob,
             SessionData(ByteBuffer.wrap("data".toByteArray()), null),
@@ -151,8 +162,8 @@ internal class RecordFactoryImplTest {
             sessionEvent,
             ExceptionEnvelope(
                 "FlowMapper-SessionError",
-                "Received SessionError with sessionId 1"),
-            Instant.now(),
+                "Received SessionError with sessionId $SESSION_ID"),
+            timestamp,
             flowConfig,
             FLOW_ID,
             false
@@ -167,9 +178,12 @@ internal class RecordFactoryImplTest {
 
     @Test
     fun `forwardEvent returns record for same cluster`() {
+        val timestamp = Instant.now()
         val sessionEvent = SessionEvent(
             MessageDirection.OUTBOUND,
-            Instant.now(), SESSION_ID, 1,
+            timestamp,
+            SESSION_ID,
+            SEQUENCE_NUMBER,
             alice,
             bob,
             SessionData(),
@@ -178,7 +192,7 @@ internal class RecordFactoryImplTest {
 
         val record = recordFactoryImplSameCluster.forwardEvent(
             sessionEvent,
-            Instant.now(),
+            timestamp,
             flowConfig,
             FLOW_ID,
             false
@@ -193,11 +207,12 @@ internal class RecordFactoryImplTest {
 
     @Test
     fun `forwardEvent returns record for different cluster`() {
+        val timestamp = Instant.now()
         val sessionEvent = SessionEvent(
             MessageDirection.OUTBOUND,
-            Instant.now(),
+            timestamp,
             SESSION_ID,
-            1,
+            SEQUENCE_NUMBER,
             HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "1"),
             HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "1"),
             SessionData(
@@ -207,7 +222,7 @@ internal class RecordFactoryImplTest {
         )
         val record = recordFactoryImplDifferentCluster.forwardEvent(
             sessionEvent,
-            Instant.now(),
+            timestamp,
             flowConfig,
             FLOW_ID,
             false
@@ -227,7 +242,7 @@ internal class RecordFactoryImplTest {
             MessageDirection.INBOUND,
             Instant.now(),
             SESSION_ID,
-            1,
+            SEQUENCE_NUMBER,
             alice,
             bob,
             SessionData(ByteBuffer.wrap("data".toByteArray()), null),
@@ -246,5 +261,102 @@ internal class RecordFactoryImplTest {
         val sessionOutput = (record.value as FlowEvent).payload as SessionEvent
         assertThat(sessionOutput.sessionId).isEqualTo(SESSION_ID)
         assertThat(sessionOutput.messageDirection).isEqualTo(MessageDirection.INBOUND)
+    }
+
+    @Test
+    fun `sendBackError returns a record back to remote counterparty for inbound session events`() {
+        val timestamp = Instant.now()
+        val sessionEvent = SessionEvent(
+            MessageDirection.INBOUND,
+            timestamp,
+            SESSION_ID,
+            SEQUENCE_NUMBER,
+            alice,
+            bob,
+            SessionData(ByteBuffer.wrap("data".toByteArray()), null),
+            null
+        )
+        val msgPayload = ExceptionEnvelope(
+            "FlowMapper-SessionError",
+            "Received SessionError with sessionId $SESSION_ID"
+        )
+        val record = recordFactoryImplDifferentCluster.sendBackError(
+            sessionEvent,
+            msgPayload,
+            timestamp,
+            flowConfig,
+            false
+        )
+        assertThat(record.topic).isEqualTo(Schemas.P2P.P2P_OUT_TOPIC)
+        assertThat(record.key).isEqualTo(SESSION_ID)
+        assertThat(record.value!!::class.java).isEqualTo(AppMessage::class.java)
+        val sessionOutput = ((record.value as AppMessage).message as AuthenticatedMessage).payload
+        assertThat(sessionOutput).isEqualTo(ByteBuffer.wrap("SessionEventSerialized".toByteArray()))
+        verify(cordaAvroSerializer).serialize(sessionEvent.apply {
+            messageDirection = MessageDirection.OUTBOUND
+            sessionId = SESSION_ID
+            sequenceNum = null
+            payload = SessionError(msgPayload)
+        })
+    }
+
+    @Test
+    fun `sendBackError returns a record back to local counterparty for inbound session events`() {
+        val timestamp = Instant.now()
+        val sessionEvent = SessionEvent(
+            MessageDirection.INBOUND,
+            timestamp,
+            SESSION_ID,
+            SEQUENCE_NUMBER,
+            alice,
+            bob,
+            SessionData(ByteBuffer.wrap("data".toByteArray()), null),
+            null
+        )
+        val msgPayload = ExceptionEnvelope(
+            "FlowMapper-SessionError",
+            "Received SessionError with sessionId $SESSION_ID"
+        )
+        val record = recordFactoryImplSameCluster.sendBackError(
+            sessionEvent,
+            msgPayload,
+            timestamp,
+            flowConfig,
+            false
+        )
+        assertThat(record.topic).isEqualTo(Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC)
+        assertThat(record.key).isEqualTo("$SESSION_ID-INITIATED")
+        assertThat(record.value!!::class).isEqualTo(FlowMapperEvent::class)
+        val sessionOutput = (record.value as FlowMapperEvent).payload as SessionEvent
+        assertThat(sessionOutput.sessionId).isEqualTo("$SESSION_ID-INITIATED")
+        assertThat(sessionOutput.messageDirection).isEqualTo(MessageDirection.INBOUND)
+    }
+
+    @Test
+    fun `sendBackError throws for outbound session events`() {
+        val timestamp = Instant.now()
+        val sessionEvent = SessionEvent(
+            MessageDirection.OUTBOUND,
+            timestamp,
+            SESSION_ID,
+            SEQUENCE_NUMBER,
+            alice,
+            bob,
+            SessionData(ByteBuffer.wrap("data".toByteArray()), null),
+            null
+        )
+        val msgPayload = ExceptionEnvelope(
+            "FlowMapper-SessionError",
+            "Received SessionError with sessionId 1"
+        )
+        assertThrows<IllegalArgumentException> {
+            recordFactoryImplSameCluster.sendBackError(
+                sessionEvent,
+                msgPayload,
+                timestamp,
+                flowConfig,
+                false
+            )
+        }
     }
 }

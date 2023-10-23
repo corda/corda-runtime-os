@@ -35,6 +35,7 @@ class PreInstallPlugin : Plugin() {
     @Extension
     @CommandLine.Command(name = "preinstall",
         subcommands = [CheckLimits::class, CheckPostgres::class, CheckKafka::class, RunAll::class],
+        mixinStandardHelpOptions = true,
         description = ["Preinstall checks for Corda."])
     class PreInstallPluginEntry : CordaCliPlugin
 
@@ -101,11 +102,14 @@ class PreInstallPlugin : Plugin() {
                 throw SecretException("No secret key provided with secret name $secretName.")
             }
             return try {
-                val secret: Secret = if (namespace != null) {
+                val secret: Secret? = if (namespace != null) {
                     checkNamespace(namespace)
                     client.secrets().inNamespace(namespace).withName(secretName).get()
                 } else {
                     client.secrets().withName(secretName).get()
+                }
+                if (secret == null) {
+                    throw SecretException("Secret $secretName not found.")
                 }
                 val encoded = secret.data[secretKey] ?: throw SecretException("Secret $secretName has no key $secretKey.")
                 String(Base64.getDecoder().decode(encoded))

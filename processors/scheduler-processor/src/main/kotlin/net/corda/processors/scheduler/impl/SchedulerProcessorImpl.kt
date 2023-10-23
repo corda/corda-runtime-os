@@ -20,6 +20,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.processors.scheduler.SchedulerProcessor
+import net.corda.schema.Schemas.ScheduledTask
 import net.corda.schema.configuration.BootConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -62,10 +63,18 @@ class SchedulerProcessorImpl @Activate constructor(
         coordinatorFactory.createCoordinator<SchedulerProcessorImpl>(dependentComponents, ::eventHandler)
 
     // now just hardcoding schedulers here until CORE-16331 is picked up, when we should take this from config
-    private val schedules = listOf<Schedule>(
-        // example schedule, delete/replace when we have a real one, uncomment for testing
-//        Schedule("say-hello", 60, "telephone"),
-//        Schedule("say-goodbye", 600, "telephone"),
+    private val schedules = listOf(
+        Schedule(ScheduledTask.SCHEDULED_TASK_NAME_DB_PROCESSOR,
+            120, ScheduledTask.SCHEDULED_TASK_TOPIC_DB_PROCESSOR
+        ),
+        Schedule(
+            ScheduledTask.SCHEDULED_TASK_NAME_SESSION_TIMEOUT,
+            60, ScheduledTask.SCHEDULED_TASK_TOPIC_FLOW_PROCESSOR
+        ),
+        Schedule(
+            ScheduledTask.SCHEDULED_TASK_NAME_MAPPER_CLEANUP,
+            60, ScheduledTask.SCHEDULED_TASK_TOPIC_MAPPER_PROCESSOR
+        )
     )
     private var schedulers: Schedulers? = null
 

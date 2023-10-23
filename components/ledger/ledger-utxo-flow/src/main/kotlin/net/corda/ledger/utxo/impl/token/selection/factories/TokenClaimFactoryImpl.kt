@@ -5,6 +5,7 @@ import net.corda.data.ledger.utxo.token.selection.data.Token
 import net.corda.data.ledger.utxo.token.selection.data.TokenAmount
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.ledger.utxo.impl.token.selection.entities.TokenClaimCheckpointState
 import net.corda.ledger.utxo.impl.token.selection.impl.PoolKey
 import net.corda.ledger.utxo.impl.token.selection.impl.TokenClaimImpl
 import net.corda.v5.base.types.MemberX500Name
@@ -43,6 +44,13 @@ class TokenClaimFactoryImpl @Activate constructor(
             token.ownerHash.toNullableSecureHash(),
             token.amount.toBigDecimal()
         )
+    }
+
+    override fun createTokenClaimCheckpointState(
+        claimId: String,
+        poolKey: TokenPoolCacheKey
+    ): TokenClaimCheckpointState {
+        return TokenClaimCheckpointState(claimId, PoolKey.fromTokenPoolCacheKey(poolKey))
     }
 
     private fun String?.toNullableSecureHash(): SecureHash? {

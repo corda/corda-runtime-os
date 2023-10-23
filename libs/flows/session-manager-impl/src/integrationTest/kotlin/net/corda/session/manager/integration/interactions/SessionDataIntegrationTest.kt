@@ -57,10 +57,10 @@ class SessionDataIntegrationTest {
         alice.assertAllMessagesDelivered()
         bob.assertAllMessagesDelivered()
 
-        alice.assertLastSentSeqNum(7)
-        bob.assertLastReceivedSeqNum(7)
-        bob.assertLastSentSeqNum(7)
-        alice.assertLastReceivedSeqNum(7)
+        alice.assertLastSentSeqNum(6)
+        bob.assertLastReceivedSeqNum(6)
+        bob.assertLastSentSeqNum(6)
+        alice.assertLastReceivedSeqNum(6)
     }
 
     @Test
@@ -96,10 +96,10 @@ class SessionDataIntegrationTest {
         alice.assertAllMessagesDelivered()
         bob.assertAllMessagesDelivered()
 
-        alice.assertLastSentSeqNum(7)
-        bob.assertLastReceivedSeqNum(7)
-        bob.assertLastSentSeqNum(7)
-        alice.assertLastReceivedSeqNum(7)
+        alice.assertLastSentSeqNum(6)
+        bob.assertLastReceivedSeqNum(6)
+        bob.assertLastSentSeqNum(6)
+        alice.assertLastReceivedSeqNum(6)
     }
 
     @Test
@@ -121,10 +121,10 @@ class SessionDataIntegrationTest {
         //bob receive duplicate data message
         bob.processAllReceivedMessages()
 
-        alice.assertLastSentSeqNum(3)
-        bob.assertLastReceivedSeqNum(3)
-        bob.assertLastSentSeqNum(1)
-        alice.assertLastReceivedSeqNum(1)
+        alice.assertLastSentSeqNum(2)
+        bob.assertLastReceivedSeqNum(2)
+        bob.assertLastSentSeqNum(0)
+        alice.assertLastReceivedSeqNum(0)
     }
 
     @Test

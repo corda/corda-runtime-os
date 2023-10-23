@@ -9,7 +9,6 @@ import net.corda.sandboxgroupcontext.CustomMetadataConsumer
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.getMetadataServices
 import net.corda.v5.crypto.extensions.DigestAlgorithmFactory
-import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
@@ -24,7 +23,7 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
     property = [ CORDA_UNINJECTABLE_SERVICE ],
     scope = PROTOTYPE
 )
-class DigestAlgorithmFactoryProviderImpl @Activate constructor()
+class DigestAlgorithmFactoryProviderImpl
     : DigestAlgorithmFactoryProvider, UsedByFlow, UsedByPersistence, UsedByVerification, CustomMetadataConsumer {
     private val provider = linkedMapOf<String, DigestAlgorithmFactory>()
 

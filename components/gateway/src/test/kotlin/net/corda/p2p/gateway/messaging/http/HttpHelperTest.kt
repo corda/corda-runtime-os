@@ -33,7 +33,7 @@ class HttpHelperTest {
         headers.set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON)
         val request = DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST, uri, payload, headers, EmptyHttpHeaders.INSTANCE)
 
-        val status = request.validate(MAX_REQUEST_SIZE, URL_PATH)
+        val status = request.validate(MAX_REQUEST_SIZE, listOf(URL_PATH, "/"))
         assertThat(status).isEqualTo(HttpResponseStatus.NOT_FOUND)
     }
 
@@ -48,7 +48,7 @@ class HttpHelperTest {
         headers.set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON)
         val request = DefaultFullHttpRequest(HttpVersion.HTTP_1_0, HttpMethod.POST, uri, payload, headers, EmptyHttpHeaders.INSTANCE)
 
-        val status = request.validate(MAX_REQUEST_SIZE, URL_PATH)
+        val status = request.validate(MAX_REQUEST_SIZE, listOf(URL_PATH))
         assertThat(status).isEqualTo(HttpResponseStatus.HTTP_VERSION_NOT_SUPPORTED)
     }
 
@@ -63,7 +63,7 @@ class HttpHelperTest {
         headers.set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON)
         val request = DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, uri, payload, headers, EmptyHttpHeaders.INSTANCE)
 
-        val status = request.validate(MAX_REQUEST_SIZE, URL_PATH)
+        val status = request.validate(MAX_REQUEST_SIZE, listOf(URL_PATH))
         assertThat(status).isEqualTo(HttpResponseStatus.NOT_IMPLEMENTED)
     }
 
@@ -78,7 +78,7 @@ class HttpHelperTest {
         headers.set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_XML)
         val request = DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST, uri, payload, headers, EmptyHttpHeaders.INSTANCE)
 
-        val status = request.validate(MAX_REQUEST_SIZE, URL_PATH)
+        val status = request.validate(MAX_REQUEST_SIZE, listOf(URL_PATH))
         assertThat(status).isEqualTo(HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE)
     }
 
@@ -92,7 +92,7 @@ class HttpHelperTest {
         headers.set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON)
         val request = DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST, uri, payload, headers, EmptyHttpHeaders.INSTANCE)
 
-        val status = request.validate(MAX_REQUEST_SIZE, URL_PATH)
+        val status = request.validate(MAX_REQUEST_SIZE, listOf(URL_PATH))
         assertThat(status).isEqualTo(HttpResponseStatus.LENGTH_REQUIRED)
     }
 
@@ -107,7 +107,7 @@ class HttpHelperTest {
         headers.set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON)
         val request = DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST, uri, payload, headers, EmptyHttpHeaders.INSTANCE)
 
-        val status = request.validate(MAX_REQUEST_SIZE, URL_PATH)
+        val status = request.validate(MAX_REQUEST_SIZE, listOf(URL_PATH))
         assertThat(status).isEqualTo(HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE)
     }
 
@@ -122,8 +122,7 @@ class HttpHelperTest {
         headers.set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON)
         val request = DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST, uri, payload, headers, EmptyHttpHeaders.INSTANCE)
 
-        val status = request.validate(MAX_REQUEST_SIZE, URL_PATH)
+        val status = request.validate(MAX_REQUEST_SIZE, listOf("/one", URL_PATH, "/two"))
         assertThat(status).isEqualTo(HttpResponseStatus.OK)
     }
-
 }

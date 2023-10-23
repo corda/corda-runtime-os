@@ -18,7 +18,8 @@ private const val FLOW_EXECUTOR_ROLE = "FlowExecutorRole"
     name = "flow-executor",
     description = ["""Creates a role ('$FLOW_EXECUTOR_ROLE') which will permit for a vNode supplied: 
         - Starting any flow
-        - Enquire about the status of the running flow"""]
+        - Enquire about the status of the running flow"""],
+    mixinStandardHelpOptions = true
 )
 @Suppress("unused")
 class FlowExecutorSubcommand : RestCommand(), Callable<Int> {

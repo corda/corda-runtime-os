@@ -19,6 +19,9 @@ CODEOWNERS         @corda/blt @corda/corda5-team-leads
 /libs/rest/                                     @corda/rest
 /libs/permissions/                              @corda/rest
 /processors/rest-processor/                     @corda/rest
+/tools/plugins/initial-rbac/                    @corda/rest
+/tools/plugins/plugins-rest/                    @corda/rest
+/tools/plugins/virtual-node/                    @corda/rest
 
 # Corda Helm chart for cluster management team
 /charts/corda/                                @corda/cluster-management

@@ -67,7 +67,7 @@ class PersistenceServiceInternal(
         payload: PersistEntities
     ): EntityResponse {
         payload.entities.map { entityManager.persist(serializationService.deserialize(it.array(), Any::class.java)) }
-        return EntityResponse(emptyList(), KeyValuePairList(emptyList()))
+        return EntityResponse(emptyList(), KeyValuePairList(emptyList()), null)
     }
 
     fun find(
@@ -80,7 +80,7 @@ class PersistenceServiceInternal(
             val id = serializationService.deserialize(serializedId.array(), Any::class.java)
             entityManager.find(clazz, id)?.let { entity -> payloadCheck(serializationService.toBytes(entity)) }
         }
-        return EntityResponse(results, KeyValuePairList(emptyList()))
+        return EntityResponse(results, KeyValuePairList(emptyList()), null)
     }
 
     fun merge(
@@ -92,7 +92,7 @@ class PersistenceServiceInternal(
             val entity = serializationService.deserialize(it.array(), Any::class.java)
             entityManager.merge(entity)
         }
-        return EntityResponse(results.map { payloadCheck(serializationService.toBytes(it)) }, KeyValuePairList(emptyList()))
+        return EntityResponse(results.map { payloadCheck(serializationService.toBytes(it)) }, KeyValuePairList(emptyList()), null)
     }
 
     fun deleteEntities(
@@ -105,7 +105,7 @@ class PersistenceServiceInternal(
             val entity = serializationService.deserialize(it.array(), Any::class.java)
             entityManager.remove(entityManager.merge(entity))
         }
-        return EntityResponse(emptyList(), KeyValuePairList(emptyList()))
+        return EntityResponse(emptyList(), KeyValuePairList(emptyList()), null)
     }
 
     /**
@@ -128,7 +128,7 @@ class PersistenceServiceInternal(
                 logger.debug("Entity not found for deletion: ${payload.entityClassName} and id: $id")
             }
         }
-        return EntityResponse(emptyList(), KeyValuePairList(emptyList()))
+        return EntityResponse(emptyList(), KeyValuePairList(emptyList()), null)
     }
 
     /**
@@ -209,6 +209,6 @@ class PersistenceServiceInternal(
             null -> emptyList()
             else -> results.filterNotNull().map { item -> payloadCheck(serializationService.toBytes(item)) }
         }
-        return EntityResponse(result, KeyValuePairList(listOf(KeyValuePair("numberOfRowsFromQuery", results.size.toString()))))
+        return EntityResponse(result, KeyValuePairList(listOf(KeyValuePair("numberOfRowsFromQuery", results.size.toString()))), null)
     }
 }

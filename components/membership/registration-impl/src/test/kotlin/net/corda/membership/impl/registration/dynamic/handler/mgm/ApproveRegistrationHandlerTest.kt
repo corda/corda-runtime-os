@@ -58,7 +58,7 @@ class ApproveRegistrationHandlerTest {
     private val notary = createHoldingIdentity("notary")
     private val registrationId = "registrationID"
     private val command = ApproveRegistration()
-    private val state = RegistrationState(registrationId, member.toAvro(), owner.toAvro())
+    private val state = RegistrationState(registrationId, member.toAvro(), owner.toAvro(), emptyList())
     private val key = "key"
     private val mockSignedGroupParameters = mock<SignedGroupParameters> {
         on { epoch } doReturn 6
@@ -171,7 +171,8 @@ class ApproveRegistrationHandlerTest {
                 eq(
                     SetOwnRegistrationStatus(
                         registrationId,
-                        RegistrationStatus.APPROVED
+                        RegistrationStatus.APPROVED,
+                        null
                     )
                 ),
                 anyOrNull(),
@@ -198,7 +199,7 @@ class ApproveRegistrationHandlerTest {
 
     @Test
     fun `invoke updates the MGM's view of group parameters with notary, if approved member has notary role set`() {
-        val state = RegistrationState(registrationId, notary.toAvro(), owner.toAvro())
+        val state = RegistrationState(registrationId, notary.toAvro(), owner.toAvro(), emptyList())
 
         val results = handler.invoke(state, key, command)
 
@@ -219,7 +220,7 @@ class ApproveRegistrationHandlerTest {
 
     @Test
     fun `invoke does not update the MGM's view of group parameters, if approved member has no role set`() {
-        val state = RegistrationState(registrationId, member.toAvro(), owner.toAvro())
+        val state = RegistrationState(registrationId, member.toAvro(), owner.toAvro(), emptyList())
 
         val results = handler.invoke(state, key, command)
 
@@ -242,7 +243,7 @@ class ApproveRegistrationHandlerTest {
 
     @Test
     fun `invoke publishes group parameters to kafka if approved member has notary role set `() {
-        val state = RegistrationState(registrationId, notary.toAvro(), owner.toAvro())
+        val state = RegistrationState(registrationId, notary.toAvro(), owner.toAvro(), emptyList())
         val groupParametersCaptor = argumentCaptor<SignedGroupParameters>()
         val holdingIdentityCaptor = argumentCaptor<HoldingIdentity>()
 
@@ -257,7 +258,7 @@ class ApproveRegistrationHandlerTest {
     fun `invoke does not send registration status update message when status cannot be retrieved`() {
         val mockedBuilder = Mockito.mockStatic(VersionedMessageBuilder::class.java).also {
             it.`when`<VersionedMessageBuilder> {
-                VersionedMessageBuilder.retrieveRegistrationStatusMessage(any(), any(), any())
+                VersionedMessageBuilder.retrieveRegistrationStatusMessage(any(), any(), any(), any())
             } doReturn null
         }
 
@@ -319,7 +320,7 @@ class ApproveRegistrationHandlerTest {
 
     @Test
     fun `fails when member name is already in use as notary service name`() {
-        val state = RegistrationState(registrationId, member.toAvro(), owner.toAvro())
+        val state = RegistrationState(registrationId, member.toAvro(), owner.toAvro(), emptyList())
         val mockNotary = mock<NotaryInfo> {
             on { name } doReturn member.x500Name
         }

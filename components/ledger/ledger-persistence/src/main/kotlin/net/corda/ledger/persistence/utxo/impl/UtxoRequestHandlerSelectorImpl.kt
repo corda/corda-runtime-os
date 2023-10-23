@@ -3,6 +3,8 @@ package net.corda.ledger.persistence.utxo.impl
 import net.corda.data.ledger.persistence.FindSignedGroupParameters
 import net.corda.data.ledger.persistence.FindSignedLedgerTransaction
 import net.corda.data.ledger.persistence.FindTransaction
+import net.corda.data.ledger.persistence.FindUnconsumedStatesByExactType
+import net.corda.data.ledger.persistence.FindTransactionIdsAndStatuses
 import net.corda.data.ledger.persistence.FindUnconsumedStatesByType
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
@@ -19,9 +21,11 @@ import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFacto
 import net.corda.ledger.persistence.query.execution.impl.VaultNamedQueryExecutorImpl
 import net.corda.ledger.persistence.utxo.UtxoRequestHandlerSelector
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoExecuteNamedQueryHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionIdsAndStatusesRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindSignedGroupParametersRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindSignedLedgerTransactionRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionRequestHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindUnconsumedStatesByExactTypeRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindUnconsumedStatesByTypeRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistSignedGroupParametersIfDoNotExistRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoPersistTransactionIfDoesNotExistRequestHandler
@@ -47,6 +51,7 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
     private val responseFactory: ResponseFactory
 ): UtxoRequestHandlerSelector {
 
+    @Suppress("LongMethod")
     override fun selectHandler(sandbox: SandboxGroupContext, request: LedgerPersistenceRequest): RequestHandler {
         val persistenceService = UtxoPersistenceServiceImpl(
             entityManagerFactory = sandbox.getEntityManagerFactory(),
@@ -95,6 +100,15 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                     outputRecordFactory
                 )
             }
+            is FindUnconsumedStatesByExactType -> {
+                UtxoFindUnconsumedStatesByExactTypeRequestHandler(
+                    req,
+                    sandbox,
+                    externalEventContext,
+                    persistenceService,
+                    outputRecordFactory
+                )
+            }
             is ResolveStateRefs -> {
                 UtxoResolveStateRefsRequestHandler(
                     req,
@@ -105,7 +119,6 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
             }
             is PersistTransaction -> {
                 UtxoPersistTransactionRequestHandler(
-                    sandbox.virtualNodeContext.holdingIdentity,
                     UtxoTransactionReaderImpl(sandbox, externalEventContext, req),
                     UtxoTokenObserverMapImpl(sandbox),
                     externalEventContext,
@@ -153,6 +166,15 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                     externalEventContext,
                     externalEventResponseFactory,
                     persistenceService
+                )
+            }
+            is FindTransactionIdsAndStatuses -> {
+                UtxoFindTransactionIdsAndStatusesRequestHandler(
+                    req,
+                    externalEventContext,
+                    persistenceService,
+                    externalEventResponseFactory,
+                    serializationService
                 )
             }
             else -> {

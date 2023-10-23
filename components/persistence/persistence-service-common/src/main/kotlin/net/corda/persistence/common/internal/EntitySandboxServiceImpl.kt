@@ -4,13 +4,16 @@ import net.corda.cpk.read.CpkReadService
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
+import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.orm.JpaEntitiesSet
 import net.corda.persistence.common.EntityExtractor
 import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_EMF
 import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_TOKEN_STATE_OBSERVERS
+import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_TOKEN_STATE_OBSERVERS_V2
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.sandbox.SandboxException
+import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP
 import net.corda.sandboxgroupcontext.RequireSandboxJSON
@@ -26,7 +29,7 @@ import net.corda.sandboxgroupcontext.service.registerCustomJsonSerializers
 import net.corda.utilities.debug
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.ContractState
-import net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver
+import net.corda.v5.ledger.utxo.observer.UtxoTokenTransactionStateObserver
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryFactory
 import net.corda.v5.ledger.utxo.query.json.ContractStateVaultJsonFactory
 import net.corda.virtualnode.HoldingIdentity
@@ -49,7 +52,7 @@ import org.slf4j.LoggerFactory
 @Suppress("LongParameterList")
 @RequireSandboxAMQP
 @RequireSandboxJSON
-@Component(service = [ EntitySandboxService::class ])
+@Component(service = [EntitySandboxService::class])
 class EntitySandboxServiceImpl @Activate constructor(
     @Reference
     private val sandboxService: SandboxGroupContextComponent,
@@ -98,14 +101,16 @@ class EntitySandboxServiceImpl @Activate constructor(
         // Instruct all CustomMetadataConsumers to accept their metadata.
         sandboxService.acceptCustomMetadata(ctx)
 
-        logger.info("Initialising DB Sandbox for {}/{}[{}]",
+        logger.info(
+            "Initialising DB Sandbox for {}/{}[{}]",
             virtualNode.holdingIdentity,
             virtualNode.cpiIdentifier.name,
             virtualNode.cpiIdentifier.version
         )
 
         return AutoCloseable {
-            logger.info("Closing DB Sandbox for {}/{}[{}]",
+            logger.info(
+                "Closing DB Sandbox for {}/{}[{}]",
                 virtualNode.holdingIdentity,
                 virtualNode.cpiIdentifier.name,
                 virtualNode.cpiIdentifier.version
@@ -174,54 +179,99 @@ class EntitySandboxServiceImpl @Activate constructor(
         ctx: MutableSandboxGroupContext,
         cpks: Collection<CpkMetadata>
     ) {
-        val tokenStateObserverMap = cpks
-            .flatMap { it.cordappManifest.tokenStateObservers }
-            .toSet()
-            .mapNotNull { getObserverFromClassName(it, ctx) }
-            .groupBy { it.stateType }
+        @Suppress("DEPRECATION")
+        val tokenStateObserverMap =
+            getStateObserver<net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver<ContractState>>(ctx, cpks) { manifest ->
+                manifest.tokenStateObservers
+            }.groupBy { it.stateType }
 
-        ctx.putObjectByKey(SANDBOX_TOKEN_STATE_OBSERVERS, requireSingleObserverToState(tokenStateObserverMap))
+        val tokenStateObserverMapV2 =
+            getStateObserver<UtxoTokenTransactionStateObserver<ContractState>>(ctx, cpks) { manifest ->
+                manifest.tokenStateObserversV2
+            }.groupBy { it.stateType }
 
-        logger.debug {
-            "Registered token observers: ${tokenStateObserverMap.mapValues { (_, observers) ->
-                observers.map { it::class.java.name }}
-            }"
-        }
+        requireSingleObserverToState(tokenStateObserverMap, tokenStateObserverMapV2)
+
+        ctx.putObjectByKey(SANDBOX_TOKEN_STATE_OBSERVERS, singleObserverToState(tokenStateObserverMap))
+        ctx.putObjectByKey(SANDBOX_TOKEN_STATE_OBSERVERS_V2, singleObserverToState(tokenStateObserverMapV2))
+
+        genLogsDebug(tokenStateObserverMap)
+        genLogsDebug(tokenStateObserverMapV2)
     }
 
+    private inline fun <reified T : Any> getStateObserver(
+        ctx: MutableSandboxGroupContext,
+        cpks: Collection<CpkMetadata>,
+        getObserverNameList: (CordappManifest) -> Set<String>
+    ) =
+        cpks
+            .flatMap { getObserverNameList(it.cordappManifest) }
+            .toSet()
+            .mapNotNull {
+                getObserverFromClassName<T>(it, ctx.sandboxGroup)
+            }
+
+    private fun <T : Any> genLogsDebug(tokenStateObserverMap: Map<Class<ContractState>, List<T>>) =
+        logger.debug {
+            "Registered token observers: ${
+                tokenStateObserverMap.mapValues { (_, observers) ->
+                    observers.map { it::class.java.name }
+                }
+            }"
+        }
+
     private fun requireSingleObserverToState(
-        tokenStateObserverMap: Map<Class<ContractState>, List<UtxoLedgerTokenStateObserver<ContractState>>>
-    ): Map<Class<ContractState>, UtxoLedgerTokenStateObserver<ContractState>?> {
+        @Suppress("DEPRECATION")
+        tokenStateObserverMapV1: Map<
+                Class<ContractState>,
+                List<net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver<ContractState>>>,
+        tokenStateObserverMapV2: Map<Class<ContractState>, List<UtxoTokenTransactionStateObserver<ContractState>>>
+    ) {
+        val tokenStateObserverMap = merge(tokenStateObserverMapV1, tokenStateObserverMapV2)
 
-        return tokenStateObserverMap.entries.associate { contractStateTypeToObservers  ->
+        tokenStateObserverMap.entries.forEach { contractStateTypeToObservers ->
             val numberOfObservers = contractStateTypeToObservers.value.size
-
             if (numberOfObservers > 1) {
-                val observerTypes = contractStateTypeToObservers.value.map { observer -> observer.stateType.name }
+                val observerTypes = contractStateTypeToObservers.value.map { it.javaClass }
                 throw IllegalStateException(
                     "More than one observer found for the contract state. " +
                             "Contract state: ${contractStateTypeToObservers.key}, observers: $observerTypes"
                 )
             }
-            contractStateTypeToObservers.key to contractStateTypeToObservers.value.singleOrNull()
         }
     }
 
-    private fun getObserverFromClassName(
+    private fun merge(
+        @Suppress("DEPRECATION")
+        map1: Map<Class<ContractState>, List<net.corda.v5.ledger.utxo.observer.UtxoLedgerTokenStateObserver<ContractState>>>,
+        map2: Map<Class<ContractState>, List<UtxoTokenTransactionStateObserver<ContractState>>>
+    ) =
+        (map1.asSequence() + map2.asSequence())
+            .groupBy({ it.key }, { it.value })
+            .mapValues { (_, values) -> values.flatten() }
+
+    private fun <T> singleObserverToState(
+        tokenStateObserverMap: Map<Class<ContractState>, List<T>>
+    ): Map<Class<ContractState>, T?> =
+        tokenStateObserverMap.entries.associate { contractStateTypeToObservers ->
+            contractStateTypeToObservers.key to contractStateTypeToObservers.value.singleOrNull()
+        }
+
+    private inline fun <reified T : Any> getObserverFromClassName(
         className: String,
-        ctx: MutableSandboxGroupContext
-    ): UtxoLedgerTokenStateObserver<ContractState>? {
-        val clazz = ctx.sandboxGroup.loadClassFromMainBundles(
+        sandboxGroup: SandboxGroup
+    ): T? {
+        val clazz = sandboxGroup.loadClassFromMainBundles(
             className,
-            UtxoLedgerTokenStateObserver::class.java
+            T::class.java
         )
 
         return try {
             @Suppress("unchecked_cast")
-            clazz.getConstructor().newInstance() as UtxoLedgerTokenStateObserver<ContractState>
+            clazz.getConstructor().newInstance() as T
         } catch (e: Exception) {
             logger.error(
-                "The UtxoLedgerTokenStateObserver '${clazz}' must implement a default public constructor.",
+                "The UTXO state observer '${clazz}' must implement a default public constructor.",
                 e
             )
             null

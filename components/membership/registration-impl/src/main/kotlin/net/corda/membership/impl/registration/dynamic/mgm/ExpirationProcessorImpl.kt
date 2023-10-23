@@ -19,6 +19,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.registration.DECLINED_REASON_FOR_USER_INTERNAL_ERROR
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.ExpirationProcessor
@@ -285,7 +286,8 @@ internal class ExpirationProcessorImpl internal constructor(
                         key = "${id.x500Name}-${id.groupId}",
                         value = RegistrationCommand(
                             DeclineRegistration(
-                                "Registration request stuck and expired."
+                                "Registration request stuck and expired.",
+                                DECLINED_REASON_FOR_USER_INTERNAL_ERROR
                             )
                         )
                     )
