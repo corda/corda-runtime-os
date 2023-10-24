@@ -45,7 +45,7 @@ class SignatureProofTests : UtxoLedgerWithBatchSignerTest() {
     }
 
     @Test
-    fun `sign doesn't produce signature proof`() {
+    fun `sign() produces a signature without proof`() {
         val signatures = singingService.sign(signedTransaction, listOf(publicKeyExample))
         assertEquals(1, signatures.size)
         val signature: DigitalSignatureAndMetadata = signatures.first()
