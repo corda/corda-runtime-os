@@ -8,7 +8,6 @@ import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityPayload
-import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityVersion
 import net.corda.ledger.utxo.flow.impl.flows.finality.addTransactionIdToFlowContext
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
@@ -30,12 +29,17 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.security.PrivilegedExceptionAction
 
+/**
+ * V1 changed slightly between 5.0 and 5.1.
+ * (5.1's initial payload contains the number of parties to let bypass steps later not needed for two parties cases)
+ * This change is not managed through flow versioning since flow interoperability is not supported between these versions.
+ */
+
 @CordaSystemFlow
 class UtxoFinalityFlowV1(
     private val initialTransaction: UtxoSignedTransactionInternal,
     private val sessions: List<FlowSession>,
-    private val pluggableNotaryClientFlow: Class<PluggableNotaryClientFlow>,
-    val version: UtxoFinalityVersion
+    private val pluggableNotaryClientFlow: Class<PluggableNotaryClientFlow>
 ) : UtxoFinalityBaseV1() {
 
     private companion object {
@@ -59,7 +63,7 @@ class UtxoFinalityFlowV1(
         * it should wait for additional signatures.
         * Otherwise, it can be skipped since there isn't unseen signatures
         */
-        val transferAdditionalSignatures = version == UtxoFinalityVersion.V1 || sessions.size > 1
+        val transferAdditionalSignatures = sessions.size > 1
 
         addTransactionIdToFlowContext(flowEngine, transactionId)
         log.trace("Starting finality flow for transaction: {}", transactionId)
@@ -93,13 +97,7 @@ class UtxoFinalityFlowV1(
 
     @Suspendable
     private fun sendTransactionAndBackchainToCounterparties(transferAdditionalSignatures: Boolean) {
-        if (version == UtxoFinalityVersion.V1) {
-            flowMessaging.sendAll(
-                initialTransaction, sessions.toSet()
-            )
-        } else {
-            flowMessaging.sendAll(FinalityPayload(initialTransaction, transferAdditionalSignatures), sessions.toSet())
-        }
+        flowMessaging.sendAll(FinalityPayload(initialTransaction, transferAdditionalSignatures), sessions.toSet())
 
         sessions.forEach {
             if (initialTransaction.dependencies.isNotEmpty()) {

@@ -23,6 +23,7 @@ dependencies {
     api 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-ledger-utxo'
     implementation 'net.corda:corda-topic-schema'
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation project(':components:ledger:ledger-common-flow-api')
     implementation project(':components:ledger:ledger-common-flow')
     implementation project(':components:ledger:notary-worker-selection')
@@ -73,6 +74,7 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
     integrationTestRuntimeOnly project(':libs:membership:membership-impl')
+    integrationTestRuntimeOnly project(':libs:state-manager:state-manager-db-impl')
 
     cpis project(path: ':testing:ledger:ledger-utxo-state-app', configuration: 'cordaCPB')
 }

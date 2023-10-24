@@ -134,6 +134,7 @@ class MemberOpsServiceProcessorTest {
         virtualNodeInfoReadService,
         membershipGroupReaderProvider,
         membershipQueryClient,
+        mock(),
         clock,
     )
 

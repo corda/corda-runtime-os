@@ -27,10 +27,10 @@ class SessionStateCreatedTransitionTest {
     private val maxMsgSize = 10000000L
 
     @Test
-    fun `Send session init when in state created`() {
+    fun `Send counterparty request  when in state created`() {
         val sessionState = buildCreatedState()
 
-        val sessionEvent = generateMessage(SessionMessageType.INIT, instant)
+        val sessionEvent = generateMessage(SessionMessageType.COUNTERPARTY_INFO, instant)
         val outputState = sessionManager.processMessageToSend(sessionState, sessionState, sessionEvent, instant, maxMsgSize)
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CREATED)
     }
@@ -50,16 +50,6 @@ class SessionStateCreatedTransitionTest {
 
         val sessionEvent = generateMessage(SessionMessageType.CLOSE, instant)
         val outputState = sessionManager.processMessageToSend(sessionState, sessionState, sessionEvent, instant, maxMsgSize)
-        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.ERROR)
-    }
-
-    @Test
-    fun `Session Initiatitor receives init back`() {
-        val sessionState = buildCreatedState()
-
-        val sessionEvent = generateMessage(SessionMessageType.INIT, instant, MessageDirection.INBOUND)
-        sessionEvent.sequenceNum = 1
-        val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.ERROR)
     }
 
@@ -84,15 +74,15 @@ class SessionStateCreatedTransitionTest {
     }
 
     private fun buildCreatedState(): SessionState {
-        val sentSessionInit = generateMessage(SessionMessageType.INIT, instant)
-        sentSessionInit.sequenceNum = 1
+        val sentSessionCOUNTERPARTYINFO = generateMessage(SessionMessageType.COUNTERPARTY_INFO, instant)
+        sentSessionCOUNTERPARTYINFO.sequenceNum = 1
 
         return buildSessionState(
             SessionStateType.CREATED,
             0,
             listOf(),
             1,
-            listOf(sentSessionInit)
+            listOf(sentSessionCOUNTERPARTYINFO)
         )
     }
 }

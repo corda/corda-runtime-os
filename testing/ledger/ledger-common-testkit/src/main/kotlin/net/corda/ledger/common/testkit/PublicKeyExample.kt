@@ -8,8 +8,9 @@ import java.security.spec.ECGenParameterSpec
 private val kpg = KeyPairGenerator.getInstance("EC")
     .apply { initialize(ECGenParameterSpec("secp256r1")) }
 
-val publicKeyExample: PublicKey = kpg
-    .generateKeyPair().public
+val keyPairExample: KeyPair = kpg.generateKeyPair()
+
+val publicKeyExample: PublicKey = keyPairExample.public
 
 val anotherPublicKeyExample: PublicKey = kpg
     .generateKeyPair().public

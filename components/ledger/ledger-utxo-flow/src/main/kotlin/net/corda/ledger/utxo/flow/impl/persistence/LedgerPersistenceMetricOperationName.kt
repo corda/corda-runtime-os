@@ -4,7 +4,9 @@ enum class LedgerPersistenceMetricOperationName {
 
     FindGroupParameters,
     FindSignedLedgerTransactionWithStatus,
+    FindTransactionIdsAndStatuses,
     FindTransactionWithStatus,
+    FindUnconsumedStatesByExactType,
     FindUnconsumedStatesByType,
     FindWithNamedQuery,
     PersistSignedGroupParametersIfDoNotExist,

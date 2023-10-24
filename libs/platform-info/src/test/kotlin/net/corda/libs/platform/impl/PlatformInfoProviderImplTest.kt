@@ -13,7 +13,8 @@ class PlatformInfoProviderImplTest {
 
     companion object {
         const val PLATFORM_VERSION = "12345"
-        const val SOFTWARE_VERSION = "5.0.0.0-SNAPSHOT"
+        const val SHORT_SOFTWARE_VERSION = "5.0"
+        const val SOFTWARE_VERSION = "$SHORT_SOFTWARE_VERSION.0.0-SNAPSHOT"
     }
 
     private val bundle = mock<Bundle>().also {
@@ -46,5 +47,10 @@ class PlatformInfoProviderImplTest {
     @Test
     fun `local worker software version returns software version from bundle context`() {
         assertThat(platformVersionService.localWorkerSoftwareVersion).isEqualTo(SOFTWARE_VERSION)
+    }
+
+    @Test
+    fun `short local worker software version returns first 2 digits`() {
+        assertThat(platformVersionService.localWorkerSoftwareShortVersion).isEqualTo(SHORT_SOFTWARE_VERSION)
     }
 }

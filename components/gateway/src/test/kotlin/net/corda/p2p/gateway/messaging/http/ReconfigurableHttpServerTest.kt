@@ -19,6 +19,7 @@ import net.corda.p2p.gateway.messaging.internal.CommonComponents
 import net.corda.p2p.gateway.messaging.internal.RequestListener
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mockConstruction
 import org.mockito.kotlin.any
@@ -45,7 +46,11 @@ class ReconfigurableHttpServerTest {
     private val listener = mock<RequestListener>()
     private val resourcesHolder = mock<ResourcesHolder>()
     private val serverAddress = InetSocketAddress("www.r3.com", 33)
-    private val serverMock = mockConstruction(HttpServer::class.java)
+    private var calledConfigurations = mutableListOf<GatewayServerConfiguration?>()
+    private val serverMock = mockConstruction(HttpServer::class.java) { _, context ->
+        val config = context.arguments()[2] as? GatewayServerConfiguration
+        calledConfigurations.add(config)
+    }
     private val serverConfiguration = GatewayServerConfiguration(
         hostAddress = serverAddress.hostName,
         hostPort = serverAddress.port,
@@ -86,13 +91,16 @@ class ReconfigurableHttpServerTest {
         on { trustStoresMap } doReturn mock()
     }
 
-    private val server = ReconfigurableHttpServer(
-        lifecycleCoordinatorFactory,
-        configurationReaderService,
-        listener,
-        commonComponents,
-        mock(),
-    )
+    @BeforeEach
+    fun setUp() {
+        ReconfigurableHttpServer(
+            lifecycleCoordinatorFactory,
+            configurationReaderService,
+            listener,
+            commonComponents,
+            mock(),
+        )
+    }
 
     @AfterEach
     fun cleanUp() {
@@ -136,7 +144,7 @@ class ReconfigurableHttpServerTest {
     @Test
     fun `applyNewConfiguration will stop the previous server in the same address`() {
         configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
-        val servers = configuration.serversConfiguration.map { it.copy(urlPath = "/tests") }
+        val servers = configuration.serversConfiguration.map { it.copy(urlPaths = setOf("/tests")) }
         configHandler.applyNewConfiguration(configuration.copy(serversConfiguration = servers), configuration, resourcesHolder)
 
         verify(serverMock.constructed().first()).close()
@@ -184,11 +192,11 @@ class ReconfigurableHttpServerTest {
     }
 
     @Test
-    fun `applyNewConfiguration will use the first configuration if there is more than one server that is using the same host and port`() {
+    fun `applyNewConfiguration if there is more than one server that is using the same host and port will merge the configurations`() {
         configHandler.applyNewConfiguration(
             configuration.copy(
                 serversConfiguration = configuration.serversConfiguration
-                    + configuration.serversConfiguration.first().copy(urlPath = "/test")
+                    + configuration.serversConfiguration.first().copy(urlPaths = setOf("/test"))
                     + configuration.serversConfiguration.first().copy(hostAddress = "0.0.0.0")
                     + configuration.serversConfiguration.first().copy(hostPort = 1000)
             ),
@@ -197,6 +205,25 @@ class ReconfigurableHttpServerTest {
         )
 
         assertThat(serverMock.constructed()).hasSize(3)
+    }
+
+    @Test
+    fun `applyNewConfiguration with more than one path for the same host and port will be merged`() {
+        val paths = (1..5).map {
+            "/test/$it"
+        }
+        val configs = paths.map {
+            configuration.serversConfiguration.first().copy(urlPaths = setOf(it))
+        }
+        configHandler.applyNewConfiguration(
+            configuration.copy(
+                serversConfiguration = configs
+            ),
+            null,
+            resourcesHolder
+        )
+
+        assertThat(calledConfigurations.firstOrNull()?.urlPaths).containsExactlyElementsOf(paths)
     }
 
     @Test

@@ -10,6 +10,7 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
+import net.corda.v5.application.interop.facade.FacadeId
 
 @InitiatingFlow(protocol = "SimpleReserveTokensViaSubFlow2-protocol")
 class SimpleReserveTokensViaSubFlowFlowV2 : ClientStartableFlow {
@@ -35,7 +36,7 @@ class SimpleReserveTokensViaSubFlowFlowV2 : ClientStartableFlow {
         val args = requestBody.getRequestBodyAsMap(jsonMarshallingService, String::class.java, String::class.java)
 
         val interopGroupId = getArgument(args, "interopGroupId")
-        val facadeId = getArgument(args, "facadeId")
+        val facadeId = FacadeId.of(getArgument(args, "facadeId"))
         val alias = MemberX500Name.parse(getArgument(args, "alias"))
         val uuid = getArgument(args, "payload")
 

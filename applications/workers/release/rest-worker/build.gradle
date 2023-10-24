@@ -33,6 +33,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':applications:workers:worker-common')
     implementation project(':libs:configuration:configuration-core')
+    implementation project(":libs:lifecycle:registry")
     implementation project(':libs:platform-info')
     implementation project(':libs:tracing')
     implementation project(':libs:configuration:configuration-validation')

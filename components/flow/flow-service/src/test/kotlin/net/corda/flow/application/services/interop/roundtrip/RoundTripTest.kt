@@ -1,11 +1,10 @@
 package net.corda.flow.application.services.interop.roundtrip
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.flow.application.services.impl.interop.dispatch.buildDispatcher
 import net.corda.flow.application.services.impl.interop.facade.FacadeReaders
-import net.corda.flow.application.services.impl.interop.proxies.JacksonJsonMarshaller
 import net.corda.flow.application.services.impl.interop.proxies.getClientProxy
 import net.corda.flow.application.services.interop.example.TokensFacade
+import net.corda.flow.application.services.interop.testJsonMarshaller
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -20,9 +19,9 @@ class RoundTripTest {
     val currentTime = ZonedDateTime.now()
     val server = TestTokenServer(mapOf("USD" to BigDecimal(1000000), "GBP" to BigDecimal("1000000"))) { currentTime }
 
-    val v1Dispatcher = server.buildDispatcher(facadeV1, JacksonJsonMarshaller(ObjectMapper()))
+    val v1Dispatcher = server.buildDispatcher(facadeV1, testJsonMarshaller)
 
-    val v1Client = facadeV1.getClientProxy<TokensFacade>(JacksonJsonMarshaller(ObjectMapper()),v1Dispatcher)
+    val v1Client = facadeV1.getClientProxy<TokensFacade>(testJsonMarshaller, v1Dispatcher)
 
     @Test
     fun roundtripClientProxyToServerDispatcher() {

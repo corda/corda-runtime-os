@@ -1,25 +1,27 @@
 package net.corda.messaging.subscription
 
-import io.javalin.Javalin
-import java.net.ServerSocket
-import java.net.URL
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.messaging.api.subscription.config.SyncRPCConfig
-import net.corda.web.server.JavalinServer
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
+import net.corda.rest.ResponseCode
+import net.corda.web.api.Endpoint
+import net.corda.web.api.HTTPMethod
+import net.corda.web.api.WebContext
+import net.corda.web.api.WebServer
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 
 class SyncRPCSubscriptionImplTest {
 
@@ -28,73 +30,139 @@ class SyncRPCSubscriptionImplTest {
         on { createCoordinator(any(), any()) }.doReturn(lifecycleCoordinator)
     }
 
-    private val webServer = JavalinServer(lifecycleCoordinatorFactory) { Javalin.create() }
-    private val TEST_ENDPOINT = "/test"
-    private val TEST_PORT = ServerSocket(0).use {
-        it.localPort
+    private val webServer = mock<WebServer>()
+    private val subscriptionName = "Test"
+    private val endpointPath = "/test"
+    private val requestData = "Request String"
+    private val serialisedRequest = randomBytes()
+
+    private val responseData = "Response String"
+    private val serialisedResponse = randomBytes()
+
+    private val serializer = mock<CordaAvroSerializer<String>> {
+        on { serialize(responseData) } doReturn(serialisedResponse)
     }
-    private val INPUT = "Request String"
-
-    private lateinit var rpcSubscription: SyncRPCSubscriptionImpl<String, String>
-
-    private val serializer: CordaAvroSerializer<String> = object : CordaAvroSerializer<String> {
-        override fun serialize(data: String): ByteArray? {
-            return data.toByteArray()
-        }
+    private val deserializer = mock<CordaAvroDeserializer<String>> {
+        on { deserialize(serialisedRequest) } doReturn(requestData)
     }
-    private val deserializer: CordaAvroDeserializer<String> = object : CordaAvroDeserializer<String> {
-        override fun deserialize(data: ByteArray): String? {
-            return String(data)
-        }
-
+    private val context = mock<WebContext> {
+        on { bodyAsBytes() } doReturn serialisedRequest
     }
-
-    @BeforeEach
-    fun setup() {
-        val processor = object : SyncRPCProcessor<String, String> {
-            override fun process(request: String): String {
-                return "input: '$request', has been handled"
-            }
-
-            override val requestClass: Class<String> = String::class.java
-            override val responseClass: Class<String> = String::class.java
-        }
-
-        webServer.start(TEST_PORT)
-        rpcSubscription = SyncRPCSubscriptionImpl(
-            SyncRPCConfig(
-                TEST_ENDPOINT
-            ), processor, lifecycleCoordinatorFactory, webServer, serializer, deserializer
-        )
-
-        SyncRPCSubscriptionImpl(
-            SyncRPCConfig(
-                TEST_ENDPOINT
-            ), processor, lifecycleCoordinatorFactory, webServer, serializer, deserializer
-        )
+    private val processor = mock<SyncRPCProcessor<String, String>> {
+        on { process(requestData) } doReturn (responseData)
     }
+    private val rpcSubscriptionConfig = SyncRPCConfig(
+        subscriptionName,
+        endpointPath
+    )
 
-    @AfterEach
-    fun teardownServer() {
-        webServer.stop()
+    private val rpcSubscription = SyncRPCSubscriptionImpl(
+        rpcSubscriptionConfig, processor, lifecycleCoordinatorFactory, webServer, serializer, deserializer
+    )
+
+    private fun randomBytes(): ByteArray {
+        return (1..16).map { ('0'..'9').random() }.joinToString("").toByteArray()
     }
 
     @Test
-    fun `starting the subscription should register endpoint and handle request`() {
+    fun `when start register endpoint`() {
+        val endpointCaptor = argumentCaptor<Endpoint>()
+        doNothing().whenever(webServer).registerEndpoint(endpointCaptor.capture())
+
         rpcSubscription.start()
 
-        val url = URL("http://localhost:$TEST_PORT$TEST_ENDPOINT")
-        val client = HttpClient.newBuilder().build()
-        val request = HttpRequest.newBuilder()
-            .uri(url.toURI())
-            .POST(HttpRequest.BodyPublishers.ofByteArray(INPUT.toByteArray()))
-            .build()
-
-        val resp = client.send(request, HttpResponse.BodyHandlers.ofByteArray())
-        val code = resp.statusCode()
-        val body = String(resp.body())
-
-        assertEquals("input: '$INPUT', has been handled", body)
-        assertEquals(200, code)
+        assertThat(endpointCaptor.allValues.size).isEqualTo(1)
+        val endpoint = endpointCaptor.firstValue
+        assertSoftly {
+            it.assertThat(endpoint.methodType).isEqualTo(HTTPMethod.POST)
+            it.assertThat(endpoint.path).isEqualTo(endpointPath)
+            it.assertThat(endpoint.webHandler).isNotNull
+            it.assertThat(endpoint.isApi).isTrue
+        }
     }
+
+    @Test
+    fun `registered handler processes deserialised payload and sets results`() {
+        val endpointCaptor = argumentCaptor<Endpoint>()
+        doNothing().whenever(webServer).registerEndpoint(endpointCaptor.capture())
+
+        rpcSubscription.start()
+
+        assertThat(endpointCaptor.allValues.size).isEqualTo(1)
+        val handler = endpointCaptor.firstValue.webHandler
+
+        handler.handle(context)
+
+        verify(deserializer).deserialize(serialisedRequest)
+        verify(processor).process(requestData)
+        verify(context).result(serialisedResponse)
+    }
+
+    @Test
+    fun `when request deserialisation fails set result`() {
+
+        val endpointCaptor = argumentCaptor<Endpoint>()
+        doNothing().whenever(webServer).registerEndpoint(endpointCaptor.capture())
+
+        val invalidDeserializer = mock<CordaAvroDeserializer<String>> {
+            on { deserialize(serialisedRequest) } doReturn(null)
+        }
+
+        SyncRPCSubscriptionImpl(
+            rpcSubscriptionConfig, processor, lifecycleCoordinatorFactory, webServer, serializer, invalidDeserializer
+        ).start()
+
+        assertThat(endpointCaptor.allValues.size).isEqualTo(1)
+        val handler = endpointCaptor.firstValue.webHandler
+
+        handler.handle(context)
+
+        verify(context).status(ResponseCode.BAD_REQUEST)
+    }
+
+    @Test
+    fun `when request process fails set result`() {
+
+        val endpointCaptor = argumentCaptor<Endpoint>()
+        doNothing().whenever(webServer).registerEndpoint(endpointCaptor.capture())
+
+        val ex = Exception("Foobar")
+        val invalidProcessor = mock<SyncRPCProcessor<String, String>> {
+            on { process(requestData) }  doAnswer { throw ex }
+        }
+
+        SyncRPCSubscriptionImpl(
+            rpcSubscriptionConfig, invalidProcessor, lifecycleCoordinatorFactory, webServer, serializer, deserializer
+        ).start()
+
+        assertThat(endpointCaptor.allValues.size).isEqualTo(1)
+        val handler = endpointCaptor.firstValue.webHandler
+
+        handler.handle(context)
+
+        verify(context).status(ResponseCode.INTERNAL_SERVER_ERROR)
+    }
+
+    @Test
+    fun `when response cannot be serialised set result`() {
+
+        val endpointCaptor = argumentCaptor<Endpoint>()
+        doNothing().whenever(webServer).registerEndpoint(endpointCaptor.capture())
+
+        val incompleteSerialiser = mock<CordaAvroSerializer<String>> {
+            on { serialize(responseData) } doReturn(null)
+        }
+
+        SyncRPCSubscriptionImpl(
+            rpcSubscriptionConfig, processor, lifecycleCoordinatorFactory, webServer, incompleteSerialiser, deserializer
+        ).start()
+
+        assertThat(endpointCaptor.allValues.size).isEqualTo(1)
+        val handler = endpointCaptor.firstValue.webHandler
+
+        handler.handle(context)
+
+        verify(context).status(ResponseCode.INTERNAL_SERVER_ERROR)
+    }
+
 }

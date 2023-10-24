@@ -15,6 +15,7 @@ import java.math.BigDecimal
 import javax.persistence.EntityManager
 import javax.persistence.Query
 import javax.persistence.Tuple
+import net.corda.ledger.utxo.token.cache.queries.impl.SqlQueryProviderTokens.Companion.SQL_PARAMETER_TOKEN_NOTARY_X500_NAME
 
 class UtxoTokenRepositoryImpl(
     private val sqlQueryProvider: SqlQueryProvider,
@@ -38,6 +39,7 @@ class UtxoTokenRepositoryImpl(
             .setParameter(SQL_PARAMETER_TOKEN_TYPE, poolKey.tokenType)
             .setParameter(SQL_PARAMETER_ISSUER_HASH, poolKey.issuerHash)
             .setParameter(SQL_PARAMETER_SYMBOL, poolKey.symbol)
+            .setParameter(SQL_PARAMETER_TOKEN_NOTARY_X500_NAME, poolKey.notaryX500Name)
 
         setParameterIfNecessaryOwnerHash(ownerHash, query)
         setParameterIfNecessaryRegexTag(regexTag, query)
@@ -62,6 +64,7 @@ class UtxoTokenRepositoryImpl(
             .setParameter(SQL_PARAMETER_TOKEN_TYPE, poolKey.tokenType)
             .setParameter(SQL_PARAMETER_ISSUER_HASH, poolKey.issuerHash)
             .setParameter(SQL_PARAMETER_SYMBOL, poolKey.symbol)
+            .setParameter(SQL_PARAMETER_TOKEN_NOTARY_X500_NAME, poolKey.notaryX500Name)
 
         setParameterIfNecessaryOwnerHash(ownerHash, query)
         setParameterIfNecessaryRegexTag(regexTag, query)

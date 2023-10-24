@@ -1,12 +1,5 @@
 package net.corda.applications.workers.smoketest
 
-import java.io.IOException
-import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
-import java.time.Duration
-import java.time.Instant
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -17,6 +10,13 @@ import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
 import org.slf4j.LoggerFactory
+import java.io.IOException
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
+import java.time.Duration
+import java.time.Instant
 
 @Order(2)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
@@ -27,15 +27,15 @@ class ClusterBootstrapTest {
     }
 
     private val healthChecks = mapOf(
-        "combined-worker" to System.getProperty("combinedWorkerHealthHttp"),
-//        "crypto-worker" to System.getProperty("cryptoWorkerHealthHttp"),
-        "db-worker" to System.getProperty("dbWorkerHealthHttp"),
-        "flow-worker" to System.getProperty("flowWorkerHealthHttp"),
-        "flow-mapper-worker" to System.getProperty("flowMapperWorkerHealthHttp"),
-        "verification-worker" to System.getProperty("verificationWorkerHealthHttp"),
-        "persistence-worker" to System.getProperty("persistenceWorkerHealthHttp"),
-        "rest-worker" to System.getProperty("restWorkerHealthHttp"),
-        "uniqueness-worker" to System.getProperty("uniquenessWorkerHealthHttp"),
+        "crypto-worker" to System.getProperty("cryptoWorkerUrl"),
+        "db-worker" to System.getProperty("dbWorkerUrl"),
+        "flow-worker" to System.getProperty("flowWorkerUrl"),
+        "flow-mapper-worker" to System.getProperty("flowMapperWorkerUrl"),
+        "verification-worker" to System.getProperty("verificationWorkerUrl"),
+        "persistence-worker" to System.getProperty("persistenceWorkerUrl"),
+        "token-selection-worker" to System.getProperty("tokenSelectionWorkerUrl"),
+        "rest-worker" to System.getProperty("restWorkerUrl"),
+        "uniqueness-worker" to System.getProperty("uniquenessWorkerUrl"),
     )
     private val client = HttpClient.newBuilder().build()
 

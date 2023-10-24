@@ -5,6 +5,7 @@ import net.corda.data.ledger.utxo.token.selection.data.TokenAmount
 import net.corda.data.ledger.utxo.token.selection.data.TokenBalanceQuery
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimQuery
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimRelease
+import net.corda.data.ledger.utxo.token.selection.data.TokenForceClaimRelease
 import net.corda.data.ledger.utxo.token.selection.data.TokenLedgerChange
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
@@ -13,20 +14,26 @@ import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.internal.CachedTokenImpl
 import net.corda.ledger.utxo.token.cache.entities.ClaimQuery
 import net.corda.ledger.utxo.token.cache.entities.ClaimRelease
+import net.corda.ledger.utxo.token.cache.entities.ForceClaimRelease
 import net.corda.ledger.utxo.token.cache.entities.LedgerChange
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.internal.PoolCacheStateImpl
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
+import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
+import net.corda.utilities.time.Clock
 import java.math.BigDecimal
 import java.math.BigInteger
 
-class EntityConverterImpl : EntityConverter {
+class EntityConverterImpl(
+    private val serviceConfiguration: ServiceConfiguration,
+    private val clock: Clock
+) : EntityConverter {
     override fun toCachedToken(avroToken: Token): CachedToken {
         return CachedTokenImpl(avroToken, this)
     }
 
     override fun toPoolCacheState(avroCacheState: TokenPoolCacheState): PoolCacheState {
-        return PoolCacheStateImpl(avroCacheState)
+        return PoolCacheStateImpl(avroCacheState, serviceConfiguration, this, clock)
     }
 
     override fun toClaimQuery(avroPoolKey: TokenPoolCacheKey, tokenClaimQuery: TokenClaimQuery): ClaimQuery {
@@ -50,6 +57,16 @@ class EntityConverterImpl : EntityConverter {
         )
     }
 
+    override fun toForceClaimRelease(
+        avroPoolKey: TokenPoolCacheKey,
+        tokenClaimRelease: TokenForceClaimRelease
+    ): ForceClaimRelease {
+        return ForceClaimRelease(
+            tokenClaimRelease.claimId,
+            toTokenPoolKey(avroPoolKey)
+        )
+    }
+
     override fun toBalanceQuery(avroPoolKey: TokenPoolCacheKey, tokenBalanceQuery: TokenBalanceQuery): BalanceQuery {
         return BalanceQuery(
             tokenBalanceQuery.requestContext.requestId,
@@ -65,7 +82,8 @@ class EntityConverterImpl : EntityConverter {
             toTokenPoolKey(avroPoolKey),
             // HACK: Added for testing will be removed by CORE-5722 (ledger integration)
             null,
-            null,
+            "",
+            "",
             tokenLedgerChange.consumedTokens.map { toCachedToken(it) },
             tokenLedgerChange.producedTokens.map { toCachedToken(it) }
         )
@@ -88,6 +106,7 @@ class EntityConverterImpl : EntityConverter {
             avroTokenPoolKey.tokenType,
             avroTokenPoolKey.issuerHash,
             avroTokenPoolKey.notaryX500Name,
-            avroTokenPoolKey.symbol)
+            avroTokenPoolKey.symbol
+        )
     }
 }

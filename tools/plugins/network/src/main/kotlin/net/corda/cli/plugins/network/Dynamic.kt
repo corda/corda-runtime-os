@@ -6,8 +6,9 @@ import picocli.CommandLine.Command
     name = "dynamic",
     subcommands = [
         OnboardMgm::class,
-        OnBoardMember::class,
+        OnboardMember::class,
     ],
-    description = ["For Onboarding Member and MGM"]
+    mixinStandardHelpOptions = true,
+    description = ["For onboarding MGM and members to a dynamic application network"]
 )
 class Dynamic

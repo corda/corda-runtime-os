@@ -46,7 +46,7 @@ class SessionsAcceptanceTest : FlowServiceTestBase() {
 
     @ParameterizedTest(name = "Receiving a {0} event for a flow that does not exist discards the event")
     @MethodSource("nonInitSessionEventTypes")
-    fun `Receiving a non-session init event for a flow that does not exist discards the event`(
+    fun `Receiving a non-init event for a flow that does not exist discards the event`(
         @Suppress("UNUSED_PARAMETER") name: String,
         parameter: (StepSetup) -> Unit
     ) {

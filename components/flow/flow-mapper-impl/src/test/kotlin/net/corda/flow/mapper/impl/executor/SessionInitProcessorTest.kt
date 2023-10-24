@@ -23,17 +23,17 @@ class SessionInitProcessorTest {
 
     private val recordFactory = object : RecordFactory {
         override fun forwardEvent(
-            sessionEvent: SessionEvent,
+            sourceEvent: SessionEvent,
             instant: Instant,
             flowConfig: SmartConfig,
             flowId: String,
             isInteropSession: Boolean
         ): Record<*, *> {
             return if (isInteropSession) {
-                Record(Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC, flowId, FlowEvent(flowId, sessionEvent))
+                Record(Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC, flowId, FlowEvent(flowId, sourceEvent))
             } else {
-                if (sessionEvent.messageDirection == MessageDirection.INBOUND) {
-                    Record(Schemas.Flow.FLOW_EVENT_TOPIC, flowId, FlowEvent(flowId, sessionEvent))
+                if (sourceEvent.messageDirection == MessageDirection.INBOUND) {
+                    Record(Schemas.Flow.FLOW_EVENT_TOPIC, flowId, FlowEvent(flowId, sourceEvent))
                 } else {
                     Record(Schemas.P2P.P2P_OUT_TOPIC, "sessionId", "")
                 }
@@ -41,11 +41,21 @@ class SessionInitProcessorTest {
         }
 
         override fun forwardError(
-            sessionEvent: SessionEvent,
+            sourceEvent: SessionEvent,
             exceptionEnvelope: ExceptionEnvelope,
             instant: Instant,
             flowConfig: SmartConfig,
             flowId: String,
+            isInteropSession: Boolean
+        ): Record<*, *> {
+            TODO("Not yet implemented")
+        }
+
+        override fun sendBackError(
+            sourceEvent: SessionEvent,
+            exceptionEnvelope: ExceptionEnvelope,
+            instant: Instant,
+            flowConfig: SmartConfig,
             isInteropSession: Boolean
         ): Record<*, *> {
             TODO("Not yet implemented")

@@ -49,17 +49,19 @@ interface FlowSessionManager {
     ): SessionState
 
     /**
-     * Generate a new session state
+     * Generate a new counterparty info request.
+     *
      * @param checkpoint The flow's [FlowCheckpoint].
      * @param sessionId The session id of the new [SessionState].
-     * @param x500Name The [MemberX500Name] that the [SessionInit] is addressed to.
      * @param contextUserProperties The user context properties
      * @param contextPlatformProperties The platform context properties
-     * @param sessionProperties The session context properties
+     * @param x500Name The [MemberX500Name] that the [SessionCounterpartyInfoRequest] is addressed to.
      * @param instant The [Instant] used within the created [SessionEvent].
+     *
+     * @return The updated [SessionState] object with the [SessionCounterpartyInfoRequest] message queued.
      */
     @Suppress("LongParameterList")
-    fun sendInitMessage(
+    fun sendCounterpartyInfoRequest(
         checkpoint: FlowCheckpoint,
         sessionId: String,
         contextUserProperties: KeyValuePairList,
@@ -69,19 +71,18 @@ interface FlowSessionManager {
     ): SessionState
 
     /**
-     * Queue [SessionConfirm] messages to send to the passed in sessions.
+     * Queue [SessionCounterpartyInfoResponse] messages to send to the passed in sessions.
      *
      * @param checkpoint The flow's [FlowCheckpoint].
      * @param sessionId The session to confirm.
      * @param contextSessionProperties Session specific context such a protocol version to send back to the initiator
      * @param instant The [Instant] used within the created [SessionEvent].
      *
-     * @return Updated [SessionState] containing [SessionConfirm] message to send.
+     * @return Updated [SessionState] containing [SessionCounterpartyInfoResponse] message to send.
      *
-     * @throws FlowSessionStateException If a session does not exist within the flow's [FlowCheckpoint], or is not in
-     * the CONFIRMED state.
+     * @throws FlowSessionStateException If a session does not exist within the flow's [FlowCheckpoint].
      */
-    fun sendConfirmMessage(
+    fun sendCounterpartyInfoResponse(
         checkpoint: FlowCheckpoint,
         sessionId: String,
         contextSessionProperties: KeyValuePairList,

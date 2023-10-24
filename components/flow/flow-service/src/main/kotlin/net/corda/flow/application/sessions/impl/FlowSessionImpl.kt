@@ -113,7 +113,6 @@ class FlowSessionImpl(
         verifySessionStatusNotErrorOrClose(sourceSessionId, flowFiberService)
         val request = FlowIORequest.Send(mapOf(getSessionInfo() to serialize(payload)))
         fiber.suspend(request)
-        setSessionConfirmed()
     }
 
     @Suspendable

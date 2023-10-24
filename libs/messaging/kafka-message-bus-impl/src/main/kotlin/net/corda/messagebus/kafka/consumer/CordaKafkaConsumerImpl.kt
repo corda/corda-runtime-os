@@ -304,7 +304,35 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
-    override fun commitSyncOffsets(event: CordaConsumerRecord<K, V>, metaData: String?) {
+    override fun syncCommitOffsets() {
+        var attemptCommit = true
+
+        while (attemptCommit) {
+            try {
+                consumer.commitSync()
+                attemptCommit = false
+            } catch (ex: Exception) {
+                when (ex::class.java) {
+                    in fatalExceptions -> {
+                        logErrorAndThrowFatalException(
+                            "Error attempting to commitSync offsets.",
+                            ex
+                        )
+                    }
+                    in transientExceptions -> {
+                        logWarningAndThrowIntermittentException("Failed to commitSync offsets.", ex)
+                    }
+                    else -> {
+                        logErrorAndThrowFatalException(
+                            "Unexpected error attempting to commitSync offsets .", ex
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    override fun syncCommitOffsets(event: CordaConsumerRecord<K, V>, metaData: String?) {
         val offsets = mutableMapOf<TopicPartition, OffsetAndMetadata>()
         val topicPartition = TopicPartition(config.topicPrefix + event.topic, event.partition)
         offsets[topicPartition] = OffsetAndMetadata(event.offset + 1, metaData)

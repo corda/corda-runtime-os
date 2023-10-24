@@ -28,7 +28,7 @@ class UtxoPersistSignedGroupParametersIfDoNotExistRequestHandler(
         return listOf(
             externalEventResponseFactory.success(
                 externalEventContext,
-                EntityResponse(emptyList(), KeyValuePairList(emptyList()))
+                EntityResponse(emptyList(), KeyValuePairList(emptyList()), null)
             )
         )
     }

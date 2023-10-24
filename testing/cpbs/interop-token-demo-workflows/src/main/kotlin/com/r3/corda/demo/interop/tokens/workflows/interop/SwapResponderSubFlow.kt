@@ -11,8 +11,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.NotaryLookup
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
-import java.util.*
-
+import net.corda.v5.application.interop.facade.FacadeId
 
 @InitiatingFlow(protocol = "swap-responder-sub-flow")
 class SwapResponderSubFlow(private val applicationName: String, private val otherLedgerRecipient: String,
@@ -34,7 +33,7 @@ class SwapResponderSubFlow(private val applicationName: String, private val othe
 
         val myInteropInfo : InterOpIdentityInfo? = interopIdentityLookUp.lookup(applicationName)
         require(myInteropInfo != null) { "Can't get InteropIdentityInfo for ${applicationName}." }
-        val facadeId = "org.corda.interop/platform/lock/v1.0"
+        val facadeId = FacadeId("org.corda.interop", listOf("platform", "lock"), "v1.0")
         log.info("Interop call: facadeId=$facadeId, interopIdentity=${myInteropInfo.applicationName}," +
                 " interopGroupId=${myInteropInfo.groupId}")
 

@@ -97,7 +97,6 @@ class ExternalEventResponseWaitingForHandler @Activate constructor(
                 "Resending external event after delay after receiving transient error from external event response. " +
                         "Current retry count $retries. Error: $exception"
             }
-            externalEventState.retries = retries.inc()
             FlowContinuation.Continue
         }
     }

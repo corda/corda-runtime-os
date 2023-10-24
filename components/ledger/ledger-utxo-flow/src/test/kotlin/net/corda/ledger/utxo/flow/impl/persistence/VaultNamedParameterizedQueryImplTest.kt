@@ -1,8 +1,8 @@
 package net.corda.ledger.utxo.flow.impl.persistence
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.flow.persistence.query.ResultSetExecutor
 import net.corda.flow.persistence.query.ResultSetFactory
+import net.corda.flow.persistence.query.StableResultSetExecutor
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.ALICE_X500_HOLDING_IDENTITY
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.VaultNamedQueryExternalEventFactory
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
@@ -42,7 +42,7 @@ class VaultNamedParameterizedQueryImplTest {
     private val resultSetFactory = mock<ResultSetFactory>()
     private val resultSet = mock<ResultSet<Any>>()
     private val clock = mock<Clock>()
-    private val resultSetExecutorCaptor = argumentCaptor<ResultSetExecutor<Any>>()
+    private val resultSetExecutorCaptor = argumentCaptor<StableResultSetExecutor<Any>>()
     private val mapCaptor = argumentCaptor<Map<String, Any>>()
 
     private val query = VaultNamedParameterizedQueryImpl(
@@ -59,7 +59,7 @@ class VaultNamedParameterizedQueryImplTest {
 
     @BeforeEach
     fun beforeEach() {
-        whenever(resultSetFactory.create(mapCaptor.capture(), any(), any(), any(), resultSetExecutorCaptor.capture())).thenReturn(resultSet)
+        whenever(resultSetFactory.create(mapCaptor.capture(), any(), any(), resultSetExecutorCaptor.capture())).thenReturn(resultSet)
         whenever(resultSet.next()).thenReturn(results)
         whenever(clock.instant()).thenReturn(later)
         whenever(sandbox.virtualNodeContext).thenReturn(virtualNodeContext)
@@ -70,21 +70,16 @@ class VaultNamedParameterizedQueryImplTest {
     @Test
     fun `setLimit updates the limit`() {
         query.execute()
-        verify(resultSetFactory).create(any(), eq(1), any(), any<Class<Any>>(), any())
+        verify(resultSetFactory).create(any(), eq(1), any<Class<Any>>(), any())
 
         query.setLimit(10)
         query.execute()
-        verify(resultSetFactory).create(any(), eq(10), any(), any<Class<Any>>(), any())
+        verify(resultSetFactory).create(any(), eq(10), any<Class<Any>>(), any())
     }
 
     @Test
-    fun `setOffset updates the offset`() {
-        query.execute()
-        verify(resultSetFactory).create(any(), any(), eq(0), any<Class<Any>>(), any())
-
-        query.setOffset(10)
-        query.execute()
-        verify(resultSetFactory).create(any(), any(), eq(10), any<Class<Any>>(), any())
+    fun `setOffset is not supported`() {
+        assertThatThrownBy { query.setOffset(10) }.isInstanceOf(UnsupportedOperationException::class.java)
     }
 
     @Test
@@ -95,11 +90,6 @@ class VaultNamedParameterizedQueryImplTest {
     @Test
     fun `setLimit cannot be zero`() {
         assertThatThrownBy { query.setLimit(0) }.isInstanceOf(IllegalArgumentException::class.java)
-    }
-
-    @Test
-    fun `setOffset cannot be negative`() {
-        assertThatThrownBy { query.setOffset(-1) }.isInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test
@@ -175,7 +165,7 @@ class VaultNamedParameterizedQueryImplTest {
     @Test
     fun `execute creates a result set, gets the next page and returns the result set`() {
         assertThat(query.execute()).isEqualTo(resultSet)
-        verify(resultSetFactory).create(any(), any(), any(), any<Class<Any>>(), any())
+        verify(resultSetFactory).create(any(), any(), any<Class<Any>>(), any())
         verify(resultSet).next()
     }
 
@@ -187,7 +177,7 @@ class VaultNamedParameterizedQueryImplTest {
         query.execute()
 
         val resultSetExecutor = resultSetExecutorCaptor.firstValue
-        assertThatThrownBy { resultSetExecutor.execute(emptyMap(), 0) }.isInstanceOf(CordaPersistenceException::class.java)
+        assertThatThrownBy { resultSetExecutor.execute(emptyMap(), null) }.isInstanceOf(CordaPersistenceException::class.java)
     }
 
     @Test
@@ -198,6 +188,6 @@ class VaultNamedParameterizedQueryImplTest {
         query.execute()
 
         val resultSetExecutor = resultSetExecutorCaptor.firstValue
-        assertThatThrownBy { resultSetExecutor.execute(emptyMap(), 0) }.isInstanceOf(IllegalStateException::class.java)
+        assertThatThrownBy { resultSetExecutor.execute(emptyMap(), null) }.isInstanceOf(IllegalStateException::class.java)
     }
 }
