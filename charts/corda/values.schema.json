@@ -1282,6 +1282,13 @@
                                         "$ref": "#/$defs/basicAuthConfig"
                                     }
                                 ]
+                            },
+                            "tokenSelection": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/basicAuthConfig"
+                                    }
+                                ]
                             }
                         },
                         "clientImage": {
@@ -2580,6 +2587,9 @@
                                 "logging": {},
                                 "profiling": {},
                                 "resources": {},
+                                "stateManager": {
+                                    "$ref": "#/$defs/stateManager"
+                                },
                                 "kafka": {},
                                 "sharding": {
                                     "type": "object",
