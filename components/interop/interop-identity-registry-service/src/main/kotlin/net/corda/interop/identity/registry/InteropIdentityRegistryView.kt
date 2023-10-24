@@ -1,5 +1,6 @@
 package net.corda.interop.identity.registry
 
+import java.util.UUID
 import net.corda.crypto.core.ShortHash
 import net.corda.interop.core.InteropIdentity
 import net.corda.v5.application.interop.facade.FacadeId
@@ -22,7 +23,7 @@ interface InteropIdentityRegistryView {
      * @param groupId Group ID of the interop identities to return.
      * @return Set of [InteropIdentity] objects with the specified group ID.
      */
-    fun getIdentitiesByGroupId(groupId: String): Set<InteropIdentity>
+    fun getIdentitiesByGroupId(groupId: UUID): Set<InteropIdentity>
 
     /**
      * Get the identity within the view with a specific short hash.
@@ -62,7 +63,7 @@ interface InteropIdentityRegistryView {
      * @param groupId Group ID of the interop group to return owned identities from.
      * @return Set of [InteropIdentity] objects with the specified group ID.
      */
-    fun getOwnedIdentities(groupId: String): Set<InteropIdentity>
+    fun getOwnedIdentities(groupId: UUID): Set<InteropIdentity>
 
     /**
      * Get owned identity within the view for the specified interop group.
@@ -71,5 +72,5 @@ interface InteropIdentityRegistryView {
      * @return The owned [InteropIdentity] in the specified group if there is one, null otherwise.
      * @throws InteropIdentityRegistryStateError if multiple owned identities are present in the registry.
      */
-    fun getOwnedIdentity(groupId: String): InteropIdentity?
+    fun getOwnedIdentity(groupId: UUID): InteropIdentity?
 }

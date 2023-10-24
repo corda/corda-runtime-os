@@ -24,6 +24,7 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import org.slf4j.LoggerFactory
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
+import java.util.*
 import net.corda.v5.application.interop.facade.FacadeId
 
 @Component(service = [FacadeService::class, UsedByFlow::class], scope = PROTOTYPE)
@@ -90,7 +91,8 @@ class FacadeServiceImpl @Activate constructor(
 }
 
 private class MessagingDispatcher(private var flowMessaging: FlowMessaging, private val jsonMarshallingService: JsonMarshallingService,
-    private val alias: MemberX500Name, private val aliasGroupId: String) : (FacadeRequest) -> FacadeResponse {
+    private val alias: MemberX500Name, private val aliasGroupId: UUID
+) : (FacadeRequest) -> FacadeResponse {
     override fun invoke(request: FacadeRequest): FacadeResponse {
         val payload = jsonMarshallingService.format(request)
         val response = flowMessaging.callFacade(alias, aliasGroupId, request.facadeId.toString(), request.methodName, payload)

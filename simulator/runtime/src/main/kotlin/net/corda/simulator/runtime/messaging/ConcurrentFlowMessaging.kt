@@ -11,6 +11,7 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.LoggerFactory
 import java.io.Closeable
+import java.util.*
 import kotlin.concurrent.thread
 
 interface CloseableFlowMessaging: FlowMessaging, Closeable
@@ -141,7 +142,7 @@ class ConcurrentFlowMessaging(
 
     override fun callFacade(
         memberName: MemberX500Name,
-        interopGroupId: String,
+        interopGroupId: UUID,
         facadeName: String,
         methodName: String,
         payload: String

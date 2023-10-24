@@ -1,5 +1,6 @@
 package net.corda.membership.impl.grouppolicy
 
+import java.util.*
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
@@ -106,7 +107,7 @@ class GroupPolicyProviderImpl @Activate constructor(
     override fun getP2PParameters(holdingIdentity: HoldingIdentity) : GroupPolicy.P2PParameters? {
         val mgmGroupPolicy = getGroupPolicy(holdingIdentity)
         return if (mgmGroupPolicy == null) {
-            val groupPolicyJson = interopGroupPolicyReadService.getGroupPolicy(holdingIdentity.groupId)
+            val groupPolicyJson = interopGroupPolicyReadService.getGroupPolicy(UUID.fromString(holdingIdentity.groupId))
             if (groupPolicyJson != null) {
                 groupPolicyParser.parseInteropGroupPolicy(groupPolicyJson).p2pParameters
             } else {

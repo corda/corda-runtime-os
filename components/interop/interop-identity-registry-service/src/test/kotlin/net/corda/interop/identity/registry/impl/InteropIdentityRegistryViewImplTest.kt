@@ -1,5 +1,6 @@
 package net.corda.interop.identity.registry.impl
 
+import java.util.*
 import net.corda.crypto.core.ShortHash
 import net.corda.interop.core.InteropIdentity
 import net.corda.interop.identity.registry.InteropIdentityRegistryStateError
@@ -12,7 +13,7 @@ import org.junit.jupiter.api.assertThrows
 class InteropIdentityRegistryViewImplTest {
     companion object {
         private val VIEW_OWNER_SHORT_HASH = ShortHash.parse("0123456789AB")
-        private const val INTEROP_GROUP_ID = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
+        private val INTEROP_GROUP_ID = UUID.fromString("3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08")
     }
 
     private val testView = InteropIdentityRegistryViewImpl(VIEW_OWNER_SHORT_HASH)

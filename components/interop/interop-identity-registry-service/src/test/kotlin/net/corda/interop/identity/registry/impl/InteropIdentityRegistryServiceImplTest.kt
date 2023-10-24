@@ -65,7 +65,7 @@ class InteropIdentityRegistryServiceImplTest {
         val view2 = cache.getVirtualNodeRegistryView(shortHash2)
 
         val interopIdentity1 = InteropIdentity(
-            groupId = UUID.randomUUID().toString(),
+            groupId = UUID.randomUUID(),
             x500Name = "C=GB, L=London, O=Alice",
             owningVirtualNodeShortHash = shortHash1,
             facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),
@@ -76,7 +76,7 @@ class InteropIdentityRegistryServiceImplTest {
         )
 
         val interopIdentity2 = InteropIdentity(
-            groupId = UUID.randomUUID().toString(),
+            groupId = UUID.randomUUID(),
             x500Name = "C=GB, L=London, O=Bob",
             owningVirtualNodeShortHash = shortHash2,
             facadeIds = listOf(FacadeId.of("org.corda.interop/platform/tokens/v2.0")),

@@ -91,7 +91,7 @@ class GroupPolicyProviderImplTest {
 
     private val groupId1 = "ABC123"
     private val groupId2 = "DEF456"
-    private val groupId3 = "INTEROP"
+    private val groupId3 = "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08"
 
     private val regProtocol1 = "foo"
     private val regProtocol2 = "bar"
@@ -107,9 +107,10 @@ class GroupPolicyProviderImplTest {
     private val groupPolicy4: String? = null
     private val groupPolicy5 = "{\"$registrationProtocolKey\": \"$regProtocol3\", \"$groupIdKey\": \"$groupId2\"}"
     private val groupPolicy6 = "{\"$registrationProtocolKey\": \"$regProtocol3\", \"$groupIdKey\": \"$groupId3\"}"
+
     private val interopGroupPolicy = """
                                         {
-                                          "groupId": "3dfc0aae-be7c-44c2-aa4f-4d0d7145cf08",
+                                          "groupId": "$groupId3",
                                           "p2pParameters": {
                                             "tlsPki": "Standard",
                                             "tlsVersion": "1.3",
@@ -223,7 +224,7 @@ class GroupPolicyProviderImplTest {
     }
 
     private val interopGroupPolicyReadService: InteropGroupPolicyReadService = mock {
-        on { getGroupPolicy(eq(holdingIdentity6.groupId)) } doReturn interopGroupPolicy
+        on { getGroupPolicy(eq(UUID.fromString(holdingIdentity6.groupId))) } doReturn interopGroupPolicy
     }
 
     private val subscriptionFactory: SubscriptionFactory = mock {

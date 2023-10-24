@@ -90,8 +90,8 @@ internal class InteropRestResourceImpl @Activate constructor(
         val vNodeInfo = getAndValidateVirtualNodeInfoByShortHash(validHoldingIdentityShortHash)
         val registryView = interopIdentityRegistryService.getVirtualNodeRegistryView(vNodeInfo.getVNodeShortHash())
         val groupIds = registryView.getIdentities().map { it.groupId }.toSet()
-        return groupIds.associate {
-            Pair(UUID.fromString(it), interopGroupPolicyReadService.getGroupPolicy(it) ?: "")
+        return groupIds.associate { groupId ->
+            Pair(groupId, interopGroupPolicyReadService.getGroupPolicy(groupId) ?: "")
         }
     }
 
@@ -190,20 +190,17 @@ internal class InteropRestResourceImpl @Activate constructor(
                 "Cannot use the groupId of your own identity during the creation of interop identity."
             )
         } else {
-            validateUUID(groupIdField) {
+            val groupId = validateUUID(groupIdField) {
                 "Malformed group policy. Group ID must be a valid uuid or 'CREATE_ID', got: $groupIdField"
             }
-            if (registryView.getOwnedIdentities(groupIdField).isNotEmpty()) {
+            if (registryView.getOwnedIdentities(groupId).isNotEmpty()) {
                 throw InvalidInputDataException(
                     "Virtual node $vNodeShortHash already has an interop identity in interop group $groupIdField."
                 )
             }
         }
 
-        val interopGroupId = interopIdentityWriteService.publishGroupPolicy(
-            groupIdField,
-            json
-        )
+        val interopGroupId = interopIdentityWriteService.publishGroupPolicy(json)
 
         val groupReader = membershipGroupReaderProvider.getGroupReader(vNodeInfo.holdingIdentity)
         val owningIdentityMemberInfo = checkNotNull(groupReader.lookup(vNodeInfo.holdingIdentity.x500Name)) {
@@ -349,7 +346,7 @@ internal class InteropRestResourceImpl @Activate constructor(
         return interopIdentities.map { interopIdentity ->
             InteropIdentityResponse(
                 interopIdentity.x500Name,
-                UUID.fromString(interopIdentity.groupId),
+                interopIdentity.groupId,
                 interopIdentity.owningVirtualNodeShortHash.toString(),
                 interopIdentity.facadeIds,
                 MemberX500Name.parse(interopIdentity.x500Name).organization,
@@ -445,15 +442,11 @@ internal class InteropRestResourceImpl @Activate constructor(
             validateUUID(groupIdField) {
                 "Malformed group policy, groupId is not a valid UUID string."
             }
-            groupIdField
         } catch (e: Exception) {
             throw InvalidInputDataException(e.message!!)
         }
 
-        interopIdentityWriteService.publishGroupPolicy(
-            interopGroupId,
-            json
-        )
+        interopIdentityWriteService.publishGroupPolicy(json)
 
         importInteropIdentityRestRequest.members.forEach { member ->
             interopIdentityWriteService.addInteropIdentity(
