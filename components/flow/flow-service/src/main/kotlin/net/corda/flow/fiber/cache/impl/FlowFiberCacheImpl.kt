@@ -35,9 +35,9 @@ class FlowFiberCacheImpl @Activate constructor(
     private val maximumSize = java.lang.Long.getLong(FLOW_FIBER_CACHE_MAX_SIZE_PROPERTY_NAME, 10000)
     private val expireAfterWriteSeconds = java.lang.Long.getLong(FLOW_FIBER_CACHE_EXPIRE_AFTER_WRITE_SECONDS_PROPERTY_NAME, 600)
 
-    private data class FibreCacheKey(val flowKey: FlowKey, val suspendCount: Int)
+    private data class FiberCacheKey(val flowKey: FlowKey, val suspendCount: Int)
 
-    private val cache: Cache<FibreCacheKey, FlowFiber> = CacheFactoryImpl().build(
+    private val cache: Cache<FiberCacheKey, FlowFiber> = CacheFactoryImpl().build(
         "flow-fiber-cache",
         Caffeine.newBuilder()
             .maximumSize(maximumSize)
@@ -67,15 +67,15 @@ class FlowFiberCacheImpl @Activate constructor(
     }
 
     override fun put(key: FlowKey, suspendCount: Int, fiber: FlowFiber) {
-        cache.put(FibreCacheKey(key, suspendCount), fiber)
+        cache.put(FiberCacheKey(key, suspendCount), fiber)
     }
 
     override fun get(key: FlowKey, suspendCount: Int): FlowFiber? {
-        return cache.getIfPresent(FibreCacheKey(key, suspendCount))
+        return cache.getIfPresent(FiberCacheKey(key, suspendCount))
     }
 
     override fun remove(key: FlowKey, suspendCount: Int) {
-        cache.invalidate(FibreCacheKey(key, suspendCount))
+        cache.invalidate(FiberCacheKey(key, suspendCount))
     }
 
     override fun remove(virtualNodeContext: VirtualNodeContext) {
