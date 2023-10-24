@@ -26,6 +26,7 @@ import net.corda.ledger.common.testkit.FakePlatformInfoProvider
 import net.corda.ledger.common.testkit.anotherPublicKeyExample
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.ledger.common.testkit.publicKeyExample
+import net.corda.ledger.common.testkit.keyPairExample
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
 import net.corda.ledger.utxo.test.UtxoLedgerWithBatchSignerTest
@@ -98,7 +99,7 @@ class ProofOfActionSerializationTests : UtxoLedgerWithBatchSignerTest() {
     fun beforeEach() {
         val notaryInfo = mock<NotaryInfo>().also {
             whenever(it.name).thenReturn(notaryX500Name)
-            whenever(it.publicKey).thenReturn(notaryKey.public)
+            whenever(it.publicKey).thenReturn(publicKeyExample)
         }
         whenever(mockNotaryLookup.lookup(notaryX500Name)).thenReturn(notaryInfo)
         signedTransaction = UtxoTransactionBuilderImpl(
@@ -215,13 +216,13 @@ class ProofOfActionSerializationTests : UtxoLedgerWithBatchSignerTest() {
 
     val realSingingService = TransactionSignatureServiceImpl(serializationServiceWithWireTx,
         signingService = mock<SigningService>().also {
-            whenever(it.findMySigningKeys(any())).thenReturn(mapOf(notaryKey.public to notaryKey.public))
+            whenever(it.findMySigningKeys(any())).thenReturn(mapOf(publicKeyExample to publicKeyExample))
             whenever(
                 it.sign(any(), any(), any())
             ).thenReturn(
                 DigitalSignatureWithKeyId(
-                    notaryKey.public.fullIdHash(),
-                    signData("abcdefgsfdsf".toByteArray(), notaryKey.private)
+                    publicKeyExample.fullIdHash(),
+                    signData("abcdefgsfdsf".toByteArray(), keyPairExample.private)
                     // TODO the method signs hardcoded string only,
                     // try to change to use the actual parameter (byte array) passes to sign method
                 )
