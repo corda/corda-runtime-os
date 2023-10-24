@@ -62,9 +62,9 @@ metadata:
   {{- with .annotations }}
     {{- toYaml . | nindent 4 }}
   {{- end }}
-    kubernetes.io/ingress.class: {{ include "corda.nginxName" $workerName | quote }}
     nginx.ingress.kubernetes.io/upstream-hash-by: "$http_corda_request_key"
 spec:
+  ingressClassName: {{ include "corda.nginxName" $workerName | quote }}
   defaultBackend:
     service:
       name: {{ include "corda.workerInternalServiceName" $workerName | quote }}
