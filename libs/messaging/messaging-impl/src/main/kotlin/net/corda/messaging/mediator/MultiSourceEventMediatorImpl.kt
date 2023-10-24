@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory
 import java.lang.Thread.sleep
 import java.time.Duration
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
 @Suppress("LongParameterList")
@@ -202,9 +203,9 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
             var groups = allocateGroups(messages.map { it.toRecord() })
             var states = stateManager.get(messages.map { it.key.toString() })
             while (groups.isNotEmpty()) {
-                val updateStates = mutableMapOf<String, State?>()
-                val deleteStates = mutableMapOf<String, State?>()
-                val flowEvents = mutableMapOf<String, MutableList<Record<K, E>>>()
+                val updateStates = ConcurrentHashMap<String, State?>()
+                val deleteStates = ConcurrentHashMap<String, State?>()
+                val flowEvents = ConcurrentHashMap<String, MutableList<Record<K, E>>>()
                 // Process each group on a thread
                 groups.map { group ->
                     taskManager.executeShortRunningTask {

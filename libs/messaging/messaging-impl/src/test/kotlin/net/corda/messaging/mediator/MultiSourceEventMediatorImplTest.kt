@@ -23,6 +23,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.taskmanager.TaskManager
 import net.corda.test.util.waitWhile
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.atLeast
@@ -115,7 +116,7 @@ class MultiSourceEventMediatorImplTest {
         )
     }
 
-    // @Test
+//     @Test
     // TODO Test temporarily disabled as it seems to be flaky
     fun `mediator processes multiples events by key`() {
         val events = (1..6).map { "event$it" }
