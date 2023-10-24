@@ -1,5 +1,5 @@
 #! groovy
-@Library('corda-shared-build-pipeline-steps@owen/CORE-17502-Token-selection-helm-changes') _
+@Library('corda-shared-build-pipeline-steps@owen/CORE-17957-Add-state-manager-support') _
 
 import com.r3.build.agents.KubernetesAgent
 import com.r3.build.enums.BuildEnvironment
