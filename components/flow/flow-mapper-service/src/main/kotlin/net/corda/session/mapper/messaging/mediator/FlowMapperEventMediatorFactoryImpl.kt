@@ -22,6 +22,7 @@ import net.corda.schema.Schemas.Flow.FLOW_MAPPER_START
 import net.corda.schema.Schemas.Flow.FLOW_SESSION
 import net.corda.schema.Schemas.Flow.FLOW_START
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
+import net.corda.schema.configuration.FlowConfig
 import net.corda.session.mapper.service.executor.FlowMapperMessageProcessor
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -49,6 +50,7 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
         stateManager: StateManager,
     ) = eventMediatorFactory.create(
         createEventMediatorConfig(
+            flowConfig,
             messagingConfig,
             FlowMapperMessageProcessor(flowMapperEventExecutorFactory, flowConfig),
             stateManager,
@@ -56,6 +58,7 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
     )
 
     private fun createEventMediatorConfig(
+        flowConfig: SmartConfig,
         messagingConfig: SmartConfig,
         messageProcessor: StateAndEventProcessor<String, FlowMapperState, FlowMapperEvent>,
         stateManager: StateManager,
@@ -80,7 +83,7 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
         )
         .messageProcessor(messageProcessor)
         .messageRouterFactory(createMessageRouterFactory())
-        .threads(16)
+        .threads(flowConfig.getInt(FlowConfig.PROCESSING_THREAD_POOL_SIZE))
         .threadName("flow-mapper-event-mediator")
         .stateManager(stateManager)
         .build()

@@ -61,6 +61,8 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 
     private val stopped = AtomicBoolean(false)
     private val running = AtomicBoolean(false)
+    // TODO This timeout was set with CORE-17768 (changing configuration value would affect other messaging patterns)
+    //  This should be reverted to use configuration value once event mediator polling is refactored (planned for 5.2)
     private val pollTimeout = Duration.ofMillis(20)
 
     override fun start() {
