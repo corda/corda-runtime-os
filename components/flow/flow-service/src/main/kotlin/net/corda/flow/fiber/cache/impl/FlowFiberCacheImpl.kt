@@ -4,7 +4,7 @@ import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.data.flow.FlowKey
-import net.corda.flow.fiber.FlowFiberImpl
+import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.SandboxedCache
@@ -37,7 +37,7 @@ class FlowFiberCacheImpl @Activate constructor(
 
     private data class FibreCacheKey(val flowKey: FlowKey, val suspendCount: Int)
 
-    private val cache: Cache<FibreCacheKey, FlowFiberImpl> = CacheFactoryImpl().build(
+    private val cache: Cache<FibreCacheKey, FlowFiber> = CacheFactoryImpl().build(
         "flow-fiber-cache",
         Caffeine.newBuilder()
             .maximumSize(maximumSize)
@@ -66,11 +66,11 @@ class FlowFiberCacheImpl @Activate constructor(
         remove(vnc)
     }
 
-    override fun put(key: FlowKey, suspendCount: Int, fiber: FlowFiberImpl) {
+    override fun put(key: FlowKey, suspendCount: Int, fiber: FlowFiber) {
         cache.put(FibreCacheKey(key, suspendCount), fiber)
     }
 
-    override fun get(key: FlowKey, suspendCount: Int): FlowFiberImpl? {
+    override fun get(key: FlowKey, suspendCount: Int): FlowFiber? {
         return cache.getIfPresent(FibreCacheKey(key, suspendCount))
     }
 

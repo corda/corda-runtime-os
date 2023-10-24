@@ -365,8 +365,10 @@ class FlowExecutionPipelineStageTest {
         verify(ioRequestTypeConverter, times(suspends.size)).convertToActionName(any())
 
         // Fiber cache
-        verify(fiberCache, times(suspends.filter { (it as FlowIORequest.FlowSuspended<*>).cacheableFiber != null }.size)).put(any(), any())
-        verify(fiberCache, times(other.size)).remove(any<FlowKey>())
+        verify(fiberCache, times(suspends.filter { (it as FlowIORequest.FlowSuspended<*>).cacheableFiber != null }.size))
+            .put(any(), any(), any()
+        )
+        verify(fiberCache, times(other.size)).remove(any(), any())
     }
 
     private fun createWaitingForHandlerMap(

@@ -5,6 +5,7 @@ import co.paralleluniverse.fibers.FiberExecutorScheduler
 import net.corda.flow.fiber.FiberExceptionConstants
 import net.corda.flow.fiber.FiberFuture
 import net.corda.flow.fiber.FlowContinuation
+import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberImpl
 import net.corda.flow.fiber.FlowLogicAndArgs
@@ -68,8 +69,8 @@ class FlowFiberFactoryImpl @Activate constructor(
         return FiberFuture(fiber, fiber.resume(flowFiberExecutionContext, suspensionOutcome, currentThreadFiberExecutor))
     }
 
-    private fun getFromCacheOrDeserialize(flowFiberExecutionContext: FlowFiberExecutionContext): FlowFiberImpl {
-        val cachedFiber: FlowFiberImpl? = try {
+    private fun getFromCacheOrDeserialize(flowFiberExecutionContext: FlowFiberExecutionContext): FlowFiber {
+        val cachedFiber: FlowFiber? = try {
             flowFiberCache.get(
                 flowFiberExecutionContext.flowCheckpoint.flowKey,
                 flowFiberExecutionContext.flowCheckpoint.suspendCount)

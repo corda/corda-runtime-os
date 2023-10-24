@@ -34,6 +34,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -105,6 +106,7 @@ class FlowEventExceptionProcessorImplTest {
         val flowEventRecord = Record("", flowId, FlowEvent(flowId, ExternalEventResponse()))
         whenever(flowCheckpoint.flowId).thenReturn(flowId)
         whenever(flowCheckpoint.currentRetryCount).thenReturn(1)
+        whenever(flowCheckpoint.suspendCount).thenReturn(123)
         whenever(flowMessageFactory.createFlowRetryingStatusMessage(flowCheckpoint)).thenReturn(flowStatusUpdate)
         whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)
         whenever(flowCheckpoint.doesExist).thenReturn(true)
@@ -113,7 +115,7 @@ class FlowEventExceptionProcessorImplTest {
 
         val result = target.process(error, context)
 
-        verify(flowFiberCache).remove(key)
+        verify(flowFiberCache).remove(key, 123)
         verify(result.checkpoint).rollback()
         verify(result.checkpoint).markForRetry(context.inputEvent, error)
         assertThat(result.outputRecords).containsOnly(flowStatusUpdateRecord, flowEventRecord)
@@ -185,6 +187,7 @@ class FlowEventExceptionProcessorImplTest {
         whenever(flowCheckpoint.doesExist).thenReturn(true)
         whenever(flowCheckpoint.flowKey).thenReturn(key)
         whenever(flowCheckpoint.sessions).thenReturn(listOf(flowActiveSessionState, flowInactiveSessionState))
+        whenever(flowCheckpoint.suspendCount).thenReturn(123)
         whenever(flowRecordFactory.createFlowMapperEventRecord(any(), any())).thenReturn(flowMapperRecord)
 
         val result = target.process(error, context)
@@ -192,7 +195,7 @@ class FlowEventExceptionProcessorImplTest {
         verify(result.checkpoint).markDeleted()
         assertThat(result.outputRecords).contains(flowStatusUpdateRecord, flowMapperRecord)
         assertThat(result.sendToDlq).isTrue
-        verify(flowFiberCache).remove(key)
+        verify(flowFiberCache).remove(key, 123)
     }
 
     @Test
@@ -204,12 +207,13 @@ class FlowEventExceptionProcessorImplTest {
         whenever(flowCheckpoint.flowId).thenReturn(flowId)
         whenever(flowCheckpoint.doesExist).thenReturn(true)
         whenever(flowCheckpoint.flowKey).thenReturn(key)
+        whenever(flowCheckpoint.suspendCount).thenReturn(123)
 
         val result = target.process(error, context)
 
         verify(flowCheckpoint).waitingFor = WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
         verify(flowCheckpoint).setPendingPlatformError(FlowProcessingExceptionTypes.PLATFORM_ERROR, error.message)
-        verify(flowFiberCache).remove(key)
+        verify(flowFiberCache).remove(key, 123)
 
         assertThat(result.outputRecords).isEmpty()
     }
@@ -299,7 +303,7 @@ class FlowEventExceptionProcessorImplTest {
     @Test
     fun `throwable triggered during event exception processing does not escape the processor`() {
         val throwable = RuntimeException()
-        whenever(flowFiberCache.remove(flowCheckpoint.flowKey)).thenThrow(throwable)
+        whenever(flowFiberCache.remove(eq(flowCheckpoint.flowKey), any())).thenThrow(throwable)
         whenever(flowCheckpoint.doesExist).thenReturn(true)
         val eventError = FlowEventException("error")
         val eventResult = target.process(eventError, context)
