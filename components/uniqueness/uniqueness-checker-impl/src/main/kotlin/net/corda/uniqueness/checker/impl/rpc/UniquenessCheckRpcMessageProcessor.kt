@@ -12,6 +12,7 @@ import net.corda.data.uniqueness.UniquenessCheckResultUnhandledExceptionAvro
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.uniqueness.checker.UniquenessChecker
+import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 
 /**
@@ -24,6 +25,9 @@ class UniquenessCheckRpcMessageProcessor(
     override val requestClass: Class<UniquenessCheckRequestAvro>,
     override val responseClass: Class<FlowEvent>,
 ) : SyncRPCProcessor<UniquenessCheckRequestAvro, FlowEvent> {
+    companion object {
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
     private val channel = Channel<ChannelMsg>()
 
     init {
@@ -54,6 +58,7 @@ class UniquenessCheckRpcMessageProcessor(
             if(msg is UniquenessCheck) buffer[msg.request] = msg
             // batch process checks when buffer is 10 or after 10ms
             if(buffer.isNotEmpty() && (buffer.size == 10 || System.nanoTime() > timeLimit) ) {
+                log.info("Processing ${buffer.size} (${buffer.map { it.key.flowExternalEventContext.requestId }})")
                 processBatch(buffer)
                 buffer.clear()
                 timeLimit = System.nanoTime() + 10_000_000
@@ -63,16 +68,17 @@ class UniquenessCheckRpcMessageProcessor(
 
     override fun process(request: UniquenessCheckRequestAvro): CompletableFuture<FlowEvent> {
         return CompletableFuture<FlowEvent>().apply {
-            runBlocking {
+            val response = runBlocking {
                 val signalChannel = Channel<FlowEvent>(1)
                 channel.send(
-                    UniquenessCheck(
-                    request, signalChannel
-                )
+                    UniquenessCheck(request, signalChannel)
                 )
                 // wait for request to be processed
-                signalChannel.receive()
+                val response = signalChannel.receive()
+                log.info("Respond ${request.flowExternalEventContext.requestId}: $response")
+                response
             }
+            this.complete(response)
         }
     }
 
@@ -86,7 +92,8 @@ class UniquenessCheckRpcMessageProcessor(
             } else {
                 externalEventResponseFactory.success(request.flowExternalEventContext, response)
             }.value?.also {
-                checks[request]?.completeSignalChannel?.send(it)
+                log.info("Complete ${request.flowExternalEventContext.requestId}: $it")
+                checks[request]?.completeSignalChannel?.trySend(it)
             }
         }
     }

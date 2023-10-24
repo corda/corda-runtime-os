@@ -1,5 +1,9 @@
 package net.corda.applications.workers.smoketest.services
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.runBlocking
 import net.corda.applications.workers.smoketest.utils.PLATFORM_VERSION
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.KeyValuePairList
@@ -23,6 +27,7 @@ import net.corda.test.util.time.AutoTickTestClock
 import net.corda.uniqueness.utils.UniquenessAssertions
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -142,6 +147,32 @@ class UniquenessCheckerRPCSmokeTests {
 
         assertThat(deserializedExternalEventResponse).isNotNull
         UniquenessAssertions.assertStandardSuccessResponse(deserializedExternalEventResponse!!, testClock)
+    }
+
+    @Test
+    fun `RPC endpoint can process batches`() {
+        val url = "${System.getProperty("uniquenessWorkerUrl")}api/$PLATFORM_VERSION/uniqueness-checker"
+
+        logger.info("uniqueness url: $url")
+
+        runBlocking(Dispatchers.Default) {
+            val softly = SoftAssertions()
+            List(50) {
+                val serializedPayload = avroSerializer.serialize(payloadBuilder().build())
+                HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .headers("Content-Type", "application/octet-stream")
+                    .POST(HttpRequest.BodyPublishers.ofByteArray(serializedPayload))
+                    .build()
+            }.map { request ->
+                async {
+                    val response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
+                    softly.assertThat(response.statusCode()).isEqualTo(200)
+                        .withFailMessage("status code on response: ${response.statusCode()} url: $url")
+                }
+            }.awaitAll()
+            softly.assertAll()
+        }
     }
 
     private val testClock = AutoTickTestClock(Instant.MAX, Duration.ofSeconds(1))

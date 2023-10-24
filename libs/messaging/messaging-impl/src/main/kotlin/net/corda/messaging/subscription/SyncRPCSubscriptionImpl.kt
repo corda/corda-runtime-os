@@ -106,7 +106,7 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                     }
 
                     val serializedResponse = cordaAvroSerializer.serialize(
-                        response.get(5_000, TimeUnit.MILLISECONDS))
+                        response.get(60_000, TimeUnit.MILLISECONDS))
                     if (serializedResponse != null) {
                         context.result(serializedResponse)
                     } else {
