@@ -5,7 +5,7 @@
   ( dict "clusterDbAccess" true )
 ) }}
 {{- include "corda.worker" ( list $ .Values.workers.flow "flow"
-  ( dict "stateManagerDbAccess" true "servicesAccessed" (list "crypto" "verification" "uniqueness" "persistence") )
+  ( dict "stateManagerDbAccess" true "servicesAccessed" ( list "crypto" "verification" "uniqueness" "persistence" "tokenSelection" ) )
 ) }}
 {{- include "corda.worker" ( list $ .Values.workers.flowMapper "flowMapper" 
   ( dict "stateManagerDbAccess" true )
