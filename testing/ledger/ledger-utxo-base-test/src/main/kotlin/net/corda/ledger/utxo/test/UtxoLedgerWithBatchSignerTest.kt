@@ -30,18 +30,19 @@ import java.security.Signature
  */
 abstract class UtxoLedgerWithBatchSignerTest : UtxoLedgerTest() {
 
-    val singingService = TransactionSignatureServiceImpl(serializationServiceWithWireTx,
+    val singingService = TransactionSignatureServiceImpl(
+        serializationServiceWithWireTx,
         signingService = mock<SigningService>().also {
             whenever(it.findMySigningKeys(any())).thenReturn(mapOf(publicKeyExample to publicKeyExample))
             whenever(
                 it.sign(any(), any(), any())
-            ).thenAnswer{
+            ).thenAnswer {
                 val signableData = it.arguments.first() as ByteArray
                 DigitalSignatureWithKeyId(
                     publicKeyExample.fullIdHash(),
                     signData(signableData, keyPairExample.private)
-            )
-        }
+                )
+            }
         },
         signatureSpecService = SignatureSpecServiceImpl(CipherSchemeMetadataImpl()),
         merkleTreeProvider = MerkleTreeProviderImpl(digestService),
@@ -49,7 +50,7 @@ abstract class UtxoLedgerWithBatchSignerTest : UtxoLedgerTest() {
         flowEngine = mock<FlowEngine>().also {
             whenever(it.flowContextProperties).thenReturn(object : FlowContextProperties {
                 override fun put(key: String, value: String) {
-                    throw NotImplementedError("Not envisioned to invoked by tests.")
+                    throw NotImplementedError("Not envisioned to be invoked in tests.")
                 }
 
                 override fun get(key: String): String =
