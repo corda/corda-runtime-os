@@ -15,7 +15,6 @@ import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.rotation.KeyType
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -75,14 +74,11 @@ class CryptoRekeyBusProcessorTests {
             on { create(any()) } doReturn wrappingRepository
         }
 
-        publisherFactory = mock()
         publisher = mock()
-        whenever(publisherFactory.createPublisher(any(), any())).thenReturn(publisher)
 
         cryptoRekeyBusProcessor = CryptoRekeyBusProcessor(
             cryptoService, virtualNodeInfoReadService,
-            wrappingRepositoryFactory, publisherFactory, config.getConfig(ConfigKeys.MESSAGING_CONFIG)
-        )
+            wrappingRepositoryFactory, publisher)
     }
 
     @Test
@@ -163,7 +159,7 @@ class CryptoRekeyBusProcessorTests {
         val cryptoService: CryptoService = mock<CryptoService> { }
         cryptoRekeyBusProcessor = CryptoRekeyBusProcessor(
             cryptoService, virtualNodeInfoReadService,
-            wrappingRepositoryFactory, publisherFactory, config.getConfig(ConfigKeys.MESSAGING_CONFIG)
+            wrappingRepositoryFactory, publisher
         )
 
         cryptoRekeyBusProcessor.onNext(listOf(getKafkaRecord(oldKeyAlias, null)))

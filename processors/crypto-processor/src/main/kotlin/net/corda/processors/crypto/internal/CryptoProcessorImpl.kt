@@ -63,6 +63,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.SubscriptionBase
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -86,6 +87,7 @@ import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.Provider
 import java.security.PublicKey
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 // An OSGi component, with no unit tests; instead, tested by using OGGi and mocked out databases in
@@ -317,7 +319,7 @@ class CryptoProcessorImpl @Activate constructor(
 
     private fun startProcessors(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val cryptoConfig = event.config.getConfig(CRYPTO_CONFIG)
-
+        val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         val wrappingRepositoryFactory = { tenantId: String ->
             WrappingRepositoryImpl(
                 entityManagerFactory = getEntityManagerFactory(
@@ -342,11 +344,12 @@ class CryptoProcessorImpl @Activate constructor(
         val rpcOpsProcessor = CryptoOpsBusProcessor(cryptoService, retryingConfig, keyEncodingService)
         val hsmRegistrationProcessor = HSMRegistrationBusProcessor(tenantInfoService, cryptoService, retryingConfig)
         val rewrapProcessor = CryptoRewrapBusProcessor(cryptoService)
+        val publisherConfig = PublisherConfig(UUID.randomUUID().toString(), false)
+        val rekeyPublisher =  publisherFactory.createPublisher(publisherConfig, messagingConfig)
         val rekeyProcessor = CryptoRekeyBusProcessor(cryptoService, virtualNodeInfoReadService,
-            wrappingRepositoryFactory, publisherFactory, cryptoConfig)
+            wrappingRepositoryFactory, rekeyPublisher)
 
         // create and start subscriptions
-        val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         val flowGroupName = "crypto.ops.flow"
 
         val rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, CRYPTO_PATH)

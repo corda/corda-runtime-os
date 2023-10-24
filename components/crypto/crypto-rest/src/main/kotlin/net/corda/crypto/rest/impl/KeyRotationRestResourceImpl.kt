@@ -78,9 +78,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
         timeToLive: Int,
         limit: Int
     ): ResponseEntity<KeyRotationResponse> {
-        if (publisher == null) {
-            throw ServiceUnavailableException("Key rotation resource has not been initialised.")
-        }
+
         // We cannot validate oldKeyAlias or newKeyAlias early here on the client side of the RPC since
         // those values are considered sensitive.
 
@@ -99,7 +97,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
             limit
         )
 
-        publisher!!.publish(listOf(Record(uploadTopic, requestId, keyRotationRequest)))
+        publisher?.publish(listOf(Record(uploadTopic, requestId, keyRotationRequest)))?:throw ServiceUnavailableException("Key rotation resource has not been initialised.")
 
         return ResponseEntity.accepted(KeyRotationResponse(requestId, oldKeyAlias, newKeyAlias))
     }

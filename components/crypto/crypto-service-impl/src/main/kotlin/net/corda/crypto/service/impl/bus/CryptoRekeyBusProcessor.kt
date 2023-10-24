@@ -8,8 +8,7 @@ import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationStatus
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.DurableProcessor
-import net.corda.messaging.api.publisher.config.PublisherConfig
-import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Crypto.REWRAP_MESSAGE_TOPIC
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -24,7 +23,7 @@ class CryptoRekeyBusProcessor(
     val cryptoService: CryptoService,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val wrappingRepositoryFactory: WrappingRepositoryFactory,
-    private val publisherFactory: PublisherFactory,
+    private val publisher: Publisher,
     private val messagingConfig: SmartConfig,
 ) : DurableProcessor<String, KeyRotationRequest> {
     companion object {
@@ -71,11 +70,6 @@ class CryptoRekeyBusProcessor(
                 }
                 wrappingRepo.close()
             }
-
-            val publisher = publisherFactory.createPublisher(
-                PublisherConfig(request.requestId),
-                messagingConfig
-            )
 
             // For each tenant, whose wrapping repo contains key that needs rotating, create a Kafka record and publish it
             // to-do this needs to be updated as there might be millions of records, and we might try to do it more efficiently
