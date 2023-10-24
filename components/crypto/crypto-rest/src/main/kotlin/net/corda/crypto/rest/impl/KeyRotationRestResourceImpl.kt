@@ -61,7 +61,9 @@ class KeyRotationRestResourceImpl @Activate constructor(
 
         // Initialise publisher with messaging config
         publisher?.close()
-        publisher = publisherFactory.createPublisher(PublisherConfig(requestId), messagingConfig)
+        val newPublisher = publisherFactory.createPublisher(PublisherConfig(requestId, false), messagingConfig)
+        newPublisher.start()
+        publisher = newPublisher
     }
 
 
@@ -84,7 +86,6 @@ class KeyRotationRestResourceImpl @Activate constructor(
 
         // We need to create a Record that tells Crypto processor to do key rotation
         // Do we need to start the publisher? FlowRestResource is not starting its publisher for some reason
-        publisher!!.start()
 
         val keyRotationRequest = KeyRotationRequest(
             requestId,
