@@ -234,20 +234,25 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                                     val output = response.responseEvents.map { taskManagerHelper.convertToMessage(it) }
                                     output.forEach { message ->
                                         val destination = messageRouter.getDestination(message)
+                                        try {
 
-                                        @Suppress("UNCHECKED_CAST")
-                                        val reply = with(destination) {
-                                            message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
-                                            client.send(message) as MediatorMessage<E>?
-                                        }
-                                        if (reply != null) {
-                                            queue.addLast(
-                                                Record(
-                                                    "",
-                                                    event.key,
-                                                    reply.payload,
+                                            @Suppress("UNCHECKED_CAST")
+                                            val reply = with(destination) {
+                                                message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
+                                                client.send(message) as MediatorMessage<E>?
+                                            }
+                                            if (reply != null) {
+                                                queue.addLast(
+                                                    Record(
+                                                        "",
+                                                        event.key,
+                                                        reply.payload,
+                                                    )
                                                 )
-                                            )
+                                            }
+                                        }
+                                        catch (ex: Exception) {
+                                            log.error(ex.message, ex)
                                         }
                                     }
                                 }
