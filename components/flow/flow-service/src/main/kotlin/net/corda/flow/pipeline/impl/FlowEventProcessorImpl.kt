@@ -82,7 +82,7 @@ class FlowEventProcessorImpl(
         }
 
         val flowEventPayload = flowEvent.payload
-        if (flowEventPayload is StartFlow) {
+        if (flowEventPayload is StartFlow && state != null) {
             log.debug { "Ignoring duplicate '${StartFlow::class.java}'. Start has already been initialized" }
             return StateAndEventProcessor.Response(
                 state,
