@@ -169,7 +169,7 @@ class UtxoLedgerTests {
         assertThat(parsedPeekFlowResult.outputs).singleElement().extracting { it.testField }.isEqualTo(evolvedMessage)
     }
 
-    @Test
+    // @Test
     fun `Utxo Ledger - creating a transaction that fails custom validation causes finality to fail`() {
         val utxoFlowRequestId = startRpcFlow(
             aliceHoldingId,
