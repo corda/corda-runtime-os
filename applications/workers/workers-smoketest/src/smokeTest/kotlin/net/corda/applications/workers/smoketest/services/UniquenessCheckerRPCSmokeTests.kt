@@ -31,6 +31,8 @@ import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.slf4j.LoggerFactory
 import java.net.URI
 import java.net.http.HttpClient
@@ -43,6 +45,8 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.UUID
 import kotlin.random.Random
+import kotlin.time.ExperimentalTime
+import kotlin.time.measureTime
 
 /**
  * Tests for the UniquenessChecker RPC service
@@ -149,28 +153,35 @@ class UniquenessCheckerRPCSmokeTests {
         UniquenessAssertions.assertStandardSuccessResponse(deserializedExternalEventResponse!!, testClock)
     }
 
-    @Test
-    fun `RPC endpoint can process batches`() {
+    @OptIn(ExperimentalTime::class)
+    @ParameterizedTest
+    @ValueSource(ints = [1, 10, 50, 200])
+    fun `RPC endpoint can process batches`(batchSize: Int) {
         val url = "${System.getProperty("uniquenessWorkerUrl")}api/$PLATFORM_VERSION/uniqueness-checker"
 
         logger.info("uniqueness url: $url")
 
         runBlocking(Dispatchers.Default) {
             val softly = SoftAssertions()
-            List(50) {
+            val requests = List(batchSize) {
                 val serializedPayload = avroSerializer.serialize(payloadBuilder().build())
                 HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .headers("Content-Type", "application/octet-stream")
                     .POST(HttpRequest.BodyPublishers.ofByteArray(serializedPayload))
                     .build()
-            }.map { request ->
-                async {
-                    val response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
-                    softly.assertThat(response.statusCode()).isEqualTo(200)
-                        .withFailMessage("status code on response: ${response.statusCode()} url: $url")
-                }
-            }.awaitAll()
+            }
+            measureTime {
+                requests.map { request ->
+                    async {
+                        val response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
+                        softly.assertThat(response.statusCode()).isEqualTo(200)
+                            .withFailMessage("status code on response: ${response.statusCode()} url: $url")
+                    }
+                }.awaitAll()
+            }.also {
+                logger.info("Completed $batchSize uniqueness requests in ${it.inWholeMilliseconds}ms")
+            }
             softly.assertAll()
         }
     }
