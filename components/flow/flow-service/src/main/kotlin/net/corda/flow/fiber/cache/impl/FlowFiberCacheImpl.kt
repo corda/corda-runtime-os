@@ -4,6 +4,7 @@ import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.data.flow.FlowKey
+import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.sandboxgroupcontext.SandboxGroupType
@@ -85,5 +86,13 @@ class FlowFiberCacheImpl @Activate constructor(
         val keysToInvalidate = cache.asMap().keys.filter { holdingIdentityToRemove == it.flowKey.identity }
         cache.invalidateAll(keysToInvalidate)
         cache.cleanUp()
+    }
+
+    // Yuk ... adding this to support the existing integration test.
+    //  I don't think we should have integration tests knowing about the internals of the cache.
+    internal fun findInCache(holdingId: HoldingIdentity, flowId: String): List<FlowFiber> {
+        return cache.asMap()
+            .filter { it.key.flowKey.identity == holdingId && it.key.flowKey.id == flowId }
+            .map { it.value }
     }
 }

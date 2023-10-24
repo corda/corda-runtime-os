@@ -18,12 +18,14 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.data.persistence.EntityRequest
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.cache.FlowFiberCache
+import net.corda.flow.fiber.cache.impl.FlowFiberCacheImpl
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -422,20 +424,18 @@ class OutputAssertionsImpl(
 
     override fun flowFiberCacheContainsKey(holdingId: HoldingIdentity, flowId: String) {
         asserts.add {
-            assertNotNull(
-                // TODO - need to figure out why we need to test internal workings of the cache in the integration test.
-                //flowFiberCache.get(FlowKey(flowId, holdingId)),
-                "",
+            assertFalse(
+                // :(
+                (flowFiberCache as FlowFiberCacheImpl).findInCache(holdingId, flowId).isEmpty(),
                 "Expected flow fiber cache to contain flowKey: $flowId, $holdingId.")
         }
     }
 
     override fun flowFiberCacheDoesNotContainKey(holdingId: HoldingIdentity, flowId: String) {
         asserts.add {
-            assertNull(
-                // TODO - need to figure out why we need to test internal workings of the cache in the integration test.
-                //flowFiberCache.get(FlowKey(flowId, holdingId)),
-                null,
+            assertTrue(
+                // :(
+                (flowFiberCache as FlowFiberCacheImpl).findInCache(holdingId, flowId).isEmpty(),
                 "Expected flow fiber cache to not contain flowKey: $flowId, $holdingId"
             )
         }
