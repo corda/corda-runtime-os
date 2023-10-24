@@ -45,7 +45,7 @@ class EvmDemoCall : ClientStartableFlow {
             val receipt = evmService.call(
                 "balanceOf", inputs.contractAddress!!, options, Type.STRING::class.java, listOf(
                     Parameter.of("from", Type.ADDRESS, inputs.address!!),
-                    Parameter.of("id", Type.UINT256, 1),
+                    Parameter.of("id", Type.UINT256, 1.toBigInteger())
                 )
             )
             println(receipt)
