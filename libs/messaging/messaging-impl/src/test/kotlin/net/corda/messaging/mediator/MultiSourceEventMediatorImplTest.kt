@@ -49,7 +49,7 @@ class MultiSourceEventMediatorImplTest {
         const val KEY1 = "key1"
         const val KEY2 = "key2"
 
-        const val PROCESSOR_RETRIES = 2
+        const val PROCESSOR_RETRIES = 5
     }
 
     private lateinit var mediator: MultiSourceEventMediatorImpl<Any, Any, Any>
