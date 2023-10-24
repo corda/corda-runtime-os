@@ -135,8 +135,6 @@ class FlowEventExceptionProcessorImplTest {
 
         val result = target.process(error, context)
 
-        verify(flowFiberCache, times(0)).remove(any<List<FlowKey>>())
-
         verify(result.checkpoint).rollback()
         verify(result.checkpoint).markForRetry(context.inputEvent, error)
         assertThat(result.outputRecords).containsOnly(flowStatusUpdateRecord, flowEventRecord)
@@ -228,7 +226,6 @@ class FlowEventExceptionProcessorImplTest {
 
         verify(result.checkpoint).waitingFor = WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
         verify(result.checkpoint).setPendingPlatformError(FlowProcessingExceptionTypes.PLATFORM_ERROR, error.message)
-        verify(flowFiberCache, times(0)).remove(any<List<FlowKey>>())
     }
 
     @Test
@@ -329,7 +326,6 @@ class FlowEventExceptionProcessorImplTest {
         target.process(error, context)
 
         verify(flowCheckpoint, times(0)).flowStartContext
-        verify(flowFiberCache, times(0)).remove(any<List<FlowKey>>())
     }
 
     @Test

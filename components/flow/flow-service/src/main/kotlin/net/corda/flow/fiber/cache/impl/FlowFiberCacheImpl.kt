@@ -76,12 +76,6 @@ class FlowFiberCacheImpl @Activate constructor(
         cache.invalidate(key)
     }
 
-    override fun remove(keys: Collection<FlowKey>) {
-        logger.debug { "Removing ${keys.size} flow fibers from flow fiber cache: ${keys.joinToString()}" }
-        cache.invalidateAll(keys)
-        cache.cleanUp()
-    }
-
     override fun remove(virtualNodeContext: VirtualNodeContext) {
         logger.debug {
             "Flow fiber cache removing holdingIdentity ${virtualNodeContext.holdingIdentity}" }
