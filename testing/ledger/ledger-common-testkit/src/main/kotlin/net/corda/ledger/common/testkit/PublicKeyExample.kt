@@ -14,5 +14,3 @@ val publicKeyExample: PublicKey = keyPairExample.public
 
 val anotherPublicKeyExample: PublicKey = kpg
     .generateKeyPair().public
-
-val keyPairExample: KeyPair = kpg.generateKeyPair()

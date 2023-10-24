@@ -10,6 +10,7 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.interop.FacadeService
 import net.corda.v5.application.interop.InteropIdentityLookup
+import net.corda.v5.application.interop.facade.FacadeId
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
@@ -56,7 +57,7 @@ class UnlockFlowDispatcher: ClientStartableFlow {
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
-        val facadeId = "org.corda.interop/platform/lock/v1.0"
+        val facadeId = FacadeId.of("org.corda.interop/platform/lock/v1.0")
         try {
             val flowArgs = requestBody.getRequestBodyAs(jsonMarshallingService, UnlockFlowArgs::class.java)
 

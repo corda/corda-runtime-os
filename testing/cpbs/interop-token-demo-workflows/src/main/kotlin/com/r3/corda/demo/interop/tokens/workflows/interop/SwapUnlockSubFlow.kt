@@ -7,6 +7,7 @@ import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.interop.FacadeService
 import net.corda.v5.application.interop.InterOpIdentityInfo
 import net.corda.v5.application.interop.InteropIdentityLookup
+import net.corda.v5.application.interop.facade.FacadeId
 import net.corda.v5.base.annotations.Suspendable
 import org.slf4j.LoggerFactory
 import java.util.UUID
@@ -28,7 +29,7 @@ class SwapUnlockSubFlow(private val applicationName: String, private val proof: 
 
         val myInteropInfo : InterOpIdentityInfo? = interopIdentityLookUp.lookup(applicationName)
         require(myInteropInfo != null) { "Can't get InteropIdentityInfo for ${applicationName}." }
-        val facadeId = "org.corda.interop/platform/lock/v1.0"
+        val facadeId = FacadeId.of("org.corda.interop/platform/lock/v1.0")
         log.info("Interop call: facadeId=$facadeId, interopIdentity=${myInteropInfo.applicationName}," +
                 " interopGroupId=${myInteropInfo.groupId}")
         log.info("unlocking send to $myInteropInfo")
