@@ -38,10 +38,10 @@ class SessionCloseIntegrationTest {
 
         closeSession(alice, bob)
 
-        alice.assertLastSentSeqNum(2)
-        bob.assertLastReceivedSeqNum(2)
-        bob.assertLastSentSeqNum(2)
-        alice.assertLastReceivedSeqNum(2)
+        alice.assertLastSentSeqNum(1)
+        bob.assertLastReceivedSeqNum(1)
+        bob.assertLastSentSeqNum(1)
+        alice.assertLastReceivedSeqNum(1)
     }
 
     @Test

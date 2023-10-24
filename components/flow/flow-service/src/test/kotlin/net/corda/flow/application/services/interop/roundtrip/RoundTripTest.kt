@@ -4,6 +4,7 @@ import net.corda.flow.application.services.impl.interop.dispatch.buildDispatcher
 import net.corda.flow.application.services.impl.interop.facade.FacadeReaders
 import net.corda.flow.application.services.impl.interop.proxies.getClientProxy
 import net.corda.flow.application.services.interop.example.TokensFacade
+import net.corda.flow.application.services.interop.testJsonMarshaller
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -14,16 +15,13 @@ import java.util.*
 
 class RoundTripTest {
     val facadeV1 = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/tokens-facade.json")!!)
-    val facadeV2 =
-        FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/tokens-facade_v2.json")!!)
 
     val currentTime = ZonedDateTime.now()
     val server = TestTokenServer(mapOf("USD" to BigDecimal(1000000), "GBP" to BigDecimal("1000000"))) { currentTime }
 
-    val v1Dispatcher = server.buildDispatcher(facadeV1)
-    val v2Dispatcher = server.buildDispatcher(facadeV2)
+    val v1Dispatcher = server.buildDispatcher(facadeV1, testJsonMarshaller)
 
-    val v1Client = facadeV1.getClientProxy<TokensFacade>(v1Dispatcher)
+    val v1Client = facadeV1.getClientProxy<TokensFacade>(testJsonMarshaller, v1Dispatcher)
 
     @Test
     fun roundtripClientProxyToServerDispatcher() {

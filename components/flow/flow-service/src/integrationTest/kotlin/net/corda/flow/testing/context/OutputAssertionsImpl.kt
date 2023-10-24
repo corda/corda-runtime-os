@@ -8,10 +8,10 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.event.session.SessionClose
-import net.corda.data.flow.event.session.SessionConfirm
+import net.corda.data.flow.event.session.SessionCounterpartyInfoRequest
+import net.corda.data.flow.event.session.SessionCounterpartyInfoResponse
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
-import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.checkpoint.Checkpoint
@@ -53,19 +53,19 @@ class OutputAssertionsImpl(
 
     }
 
-    override fun sessionConfirmEvents(
+    override fun sessionCounterpartyInfoResponse(
         vararg sessionIds: String,
         initiatingIdentity: HoldingIdentity?,
         initiatedIdentity: HoldingIdentity?,
     ) {
         asserts.add { testRun ->
-            findAndAssertSessionEvents<SessionConfirm>(testRun, sessionIds.toSet(), initiatingIdentity, initiatedIdentity)
+            findAndAssertSessionEvents<SessionCounterpartyInfoResponse>(testRun, sessionIds.toSet(), initiatingIdentity, initiatedIdentity)
         }
     }
 
-    override fun sessionInitEvents(vararg sessionIds: String, initiatingIdentity: HoldingIdentity?, initiatedIdentity: HoldingIdentity?) {
+    override fun sessionCounterpartyInfoRequestEvents(vararg sessionIds: String, initiatingIdentity: HoldingIdentity?, initiatedIdentity: HoldingIdentity?) {
         asserts.add { testRun ->
-            findAndAssertSessionEvents<SessionInit>(testRun, sessionIds.toSet(), initiatingIdentity, initiatedIdentity)
+            findAndAssertSessionEvents<SessionCounterpartyInfoRequest>(testRun, sessionIds.toSet(), initiatingIdentity, initiatedIdentity)
         }
     }
 
@@ -259,13 +259,13 @@ class OutputAssertionsImpl(
 
     override fun hasPendingUserException() {
         asserts.add { testRun ->
-            assertThat(testRun.response?.updatedState?.pipelineState?.pendingPlatformError).isNotNull()
+            assertThat(testRun.response?.updatedState?.value?.pipelineState?.pendingPlatformError).isNotNull()
         }
     }
 
     override fun noPendingUserException() {
         asserts.add { testRun ->
-            assertThat(testRun.response?.updatedState?.pipelineState?.pendingPlatformError).isNull()
+            assertThat(testRun.response?.updatedState?.value?.pipelineState?.pendingPlatformError).isNull()
         }
     }
 
@@ -278,8 +278,8 @@ class OutputAssertionsImpl(
 
     override fun checkpointHasRetry(expectedCount: Int) {
         asserts.add { testRun ->
-            assertThat(testRun.response?.updatedState?.pipelineState?.retryState).isNotNull
-            val retry = testRun.response!!.updatedState!!.pipelineState!!.retryState
+            assertThat(testRun.response?.updatedState?.value?.pipelineState?.retryState).isNotNull
+            val retry = testRun.response!!.updatedState!!.value?.pipelineState!!.retryState
 
             assertThat(retry.retryCount).isEqualTo(expectedCount)
 
@@ -296,7 +296,7 @@ class OutputAssertionsImpl(
 
     override fun checkpointDoesNotHaveRetry() {
         asserts.add { testRun ->
-            assertThat(testRun.response?.updatedState?.pipelineState?.retryState).isNull()
+            assertThat(testRun.response?.updatedState?.value?.pipelineState?.retryState).isNull()
         }
     }
 
@@ -364,7 +364,7 @@ class OutputAssertionsImpl(
 
     override fun nullStateRecord() {
         asserts.add {
-            assertNull(it.response?.updatedState, "Expected to receive NULL for output state")
+            assertNull(it.response?.updatedState?.value, "Expected to receive NULL for output state")
         }
     }
 

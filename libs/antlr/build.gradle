@@ -1,4 +1,4 @@
-import aQute.bnd.version.MavenVersion
+import static aQute.bnd.version.MavenVersion.parseMavenString
 
 plugins {
     id 'java-library'
@@ -17,7 +17,7 @@ tasks.named('jar', Jar) {
     archiveBaseName = 'corda-antlr'
 
     ext {
-        bundleVersion = MavenVersion.parseMavenString(antlrVersion).OSGiVersion
+        bundleVersion = parseMavenString(antlrVersion).OSGiVersion
     }
 
     bundle {
@@ -78,5 +78,5 @@ publishing {
 }
 
 artifactoryPublish {
-    publications('antlr')
+    publications 'antlr'
 }

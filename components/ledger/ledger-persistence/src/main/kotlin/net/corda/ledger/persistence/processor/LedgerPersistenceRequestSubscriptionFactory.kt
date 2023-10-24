@@ -1,7 +1,9 @@
 package net.corda.ledger.persistence.processor
 
+import net.corda.data.flow.event.FlowEvent
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.libs.configuration.SmartConfig
+import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.Subscription
 
 /**
@@ -16,4 +18,7 @@ interface LedgerPersistenceRequestSubscriptionFactory {
      * @return A new subscription for [LedgerPersistenceRequest] messages
      */
     fun create(config: SmartConfig): Subscription<String, LedgerPersistenceRequest>
+
+    fun createRpcSubscription(): RPCSubscription<LedgerPersistenceRequest, FlowEvent>
+
 }

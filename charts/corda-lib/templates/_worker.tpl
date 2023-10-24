@@ -59,9 +59,11 @@ metadata:
   {{- range $key, $value := . }}
     {{ $key }}: {{ $value | quote }}
   {{- end }}
-  {{- end}}
+  {{- end }}
 spec:
-  type: {{ .type }}
+  {{- with .type }}
+  type: {{ . }}
+  {{- end }}
   {{- if .externalTrafficPolicy }}
   externalTrafficPolicy: {{ .externalTrafficPolicy }}
   {{- else if .loadBalancerSourceRanges }}
@@ -74,6 +76,19 @@ spec:
     port: {{ .port }}
     targetPort: http
 {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "corda.workerInternalServiceName" $workerName }}
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ $workerName }}
+  ports:
+      - protocol: TCP
+        port: {{ include "corda.workerServicePort" . }}
+        targetPort: "monitor"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -106,16 +121,16 @@ spec:
       {{- if and ( not $.Values.dumpHostPath ) ( not .profiling.enabled ) }}
       {{- with $.Values.podSecurityContext }}
       securityContext:
-        {{ . | toYaml | nindent 8 }}
+        {{- . | toYaml | nindent 8 }}
       {{- end }}
       {{- end }}
-      {{- include "corda.imagePullSecrets" $ | nindent 6 }}
-      {{- include "corda.tolerations" $ | nindent 6 }}
+      {{- include "corda.imagePullSecrets" $ | indent 6 }}
+      {{- include "corda.tolerations" $ | indent 6 }}
       {{- with $.Values.serviceAccount.name  }}
       serviceAccountName: {{ . }}
       {{- end }}
       {{- include "corda.topologySpreadConstraints" $ | indent 6 }}
-      {{- include "corda.affinity" (list $ . $worker ) | nindent 6 }}
+      {{- include "corda.affinity" (list $ . $worker ) | indent 6 }}
       containers:
       - name: {{ $workerName | quote }}
         image: {{ include "corda.workerImage" ( list $ . ) }}
@@ -159,13 +174,6 @@ spec:
               fieldRef:
                 apiVersion: v1
                 fieldPath: metadata.namespace
-          - name: ENABLE_CLOUDWATCH
-            value:
-              {{- if eq $.Values.serviceAccount.name "cloudwatch-writer" }}
-                "true"
-              {{- else }}
-                "false"
-              {{- end }}
           - name: JAVA_TOOL_OPTIONS
             value:
               {{ .javaOptions }}
@@ -228,8 +236,11 @@ spec:
             value: {{ required (printf "Must specify workers.%s.kafka.sasl.password.value, workers.%s.kafka.sasl.password.valueFrom.secretKeyRef.name, kafka.sasl.password.value, or kafka.sasl.password.valueFrom.secretKeyRef.name" $worker $worker) $.Values.kafka.sasl.password.value }}
             {{- end }}
           {{- end }}
+        {{- if not (($.Values).vault).url }}
         {{- include "corda.configSaltAndPassphraseEnv" $ | nindent 10 }}
-        {{- if $optionalArgs.clusterDbAccess }}
+        {{- end }}
+        {{- /* TODO-[CORE-16419]: isolate StateManager database from the Cluster database */ -}}
+        {{- if or $optionalArgs.clusterDbAccess $optionalArgs.stateManagerDbAccess }}
         {{- include "corda.clusterDbEnv" $ | nindent 10 }}
         {{- end }}
         args:
@@ -276,11 +287,46 @@ spec:
           - "-ddatabase.pool.keepaliveTimeSeconds={{ .clusterDbConnectionPool.keepaliveTimeSeconds }}"
           - "-ddatabase.pool.validationTimeoutSeconds={{ .clusterDbConnectionPool.validationTimeoutSeconds }}"
           {{- end }}
+          {{- /* TODO-[CORE-16419]: isolate StateManager database from the Cluster database */ -}}
+          {{- if $optionalArgs.stateManagerDbAccess }}
+          - "--stateManager"
+          - "type=DATABASE"
+          - "--stateManager"
+          - "database.user=$(DB_CLUSTER_USERNAME)"
+          - "--stateManager"
+          - "database.pass=$(DB_CLUSTER_PASSWORD)"
+          - "--stateManager"
+          - "database.jdbc.url=jdbc:postgresql://{{ required "Must specify db.cluster.host" $.Values.db.cluster.host }}:{{ $.Values.db.cluster.port }}/{{ $.Values.db.cluster.database }}?currentSchema=STATE_MANAGER"
+          - "--stateManager"
+          - "database.jdbc.directory=/opt/jdbc-driver"
+          - "--stateManager"
+          - "database.jdbc.driver=org.postgresql.Driver"
+          - "--stateManager"
+          - "database.pool.maxSize={{ .stateManagerDbConnectionPool.maxSize }}"
+          {{- if .stateManagerDbConnectionPool.minSize }}
+          - "--stateManager"
+          - "database.pool.minSize={{ .stateManagerDbConnectionPool.minSize }}"
+          {{- end }}
+          - "--stateManager"
+          - "database.pool.idleTimeoutSeconds={{ .stateManagerDbConnectionPool.idleTimeoutSeconds }}"
+          - "--stateManager"
+          - "database.pool.maxLifetimeSeconds={{ .stateManagerDbConnectionPool.maxLifetimeSeconds }}"
+          - "--stateManager"
+          - "database.pool.keepAliveTimeSeconds={{ .stateManagerDbConnectionPool.keepAliveTimeSeconds }}"
+          - "--stateManager"
+          - "database.pool.validationTimeoutSeconds={{ .stateManagerDbConnectionPool.validationTimeoutSeconds }}"
+          {{- end }}
           {{- if $.Values.tracing.endpoint }}
           - "--send-trace-to={{ $.Values.tracing.endpoint }}"
           {{- end }}
           {{- if $.Values.tracing.samplesPerSecond }}
           - "--trace-samples-per-second={{ $.Values.tracing.samplesPerSecond }}"
+          {{- end }}
+          {{- if $optionalArgs.servicesAccessed }}
+          {{- range $worker := $optionalArgs.servicesAccessed }}
+          {{- $endpoint := include "corda.getWorkerEndpoint" (dict "context" $ "worker" $worker) }}
+          - --serviceEndpoint={{ $endpoint }}
+          {{- end }}
           {{- end }}
           {{- range $i, $arg := $optionalArgs.additionalWorkerArgs }}
           - {{ $arg | quote }}
@@ -404,8 +450,8 @@ Worker type in upper snake case
 Worker common labels
 */}}
 {{- define "corda.workerLabels" -}}
-{{- $ := index . 0 }}
-{{- $worker := index . 1 }}
+{{- $ := index . 0 -}}
+{{- $worker := index . 1 -}}
 {{ include "corda.labels" $ }}
 {{ include "corda.workerComponentLabel" $worker }}
 {{- end }}
@@ -414,8 +460,8 @@ Worker common labels
 Worker selector labels
 */}}
 {{- define "corda.workerSelectorLabels" -}}
-{{- $ := index . 0 }}
-{{- $worker := index . 1 }}
+{{- $ := index . 0 -}}
+{{- $worker := index . 1 -}}
 {{ include "corda.selectorLabels" $ }}
 {{ include "corda.workerComponentLabel" $worker }}
 {{- end }}

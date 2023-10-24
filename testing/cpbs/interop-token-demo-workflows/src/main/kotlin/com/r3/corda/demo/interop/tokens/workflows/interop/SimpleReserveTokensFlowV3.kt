@@ -10,6 +10,7 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
+import net.corda.v5.application.interop.facade.FacadeId
 
 @InitiatingFlow(protocol = "SimpleReserveTokensFlow3-protocol")
 class SimpleReserveTokensFlowV3 : ClientStartableFlow {
@@ -37,7 +38,7 @@ class SimpleReserveTokensFlowV3 : ClientStartableFlow {
 
         val args = requestBody.getRequestBodyAsMap(jsonMarshallingService, String::class.java, String::class.java)
 
-        val facadeId = getArgument(args, "facadeId")
+        val facadeId = FacadeId.of(getArgument(args, "facadeId"))
         val applicationName = getArgument(args, "applicationName")
         val uuid = getArgument(args, "payload")
 

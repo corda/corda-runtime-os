@@ -33,6 +33,11 @@ dependencies {
         implementation("org.yaml:snakeyaml:$snakeyamlVersion") {
             because "required until liquibase-core updates it's internal version of snakeYaml, currently using 1.33 which has CVE-2022-1471"
         }
+        implementation('org.slf4j:slf4j-api') {
+            version {
+                strictly slf4jV2Version
+            }
+        }
     }
 
     // DO NOT DISTRIBUTE DRIVERS HERE WE ARE NOT LICENSED TO DISTRIBUTE

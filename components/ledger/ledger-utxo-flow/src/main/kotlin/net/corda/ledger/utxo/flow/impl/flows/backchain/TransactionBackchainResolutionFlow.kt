@@ -9,6 +9,7 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 
 @CordaSystemFlow
@@ -57,14 +58,9 @@ class TransactionBackchainResolutionFlowVersionedFlowFactory(
         return when {
             version >= CORDA_5_1.value -> TransactionBackchainResolutionFlowV1(
                 initialTransactionIds,
-                session,
-                TransactionBackChainResolutionVersion.V2
+                session
             )
-            version in 1 until CORDA_5_1.value -> TransactionBackchainResolutionFlowV1(
-                initialTransactionIds,
-                session,
-                TransactionBackChainResolutionVersion.V1
-            )
+            version in 1 until CORDA_5_1.value -> throw CordaRuntimeException("Flows cannot be shared between 5.0 and 5.1 vnodes.")
             else -> throw IllegalArgumentException()
         }
     }

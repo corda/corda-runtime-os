@@ -66,7 +66,7 @@ class InteropProcessor(
     }
 
     @Suppress("ThrowsCount")
-    private fun processInboundEvent(state: InteropState?, eventKey: String, sessionEvent: SessionEvent):
+    private fun processInboundEvent(state: StateAndEventProcessor.State<InteropState>?, eventKey: String, sessionEvent: SessionEvent):
             StateAndEventProcessor.Response<InteropState> {
 
         val (destinationInteropIdentity, sourceInteropIdentity) = if (sessionEvent.isInitiatingIdentityDestination()) {
@@ -111,12 +111,15 @@ class InteropProcessor(
         }
 
         return StateAndEventProcessor.Response(
-            InteropState(
-                UUID.randomUUID().toString(),
-                null,
-                InteropStateType.VALID,
-                destinationInteropIdentity.x500Name.toString(),
-                destinationInteropIdentity.groupId
+            StateAndEventProcessor.State(
+                    InteropState(
+                    UUID.randomUUID().toString(),
+                    null,
+                    InteropStateType.VALID,
+                    destinationInteropIdentity.x500Name.toString(),
+                    destinationInteropIdentity.groupId
+                ),
+                state?.metadata
             ),
             listOf(
                 Record(
@@ -149,7 +152,7 @@ class InteropProcessor(
     }
 
     @Suppress("ThrowsCount")
-    private fun processOutboundEvent(state: InteropState?, sessionEvent: SessionEvent):
+    private fun processOutboundEvent(state: StateAndEventProcessor.State<InteropState>?, sessionEvent: SessionEvent):
             StateAndEventProcessor.Response<InteropState> {
 
         val (sourceIdentity, destinationIdentity) = getSourceAndDestinationIdentity(sessionEvent)
@@ -159,7 +162,7 @@ class InteropProcessor(
         val sessionPayload = sessionEvent.payload
 
         // If group ID is null, get the group ID from the initial session data event
-        val interopGroupId = if (state?.groupId == null) {
+        val interopGroupId = if (state?.value?.groupId == null) {
             assert(sessionPayload is SessionData) {
                 "State group ID is null and no session data event."
             }
@@ -170,7 +173,7 @@ class InteropProcessor(
             val parameters = InteropSessionParameters.fromContextUserProperties(sessionInit.contextUserProperties)
             parameters.interopGroupId
         } else {
-            state.groupId?.let { UUID.fromString(it) } ?: throw InteropProcessorException(
+            state.value?.groupId?.let { UUID.fromString(it) } ?: throw InteropProcessorException(
                 "Interop group ID missing from InteropProcessor state. ", state
             )
         }
@@ -236,7 +239,7 @@ class InteropProcessor(
     }
 
     override fun onNext(
-        state: InteropState?,
+        state: StateAndEventProcessor.State<InteropState>?,
         event: Record<String, FlowMapperEvent>
     ): StateAndEventProcessor.Response<InteropState> {
         val eventPayload = event.value?.payload

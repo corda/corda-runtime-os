@@ -1,11 +1,11 @@
 package net.corda.e2etest.utilities.config
 
 import com.fasterxml.jackson.databind.JsonNode
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigRenderOptions
 import net.corda.e2etest.utilities.ClusterInfo
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
-import net.corda.e2etest.utilities.expand
-import net.corda.e2etest.utilities.flatten
-import net.corda.e2etest.utilities.toJsonString
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
 import org.slf4j.LoggerFactory
@@ -21,11 +21,13 @@ class SingleClusterTestConfigManager(
         private const val GET_CONFIG_TIMEOUT_SECONDS = 30L
     }
 
-    private val flattenedOverrides: MutableMap<String, Map<String, Any?>> = ConcurrentHashMap()
-    private var originalConfigs: MutableMap<String, JsonNode> = ConcurrentHashMap()
+    private val originalConfigs: MutableMap<String, Config> = ConcurrentHashMap()
+    private val overrides: MutableMap<String, Config> = ConcurrentHashMap()
 
     override fun load(section: String, props: Map<String, Any?>): TestConfigManager {
-        props.forEach { (k, v) -> load(section, k, v) }
+        overrides.compute(section) { _, v ->
+            ConfigFactory.parseMap(props).withFallback(v ?: ConfigFactory.empty())
+        }
         return this
     }
 
@@ -35,48 +37,43 @@ class SingleClusterTestConfigManager(
                     "into TestConfigManager."
         )
 
-        // If the input value is a map, flatten it to a standardised form for merging with previously loaded configs.
-        val propsAsFlattenedTree = mutableMapOf<String, Any?>().also {
-            if (value is Map<*, *>) {
-                value.flatten(it, prop)
-            } else {
-                it[prop] = value
-            }
-        }
-
-        // Combine with previously loaded overrides with the new properties taking precedence.
-        flattenedOverrides.compute(section) { _, v ->
-            (v ?: emptyMap()) + propsAsFlattenedTree
+        overrides.compute(section) { _, v ->
+            ConfigFactory.parseString("$prop=$value").withFallback(v ?: ConfigFactory.empty())
         }
 
         return this
     }
 
     override fun apply(): TestConfigManager {
-        flattenedOverrides.filterValues {
-            it.isNotEmpty()
-        }.forEach { (section, configOverride) ->
+        overrides.forEach { (section, configOverride) ->
             val currentConfig = getConfig(section)
-            // Store original config for later revert.
-            originalConfigs.computeIfAbsent(section) { currentConfig }
 
             val (previousVersion, previousSourceConfig) = with(currentConfig) {
                 version to sourceConfig
             }
+            val previousConfig = previousSourceConfig.takeIf {
+                it.isNotBlank()
+            }?.let {
+                ConfigFactory.parseString(it)
+            } ?: ConfigFactory.empty()
 
-            val newConfig = configOverride.expand().toJsonString()
+            // Store original config for later revert.
+            originalConfigs.computeIfAbsent(section) { previousConfig }
+
+            val mergedConfig = configOverride.withFallback(previousConfig).root().render(ConfigRenderOptions.concise())
+
             logger.info(
-                "Updating from config \"$previousSourceConfig\" to \"$newConfig\" for section \"$section\" on " +
+                "Updating from config \"$previousSourceConfig\" to \"$mergedConfig\" for section \"$section\" on " +
                         "cluster \"${clusterInfo.name}\"."
             )
 
-            if(newConfig != previousSourceConfig) {
-                updateConfig(newConfig, section)
+            if(mergedConfig != previousSourceConfig) {
+                updateConfig(mergedConfig, section)
 
                 eventually(duration = Duration.ofSeconds(GET_CONFIG_TIMEOUT_SECONDS)) {
                     with(getConfig(section)) {
                         assertThat(version).isNotEqualTo(previousVersion)
-                        assertThat(sourceConfig).isEqualTo(newConfig)
+                        assertThat(sourceConfig).isEqualTo(mergedConfig)
                     }
                 }
             }
@@ -89,7 +86,7 @@ class SingleClusterTestConfigManager(
             val (previousVersion, previousSourceConfig) = with(getConfig(section)) {
                 version to sourceConfig
             }
-            val preTestConfig = originalConfig.sourceConfig.ifBlank { "{}" }
+            val preTestConfig = originalConfig.root().render(ConfigRenderOptions.concise())
 
             logger.info(
                 "Reverting test config for section \"$section\" from \"$previousSourceConfig\" to \"$preTestConfig\" " +

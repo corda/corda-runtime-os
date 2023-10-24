@@ -21,6 +21,7 @@ internal class PersistMemberRegistrationStateHandler(
             member,
             command.setStatusRequest.registrationId,
             command.setStatusRequest.newStatus,
+            command.setStatusRequest.reason
         ).createAsyncCommands()
         return RegistrationHandlerResult(
             null,

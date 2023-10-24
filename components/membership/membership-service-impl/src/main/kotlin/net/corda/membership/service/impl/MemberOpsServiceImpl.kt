@@ -11,6 +11,7 @@ import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -78,6 +79,8 @@ class MemberOpsServiceImpl @Activate constructor(
     private val merkleTreeProvider: MerkleTreeProvider,
     @Reference(service = LocallyHostedIdentitiesService::class)
     private val locallyHostedIdentitiesService: LocallyHostedIdentitiesService,
+    @Reference(service = PlatformInfoProvider::class)
+    private val platformInfoProvider: PlatformInfoProvider,
 ) : MemberOpsService {
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -202,6 +205,7 @@ class MemberOpsServiceImpl @Activate constructor(
                     virtualNodeInfoReadService,
                     membershipGroupReaderProvider,
                     membershipQueryClient,
+                    platformInfoProvider,
                 ),
                 messagingConfig = messagingConfig
             ).also { it.start() }

@@ -485,6 +485,8 @@ class MemberSynchronisationServiceImpl internal constructor(
             setOf(
                 LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                 LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
+                LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
+                LifecycleCoordinatorName.forComponent<MembershipPersistenceClient>(),
             )
         )
     }

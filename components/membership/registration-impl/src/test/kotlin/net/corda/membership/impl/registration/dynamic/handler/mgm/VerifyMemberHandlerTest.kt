@@ -53,7 +53,8 @@ class VerifyMemberHandlerTest {
     private val state = RegistrationState(
         REGISTRATION_ID,
         member,
-        mgm
+        mgm,
+        emptyList()
     )
     private val setRegistrationRequestStatusCommands = listOf(
         Record(

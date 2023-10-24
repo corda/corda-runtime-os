@@ -12,6 +12,7 @@ import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 import java.util.*
+import net.corda.v5.application.interop.facade.FacadeId
 
 lateinit var interopIdentityLookUp: InteropIdentityLookup
 
@@ -38,7 +39,7 @@ class SimpleReserveTokensFlow : ClientStartableFlow {
 
         val args = requestBody.getRequestBodyAsMap(jsonMarshallingService, String::class.java, String::class.java)
 
-        val facadeId = getArgument(args, "facadeId")
+        val facadeId = FacadeId.of(getArgument(args, "facadeId"))
         val alias = MemberX500Name.parse(getArgument(args, "alias"))
         val uuid = getArgument(args, "payload")
 

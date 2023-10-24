@@ -16,7 +16,8 @@ class ReconcilerImplTest {
                 String::class.java,
                 Int::class.java,
                 mock(),
-                1000L
+                1000L,
+                forceInitialReconciliation = false,
             )
         assertEquals(
             "${ReconcilerImpl::class.java.name}<${String::class.java.name}, ${Int::class.java.name}>",

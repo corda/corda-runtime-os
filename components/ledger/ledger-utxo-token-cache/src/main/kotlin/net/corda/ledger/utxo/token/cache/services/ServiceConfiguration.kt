@@ -6,4 +6,6 @@ interface ServiceConfiguration {
     fun init(config: SmartConfig)
 
     val cachedTokenPageSize: Int
+
+    val claimTimeoutSeconds: Int
 }

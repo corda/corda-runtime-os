@@ -9,6 +9,7 @@ import net.corda.v5.application.interop.InteropIdentityLookup
 import net.corda.v5.base.annotations.Suspendable
 import org.slf4j.LoggerFactory
 import java.util.UUID
+import net.corda.v5.application.interop.facade.FacadeId
 
 @InitiatingFlow(protocol = "swap-responder-sub-flow")
 class SwapResponderSubFlow(private val message: Payment):
@@ -26,7 +27,7 @@ class SwapResponderSubFlow(private val message: Payment):
         val applicationName = message.applicationName
         val myInteropInfo : InterOpIdentityInfo? = interopIdentityLookUp.lookup(applicationName)
         require(myInteropInfo != null) { "Can't get InteropIdentityInfo for ${applicationName}." }
-        val facadeId = "org.corda.interop/platform/tokens/v1.0"
+        val facadeId = FacadeId("org.corda.interop", listOf("platform", "tokens"), "v1.0")
         log.info("Interop call: facadeId=$facadeId, interopIdentity=${myInteropInfo.applicationName}," +
                 " interopGroupId=${myInteropInfo.groupId}")
         val tokens: TokensFacade =

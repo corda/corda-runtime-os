@@ -59,7 +59,7 @@ class NotaryVirtualNodeSelectorServiceImplTest {
         // make sure none of the elements is chosen exclusively
         val selectedVirtualNodes = mutableMapOf<MemberX500Name, Int>()
 
-        (1..SELECTION_COUNT).forEach { _ ->
+        for (i in 1..SELECTION_COUNT) {
             val selected = selector.selectVirtualNode(firstNotaryServiceName)
             selectedVirtualNodes.merge(selected, 1, Int::plus)
         }
@@ -74,7 +74,7 @@ class NotaryVirtualNodeSelectorServiceImplTest {
         val selectedVirtualNodesForFirstService = mutableMapOf<MemberX500Name, Int>()
         val selectedVirtualNodesForSecondService = mutableMapOf<MemberX500Name, Int>()
 
-        (1..SELECTION_COUNT).forEach { _ ->
+        for (i in 1..SELECTION_COUNT) {
             selectedVirtualNodesForFirstService.merge(
                 selector.selectVirtualNode(firstNotaryServiceName),
                 1,

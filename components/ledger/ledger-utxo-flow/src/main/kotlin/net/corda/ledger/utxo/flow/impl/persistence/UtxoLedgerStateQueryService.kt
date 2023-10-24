@@ -11,7 +11,7 @@ import net.corda.v5.ledger.utxo.StateRef
  */
 interface UtxoLedgerStateQueryService {
     /**
-     * Find unconsumed visible states of type [stateClass].
+     * Find unconsumed visible states of type [stateClass] and that of subclasses.
      *
      * @param stateClass The class of the aimed states.
      * @return The result [StateAndRef]s.
@@ -20,6 +20,17 @@ interface UtxoLedgerStateQueryService {
      */
     @Suspendable
     fun <T: ContractState> findUnconsumedStatesByType(stateClass: Class<out T>): List<StateAndRef<T>>
+
+    /**
+     * Find unconsumed visible states of type [stateClass].
+     *
+     * @param stateClass The class of the aimed states.
+     * @return The result [StateAndRef]s.
+     *
+     * @throws CordaPersistenceException if an error happens during find operation.
+     */
+    @Suspendable
+    fun <T: ContractState> findUnconsumedStatesByExactType(stateClass: Class<out T>): List<StateAndRef<T>>
 
     /**
      * Resolve [StateRef]s to [StateAndRef]s

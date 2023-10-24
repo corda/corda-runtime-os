@@ -94,7 +94,7 @@ class VirtualNodeRestResourceImplTest {
         val requestId = "r1"
         val request = CreateVirtualNodeRequest(
             "",
-            "",
+            "checkSum",
             null,
             null,
             null,
@@ -105,7 +105,14 @@ class VirtualNodeRestResourceImplTest {
         val holdingIdentity = mock<HoldingIdentity>()
         val asyncRequest = VirtualNodeAsynchronousRequest().apply { this.requestId = requestId }
 
-        whenever(virtualNodeValidationService.validateAndGetGroupId(request)).thenReturn(groupId)
+        whenever(virtualNodeValidationService.validateAndGetGroupId(request)).then {
+            if (request.cpiFileChecksum.uppercase() != request.cpiFileChecksum) {
+                throw IllegalArgumentException("CPI checksum must be uppercase at this point")
+            }
+            
+            groupId
+        }
+        
         whenever(requestFactory.createHoldingIdentity(groupId, request)).thenReturn(holdingIdentity)
         whenever(requestFactory.createVirtualNodeRequest(holdingIdentity, request)).thenReturn(asyncRequest)
 

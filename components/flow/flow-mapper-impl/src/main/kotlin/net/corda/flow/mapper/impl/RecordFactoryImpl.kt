@@ -38,7 +38,7 @@ class RecordFactoryImpl @Activate constructor(
     private val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
 
     override fun forwardError(
-        sessionEvent: SessionEvent,
+        sourceEvent: SessionEvent,
         exceptionEnvelope: ExceptionEnvelope,
         instant: Instant,
         flowConfig: SmartConfig,
@@ -46,7 +46,7 @@ class RecordFactoryImpl @Activate constructor(
         isInteropSession: Boolean
     ): Record<*, *> {
         return buildSessionRecord(
-            sessionEvent,
+            sourceEvent,
             SessionError(
                 exceptionEnvelope
             ),
@@ -58,18 +58,45 @@ class RecordFactoryImpl @Activate constructor(
     }
 
     override fun forwardEvent(
-        sessionEvent: SessionEvent,
+        sourceEvent: SessionEvent,
         instant: Instant,
         flowConfig: SmartConfig,
         flowId: String,
         isInteropSession: Boolean
     ): Record<*, *> {
         return buildSessionRecord(
-            sessionEvent,
-            sessionEvent.payload,
+            sourceEvent,
+            sourceEvent.payload,
             instant,
             flowConfig,
             flowId,
+            isInteropSession
+        )
+    }
+
+    override fun sendBackError(
+        sourceEvent: SessionEvent,
+        exceptionEnvelope: ExceptionEnvelope,
+        instant: Instant,
+        flowConfig: SmartConfig,
+        isInteropSession: Boolean
+    ): Record<*, *> {
+        if (sourceEvent.messageDirection == MessageDirection.INBOUND) {
+            // In this case, the mapper should send the error back from where it came. To do this, switch the message
+            // direction to OUTBOUND and then use the usual forwarding machinery to ensure it goes to the right place.
+            sourceEvent.messageDirection = MessageDirection.OUTBOUND
+        } else {
+            // The mapper does not have the flow ID available to it, and so cannot send the session error back. Raise an
+            // error instead. At present this is done by providing a `null` flow ID, and letting the forwarding code
+            // raise an error when it discovers it needs it.
+            sourceEvent.messageDirection = MessageDirection.INBOUND
+        }
+        return buildSessionRecord(
+            sourceEvent,
+            SessionError(exceptionEnvelope),
+            instant,
+            flowConfig,
+            null,
             isInteropSession
         )
     }
@@ -100,7 +127,7 @@ class RecordFactoryImpl @Activate constructor(
         newPayload: Any,
         timestamp: Instant,
         config: SmartConfig,
-        flowId: String,
+        flowId: String?,
         isInteropSession: Boolean
     ) : Record<*, *> {
         val outputTopic = getSessionEventOutputTopic(sourceEvent, isInteropSession)
@@ -122,6 +149,10 @@ class RecordFactoryImpl @Activate constructor(
         )
         return when (outputTopic) {
             Schemas.Flow.FLOW_EVENT_TOPIC -> {
+                if (flowId == null) {
+                    throw IllegalArgumentException("Flow ID is required to forward an event back to the flow event" +
+                            "topic, but it was not provided.")
+                }
                 Record(outputTopic, flowId, FlowEvent(flowId, sessionEvent))
             }
             Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC -> {
@@ -165,10 +196,7 @@ class RecordFactoryImpl @Activate constructor(
         sessionEvent: SessionEvent
     ): Boolean {
         val destinationIdentity = getSourceAndDestinationIdentity(sessionEvent).destinationIdentity
-        return when (locallyHostedIdentitiesService.getIdentityInfo(destinationIdentity.toCorda())) {
-            null -> false
-            else -> true
-        }
+        return locallyHostedIdentitiesService.isHostedLocally(destinationIdentity.toCorda())
     }
 
     /**

@@ -293,6 +293,7 @@ class MgmSynchronisationServiceImpl internal constructor(
                 LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
                 LifecycleCoordinatorName.forComponent<MembershipQueryClient>(),
                 LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
+                LifecycleCoordinatorName.forComponent<LocallyHostedIdentitiesService>()
             )
         )
     }

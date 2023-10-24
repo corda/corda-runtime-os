@@ -8,10 +8,11 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
+import net.corda.v5.application.interop.facade.FacadeId
 
 @Suppress("LongParameterList")
 class ReserveTokensSubFlowV2(private val alias: MemberX500Name, private val interopGroupId: String,
-                             private val facadeId: String, private val denomination: String,
+                             private val facadeId: FacadeId, private val denomination: String,
                              private val amount: BigDecimal, private val timeToLiveMs: Long):
     SubFlow<TokenReservation> {
 

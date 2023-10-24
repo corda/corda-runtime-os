@@ -88,7 +88,9 @@ tasks.named('test', Test) {
 }
 
 tasks.named('jar', Jar) {
-    bnd '''\
+    bundle {
+        bnd '''\
 DynamicImport-Package: org.hibernate.proxy
 '''
+    }
 }
