@@ -183,6 +183,15 @@ workers:
             secretKeyRef:
               name: "kafka-credentials"
               key: "tokenSelection"
+    stateManager:
+      db:
+        name: state-manager
+        username:
+          value: "state-manager-user"
+        password:
+          valueFrom:
+            secretKeyRef:
+              key: "password"
   rest:
     kafka:
       sasl:
