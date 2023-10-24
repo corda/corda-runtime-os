@@ -1,5 +1,6 @@
 package net.corda.flow.maintenance
 
+import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.statemanager.api.StateManagerFactory
@@ -14,6 +15,8 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.MessagingConfig
+import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.osgi.service.component.annotations.Activate
@@ -45,7 +48,7 @@ class FlowMaintenanceImpl @Activate constructor(
         if (requiredKeys.all { config.containsKey(it) }) {
             val messagingConfig = config.getConfig(ConfigKeys.MESSAGING_CONFIG)
             val newStateManagerConfig = config.getConfig(ConfigKeys.STATE_MANAGER_CONFIG)
-            val flowConfig = config.getConfig(ConfigKeys.FLOW_CONFIG)
+            val flowConfig = getFlowConfig(config, messagingConfig)
 
             val stateManager = coordinator.createManagedResource("STATE_MANAGER") {
                 stateManagerFactory.create(newStateManagerConfig)
@@ -76,6 +79,22 @@ class FlowMaintenanceImpl @Activate constructor(
             }.start()
         }
     }
+
+    /**
+     * Flow logic requires some messaging config values
+     */
+    private fun getFlowConfig(
+        config: Map<String, SmartConfig>,
+        messagingConfig: SmartConfig
+    ) = config.getConfig(ConfigKeys.FLOW_CONFIG)
+        .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(messagingConfig.getLong(MAX_ALLOWED_MSG_SIZE)))
+        .withValue(
+            MessagingConfig.Subscription.PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(
+                messagingConfig.getLong(
+                    MessagingConfig.Subscription.PROCESSOR_TIMEOUT
+                )
+            )
+        )
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
