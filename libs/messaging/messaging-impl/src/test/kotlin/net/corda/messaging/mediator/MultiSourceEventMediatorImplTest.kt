@@ -1,5 +1,10 @@
 package net.corda.messaging.mediator
 
+import java.util.LinkedList
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import kotlin.concurrent.thread
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.libs.configuration.SmartConfig
@@ -9,6 +14,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.exception.CordaMessageAPIConfigException
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorConsumer
 import net.corda.messaging.api.mediator.MessageRouter
@@ -25,7 +31,7 @@ import net.corda.messaging.api.mediator.factory.MessagingClientFinder
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.taskmanager.TaskManager
-import net.corda.test.util.waitWhile
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -36,11 +42,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.time.Duration
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-import kotlin.concurrent.thread
 
 class MultiSourceEventMediatorImplTest {
     companion object {
@@ -135,8 +136,7 @@ class MultiSourceEventMediatorImplTest {
 
         // This should return a list of the currently persisted states in StateManager.
         // It's called each time processEvents() is run.
-        whenever(stateManager.get(any())).thenReturn(mapOf("" to mock()))
-
+        whenever(stateManager.get(any())).thenReturn(mapOf(KEY1 to mock(), KEY2 to mock()))
 
         // This function returns the most up-to-date version of the states; essentially a create + get
         // called in StateManagerHelper::persistStates()
@@ -148,13 +148,18 @@ class MultiSourceEventMediatorImplTest {
             val command = invocation.getArgument<() -> Any>(0)
             CompletableFuture.supplyAsync(command)
         }
-    }
 
+        whenever(taskManager.executeShortRunningTask (any<() -> Any>())).thenAnswer { invocation ->
+            val command = invocation.getArgument<() -> Any>(0)
+            CompletableFuture.supplyAsync(command)
+        }
+    }
 
     // @Test
     // TODO Test temporarily disabled as it seems to be flaky
     fun `mediator processes multiples events by key`() {
         val events = (1..6).map { "event$it" }
+
         val eventBatches = listOf(
             listOf(
                 cordaConsumerRecords(KEY1, events[0]),
@@ -167,18 +172,43 @@ class MultiSourceEventMediatorImplTest {
                 cordaConsumerRecords(KEY1, events[5]),
             ),
         )
-        var batchNumber = 0
+
+        val batchesQueue = LinkedList(eventBatches)
+        val latch = CountDownLatch(eventBatches.size)
+
         whenever(consumer.poll(any())).thenAnswer {
-            if (batchNumber < eventBatches.size) {
-                eventBatches[batchNumber++]
-            } else {
-                Thread.sleep(10)
-                emptyList()
+            Thread.sleep(10) // Sleep for 10 milliseconds before each poll
+            latch.countDown()
+            batchesQueue.poll() ?: emptyList<Any>()
+        }
+
+        val processorResult: ProcessorTask.Result<String, Int, Double> = mock()
+        val processorTask: ProcessorTask<String, Int, Double> = mock()
+        whenever(processorTask.persistedState).thenReturn(null)
+        whenever(processorResult.outputEvents).thenReturn(listOf(mock()))
+        whenever(processorResult.updatedState).thenReturn(mock())
+        whenever(processorResult.processorTask).thenReturn(processorTask)
+        whenever(processorResult.key).thenReturn(KEY1)
+        whenever(processorResult.outputEvents).thenReturn(emptyList())
+
+        val clientResult: ClientTask.Result<String, Int, Double> = mock()
+        whenever(clientResult.processorTask).thenReturn(processorTask)
+        whenever(clientResult.key).thenReturn(KEY1)
+
+        whenever(taskManager.executeShortRunningTask(any<() -> Any>())).thenAnswer {
+            val task = it.getArgument<() -> Any>(0)  // getting the first argument of the mocked method
+
+            when (val result = task.invoke()) {
+                is ProcessorTask.Result<*, *, *> -> CompletableFuture.completedFuture(processorResult)
+                is ClientTask.Result<*, *, *> -> CompletableFuture.completedFuture(clientResult)
+                else -> result
             }
         }
 
         mediator.start()
-        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { batchNumber < eventBatches.size }
+
+        latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+
         mediator.close()
 
         verify(consumerFactory).create(any<MediatorConsumerConfig<Any, Any>>())
@@ -233,6 +263,31 @@ class MultiSourceEventMediatorImplTest {
     }
 
     @Test
+    fun `mediator does not retry after fatal exception`() {
+        val latch = CountDownLatch(1)
+        whenever(lifecycleCoordinator.close()).then { latch.countDown() }
+        whenever(consumer.poll(any()))
+            .thenThrow(CordaMessageAPIFatalException("FATAL"))
+
+        mediator.start()
+
+        latch.await(5L, TimeUnit.SECONDS)
+
+        mediator.close()
+
+        // Ensure our components haven't been recreated
+        verify(consumerFactory, times(1)).create<Any, Any>(any())
+        verify(clientFactory, times(1)).create(any())
+        verify(messageRouterFactory, times(1)).create(any())
+
+        verify(lifecycleCoordinator).updateStatus(
+            eq(LifecycleStatus.ERROR),
+            eq("Error: Multi-source event mediator TestConfig failed to process messages, Fatal error occurred.")
+        )
+        verify(lifecycleCoordinator).close()
+    }
+
+    @Test
     fun `mediator stops after interrupted exception`() {
         val latch = CountDownLatch(1)
 
@@ -242,11 +297,13 @@ class MultiSourceEventMediatorImplTest {
 
         thread(name = "Interruption") {
             mediator.close()
-        }
+        }.join()
 
         verify(consumerFactory, times(1)).create<Any, Any>(any())
         verify(clientFactory, times(1)).create(any())
         verify(messageRouterFactory, times(1)).create(any())
+
+        verify(lifecycleCoordinator).close()
     }
 
     @Test
@@ -270,6 +327,12 @@ class MultiSourceEventMediatorImplTest {
         verify(clientFactory, times(2)).create(any())
         verify(messageRouterFactory, times(2)).create(any())
         verify(lifecycleCoordinator).updateStatus(eq(LifecycleStatus.ERROR), any())
+    }
+
+    @AfterEach
+    fun tearDown() {
+        // Close the mediator if a task fails early
+        mediator.close()
     }
 
     private fun cordaConsumerRecords(key: String, event: String): CordaConsumerRecord<Any, Any> = CordaConsumerRecord(
