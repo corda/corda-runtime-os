@@ -107,7 +107,7 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
         }
     }
 
-    override fun publishGroupPolicy(groupId: String, groupPolicy: String): String {
+    override fun publishGroupPolicy(groupPolicy: String): UUID {
         val json = ObjectMapper().readTree(groupPolicy) as ObjectNode
 
         require(json.hasNonNull("groupId")) {
@@ -118,8 +118,8 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
             "Invalid group policy, 'groupId' field is not a text node."
         }
 
-        val finalGroupId = when(val inputGroupId = json.get("groupId").asText()) {
-            "CREATE_ID" -> UUID.randomUUID()
+        val groupId = when(val inputGroupId = json.get("groupId").asText()) {
+            CREATE_ID -> UUID.randomUUID()
             else -> try {
                 UUID.fromString(inputGroupId)
             } catch (e: Exception) {
@@ -127,12 +127,12 @@ class InteropIdentityWriteServiceImpl @Activate constructor(
             }
         }
 
-        json.set<TextNode>("groupId", JsonNodeFactory.instance.textNode(finalGroupId.toString()))
+        json.set<TextNode>("groupId", JsonNodeFactory.instance.textNode(groupId.toString()))
         val finalGroupPolicy = json.toString()
 
-        interopGroupPolicyProducer.publishInteropGroupPolicy(finalGroupId.toString(), finalGroupPolicy)
+        interopGroupPolicyProducer.publishInteropGroupPolicy(groupId, finalGroupPolicy)
         
-        return finalGroupId.toString()
+        return groupId
     }
 
     private fun writeMemberInfoTopic(vNodeShortHash: ShortHash, identity: InteropIdentity) {

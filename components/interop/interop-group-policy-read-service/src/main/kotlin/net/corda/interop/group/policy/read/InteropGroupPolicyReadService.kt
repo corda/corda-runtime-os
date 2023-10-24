@@ -1,5 +1,6 @@
 package net.corda.interop.group.policy.read
 
+import java.util.*
 import net.corda.lifecycle.Lifecycle
 
 /**
@@ -13,5 +14,5 @@ interface InteropGroupPolicyReadService: Lifecycle {
      * @return The current [String] group policy json content for the given interop group id.
      *  Returns null if no group policy was found or if error occurs when retrieving group policy.
      */
-    fun getGroupPolicy(groupId: String): String?
+    fun getGroupPolicy(groupId: UUID): String?
 }

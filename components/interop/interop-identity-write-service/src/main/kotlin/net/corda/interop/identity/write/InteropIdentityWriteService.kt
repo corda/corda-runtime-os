@@ -1,5 +1,6 @@
 package net.corda.interop.identity.write
 
+import java.util.*
 import net.corda.crypto.core.ShortHash
 import net.corda.interop.core.InteropIdentity
 import net.corda.lifecycle.Lifecycle
@@ -34,8 +35,8 @@ interface InteropIdentityWriteService : Lifecycle {
     /**
      * Add a new group policy json.
      *
-     * @param groupId groupId of the interop group.
-     * @param groupPolicy group policy content.
+     * @param groupPolicy group policy to publish.
+     * @return The UUID of the created group, either generated or taken from the [groupPolicy] argument.
      */
-    fun publishGroupPolicy(groupId: String, groupPolicy: String) : String
+    fun publishGroupPolicy(groupPolicy: String) : UUID
 }

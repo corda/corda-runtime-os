@@ -173,7 +173,7 @@ class InteropProcessor(
             val parameters = InteropSessionParameters.fromContextUserProperties(sessionInit.contextUserProperties)
             parameters.interopGroupId
         } else {
-            state.value?.groupId ?: throw InteropProcessorException(
+            state.value?.groupId?.let { UUID.fromString(it) } ?: throw InteropProcessorException(
                 "Interop group ID missing from InteropProcessor state. ", state
             )
         }
@@ -187,7 +187,7 @@ class InteropProcessor(
                 "Source identity '${this.x500Name}' does not own an interop identity in interop group '$interopGroupId'"
             }
             this.x500Name = interopIdentity.x500Name
-            this.groupId = interopGroupId
+            this.groupId = interopGroupId.toString()
         }
 
         // The translated destination is the non-owned interop identity within the given group which has the
@@ -209,7 +209,7 @@ class InteropProcessor(
                 )
             }
             this.x500Name = destinationIdentityList.single().x500Name
-            this.groupId = interopGroupId
+            this.groupId = interopGroupId.toString()
         }
 
         logLeaving("OUTBOUND", translatedSource, translatedDestination, sessionEvent)

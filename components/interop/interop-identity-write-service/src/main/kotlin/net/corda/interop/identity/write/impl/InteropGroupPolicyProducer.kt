@@ -1,5 +1,6 @@
 package net.corda.interop.identity.write.impl
 
+import java.util.*
 import java.util.concurrent.ExecutionException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -15,13 +16,13 @@ class InteropGroupPolicyProducer(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    fun publishInteropGroupPolicy(groupId: String, groupPolicy: String) {
+    fun publishInteropGroupPolicy(groupId: UUID, groupPolicy: String) {
         if (publisher.get() == null) {
             logger.error("Interop group policy publisher is null, not publishing.")
             return
         }
 
-        val futures = publisher.get()!!.publish(listOf(Record(INTEROP_GROUP_POLICY_TOPIC, groupId, groupPolicy)))
+        val futures = publisher.get()!!.publish(listOf(Record(INTEROP_GROUP_POLICY_TOPIC, groupId.toString(), groupPolicy)))
 
         try {
             futures.single().get()

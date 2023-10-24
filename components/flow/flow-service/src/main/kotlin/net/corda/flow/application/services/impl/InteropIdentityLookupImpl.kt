@@ -1,5 +1,6 @@
 package net.corda.flow.application.services.impl
 
+import java.util.*
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.interop.identity.registry.InteropIdentityRegistryView
 import net.corda.sandbox.type.UsedByFlow
@@ -52,7 +53,7 @@ data class InteropIdentityInfoImpl(
     private val applicationName: String,
     private val facadeIds: List<FacadeId>,
     private val x500Name: String,
-    private val groupId: String
+    private val groupId: UUID
 ) : InterOpIdentityInfo {
     override fun getApplicationName(): String {
         return applicationName
@@ -62,7 +63,7 @@ data class InteropIdentityInfoImpl(
         return facadeIds
     }
 
-    override fun getGroupId(): String {
+    override fun getGroupId(): UUID {
         return groupId
     }
 

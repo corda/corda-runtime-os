@@ -70,7 +70,7 @@ class HostedIdentityProducer(private val publisher: AtomicReference<Publisher?>)
     private fun createHostedIdentityRecord(key: ShortHash, identity: InteropIdentity?): Record<String, HostedIdentityEntry> {
         val hostedIdentity = identity?.let {
             HostedIdentityEntry(
-                HoldingIdentity(it.x500Name, it.groupId),
+                HoldingIdentity(it.x500Name, it.groupId.toString()),
                 key.toString(),
                 //TODO CORE-15168
                 emptyList(),
