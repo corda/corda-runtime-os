@@ -7,6 +7,9 @@ abstract class AbstractUtxoQueryProvider : UtxoQueryProvider {
     companion object {
         @JvmField
         val UNVERIFIED = TransactionStatus.UNVERIFIED.value
+
+        @JvmField
+        val DRAFT = TransactionStatus.DRAFT.value
     }
 
     override val findTransactionPrivacySaltAndMetadata: String
