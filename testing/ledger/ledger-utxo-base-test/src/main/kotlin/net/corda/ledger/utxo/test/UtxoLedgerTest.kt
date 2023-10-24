@@ -7,7 +7,7 @@ import net.corda.ledger.common.flow.impl.transaction.filtered.factory.FilteredTr
 import net.corda.ledger.common.test.CommonLedgerTest
 import net.corda.ledger.common.testkit.anotherPublicKeyExample
 import net.corda.ledger.common.testkit.fakeTransactionSignatureService
-import net.corda.ledger.common.testkit.keyPairExample
+import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.flow.impl.UtxoLedgerServiceImpl
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
@@ -42,12 +42,10 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
     private val mockExternalEventExecutor = mock<ExternalEventExecutor>()
     private val mockResultSetFactory = mock<ResultSetFactory>()
 
-    val notaryKey = keyPairExample
-
     val mockNotaryLookup = mock<NotaryLookup>().also{
         val notaryExampleInfo = mock<NotaryInfo>().also {
             whenever(it.name).thenReturn(notaryX500Name)
-            whenever(it.publicKey).thenReturn(notaryKey.public)
+            whenever(it.publicKey).thenReturn(publicKeyExample)
         }
 
         val anotherNotaryExampleInfo = mock<NotaryInfo>().also {

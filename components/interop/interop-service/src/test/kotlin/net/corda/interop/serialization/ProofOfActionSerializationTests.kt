@@ -28,7 +28,7 @@ import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
-import net.corda.ledger.utxo.test.UtxoLedgerTest
+import net.corda.ledger.utxo.test.UtxoLedgerWithBatchSignerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.getUtxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
@@ -66,7 +66,7 @@ import java.security.spec.ECGenParameterSpec
 import java.util.TimeZone
 import kotlin.test.assertEquals
 
-class ProofOfActionSerializationTests : UtxoLedgerTest() {
+class ProofOfActionSerializationTests : UtxoLedgerWithBatchSignerTest() {
 
     companion object {
 
@@ -198,7 +198,7 @@ class ProofOfActionSerializationTests : UtxoLedgerTest() {
         )
         val signature: DigitalSignatureAndMetadata = batchSignatures.first().first()
 
-        val facade = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/locking-facade.json")!!)
+        val facade = FacadeReaders.JSON.read(this::class.java.getResourceAsStream("/sampleFacades/proof-of-action-test-facade.json")!!)
         val jsonMapper = object : JsonMarshaller {
             override fun serialize(value: Any): String = jsonMarshallingService.format(value)
             override fun <T : Any> deserialize(value: String, type: Class<T>): T =
