@@ -72,7 +72,6 @@ class ScheduledTaskProcessor(
         return ids.chunked(batchSize)
     }
 
-
     override val keyClass = String::class.java
     override val valueClass = ScheduledTaskTrigger::class.java
 }
