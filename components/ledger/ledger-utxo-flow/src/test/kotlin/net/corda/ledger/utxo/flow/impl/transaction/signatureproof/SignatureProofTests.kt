@@ -1,10 +1,10 @@
-package net.corda.interop.serialization
+package net.corda.ledger.utxo.flow.impl.transaction.signatureproof
 
 import net.corda.ledger.common.testkit.anotherPublicKeyExample
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
-import net.corda.ledger.utxo.test.UtxoLedgerTest
+import net.corda.ledger.utxo.test.UtxoLedgerWithBatchSignerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.getUtxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
@@ -12,12 +12,14 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.NotaryInfo
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import kotlin.test.assertEquals
 
-class SignatureProofTests : UtxoLedgerTest() {
+class SignatureProofTests : UtxoLedgerWithBatchSignerTest() {
     companion object {
         private lateinit var signedTransaction: UtxoSignedTransactionInternal
         private val notaryX500Name = MemberX500Name.parse("O=ExampleNotaryService, L=London, C=GB")
@@ -43,9 +45,19 @@ class SignatureProofTests : UtxoLedgerTest() {
     }
 
     @Test
+    fun `sign doesn't produce signature proof`() {
+        val signatures = singingService.sign(signedTransaction, listOf(publicKeyExample))
+        assertEquals(1, signatures.size)
+        val signature: DigitalSignatureAndMetadata = signatures.first()
+        assertNull(signature.proof)
+    }
+    @Test
     fun `sign batch produces signature proof`() {
         val batchSignatures = singingService.signBatch(listOf(signedTransaction), listOf(publicKeyExample))
-        val signature: DigitalSignatureAndMetadata = batchSignatures.first().first()
+        assertEquals(1, batchSignatures.size)
+        val batch: List<DigitalSignatureAndMetadata> = batchSignatures.first()
+        assertEquals(1, batch.size)
+        val signature: DigitalSignatureAndMetadata = batch.first()
         assertNotNull(signature.proof)
     }
 }
