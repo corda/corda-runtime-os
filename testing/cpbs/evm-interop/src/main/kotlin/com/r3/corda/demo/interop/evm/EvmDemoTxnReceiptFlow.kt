@@ -18,7 +18,6 @@ class EvmDemoTxnReceiptFlow : ClientStartableFlow {
 
     private companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private const val TRANSFER_FUNCTION = "sendTokenOne"
 
     }
 

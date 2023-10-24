@@ -30,7 +30,7 @@ class EvmTransactionExternalEventFactory @Activate constructor(
     override val responseType: Class<EvmResponse> = EvmResponse::class.java
 
     override fun resumeWith(checkpoint: FlowCheckpoint, response: EvmResponse): String {
-        return response.payload
+        return response.payload.toString()
     }
 
     override fun createExternalEvent(

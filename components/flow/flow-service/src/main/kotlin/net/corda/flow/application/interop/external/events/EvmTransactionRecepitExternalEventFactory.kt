@@ -30,8 +30,8 @@ class EvmTransactionReceiptExternalEventFactory @Activate constructor(
     override val responseType: Class<EvmResponse> = EvmResponse::class.java
 
     override fun resumeWith(checkpoint: FlowCheckpoint, response: EvmResponse): TransactionReceipt {
-        response.payload
-        val receipt = net.corda.data.interop.evm.response.TransactionReceipt.getDecoder().decode(response.payload.toByteArray())
+        println("EvmTransactionReceiptExternalEventFactory: resumeWith")
+        val receipt = jsonMarshallingService.parse(response.payload.toString(), net.corda.data.interop.evm.response.TransactionReceipt::class.java)
         return receipt.toCorda()
     }
 
