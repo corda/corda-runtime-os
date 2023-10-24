@@ -73,7 +73,8 @@ class MessageBusConfigResolverTest {
                     mapOf(
                         BOOTSTRAP_SERVERS_PROP to "kafka:1001",
                         SSL_KEYSTORE_PROP to "foo/bar",
-                        CLIENT_ID_PROP to "eventConsumer--$CLIENT_ID"
+                        CLIENT_ID_PROP to "eventConsumer--$CLIENT_ID",
+                        GROUP_ID_PROP to "group-cooperative"
                     )
                 ),
                 ConsumerRoles.EVENT_LOG to getExpectedConsumerProperties(
@@ -296,7 +297,7 @@ class MessageBusConfigResolverTest {
     // configuration block doesn't ensure that only shared properties are placed in there. This doesn't matter from
     // Kafka's perspective, so we just assert on the properties that do matter here.
     private fun assertConsumerProperties(expected: Properties, actual: Properties) {
-        // TODO assertEquals(expected[GROUP_ID_PROP], actual[GROUP_ID_PROP])
+        assertEquals(expected[GROUP_ID_PROP], actual[GROUP_ID_PROP])
         assertEquals(expected[CLIENT_ID_PROP], actual[CLIENT_ID_PROP])
         assertEquals(expected[ISOLATION_LEVEL_PROP], actual[ISOLATION_LEVEL_PROP]) // Verify an enforced property
         assertEquals(expected[BOOTSTRAP_SERVERS_PROP], actual[BOOTSTRAP_SERVERS_PROP]) // Verify overriding a default
