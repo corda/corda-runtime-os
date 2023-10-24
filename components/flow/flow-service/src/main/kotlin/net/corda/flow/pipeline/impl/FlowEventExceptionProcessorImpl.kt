@@ -335,6 +335,6 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
      * Remove cached flow fiber for this checkpoint, if it exists.
      */
     private fun removeCachedFlowFiber(checkpoint: FlowCheckpoint) {
-        if (checkpoint.doesExist) flowFiberCache.remove(checkpoint.flowKey)
+        if (checkpoint.doesExist) flowFiberCache.remove(checkpoint.flowKey, checkpoint.suspendCount)
     }
 }

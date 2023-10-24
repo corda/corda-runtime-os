@@ -70,7 +70,9 @@ class FlowFiberFactoryImpl @Activate constructor(
 
     private fun getFromCacheOrDeserialize(flowFiberExecutionContext: FlowFiberExecutionContext): FlowFiberImpl {
         val cachedFiber: FlowFiberImpl? = try {
-            flowFiberCache.get(flowFiberExecutionContext.flowCheckpoint.flowKey)
+            flowFiberCache.get(
+                flowFiberExecutionContext.flowCheckpoint.flowKey,
+                flowFiberExecutionContext.flowCheckpoint.suspendCount)
         } catch (e: Exception) {
             logger.warn("Exception when getting from flow fiber cache.", e)
             null

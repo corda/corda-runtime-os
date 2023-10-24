@@ -104,7 +104,7 @@ internal class FlowExecutionPipelineStage(
 
         return when (fiberResult) {
             is FlowIORequest.FlowFinished -> {
-                fiberCache.remove(context.checkpoint.flowKey)
+                fiberCache.remove(context.checkpoint.flowKey, context.checkpoint.suspendCount)
                 context.checkpoint.serializedFiber = ByteBuffer.wrap(byteArrayOf())
                 context.flowMetrics.flowFiberExited()
                 fiberResult
@@ -112,7 +112,7 @@ internal class FlowExecutionPipelineStage(
 
             is FlowIORequest.FlowSuspended<*> -> {
                 fiberResult.cacheableFiber?.let {
-                    fiberCache.put(context.checkpoint.flowKey, it)
+                    fiberCache.put(context.checkpoint.flowKey, context.checkpoint.suspendCount, it)
                 }
                 context.checkpoint.serializedFiber = fiberResult.fiber
                 context.flowMetrics.flowFiberExitedWithSuspension(
@@ -122,7 +122,7 @@ internal class FlowExecutionPipelineStage(
             }
 
             is FlowIORequest.FlowFailed -> {
-                fiberCache.remove(context.checkpoint.flowKey)
+                fiberCache.remove(context.checkpoint.flowKey, context.checkpoint.suspendCount)
                 context.flowMetrics.flowFiberExited()
                 fiberResult
             }
