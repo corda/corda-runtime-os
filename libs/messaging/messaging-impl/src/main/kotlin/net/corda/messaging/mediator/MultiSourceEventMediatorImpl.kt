@@ -208,60 +208,65 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                 // Process each group on a thread
                 groups.map { group ->
                     taskManager.executeShortRunningTask {
-                        // Process all same flow events in one go
-                        group.map { it ->
-                            flowEvents.compute(it.key.toString()) { _, v ->
-                                if (v == null) {
-                                    it.value.toMutableList()
-                                } else {
-                                    v.addAll(it.value)
-                                    v
-                                }
-                            }
-                            var state = states[it.key.toString()]
-                            var processorState = stateManagerHelper.deserializeValue(state)?.let { stateValue ->
-                                StateAndEventProcessor.State(
-                                    stateValue,
-                                    state?.metadata
-                                )
-                            }
-                            val queue = ArrayDeque(it.value)
-                            while (queue.isNotEmpty()) {
-                                val event = queue.removeFirst()
-                                val response = config.messageProcessor.onNext(processorState, event)
-                                processorState = response.updatedState
-                                val output = response.responseEvents.map { taskManagerHelper.convertToMessage(it) }
-                                output.forEach { message ->
-                                    val destination = messageRouter.getDestination(message)
-                                    @Suppress("UNCHECKED_CAST")
-                                    val reply = with(destination) {
-                                        message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
-                                        client.send(message) as MediatorMessage<E>?
+                        try {
+                            // Process all same flow events in one go
+                            group.map { it ->
+                                flowEvents.compute(it.key.toString()) { _, v ->
+                                    if (v == null) {
+                                        it.value.toMutableList()
+                                    } else {
+                                        v.addAll(it.value)
+                                        v
                                     }
-                                    if (reply != null) {
-                                        queue.addLast(
-                                            Record(
-                                                "",
-                                                event.key,
-                                                reply.payload,
+                                }
+                                var state = states[it.key.toString()]
+                                var processorState = stateManagerHelper.deserializeValue(state)?.let { stateValue ->
+                                    StateAndEventProcessor.State(
+                                        stateValue,
+                                        state?.metadata
+                                    )
+                                }
+                                val queue = ArrayDeque(it.value)
+                                while (queue.isNotEmpty()) {
+                                    val event = queue.removeFirst()
+                                    val response = config.messageProcessor.onNext(processorState, event)
+                                    processorState = response.updatedState
+                                    val output = response.responseEvents.map { taskManagerHelper.convertToMessage(it) }
+                                    output.forEach { message ->
+                                        val destination = messageRouter.getDestination(message)
+
+                                        @Suppress("UNCHECKED_CAST")
+                                        val reply = with(destination) {
+                                            message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
+                                            client.send(message) as MediatorMessage<E>?
+                                        }
+                                        if (reply != null) {
+                                            queue.addLast(
+                                                Record(
+                                                    "",
+                                                    event.key,
+                                                    reply.payload,
+                                                )
                                             )
-                                        )
+                                        }
                                     }
                                 }
+                                // Update states
+                                val newState = stateManagerHelper.createOrUpdateState(
+                                    it.key.toString(),
+                                    state,
+                                    processorState,
+                                )
+                                if (newState == null) {
+                                    deleteStates[it.key.toString()] = states[it.key.toString()]
+                                } else {
+                                    val incrementVersion = if (state == null) 0 else 1
+                                    val updatedState = newState.copy(version = newState.version + incrementVersion)
+                                    updateStates[it.key.toString()] = updatedState
+                                }
                             }
-                            // Update states
-                            val newState = stateManagerHelper.createOrUpdateState(
-                                it.key.toString(),
-                                state,
-                                processorState,
-                            )
-                            if (newState == null) {
-                                deleteStates[it.key.toString()] = states[it.key.toString()]
-                            } else {
-                                val incrementVersion = if (state == null) 0 else 1
-                                val updatedState = newState.copy(version = newState.version + incrementVersion)
-                                updateStates[it.key.toString()] = updatedState
-                            }
+                        } catch (ex: Exception) {
+                            log.error(ex.message, ex)
                         }
                     }
                 }.map {
