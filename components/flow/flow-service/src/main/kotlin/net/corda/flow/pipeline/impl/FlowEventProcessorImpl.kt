@@ -1,6 +1,7 @@
 package net.corda.flow.pipeline.impl
 
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
 import net.corda.flow.pipeline.FlowMDCService
@@ -80,6 +81,14 @@ class FlowEventProcessorImpl(
             )
         }
 
+        val flowEventPayload = flowEvent.payload
+        if (flowEventPayload is StartFlow) {
+            log.debug { "Ignoring duplicate '${StartFlow::class.java}'. Start has already been initialized" }
+            return StateAndEventProcessor.Response(
+                state,
+                listOf()
+            )
+        }
 
         val pipeline = try {
             log.trace { "Flow [${event.key}] Received event: ${flowEvent.payload::class.java} / ${flowEvent.payload}" }

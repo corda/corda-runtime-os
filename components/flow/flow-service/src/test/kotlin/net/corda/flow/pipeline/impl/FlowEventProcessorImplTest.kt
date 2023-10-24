@@ -286,6 +286,17 @@ class FlowEventProcessorImplTest {
     }
 
     @Test
+    fun `Execute flow pipeline with a checkpoint and start flow event`() {
+        val inputEvent = getFlowEventRecord(FlowEvent(flowKey, startFlowEvent))
+
+        val response = processor.onNext(state, inputEvent)
+
+        assertThat(response).isEqualTo(StateAndEventProcessor.Response(state, emptyList(), false))
+        verify(flowMDCService, times(1)).getMDCLogging(anyOrNull(), any(), any())
+        verify(flowEventPipelineFactory, times(0)).create(any(),any(),any(),any(),any(),any())
+    }
+
+    @Test
     fun `Execute flow pipeline from null checkpoint and session init event`() {
         val inputEvent = getFlowEventRecord(FlowEvent(flowKey, sessionInitFlowEvent))
 
