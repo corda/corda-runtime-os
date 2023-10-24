@@ -16,7 +16,6 @@ import net.corda.flow.state.impl.CheckpointMetadataKeys.STATE_META_SESSION_EXPIR
 import net.corda.libs.statemanager.api.Metadata
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
-import net.corda.schema.configuration.FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW
 import net.corda.schema.configuration.FlowConfig.SESSION_FLOW_CLEANUP_TIME
 import net.corda.schema.configuration.FlowConfig.SESSION_TIMEOUT_WINDOW
 import net.corda.session.manager.SessionManager
@@ -163,7 +162,8 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         return if (externalEventState == null) {
             listOf()
         } else {
-            val retryWindow = context.flowConfig.getLong(EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW)
+            // TODO val retryWindow = context.flowConfig.getLong(EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW)
+            val retryWindow = 10L
             externalEventManager.getEventToSend(externalEventState, now, Duration.ofMillis(retryWindow))
                 .let { (updatedExternalEventState, record) ->
                     context.checkpoint.externalEventState = updatedExternalEventState
