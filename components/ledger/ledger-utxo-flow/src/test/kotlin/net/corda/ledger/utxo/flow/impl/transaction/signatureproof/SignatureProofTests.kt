@@ -52,7 +52,7 @@ class SignatureProofTests : UtxoLedgerWithBatchSignerTest() {
         assertNull(signature.proof)
     }
     @Test
-    fun `sign batch produces signature proof`() {
+    fun `signBatch() produces a signature with proof`() {
         val batchSignatures = singingService.signBatch(listOf(signedTransaction), listOf(publicKeyExample))
         assertEquals(1, batchSignatures.size)
         val batch: List<DigitalSignatureAndMetadata> = batchSignatures.first()
