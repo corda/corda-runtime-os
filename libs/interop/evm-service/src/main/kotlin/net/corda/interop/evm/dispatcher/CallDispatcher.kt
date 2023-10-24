@@ -21,9 +21,9 @@ class CallDispatcher(private val evmConnector: EthereumConnector) : EvmDispatche
 
     private val encoder = TransactionEncoder()
 
-    private val decoder = TransactionDecoder()
+//    private val decoder = TransactionDecoder()
     override fun dispatch(evmRequest: EvmRequest): EvmResponse {
-        val request = evmRequest.payload as Call
+         val request = evmRequest.payload as Call
 
         val data = encoder.encode(request.function, request.parameters)
         // EVM Expects both data & input
@@ -33,6 +33,9 @@ class CallDispatcher(private val evmConnector: EthereumConnector) : EvmDispatche
             .put("input", data)
 
         val resp = evmConnector.send<GenericResponse>(evmRequest.rpcUrl, CALL, listOf(callData, LATEST))
-        return EvmResponse(decoder.decode(resp.result.toString(), evmRequest.returnType))
+//        return EvmResponse(decoder.decode(resp.result.toString(), evmRequest.returnType))
+        // Temporary to test the call is working
+        return EvmResponse(resp.result.toString())
+
     }
 }

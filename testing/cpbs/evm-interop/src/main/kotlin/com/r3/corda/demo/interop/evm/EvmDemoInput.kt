@@ -14,3 +14,9 @@ class EvmDemoTxnReceiptInput {
     var rpcUrl: String? = null
     var hash: String? = null
 }
+
+class EvmDemoCallInput {
+    var rpcUrl: String? = null
+    var contractAddress: String? = null
+    var address: String? = null
+}
