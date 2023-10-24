@@ -34,7 +34,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -115,7 +114,7 @@ class FlowEventExceptionProcessorImplTest {
 
         val result = target.process(error, context)
 
-        verify(flowFiberCache).remove(key, 123)
+        verify(flowFiberCache).remove(key)
         verify(result.checkpoint).rollback()
         verify(result.checkpoint).markForRetry(context.inputEvent, error)
         assertThat(result.outputRecords).containsOnly(flowStatusUpdateRecord, flowEventRecord)
@@ -195,7 +194,7 @@ class FlowEventExceptionProcessorImplTest {
         verify(result.checkpoint).markDeleted()
         assertThat(result.outputRecords).contains(flowStatusUpdateRecord, flowMapperRecord)
         assertThat(result.sendToDlq).isTrue
-        verify(flowFiberCache).remove(key, 123)
+        verify(flowFiberCache).remove(key)
     }
 
     @Test
@@ -213,7 +212,7 @@ class FlowEventExceptionProcessorImplTest {
 
         verify(flowCheckpoint).waitingFor = WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
         verify(flowCheckpoint).setPendingPlatformError(FlowProcessingExceptionTypes.PLATFORM_ERROR, error.message)
-        verify(flowFiberCache).remove(key, 123)
+        verify(flowFiberCache).remove(key)
 
         assertThat(result.outputRecords).isEmpty()
     }
@@ -303,7 +302,7 @@ class FlowEventExceptionProcessorImplTest {
     @Test
     fun `throwable triggered during event exception processing does not escape the processor`() {
         val throwable = RuntimeException()
-        whenever(flowFiberCache.remove(eq(flowCheckpoint.flowKey), any())).thenThrow(throwable)
+        whenever(flowFiberCache.remove(flowCheckpoint.flowKey)).thenThrow(throwable)
         whenever(flowCheckpoint.doesExist).thenReturn(true)
         val eventError = FlowEventException("error")
         val eventResult = target.process(eventError, context)

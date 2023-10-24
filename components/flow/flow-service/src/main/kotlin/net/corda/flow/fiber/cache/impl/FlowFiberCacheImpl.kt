@@ -36,9 +36,9 @@ class FlowFiberCacheImpl @Activate constructor(
     private val maximumSize = java.lang.Long.getLong(FLOW_FIBER_CACHE_MAX_SIZE_PROPERTY_NAME, 10000)
     private val expireAfterWriteSeconds = java.lang.Long.getLong(FLOW_FIBER_CACHE_EXPIRE_AFTER_WRITE_SECONDS_PROPERTY_NAME, 600)
 
-    private data class FiberCacheKey(val flowKey: FlowKey, val suspendCount: Int)
+    private data class FiberCacheValue(val fiber: FlowFiber, val suspendCount: Int)
 
-    private val cache: Cache<FiberCacheKey, FlowFiber> = CacheFactoryImpl().build(
+    private val cache: Cache<FlowKey, FiberCacheValue> = CacheFactoryImpl().build(
         "flow-fiber-cache",
         Caffeine.newBuilder()
             .maximumSize(maximumSize)
@@ -68,22 +68,22 @@ class FlowFiberCacheImpl @Activate constructor(
     }
 
     override fun put(key: FlowKey, suspendCount: Int, fiber: FlowFiber) {
-        cache.put(FiberCacheKey(key, suspendCount), fiber)
+        cache.put(key, FiberCacheValue(fiber, suspendCount))
     }
 
     override fun get(key: FlowKey, suspendCount: Int): FlowFiber? {
-        return cache.getIfPresent(FiberCacheKey(key, suspendCount))
+        return cache.getIfPresent(key)?.takeIf { it.suspendCount == suspendCount }?.fiber
     }
 
-    override fun remove(key: FlowKey, suspendCount: Int) {
-        cache.invalidate(FiberCacheKey(key, suspendCount))
+    override fun remove(key: FlowKey) {
+        cache.invalidate(key)
     }
 
     override fun remove(virtualNodeContext: VirtualNodeContext) {
         logger.debug {
             "Flow fiber cache removing holdingIdentity ${virtualNodeContext.holdingIdentity}" }
         val holdingIdentityToRemove = virtualNodeContext.holdingIdentity.toAvro()
-        val keysToInvalidate = cache.asMap().keys.filter { holdingIdentityToRemove == it.flowKey.identity }
+        val keysToInvalidate = cache.asMap().keys.filter { holdingIdentityToRemove == it.identity }
         cache.invalidateAll(keysToInvalidate)
         cache.cleanUp()
     }
@@ -92,7 +92,7 @@ class FlowFiberCacheImpl @Activate constructor(
     //  I don't think we should have integration tests knowing about the internals of the cache.
     internal fun findInCache(holdingId: HoldingIdentity, flowId: String): List<FlowFiber> {
         return cache.asMap()
-            .filter { it.key.flowKey.identity == holdingId && it.key.flowKey.id == flowId }
-            .map { it.value }
+            .filter { it.key.identity == holdingId && it.key.id == flowId }
+            .map { it.value.fiber }
     }
 }

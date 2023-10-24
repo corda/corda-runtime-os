@@ -46,30 +46,20 @@ class FlowFibreCacheTest {
     fun `when remove and entry does not exist do no throw`() {
         val cache = FlowFiberCacheImpl(cacheEviction)
         assertDoesNotThrow {
-            cache.remove(key, 1)
+            cache.remove(key)
         }
-    }
-
-    @Test
-    fun `when remove and entry does not exist at suspendCount do no throw`() {
-        val cache = FlowFiberCacheImpl(cacheEviction)
-        cache.put(key, 1, value)
-        assertDoesNotThrow {
-            cache.remove(key, 123)
-        }
-        assertThat(cache.get(key, 1)).isSameAs(value)
     }
 
     @Test
     fun `when remove and exists`() {
         val cache = FlowFiberCacheImpl(cacheEviction)
         cache.put(key, 1, value)
-        cache.remove(key, 1)
+        cache.remove(key)
         assertThat(cache.get(key, 1)).isNull()
     }
 
     @Test
-    fun `when remove by vnode context remover all`() {
+    fun `when remove by vnode context remove all`() {
         val id = mock<HoldingIdentity> {
             on { x500Name } doReturn (MemberX500Name("Bruce", "Thomas", "GB"))
             on { groupId } doReturn ("Batman")

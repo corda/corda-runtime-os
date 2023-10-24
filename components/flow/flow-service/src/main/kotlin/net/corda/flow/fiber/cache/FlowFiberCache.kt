@@ -19,7 +19,7 @@ interface FlowFiberCache: SandboxedCache {
     fun get(key: FlowKey, suspendCount: Int): FlowFiber?
 
     /**
-     * Invalidate and remove a flow fiber from the cache with the given [FlowKey] and [suspendCount].
+     * Invalidate and remove a flow fiber from the cache with the given [FlowKey].
      */
-    fun remove(key: FlowKey, suspendCount: Int)
+    fun remove(key: FlowKey)
 }
