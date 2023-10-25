@@ -17,6 +17,7 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
+import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.osgi.service.component.annotations.Activate
@@ -88,13 +89,7 @@ class FlowMaintenanceImpl @Activate constructor(
         messagingConfig: SmartConfig
     ) = config.getConfig(ConfigKeys.FLOW_CONFIG)
         .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(messagingConfig.getLong(MAX_ALLOWED_MSG_SIZE)))
-        .withValue(
-            MessagingConfig.Subscription.PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(
-                messagingConfig.getLong(
-                    MessagingConfig.Subscription.PROCESSOR_TIMEOUT
-                )
-            )
-        )
+        .withValue(PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(messagingConfig.getLong(PROCESSOR_TIMEOUT)))
 
     override val isRunning: Boolean
         get() = coordinator.isRunning

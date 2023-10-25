@@ -14,18 +14,7 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import org.junit.jupiter.api.Test
 import org.mockito.internal.verification.Times
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.argThat
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doAnswer
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.isNull
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
-import org.mockito.kotlin.times
-import org.mockito.kotlin.verify
+import org.mockito.kotlin.*
 
 class FlowMaintenanceImplTests {
 
@@ -48,9 +37,13 @@ class FlowMaintenanceImplTests {
         on { createDurableSubscription(any(), any<TimeoutEventCleanupProcessor>(), any(), anyOrNull()) } doReturn (timeoutSubscription)
     }
 
-    private val messagingConfig = mock<SmartConfig>()
+    private val messagingConfig = mock<SmartConfig>().apply {
+        whenever(getLong(any())).thenReturn(100L)
+    }
     private val stateManagerConfig = mock<SmartConfig>()
-    private val flowConfig = mock<SmartConfig>()
+    private val flowConfig = mock<SmartConfig>().apply {
+        whenever(withValue(any(), any())).thenReturn(this)
+    }
 
     private val config = mapOf(
         ConfigKeys.MESSAGING_CONFIG to messagingConfig,
@@ -116,7 +109,9 @@ class FlowMaintenanceImplTests {
     @Test
     fun `when new state manager config pushed create another StateManager and close old`() {
         flowMaintenance.onConfigChange(config)
-        val newConfig = mock<SmartConfig>()
+        val newConfig = mock<SmartConfig>().apply {
+            whenever(withValue(any(), any())).thenReturn(this)
+        }
         flowMaintenance.onConfigChange(
             mapOf(
                 ConfigKeys.MESSAGING_CONFIG to newConfig,
