@@ -61,6 +61,7 @@ class StateManagerImpl(
     }
 
     override fun update(states: Collection<State>): Map<String, State> {
+        if (states.isEmpty()) return emptyMap()
         try {
             val (_, failedUpdates) = dataSource.connection.transaction { conn ->
                 stateRepository.update(conn, states.map { it.toPersistentEntity() })

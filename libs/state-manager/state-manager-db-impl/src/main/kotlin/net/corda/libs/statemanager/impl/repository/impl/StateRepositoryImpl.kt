@@ -32,6 +32,8 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
 
     override fun update(connection: Connection, states: List<StateEntity>): StateRepository.StateUpdateSummary {
         fun getParameterIndex(currentRow:Int, index: Int) = (currentRow * 4) + index // 4 columns in the temp table
+
+        if (states.isEmpty()) return StateRepository.StateUpdateSummary(emptyList(), emptyList())
         val updatedKeys = mutableListOf<String>()
         connection.prepareStatement(queryProvider.updateStates(states)).use { stmt ->
             repeat(states.size) { stateIterator ->

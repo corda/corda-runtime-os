@@ -42,6 +42,7 @@ import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import javax.persistence.PersistenceException
 import kotlin.concurrent.thread
+import org.junit.jupiter.api.assertDoesNotThrow
 
 // TODO-[CORE-16663]: make database provider pluggable
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -255,6 +256,13 @@ class StateManagerIntegrationTest {
             { i, _ -> "state_$i$i" },
             { _, _ -> metadata("updatedK2" to "updatedV2") }
         )
+    }
+
+    @Test
+    fun `does not throw when updating states of size 0`() {
+        val failedUpdates = assertDoesNotThrow { stateManager.update(emptyList()) }
+
+        assertThat(failedUpdates).isEmpty()
     }
 
     @Test
