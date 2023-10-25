@@ -1,6 +1,5 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality.v1
 
-import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.core.fullId
 import net.corda.crypto.core.fullIdHash
 import net.corda.ledger.common.data.transaction.TransactionStatus

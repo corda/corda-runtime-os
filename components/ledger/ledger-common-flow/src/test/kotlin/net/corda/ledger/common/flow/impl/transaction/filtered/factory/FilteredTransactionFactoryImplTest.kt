@@ -10,6 +10,7 @@ import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters
+import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters.AuditProof.AuditProofPredicate
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
@@ -66,9 +67,9 @@ class FilteredTransactionFactoryImplTest {
             filteredTransaction = filteredTransactionFactory.create(
                 wireTransaction,
                 componentGroupFilterParameters = listOf(
-                    ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java) { true },
-                    ComponentGroupFilterParameters.AuditProof(1, Any::class.java) { true },
-                    ComponentGroupFilterParameters.AuditProof(1, Any::class.java) { true },
+                    ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java, AuditProofPredicate.Content { true }),
+                    ComponentGroupFilterParameters.AuditProof(1, Any::class.java, AuditProofPredicate.Content { true }),
+                    ComponentGroupFilterParameters.AuditProof(1, Any::class.java, AuditProofPredicate.Content { true }),
                 )
             )
         }.hasMessageContaining("Unique component group indexes are required when filtering a transaction")
@@ -85,8 +86,8 @@ class FilteredTransactionFactoryImplTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java) { false },
-                ComponentGroupFilterParameters.AuditProof(1, Any::class.java) { false },
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java, AuditProofPredicate.Content { false }),
+                ComponentGroupFilterParameters.AuditProof(1, Any::class.java, AuditProofPredicate.Content { false }),
             )
         )
 
@@ -108,8 +109,8 @@ class FilteredTransactionFactoryImplTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java) { true },
-                ComponentGroupFilterParameters.AuditProof(1, Any::class.java) { true },
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java, AuditProofPredicate.Content { true }),
+                ComponentGroupFilterParameters.AuditProof(1, Any::class.java, AuditProofPredicate.Content { true }),
             )
         )
 
@@ -133,8 +134,8 @@ class FilteredTransactionFactoryImplTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java) { true },
-                ComponentGroupFilterParameters.AuditProof(1, Any::class.java) { it is MyClassA || it is MyClassB },
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java, AuditProofPredicate.Content { true }),
+                ComponentGroupFilterParameters.AuditProof(1, Any::class.java, AuditProofPredicate.Content { it is MyClassA || it is MyClassB }),
             )
         )
 
@@ -168,8 +169,8 @@ class FilteredTransactionFactoryImplTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java) { true },
-                ComponentGroupFilterParameters.AuditProof(1, Any::class.java) { false },
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java, AuditProofPredicate.Content { true }),
+                ComponentGroupFilterParameters.AuditProof(1, Any::class.java, AuditProofPredicate.Content { false }),
             )
         )
 
@@ -200,7 +201,7 @@ class FilteredTransactionFactoryImplTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java) { true },
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java, AuditProofPredicate.Content { true }),
                 ComponentGroupFilterParameters.SizeProof(1),
             )
         )
@@ -230,7 +231,7 @@ class FilteredTransactionFactoryImplTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java) { true },
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java, AuditProofPredicate.Content { true }),
                 ComponentGroupFilterParameters.SizeProof(1),
             )
         )

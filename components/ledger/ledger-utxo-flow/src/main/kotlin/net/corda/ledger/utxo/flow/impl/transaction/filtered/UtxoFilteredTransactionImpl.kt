@@ -20,7 +20,6 @@ import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
 import net.corda.v5.ledger.utxo.transaction.filtered.FilteredDataInconsistencyException
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData
-import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import java.security.PublicKey
 
 @Suppress("TooManyFunctions")

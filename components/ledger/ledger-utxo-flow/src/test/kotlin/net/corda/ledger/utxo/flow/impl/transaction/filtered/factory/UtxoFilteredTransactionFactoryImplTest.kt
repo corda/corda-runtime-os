@@ -74,7 +74,10 @@ class UtxoFilteredTransactionFactoryImplTest : UtxoLedgerTest() {
         assertThat(componentGroupFilterParameters).hasSize(2)
         assertThat(componentGroups).containsExactly(UtxoComponentGroup.METADATA.ordinal, UtxoComponentGroup.NOTARY.ordinal)
 
-        val predicate = componentGroupFilterParameters[1].let { (it as ComponentGroupFilterParameters.AuditProof<Any>).predicate }
+        val predicate = componentGroupFilterParameters[1].let {
+            (it as ComponentGroupFilterParameters.AuditProof<Any>).predicate as
+                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content
+        }
         assertThat(predicate.test(notaryX500Name)).isTrue
         assertThat(predicate.test(publicKeyExample)).isTrue
         assertThat(predicate.test(utxoTimeWindowExample)).isFalse
@@ -92,7 +95,10 @@ class UtxoFilteredTransactionFactoryImplTest : UtxoLedgerTest() {
         assertThat(componentGroupFilterParameters).hasSize(2)
         assertThat(componentGroups).containsExactly(UtxoComponentGroup.METADATA.ordinal, UtxoComponentGroup.NOTARY.ordinal)
 
-        val predicate = componentGroupFilterParameters[1].let { (it as ComponentGroupFilterParameters.AuditProof<Any>).predicate }
+        val predicate = componentGroupFilterParameters[1].let {
+            (it as ComponentGroupFilterParameters.AuditProof<Any>).predicate as
+                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content
+        }
         assertThat(predicate.test(notaryX500Name)).isFalse
         assertThat(predicate.test(publicKeyExample)).isFalse
         assertThat(predicate.test(utxoTimeWindowExample)).isTrue
@@ -111,7 +117,10 @@ class UtxoFilteredTransactionFactoryImplTest : UtxoLedgerTest() {
         assertThat(componentGroupFilterParameters).hasSize(2)
         assertThat(componentGroups).containsExactly(UtxoComponentGroup.METADATA.ordinal, UtxoComponentGroup.NOTARY.ordinal)
 
-        val predicate = componentGroupFilterParameters[1].let { (it as ComponentGroupFilterParameters.AuditProof<Any>).predicate }
+        val predicate = componentGroupFilterParameters[1].let {
+            (it as ComponentGroupFilterParameters.AuditProof<Any>).predicate as
+                    ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content
+        }
         assertThat(predicate.test(notaryX500Name)).isTrue
         assertThat(predicate.test(publicKeyExample)).isTrue
         assertThat(predicate.test(utxoTimeWindowExample)).isTrue
