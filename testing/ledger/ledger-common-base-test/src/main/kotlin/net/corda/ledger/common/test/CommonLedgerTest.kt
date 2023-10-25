@@ -5,7 +5,6 @@ import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.common.json.validation.impl.JsonValidatorImpl
-import net.corda.crypto.cipher.suite.merkle.MerkleTreeProofProvider
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.flow.application.services.impl.FlowEngineImpl
 import net.corda.internal.serialization.amqp.helper.TestFlowFiberServiceWithSerialization
@@ -17,10 +16,6 @@ import net.corda.ledger.common.flow.impl.transaction.serializer.kryo.WireTransac
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.common.testkit.fakePlatformInfoProvider
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
-import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
-import net.corda.v5.crypto.merkle.MerkleProof
-import net.corda.v5.crypto.merkle.MerkleProofType
 
 abstract class CommonLedgerTest {
 
@@ -32,16 +27,7 @@ abstract class CommonLedgerTest {
 
     val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
 
-    val jsonMarshallingService = JsonMarshallingServiceImpl(object : MerkleTreeProofProvider {
-        override fun createMerkleProof(
-            proofType: MerkleProofType, treeSize: Int, leaves: List<IndexedMerkleLeaf>, hashes: List<SecureHash>
-        ): MerkleProof {
-            TODO("Not yet implemented")
-        }
-        override fun createIndexedMerkleLeaf(index: Int, nonce: ByteArray?, leafData: ByteArray): IndexedMerkleLeaf {
-            TODO("Not yet implemented")
-        }
-    })
+    val jsonMarshallingService = JsonMarshallingServiceImpl()
 
     val jsonValidator = JsonValidatorImpl()
 

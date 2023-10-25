@@ -5,7 +5,6 @@ import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.common.json.validation.impl.JsonValidatorImpl
-import net.corda.crypto.cipher.suite.merkle.MerkleTreeProofProvider
 import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
@@ -19,10 +18,6 @@ import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
-import net.corda.v5.crypto.merkle.MerkleProof
-import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateRef
@@ -66,16 +61,7 @@ open class UtxoFilteredTransactionTestBase {
 
     val digestService =
         DigestServiceImpl(PlatformDigestServiceImpl(CipherSchemeMetadataImpl()), null)
-    protected val jsonMarshallingService = JsonMarshallingServiceImpl( object : MerkleTreeProofProvider {
-        override fun createMerkleProof(
-            proofType: MerkleProofType, treeSize: Int, leaves: List<IndexedMerkleLeaf>, hashes: List<SecureHash>
-        ): MerkleProof {
-            TODO("Not yet implemented")
-        }
-        override fun createIndexedMerkleLeaf(index: Int, nonce: ByteArray?, leafData: ByteArray): IndexedMerkleLeaf {
-            TODO("Not yet implemented")
-        }
-    })
+    protected val jsonMarshallingService = JsonMarshallingServiceImpl()
     protected val jsonValidator = JsonValidatorImpl()
     protected val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
     val serializationService = mock<SerializationService>()

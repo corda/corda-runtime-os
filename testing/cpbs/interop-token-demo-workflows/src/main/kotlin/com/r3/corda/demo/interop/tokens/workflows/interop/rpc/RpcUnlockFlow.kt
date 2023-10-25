@@ -5,7 +5,7 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.marshalling.InteropJsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.common.transaction.TransactionSignatureVerificationService
@@ -27,7 +27,7 @@ class RpcUnlockFlow: ClientStartableFlow {
     }
 
     @CordaInject
-    lateinit var jsonMarshallingService: JsonMarshallingService
+    lateinit var jsonMarshallingService: InteropJsonMarshallingService
 
     @CordaInject
     lateinit var memberLookup: MemberLookup

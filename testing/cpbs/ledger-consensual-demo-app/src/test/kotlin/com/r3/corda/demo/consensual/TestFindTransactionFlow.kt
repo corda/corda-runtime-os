@@ -9,11 +9,6 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import com.r3.corda.demo.consensual.contract.TestConsensualState
-import net.corda.crypto.cipher.suite.merkle.MerkleTreeProofProvider
-import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
-import net.corda.v5.crypto.merkle.MerkleProof
-import net.corda.v5.crypto.merkle.MerkleProofType
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -23,16 +18,7 @@ import org.mockito.kotlin.whenever
 import java.security.KeyPairGenerator
 
 class TestFindTransactionFlow {
-    val marshallingService: JsonMarshallingService = JsonMarshallingServiceImpl(object : MerkleTreeProofProvider{
-        override fun createMerkleProof(
-            proofType: MerkleProofType, treeSize: Int, leaves: List<IndexedMerkleLeaf>, hashes: List<SecureHash>
-        ): MerkleProof {
-            TODO("Not yet implemented")
-        }
-        override fun createIndexedMerkleLeaf(index: Int, nonce: ByteArray?, leafData: ByteArray): IndexedMerkleLeaf {
-            TODO("Not yet implemented")
-        }
-    })
+    val marshallingService: JsonMarshallingService = JsonMarshallingServiceImpl()
 
     private lateinit var digestService: DigestService
 
