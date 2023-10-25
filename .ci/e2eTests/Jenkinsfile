@@ -1,9 +1,10 @@
-@Library('corda-shared-build-pipeline-steps@5.1') _
+@Library('corda-shared-build-pipeline-steps@ES-1529/deployUtils') _
 
 endToEndPipeline(
     assembleAndCompile: false,
     dailyBuildCron: '',
     multiCluster: false,
+    enableNotifications: false,
     gradleTestTargetsToExecute: ['smokeTest', 'e2eTest'],
     usePackagedCordaHelmChart: false,
     // TODO - remove this when J17 is the default in the pipeline
