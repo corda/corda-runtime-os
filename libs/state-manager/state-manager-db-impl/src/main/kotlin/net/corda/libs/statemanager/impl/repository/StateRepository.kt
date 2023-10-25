@@ -48,7 +48,7 @@ interface StateRepository {
      *
      * @param connection The JDBC connection used to interact with the database.
      * @param states A collection of states to be updated in the database.
-     * @return A collection of keys for states that could not be updated due to optimistic locking check failure.
+     * @return State keys for both successful and failed updates where states could not be updated due to optimistic locking check failure.
      */
     fun update(connection: Connection, states: List<StateEntity>): StateEntityModificationResponse
 

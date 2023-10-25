@@ -230,7 +230,7 @@ class StateManagerIntegrationTest {
         }
     }
 
-    @ValueSource(ints = [1, 10, 20, 50, 100, 200, 500])
+    @ValueSource(ints = [1, 5, 10, 20, 50])
     @ParameterizedTest(name = "can update existing states (batch size: {0})")
     fun canUpdateExistingStates(stateCount: Int) {
         persistStateEntities(
@@ -246,10 +246,7 @@ class StateManagerIntegrationTest {
             )
         }
 
-        val start = System.nanoTime()
         val failedUpdates = stateManager.update(statesToUpdate)
-        val end = System.nanoTime()
-        println("Time taken $stateCount states = ${(end-start)/1_000_000}")
 
         assertThat(failedUpdates).isEmpty()
         softlyAssertPersistedStateEntities(

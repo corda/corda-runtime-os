@@ -80,15 +80,15 @@ class StateManagerImpl(
 
     override fun delete(states: Collection<State>): Map<String, State> {
         try {
-            val failedDeletes = dataSource.connection.transaction { conn ->
-                stateRepository.delete(conn, states.map { it.toPersistentEntity() })
-            }
+            entityManagerFactory.transaction { em ->
+                val failedDeletes = stateRepository.delete(em, states.map { it.toPersistentEntity() })
 
-            return if (failedDeletes.isEmpty()) {
-                emptyMap()
-            } else {
-                logger.warn("Optimistic locking check failed while deleting States ${failedDeletes.joinToString()}")
-                get(failedDeletes)
+                return if (failedDeletes.isEmpty()) {
+                    emptyMap()
+                } else {
+                    logger.warn("Optimistic locking check failed while deleting States ${failedDeletes.joinToString()}")
+                    get(failedDeletes)
+                }
             }
         } catch (e: Exception) {
             logger.warn("Failed to delete batch of states - ${states.joinToString { it.key }}", e)
