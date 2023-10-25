@@ -610,7 +610,7 @@ class MembershipPersistenceTest {
         val registrationId = randomUUID().toString()
         val status = RegistrationStatus.PENDING_MEMBER_VERIFICATION
 
-        val result = membershipPersistenceClientWrapper.persistRegistrationRequest(
+        val statusPersistence = membershipPersistenceClientWrapper.persistRegistrationRequest(
             viewOwningHoldingIdentity,
             RegistrationRequest(
                 RegistrationStatus.PENDING_MEMBER_VERIFICATION,
@@ -648,11 +648,11 @@ class MembershipPersistenceTest {
                     ),
                     CryptoSignatureSpec("", null, null)
                 ),
-                REGISTRATION_SERIAL,
+                null,
             )
         ).execute()
 
-        assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        assertThat(statusPersistence).isInstanceOf(MembershipPersistenceResult.Success::class.java)
 
         val persistedEntity = vnodeEmf.createEntityManager().use {
             it.find(RegistrationRequestEntity::class.java, registrationId)
@@ -661,6 +661,7 @@ class MembershipPersistenceTest {
         assertThat(persistedEntity.registrationId).isEqualTo(registrationId)
         assertThat(persistedEntity.holdingIdentityShortHash).isEqualTo(registeringHoldingIdentity.shortHash.value)
         assertThat(persistedEntity.status).isEqualTo(status.toString())
+        assertThat(persistedEntity.serial).isNull()
 
         val persistedMemberContext = persistedEntity.memberContext.deserializeContextAsMap()
         with(persistedMemberContext.entries) {
@@ -676,7 +677,7 @@ class MembershipPersistenceTest {
             assertThat(first().value).isEqualTo(REGISTRATION_CONTEXT_VALUE)
         }
 
-        val result2 = membershipPersistenceClientWrapper.persistRegistrationRequest(
+        val serialAndStatusPersistence = membershipPersistenceClientWrapper.persistRegistrationRequest(
             viewOwningHoldingIdentity,
             RegistrationRequest(
                 RegistrationStatus.SENT_TO_MGM,
@@ -719,7 +720,7 @@ class MembershipPersistenceTest {
             )
         ).execute()
 
-        assertThat(result2).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        assertThat(serialAndStatusPersistence).isInstanceOf(MembershipPersistenceResult.Success::class.java)
         val persistedEntity2 = vnodeEmf.createEntityManager().use {
             it.find(RegistrationRequestEntity::class.java, registrationId)
         }
