@@ -1,3 +1,3 @@
-@Library('corda-shared-build-pipeline-steps@owen/CORE-17957-Add-state-manager-support') _
+@Library('corda-shared-build-pipeline-steps@5.1') _
 
 cordaCompatibilityCheckPipeline(javaVersion: '17')
