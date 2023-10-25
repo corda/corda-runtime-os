@@ -41,7 +41,7 @@ internal class VirtualNodeDbImpl(
      */
     @Suppress("NestedBlockDepth")
     override fun createSchemasAndUsers() {
-        if (isPlatformManagedDb) {
+        if (isPlatformManagedDb && dbConnections[DDL] != null) {
             // Order is important because DB schema should be deleted first if DDL user already exists
             for (privilege in listOf(DDL, DML)) {
                 dbConnections[privilege]!!.let { connection ->
@@ -77,20 +77,21 @@ internal class VirtualNodeDbImpl(
      */
     override fun runDbMigration(migrationTagToApply: String?) {
         val dbConnection = dbConnections[DDL]
-            ?: throw VirtualNodeDbException("No DDL database connection when due to apply system migrations")
-        dbConnectionManager.getDataSource(dbConnection.config).use { dataSource ->
-            val dbChangeFiles = dbType.dbChangeFiles
-            val changeLogResourceFiles = setOf(DbSchema::class.java).mapTo(LinkedHashSet()) { klass ->
-                ClassloaderChangeLog.ChangeLogResourceFiles(klass.packageName, dbChangeFiles, klass.classLoader)
-            }
-            val dbChange = ClassloaderChangeLog(changeLogResourceFiles)
+        if (dbConnection != null) {
+            dbConnectionManager.getDataSource(dbConnection.config).use { dataSource ->
+                val dbChangeFiles = dbType.dbChangeFiles
+                val changeLogResourceFiles = setOf(DbSchema::class.java).mapTo(LinkedHashSet()) { klass ->
+                    ClassloaderChangeLog.ChangeLogResourceFiles(klass.packageName, dbChangeFiles, klass.classLoader)
+                }
+                val dbChange = ClassloaderChangeLog(changeLogResourceFiles)
 
-            dataSource.connection.use { connection ->
-                if (isPlatformManagedDb) {
-                    val dbSchema = dbType.getSchemaName(holdingIdentityShortHash)
-                    schemaMigrator.updateDb(connection, dbChange, dbSchema, migrationTagToApply)
-                } else {
-                    schemaMigrator.updateDb(connection, dbChange, migrationTagToApply)
+                dataSource.connection.use { connection ->
+                    if (isPlatformManagedDb) {
+                        val dbSchema = dbType.getSchemaName(holdingIdentityShortHash)
+                        schemaMigrator.updateDb(connection, dbChange, dbSchema, migrationTagToApply)
+                    } else {
+                        schemaMigrator.updateDb(connection, dbChange, migrationTagToApply)
+                    }
                 }
             }
         }
@@ -107,10 +108,11 @@ internal class VirtualNodeDbImpl(
      */
     override fun runCpiMigrations(dbChange: DbChange, migrationTagToApply: String) {
         val dbConnection = dbConnections[DDL]
-            ?: throw VirtualNodeDbException("No DDL database connection when due to apply CPI migrations")
-        dbConnectionManager.getDataSource(dbConnection.config).use { dataSource ->
-            dataSource.connection.use { connection ->
-                schemaMigrator.updateDb(connection, dbChange, tag = migrationTagToApply)
+        if (dbConnection != null) {
+            dbConnectionManager.getDataSource(dbConnection.config).use { dataSource ->
+                dataSource.connection.use { connection ->
+                    schemaMigrator.updateDb(connection, dbChange, tag = migrationTagToApply)
+                }
             }
         }
     }

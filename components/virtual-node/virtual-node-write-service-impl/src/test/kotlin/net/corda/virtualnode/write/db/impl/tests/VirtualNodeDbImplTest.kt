@@ -11,9 +11,9 @@ import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfig
 import net.corda.virtualnode.write.db.impl.VirtualNodesDbAdmin
 import net.corda.virtualnode.write.db.impl.writer.DbConnection
-import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbException
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbImpl
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
@@ -142,6 +142,18 @@ class VirtualNodeDbImplTest {
     }
 
     @Test
+    fun `create schema and users for platform managed DBs - does nothing if DDL connection missing`() {
+        val target = createVirtualNodeDb(
+            isPlatformManagedDb = true,
+            dbConnections = mapOf(
+                DbPrivilege.DML to dmlConnection,
+            )
+        )
+
+        assertDoesNotThrow { target.createSchemasAndUsers() }
+    }
+
+    @Test
     fun `run cpi migrations throws if no DDL connection present`() {
         val target = createVirtualNodeDb(
             isPlatformManagedDb = true,
@@ -150,7 +162,7 @@ class VirtualNodeDbImplTest {
             )
         )
 
-        assertThrows<VirtualNodeDbException> { target.runCpiMigrations(mock(), "tag") }
+        assertDoesNotThrow { target.runCpiMigrations(mock(), "tag") }
     }
 
     @Test
@@ -177,7 +189,7 @@ class VirtualNodeDbImplTest {
             )
         )
 
-        assertThrows<VirtualNodeDbException> { target.runDbMigration("tag") }
+        assertDoesNotThrow { target.runDbMigration("tag") }
     }
 
     @Test
