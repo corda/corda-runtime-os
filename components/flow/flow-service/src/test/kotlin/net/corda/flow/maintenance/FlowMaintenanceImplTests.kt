@@ -17,7 +17,6 @@ import org.mockito.internal.verification.Times
 import org.mockito.kotlin.*
 
 class FlowMaintenanceImplTests {
-
     private val stateManager = mock<StateManager>()
     private val stateManagerFactory = mock<StateManagerFactory> {
         on { create(any()) } doReturn (stateManager)
