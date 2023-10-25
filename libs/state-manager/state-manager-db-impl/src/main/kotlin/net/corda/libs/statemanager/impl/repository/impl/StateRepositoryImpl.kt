@@ -7,7 +7,6 @@ import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.repository.StateRepository
-import net.corda.libs.statemanager.impl.repository.impl.PreparedStatementHelper.extractFailedKeysFromBatchResults
 
 // TODO-[CORE-17733]: batch update and delete.
 class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepository {
@@ -53,16 +52,22 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
         )
     }
 
-    override fun delete(connection: Connection, states: Collection<StateEntity>): Collection<String> {
-        return connection.prepareStatement(queryProvider.deleteStatesByKey).use { preparedStatement ->
-            for (s in states) {
-                preparedStatement.setString(1, s.key)
-                preparedStatement.setInt(2, s.version)
-                preparedStatement.addBatch()
-            }
-            val results = preparedStatement.executeBatch()
-            extractFailedKeysFromBatchResults(results, states.map { it.key })
+    override fun delete(entityManager: EntityManager, states: Collection<StateEntity>): Collection<String> {
+        val failedKeys = mutableListOf<String>()
+
+        states.forEach { state ->
+            entityManager
+                .createNativeQuery(queryProvider.deleteStatesByKey)
+                .setParameter(KEY_PARAMETER_NAME, state.key)
+                .setParameter(VERSION_PARAMETER_NAME, state.version)
+                .executeUpdate().also {
+                    if (it == 0) {
+                        failedKeys.add(state.key)
+                    }
+                }
         }
+
+        return failedKeys
     }
 
     override fun updatedBetween(entityManager: EntityManager, interval: IntervalFilter): Collection<StateEntity> =
