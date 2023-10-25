@@ -29,6 +29,9 @@ class TokenClaimReleaseEventHandler(
         } else {
             tokenCache.removeAll(event.usedTokens)
             state.removeClaim(event.claimId)
+            log.info(
+                "Claim Removed vNode='${event.poolKey.shortHolderId}' FlowId='${event.flowId}' ClaimId='${event.claimId}'"
+            )
         }
 
         return recordFactory.getClaimReleaseAck(event.flowId, event.externalEventRequestId)

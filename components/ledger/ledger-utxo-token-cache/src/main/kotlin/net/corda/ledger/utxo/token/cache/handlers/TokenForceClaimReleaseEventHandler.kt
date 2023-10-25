@@ -22,9 +22,12 @@ class TokenForceClaimReleaseEventHandler : TokenEventHandler<ForceClaimRelease> 
         log.debug { "Received token claim release for: $event" }
 
         if (!state.claimExists(event.claimId)) {
-            log.warn("Couldn't find existing claim for claimId='${event.claimId}'")
+            log.warn("Couldn't find existing claim for vNode='${event.poolKey.shortHolderId}' claimId='${event.claimId}'")
         } else {
             state.removeClaim(event.claimId)
+            log.info(
+                "Claim Force Removed vNode='${event.poolKey.shortHolderId}' FlowId='${event.flowId}' ClaimId='${event.claimId}'"
+            )
         }
 
         return null

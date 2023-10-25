@@ -32,7 +32,7 @@ class TokenClaimQueryEventHandler(
 
         val claimId = event.externalEventRequestId
         val claim = state.claim(claimId)
-        if(claim != null) {
+        if (claim != null) {
 
             logger.warn("A token claim is being processed more than once. ClaimId: $claimId")
 
@@ -53,13 +53,19 @@ class TokenClaimQueryEventHandler(
             // This way the cache size will be equal to the configured size once the claimed tokens are removed
             // from the query results
             val maxTokens = serviceConfiguration.cachedTokenPageSize + state.claimedTokens().size
-            val findResult = availableTokenService.findAvailTokens(event.poolKey, event.ownerHash, event.tagRegex, maxTokens)
+            val findResult =
+                availableTokenService.findAvailTokens(event.poolKey, event.ownerHash, event.tagRegex, maxTokens)
 
             // Remove the claimed tokens from the query results
             val tokens = findResult.tokens.filterNot { state.isTokenClaimed(it.stateRef) }
 
             // Replace the tokens in the cache with the ones from the query result that have not been claimed
             tokenCache.add(tokens)
+            logger.info(
+                "Claim Created vNode='${event.poolKey.shortHolderId}' FlowId='${event.flowId}' ClaimId='${claimId}' Tokens='${
+                    tokens.map { it.stateRef }.joinToString(", ")
+                }'"
+            )
             selectionResult = selectTokens(tokenCache, state, event)
         }
 
