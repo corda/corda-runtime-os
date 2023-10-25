@@ -1,6 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.transaction.filtered.factory
 
-import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters
+import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters.AuditProof
 import net.corda.ledger.common.flow.transaction.filtered.factory.FilteredTransactionFactory
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup.METADATA
@@ -41,10 +41,14 @@ class UtxoFilteredTransactionFactoryImpl @Activate constructor(
         filteredTransactionBuilder: UtxoFilteredTransactionBuilderInternal
     ): UtxoFilteredTransaction {
         val notaryAndTimeWindow = if (filteredTransactionBuilder.notary || filteredTransactionBuilder.timeWindow) {
-            ComponentGroupFilterParameters.AuditProof(NOTARY.ordinal, Any::class.java) {
-                filteredTransactionBuilder.notary && (it is MemberX500Name || it is PublicKey ) // notary components
-                        || filteredTransactionBuilder.timeWindow && it is TimeWindow // time window
-            }
+            AuditProof(
+                NOTARY.ordinal,
+                Any::class.java,
+                AuditProof.AuditProofPredicate.Content {
+                    filteredTransactionBuilder.notary && (it is MemberX500Name || it is PublicKey) // notary components
+                            || filteredTransactionBuilder.timeWindow && it is TimeWindow // time window
+                }
+            )
         } else {
             null
         }
@@ -53,23 +57,29 @@ class UtxoFilteredTransactionFactoryImpl @Activate constructor(
             filteredTransactionFactory.create(
                 signedTransaction.wireTransaction,
                 listOfNotNull(
-                    ComponentGroupFilterParameters.AuditProof(METADATA.ordinal, TransactionMetadata::class.java) { true },
+                    AuditProof(
+                        METADATA.ordinal,
+                        TransactionMetadata::class.java,
+                        AuditProof.AuditProofPredicate.Content { true }
+                    ),
                     notaryAndTimeWindow,
                     filteredTransactionBuilder.signatories,
                     filteredTransactionBuilder.inputStates,
                     filteredTransactionBuilder.referenceStates,
-                    (filteredTransactionBuilder.outputStates as? ComponentGroupFilterParameters.AuditProof<*>)?.let { _ ->
-                        ComponentGroupFilterParameters.AuditProof(
+                    (filteredTransactionBuilder.outputStates as? AuditProof<*>)?.let { _ ->
+                        AuditProof(
                             UtxoComponentGroup.OUTPUTS_INFO.ordinal,
-                            UtxoOutputInfoComponent::class.java
-                        ) { true }
+                            UtxoOutputInfoComponent::class.java,
+                            AuditProof.AuditProofPredicate.Content { true }
+                        )
                     },
                     filteredTransactionBuilder.outputStates,
-                    (filteredTransactionBuilder.commands as? ComponentGroupFilterParameters.AuditProof<*>)?.let { _ ->
-                        ComponentGroupFilterParameters.AuditProof(
+                    (filteredTransactionBuilder.commands as? AuditProof<*>)?.let { _ ->
+                        AuditProof(
                             UtxoComponentGroup.COMMANDS_INFO.ordinal,
-                            List::class.java
-                        ) { true }
+                            List::class.java,
+                            AuditProof.AuditProofPredicate.Content { true }
+                        )
                     },
                     filteredTransactionBuilder.commands
                 )

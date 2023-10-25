@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality.v1
 
 import net.corda.crypto.core.fullId
+import net.corda.crypto.core.fullIdHash
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
@@ -8,10 +9,12 @@ import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
 import net.corda.ledger.utxo.flow.impl.PluggableNotaryDetails
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
+import net.corda.ledger.utxo.flow.impl.flows.finality.FilteredTransactionAndSignatures
 import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityPayload
 import net.corda.ledger.utxo.flow.impl.flows.finality.addTransactionIdToFlowContext
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.utilities.debug
 import net.corda.utilities.trace
@@ -23,8 +26,10 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionFatal
+import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -57,6 +62,12 @@ class UtxoFinalityFlowV1(
     @CordaInject
     lateinit var virtualNodeSelectorService: NotaryVirtualNodeSelectorService
 
+    @CordaInject
+    lateinit var notaryLookup: NotaryLookup
+
+    @CordaInject
+    lateinit var utxoLedgerService: UtxoLedgerService
+
     @Suspendable
     override fun call(): UtxoSignedTransaction {
         /*
@@ -68,6 +79,7 @@ class UtxoFinalityFlowV1(
 
         addTransactionIdToFlowContext(flowEngine, transactionId)
         log.trace("Starting finality flow for transaction: {}", transactionId)
+
         verifyExistingSignatures(initialTransaction)
         verifyTransaction(initialTransaction)
 
@@ -80,16 +92,21 @@ class UtxoFinalityFlowV1(
         )
 
         val (transaction, signaturesReceivedFromSessions) = receiveSignaturesAndAddToTransaction()
+        log.info("RECEIVED TRANSACTION SIGNATURES!!")
         verifyAllReceivedSignatures(transaction, signaturesReceivedFromSessions)
+        log.info("PERSISTING TRANSACTION WITH SIGNATURES!!")
         persistTransactionWithCounterpartySignatures(transaction)
 
         if (transferAdditionalSignatures) {
             sendUnseenSignaturesToCounterparties(transaction, signaturesReceivedFromSessions)
         }
+        log.info("SENT ADDITIONAL SIGNATURES!!")
 
         val (notarizedTransaction, notarySignatures) = notarize(transaction)
         persistNotarizedTransaction(notarizedTransaction)
+        log.info("PERSISTED NOTARISED TRANSACTION!!")
         sendNotarySignaturesToCounterparties(notarySignatures)
+        log.info("SENT NOTARY SIGNATURES")
         log.trace("Finalisation of transaction {} has been finished.", transactionId)
         return notarizedTransaction
     }
@@ -101,10 +118,14 @@ class UtxoFinalityFlowV1(
     }
 
     @Suspendable
-    private fun sendTransactionAndBackchainToCounterparties(transferAdditionalSignatures: Boolean, isNotaryBackchainVerifying: Boolean) {
-        flowMessaging.sendAll(FinalityPayload(initialTransaction, transferAdditionalSignatures, isNotaryBackchainVerifying), sessions.toSet())
+    private fun sendTransactionAndBackchainToCounterparties(transferAdditionalSignatures: Boolean) {
+        flowMessaging.sendAll(FinalityPayload(initialTransaction, transferAdditionalSignatures), sessions.toSet())
 
-        if (isNotaryBackchainVerifying) {
+        val notaryInfo = requireNotNull(notaryLookup.lookup(initialTransaction.notaryName)) {
+            "Notary ${initialTransaction.notaryName} does not exist in the network"
+        }
+
+        if (notaryInfo.isBackchainVerifying) {
             sessions.forEach {
                 if (initialTransaction.dependencies.isNotEmpty()) {
                     flowEngine.subFlow(TransactionBackchainSenderFlow(initialTransaction.id, it))
@@ -118,6 +139,42 @@ class UtxoFinalityFlowV1(
             log.trace {
                 "Transaction's notary is not backchain verifying so will not perform resolution."
             }
+            // get input state data
+            // create filtered transactions for each input state
+            // 1 filtered transaction per group of inputs that reference a single transaction
+            // need to create a new way to correctly create a wire transaction in the form i need to have a filtered transaction of it
+            // can't use transaction builder because that does signing with the local member's key
+            // build wire transaction manually for now??
+            // we need the whole transaction per input state anyway so that we can create the merkle proof root
+            // so sending of signatures should just be sent alongside the filtered transaction not in the proof itself
+            // no point getting the ledger transaction, because I need to fetch the transactions for the inputs anyway, in which case
+            // a state ref is good enough
+            // need to send reference states as well
+            val filteredTransactionsAndSignatures = initialTransaction
+                .let { it.inputStateRefs + it.referenceStateRefs }
+                .groupBy { stateRef -> stateRef.transactionId }
+                .mapValues { (_, stateRefs) -> stateRefs.map { stateRef -> stateRef.index } }
+                .map { (transactionId, indexes) ->
+                    // this isn't the most performant solution since we're fetching transactions one by one
+                    // reduces the benefit of removing backchain resolution but at least reduces network traffic.
+                    val dependency = requireNotNull(utxoLedgerService.findSignedTransaction(transactionId)) {
+                        "Dependant transaction $transactionId does not exist"
+                    }
+                    // take privacy salt from wire transaction
+                    // empty out all the component groups other than outputs
+                    // build a new wire transaction from it and then build a signed transaction
+                    FilteredTransactionAndSignatures(
+                        utxoLedgerService.filterSignedTransaction(dependency)
+                            .withOutputStates(indexes)
+                            .withNotary()
+                            .withTimeWindow() // time window added to build wire transaction on peer
+                            .build() as UtxoFilteredTransactionInternal,
+                        (dependency as UtxoSignedTransactionInternal).wireTransaction.privacySalt,
+                        dependency.signatures.filter { initialTransaction.notaryKey.fullIdHash() == it.by }
+                    )
+                }
+            flowMessaging.sendAll(FinalityPayload(filteredTransactionsAndSignatures), sessions.toSet())
+            log.info("SENT FILTERED TRANSACTION!!")
         }
     }
 

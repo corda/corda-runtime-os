@@ -34,9 +34,22 @@ sealed interface ComponentGroupFilterParameters {
     data class AuditProof<T : Any>(
         override val componentGroupIndex: Int,
         val deserializedClass: Class<T>,
-        val predicate: Predicate<T>
+        val predicate: AuditProofPredicate<T>
     ) : ComponentGroupFilterParameters {
         override val merkleProofType = MerkleProofType.AUDIT
+
+        sealed interface AuditProofPredicate<T> {
+            class Content<T>(private val predicate: Predicate<T>) : AuditProofPredicate<T>, Predicate<T> {
+                override fun test(t: T): Boolean {
+                    return predicate.test(t)
+                }
+            }
+            class Index<T>(private val indexes: List<Int>) : AuditProofPredicate<T>, Predicate<Int> {
+                override fun test(t: Int): Boolean {
+                    return t in indexes
+                }
+            }
+        }
     }
 
     /**
