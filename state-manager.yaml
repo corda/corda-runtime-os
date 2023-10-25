@@ -46,6 +46,14 @@ bootstrap:
             secretKeyRef:
               name: "state-manager-db-postgresql"
               key: "postgres-password"
+      tokenSelection:
+        username:
+          value: "postgres"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "state-manager-db-postgresql"
+              key: "postgres-password"
 workers:
   flow:
     stateManager:
