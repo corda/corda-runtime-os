@@ -31,7 +31,7 @@ class StateManagerHelper<K : Any, S : Any, E : Any>(
         State(
             key,
             serializedValue,
-            persistedState?.version ?: State.VERSION_INITIAL_VALUE,
+            if (persistedState == null) State.VERSION_INITIAL_VALUE else persistedState.version + 1,
             newState?.metadata ?: Metadata(),
         )
     }

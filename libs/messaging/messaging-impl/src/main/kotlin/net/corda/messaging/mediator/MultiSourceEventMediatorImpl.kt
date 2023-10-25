@@ -2,6 +2,7 @@ package net.corda.messaging.mediator
 
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.libs.statemanager.api.Metadata
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -203,6 +204,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
             var groups = allocateGroups(messages.map { it.toRecord() })
             var states = stateManager.get(messages.map { it.key.toString() })
             while (groups.isNotEmpty()) {
+                val newStates = ConcurrentHashMap<String, State?>()
                 val updateStates = ConcurrentHashMap<String, State?>()
                 val deleteStates = ConcurrentHashMap<String, State?>()
                 val flowEvents = ConcurrentHashMap<String, MutableList<Record<K, E>>>()
@@ -220,7 +222,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                                         v
                                     }
                                 }
-                                var state = states[it.key.toString()]
+                                var state = states.getOrDefault(it.key.toString(), null)
                                 var processorState = stateManagerHelper.deserializeValue(state)?.let { stateValue ->
                                     StateAndEventProcessor.State(
                                         stateValue,
@@ -257,18 +259,27 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                                         }
                                     }
                                 }
-                                // Update states
-                                val newState = stateManagerHelper.createOrUpdateState(
+
+                                // ---- Manage the state ----
+                                val processedState = stateManagerHelper.createOrUpdateState(
                                     it.key.toString(),
                                     state,
                                     processorState,
                                 )
-                                if (newState == null) {
-                                    deleteStates[it.key.toString()] = states[it.key.toString()]
-                                } else {
-                                    val incrementVersion = if (state == null) 0 else 1
-                                    val updatedState = newState.copy(version = newState.version + incrementVersion)
-                                    updateStates[it.key.toString()] = updatedState
+
+                                // New state
+                                if (state == null && processedState != null) {
+                                    newStates[it.key.toString()] = processedState
+                                }
+
+                                // Update state
+                                if (state != null && processedState != null) {
+                                    updateStates[it.key.toString()] = processedState
+                                }
+
+                                // Delete state
+                                if (state != null && processorState == null) {
+                                    deleteStates[it.key.toString()] = state
                                 }
                             }
                         } catch (ex: Exception) {
