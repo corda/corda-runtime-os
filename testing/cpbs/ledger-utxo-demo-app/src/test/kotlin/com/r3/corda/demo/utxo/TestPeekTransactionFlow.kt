@@ -11,6 +11,11 @@ import net.corda.v5.ledger.utxo.TransactionState
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import com.r3.corda.demo.utxo.contract.TestUtxoState
+import net.corda.crypto.cipher.suite.merkle.MerkleTreeProofProvider
+import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
+import net.corda.v5.crypto.merkle.MerkleProof
+import net.corda.v5.crypto.merkle.MerkleProofType
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -20,7 +25,16 @@ import org.mockito.kotlin.whenever
 import java.security.KeyPairGenerator
 
 class TestPeekTransactionFlow {
-        private val jsonMarshallingService = JsonMarshallingServiceImpl()
+        private val jsonMarshallingService = JsonMarshallingServiceImpl(object : MerkleTreeProofProvider {
+            override fun createMerkleProof(
+                proofType: MerkleProofType, treeSize: Int, leaves: List<IndexedMerkleLeaf>, hashes: List<SecureHash>
+            ): MerkleProof {
+                TODO("Not yet implemented")
+            }
+            override fun createIndexedMerkleLeaf(index: Int, nonce: ByteArray?, leafData: ByteArray): IndexedMerkleLeaf {
+                TODO("Not yet implemented")
+            }
+        })
 
         private lateinit var digestService: DigestService
 

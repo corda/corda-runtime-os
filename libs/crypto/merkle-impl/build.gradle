@@ -22,6 +22,7 @@ dependencies {
     implementation project(":libs:crypto:cipher-suite-impl")
     implementation project(":libs:crypto:crypto-core")
     implementation project(':libs:sandbox-types')
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"

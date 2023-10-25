@@ -1,9 +1,14 @@
 package net.corda.application.impl.services.json
 
+import net.corda.crypto.cipher.suite.merkle.MerkleTreeProofProvider
 import net.corda.v5.application.marshalling.json.JsonDeserializer
 import net.corda.v5.application.marshalling.json.JsonNodeReader
 import net.corda.v5.application.marshalling.json.JsonSerializer
 import net.corda.v5.application.marshalling.json.JsonWriter
+import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
+import net.corda.v5.crypto.merkle.MerkleProof
+import net.corda.v5.crypto.merkle.MerkleProofType
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -104,6 +109,17 @@ class JsonMarshallingServiceImplTest {
         return Class.forName(types.first().typeName)
     }
 
+    private val dummyMerkleTreeProofProvider = object : MerkleTreeProofProvider {
+        override fun createMerkleProof(
+            proofType: MerkleProofType, treeSize: Int, leaves: List<IndexedMerkleLeaf>, hashes: List<SecureHash>
+        ): MerkleProof {
+            TODO("Not yet implemented")
+        }
+        override fun createIndexedMerkleLeaf(index: Int, nonce: ByteArray?, leafData: ByteArray): IndexedMerkleLeaf {
+            TODO("Not yet implemented")
+        }
+    }
+
     @Test
     fun `Can serialize object to json string`() {
         val dto = SimpleDto(
@@ -111,7 +127,7 @@ class JsonMarshallingServiceImplTest {
             quantity = 1
         )
 
-        val json = JsonMarshallingServiceImpl().format(dto)
+        val json = JsonMarshallingServiceImpl(dummyMerkleTreeProofProvider).format(dto)
         assertThat(json).isEqualTo("""
             {
               "name": "n1",
@@ -122,7 +138,7 @@ class JsonMarshallingServiceImplTest {
 
     @Test
     fun `Can deserialize object from json string`() {
-        val dto = JsonMarshallingServiceImpl().parse("""
+        val dto = JsonMarshallingServiceImpl(dummyMerkleTreeProofProvider).parse("""
             {
               "name": "n1",
               "quantity": 1
@@ -134,7 +150,7 @@ class JsonMarshallingServiceImplTest {
 
     @Test
     fun `Can deserialize list from json string`() {
-        val dtoList = JsonMarshallingServiceImpl().parseList("""
+        val dtoList = JsonMarshallingServiceImpl(dummyMerkleTreeProofProvider).parseList("""
             [
               {
                 "name": "n1",
@@ -158,7 +174,7 @@ class JsonMarshallingServiceImplTest {
 
     @Test
     fun `can deserialize map from json string`() {
-        val dtoMap = JsonMarshallingServiceImpl().parseMap("""
+        val dtoMap = JsonMarshallingServiceImpl(dummyMerkleTreeProofProvider).parseMap("""
             {
               "100": {
                 "name": "n1",
@@ -193,7 +209,7 @@ class JsonMarshallingServiceImplTest {
             "net.corda.application.impl.services.json.JsonMarshallingServiceImplTest\$SimpleSerializer"
         )
 
-        val jms = JsonMarshallingServiceImpl()
+        val jms = JsonMarshallingServiceImpl(dummyMerkleTreeProofProvider)
         jms.setSerializer(instance as JsonSerializer<*>, extractSerializingType(instance))
 
         val dto = SimpleDto(
@@ -215,7 +231,7 @@ class JsonMarshallingServiceImplTest {
             "net.corda.application.impl.services.json.JsonMarshallingServiceImplTest\$SimpleDeserializer"
         )
 
-        val jms = JsonMarshallingServiceImpl()
+        val jms = JsonMarshallingServiceImpl(dummyMerkleTreeProofProvider)
         jms.setDeserializer(instance as JsonDeserializer<*>, extractSerializingType(instance))
 
         val dto = jms.parse("""
@@ -230,7 +246,7 @@ class JsonMarshallingServiceImplTest {
 
     @Test
     fun `Duplicate serializers are rejected`() {
-        val jms = JsonMarshallingServiceImpl()
+        val jms = JsonMarshallingServiceImpl(dummyMerkleTreeProofProvider)
         assertTrue(jms.setSerializer(SimpleSerializer(), SimpleDto::class.java))
         assertTrue(jms.setSerializer(OtherSerializer(), OtherDto::class.java))
         assertFalse(jms.setSerializer(SimpleSerializer(), SimpleDto::class.java)) // exact duplicate
@@ -239,7 +255,7 @@ class JsonMarshallingServiceImplTest {
 
     @Test
     fun `Duplicate deserializers are rejected`() {
-        val jms = JsonMarshallingServiceImpl()
+        val jms = JsonMarshallingServiceImpl(dummyMerkleTreeProofProvider)
         assertTrue(jms.setDeserializer(SimpleDeserializer(), SimpleDto::class.java))
         assertTrue(jms.setDeserializer(OtherDeserializer(), OtherDto::class.java))
         assertFalse(jms.setDeserializer(SimpleDeserializer(), SimpleDto::class.java)) // exact duplicate
@@ -248,7 +264,7 @@ class JsonMarshallingServiceImplTest {
 
     @Test
     fun `Nested field with custom serializer and deserializer picks them up correctly`() {
-        val jms = JsonMarshallingServiceImpl()
+        val jms = JsonMarshallingServiceImpl(dummyMerkleTreeProofProvider)
 
         // ComplexDto has no explicit serializer or deserializer but contains a field which does. The
         // JsonMarshallingService should automatically recognise the custom field serialization even though the outer

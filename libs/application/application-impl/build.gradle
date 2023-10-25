@@ -22,7 +22,6 @@ dependencies {
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
 
     implementation 'org.slf4j:slf4j-api'
-    implementation project(':libs:crypto:merkle-impl')
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"

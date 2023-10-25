@@ -18,10 +18,9 @@ import net.corda.common.json.serializers.JsonDeserializerAdaptor
 import net.corda.common.json.serializers.JsonSerializerAdaptor
 import net.corda.common.json.serializers.SerializationCustomizer
 import net.corda.crypto.cipher.suite.SignatureSpecImpl
+import net.corda.crypto.cipher.suite.merkle.MerkleTreeProofProvider
 import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.crypto.core.parseSecureHash
-import net.corda.crypto.merkle.impl.IndexedMerkleLeafImpl
-import net.corda.crypto.merkle.impl.MerkleProofImpl
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.sandbox.type.UsedByVerification
@@ -37,7 +36,9 @@ import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
 import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.serialization.SingletonSerializeAsToken
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
@@ -53,7 +54,11 @@ import java.util.Collections.unmodifiableMap
     service = [ JsonMarshallingService::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class ],
     scope = PROTOTYPE
 )
-class JsonMarshallingServiceImpl : JsonMarshallingService,
+class JsonMarshallingServiceImpl
+@Activate constructor(
+    @Reference(service = MerkleTreeProofProvider::class)
+    private val merkleTreeProofProvider: MerkleTreeProofProvider
+) : JsonMarshallingService,
     UsedByFlow, UsedByPersistence, UsedByVerification, SingletonSerializeAsToken, SerializationCustomizer {
     private companion object {
         private const val INITIAL_SIZE = 16
@@ -78,8 +83,8 @@ class JsonMarshallingServiceImpl : JsonMarshallingService,
         module.addDeserializer(DigitalSignatureMetadata::class.java, DigitalSignatureMetadataDeserializer())
         module.addDeserializer(SignatureSpec::class.java, SignatureSpecDeserializer())
         module.addSerializer(DigitalSignatureMetadata::class.java, DigitalSignatureMetadataSerializer())
-        module.addDeserializer(IndexedMerkleLeaf::class.java, IndexedMerkleLeafDeserializer())
-        module.addDeserializer(MerkleProof::class.java, MerkleProofDeserializer())
+        module.addDeserializer(IndexedMerkleLeaf::class.java, IndexedMerkleLeafDeserializer(merkleTreeProofProvider))
+        module.addDeserializer(MerkleProof::class.java, MerkleProofDeserializer(merkleTreeProofProvider))
         registerModule(JavaTimeModule())
 
         // Register Kotlin after resetting the AnnotationIntrospector.
@@ -244,7 +249,8 @@ class SignatureSpecDeserializer : com.fasterxml.jackson.databind.JsonDeserialize
     }
 }
 
-class MerkleProofDeserializer : com.fasterxml.jackson.databind.JsonDeserializer<MerkleProof>() {
+class MerkleProofDeserializer(private val merkleTreeProofProvider: MerkleTreeProofProvider)
+    : com.fasterxml.jackson.databind.JsonDeserializer<MerkleProof>() {
     override fun deserialize(
         parser: JsonParser,
         ctxt: DeserializationContext
@@ -264,21 +270,21 @@ class MerkleProofDeserializer : com.fasterxml.jackson.databind.JsonDeserializer<
             val hash = parser.codec.treeToValue(hashNode, SecureHash::class.java)
             hashes.add(hash)
         }
-        return MerkleProofImpl(proofType, treeSize, leaves, hashes) //TODO use service to decouple from having an impl dependency
-
+        return merkleTreeProofProvider.createMerkleProof(proofType, treeSize, leaves, hashes)
     }
 }
 
-class IndexedMerkleLeafDeserializer : com.fasterxml.jackson.databind.JsonDeserializer<IndexedMerkleLeaf>() {
+class IndexedMerkleLeafDeserializer(private val merkleTreeProofProvider: MerkleTreeProofProvider)
+    : com.fasterxml.jackson.databind.JsonDeserializer<IndexedMerkleLeaf>() {
     override fun deserialize(
         parser: JsonParser,
         ctxt: DeserializationContext
-    ): IndexedMerkleLeafImpl {
+    ): IndexedMerkleLeaf {
         val node: JsonNode = parser.codec.readTree(parser)
         val index = node.get("index").asInt()
         val nonce = if (node.has("nonce")) node.get("nonce").binaryValue() else null
         val leafData = node.get("leafData").binaryValue()
 
-        return IndexedMerkleLeafImpl(index, nonce, leafData)
+        return merkleTreeProofProvider.createIndexedMerkleLeaf(index, nonce, leafData)
     }
 }

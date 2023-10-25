@@ -2,6 +2,7 @@ package net.corda.ledger.persistence.utxo.impl
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
+import net.corda.crypto.cipher.suite.merkle.MerkleTreeProofProvider
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.ledger.common.data.transaction.PrivacySalt
 import net.corda.ledger.common.data.transaction.TransactionStatus
@@ -15,6 +16,9 @@ import net.corda.utilities.time.UTCClock
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
+import net.corda.v5.crypto.merkle.MerkleProof
+import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.EncumbranceGroup
@@ -77,6 +81,17 @@ class UtxoPersistenceServiceImplTest {
         on { createEntityManager() }.doReturn(mockEm)
     }
 
+    private val dummyMerkeTreeProofProvider = object : MerkleTreeProofProvider {
+        override fun createMerkleProof(
+            proofType: MerkleProofType, treeSize: Int, leaves: List<IndexedMerkleLeaf>, hashes: List<SecureHash>
+        ): MerkleProof {
+            TODO("Not yet implemented")
+        }
+        override fun createIndexedMerkleLeaf(index: Int, nonce: ByteArray?, leafData: ByteArray): IndexedMerkleLeaf {
+            TODO("Not yet implemented")
+        }
+    }
+
     private val persistenceService = UtxoPersistenceServiceImpl(
         mockEmFactory,
         mockRepository,
@@ -84,7 +99,7 @@ class UtxoPersistenceServiceImplTest {
         mock(),
         storage,
         DefaultContractStateVaultJsonFactoryImpl(),
-        JsonMarshallingServiceImpl(), // We could mock this but this is basically just a layer on top of Jackson
+        JsonMarshallingServiceImpl(dummyMerkeTreeProofProvider), // We could mock this but this is basically just a layer on top of Jackson
         UTCClock()
     )
 
@@ -135,7 +150,7 @@ class UtxoPersistenceServiceImplTest {
             mock(),
             storage,
             emptyDefaultContractStateVaultJsonFactory,
-            JsonMarshallingServiceImpl(),
+            JsonMarshallingServiceImpl(dummyMerkeTreeProofProvider),
             UTCClock()
         )
 
@@ -220,7 +235,7 @@ class UtxoPersistenceServiceImplTest {
             mock(),
             ContractStateVaultJsonFactoryRegistryImpl(), // Empty storage
             DefaultContractStateVaultJsonFactoryImpl(),
-            JsonMarshallingServiceImpl(),
+            JsonMarshallingServiceImpl(dummyMerkeTreeProofProvider),
             UTCClock()
         )
 
@@ -259,7 +274,7 @@ class UtxoPersistenceServiceImplTest {
             mock(),
             storage,
             DefaultContractStateVaultJsonFactoryImpl(),
-            JsonMarshallingServiceImpl(),
+            JsonMarshallingServiceImpl(dummyMerkeTreeProofProvider),
             UTCClock()
         )
 
