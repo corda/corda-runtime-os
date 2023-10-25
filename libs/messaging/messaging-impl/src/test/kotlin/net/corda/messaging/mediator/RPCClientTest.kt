@@ -15,6 +15,7 @@ import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_ENDPO
 import net.corda.messaging.api.records.Record
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -48,7 +49,7 @@ class RPCClientTest {
         val mockHttpResponse: HttpResponse<ByteArray> = mock()
     ) {
         init {
-            whenever(mockSerializer.serialize(any<Record<*,*>>()))
+            whenever(mockSerializer.serialize(any<Record<*, *>>()))
                 .thenReturn("testPayload".toByteArray())
 
             whenever(mockDeserializer.deserialize(any()))
@@ -62,6 +63,11 @@ class RPCClientTest {
 
             whenever(mockHttpClient.send(any(), any<HttpResponse.BodyHandler<*>>()))
                 .thenReturn(mockHttpResponse)
+        }
+
+        fun setResponse(bytes: ByteArray) = apply {
+            whenever(mockHttpResponse.body())
+                .thenReturn(bytes)
         }
 
         fun withHttpStatus(status: Int) = apply {
@@ -107,6 +113,16 @@ class RPCClientTest {
             FlowEvent(),
             result!!.payload
         )
+    }
+
+    @Test
+    fun `send() processes message and returns empty byte array`() {
+        val environment = MockEnvironment()
+            .setResponse(byteArrayOf())
+
+        val client = createClient(environment.mocks)
+        val result = client.send(message)
+        assertNull(result)
     }
 
     @Test

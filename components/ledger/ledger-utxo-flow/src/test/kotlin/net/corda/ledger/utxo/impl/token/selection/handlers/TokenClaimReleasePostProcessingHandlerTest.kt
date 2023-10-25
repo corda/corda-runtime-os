@@ -1,5 +1,7 @@
 package net.corda.ledger.utxo.impl.token.selection.handlers
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.ledger.utxo.token.selection.data.TokenForceClaimRelease
 import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
@@ -12,6 +14,8 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
@@ -47,10 +51,14 @@ class TokenClaimReleasePostProcessingHandlerTest {
         .setPoolKey(expectedAvroPoolKey1)
         .setPayload(expectedPayload1)
         .build()
+
+    private val keyBytes1 = "key".toByteArray()
+    private val dataBytes1 = "data".toByteArray()
+
     private val expectedRecord1 = Record(
         Schemas.Services.TOKEN_CACHE_EVENT,
-        expectedAvroPoolKey1,
-        expectedTokenPoolCacheEvent1
+        keyBytes1,
+        dataBytes1
     )
 
     private val expectedAvroPoolKey2 = TokenPoolCacheKey.newBuilder()
@@ -68,13 +76,29 @@ class TokenClaimReleasePostProcessingHandlerTest {
         .setPoolKey(expectedAvroPoolKey2)
         .setPayload(expectedPayload2)
         .build()
+    private val keyBytes2 = "key2".toByteArray()
+    private val dataBytes2 = "data2".toByteArray()
+
     private val expectedRecord2 = Record(
         Schemas.Services.TOKEN_CACHE_EVENT,
-        expectedAvroPoolKey2,
-        expectedTokenPoolCacheEvent2
+        keyBytes2,
+        dataBytes2
     )
 
-    private val target = TokenClaimReleasePostProcessingHandler(tokenClaimCheckpointService)
+    private val serializer = mock<CordaAvroSerializer<Any>>().apply {
+        whenever(serialize(eq(expectedAvroPoolKey1))).thenReturn(keyBytes1)
+        whenever(serialize(eq(expectedTokenPoolCacheEvent1))).thenReturn(dataBytes1)
+        whenever(serialize(eq(expectedAvroPoolKey2))).thenReturn(keyBytes2)
+        whenever(serialize(eq(expectedTokenPoolCacheEvent2))).thenReturn(dataBytes2)
+    }
+    private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory>().apply {
+        whenever(createAvroSerializer<Any>(any())).thenReturn(serializer)
+    }
+
+    private val target = TokenClaimReleasePostProcessingHandler(
+        tokenClaimCheckpointService,
+        cordaAvroSerializationFactory
+    )
 
     @Test
     fun `Empty list returned for flows where flow not complete and not DLQ`() {
