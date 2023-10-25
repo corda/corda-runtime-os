@@ -53,7 +53,7 @@ class TokenCacheEventProcessorFactoryImpl constructor(
         val sqlQueryProvider = SqlQueryProviderTokens()
         val utxoTokenRepository = UtxoTokenRepositoryImpl(sqlQueryProvider)
         val tokenPoolCache = TokenPoolCacheImpl()
-        val tokenSelectionMetrics = TokenSelectionMetricsImpl(UTCClock())
+        val tokenSelectionMetrics = TokenSelectionMetricsImpl(clock)
         val availableTokenService = AvailableTokenServiceImpl(
             virtualNodeInfoService,
             dbConnectionManager,
