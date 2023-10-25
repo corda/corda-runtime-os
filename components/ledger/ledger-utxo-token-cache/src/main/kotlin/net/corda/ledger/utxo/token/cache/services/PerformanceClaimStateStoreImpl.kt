@@ -19,15 +19,17 @@ class PerformanceClaimStateStoreImpl(
     private val clock: Clock
 ) : ClaimStateStore {
 
-    private var currentState = storedPoolClaimState
-    private var executor = ThreadPoolExecutor(
+    // We use a limited queue executor to ensure we only ever queue one new request if we are currently processing
+    // an existing request.
+    private val executor = ThreadPoolExecutor(
         1, 1,
         0L, TimeUnit.MILLISECONDS,
         LinkedBlockingQueue(1),
         ThreadPoolExecutor.DiscardPolicy()
     )
+    private val requestQueue = LinkedBlockingQueue<QueuedRequestItem>()
 
-    private var requestQueue = LinkedBlockingQueue<QueuedRequestItem>()
+    private var currentState = storedPoolClaimState
 
     private data class QueuedRequestItem(
         val requestAction: (TokenPoolCacheState) -> TokenPoolCacheState,

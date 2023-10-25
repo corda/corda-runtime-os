@@ -23,23 +23,19 @@ class ClaimStateStoreCacheImpl(
     }
 
     private fun createClaimStateStore(key: TokenPoolKey): ClaimStateStore {
-        return try {
-            // No existing Store for this key, we need to create one
-            // Try and get the existing state from storage
-            val stateRecord = stateManager.get(listOf(key.toString()))
-                .map { it.value }
-                .firstOrNull()
+        // No existing Store for this key, we need to create one
+        // Try and get the existing state from storage
+        val stateRecord = stateManager.get(listOf(key.toString()))
+            .map { it.value }
+            .firstOrNull()
 
-            val claimState = if (stateRecord == null) {
-                createClaimStateFromDefaults(key)
-            } else {
-                createClaimStateFromExisting(key, stateRecord)
-            }
-
-            claimStateStoreFactory.create(key, claimState)
-        } catch (ex: Exception) {
-            throw ex
+        val claimState = if (stateRecord == null) {
+            createClaimStateFromDefaults(key)
+        } else {
+            createClaimStateFromExisting(key, stateRecord)
         }
+
+        return claimStateStoreFactory.create(key, claimState)
     }
 
     private fun createClaimStateFromDefaults(key: TokenPoolKey): StoredPoolClaimState {

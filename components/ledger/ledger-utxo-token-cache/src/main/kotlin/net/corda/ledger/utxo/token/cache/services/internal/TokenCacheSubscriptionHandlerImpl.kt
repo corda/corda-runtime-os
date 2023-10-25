@@ -42,8 +42,8 @@ class TokenCacheSubscriptionHandlerImpl(
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val CONSUMER_GROUP = "TokenEventConsumer"
-        private const val SUBSCRIPTION_NAME = "Token Selection Processor"
         private const val RPC_SUBSCRIPTION = "TOKEN_RPC_SUBSCRIPTION"
+        private val rpcConfig = SyncRPCConfig("Token Selection Processor", WorkerRPCPaths.TOKEN_SELECTION_PATH)
     }
 
     private val coordinator =
@@ -120,7 +120,6 @@ class TokenCacheSubscriptionHandlerImpl(
 
     private fun createAndRegisterSyncRPCSubscription(delegatedProcessor: TokenSelectionDelegatedProcessor) {
         val processor = TokenSelectionSyncRPCProcessor(delegatedProcessor)
-        val rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, WorkerRPCPaths.TOKEN_SELECTION_PATH)
         coordinator.createManagedResource(RPC_SUBSCRIPTION) {
             subscriptionFactory.createHttpRPCSubscription(
                 rpcConfig,
