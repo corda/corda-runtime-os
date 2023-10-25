@@ -75,7 +75,11 @@ class StateManagerImplTest {
 
     @Test
     fun updateReturnsEmptyMapWhenOptimisticLockingCheckSucceedsForAllStates() {
-        whenever(stateRepository.update(any(), any())).thenReturn(emptyList())
+        whenever(stateRepository.update(any(), any()))
+            .thenReturn(StateRepository.StateUpdateSummary(
+                listOf(apiStateTwo.key, apiStateTwo.key, apiStateThree.key),
+                emptyList()
+            ))
 
         val result = stateManager.update(listOf(apiStateOne, apiStateTwo, apiStateThree))
         assertThat(result).isEmpty()
@@ -87,7 +91,11 @@ class StateManagerImplTest {
     fun updateReturnsLatestPersistedViewForStatesThatFailedOptimisticLockingCheck() {
         val persistedStateTwo = persistentStateTwo.newVersion()
         whenever(stateRepository.get(any(), any())).thenReturn(listOf(persistedStateTwo))
-        whenever(stateRepository.update(any(), any())).thenReturn(listOf(persistedStateTwo.key))
+        whenever(stateRepository.update(any(), any()))
+            .thenReturn(StateRepository.StateUpdateSummary(
+                listOf(apiStateTwo.key, apiStateThree.key),
+                listOf(apiStateTwo.key)
+            ))
 
         val result = stateManager.update(listOf(apiStateOne, apiStateTwo, apiStateThree))
         assertThat(result).containsExactly(entry(persistedStateTwo.key, persistedStateTwo.toState()))
@@ -102,7 +110,7 @@ class StateManagerImplTest {
 
         val result = stateManager.delete(listOf(apiStateOne, apiStateTwo, apiStateThree))
         assertThat(result).isEmpty()
-        verify(stateRepository).delete(connection, listOf(persistentStateOne, persistentStateTwo, persistentStateThree))
+        verify(stateRepository).delete(entityManager, listOf(persistentStateOne, persistentStateTwo, persistentStateThree))
         verifyNoMoreInteractions(stateRepository)
     }
 
@@ -115,7 +123,7 @@ class StateManagerImplTest {
         val result = stateManager.delete(listOf(apiStateOne, apiStateTwo, apiStateThree))
         assertThat(result).containsExactly(entry(persistedStateThree.key, persistedStateThree.toState()))
         verify(stateRepository).get(entityManager, listOf(apiStateThree.key))
-        verify(stateRepository).delete(connection, listOf(persistentStateOne, persistentStateTwo, persistentStateThree))
+        verify(stateRepository).delete(entityManager, listOf(persistentStateOne, persistentStateTwo, persistentStateThree))
         verifyNoMoreInteractions(stateRepository)
     }
 }

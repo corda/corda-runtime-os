@@ -30,15 +30,15 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
             .setParameter(KEYS_PARAMETER_NAME, keys)
             .resultListAsStateEntityCollection()
 
-    override fun update(connection: Connection, states: List<StateEntity>): StateRepository.StateEntityModificationResponse {
-        fun getParameterIndex(currentRow:Int, index: Int) = (currentRow * 4) + index // 4 parameters in the statement
+    override fun update(connection: Connection, states: List<StateEntity>): StateRepository.StateUpdateSummary {
+        fun getParameterIndex(currentRow:Int, index: Int) = (currentRow * 4) + index // 4 columns in the temp table
         val updatedKeys = mutableListOf<String>()
         connection.prepareStatement(queryProvider.updateStates(states)).use { stmt ->
-            repeat(states.size) {
-                stmt.setString(getParameterIndex(it, 1), states[it].key)
-                stmt.setBytes(getParameterIndex(it, 2), states[it].value)
-                stmt.setString(getParameterIndex(it, 3), states[it].metadata)
-                stmt.setInt(getParameterIndex(it, 4), states[it].version)
+            repeat(states.size) { stateIterator ->
+                stmt.setString(getParameterIndex(stateIterator, 1), states[stateIterator].key)
+                stmt.setBytes(getParameterIndex(stateIterator, 2), states[stateIterator].value)
+                stmt.setString(getParameterIndex(stateIterator, 3), states[stateIterator].metadata)
+                stmt.setInt(getParameterIndex(stateIterator, 4), states[stateIterator].version)
             }
             stmt.execute()
             val results = stmt.resultSet
@@ -46,7 +46,7 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
                 updatedKeys.add(results.getString(1))
             }
         }
-        return StateRepository.StateEntityModificationResponse(
+        return StateRepository.StateUpdateSummary(
             updatedKeys,
             states.map { it.key }.filterNot { updatedKeys.contains(it) }
         )

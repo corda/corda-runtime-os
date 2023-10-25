@@ -17,7 +17,7 @@ interface StateRepository {
      * @param successfulKeys the keys of states that were successfully updated
      * @param failedKeys the keys of states that were not updated
      */
-    data class StateEntityModificationResponse(
+    data class StateUpdateSummary(
         val successfulKeys: List<String>,
         val failedKeys: List<String>
     )
@@ -50,7 +50,7 @@ interface StateRepository {
      * @param states A collection of states to be updated in the database.
      * @return State keys for both successful and failed updates where states could not be updated due to optimistic locking check failure.
      */
-    fun update(connection: Connection, states: List<StateEntity>): StateEntityModificationResponse
+    fun update(connection: Connection, states: List<StateEntity>): StateUpdateSummary
 
     /**
      * Delete states with the given keys from the persistence context.
