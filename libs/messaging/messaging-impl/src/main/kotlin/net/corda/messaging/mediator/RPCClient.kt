@@ -62,7 +62,9 @@ class RPCClient(
 
         val deserializedResponse = deserializePayload(response.body())
 
-        return if(deserializedResponse==null){
+        return deserializedResponse?.let {
+            MediatorMessage(deserializedResponse, mutableMapOf("statusCode" to response.statusCode()))
+        }
             null
         }else {
             MediatorMessage(deserializedResponse, mutableMapOf("statusCode" to response.statusCode()))
