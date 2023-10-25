@@ -63,4 +63,7 @@ private data class NotaryInfoImpl(
     override fun getProtocol() = protocol
     override fun getProtocolVersions() = protocolVersions
     override fun getPublicKey() = publicKey
+
+    // TODO REMEMBER TO CHANGE
+    override fun shouldIncludeBackchain(): Boolean = false
 }

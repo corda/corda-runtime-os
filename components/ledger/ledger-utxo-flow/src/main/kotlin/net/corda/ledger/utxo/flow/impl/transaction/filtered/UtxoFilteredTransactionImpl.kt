@@ -27,7 +27,7 @@ import java.security.PublicKey
 class UtxoFilteredTransactionImpl(
     private val serializationService: SerializationService,
     val filteredTransaction: FilteredTransaction
-) : UtxoFilteredTransaction {
+) : UtxoFilteredTransactionInternal {
 
     override fun getId(): SecureHash {
         return filteredTransaction.id
@@ -83,11 +83,18 @@ class UtxoFilteredTransactionImpl(
         }
     }
 
+    override fun getOutputStates(): UtxoFilteredData<ContractState> {
+        return getFilteredData<ContractState>(UtxoComponentGroup.OUTPUTS.ordinal)
+    }
+
+    override fun getOutputStateInfos(): UtxoFilteredData<UtxoOutputInfoComponent> {
+        return getFilteredData<UtxoOutputInfoComponent>(UtxoComponentGroup.OUTPUTS_INFO.ordinal)
+    }
+
     private fun extractOutputStateAndRefs(
         filteredOutputStates: UtxoFilteredData.Audit<ContractState>
     ): UtxoFilteredData<StateAndRef<*>> {
-        val componentGroupOrdinal = UtxoComponentGroup.OUTPUTS_INFO.ordinal
-        return when (val filteredStateInfos = getFilteredData<UtxoOutputInfoComponent>(componentGroupOrdinal)) {
+        return when (val filteredStateInfos = getFilteredData<UtxoOutputInfoComponent>(UtxoComponentGroup.OUTPUTS_INFO.ordinal)) {
             is UtxoFilteredData.Audit -> {
                 val values = filteredOutputStates.values.entries.associateBy(
                     keySelector = { (key, _) -> key },

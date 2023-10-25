@@ -172,7 +172,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         return UtxoComponentGroup.values().sorted().map { componentGroupIndex ->
             when (componentGroupIndex) {
                 UtxoComponentGroup.METADATA -> listOf(1)// This will be populated later
-                UtxoComponentGroup.NOTARY -> notaryGroup.map { it!! }
+                UtxoComponentGroup.NOTARY -> notaryGroup.requireNoNulls()
                 UtxoComponentGroup.SIGNATORIES -> utxoTransactionBuilder.signatories
                 UtxoComponentGroup.OUTPUTS_INFO -> outputsInfo
                 UtxoComponentGroup.COMMANDS_INFO -> commandsInfo

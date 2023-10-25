@@ -52,7 +52,7 @@ data class UtxoFilteredTransactionBuilderImpl(
             signatories = ComponentGroupFilterParameters.AuditProof(
                 UtxoComponentGroup.SIGNATORIES.ordinal,
                 PublicKey::class.java,
-                predicate
+                ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content(predicate)
             )
         )
     }
@@ -73,7 +73,7 @@ data class UtxoFilteredTransactionBuilderImpl(
             inputStates = ComponentGroupFilterParameters.AuditProof(
                 UtxoComponentGroup.INPUTS.ordinal,
                 StateRef::class.java,
-                predicate
+                ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content(predicate)
             )
         )
     }
@@ -94,7 +94,7 @@ data class UtxoFilteredTransactionBuilderImpl(
             referenceStates = ComponentGroupFilterParameters.AuditProof(
                 UtxoComponentGroup.REFERENCES.ordinal,
                 StateRef::class.java,
-                predicate
+                ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content(predicate)
             )
         )
     }
@@ -115,7 +115,18 @@ data class UtxoFilteredTransactionBuilderImpl(
             outputStates = ComponentGroupFilterParameters.AuditProof(
                 UtxoComponentGroup.OUTPUTS.ordinal,
                 ContractState::class.java,
-                predicate
+                ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content(predicate)
+            )
+        )
+    }
+
+    @Suspendable
+    override fun withOutputStates(indexes: MutableList<Int>): UtxoFilteredTransactionBuilder {
+        return copy(
+            outputStates = ComponentGroupFilterParameters.AuditProof(
+                UtxoComponentGroup.OUTPUTS.ordinal,
+                ContractState::class.java,
+                ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Index(indexes)
             )
         )
     }
@@ -136,7 +147,7 @@ data class UtxoFilteredTransactionBuilderImpl(
             commands = ComponentGroupFilterParameters.AuditProof(
                 UtxoComponentGroup.COMMANDS.ordinal,
                 Command::class.java,
-                predicate
+                ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content(predicate)
             )
         )
     }

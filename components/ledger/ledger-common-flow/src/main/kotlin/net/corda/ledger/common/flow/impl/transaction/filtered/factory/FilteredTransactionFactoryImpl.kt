@@ -6,6 +6,7 @@ import net.corda.ledger.common.flow.impl.transaction.filtered.FilteredTransactio
 import net.corda.ledger.common.flow.transaction.filtered.FilteredComponentGroup
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters
+import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters.AuditProof
 import net.corda.ledger.common.flow.transaction.filtered.factory.FilteredTransactionFactory
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
@@ -38,7 +39,7 @@ class FilteredTransactionFactoryImpl @Activate constructor(
     @Suspendable
     override fun create(
         wireTransaction: WireTransaction,
-        componentGroupFilterParameters: List<ComponentGroupFilterParameters>
+        componentGroupFilterParameters: List<ComponentGroupFilterParameters>,
     ): FilteredTransaction {
 
         requireUniqueComponentGroupIndexes(componentGroupFilterParameters)
@@ -85,19 +86,30 @@ class FilteredTransactionFactoryImpl @Activate constructor(
             }
 
         val merkleProof = when (parameters) {
-            is ComponentGroupFilterParameters.AuditProof<*> -> {
+            is AuditProof<*> -> {
 
                 val skipFiltering = componentGroupIndex == 0
 
                 val filteredComponents = componentGroup
                     .mapIndexed { index, component -> index to component }
-                    .filter { (_, component) ->
-                        skipFiltering || (parameters.predicate as Predicate<Any>).test(
-                            serializationService.deserialize(
-                                component,
-                                parameters.deserializedClass
-                            )
-                        )
+                    .filter { (index, component) ->
+                        if (skipFiltering) {
+                            true
+                        } else {
+                            when (val predicate = parameters.predicate) {
+                                is AuditProof.AuditProofPredicate.Content -> {
+                                    (predicate as AuditProof.AuditProofPredicate.Content<Any>).test(
+                                        serializationService.deserialize(
+                                            component,
+                                            parameters.deserializedClass
+                                        )
+                                    )
+                                }
+                                is AuditProof.AuditProofPredicate.Index -> {
+                                    predicate.test(index)
+                                }
+                            }
+                        }
                     }
 
                 wireTransaction.componentMerkleTrees[componentGroupIndex]!!.let { merkleTree ->
