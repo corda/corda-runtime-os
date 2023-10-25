@@ -16,6 +16,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
@@ -69,6 +70,7 @@ class FlowService @Activate constructor(
                             LifecycleCoordinatorName.forComponent<CpiInfoReadService>(),
                             LifecycleCoordinatorName.forComponent<FlowExecutor>(),
                             LifecycleCoordinatorName.forComponent<FlowMaintenance>(),
+                            LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
                         )
                     )
                 flowMaintenance.start()

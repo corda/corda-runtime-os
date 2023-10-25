@@ -79,8 +79,25 @@ metrics:
     # -- Labels that can be used so PodMonitor is discovered by Prometheus
     labels: {}
     # -- A list of regular expressions for the names of metrics that Prometheus should keep; if empty, all metrics are kept
-    keepNames: []
-    # - "jvm_.*"
+    keepNames:
+      - "corda_flow_execution_time_seconds_(count|sum|max)"
+      - "corda_http_server_request_time_seconds_(count|sum|max)"
+      - "corda_p2p_gateway_inbound_request_time_seconds_(count|sum|max)"
+      - "corda_p2p_gateway_outbound_request_time_seconds_(count|sum|max)"
+      - "corda_p2p_gateway_outbound_tls_connections_total"
+      - "corda_p2p_message_outbound_total"
+      - "corda_p2p_message_outbound_replayed_total"
+      - "corda_p2p_message_outbound_latency_seconds_(count|sum|max)"
+      - "corda_p2p_message_inbound_total"
+      - "corda_p2p_session_outbound_total"
+      - "corda_p2p_session_inbound_total"
+      - "corda_membership_actions_handler_time_seconds_(count|sum|max)"
+      - "jvm_.*"
+      - "process_cpu_usage"
+    # -- A list of regular expressions for labels that Prometheus should drop across all metrics; if empty, all labels are kept
+    dropLabels:
+      - "virtualnode_destination"
+      - "virtualnode_source"
 
 # Distributed tracing configuration
 tracing:
@@ -423,7 +440,31 @@ bootstrap:
               name: ""
               # -- the password secret key
               key: ""
-
+      tokenSelection:
+        # the username configuration
+        username:
+          # -- the username, defaults to this value
+          value: ""
+          # the username secret configuration; used in preference to value if name is set
+          valueFrom:
+            # the username secret key reference
+            secretKeyRef:
+              # -- the username secret name
+              name: ""
+              # -- the username secret key
+              key: ""
+        # password configuration
+        password:
+          # -- the password, defaults to a value randomly-generated on install
+          value: ""
+          # the password secret configuration
+          valueFrom:
+            # the password secret key reference
+            secretKeyRef:
+              # -- the password secret name
+              name: ""
+              # -- the password secret key
+              key: ""
     # Image containing DB client, used to set up the DB
     clientImage:
       # -- registry for image containing a db client, used to set up the db
@@ -1445,6 +1486,59 @@ workers:
       keepaliveTimeSeconds: 0
       # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
       validationTimeoutSeconds: 5
+
+    stateManager:
+      # Type of State Manager
+      type: DATABASE
+      # State Manager database configuration
+      db:
+        # -- the State Manager database host
+        host: null
+        # -- the State Manager database type
+        type: "postgresql"
+        # -- the State Manager database port
+        port: 5432
+        # -- the State Manager database name
+        name: token_selection_state_manager
+        # the State Manager database user configuration
+        username:
+          # -- the State Manager database user
+          value: "token_selection_state_manager_user"
+          # the State Manager database user secret configuration; used in preference to value if name is set
+          valueFrom:
+            # the State Manager database user secret key reference
+            secretKeyRef:
+              # -- the State Manager database user secret name
+              name: ""
+              # -- the State Manager database user secret key
+              key: ""
+        # the State Manager database password configuration
+        password:
+          # -- the State Manager database password
+          value: ""
+          # the State Manager database password secret configuration; used in preference to value if name is set
+          valueFrom:
+            # the State Manager database password secret key reference
+            secretKeyRef:
+              # -- the State Manager database password secret name
+              name: ""
+              # -- the State Manager database password secret key
+              key: ""
+        # token selection worker JDBC connection pool configuration for State Manager DB
+        connectionPool:
+          # -- token selection maximum JDBC connection pool size for state manager DB
+          maxSize: 5
+          # -- token selection minimum JDBC connection pool size for state manager DB; null value means pool's min size will default to pool's max size value
+          minSize: null
+          # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
+          idleTimeoutSeconds: 120
+          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+          maxLifetimeSeconds: 1800
+          # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
+          keepAliveTimeSeconds: 0
+          # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
+          validationTimeoutSeconds: 5
+
     # token selection worker Kafka configuration
     kafka:
       # if kafka.sasl.enabled, the credentials to connect to Kafka with for the token selection worker
@@ -1473,6 +1567,20 @@ workers:
               name: ""
               # -- the token selection worker SASL password secret key for client connection to Kafka
               key: ""
+    # token selection sharding configuration
+    sharding:
+      # -- enable sharding of token selection requests
+      enabled: false
+      # token selection sharding image configuration
+      image:
+        # -- token selection sharding image registry
+        registry: "registry.k8s.io"
+        # -- token selection sharding image repository
+        repository: "ingress-nginx/controller"
+        # -- token selection sharding image tag
+        tag: "v1.9.3@sha256:8fd21d59428507671ce0fb47f818b1d859c92d2ad07bb7c947268d433030ba98"
+      # -- token selection replica count
+      replicaCount: 2
 
   # uniqueness worker configuration
   uniqueness:

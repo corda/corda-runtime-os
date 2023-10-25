@@ -51,10 +51,16 @@ class ScheduledTaskProcessor(
 
     private fun getExpiredStateIds() : List<String> {
         val windowExpiry = clock.instant() - Duration.ofMillis(cleanupWindow)
-        val states = stateManager.findUpdatedBetweenWithMetadataFilter(
+        val closingStates = stateManager.findUpdatedBetweenWithMetadataFilter(
             IntervalFilter(Instant.EPOCH, windowExpiry),
             MetadataFilter(FLOW_MAPPER_STATUS, Operation.Equals, FlowMapperStateType.CLOSING.toString())
         )
+        val errorStates = stateManager.findUpdatedBetweenWithMetadataFilter(
+            IntervalFilter(Instant.EPOCH, windowExpiry),
+            MetadataFilter(FLOW_MAPPER_STATUS, Operation.Equals, FlowMapperStateType.ERROR.toString())
+        )
+        val states = closingStates + errorStates
+
         return states.map {
             it.key
         }.also {
@@ -65,7 +71,6 @@ class ScheduledTaskProcessor(
     private fun batchIds(ids: List<String>) : List<List<String>> {
         return ids.chunked(batchSize)
     }
-
 
     override val keyClass = String::class.java
     override val valueClass = ScheduledTaskTrigger::class.java
