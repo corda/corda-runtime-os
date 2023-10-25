@@ -68,7 +68,7 @@ class CpiInfoWriterComponentImpl @Activate constructor(
             log.error("Cpi Info Writer publisher is null, not publishing, this error will addressed in a later PR")
             return
         }
-
+        log.info("BOGDAN - PUBLISHING STUFF PUBLISHER IS $publisher.")
         val futures = publisher.get()!!.publish(records)
 
         // Wait for the future (there should only be one) to complete.

@@ -59,6 +59,8 @@ class TriggerPublisherImpl constructor(
 
     override fun publish(taskName: String, topicName: String) {
         logger.trace { "Publishing trigger for $taskName to $topicName" }
+        logger.info("BOGDAN - PUBLISHER IS $publisher")
+        logger.info("BOGDAN - PUBLISHING TRIGGER FOR $taskName to $topicName")
         publisher.get()?.publish(listOf(
             Record(
                 topicName,

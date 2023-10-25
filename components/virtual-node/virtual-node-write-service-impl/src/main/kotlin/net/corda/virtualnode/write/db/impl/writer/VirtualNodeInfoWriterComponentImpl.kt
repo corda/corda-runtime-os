@@ -57,7 +57,8 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
     private var registration: RegistrationHandle? = null
     private var configSubscription: AutoCloseable? = null
 
-    override fun put(recordKey: HoldingIdentity, recordValue: VirtualNodeInfo) =
+    override fun put(recordKey: HoldingIdentity, recordValue: VirtualNodeInfo) {
+        log.info("BOGDAN - PUBLISHING VIRTUAL NODE INFO $recordValue")
         publish(
             listOf(
                 Record(
@@ -67,6 +68,7 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
                 )
             )
         )
+    }
 
     override fun remove(recordKey: HoldingIdentity) =
         publish(listOf(Record(Schemas.VirtualNode.VIRTUAL_NODE_INFO_TOPIC, recordKey.toAvro(), null)))
@@ -78,7 +80,7 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
             log.error("Publisher is null, not publishing")
             return
         }
-
+        log.info("BOGDAN - PUBLISHING STUFF PUBLISHER IS $publisher.")
         //TODO:  according the publish kdoc, we need to handle failure, retries, and possibly transactions.  Next PR.
         val futures = publisher!!.publish(records)
 

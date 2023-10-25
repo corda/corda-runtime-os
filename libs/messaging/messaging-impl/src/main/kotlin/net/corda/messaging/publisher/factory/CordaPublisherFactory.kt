@@ -20,6 +20,8 @@ import net.corda.messaging.publisher.CordaRPCSenderImpl
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.util.UUID
 
 /**
@@ -37,12 +39,18 @@ class CordaPublisherFactory @Activate constructor(
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : PublisherFactory {
 
+    companion object {
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
+
     override fun createPublisher(
         publisherConfig: PublisherConfig,
         messagingConfig: SmartConfig
     ): Publisher {
         val configBuilder = MessagingConfigResolver(messagingConfig.factory)
+        logger.info("BOGDAN - PUBLISHER CONFIG BEFORE MERGING IS $publisherConfig")
         val config = configBuilder.buildPublisherConfig(publisherConfig, messagingConfig)
+        logger.info("BOGDAN - CREATING PUBLISHER WITH CONFIG $config")
         // TODO 3781 - topic prefix
         val producerConfig = ProducerConfig(config.clientId, config.instanceId, config.transactional, ProducerRoles.PUBLISHER)
         return CordaPublisherImpl(config, producerConfig, cordaProducerBuilder)

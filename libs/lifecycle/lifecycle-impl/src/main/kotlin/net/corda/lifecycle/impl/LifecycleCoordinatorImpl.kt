@@ -253,6 +253,7 @@ class LifecycleCoordinatorImpl(
      * Start this coordinator.
      */
     override fun start() {
+        logger.info("BOGDAN - STARTING COORDINATOR ${name.componentName}")
         logger.trace { "$name: Starting coordinator" }
         postEvent(StartEvent())
     }
@@ -264,6 +265,7 @@ class LifecycleCoordinatorImpl(
      * are delivered to the user code.
      */
     override fun stop() {
+        logger.info("BOGDAN - STOPPING COORDINATOR ${name.componentName}")
         logger.trace { "$name: Stopping coordinator" }
         stopInternal(false)
     }
@@ -271,6 +273,7 @@ class LifecycleCoordinatorImpl(
     override fun close() {
         if (_isClosed.compareAndSet(false, true)) {
             logger.trace { "$name: Closing coordinator" }
+            logger.info("BOGDAN - CLOSING COORDINATOR ${name.componentName}")
             postInternalEvent(StopEvent())
             postInternalEvent(CloseCoordinator())
         }
