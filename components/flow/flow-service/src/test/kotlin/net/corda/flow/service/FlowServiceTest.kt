@@ -7,6 +7,7 @@ import net.corda.flow.MINIMUM_SMART_CONFIG
 import net.corda.flow.maintenance.FlowMaintenance
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.test.impl.LifecycleTest
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -33,6 +34,7 @@ class FlowServiceTest {
                 Arguments.of(LifecycleCoordinatorName.forComponent<CpiInfoReadService>()),
                 Arguments.of(LifecycleCoordinatorName.forComponent<FlowExecutor>()),
                 Arguments.of(LifecycleCoordinatorName.forComponent<FlowMaintenance>()),
+                Arguments.of(LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>()),
             )
         }
     }
@@ -156,6 +158,7 @@ class FlowServiceTest {
             addDependency<SandboxGroupContextComponent>()
             addDependency<VirtualNodeInfoReadService>()
             addDependency<CpiInfoReadService>()
+            addDependency<MembershipGroupReaderProvider>()
             addDependency<FlowExecutor>()
             addDependency<FlowMaintenance>()
 
