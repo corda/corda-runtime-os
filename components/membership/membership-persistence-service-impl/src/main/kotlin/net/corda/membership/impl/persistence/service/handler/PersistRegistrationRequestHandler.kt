@@ -28,30 +28,54 @@ internal class PersistRegistrationRequestHandler(
                             " is already persisted. Persistence request was discarded.")
                     return@transaction
                 }
-                // In case of processing persistence requests in an unordered manner we need to make sure the serial
-                // gets persisted. The existing status of the request won't be modified.
-                if (request.status == RegistrationStatus.SENT_TO_MGM) {
-                    em.merge(createEntity(request, currentStatus.status.toStatus()))
-                    return@transaction
-                } else if (!it.canMoveToStatus(request.status)) {
+                if (!it.canMoveToStatus(request.status)) {
                     logger.info(
                         "Registration request [$registrationId] has status: ${currentStatus.status}" +
                                 " can not move it to status ${request.status}"
                     )
+                    // In case of processing persistence requests in an unordered manner we need to make sure the serial
+                    // gets persisted. All other existing data of the request will remain the same.
+                    if (request.status == RegistrationStatus.SENT_TO_MGM && currentStatus.serial == null) {
+                        logger.info("Updating request [$registrationId] serial to ${currentStatus.serial}")
+                        em.merge(createEntityBasedOnPreviousEntity(currentStatus, request.registrationRequest.serial))
+                        return@transaction
+                    }
                     return@transaction
                 }
             }
-            em.merge(createEntity(request, request.status))
+            em.merge(createEntityBasedOnRequest(request))
         }
     }
 
-    private fun createEntity(request: PersistRegistrationRequest, status: RegistrationStatus): RegistrationRequestEntity {
+    private fun createEntityBasedOnPreviousEntity(entity: RegistrationRequestEntity, newSerial: Long): RegistrationRequestEntity {
+        val now = clock.instant()
+        with(entity) {
+            return RegistrationRequestEntity(
+                registrationId = registrationId,
+                holdingIdentityShortHash = holdingIdentityShortHash,
+                status = status,
+                created = created,
+                lastModified = now,
+                memberContext = memberContext,
+                memberContextSignatureKey = memberContextSignatureKey,
+                memberContextSignatureContent = memberContextSignatureContent,
+                memberContextSignatureSpec = memberContextSignatureSpec,
+                registrationContext = registrationContext,
+                registrationContextSignatureKey = registrationContextSignatureKey,
+                registrationContextSignatureContent = registrationContextSignatureContent,
+                registrationContextSignatureSpec = registrationContextSignatureSpec,
+                serial = newSerial,
+            )
+        }
+    }
+
+    private fun createEntityBasedOnRequest(request: PersistRegistrationRequest): RegistrationRequestEntity {
         val now = clock.instant()
         with(request.registrationRequest) {
             return RegistrationRequestEntity(
                 registrationId = registrationId,
                 holdingIdentityShortHash = request.registeringHoldingIdentity.toCorda().shortHash.value,
-                status = status.toString(),
+                status = request.status.toString(),
                 created = now,
                 lastModified = now,
                 memberContext = memberContext.data.array(),

@@ -309,8 +309,13 @@ class DynamicMemberRegistrationService @Activate constructor(
                 val publicKey = keyEncodingService.decodePublicKey(memberContext.getFirst(PARTY_SESSION_KEYS_PEM))
                 val signatureSpec = memberContext.getFirst(SESSION_KEYS_SIGNATURE_SPEC)
 
+                // This is the user provided part of registration context with transformations. It will be the member
+                // provided context of the member information after successful registration.
                 val signedMemberContext = sign(memberId, publicKey, signatureSpec, memberContext)
+                // This is the context used during registration process, e.g. pre-auth tokens will be placed here.
                 val signedRegistrationContext = sign(memberId, publicKey, signatureSpec, registrationContext)
+                // This is the user provided part of registration context in its original form without any
+                // transformations.
                 val signedRegistrationRequestMemberContext = sign(
                     memberId,
                     publicKey,
@@ -374,8 +379,10 @@ class DynamicMemberRegistrationService @Activate constructor(
                     memberId.value
                 )
 
-                // This call will update the status and serial information, but the context will remain the same
-                // as it was before, because the memberContext column is not updatable.
+                // This call will update the serial information only, if the request got persisted before,
+                // in this scenario all the existing data in the persistence will remain the same, except the serial.
+                // If the request wasn't persisted before successfully, we will persist the whole here.
+                // We will persist here the platform transformed data in 5.2 as part of CORE-18001
                 val commands = membershipPersistenceClient.persistRegistrationRequest(
                     viewOwningIdentity = member,
                     registrationRequest = RegistrationRequest(
