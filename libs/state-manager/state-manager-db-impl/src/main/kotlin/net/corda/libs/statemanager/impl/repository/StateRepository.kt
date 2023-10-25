@@ -12,6 +12,17 @@ import javax.persistence.EntityManager
 interface StateRepository {
 
     /**
+     * Response type after modification of State entities.
+     *
+     * @param successfulKeys the keys of states that were successfully updated
+     * @param failedKeys the keys of states that were not updated
+     */
+    data class StateEntityModificationResponse(
+        val successfulKeys: List<String>,
+        val failedKeys: List<String>
+    )
+
+    /**
      * Create state into the persistence context.
      * Transaction should be controlled by the caller.
      *
@@ -39,7 +50,7 @@ interface StateRepository {
      * @param states A collection of states to be updated in the database.
      * @return A collection of keys for states that could not be updated due to optimistic locking check failure.
      */
-    fun update(connection: Connection, states: Collection<StateEntity>): Collection<String>
+    fun update(connection: Connection, states: List<StateEntity>): StateEntityModificationResponse
 
     /**
      * Delete a collection of states from the database using JDBC connection.

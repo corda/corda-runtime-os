@@ -31,19 +31,26 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
             .setParameter(KEYS_PARAMETER_NAME, keys)
             .resultListAsStateEntityCollection()
 
-    override fun update(connection: Connection, states: Collection<StateEntity>): Collection<String> {
-        return connection.prepareStatement(queryProvider.updateState).use { preparedStatement ->
-            for (s in states) {
-                preparedStatement.setString(1, s.key)
-                preparedStatement.setBytes(2, s.value)
-                preparedStatement.setString(3, s.metadata)
-                preparedStatement.setString(4, s.key)
-                preparedStatement.setInt(5, s.version)
-                preparedStatement.addBatch()
+    override fun update(connection: Connection, states: List<StateEntity>): StateRepository.StateEntityModificationResponse {
+        fun getParameterIndex(currentRow:Int, index: Int) = (currentRow * 4) + index // 4 parameters in the statement
+        val updatedKeys = mutableListOf<String>()
+        connection.prepareStatement(queryProvider.updateStates(states)).use { stmt ->
+            repeat(states.size) {
+                stmt.setString(getParameterIndex(it, 1), states[it].key)
+                stmt.setBytes(getParameterIndex(it, 2), states[it].value)
+                stmt.setString(getParameterIndex(it, 3), states[it].metadata)
+                stmt.setInt(getParameterIndex(it, 4), states[it].version)
             }
-            val results = preparedStatement.executeBatch()
-            extractFailedKeysFromBatchResults(results, states.map { it.key })
+            stmt.execute()
+            val results = stmt.resultSet
+            while (results.next()) {
+                updatedKeys.add(results.getString(1))
+            }
         }
+        return StateRepository.StateEntityModificationResponse(
+            updatedKeys,
+            states.map { it.key }.filterNot { updatedKeys.contains(it) }
+        )
     }
 
     override fun delete(connection: Connection, states: Collection<StateEntity>): Collection<String> {

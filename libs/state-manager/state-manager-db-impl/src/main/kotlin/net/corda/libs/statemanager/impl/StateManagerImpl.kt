@@ -62,7 +62,7 @@ class StateManagerImpl(
 
     override fun update(states: Collection<State>): Map<String, State> {
         try {
-            val failedUpdates = dataSource.connection.transaction { conn ->
+            val (_, failedUpdates) = dataSource.connection.transaction { conn ->
                 stateRepository.update(conn, states.map { it.toPersistentEntity() })
             }
 
