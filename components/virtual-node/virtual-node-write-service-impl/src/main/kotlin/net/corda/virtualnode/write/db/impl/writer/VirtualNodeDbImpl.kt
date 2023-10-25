@@ -75,6 +75,7 @@ internal class VirtualNodeDbImpl(
      * @param migrationTagToApply [string?] is an optional tag to be added to the liquibase migration.
      *  See: https://docs.liquibase.com/change-types/tag-database.html
      */
+    @Suppress("NestedBlockDepth")
     override fun runDbMigration(migrationTagToApply: String?) {
         val dbConnection = dbConnections[DDL]
         if (dbConnection != null) {
