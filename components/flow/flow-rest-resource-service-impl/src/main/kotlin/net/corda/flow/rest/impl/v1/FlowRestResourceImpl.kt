@@ -1,6 +1,7 @@
 package net.corda.flow.rest.impl.v1
 
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.data.flow.FlowKey
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.data.virtualnode.VirtualNodeOperationalState
 import net.corda.flow.rest.FlowStatusCacheService
@@ -202,7 +203,7 @@ class FlowRestResourceImpl @Activate constructor(
             val status = messageFactory.createStartFlowStatus(clientRequestId, vNode, flowClassName)
 
             val records = listOf(
-                addTraceContextToRecord(Record(FLOW_MAPPER_EVENT_TOPIC, status.key.toString(), startEvent)),
+                addTraceContextToRecord(Record(FLOW_MAPPER_EVENT_TOPIC, getKeyForStartEvent(status.key, holdingIdentityShortHash), startEvent)),
                 Record(FLOW_STATUS_TOPIC, status.key, status),
             )
 
@@ -230,6 +231,10 @@ class FlowRestResourceImpl @Activate constructor(
             }
             ResponseEntity.accepted(messageFactory.createFlowStatusResponse(status))
         }
+    }
+
+    private fun getKeyForStartEvent(flowKey: FlowKey, holdingIdentityShortHash: String): String {
+        return "${flowKey.id}-${holdingIdentityShortHash}"
     }
 
     private fun markFatalAndReturnFailureException(exception: Exception): Exception {
