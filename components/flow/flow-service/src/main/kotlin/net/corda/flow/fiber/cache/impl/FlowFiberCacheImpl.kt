@@ -90,9 +90,7 @@ class FlowFiberCacheImpl @Activate constructor(
 
     // Yuk ... adding this to support the existing integration test.
     //  I don't think we should have integration tests knowing about the internals of the cache.
-    internal fun findInCache(holdingId: HoldingIdentity, flowId: String): List<FlowFiber> {
-        return cache.asMap()
-            .filter { it.key.identity == holdingId && it.key.id == flowId }
-            .map { it.value.fiber }
+    internal fun findInCache(holdingId: HoldingIdentity, flowId: String): FlowFiber? {
+        return cache.getIfPresent(FlowKey(flowId, holdingId))?.fiber
     }
 }

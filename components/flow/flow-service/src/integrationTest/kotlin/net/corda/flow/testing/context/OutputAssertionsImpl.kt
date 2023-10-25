@@ -25,7 +25,6 @@ import net.corda.schema.Schemas
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -424,18 +423,18 @@ class OutputAssertionsImpl(
 
     override fun flowFiberCacheContainsKey(holdingId: HoldingIdentity, flowId: String) {
         asserts.add {
-            assertFalse(
+            assertNotNull(
                 // :(
-                (flowFiberCache as FlowFiberCacheImpl).findInCache(holdingId, flowId).isEmpty(),
+                (flowFiberCache as FlowFiberCacheImpl).findInCache(holdingId, flowId),
                 "Expected flow fiber cache to contain flowKey: $flowId, $holdingId.")
         }
     }
 
     override fun flowFiberCacheDoesNotContainKey(holdingId: HoldingIdentity, flowId: String) {
         asserts.add {
-            assertTrue(
+            assertNull(
                 // :(
-                (flowFiberCache as FlowFiberCacheImpl).findInCache(holdingId, flowId).isEmpty(),
+                (flowFiberCache as FlowFiberCacheImpl).findInCache(holdingId, flowId),
                 "Expected flow fiber cache to not contain flowKey: $flowId, $holdingId"
             )
         }
