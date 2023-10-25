@@ -97,7 +97,8 @@ class KeyRotationRestResourceImpl @Activate constructor(
             limit
         )
 
-        publisher?.publish(listOf(Record(uploadTopic, requestId, keyRotationRequest)))?:throw ServiceUnavailableException("Key rotation resource has not been initialised.")
+        publisher?.publish(listOf(Record(uploadTopic, requestId, keyRotationRequest)))
+            ?: throw ServiceUnavailableException("Key rotation resource has not been initialised.")
 
         return ResponseEntity.accepted(KeyRotationResponse(requestId, oldKeyAlias, newKeyAlias))
     }
