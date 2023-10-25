@@ -87,8 +87,7 @@ class UtxoFinalityFlowV1(
         persistUnverifiedTransaction()
 
         sendTransactionAndBackchainToCounterparties(
-            transferAdditionalSignatures,
-            pluggableNotaryDetails.isBackchainVerifying
+            transferAdditionalSignatures
         )
 
         val (transaction, signaturesReceivedFromSessions) = receiveSignaturesAndAddToTransaction()
@@ -121,11 +120,7 @@ class UtxoFinalityFlowV1(
     private fun sendTransactionAndBackchainToCounterparties(transferAdditionalSignatures: Boolean) {
         flowMessaging.sendAll(FinalityPayload(initialTransaction, transferAdditionalSignatures), sessions.toSet())
 
-        val notaryInfo = requireNotNull(notaryLookup.lookup(initialTransaction.notaryName)) {
-            "Notary ${initialTransaction.notaryName} does not exist in the network"
-        }
-
-        if (notaryInfo.isBackchainVerifying) {
+        if (pluggableNotaryDetails.isBackchainVerifying) {
             sessions.forEach {
                 if (initialTransaction.dependencies.isNotEmpty()) {
                     flowEngine.subFlow(TransactionBackchainSenderFlow(initialTransaction.id, it))

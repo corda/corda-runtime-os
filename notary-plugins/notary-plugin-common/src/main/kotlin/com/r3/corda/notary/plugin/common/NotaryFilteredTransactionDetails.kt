@@ -1,4 +1,4 @@
-package com.r3.corda.notary.plugin.nonvalidating.server
+package com.r3.corda.notary.plugin.common
 
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
@@ -8,11 +8,7 @@ import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
 import java.security.PublicKey
 
-/**
- * A representation of a transaction (non-validating). It is easier to perform operations on this representation than
- * on the actual transaction object (e.g. FilteredTransaction).
- */
-data class NonValidatingNotaryTransactionDetails(
+data class NotaryFilteredTransactionDetails(
     private val id: SecureHash,
     private val metadata: TransactionMetadata,
     val numOutputs: Int,

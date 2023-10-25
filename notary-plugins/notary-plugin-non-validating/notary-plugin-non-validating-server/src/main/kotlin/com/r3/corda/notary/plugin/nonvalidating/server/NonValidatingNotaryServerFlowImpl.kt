@@ -2,6 +2,7 @@ package com.r3.corda.notary.plugin.nonvalidating.server
 
 import com.r3.corda.notary.plugin.common.NotarizationResponse
 import com.r3.corda.notary.plugin.common.NotaryExceptionGeneral
+import com.r3.corda.notary.plugin.common.NotaryFilteredTransactionDetails
 import com.r3.corda.notary.plugin.common.toNotarizationResponse
 import com.r3.corda.notary.plugin.nonvalidating.api.NonValidatingNotarizationPayload
 import net.corda.v5.application.flows.CordaInject
@@ -126,7 +127,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
      * This function will validate selected notary is valid notary to notarize.
      * */
     @Suspendable
-    private fun validateTransactionNotaryAgainstCurrentNotary(txDetails: NonValidatingNotaryTransactionDetails) {
+    private fun validateTransactionNotaryAgainstCurrentNotary(txDetails: NotaryFilteredTransactionDetails) {
         val currentNotaryServiceName = memberLookup
             .myInfo()
             .memberProvidedContext
@@ -145,7 +146,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
      */
     @Suspendable
     @Suppress("TooGenericExceptionCaught")
-    private fun validateRequest(requestPayload: NonValidatingNotarizationPayload): NonValidatingNotaryTransactionDetails {
+    private fun validateRequest(requestPayload: NonValidatingNotarizationPayload): NotaryFilteredTransactionDetails {
         val transactionParts = try {
             extractParts(requestPayload)
         } catch (e: Exception) {
@@ -162,7 +163,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
      * A helper function that constructs an instance of [NonValidatingNotaryTransactionDetails] from the given transaction.
      */
     @Suspendable
-    private fun extractParts(requestPayload: NonValidatingNotarizationPayload): NonValidatingNotaryTransactionDetails {
+    private fun extractParts(requestPayload: NonValidatingNotarizationPayload): NotaryFilteredTransactionDetails {
         val filteredTx = requestPayload.transaction as UtxoFilteredTransaction
 
         // The notary component is not needed by us but we validate that it is present just in case
@@ -194,7 +195,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
             "Could not fetch output states from the filtered transaction"
         }
 
-        return NonValidatingNotaryTransactionDetails(
+        return NotaryFilteredTransactionDetails(
             filteredTx.id,
             filteredTx.metadata,
             outputStates.size,
