@@ -35,4 +35,7 @@ internal class JavalinContext(private val ctx: Context) : WebContext {
         ctx.header(header)
     }
 
+    override fun requestHeaders(): Map<String, String> {
+        return ctx.req.headerNames.toList().associateWith { ctx.req.getHeader(it) }
+    }
 }

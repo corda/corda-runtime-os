@@ -2,6 +2,7 @@ package net.corda.messaging.subscription
 
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -77,6 +78,8 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
 
         val webHandler = WebHandler { context ->
             trace(operationName) {
+
+
                 val payload = cordaAvroDeserializer.deserialize(context.bodyAsBytes())
 
                 if (payload == null) {
@@ -86,6 +89,9 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                     return@trace context
                 }
 
+                if (payload is TokenPoolCacheEvent) {
+                    log.info(context.requestHeaders().map { "${it.key}=${it.value}" }.joinToString { " " })
+                }
 
                 val response = try {
                     processor.process(payload)

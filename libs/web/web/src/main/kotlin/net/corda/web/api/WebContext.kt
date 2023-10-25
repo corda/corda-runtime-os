@@ -46,4 +46,6 @@ interface WebContext {
      * @param header The name of the header to be retrieved.
      */
     fun header(header: String)
+
+    fun requestHeaders(): Map<String, String>
 }
