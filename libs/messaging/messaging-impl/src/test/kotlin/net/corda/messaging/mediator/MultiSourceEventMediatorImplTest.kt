@@ -49,7 +49,7 @@ class MultiSourceEventMediatorImplTest {
         const val KEY1 = "key1"
         const val KEY2 = "key2"
 
-        const val PROCESSOR_RETRIES = 5
+        const val PROCESSOR_RETRIES = 2
     }
 
     private lateinit var mediator: MultiSourceEventMediatorImpl<Any, Any, Any>
@@ -123,6 +123,7 @@ class MultiSourceEventMediatorImplTest {
             .threads(1)
             .threadName("test")
             .build()
+            .also { whenever(it.processorRetries).thenReturn(PROCESSOR_RETRIES) }
     }
 
     private fun setupStateManager() {
