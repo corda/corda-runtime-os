@@ -81,15 +81,6 @@ class FlowEventProcessorImpl(
             )
         }
 
-        val flowEventPayload = flowEvent.payload
-        if (flowEventPayload is StartFlow && state?.value != null) {
-            log.debug { "Ignoring duplicate '${StartFlow::class.java}'. Start has already been initialized" }
-            return StateAndEventProcessor.Response(
-                state,
-                listOf()
-            )
-        }
-
         val pipeline = try {
             log.trace { "Flow [${event.key}] Received event: ${flowEvent.payload::class.java} / ${flowEvent.payload}" }
             flowEventPipelineFactory.create(state, flowEvent, configs, mdcProperties, traceContext, event.timestamp)
@@ -100,6 +91,18 @@ class FlowEventProcessorImpl(
                 updatedState = null,
                 responseEvents = listOf(),
                 markForDLQ = true
+            )
+        }
+
+        val isInRetryState = pipeline.context.checkpoint.inRetryState
+        val flowEventPayload = flowEvent.payload
+        val checkpoint = state?.value
+
+        if (flowEventPayload is StartFlow && checkpoint != null && !isInRetryState) {
+            log.debug { "Ignoring duplicate '${StartFlow::class.java}'. Start has already been initialized" }
+            return StateAndEventProcessor.Response(
+                state,
+                listOf()
             )
         }
 

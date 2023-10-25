@@ -293,7 +293,19 @@ class FlowEventProcessorImplTest {
 
         assertThat(response).isEqualTo(StateAndEventProcessor.Response(state, emptyList(), false))
         verify(flowMDCService, times(1)).getMDCLogging(anyOrNull(), any(), any())
-        verify(flowEventPipelineFactory, times(0)).create(any(),any(),any(),any(),any(),any())
+        verify(flowEventPipelineFactory, times(1)).create(any(),any(),any(),any(),any(),any())
+    }
+
+    @Test
+    fun `Execute flow pipeline with a checkpoint and start flow event in retry mode`() {
+        val inputEvent = getFlowEventRecord(FlowEvent(flowKey, startFlowEvent))
+        whenever(flowCheckpoint.inRetryState).thenReturn(true)
+
+        val response = processor.onNext(state, inputEvent)
+
+        assertThat(response).isEqualTo(outputResponse)
+        verify(flowMDCService, times(1)).getMDCLogging(anyOrNull(), any(), any())
+        verify(flowEventPipelineFactory, times(1)).create(any(),any(),any(),any(),any(),any())
     }
 
     @Test
