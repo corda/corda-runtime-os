@@ -2,16 +2,17 @@ package net.corda.crypto.service.impl.bus
 
 
 import net.corda.crypto.core.CryptoService
+import net.corda.crypto.core.ShortHash
 import net.corda.crypto.softhsm.WrappingRepositoryFactory
 import net.corda.data.crypto.wire.ops.key.rotation.IndividualKeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationStatus
-import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Crypto.REWRAP_MESSAGE_TOPIC
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
@@ -23,8 +24,7 @@ class CryptoRekeyBusProcessor(
     val cryptoService: CryptoService,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val wrappingRepositoryFactory: WrappingRepositoryFactory,
-    private val publisher: Publisher,
-    private val messagingConfig: SmartConfig,
+    private val publisher: Publisher
 ) : DurableProcessor<String, KeyRotationRequest> {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -34,8 +34,11 @@ class CryptoRekeyBusProcessor(
     override val valueClass = KeyRotationRequest::class.java
     private val uploadTopic = REWRAP_MESSAGE_TOPIC
 
+    @Suppress("NestedBlockDepth")
     override fun onNext(events: List<Record<String, KeyRotationRequest>>): List<Record<*, *>> {
+        logger.info("received ${events.size} key rotation requests")
         events.forEach {
+            logger.info("processing ${it}")
             // we want to compute how many keys we need to rotate
             // root (unmanaged) keys can be used in clusterDB and vNodeDB
             // then for each key we will send a record on Kafka
@@ -62,15 +65,20 @@ class CryptoRekeyBusProcessor(
             // as we need to report the status with this total amount.
             val virtualNodeInfo = virtualNodeInfoReadService.getAll()
             virtualNodeInfo.forEach { virtualNode ->
-                val tenantId = virtualNode.holdingIdentity.x500Name.commonName.toString()
-                val wrappingRepo = wrappingRepositoryFactory.create(tenantId)
-                if (wrappingRepo.findKey(request.oldKeyAlias) != null) {
-                    keysToRotate++
-                    tenantIdsWithKeysToRotate.add(tenantId)
+                logger.info("Measuring work needed for vnode ${virtualNode.holdingIdentity} for ${it}")
+                val tenantId = virtualNode.holdingIdentity.shortHash.toString()
+                wrappingRepositoryFactory.create(tenantId).use { wrappingRepo ->
+                    if (wrappingRepo.findKey(request.oldKeyAlias) != null) {
+                        logger.info("Found work to be done on vnode  ${virtualNode.holdingIdentity}")
+                        // Note: technically we are not counting the number of keys to rate, but rather the number of
+                        // vnodes which have some number of keys to rotate
+                        keysToRotate++
+                        tenantIdsWithKeysToRotate.add(tenantId)
+                    } else {
+                        logger.info("no work to be done for  ${virtualNode.holdingIdentity}")
+                    }
                 }
-                wrappingRepo.close()
             }
-
             // For each tenant, whose wrapping repo contains key that needs rotating, create a Kafka record and publish it
             // to-do this needs to be updated as there might be millions of records, and we might try to do it more efficiently
 
@@ -96,6 +104,7 @@ class CryptoRekeyBusProcessor(
                         )
                     )
                 )
+                logger.info("Publish key rotation ${tenantId}")
             }
             publisher.close()
         }
