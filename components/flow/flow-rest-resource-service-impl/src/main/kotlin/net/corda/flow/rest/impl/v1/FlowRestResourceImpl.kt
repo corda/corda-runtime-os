@@ -203,7 +203,8 @@ class FlowRestResourceImpl @Activate constructor(
             val status = messageFactory.createStartFlowStatus(clientRequestId, vNode, flowClassName)
 
             val records = listOf(
-                addTraceContextToRecord(Record(FLOW_MAPPER_EVENT_TOPIC, getKeyForStartEvent(status.key, holdingIdentityShortHash), startEvent)),
+                addTraceContextToRecord(Record(FLOW_MAPPER_EVENT_TOPIC,
+                    getKeyForStartEvent(status.key, holdingIdentityShortHash), startEvent)),
                 Record(FLOW_STATUS_TOPIC, status.key, status),
             )
 
