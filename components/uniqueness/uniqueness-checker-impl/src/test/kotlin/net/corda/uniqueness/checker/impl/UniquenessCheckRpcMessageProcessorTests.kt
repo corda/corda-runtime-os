@@ -9,6 +9,7 @@ import net.corda.data.uniqueness.UniquenessCheckResultUnhandledExceptionAvro
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.messaging.api.records.Record
 import net.corda.uniqueness.checker.UniquenessChecker
+import net.corda.uniqueness.checker.impl.rpc.UniquenessCheckRpcMessageProcessor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any

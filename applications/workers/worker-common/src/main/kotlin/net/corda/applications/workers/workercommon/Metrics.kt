@@ -14,9 +14,11 @@ import io.micrometer.prometheus.PrometheusMeterRegistry
 import net.corda.metrics.CordaMetrics
 import net.corda.web.api.Endpoint
 import net.corda.web.api.HTTPMethod
+import net.corda.web.api.WebContext
 import net.corda.web.api.WebHandler
 import net.corda.web.api.WebServer
 import org.slf4j.LoggerFactory
+import java.util.concurrent.CompletableFuture
 
 object Metrics {
     private val logger = LoggerFactory.getLogger(Metrics::class.java)
@@ -35,9 +37,11 @@ object Metrics {
         FileDescriptorMetrics().bindTo(CordaMetrics.registry)
 
         val metricsRouteHandler = WebHandler { context ->
-            context.result(prometheusRegistry.scrape())
-            context.header(Header.CACHE_CONTROL, NO_CACHE)
-            context
+            CompletableFuture<WebContext>().apply {
+                context.result(prometheusRegistry.scrape())
+                context.header(Header.CACHE_CONTROL, NO_CACHE)
+//                context
+            }
         }
         webServer.registerEndpoint(Endpoint(HTTPMethod.GET, HTTP_METRICS_ROUTE, metricsRouteHandler))
     }

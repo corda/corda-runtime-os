@@ -31,6 +31,8 @@ dependencies {
     implementation project(":libs:utilities")
     implementation project(":libs:web:web")
 
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$kotlinCoroutinesVersion"
+
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
@@ -55,4 +57,14 @@ dependencies {
 
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+}
+
+// include coroutines bundle in this jar as it doesn't have OSGi metadata
+tasks.named('jar', Jar) {
+    bundle {
+        bnd '''\
+-conditionalpackage: kotlinx.coroutines*
+Import-Package: !android*, *
+'''
+    }
 }

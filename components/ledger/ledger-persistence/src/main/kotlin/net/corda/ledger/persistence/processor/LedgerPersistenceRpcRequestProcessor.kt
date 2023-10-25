@@ -21,6 +21,7 @@ import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
+import java.util.concurrent.CompletableFuture
 
 /**
  * Handles incoming requests, typically from the flow worker, and sends responses.
@@ -39,58 +40,61 @@ class LedgerPersistenceRpcRequestProcessor(
         val log: Logger = LoggerFactory.getLogger(LedgerPersistenceRpcRequestProcessor::class.java)
     }
 
-    override fun process(request: LedgerPersistenceRequest): FlowEvent {
-        val startTime = System.nanoTime()
-        val clientRequestId =
-            request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
-        val holdingIdentity = request.holdingIdentity.toCorda()
+    override fun process(request: LedgerPersistenceRequest): CompletableFuture<FlowEvent> {
+        return CompletableFuture<FlowEvent>().apply {
+            val startTime = System.nanoTime()
+            val clientRequestId =
+                request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
+            val holdingIdentity = request.holdingIdentity.toCorda()
 
-        val result =
-            withMDC(
-            mapOf(
-                MDC_CLIENT_ID to clientRequestId,
-                MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
-            ) + translateFlowContextToMDC(request.flowExternalEventContext.contextProperties.toMap())
-        ) {
-            try {
+            val result =
+                withMDC(
+                    mapOf(
+                        MDC_CLIENT_ID to clientRequestId,
+                        MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
+                    ) + translateFlowContextToMDC(request.flowExternalEventContext.contextProperties.toMap())
+                ) {
+                    try {
 
-                val cpkFileHashes = request.flowExternalEventContext.contextProperties.items
-                    .filter { it.key.startsWith(CPK_FILE_CHECKSUM) }
-                    .map { it.value.toSecureHash() }
-                    .toSet()
+                        val cpkFileHashes = request.flowExternalEventContext.contextProperties.items
+                            .filter { it.key.startsWith(CPK_FILE_CHECKSUM) }
+                            .map { it.value.toSecureHash() }
+                            .toSet()
 
-                val sandbox = entitySandboxService.get(holdingIdentity, cpkFileHashes)
+                        val sandbox = entitySandboxService.get(holdingIdentity, cpkFileHashes)
 
-                currentSandboxGroupContext.set(sandbox)
+                        currentSandboxGroupContext.set(sandbox)
 
-                delegatedRequestHandlerSelector.selectHandler(sandbox, request).execute()
-            } catch (e: Exception) {
-                listOf(
-                    when (e) {
-                        is UnsupportedLedgerTypeException,
-                        is UnsupportedRequestTypeException,
-                        is InconsistentLedgerStateException -> {
-                            responseFactory.fatalErrorResponse(request.flowExternalEventContext, e)
-                        }
+                        delegatedRequestHandlerSelector.selectHandler(sandbox, request).execute()
+                    } catch (e: Exception) {
+                        listOf(
+                            when (e) {
+                                is UnsupportedLedgerTypeException,
+                                is UnsupportedRequestTypeException,
+                                is InconsistentLedgerStateException
+                                -> {
+                                    responseFactory.fatalErrorResponse(request.flowExternalEventContext, e)
+                                }
 
-                        else -> {
-                            responseFactory.errorResponse(request.flowExternalEventContext, e)
-                        }
+                                else -> {
+                                    responseFactory.errorResponse(request.flowExternalEventContext, e)
+                                }
+                            }
+                        )
+                    } finally {
+                        currentSandboxGroupContext.remove()
+                    }.also {
+                        CordaMetrics.Metric.Ledger.PersistenceExecutionTime
+                            .builder()
+                            .forVirtualNode(holdingIdentity.shortHash.toString())
+                            .withTag(CordaMetrics.Tag.LedgerType, request.ledgerType.toString())
+                            .withTag(CordaMetrics.Tag.OperationName, request.request.javaClass.simpleName)
+                            .build()
+                            .record(Duration.ofNanos(System.nanoTime() - startTime))
                     }
-                )
-            } finally {
-                currentSandboxGroupContext.remove()
-            }.also {
-                CordaMetrics.Metric.Ledger.PersistenceExecutionTime
-                    .builder()
-                    .forVirtualNode(holdingIdentity.shortHash.toString())
-                    .withTag(CordaMetrics.Tag.LedgerType, request.ledgerType.toString())
-                    .withTag(CordaMetrics.Tag.OperationName, request.request.javaClass.simpleName)
-                    .build()
-                    .record(Duration.ofNanos(System.nanoTime() - startTime))
-            }
+                }
+            result.single().value as FlowEvent
         }
-        return result.single().value as FlowEvent
     }
 }
 

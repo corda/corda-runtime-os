@@ -11,6 +11,7 @@ import net.corda.persistence.common.ResponseFactory
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
+import java.util.concurrent.CompletableFuture
 
 
 /**
@@ -39,12 +40,19 @@ class EntityRpcRequestProcessor(
         val processorService = ProcessorService()
     }
 
-    override fun process(request: EntityRequest): FlowEvent {
-        logger.debug { "process processing request $request" }
+    override fun process(request: EntityRequest): CompletableFuture<FlowEvent> {
+        return CompletableFuture<FlowEvent>().apply {
+            logger.debug { "process processing request $request" }
 
-        val record = processorService.processEvent(
-            logger, request, entitySandboxService, currentSandboxGroupContext, responseFactory, requestsIdsRepository
-        ) { it }
-        return record.value as FlowEvent
+            val record = processorService.processEvent(
+                logger,
+                request,
+                entitySandboxService,
+                currentSandboxGroupContext,
+                responseFactory,
+                requestsIdsRepository
+            ) { it }
+            record.value as FlowEvent
+        }
     }
 }

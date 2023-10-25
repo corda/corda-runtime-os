@@ -25,6 +25,7 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.uniqueness.backingstore.BackingStoreLifecycle
 import net.corda.uniqueness.checker.UniquenessChecker
 import net.corda.uniqueness.checker.UniquenessCheckerLifecycle
+import net.corda.uniqueness.checker.impl.rpc.UniquenessCheckRpcMessageProcessor
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
