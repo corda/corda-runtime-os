@@ -65,10 +65,6 @@ class RPCClient(
         return deserializedResponse?.let {
             MediatorMessage(deserializedResponse, mutableMapOf("statusCode" to response.statusCode()))
         }
-            null
-        }else {
-            MediatorMessage(deserializedResponse, mutableMapOf("statusCode" to response.statusCode()))
-        }
     }
 
 
