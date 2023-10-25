@@ -30,6 +30,8 @@ class FlowStateManager(private val initialState: FlowState) {
 
     val holdingIdentity: HoldingIdentity = state.flowStartContext.identity.toCorda()
 
+    val suspendCount: Int = state.suspendCount
+
     val fiber: ByteBuffer
         get() = state.fiber ?: ByteBuffer.wrap(byteArrayOf())
 
