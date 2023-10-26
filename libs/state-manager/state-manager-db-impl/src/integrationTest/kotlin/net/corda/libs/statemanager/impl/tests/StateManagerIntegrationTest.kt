@@ -35,8 +35,8 @@ import org.mockito.kotlin.mock
 import java.sql.SQLException
 import java.time.Instant
 import java.util.UUID
-import java.util.concurrent.CountDownLatch
-import kotlin.concurrent.thread
+import javax.persistence.PersistenceException
+import org.junit.jupiter.api.assertDoesNotThrow
 
 // TODO-[CORE-16663]: make database provider pluggable
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -267,40 +267,30 @@ class StateManagerIntegrationTest {
         val conflictingKeys = (1..totalCount).filter { it % 2 == 0 }.map { buildStateKey(it) }
         val persistedStates = stateManager.get(allKeys)
 
-        val latch = CountDownLatch(1)
-        val updater1 = thread {
-            val statesToUpdateFirstThread = mutableListOf<State>()
-            conflictingKeys.forEach {
-                val state = persistedStates[it]!!
-                statesToUpdateFirstThread.add(
-                    State(state.key, "u1_$it".toByteArray(), state.version, metadata("u1" to it))
-                )
-            }
-
-            assertThat(stateManager.update(statesToUpdateFirstThread)).isEmpty()
-            latch.countDown()
+        val statesToUpdateFirstThread = mutableListOf<State>()
+        conflictingKeys.forEach {
+            val state = persistedStates[it]!!
+            statesToUpdateFirstThread.add(
+                State(state.key, "u1_$it".toByteArray(), state.version, metadata("u1" to it))
+            )
         }
 
-        val updater2 = thread {
-            val statesToUpdateSecondThread = mutableMapOf<String, State>()
-            allKeys.forEach {
-                val state = persistedStates[it]!!
-                statesToUpdateSecondThread[state.key] = State(state.key, "u2_$it".toByteArray(), state.version, metadata("u2" to it))
-            }
+        assertThat(stateManager.update(statesToUpdateFirstThread)).isEmpty()
 
-            latch.await()
-            val failedUpdates = stateManager.update(statesToUpdateSecondThread.values)
-            assertThat(failedUpdates).containsOnlyKeys(conflictingKeys)
-            assertSoftly {
-                failedUpdates.values.map { state ->
-                    // assert the real version has bumped by one (updater1 caused this)
-                    it.assertThat(state.version).isEqualTo(statesToUpdateSecondThread[state.key]!!.version + 1)
-                }
-            }
+        val statesToUpdateSecondThread = mutableMapOf<String, State>()
+        allKeys.forEach {
+            val state = persistedStates[it]!!
+            statesToUpdateSecondThread[state.key] = State(state.key, "u2_$it".toByteArray(), state.version, metadata("u2" to it))
         }
 
-        updater1.join()
-        updater2.join()
+        val failedUpdates = stateManager.update(statesToUpdateSecondThread.values)
+        assertThat(failedUpdates).containsOnlyKeys(conflictingKeys)
+        assertSoftly {
+            failedUpdates.values.map { state ->
+                // assert the real version has bumped by one
+                it.assertThat(state.version).isEqualTo(statesToUpdateSecondThread[state.key]!!.version + 1)
+            }
+        }
 
         softlyAssertPersistedStateEntities(
             (1..totalCount),
@@ -345,37 +335,30 @@ class StateManagerIntegrationTest {
         val conflictingKeys = (1..totalCount).filter { it % 2 == 0 }.map { buildStateKey(it) }
         val persistedStates = stateManager.get(allKeys)
 
-        val latch = CountDownLatch(1)
-        val updater = thread {
-            val statesToUpdate = mutableListOf<State>()
-            conflictingKeys.forEach {
-                val state = persistedStates[it]!!
-                statesToUpdate.add(
-                    State(state.key, "u1_$it".toByteArray(), state.version, metadata("u1" to it))
-                )
-            }
-
-            assertThat(stateManager.update(statesToUpdate)).isEmpty()
-            latch.countDown()
-        }
-
-        val deleter = thread {
-            val statesToDelete = mutableListOf<State>()
-            allKeys.forEach {
-                val state = persistedStates[it]!!
-                statesToDelete.add(State(state.key, "delete".toByteArray(), state.version))
-            }
-
-            latch.await()
-            val failedDeletes = stateManager.delete(statesToDelete)
-            assertThat(failedDeletes).containsOnlyKeys(conflictingKeys)
-            assertThat(failedDeletes).containsValues(
-                *statesToDelete.filter { conflictingKeys.contains(it.key) }.toTypedArray()
+        val statesToUpdate = mutableListOf<State>()
+        conflictingKeys.forEach {
+            val state = persistedStates[it]!!
+            statesToUpdate.add(
+                State(state.key, "u1_$it".toByteArray(), state.version, metadata("u1" to it))
             )
         }
 
-        updater.join()
-        deleter.join()
+        assertThat(stateManager.update(statesToUpdate)).isEmpty()
+
+        val statesToDelete = mutableMapOf<String, State>()
+        allKeys.forEach {
+            val state = persistedStates[it]!!
+            statesToDelete[state.key] = State(state.key, "delete".toByteArray(), state.version)
+        }
+
+        val failedDeletes = stateManager.delete(statesToDelete.values)
+        assertThat(failedDeletes).containsOnlyKeys(conflictingKeys)
+        assertSoftly {
+            failedDeletes.values.map { state ->
+                // assert the real version has bumped by one
+                it.assertThat(state.version).isEqualTo(statesToDelete[state.key]!!.version + 1)
+            }
+        }
 
         softlyAssertPersistedStateEntities(
             (2..totalCount step 2),
