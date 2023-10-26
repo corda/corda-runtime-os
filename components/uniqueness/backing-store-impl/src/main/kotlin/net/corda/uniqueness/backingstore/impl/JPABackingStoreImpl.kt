@@ -381,7 +381,9 @@ open class JPABackingStoreImpl @Activate constructor(
                             result.toCharacterRepresentation()
                         )
                     )
+                }
 
+                transactionDetails.forEach { (request, result) ->
                     if (result is UniquenessCheckResultFailure) {
                         entityManager.persist(
                             UniquenessRejectedTransactionEntity(
