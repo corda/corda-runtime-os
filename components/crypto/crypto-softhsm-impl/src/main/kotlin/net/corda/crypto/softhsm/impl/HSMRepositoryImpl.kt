@@ -11,6 +11,7 @@ import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.v5.base.util.EncodingUtils.toHex
 import org.slf4j.LoggerFactory
+import java.lang.UnsupportedOperationException
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
@@ -138,6 +139,7 @@ class HSMRepositoryImpl(
                 }
             }
         }
+        throw UnsupportedOperationException() // unreachable
     }
 
     private fun findHSMAssociationEntity(
