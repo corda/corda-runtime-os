@@ -14,9 +14,8 @@ import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.mediator.factory.MessagingClientFactoryFactory
 import net.corda.messaging.api.mediator.factory.MultiSourceEventMediatorFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
-import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_OUT
-import net.corda.schema.Schemas.Flow.FLOW_SESSION
-import net.corda.schema.Schemas.Flow.FLOW_START
+import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.configuration.MessagingConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -62,10 +61,7 @@ class TestFlowEventMediatorFactoryImpl @Activate constructor(
         .messagingConfig(messagingConfig)
         .consumerFactories(
             mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                FLOW_START, CONSUMER_GROUP, messagingConfig
-            ),
-            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
-                FLOW_SESSION, CONSUMER_GROUP, messagingConfig
+                FLOW_EVENT_TOPIC, CONSUMER_GROUP, messagingConfig
             ),
         )
         .clientFactories(
@@ -85,7 +81,7 @@ class TestFlowEventMediatorFactoryImpl @Activate constructor(
 
         MessageRouter { message ->
             when (val event = message.payload) {
-                is FlowMapperEvent -> routeTo(messageBusClient, FLOW_MAPPER_SESSION_OUT)
+                is FlowMapperEvent -> routeTo(messageBusClient, FLOW_MAPPER_EVENT_TOPIC)
                 else -> {
                     val eventType = event?.let { it::class.java }
                     throw IllegalStateException("No route defined for event type [$eventType]")
