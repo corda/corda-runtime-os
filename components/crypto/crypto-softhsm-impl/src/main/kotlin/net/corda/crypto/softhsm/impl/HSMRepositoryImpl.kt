@@ -15,6 +15,7 @@ import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
+import javax.persistence.RollbackException
 import javax.persistence.Tuple
 
 /**
@@ -99,30 +100,42 @@ class HSMRepositoryImpl(
         tenantId: String,
         category: String,
         masterKeyPolicy: MasterKeyPolicy
-    ): HSMAssociationInfo = entityManagerFactory.createEntityManager().use {
-        it.transaction { em ->
-            val association =
-                findHSMAssociationEntity(em, tenantId)
-                    ?: createAndPersistAssociation(em, tenantId, CryptoConsts.SOFT_HSM_ID, masterKeyPolicy)
+    ): HSMAssociationInfo {
+        entityManagerFactory.createEntityManager().use {
+            while (true) {
+                try {
+                    return it.transaction { em ->
+                        val association =
+                            findHSMAssociationEntity(em, tenantId)
+                                ?: createAndPersistAssociation(em, tenantId, CryptoConsts.SOFT_HSM_ID, masterKeyPolicy)
 
-            val tenantAssociation = findTenantAssociation(tenantId, category)
-            if (tenantAssociation == null) {
-                val newAssociation = HSMCategoryAssociationEntity(
-                    id = UUID.randomUUID().toString(),
-                    tenantId = tenantId,
-                    category = category,
-                    timestamp = Instant.now(),
-                    hsmAssociation = association,
-                    deprecatedAt = 0
-                )
-                em.merge(newAssociation).toHSMAssociation().also {
-                    logger.trace("Stored tenant category association $tenantId $category with wrapping key alias "+
-                            it.masterKeyAlias)
+                        val tenantAssociation = findTenantAssociation(tenantId, category)
+                        if (tenantAssociation == null) {
+                            val newAssociation = HSMCategoryAssociationEntity(
+                                id = UUID.randomUUID().toString(),
+                                tenantId = tenantId,
+                                category = category,
+                                timestamp = Instant.now(),
+                                hsmAssociation = association,
+                                deprecatedAt = 0
+                            )
+                            em.merge(newAssociation).toHSMAssociation().also {
+                                logger.trace(
+                                    "Stored tenant category association $tenantId $category with wrapping key alias " +
+                                            it.masterKeyAlias
+                                )
+                            }
+                        } else {
+                            logger.trace(
+                                "Reusing tenant category association $tenantId $category with wrapping key alias " +
+                                        tenantAssociation.masterKeyAlias
+                            )
+                            tenantAssociation
+                        }
+                    }
+                } catch (_: RollbackException) {
+                    Thread.sleep(1000)
                 }
-            } else {
-                logger.trace("Reusing tenant category association $tenantId $category with wrapping key alias "+
-                        tenantAssociation.masterKeyAlias)
-                tenantAssociation
             }
         }
     }
