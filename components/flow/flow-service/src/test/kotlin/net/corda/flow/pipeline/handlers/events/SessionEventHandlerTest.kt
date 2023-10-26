@@ -159,6 +159,7 @@ class SessionEventHandlerTest {
             flowSandboxService, sessionManager, fakeCheckpointInitializerService, flowSessionManager)
 
         sessionEventHandler.preProcess(inputContext)
+        verify(sessionManager, times(1)).generateSessionState(any(), any(), anyOrNull(), any(), any())
         verify(flowSessionManager, times(1)).sendErrorMessages(any(), any(), anyOrNull(), any())
     }
 

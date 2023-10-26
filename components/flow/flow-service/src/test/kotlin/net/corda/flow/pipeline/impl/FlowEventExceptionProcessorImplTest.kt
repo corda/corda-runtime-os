@@ -105,6 +105,7 @@ class FlowEventExceptionProcessorImplTest {
         val flowEventRecord = Record("", flowId, FlowEvent(flowId, ExternalEventResponse()))
         whenever(flowCheckpoint.flowId).thenReturn(flowId)
         whenever(flowCheckpoint.currentRetryCount).thenReturn(1)
+        whenever(flowCheckpoint.suspendCount).thenReturn(123)
         whenever(flowMessageFactory.createFlowRetryingStatusMessage(flowCheckpoint)).thenReturn(flowStatusUpdate)
         whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)
         whenever(flowCheckpoint.doesExist).thenReturn(true)
@@ -134,8 +135,6 @@ class FlowEventExceptionProcessorImplTest {
         whenever(flowCheckpoint.doesExist).thenReturn(false)
 
         val result = target.process(error, context)
-
-        verify(flowFiberCache, times(0)).remove(any<List<FlowKey>>())
 
         verify(result.checkpoint).rollback()
         verify(result.checkpoint).markForRetry(context.inputEvent, error)
@@ -174,7 +173,7 @@ class FlowEventExceptionProcessorImplTest {
         val key = FlowKey()
         val flowStatusUpdateRecord = Record("", key, flowStatusUpdate)
         val flowMapperEvent = mock<FlowMapperEvent>()
-        val flowMapperRecord = Record(Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC, "key", flowMapperEvent)
+        val flowMapperRecord = Record(Schemas.Flow.FLOW_MAPPER_SESSION_OUT, "key", flowMapperEvent)
 
         whenever(
             flowMessageFactory.createFlowFailedStatusMessage(
@@ -187,6 +186,7 @@ class FlowEventExceptionProcessorImplTest {
         whenever(flowCheckpoint.doesExist).thenReturn(true)
         whenever(flowCheckpoint.flowKey).thenReturn(key)
         whenever(flowCheckpoint.sessions).thenReturn(listOf(flowActiveSessionState, flowInactiveSessionState))
+        whenever(flowCheckpoint.suspendCount).thenReturn(123)
         whenever(flowRecordFactory.createFlowMapperEventRecord(any(), any())).thenReturn(flowMapperRecord)
 
         val result = target.process(error, context)
@@ -206,6 +206,7 @@ class FlowEventExceptionProcessorImplTest {
         whenever(flowCheckpoint.flowId).thenReturn(flowId)
         whenever(flowCheckpoint.doesExist).thenReturn(true)
         whenever(flowCheckpoint.flowKey).thenReturn(key)
+        whenever(flowCheckpoint.suspendCount).thenReturn(123)
 
         val result = target.process(error, context)
 
@@ -228,7 +229,6 @@ class FlowEventExceptionProcessorImplTest {
 
         verify(result.checkpoint).waitingFor = WaitingFor(net.corda.data.flow.state.waiting.Wakeup())
         verify(result.checkpoint).setPendingPlatformError(FlowProcessingExceptionTypes.PLATFORM_ERROR, error.message)
-        verify(flowFiberCache, times(0)).remove(any<List<FlowKey>>())
     }
 
     @Test
@@ -329,7 +329,6 @@ class FlowEventExceptionProcessorImplTest {
         target.process(error, context)
 
         verify(flowCheckpoint, times(0)).flowStartContext
-        verify(flowFiberCache, times(0)).remove(any<List<FlowKey>>())
     }
 
     @Test

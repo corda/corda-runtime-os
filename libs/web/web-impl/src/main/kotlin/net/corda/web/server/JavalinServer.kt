@@ -5,6 +5,7 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.createCoordinator
+import net.corda.tracing.configureJavalinForTracing
 import net.corda.utilities.classload.executeWithThreadContextClassLoader
 import net.corda.utilities.executeWithStdErrSuppressed
 import net.corda.web.api.Endpoint
@@ -32,7 +33,21 @@ class JavalinServer(
         coordinatorFactory: LifecycleCoordinatorFactory,
         @Reference(service = PlatformInfoProvider::class)
         platformInfoProvider: PlatformInfoProvider,
-    ) : this(coordinatorFactory, { Javalin.create() }, platformInfoProvider)
+    ) : this(
+        coordinatorFactory,
+        {
+            Javalin.create { config ->
+                // hardcode to 100Mb for now
+                // TODO CORE-17986: make configurable
+                config.maxRequestSize = 100_000_000L
+
+                if (log.isDebugEnabled) {
+                    config.enableDevLogging()
+                }
+                configureJavalinForTracing(config)
+            }
+        },
+        platformInfoProvider)
 
     private companion object {
         val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
