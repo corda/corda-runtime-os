@@ -18,7 +18,9 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.UUID
+import javax.persistence.PersistenceException
 import kotlin.concurrent.thread
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -134,6 +136,54 @@ class TaskSchedulerLogEntityTest {
                 it.assertThat(loadedLog.schedulerId).isEqualTo("batman")
                 it.assertThat(loadedLog.lastScheduled).isAfter(createTs)
             }
+        }
+    }
+
+    @Test
+    fun `duplicate insert throws ConstraintViolationException`() {
+        val taskId = "foo${UUID.randomUUID()}"
+        val log = TaskSchedulerLogEntity(taskId, "bar")
+
+        emf.createEntityManager().transaction {
+            it.persist(log)
+            it.flush()
+        }
+
+        emf.createEntityManager().transaction {
+            try {
+                it.persist(log)
+                it.flush()
+            }
+            catch (e: PersistenceException) {
+                // NOTE: this is not great, but we must be able to detect a constraint violation in case
+                //  of a race condition, however, the JPA exception type doesn't give us enough info, so we check
+                //  the hibernate generated message.
+                if(e.message?.contains("ConstraintViolationException") == true) {
+                    println(e)
+                } else {
+                    throw e
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `getOrInitialiseLog lazily creates entity`() {
+        val taskId = "foo${UUID.randomUUID()}"
+        val repo = TaskSchedulerLogEntityRepository()
+        val created = emf.createEntityManager().transaction {
+            repo.getOrInitialiseLog(taskId, "scheduler", it)
+        }
+
+        assertThat(created.lastScheduled.until(created.now, ChronoUnit.SECONDS)).isGreaterThan(0)
+
+        emf.createEntityManager().use { em ->
+            val loadedLog = em.find(
+                TaskSchedulerLogEntity::class.java,
+                taskId
+            )
+
+            assertThat(loadedLog).isNotNull
         }
     }
 
