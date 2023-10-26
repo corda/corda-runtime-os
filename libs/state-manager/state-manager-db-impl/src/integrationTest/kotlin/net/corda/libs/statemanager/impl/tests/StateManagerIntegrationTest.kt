@@ -282,20 +282,21 @@ class StateManagerIntegrationTest {
         }
 
         val updater2 = thread {
-            val statesToUpdateSecondThread = mutableListOf<State>()
+            val statesToUpdateSecondThread = mutableMapOf<String, State>()
             allKeys.forEach {
                 val state = persistedStates[it]!!
-                statesToUpdateSecondThread.add(
-                    State(state.key, "u2_$it".toByteArray(), state.version, metadata("u2" to it))
-                )
+                statesToUpdateSecondThread[state.key] = State(state.key, "u2_$it".toByteArray(), state.version, metadata("u2" to it))
             }
 
             latch.await()
-            val failedUpdates = stateManager.update(statesToUpdateSecondThread)
+            val failedUpdates = stateManager.update(statesToUpdateSecondThread.values)
             assertThat(failedUpdates).containsOnlyKeys(conflictingKeys)
-            assertThat(failedUpdates).containsValues(
-                *statesToUpdateSecondThread.filter { conflictingKeys.contains(it.key) }.toTypedArray()
-            )
+            assertSoftly {
+                failedUpdates.values.map { state ->
+                    // assert the real version has bumped by one (updater1 caused this)
+                    it.assertThat(state.version).isEqualTo(statesToUpdateSecondThread[state.key]!!.version + 1)
+                }
+            }
         }
 
         updater1.join()
