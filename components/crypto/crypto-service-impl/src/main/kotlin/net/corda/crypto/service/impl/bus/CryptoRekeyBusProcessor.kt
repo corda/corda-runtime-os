@@ -2,7 +2,7 @@ package net.corda.crypto.service.impl.bus
 
 
 import net.corda.crypto.core.CryptoService
-import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.softhsm.WrappingRepositoryFactory
 import net.corda.data.crypto.wire.ops.key.rotation.IndividualKeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
@@ -12,7 +12,6 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Crypto.REWRAP_MESSAGE_TOPIC
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
@@ -37,75 +36,34 @@ class CryptoRekeyBusProcessor(
     @Suppress("NestedBlockDepth")
     override fun onNext(events: List<Record<String, KeyRotationRequest>>): List<Record<*, *>> {
         logger.info("received ${events.size} key rotation requests")
-        events.forEach {
-            logger.info("processing ${it}")
-            // we want to compute how many keys we need to rotate
+        events.map { it.value}.filterNotNull().forEach { request ->
+            logger.info("processing $request")
             // root (unmanaged) keys can be used in clusterDB and vNodeDB
             // then for each key we will send a record on Kafka
             // We do not have a code that deals with rewrapping the root key in a cluster DB
-            //
 
             // tenantId in the request is useful ONLY for re-wrapping managed keys!
             // For unmanaged (root) key we need to go through all vNodes and check if the oldKeyAlias is used there
             // if yes, then we need to issue a new record for this key to be re-wrapped
             // we get the tenantId from the vNode info (I hope).
-            // Plus we need to query somehow the cluster DB to find out if the root key is used there
 
-            val request = it.value
-            if (request == null) {
-                logger.error("Unexpected null payload for event with the key={} in topic={}", it.key, it.topic)
-                return emptyList() // cannot send any error back as have no idea where to send to
-            }
+            val virtualNodeInfo = virtualNodeInfoReadService.getAll() // Get all the virtual nodes
+            val virtualNodeTenantIds = virtualNodeInfo.map { it.holdingIdentity.shortHash.toString() }
 
-            var tenantIdsWithKeysToRotate = mutableListOf<String>()
-            var keysToRotate: Int = 0
-
-            // Get all the virtual nodes, and check if the wrapping repository contains the key that needs to be rotated.
-            // We need to calculate the total amount of the keys that need to be rotated regardless the limit being set,
-            // as we need to report the status with this total amount.
-            val virtualNodeInfo = virtualNodeInfoReadService.getAll()
-            virtualNodeInfo.forEach { virtualNode ->
-                logger.info("Measuring work needed for vnode ${virtualNode.holdingIdentity} for ${it}")
-                val tenantId = virtualNode.holdingIdentity.shortHash.toString()
+            val allTenantIds = virtualNodeTenantIds+listOf(CryptoTenants.CRYPTO, CryptoTenants.P2P, CryptoTenants.REST)
+            logger.info("Found ${allTenantIds.size} tenants; first few are: ${allTenantIds.take(10)}")
+            val targetWrappingKeys = allTenantIds.asSequence().map { tenantId ->
                 wrappingRepositoryFactory.create(tenantId).use { wrappingRepo ->
-                    if (wrappingRepo.findKey(request.oldKeyAlias) != null) {
-                        logger.info("Found work to be done on vnode  ${virtualNode.holdingIdentity}")
-                        // Note: technically we are not counting the number of keys to rate, but rather the number of
-                        // vnodes which have some number of keys to rotate
-                        keysToRotate++
-                        tenantIdsWithKeysToRotate.add(tenantId)
-                    } else {
-                        logger.info("no work to be done for  ${virtualNode.holdingIdentity}")
-                    }
+                    wrappingRepo.findKeysWrappedByAlias (request.oldKeyAlias).map { wki -> tenantId to wki}
                 }
-            }
-            // For each tenant, whose wrapping repo contains key that needs rotating, create a Kafka record and publish it
-            // to-do this needs to be updated as there might be millions of records, and we might try to do it more efficiently
+            }.flatten()
 
-            // If the user sets up the limit of the individual key rotations, do only that number of rotations
-            // We are rotating root keys at the moment, so for each tenant there will be maximum one key, hence we can
-            // limit the number from tenantIds.
-            if (request.limit != null) {
-                tenantIdsWithKeysToRotate = tenantIdsWithKeysToRotate.take(request.limit).toMutableList()
-            }
+            val truncatedWrappingKeys = targetWrappingKeys.take(request.limit?:Int.MAX_VALUE)
 
-            tenantIdsWithKeysToRotate.forEach { tenantId ->
-                publisher.publish(
-                    listOf(
-                        Record(
-                            uploadTopic,
-                            request.requestId,
-                            createIndividualKeyRotationRequest(
-                                request.requestId,
-                                tenantId,
-                                request.oldKeyAlias,
-                                request.newKeyAlias
-                            )
-                        )
-                    )
-                )
-                logger.info("Publish key rotation ${tenantId}")
-            }
+            truncatedWrappingKeys.map { (tenantId, wrappingKeyInfo) ->
+                val newGeneration = cryptoService.rewrapWrappingKey(tenantId, wrappingKeyInfo.alias, request.newKeyAlias)
+                logger.info("Rewrapped ${wrappingKeyInfo.alias} in tenant ${tenantId} from ${wrappingKeyInfo.parentKeyAlias} to ${request.newKeyAlias}; generation number now ${newGeneration}")
+            }.count()
             publisher.close()
         }
         return emptyList()

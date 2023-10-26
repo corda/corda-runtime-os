@@ -47,4 +47,12 @@ interface WrappingRepository : Closeable {
      * @return The pair of UUID and the wrapping key material with metadata about version and algorithm.
      */
     fun findKeyAndId(alias: String): Pair<UUID, WrappingKeyInfo>?
+
+    /**
+     * Find all wrapping key in the database wrapping. This function will stream its output.
+     *
+     * @param alias The name of the parent wrapping key.
+     * @return A stream of results
+     */
+    fun findKeysWrappedByAlias(alias: String): Sequence<WrappingKeyInfo>
 }

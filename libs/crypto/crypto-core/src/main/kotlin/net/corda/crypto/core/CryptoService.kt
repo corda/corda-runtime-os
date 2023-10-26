@@ -308,9 +308,10 @@ interface CryptoService {
      * @param tenantId the tenant that holds the wrapping key
      * @param targetAlias the alias of the wrapping key that is to be decrypted then encrypted
      * @param newParentKeyAlias the new parent key to use for encrypting the wrapping key at rest
+     * @return the new wrapping generation number
      *
      * @throws IllegalStateException if the newParentKeyAlias or the current parent key alias is not
      *         in the configuration unmanaged keys map or targetAlias is not found
      */
-    fun rewrapWrappingKey(tenantId: String, targetAlias: String, newParentKeyAlias: String)
+    fun rewrapWrappingKey(tenantId: String, targetAlias: String, newParentKeyAlias: String): Int
 }

@@ -163,7 +163,8 @@ open class SoftCryptoService(
                 wrappingKey.algorithm,
                 wrappingKeyEncrypted,
                 1,
-                parentKeyName
+                parentKeyName,
+                wrappingKeyAlias
             )
         recoverable("createWrappingKey save key") {
             wrappingRepositoryFactory.create(tenantId).use {
@@ -567,7 +568,7 @@ open class SoftCryptoService(
         )
     }
     
-    override fun rewrapWrappingKey(tenantId: String, targetAlias: String, newParentKeyAlias: String) {
+    override fun rewrapWrappingKey(tenantId: String, targetAlias: String, newParentKeyAlias: String): Int {
         val newParentKey = checkNotNull(unmanagedWrappingKeys.get(newParentKeyAlias)) {
             "Unable to find parent key $newParentKeyAlias in the configured unmanaged wrapping keys"
         }
@@ -579,15 +580,18 @@ open class SoftCryptoService(
             val oldParentKey = checkNotNull(unmanagedWrappingKeys.get(wrappingKeyInfo.parentKeyAlias)) {
                 "Unable to find parent key ${wrappingKeyInfo.parentKeyAlias} in the configured unmanaged wrapping keys"
             }
+            val newGeneration = wrappingKeyInfo.generation + 1
             oldParentKey.unwrapWrappingKey(wrappingKeyInfo.keyMaterial).also { wrappingKey ->
                 logger.trace { "Should decrypt key material in row $id with alias $targetAlias using " +
                         "${wrappingKeyInfo.parentKeyAlias} and encrypt key material using $newParentKeyAlias" }
                 val wrappedWithNewKey = newParentKey.wrap(wrappingKey)
-                wrappingRepo.saveKeyWithId(
-                    targetAlias,
-                    wrappingKeyInfo.copy(keyMaterial = wrappedWithNewKey, parentKeyAlias = newParentKeyAlias),
-                    id)
+                val newInfo = wrappingKeyInfo.copy(
+                    keyMaterial = wrappedWithNewKey,
+                    parentKeyAlias = newParentKeyAlias,
+                    generation = newGeneration)
+                wrappingRepo.saveKeyWithId(targetAlias, newInfo, id)
             }
+            return newGeneration
         }
     }
     

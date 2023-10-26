@@ -687,7 +687,8 @@ class CryptoOperationsTests {
                 it.rootWrappingKey.algorithm + "!",
                 it.rootWrappingKey.wrap(factory.secondLevelWrappingKey),
                 1,
-                "root"
+                "root",
+                "key1"
             )
         }
         assertThat(e.message).contains("Expected algorithm")
@@ -700,7 +701,7 @@ class CryptoOperationsTests {
             WRAPPING_KEY_ENCODING_VERSION + 1,
             it.secondLevelWrappingKey.algorithm,
             it.rootWrappingKey.wrap(it.secondLevelWrappingKey),
-            1, "root"
+            1, "root", "key1"
             )
         }
         assertThat(e.message).contains("Unknown wrapping key encoding. Expected to be 1")

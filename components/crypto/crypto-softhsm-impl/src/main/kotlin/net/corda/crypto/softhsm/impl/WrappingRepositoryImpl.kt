@@ -10,7 +10,9 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.UUID
+import java.util.stream.Stream
 import javax.persistence.EntityManagerFactory
+import kotlin.streams.asSequence
 
 class WrappingRepositoryImpl(
     private val entityManagerFactory: EntityManagerFactory,
@@ -58,6 +60,15 @@ class WrappingRepositoryImpl(
                 Pair(dao.id, dao.toDto())
             }
         }
+
+    // TODO add test coverage
+    override fun findKeysWrappedByAlias(alias: String): Sequence<WrappingKeyInfo> =
+        entityManagerFactory.createEntityManager().use { it ->
+            it.createQuery(
+                "FROM ${WrappingKeyEntity::class.simpleName} AS k WHERE k.parentKeyReference = :alias",
+                WrappingKeyEntity::class.java
+            ).setParameter("alias", alias).resultStream.map {dao -> dao.toDto() }.toList().asSequence()
+        }
 }
 
 // NOTE: this should be on the entity object directly, but this means this repo (and the DTOs) need
@@ -68,6 +79,7 @@ fun WrappingKeyEntity.toDto() =
         algorithmName = this.algorithmName,
         keyMaterial = this.keyMaterial,
         generation = this.generation,
-        parentKeyAlias = this.parentKeyReference
+        parentKeyAlias = this.parentKeyReference,
+        alias = this.alias
     )
         

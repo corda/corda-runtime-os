@@ -146,7 +146,8 @@ class TestServicesFactory {
     val rootWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
     val secondLevelWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
     val secondLevelWrappingKeyWrapped = rootWrappingKey.wrap(secondLevelWrappingKey)
-    val secondLevelWrappingKeyInfo = WrappingKeyInfo(1, "AES", secondLevelWrappingKeyWrapped, 1, "root")
+    val secondLevelWrappingKeyInfo = WrappingKeyInfo(
+        1, "AES", secondLevelWrappingKeyWrapped, 1, "root", "key1")
     val wrappingRepository = TestWrappingRepository(secondLevelWrappingKeyInfo)
     val shortHashCache: Cache<ShortHashCacheKey, SigningKeyInfo> = CacheFactoryImpl().build(
         "test short hash cache", Caffeine.newBuilder()
