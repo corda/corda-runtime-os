@@ -116,10 +116,12 @@ class HSMRepositoryImpl(
                     deprecatedAt = 0
                 )
                 em.merge(newAssociation).toHSMAssociation().also {
-                    logger.trace("Stored tenant category association $tenantId $category with wrapping key alias ${it.masterKeyAlias}")
+                    logger.trace("Stored tenant category association $tenantId $category with wrapping key alias "+
+                            it.masterKeyAlias)
                 }
             } else {
-                logger.trace("Reusing tenant category association $tenantId $category with wrapping key alias ${tenantAssociation.masterKeyAlias}")
+                logger.trace("Reusing tenant category association $tenantId $category with wrapping key alias "+
+                        tenantAssociation.masterKeyAlias)
                 tenantAssociation
             }
         }
