@@ -348,24 +348,21 @@ open class JPABackingStoreImpl @Activate constructor(
                 consumingTxId: SecureHash,
                 stateRefs: Collection<UniquenessCheckStateRef>
             ) {
-                stateRefs.forEach { stateRef ->
-                    val safeUpdate = entityManager.createNamedQuery(
-                        "UniquenessStateDetailEntity.consumeWithProtection"
-                    )
-                        .setParameter("consumingTxAlgo", consumingTxId.algorithm)
-                        .setParameter("consumingTxId", consumingTxId.bytes)
-                        .setParameter("issueTxAlgo", stateRef.txHash.algorithm)
-                        .setParameter("issueTxId", stateRef.txHash.bytes)
-                        .setParameter("stateIndex", stateRef.stateIndex)
 
-                    val updatedRowCount = safeUpdate.executeUpdate()
+                val safeUpdate = entityManager.createNamedQuery(
+                    "UniquenessStateDetailEntity.consumeWithProtection"
+                )
+                    .setParameter("consumingTxAlgo", consumingTxId.algorithm)
+                    .setParameter("consumingTxId", consumingTxId.bytes)
+                    .setParameter("stateRefs", stateRefs.map { it.toString() })
 
-                    if (updatedRowCount == 0) {
-                        // TODO: Figure out application specific exceptions
-                        throw EntityExistsException(
-                            "No states were consumed, this might be an in-flight double spend"
-                        )
-                    }
+                val updatedRowCount = safeUpdate.executeUpdate()
+
+                if (updatedRowCount < stateRefs.size) {
+                    // TODO: Figure out application specific exceptions
+                    throw EntityExistsException(
+                        "Unable to consume all state refs as part of transaction ${consumingTxId}," +
+                                "this might be an in-flight double spend. Rolling back.")
                 }
             }
 

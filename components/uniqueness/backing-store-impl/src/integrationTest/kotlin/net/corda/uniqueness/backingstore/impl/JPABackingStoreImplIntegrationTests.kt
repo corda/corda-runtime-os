@@ -609,8 +609,8 @@ class JPABackingStoreImplIntegrationTests {
                 assertThat(exceptions)
                     .hasSize(numExecutors)
                     .containsOnlyOnce(null)
-                assertThat(exceptions.filterNotNull().map { it.message })
-                    .containsOnly("No states were consumed, this might be an in-flight double spend")
+                assertThat(exceptions.filterNotNull().map { it.message?.subSequence(0, 32) })
+                    .containsOnly("Unable to consume all state refs")
             }
         }
 

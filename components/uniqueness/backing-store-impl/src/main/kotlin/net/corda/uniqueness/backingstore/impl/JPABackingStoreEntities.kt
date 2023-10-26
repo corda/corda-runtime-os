@@ -95,7 +95,11 @@ internal class UniquenessTxAlgoIdKey(
         name = "UniquenessStateDetailEntity.consumeWithProtection",
         query = "UPDATE UniquenessStateDetailEntity SET " +
             "consumingTxIdAlgo = :consumingTxAlgo, consumingTxId = :consumingTxId " +
-            "WHERE issueTxIdAlgo = :issueTxAlgo AND issueTxId = :issueTxId AND issueTxOutputIndex = :stateIndex " +
+             // FIXME: Encode needs to be "cast(issueTxId as string) in HSQLDB. Might need to switch
+             // on DB type similar to C4 backing store selection.
+             // Note: hex returns lower-case, but Corda uses upper when converting to string, so we
+             // convert to match
+            "WHERE concat(issueTxIdAlgo, ':', upper(encode(issueTxId, 'hex')), ':', cast(issueTxOutputIndex as string)) IN :stateRefs " +
             "AND consumingTxId IS NULL" // In-flight double spend protection
     )
 )
