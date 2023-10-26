@@ -22,7 +22,6 @@ class TokenClaimQueryEventHandler(
 
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        var claimIdSeen: String? = null
     }
 
     override fun handle(

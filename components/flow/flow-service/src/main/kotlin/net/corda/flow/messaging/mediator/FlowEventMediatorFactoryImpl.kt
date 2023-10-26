@@ -19,6 +19,7 @@ import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.constants.WorkerRPCPaths.CRYPTO_PATH
 import net.corda.messaging.api.constants.WorkerRPCPaths.LEDGER_PATH
 import net.corda.messaging.api.constants.WorkerRPCPaths.PERSISTENCE_PATH
+import net.corda.messaging.api.constants.WorkerRPCPaths.TOKEN_SELECTION_PATH
 import net.corda.messaging.api.constants.WorkerRPCPaths.UNIQUENESS_PATH
 import net.corda.messaging.api.constants.WorkerRPCPaths.VERIFICATION_PATH
 import net.corda.messaging.api.mediator.MediatorMessage
@@ -31,11 +32,13 @@ import net.corda.messaging.api.mediator.factory.MessagingClientFactoryFactory
 import net.corda.messaging.api.mediator.factory.MultiSourceEventMediatorFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
-import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_OUT
+import net.corda.schema.Schemas.Flow.FLOW_SESSION
+import net.corda.schema.Schemas.Flow.FLOW_START
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
-import net.corda.schema.Schemas.Services.TOKEN_CACHE_EVENT
 import net.corda.schema.configuration.BootConfig.CRYPTO_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.PERSISTENCE_WORKER_REST_ENDPOINT
+import net.corda.schema.configuration.BootConfig.TOKEN_SELECTION_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.UNIQUENESS_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.VERIFICATION_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.ConfigKeys
@@ -91,6 +94,12 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         .messagingConfig(messagingConfig)
         .consumerFactories(
             mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
+                FLOW_START, CONSUMER_GROUP, messagingConfig
+            ),
+            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
+                FLOW_SESSION, CONSUMER_GROUP, messagingConfig
+            ),
+            mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
                 FLOW_EVENT_TOPIC, CONSUMER_GROUP, messagingConfig
             ),
         )
@@ -121,11 +130,11 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         MessageRouter { message ->
             when (val event = message.event()) {
                 is EntityRequest -> routeTo(rpcClient, rpcEndpoint(PERSISTENCE_WORKER_REST_ENDPOINT, PERSISTENCE_PATH))
-                is FlowMapperEvent -> routeTo(messageBusClient, FLOW_MAPPER_EVENT_TOPIC)
+                is FlowMapperEvent -> routeTo(messageBusClient, FLOW_MAPPER_SESSION_OUT)
                 is FlowOpsRequest -> routeTo(rpcClient, rpcEndpoint(CRYPTO_WORKER_REST_ENDPOINT, CRYPTO_PATH))
                 is FlowStatus -> routeTo(messageBusClient, FLOW_STATUS_TOPIC)
                 is LedgerPersistenceRequest -> routeTo(rpcClient, rpcEndpoint(PERSISTENCE_WORKER_REST_ENDPOINT, LEDGER_PATH))
-                is TokenPoolCacheEvent -> routeTo(messageBusClient, TOKEN_CACHE_EVENT)
+                is TokenPoolCacheEvent -> routeTo(rpcClient, rpcEndpoint(TOKEN_SELECTION_WORKER_REST_ENDPOINT, TOKEN_SELECTION_PATH))
                 is TransactionVerificationRequest -> routeTo(rpcClient, rpcEndpoint(VERIFICATION_WORKER_REST_ENDPOINT, VERIFICATION_PATH))
                 is UniquenessCheckRequestAvro -> routeTo(rpcClient, rpcEndpoint(UNIQUENESS_WORKER_REST_ENDPOINT, UNIQUENESS_PATH))
                 is FlowEvent -> routeTo(messageBusClient, FLOW_EVENT_TOPIC)

@@ -8,13 +8,14 @@ import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.flow.event.FlowEvent
-import net.corda.messaging.api.exception.CordaHTTPClientErrorException
-import net.corda.messaging.api.exception.CordaHTTPServerErrorException
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_ENDPOINT
 import net.corda.messaging.api.records.Record
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -48,7 +49,7 @@ class RPCClientTest {
         val mockHttpResponse: HttpResponse<ByteArray> = mock()
     ) {
         init {
-            whenever(mockSerializer.serialize(any<Record<*,*>>()))
+            whenever(mockSerializer.serialize(any<Record<*, *>>()))
                 .thenReturn("testPayload".toByteArray())
 
             whenever(mockDeserializer.deserialize(any()))
@@ -62,6 +63,11 @@ class RPCClientTest {
 
             whenever(mockHttpClient.send(any(), any<HttpResponse.BodyHandler<*>>()))
                 .thenReturn(mockHttpResponse)
+        }
+
+        fun setResponse(bytes: ByteArray) = apply {
+            whenever(mockHttpResponse.body())
+                .thenReturn(bytes)
         }
 
         fun withHttpStatus(status: Int) = apply {
@@ -110,13 +116,23 @@ class RPCClientTest {
     }
 
     @Test
+    fun `send() processes message and returns empty byte array`() {
+        val environment = MockEnvironment()
+            .setResponse(byteArrayOf())
+
+        val client = createClient(environment.mocks)
+        val result = client.send(message)
+        assertNull(result)
+    }
+
+    @Test
     fun `send() handles 4XX error`() {
         val environment = MockEnvironment()
             .withHttpStatus(404)
 
         val client = createClient(environment.mocks)
 
-        assertThrows<CordaHTTPClientErrorException> {
+        assertThrows<CordaMessageAPIIntermittentException> {
             client.send(message)
         }
     }
@@ -128,7 +144,7 @@ class RPCClientTest {
 
         val client = createClient(environment.mocks)
 
-        assertThrows<CordaHTTPServerErrorException> {
+        assertThrows<CordaMessageAPIIntermittentException> {
             client.send(message)
         }
     }
@@ -144,7 +160,7 @@ class RPCClientTest {
 
         val client = createClient(environment.mocks, onSerializationError)
 
-        assertThrows<IllegalArgumentException> {
+        assertThrows<CordaMessageAPIFatalException> {
             client.send(message)
         }
 
@@ -179,7 +195,7 @@ class RPCClientTest {
 
         val client = createClient(environment.mocks)
 
-        assertThrows<IOException> {
+        assertThrows<CordaMessageAPIIntermittentException> {
             client.send(message)
         }
     }
@@ -193,7 +209,7 @@ class RPCClientTest {
 
         val client = createClient(environment.mocks)
 
-        assertThrows<IOException> {
+        assertThrows<CordaMessageAPIIntermittentException> {
             client.send(message)
         }
 

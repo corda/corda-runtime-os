@@ -28,9 +28,14 @@ class ScheduledTaskProcessorTest {
 
     private val clock = Clock.fixed(Instant.now(), ZoneId.systemDefault())
     private val window = 1000L
-    private val states = listOf(
-        createStateEntry("key1", clock.instant().minusMillis(window * 2)),
-        createStateEntry("key4", clock.instant().minusMillis(window * 3))
+    private val closingStates = listOf(
+        createStateEntry("key1", clock.instant().minusMillis(window * 2), FlowMapperStateType.CLOSING.toString()),
+        createStateEntry("key4", clock.instant().minusMillis(window * 3), FlowMapperStateType.CLOSING.toString())
+    ).toMap()
+
+    private val errorStates = listOf(
+        createStateEntry("key2", clock.instant().minusMillis(window * 2), FlowMapperStateType.CLOSING.toString()),
+        createStateEntry("key5", clock.instant().minusMillis(window * 3), FlowMapperStateType.CLOSING.toString())
     ).toMap()
     private val inputEvent = Record(
         Schemas.ScheduledTask.SCHEDULED_TASK_TOPIC_MAPPER_PROCESSOR,
@@ -41,7 +46,7 @@ class ScheduledTaskProcessorTest {
     @Test
     fun `when scheduled task handler generates new records, ID of each retrieved state is present in output events`() {
         val stateManager = mock<StateManager>()
-        whenever(stateManager.findUpdatedBetweenWithMetadataFilter(any(), any())).thenReturn(states)
+        whenever(stateManager.findUpdatedBetweenWithMetadataFilter(any(), any())).thenReturn(closingStates+errorStates)
         val scheduledTaskProcessor = ScheduledTaskProcessor(
             stateManager,
             clock,
@@ -54,12 +59,16 @@ class ScheduledTaskProcessorTest {
             IntervalFilter(Instant.EPOCH, clock.instant() - Duration.ofMillis(window)),
             MetadataFilter(FLOW_MAPPER_STATUS, Operation.Equals, FlowMapperStateType.CLOSING.toString())
         )
+        verify(stateManager).findUpdatedBetweenWithMetadataFilter(
+            IntervalFilter(Instant.EPOCH, clock.instant() - Duration.ofMillis(window)),
+            MetadataFilter(FLOW_MAPPER_STATUS, Operation.Equals, FlowMapperStateType.ERROR.toString())
+        )
     }
 
     @Test
     fun `when batch size is set to one, a record per id is present in output events`() {
         val stateManager = mock<StateManager>()
-        whenever(stateManager.findUpdatedBetweenWithMetadataFilter(any(), any())).thenReturn(states)
+        whenever(stateManager.findUpdatedBetweenWithMetadataFilter(any(), any())).thenReturn(closingStates)
         val scheduledTaskProcessor = ScheduledTaskProcessor(
             stateManager,
             clock,
@@ -107,12 +116,13 @@ class ScheduledTaskProcessorTest {
 
     private fun createStateEntry(
         key: String,
-        lastUpdated: Instant
+        lastUpdated: Instant,
+        status:String
     ): Pair<String, State> {
         val state = State(
             key,
             byteArrayOf(),
-            metadata = metadata(FLOW_MAPPER_STATUS to FlowMapperStateType.CLOSING.toString()),
+            metadata = metadata(FLOW_MAPPER_STATUS to status),
             modifiedTime = lastUpdated
         )
         return Pair(key, state)

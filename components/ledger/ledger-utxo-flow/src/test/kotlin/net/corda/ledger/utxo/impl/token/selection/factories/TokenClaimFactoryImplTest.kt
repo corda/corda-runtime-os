@@ -1,8 +1,7 @@
-package net.corda.ledger.utxo.token.selection.impl.factories
+package net.corda.ledger.utxo.impl.token.selection.factories
 
 import net.corda.data.ledger.utxo.token.selection.data.Token
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
-import net.corda.ledger.utxo.impl.token.selection.factories.TokenClaimFactoryImpl
 import net.corda.ledger.utxo.impl.token.selection.impl.ALICE_X500
 import net.corda.ledger.utxo.impl.token.selection.impl.ALICE_X500_NAME
 import net.corda.ledger.utxo.impl.token.selection.impl.BOB_X500

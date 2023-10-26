@@ -17,7 +17,6 @@ import net.corda.web.api.WebServer
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
-
 /**
  * Implementation of a RPCSubscription
  *
@@ -49,7 +48,6 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
         LifecycleCoordinatorName(
             "RPCSubscription-${rpcConfig.endpoint.removePrefix("/")}-${UUID.randomUUID()}"
         )
-
 
     private val coordinator = lifecycleCoordinatorFactory.createCoordinator(subscriptionName) { _, _ -> }
 
@@ -99,14 +97,19 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                     return@trace context
                 }
 
-                val serializedResponse = cordaAvroSerializer.serialize(response)
-                if (serializedResponse != null) {
-                    context.result(serializedResponse)
+                // assume a null response is no response and return a zero length byte array
+                if (response == null) {
+                    context.result(ByteArray(0))
                 } else {
-                    val errorMsg = "Response Payload cannot be serialised: ${response.javaClass.name}"
-                    log.warn(errorMsg)
-                    context.result(errorMsg)
-                    context.status(ResponseCode.INTERNAL_SERVER_ERROR)
+                    val serializedResponse = cordaAvroSerializer.serialize(response)
+                    if (serializedResponse != null) {
+                        context.result(serializedResponse)
+                    } else {
+                        val errorMsg = "Response Payload cannot be serialised: ${response.javaClass.name}"
+                        log.warn(errorMsg)
+                        context.result(errorMsg)
+                        context.status(ResponseCode.INTERNAL_SERVER_ERROR)
+                    }
                 }
                 context
             }
