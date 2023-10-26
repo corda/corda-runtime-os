@@ -7,7 +7,6 @@ import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -21,6 +20,11 @@ import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
 
 class HSMRepositoryImplTest {
+
+    companion object {
+        @JvmStatic
+        private fun masterKeyPolicies() = listOf(MasterKeyPolicy.UNIQUE, MasterKeyPolicy.SHARED, MasterKeyPolicy.NONE)
+    }
 
     @Test
     fun `findTenantAssociation returns null when there are no results`() {
@@ -86,16 +90,13 @@ class HSMRepositoryImplTest {
     }
 
     @Test
-    fun `createOrLookupCategoryAssociation returns existing master key alias`() {
+    fun `createOrLookupCategoryAssociation returns existing associations`() {
         val entityCap = argumentCaptor<HSMCategoryAssociationEntity>()
 
         val hsmAssociation1 = HSMAssociationEntity("2", "tenant", "hsm", Instant.ofEpochMilli(0), "master_key")
         val hsmCategoryAssociation1 = HSMCategoryAssociationEntity("1", "tenant", "category", hsmAssociation1, Instant.ofEpochMilli(0), 0)
-        //val hsmAssociation2 = HSMAssociationEntity("2", "tenant", "hsm", Instant.ofEpochMilli(0), "master_key")
-        //val hsmCategoryAssociation2 = HSMCategoryAssociationEntity("2", "tenant", "category", hsmAssociation2, Instant.ofEpochMilli(0), 0)
 
-        val et = org.mockito.kotlin.mock<EntityTransaction> {
-        }
+        val et = org.mockito.kotlin.mock<EntityTransaction>()
         val em = org.mockito.kotlin.mock<EntityManager> {
             on { createQuery(any(), eq(HSMAssociationEntity::class.java)) } doAnswer {
                 org.mockito.kotlin.mock {
@@ -123,14 +124,9 @@ class HSMRepositoryImplTest {
         }
     }
 
-    companion object {
-        @JvmStatic
-        private fun masterKeyPolicies() = listOf(MasterKeyPolicy.UNIQUE, MasterKeyPolicy.SHARED, MasterKeyPolicy.NONE)
-    }
-
     @ParameterizedTest
     @MethodSource("masterKeyPolicies")
-    fun `createOrLookupCategoryAssociation returns null master key alias`(masterKeyPolicy: MasterKeyPolicy) {
+    fun `createOrLookupCategoryAssociation creates appropriate associations`(masterKeyPolicy: MasterKeyPolicy) {
         val entityCap = argumentCaptor<HSMCategoryAssociationEntity>()
 
         val et = org.mockito.kotlin.mock<EntityTransaction>()
