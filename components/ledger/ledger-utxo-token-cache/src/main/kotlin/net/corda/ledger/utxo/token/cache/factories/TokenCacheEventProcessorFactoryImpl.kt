@@ -47,12 +47,13 @@ class TokenCacheEventProcessorFactoryImpl constructor(
     private val clock: Clock
 ) : TokenCacheEventProcessorFactory {
 
+    private val tokenPoolCache = TokenPoolCacheImpl()
+
     override fun create(): StateAndEventProcessor<TokenPoolCacheKey, TokenPoolCacheState, TokenPoolCacheEvent> {
         val recordFactory = RecordFactoryImpl(externalEventResponseFactory)
         val tokenFilterStrategy = SimpleTokenFilterStrategy()
         val sqlQueryProvider = SqlQueryProviderTokens()
         val utxoTokenRepository = UtxoTokenRepositoryImpl(sqlQueryProvider)
-        val tokenPoolCache = TokenPoolCacheImpl()
         val tokenSelectionMetrics = TokenSelectionMetricsImpl(clock)
         val availableTokenService = AvailableTokenServiceImpl(
             virtualNodeInfoService,
@@ -89,7 +90,7 @@ class TokenCacheEventProcessorFactoryImpl constructor(
         stateManager: StateManager,
         processor: StateAndEventProcessor<TokenPoolCacheKey, TokenPoolCacheState, TokenPoolCacheEvent>
     ): TokenSelectionDelegatedProcessor {
-        val claimStateStoreFactory = ClaimStateStoreFactoryImpl(stateManager, serialization, clock)
+        val claimStateStoreFactory = ClaimStateStoreFactoryImpl(stateManager, serialization, tokenPoolCache, clock)
         val tokenSelectionMetrics = TokenSelectionMetricsImpl(UTCClock())
         return TokenSelectionDelegatedProcessorImpl(
             eventConverter,
