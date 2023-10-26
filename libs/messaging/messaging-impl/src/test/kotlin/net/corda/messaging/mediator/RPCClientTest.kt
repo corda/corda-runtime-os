@@ -1,17 +1,16 @@
 package net.corda.messaging.mediator
 
-import java.io.IOException
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.crypto.cipher.suite.PlatformDigestService
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.flow.event.FlowEvent
 import net.corda.messaging.api.exception.CordaHTTPClientErrorException
 import net.corda.messaging.api.exception.CordaHTTPServerErrorException
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_ENDPOINT
+import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_KEY
 import net.corda.messaging.api.records.Record
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -25,28 +24,38 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.io.IOException
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
 
 class RPCClientTest {
 
     private lateinit var client: RPCClient
+    private val secureHash = SecureHashImpl("alg", "abc".toByteArray())
     private val payload = "testPayload".toByteArray()
     private val message = MediatorMessage(
         payload,
-        mutableMapOf(MSG_PROP_ENDPOINT to "http://test-endpoint/api/5.1/test")
+        mutableMapOf(
+            MSG_PROP_ENDPOINT to "http://test-endpoint/api/5.1/test",
+            MSG_PROP_KEY to "test"
+        )
     )
 
     data class Mocks(
         val serializer: CordaAvroSerializer<Any>,
         val deserializer: CordaAvroDeserializer<Any>,
         val httpClient: HttpClient,
-        val httpResponse: HttpResponse<ByteArray>
+        val httpResponse: HttpResponse<ByteArray>,
+        val digestService: PlatformDigestService
     )
 
     private inner class MockEnvironment(
         val mockSerializer: CordaAvroSerializer<Any> = mock(),
         val mockDeserializer: CordaAvroDeserializer<Any> = mock(),
         val mockHttpClient: HttpClient = mock(),
-        val mockHttpResponse: HttpResponse<ByteArray> = mock()
+        val mockHttpResponse: HttpResponse<ByteArray> = mock(),
+        val mockDigestService: PlatformDigestService = mock()
     ) {
         init {
             whenever(mockSerializer.serialize(any<Record<*, *>>()))
@@ -63,6 +72,8 @@ class RPCClientTest {
 
             whenever(mockHttpClient.send(any(), any<HttpResponse.BodyHandler<*>>()))
                 .thenReturn(mockHttpResponse)
+
+            whenever(mockDigestService.hash(any<ByteArray>(), any())).thenReturn(secureHash)
         }
 
         fun setResponse(bytes: ByteArray) = apply {
@@ -75,7 +86,7 @@ class RPCClientTest {
         }
 
         val mocks: Mocks
-            get() = Mocks(mockSerializer, mockDeserializer, mockHttpClient, mockHttpResponse)
+            get() = Mocks(mockSerializer, mockDeserializer, mockHttpClient, mockHttpResponse, mockDigestService)
     }
 
 
@@ -94,6 +105,7 @@ class RPCClientTest {
         return RPCClient(
             "TestRPCClient1",
             mockSerializationFactory,
+            mocks.digestService,
             onSerializationError,
             mocks.httpClient
         )
