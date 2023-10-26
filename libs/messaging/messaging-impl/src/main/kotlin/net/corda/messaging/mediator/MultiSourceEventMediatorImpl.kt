@@ -289,10 +289,12 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                 }.map {
                     it.join()
                 }
-                // Delete states
+                // Persist states changes
+                val failedToCreateKeys = stateManager.create(newStates.values.mapNotNull { it })
+                val failedToCreate = stateManager.get(failedToCreateKeys)
                 val failedToDelete = stateManager.delete(deleteStates.values.mapNotNull { it })
                 val failedToUpdate = stateManager.update(updateStates.values.mapNotNull { it })
-                states = failedToDelete + failedToUpdate
+                states = failedToCreate + failedToDelete + failedToUpdate
                 groups = if (states.isNotEmpty()) {
                     allocateGroups(flowEvents.filterKeys { states.containsKey(it) }.values.flatten())
                 } else {
