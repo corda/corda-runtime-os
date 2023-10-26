@@ -87,6 +87,8 @@ class HSMRepositoryImplTest {
 
     @Test
     fun `createOrLookupCategoryAssociation returns existing master key alias`() {
+        val entityCap = argumentCaptor<HSMCategoryAssociationEntity>()
+
         val hsmAssociation1 = HSMAssociationEntity("2", "tenant", "hsm", Instant.ofEpochMilli(0), "master_key")
         val hsmCategoryAssociation1 = HSMCategoryAssociationEntity("1", "tenant", "category", hsmAssociation1, Instant.ofEpochMilli(0), 0)
         //val hsmAssociation2 = HSMAssociationEntity("2", "tenant", "hsm", Instant.ofEpochMilli(0), "master_key")
@@ -108,6 +110,7 @@ class HSMRepositoryImplTest {
                 }
             }
             on { transaction } doReturn et
+            on { merge(entityCap.capture()) } doAnswer { entityCap.lastValue }
         }
         HSMRepositoryImpl(
             org.mockito.kotlin.mock {
@@ -115,6 +118,7 @@ class HSMRepositoryImplTest {
             }
         ).use {
             val association = it.createOrLookupCategoryAssociation("tenant", "hsm", MasterKeyPolicy.SHARED)
+            assertThat(entityCap.allValues.size).isEqualTo(0)
             assertThat(association.masterKeyAlias).isEqualTo("master_key")
         }
     }
@@ -153,6 +157,7 @@ class HSMRepositoryImplTest {
             }
         ).use {
             val association = it.createOrLookupCategoryAssociation("tenant", "hsm", masterKeyPolicy)
+            assertThat(entityCap.allValues.size).isEqualTo(1)
             when (masterKeyPolicy) {
                 MasterKeyPolicy.UNIQUE -> assertThat(association.masterKeyAlias).isNotNull()
                 MasterKeyPolicy.SHARED, MasterKeyPolicy.NONE-> assertThat(association.masterKeyAlias).isNull()
