@@ -80,8 +80,6 @@ open class JPABackingStoreImpl @Activate constructor(
         )
 
         val entityManager = entityManagerFactory.createEntityManager()
-        // Enable Hibernate JDBC batch and set the batch size on a per-session basis.
-        entityManager.unwrap(Session::class.java).jdbcBatchSize = HIBERNATE_JDBC_BATCH_SIZE
 
         @Suppress("TooGenericExceptionCaught")
         try {
