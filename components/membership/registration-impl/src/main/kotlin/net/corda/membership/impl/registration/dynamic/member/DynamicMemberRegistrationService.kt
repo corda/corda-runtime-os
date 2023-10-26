@@ -295,7 +295,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 logger.debug("Member roles: {}, notary keys: {}", roles, notaryKeys)
                 val groupReader = membershipGroupReaderProvider.getGroupReader(member)
                 val previousInfo = groupReader.lookup(member.x500Name, MembershipStatusFilter.ACTIVE_OR_SUSPENDED)
-                val memberContext = buildMemberContext(
+                val platformTransformedMemberContext = buildMemberContext(
                     context,
                     registrationId,
                     member,
@@ -306,17 +306,17 @@ class DynamicMemberRegistrationService @Activate constructor(
                     .toWire()
                 val registrationContext = buildRegistrationContext(context)
 
-                val publicKey = keyEncodingService.decodePublicKey(memberContext.getFirst(PARTY_SESSION_KEYS_PEM))
-                val signatureSpec = memberContext.getFirst(SESSION_KEYS_SIGNATURE_SPEC)
+                val publicKey = keyEncodingService.decodePublicKey(platformTransformedMemberContext.getFirst(PARTY_SESSION_KEYS_PEM))
+                val signatureSpec = platformTransformedMemberContext.getFirst(SESSION_KEYS_SIGNATURE_SPEC)
 
                 // This is the user provided part of registration context with transformations. It will be the member
                 // provided context of the member information after successful registration.
-                val signedMemberContext = sign(memberId, publicKey, signatureSpec, memberContext)
+                val signedPlatformTransformedMemberContext = sign(memberId, publicKey, signatureSpec, platformTransformedMemberContext)
                 // This is the context used during registration process, e.g. pre-auth tokens will be placed here.
                 val signedRegistrationContext = sign(memberId, publicKey, signatureSpec, registrationContext)
                 // This is the user provided part of registration context in its original form without any
                 // transformations.
-                val signedRegistrationRequestMemberContext = sign(
+                val signedUserProvidedMemberContext = sign(
                     memberId,
                     publicKey,
                     signatureSpec,
@@ -336,7 +336,7 @@ class DynamicMemberRegistrationService @Activate constructor(
 
                 val message = MembershipRegistrationRequest(
                     registrationId.toString(),
-                    signedMemberContext,
+                    signedPlatformTransformedMemberContext,
                     signedRegistrationContext,
                     serialInfo,
                 )
@@ -389,7 +389,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                         status = RegistrationStatus.SENT_TO_MGM,
                         registrationId = registrationId.toString(),
                         requester = member,
-                        memberContext = signedRegistrationRequestMemberContext,
+                        memberContext = signedUserProvidedMemberContext,
                         registrationContext = signedRegistrationContext,
                         serial = serialInfo,
                     )

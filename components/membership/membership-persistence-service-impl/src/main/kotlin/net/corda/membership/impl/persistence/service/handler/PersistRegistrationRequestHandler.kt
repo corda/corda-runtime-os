@@ -17,27 +17,27 @@ internal class PersistRegistrationRequestHandler(
         val registrationId = request.registrationRequest.registrationId
         logger.info("Persisting registration request with ID [$registrationId] to status ${request.status}.")
         transaction(context.holdingIdentity.toCorda().shortHash) { em ->
-            val currentStatus = em.find(
+            val currentRegistrationRequest = em.find(
                 RegistrationRequestEntity::class.java,
                 registrationId,
                 LockModeType.PESSIMISTIC_WRITE,
             )
-            currentStatus?.status?.toStatus()?.let {
+            currentRegistrationRequest?.status?.toStatus()?.let {
                 if (it == request.status) {
-                    logger.info("Registration request [$registrationId] with status: ${currentStatus.status}" +
+                    logger.info("Registration request [$registrationId] with status: ${currentRegistrationRequest.status}" +
                             " is already persisted. Persistence request was discarded.")
                     return@transaction
                 }
                 if (!it.canMoveToStatus(request.status)) {
                     logger.info(
-                        "Registration request [$registrationId] has status: ${currentStatus.status}" +
+                        "Registration request [$registrationId] has status: ${currentRegistrationRequest.status}" +
                                 " can not move it to status ${request.status}"
                     )
                     // In case of processing persistence requests in an unordered manner we need to make sure the serial
                     // gets persisted. All other existing data of the request will remain the same.
-                    if (request.status == RegistrationStatus.SENT_TO_MGM && currentStatus.serial == null) {
-                        logger.info("Updating request [$registrationId] serial to ${currentStatus.serial}")
-                        em.merge(createEntityBasedOnPreviousEntity(currentStatus, request.registrationRequest.serial))
+                    if (request.status == RegistrationStatus.SENT_TO_MGM && currentRegistrationRequest.serial == null) {
+                        logger.info("Updating request [$registrationId] serial to ${currentRegistrationRequest.serial}")
+                        em.merge(createEntityBasedOnPreviousEntity(currentRegistrationRequest, request.registrationRequest.serial))
                         return@transaction
                     }
                     return@transaction
@@ -47,9 +47,9 @@ internal class PersistRegistrationRequestHandler(
         }
     }
 
-    private fun createEntityBasedOnPreviousEntity(entity: RegistrationRequestEntity, newSerial: Long): RegistrationRequestEntity {
+    private fun createEntityBasedOnPreviousEntity(previousEntity: RegistrationRequestEntity, newSerial: Long): RegistrationRequestEntity {
         val now = clock.instant()
-        with(entity) {
+        with(previousEntity) {
             return RegistrationRequestEntity(
                 registrationId = registrationId,
                 holdingIdentityShortHash = holdingIdentityShortHash,
