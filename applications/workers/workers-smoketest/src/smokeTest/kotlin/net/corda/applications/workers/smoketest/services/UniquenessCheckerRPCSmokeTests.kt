@@ -155,7 +155,7 @@ class UniquenessCheckerRPCSmokeTests {
 
     @OptIn(ExperimentalTime::class)
     @ParameterizedTest
-    @ValueSource(ints = [1, 10, 50, 200])
+    @ValueSource(ints = [1, 1, 10, 50, 100, 200])
     fun `RPC endpoint can process batches`(batchSize: Int) {
         val url = "${System.getProperty("uniquenessWorkerUrl")}api/$PLATFORM_VERSION/uniqueness-checker"
 

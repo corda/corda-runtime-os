@@ -2,8 +2,8 @@ package net.corda.uniqueness.checker.impl.rpc
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import net.corda.data.flow.event.FlowEvent
@@ -19,6 +19,7 @@ import java.util.concurrent.CompletableFuture
  * Processes messages received from the RPC calls, and responds using the external
  * events response API.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class UniquenessCheckRpcMessageProcessor(
     private val uniquenessChecker: UniquenessChecker,
     private val externalEventResponseFactory: ExternalEventResponseFactory,
@@ -28,41 +29,30 @@ class UniquenessCheckRpcMessageProcessor(
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
-    private val channel = Channel<ChannelMsg>()
+    private val channel = Channel<UniquenessCheck>()
 
     init {
         CoroutineScope(Dispatchers.IO).launch {
-            heartBeat(channel)
             processRequests(channel)
         }
     }
 
-    interface ChannelMsg
     data class UniquenessCheck(val request: UniquenessCheckRequestAvro,
                                val completeSignalChannel: Channel<FlowEvent>)
-        : ChannelMsg
-    class Ticker() : ChannelMsg
 
-    private fun CoroutineScope.heartBeat(channel: Channel<ChannelMsg>) = launch {
-        while (true) {
-            delay(5)
-            channel.send(Ticker())
-        }
-    }
-
-    private fun CoroutineScope.processRequests(channel: Channel<ChannelMsg>) = launch {
+    private fun CoroutineScope.processRequests(channel: Channel<UniquenessCheck>) = launch {
         val buffer = mutableMapOf<UniquenessCheckRequestAvro, UniquenessCheck>()
-        var timeLimit: Long? = null
         for(msg in channel) {
-            if(null == timeLimit) timeLimit = System.nanoTime() + 10_000_000
-            if(msg is UniquenessCheck) buffer[msg.request] = msg
-            // batch process checks when buffer is 10 or after 10ms
-            if(buffer.isNotEmpty() && (buffer.size == 10 || System.nanoTime() > timeLimit) ) {
-                log.info("Processing ${buffer.size} (${buffer.map { it.key.flowExternalEventContext.requestId }})")
-                processBatch(buffer)
-                buffer.clear()
-                timeLimit = System.nanoTime() + 10_000_000
+            buffer[msg.request] = msg
+            // fill up the buffer as long as there's messages in the channel
+            while(!channel.isEmpty && buffer.size <= 20) {
+                channel.receive().also {
+                    buffer[it.request] = it
+                }
             }
+            log.info("Processing buffer of ${buffer.size} verification requests (${buffer.map { it.key.flowExternalEventContext.requestId }})")
+            processBatch(buffer)
+            buffer.clear()
         }
     }
 
