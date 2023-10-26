@@ -16,7 +16,6 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-config-schema"
     implementation project(":libs:chunking:chunking-core")
-    implementation project(path: ':libs:kotlin-coroutines', configuration: 'bundle')
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:message-bus")
     implementation project(":libs:configuration:configuration-core")

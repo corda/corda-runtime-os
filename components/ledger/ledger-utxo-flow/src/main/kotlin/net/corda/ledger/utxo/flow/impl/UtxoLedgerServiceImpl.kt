@@ -24,6 +24,7 @@ import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -49,6 +50,7 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
+import java.time.Instant
 
 @Suppress("LongParameterList", "TooManyFunctions")
 @Component(service = [UtxoLedgerService::class, UsedByFlow::class], scope = PROTOTYPE)
@@ -65,6 +67,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
 ) : UtxoLedgerService, UsedByFlow, SingletonSerializeAsToken {
 
     private companion object {
+        const val FIND_UNCONSUMED_STATES_BY_EXACT_TYPE = "CORDA_FIND_UNCONSUMED_STATES_BY_EXACT_TYPE"
         val clock = UTCClock()
     }
 
@@ -106,8 +109,17 @@ class UtxoLedgerServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun <T : ContractState> findUnconsumedStatesByExactType(type: Class<T>): List<StateAndRef<T>> {
-        return utxoLedgerStateQueryService.findUnconsumedStatesByExactType(type)
+    override fun <T : ContractState> findUnconsumedStatesByExactType(
+        type: Class<T>,
+        limit: Int,
+        createdTimestampLimit: Instant
+    ): PagedQuery.ResultSet<StateAndRef<T>> {
+        @Suppress("UNCHECKED_CAST")
+        return query(FIND_UNCONSUMED_STATES_BY_EXACT_TYPE, StateAndRef::class.java)
+            .setParameter("type", type.name)
+            .setCreatedTimestampLimit(createdTimestampLimit)
+            .setLimit(limit)
+            .execute() as PagedQuery.ResultSet<StateAndRef<T>>
     }
 
     @Suspendable

@@ -5,6 +5,7 @@ import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.Health
 import net.corda.applications.workers.workercommon.JavaSerialisationFilter
 import net.corda.applications.workers.workercommon.Metrics
+import net.corda.applications.workers.workercommon.WorkerHelpers
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
@@ -14,6 +15,7 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
+import net.corda.processors.token.cache.TokenCacheProcessor
 import net.corda.schema.configuration.BootConfig
 import net.corda.tracing.configureTracing
 import net.corda.tracing.shutdownTracing
@@ -42,6 +44,8 @@ class TokenSelectionWorker @Activate constructor(
     private val configurationValidatorFactory: ConfigurationValidatorFactory,
     @Reference(service = SecretsServiceFactoryResolver::class)
     val secretsServiceFactoryResolver: SecretsServiceFactoryResolver,
+    @Reference(service = TokenCacheProcessor::class)
+    private val tokenCacheProcessor: TokenCacheProcessor,
 ) : Application {
 
     private companion object {
@@ -64,14 +68,21 @@ class TokenSelectionWorker @Activate constructor(
 
         configureTracing("Token selection Worker", params.defaultParams.zipkinTraceUrl, params.defaultParams.traceSamplesPerSecond)
 
-        webServer.start(params.defaultParams.workerServerPort)
+        val config = WorkerHelpers.getBootstrapConfig(
+            secretsServiceFactoryResolver,
+            params.defaultParams,
+            configurationValidatorFactory.createConfigValidator(),
+            listOf(WorkerHelpers.createConfigFromParams(BootConfig.BOOT_DB, params.databaseParams))
+        )
 
-        // This is a placeholder worker the processor is still todo
+        webServer.start(params.defaultParams.workerServerPort)
+        tokenCacheProcessor.start(config)
     }
 
     override fun shutdown() {
         logger.info("Token selection worker stopping.")
         webServer.stop()
+        tokenCacheProcessor.stop()
         shutdownTracing()
     }
 }

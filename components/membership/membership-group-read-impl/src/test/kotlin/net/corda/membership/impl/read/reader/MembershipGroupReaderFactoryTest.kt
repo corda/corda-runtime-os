@@ -1,10 +1,12 @@
 package net.corda.membership.impl.read.reader
 
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.impl.read.TestProperties.Companion.GROUP_ID_1
 import net.corda.membership.impl.read.TestProperties.Companion.aliceName
 import net.corda.membership.impl.read.TestProperties.Companion.bobName
 import net.corda.membership.impl.read.cache.MemberDataCache
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.read.GroupParametersReaderService
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.virtualnode.HoldingIdentity
@@ -40,10 +42,14 @@ class MembershipGroupReaderFactoryTest {
     }
 
     private val groupParametersReaderService: GroupParametersReaderService = mock()
+    private val memberInfoFactory: MemberInfoFactory = mock()
+    private val platformInfoProvider: PlatformInfoProvider = mock()
 
     @BeforeEach
     fun setUp() {
-        membershipGroupReaderFactory = MembershipGroupReaderFactory.Impl(cache, groupParametersReaderService)
+        membershipGroupReaderFactory = MembershipGroupReaderFactory.Impl(
+            cache, groupParametersReaderService, memberInfoFactory, platformInfoProvider
+        )
     }
 
     @Test

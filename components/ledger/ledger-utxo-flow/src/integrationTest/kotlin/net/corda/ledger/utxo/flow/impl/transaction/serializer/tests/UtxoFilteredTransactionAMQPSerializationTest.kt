@@ -45,7 +45,7 @@ class UtxoFilteredTransactionAMQPSerializationTest : UtxoLedgerIntegrationTest()
                     serializationService.serialize(outputInfo).bytes
                 ), // output infos
                 emptyList(), // command infos
-                emptyList(), // attachments
+                emptyList(), // unused
                 listOf(
                     serializationService.serialize(StateRef(inputHash, 0)).bytes,
                     serializationService.serialize(StateRef(inputHash, 1)).bytes
@@ -103,7 +103,7 @@ class UtxoFilteredTransactionAMQPSerializationTest : UtxoLedgerIntegrationTest()
                     serializationService.serialize(outputInfo).bytes
                 ), // output infos
                 emptyList(), // command infos
-                emptyList(), // attachments
+                emptyList(), // unused
                 listOf(
                     serializationService.serialize(StateRef(inputHash, 0)).bytes,
                     serializationService.serialize(StateRef(inputHash, 1)).bytes
@@ -158,7 +158,7 @@ class UtxoFilteredTransactionAMQPSerializationTest : UtxoLedgerIntegrationTest()
                     serializationService.serialize(outputInfo).bytes
                 ), // output infos
                 emptyList(), // command infos
-                emptyList(), // attachments
+                emptyList(), // unused
                 emptyList(), // inputs
                 emptyList(), // references
                 listOf(

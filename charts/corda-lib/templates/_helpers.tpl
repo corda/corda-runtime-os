@@ -233,23 +233,31 @@ Cluster DB credentials environment variables
 - name: DB_CLUSTER_USERNAME
   valueFrom:
     secretKeyRef:
-      {{- if .Values.db.cluster.username.valueFrom.secretKeyRef.name }}
-      name: {{ .Values.db.cluster.username.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required "Must specify db.cluster.username.valueFrom.secretKeyRef.key" .Values.db.cluster.username.valueFrom.secretKeyRef.key | quote }}
-      {{- else }}
-      name: {{ include "corda.clusterDbDefaultSecretName" . | quote }}
-      key: "username"
-      {{- end }}
+      {{- include "corda.clusterDbUsername" . | nindent 6 }}
 - name: DB_CLUSTER_PASSWORD
   valueFrom:
     secretKeyRef:
-      {{- if .Values.db.cluster.password.valueFrom.secretKeyRef.name }}
-      name: {{ .Values.db.cluster.password.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required "Must specify db.cluster.password.valueFrom.secretKeyRef.key" .Values.db.cluster.password.valueFrom.secretKeyRef.key | quote }}
-      {{- else }}
-      name: {{ include "corda.clusterDbDefaultSecretName" . | quote }}
-      key: "password"
-      {{- end }}
+      {{- include "corda.clusterDbPassword" . | nindent 6 }}
+{{- end -}}
+
+{{- define "corda.clusterDbUsername" -}}
+{{- if .Values.db.cluster.username.valueFrom.secretKeyRef.name -}}
+name: {{ .Values.db.cluster.username.valueFrom.secretKeyRef.name | quote }}
+key: {{ required "Must specify db.cluster.username.valueFrom.secretKeyRef.key" .Values.db.cluster.username.valueFrom.secretKeyRef.key | quote }}
+{{- else -}}
+name: {{ include "corda.clusterDbDefaultSecretName" . | quote }}
+key: "username"
+{{- end }}
+{{- end }}
+
+{{- define "corda.clusterDbPassword" -}}
+{{- if .Values.db.cluster.password.valueFrom.secretKeyRef.name -}}
+name: {{ .Values.db.cluster.password.valueFrom.secretKeyRef.name | quote }}
+key: {{ required "Must specify db.cluster.password.valueFrom.secretKeyRef.key" .Values.db.cluster.password.valueFrom.secretKeyRef.key | quote }}
+{{- else -}}
+name: {{ include "corda.clusterDbDefaultSecretName" . | quote }}
+key: "password"
+{{- end -}}
 {{- end -}}
 
 {{/*
@@ -259,42 +267,42 @@ Default name for bootstrap cluster DB secret
 {{ printf "%s-bootstrap-cluster-db" (include "corda.fullname" .) }}
 {{- end -}}
 
+{{- define "corda.bootstrapClusterPgUser" -}}
+{{- if .Values.bootstrap.db.cluster.username.valueFrom.secretKeyRef.name -}}
+name: {{ .Values.bootstrap.db.cluster.username.valueFrom.secretKeyRef.name | quote }}
+key: {{ required "Must specify bootstrap.db.cluster.username.valueFrom.secretKeyRef.key" .Values.bootstrap.db.cluster.username.valueFrom.secretKeyRef.key | quote }}
+{{- else if .Values.bootstrap.db.cluster.username.value -}}
+name: {{ include "corda.bootstrapClusterDbDefaultSecretName" . | quote }}
+key: "username"
+{{- else -}}
+{{ include "corda.clusterDbUsername" . }}
+{{- end -}}
+{{- end }}
+
+{{- define "corda.bootstrapClusterPgPassword" -}}
+{{- if .Values.bootstrap.db.cluster.password.valueFrom.secretKeyRef.name -}}
+name: {{ .Values.bootstrap.db.cluster.password.valueFrom.secretKeyRef.name | quote }}
+key: {{ required "Must specify bootstrap.db.cluster.password.valueFrom.secretKeyRef.key" .Values.bootstrap.db.cluster.password.valueFrom.secretKeyRef.key | quote }}
+{{- else if .Values.bootstrap.db.cluster.password.value -}}
+name: {{ include "corda.bootstrapClusterDbDefaultSecretName" . | quote }}
+key: "password"
+{{- else -}}
+{{ include "corda.clusterDbPassword" . }}
+{{- end -}}
+{{- end }}
+
 {{/*
 Bootstrap cluster DB credentials environment variables
 */}}
 {{- define "corda.bootstrapClusterDbEnv" -}}
-- name: PGUSER
+- name: CLUSTER_PGUSER
   valueFrom:
     secretKeyRef:
-      {{- if .Values.bootstrap.db.cluster.username.valueFrom.secretKeyRef.name }}
-      name: {{ .Values.bootstrap.db.cluster.username.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required "Must specify bootstrap.db.cluster.username.valueFrom.secretKeyRef.key" .Values.bootstrap.db.cluster.username.valueFrom.secretKeyRef.key | quote }}
-      {{- else if .Values.bootstrap.db.cluster.username.value }}
-      name: {{ include "corda.bootstrapClusterDbDefaultSecretName" . | quote }}
-      key: "username"
-      {{- else if .Values.db.cluster.username.valueFrom.secretKeyRef.name }}
-      name: {{ .Values.db.cluster.username.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required "Must specify db.cluster.username.valueFrom.secretKeyRef.key" .Values.db.cluster.username.valueFrom.secretKeyRef.key | quote }}
-      {{- else }}
-      name: {{ include "corda.clusterDbDefaultSecretName" . | quote }}
-      key: "username"
-      {{- end }}
-- name: PGPASSWORD
+      {{- include "corda.bootstrapClusterPgUser" . | nindent 6 }}
+- name: CLUSTER_PGPASSWORD
   valueFrom:
     secretKeyRef:
-      {{- if .Values.bootstrap.db.cluster.password.valueFrom.secretKeyRef.name }}
-      name: {{ .Values.bootstrap.db.cluster.password.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required "Must specify bootstrap.db.cluster.password.valueFrom.secretKeyRef.key" .Values.bootstrap.db.cluster.password.valueFrom.secretKeyRef.key | quote }}
-      {{- else if .Values.bootstrap.db.cluster.password.value }}
-      name: {{ include "corda.bootstrapClusterDbDefaultSecretName" . | quote }}
-      key: "password"
-      {{- else if .Values.db.cluster.password.valueFrom.secretKeyRef.name }}
-      name: {{ .Values.db.cluster.password.valueFrom.secretKeyRef.name | quote }}
-      key: {{ required "Must specify db.cluster.password.valueFrom.secretKeyRef.key" .Values.db.cluster.password.valueFrom.secretKeyRef.key | quote }}
-      {{- else}}
-      name: {{ include "corda.clusterDbDefaultSecretName" . | quote }}
-      key: "password"
-      {{- end }}
+      {{- include "corda.bootstrapClusterPgPassword" . | nindent 6 }}
 {{- end -}}
 
 {{/*
@@ -553,6 +561,17 @@ metadata:
 spec:
   podMetricsEndpoints:
   - port: monitor
+    metricRelabelings:
+    {{- with .Values.metrics.podMonitor.keepNames }}
+    - sourceLabels:
+      - "__name__"
+      regex: {{ join "|" . | quote }}
+      action: "keep"
+    {{- end }}
+    {{- with .Values.metrics.podMonitor.dropLabels }}
+    - regex: {{ join "|" . | quote }}
+      action: "labeldrop"
+    {{- end }}
   jobLabel: {{ $.Release.Name }}-{{ include "corda.name" . }}
   selector:
     matchLabels:
@@ -635,7 +654,48 @@ Get the endpoint argument for a given worker
 {{- define "corda.getWorkerEndpoint" }}
 {{- $context := .context }}
 {{- $worker := .worker }}
-{{- $workerName := printf "%s-%s-worker" (include "corda.fullname" $context) (include "corda.workerTypeKebabCase" $worker) }}
-{{- $workerServiceName := include "corda.workerInternalServiceName" $workerName }}
-{{- printf "endpoints.%s=%s:%s" $worker $workerServiceName (include "corda.workerServicePort" $) }}
+{{- $workerValues := ( index $context.Values.workers $worker ) }}
+{{- $workerName := printf "%s-%s-worker" ( include "corda.fullname" $context ) ( include "corda.workerTypeKebabCase" $worker ) }}
+{{- $workerServiceName := "" }}
+{{- if ( ( $workerValues.sharding ).enabled ) }}
+{{- $workerServiceName = include "corda.nginxName" $workerName }}
+{{- else }}
+{{- $workerServiceName = include "corda.workerInternalServiceName" $workerName }}
+{{- end }}
+{{- printf "endpoints.%s=%s:%s" $worker $workerServiceName ( include "corda.workerServicePort" $context ) }}
+{{- end }}
+
+{{/*
+Default pod affinity
+*/}}
+{{- define "corda.defaultAffinity" -}}
+{{- $weight := index . 0 }}
+{{- $component := index . 1 }}
+weight: {{ $weight}}
+podAffinityTerm:
+  labelSelector:
+    matchExpressions:
+      - key: "app.kubernetes.io/component"
+        operator: In
+        values:
+          - {{ $component | quote }}
+  topologyKey: "kubernetes.io/hostname"
+{{- end }}
+
+{{/*
+Pod affinity
+*/}}
+{{- define "corda.affinity" -}}
+{{- $ := index . 0 }}
+{{- $component := index . 1 }}
+{{- $affinity := default ( deepCopy $.Values.affinity ) dict }}
+{{- if not ($affinity.podAntiAffinity) }}
+{{- $_ := set $affinity "podAntiAffinity" dict }}
+{{- end }}
+{{- if not ($affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution) }}
+{{- $_ := set $affinity.podAntiAffinity "preferredDuringSchedulingIgnoredDuringExecution" list }}
+{{- end }}
+{{- $_ := set $affinity.podAntiAffinity "preferredDuringSchedulingIgnoredDuringExecution" ( append $affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution ( fromYaml ( include "corda.defaultAffinity" ( list ( add ( len $affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution ) 1 ) $component ) ) ) ) }}
+affinity:
+{{- toYaml $affinity | nindent 2 }}
 {{- end }}

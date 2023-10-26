@@ -33,7 +33,7 @@ class SessionInitProcessorTest {
                 Record(Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC, flowId, FlowEvent(flowId, sourceEvent))
             } else {
                 if (sourceEvent.messageDirection == MessageDirection.INBOUND) {
-                    Record(Schemas.Flow.FLOW_EVENT_TOPIC, flowId, FlowEvent(flowId, sourceEvent))
+                    Record(Schemas.Flow.FLOW_SESSION, flowId, FlowEvent(flowId, sourceEvent))
                 } else {
                     Record(Schemas.P2P.P2P_OUT_TOPIC, "sessionId", "")
                 }
@@ -87,7 +87,7 @@ class SessionInitProcessorTest {
 
         Assertions.assertThat(outboundEvents.size).isEqualTo(1)
         val outboundEvent = outboundEvents.first()
-        Assertions.assertThat(outboundEvent.topic).isEqualTo(Schemas.Flow.FLOW_EVENT_TOPIC)
+        Assertions.assertThat(outboundEvent.topic).isEqualTo(Schemas.Flow.FLOW_SESSION)
         Assertions.assertThat(outboundEvent.key::class).isEqualTo(String::class)
         Assertions.assertThat(outboundEvent.value!!::class).isEqualTo(FlowEvent::class)
         Assertions.assertThat(payload.sessionId).isEqualTo("sessionId-INITIATED")

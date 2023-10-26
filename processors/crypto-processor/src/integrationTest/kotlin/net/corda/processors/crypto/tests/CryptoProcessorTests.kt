@@ -1,6 +1,7 @@
 package net.corda.processors.crypto.tests
 
 import com.typesafe.config.ConfigRenderOptions
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import net.corda.crypto.cipher.suite.SignatureSpecs
@@ -21,7 +22,6 @@ import net.corda.crypto.hes.EphemeralKeyPairEncryptor
 import net.corda.crypto.hes.HybridEncryptionParams
 import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.crypto.persistence.db.model.CryptoEntities
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -248,7 +248,7 @@ class CryptoProcessorTests {
             flowOpsResponsesSub = subscriptionFactory.createDurableSubscription(
                 subscriptionConfig = SubscriptionConfig(
                     groupName = "TEST",
-                    eventTopic = Schemas.Flow.FLOW_EVENT_TOPIC
+                    eventTopic = Schemas.Flow.FLOW_SESSION
                 ),
                 processor = flowOpsResponses,
                 messagingConfig = messagingConfig,

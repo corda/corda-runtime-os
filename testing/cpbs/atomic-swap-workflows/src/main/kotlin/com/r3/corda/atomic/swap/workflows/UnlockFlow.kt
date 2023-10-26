@@ -51,6 +51,7 @@ class UnlockFlow : ClientStartableFlow {
 
             val stateId = flowArgs.stateId
 
+            @Suppress("deprecation")
             val unconsumedLockStates = ledgerService.findUnconsumedStatesByType(LockState::class.java)
             val unconsumedLockStatesWithId = unconsumedLockStates.filter { it.state.contractState.assetId == stateId }
 
@@ -61,7 +62,7 @@ class UnlockFlow : ClientStartableFlow {
             val stateAndRefLock = unconsumedLockStatesWithId.first()
             val inputLockState = stateAndRefLock.state.contractState
 
-
+            @Suppress("deprecation")
             val unconsumedAssetStates = ledgerService.findUnconsumedStatesByType(Asset::class.java)
             val unconsumedAssetStatesWithId = unconsumedAssetStates.filter { it.state.contractState.assetId == stateId }
 

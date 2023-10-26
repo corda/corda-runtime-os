@@ -30,7 +30,7 @@ class GroupParametersUpdateVerifier {
             }
         }
         parameters[MPV_KEY]?.let {
-            if (it.toInt() !in 50000..99999) {
+            if ((it.toIntOrNull() ?: -1) !in 50000..99999) {
                 errorMessages += "The minimum platform version (key: $MPV_KEY) has an invalid value.\n"
             }
             it

@@ -18,7 +18,6 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.db.DBProcessor
 import net.corda.processors.scheduler.SchedulerProcessor
-import net.corda.processors.token.cache.TokenCacheProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.tracing.configureTracing
 import net.corda.tracing.shutdownTracing
@@ -36,8 +35,6 @@ import picocli.CommandLine.Option
 class DBWorker @Activate constructor(
     @Reference(service = DBProcessor::class)
     private val processor: DBProcessor,
-    @Reference(service = TokenCacheProcessor::class)
-    private val tokenCacheProcessor: TokenCacheProcessor,
     @Reference(service = SchedulerProcessor::class)
     private val schedulerProcessor: SchedulerProcessor,
     @Reference(service = Shutdown::class)
@@ -69,7 +66,6 @@ class DBWorker @Activate constructor(
 
         JavaSerialisationFilter.install()
 
-
         val params = getParams(args, DBWorkerParams())
 
         if (printHelpOrVersion(params.defaultParams, DBWorker::class.java, shutDownService)) return
@@ -86,7 +82,6 @@ class DBWorker @Activate constructor(
         )
         webServer.start(params.defaultParams.workerServerPort)
         processor.start(config)
-        tokenCacheProcessor.start(config)
         schedulerProcessor.start(config)
     }
 
@@ -94,7 +89,6 @@ class DBWorker @Activate constructor(
         logger.info("DB worker stopping.")
         processor.stop()
         webServer.stop()
-        tokenCacheProcessor.stop()
         schedulerProcessor.stop()
         shutdownTracing()
     }

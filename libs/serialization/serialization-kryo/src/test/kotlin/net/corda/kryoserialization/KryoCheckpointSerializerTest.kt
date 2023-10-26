@@ -6,6 +6,7 @@ import co.paralleluniverse.io.serialization.kryo.KryoSerializer
 import com.esotericsoftware.kryo.ClassResolver
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.util.MapReferenceResolver
+import com.esotericsoftware.kryo.util.Pool
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.kryoserialization.KryoCheckpointSerializerTest.SerializableFunction
 import net.corda.kryoserialization.TestClass.Companion.TEST_INT
@@ -78,7 +79,7 @@ class KryoCheckpointSerializerTest {
                     },
                 emptyMap(),
                 ClassSerializer(sandboxGroup)
-            )
+            ).toPool()
         )
 
         assertThatThrownBy { serializer.serialize(FlowStackItem()) }
@@ -117,7 +118,7 @@ class KryoCheckpointSerializerTest {
                 Kryo(CordaClassResolver(sandboxGroup), MapReferenceResolver()),
                 emptyMap(),
                 ClassSerializer(sandboxGroup)
-            )
+            ).toPool()
         )
         val tester = TestClass(TEST_INT, TEST_STRING)
 
@@ -140,7 +141,7 @@ class KryoCheckpointSerializerTest {
                 kryo = getQuasarKryo(CordaClassResolver(sandboxGroup)),
                 serializers = emptyMap(),
                 classSerializer = ClassSerializer(sandboxGroup)
-            )
+            ).toPool()
         )
         val tester = Instant.now()
 
@@ -160,7 +161,7 @@ class KryoCheckpointSerializerTest {
                 kryo = getQuasarKryo(CordaClassResolver(sandboxGroup)),
                 serializers = emptyMap(),
                 classSerializer = ClassSerializer(sandboxGroup)
-            )
+            ).toPool()
         )
         val tester = Chronology.getAvailableChronologies().first()
 
@@ -178,7 +179,7 @@ class KryoCheckpointSerializerTest {
                 kryo = getQuasarKryo(CordaClassResolver(sandboxGroup)),
                 serializers = emptyMap(),
                 classSerializer = ClassSerializer(sandboxGroup)
-            )
+            ).toPool()
         )
         val tester = ZoneRules.of(ZoneOffset.UTC)
 
@@ -198,7 +199,7 @@ class KryoCheckpointSerializerTest {
                 kryo = getQuasarKryo(CordaClassResolver(sandboxGroup)),
                 serializers = emptyMap(),
                 classSerializer = ClassSerializer(sandboxGroup)
-            )
+            ).toPool()
         )
 
         val tester = Function<Any, String> { x -> "Hello $x, hash=${x.hashCode()}" }
@@ -219,7 +220,7 @@ class KryoCheckpointSerializerTest {
                 kryo = getQuasarKryo(CordaClassResolver(sandboxGroup)),
                 serializers = emptyMap(),
                 classSerializer = ClassSerializer(sandboxGroup)
-            )
+            ).toPool()
         )
 
         val obj = LambdaField("Something Extra")
@@ -246,7 +247,7 @@ class KryoCheckpointSerializerTest {
                 kryo = getQuasarKryo(CordaClassResolver(sandboxGroup)),
                 serializers = emptyMap(),
                 classSerializer = ClassSerializer(sandboxGroup)
-            )
+            ).toPool()
         )
 
         val obj = LambdaField("Something Extra")
@@ -300,7 +301,7 @@ class KryoCheckpointSerializerTest {
         runTestWithCollection(LinkedList())
     }
 
-    private data class TestClassWithIterator<C,I>(val list: C, val iterator: I)
+    private data class TestClassWithIterator<C, I>(val list: C, val iterator: I)
 
     private fun runTestWithCollection(collection: MutableCollection<Int>) {
 
@@ -310,7 +311,7 @@ class KryoCheckpointSerializerTest {
                 Kryo(CordaClassResolver(sandboxGroup), MapReferenceResolver()),
                 emptyMap(),
                 ClassSerializer(sandboxGroup)
-            )
+            ).toPool()
         )
 
         for (i in 1..20) {
@@ -341,7 +342,7 @@ class KryoCheckpointSerializerTest {
                 Kryo(CordaClassResolver(sandboxGroup), MapReferenceResolver()),
                 emptyMap(),
                 ClassSerializer(sandboxGroup)
-            )
+            ).toPool()
         )
 
         for (i in 1..20) {
@@ -372,6 +373,14 @@ class KryoCheckpointSerializerTest {
         val classCaptor = argumentCaptor<String>()
         whenever(getClass(any(), classCaptor.capture())).thenAnswer {
             Class.forName(classCaptor.lastValue)
+        }
+    }
+
+    private fun Kryo.toPool(): Pool<Kryo> {
+        return object : Pool<Kryo>(true, false, 4) {
+            override fun create(): Kryo {
+                return this@toPool
+            }
         }
     }
 }

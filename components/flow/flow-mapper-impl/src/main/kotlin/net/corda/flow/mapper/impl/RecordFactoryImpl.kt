@@ -103,13 +103,13 @@ class RecordFactoryImpl @Activate constructor(
 
     private fun getSessionEventOutputTopic(sessionEvent: SessionEvent, isInteropSession: Boolean): String {
         return when (sessionEvent.messageDirection) {
-            MessageDirection.INBOUND -> Schemas.Flow.FLOW_EVENT_TOPIC
+            MessageDirection.INBOUND -> Schemas.Flow.FLOW_SESSION
             MessageDirection.OUTBOUND -> {
                 if (isInteropSession) {
-                    Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC
+                    Schemas.Flow.FLOW_MAPPER_SESSION_IN
                 } else {
                     if (isLocalCluster(sessionEvent)) {
-                        Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
+                        Schemas.Flow.FLOW_MAPPER_SESSION_IN
                     } else {
                         Schemas.P2P.P2P_OUT_TOPIC
                     }
@@ -132,8 +132,8 @@ class RecordFactoryImpl @Activate constructor(
     ) : Record<*, *> {
         val outputTopic = getSessionEventOutputTopic(sourceEvent, isInteropSession)
         val (newDirection, sessionId) = when (outputTopic) {
-            Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC -> Pair(MessageDirection.INBOUND, toggleSessionId(sourceEvent.sessionId))
-            Schemas.Flow.FLOW_EVENT_TOPIC -> Pair(MessageDirection.INBOUND, sourceEvent.sessionId)
+            Schemas.Flow.FLOW_MAPPER_SESSION_IN -> Pair(MessageDirection.INBOUND, toggleSessionId(sourceEvent.sessionId))
+            Schemas.Flow.FLOW_SESSION -> Pair(MessageDirection.INBOUND, sourceEvent.sessionId)
             else -> Pair(MessageDirection.OUTBOUND, sourceEvent.sessionId)
         }
         val sequenceNumber = if (newPayload is SessionError) null else sourceEvent.sequenceNum
@@ -148,7 +148,7 @@ class RecordFactoryImpl @Activate constructor(
             sourceEvent.contextSessionProperties
         )
         return when (outputTopic) {
-            Schemas.Flow.FLOW_EVENT_TOPIC -> {
+            Schemas.Flow.FLOW_SESSION -> {
                 if (flowId == null) {
                     throw IllegalArgumentException("Flow ID is required to forward an event back to the flow event" +
                             "topic, but it was not provided.")
@@ -158,7 +158,7 @@ class RecordFactoryImpl @Activate constructor(
             Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC -> {
                 Record(outputTopic, sessionId, FlowMapperEvent(sessionEvent))
             }
-            Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC -> {
+            Schemas.Flow.FLOW_MAPPER_SESSION_IN -> {
                 Record(outputTopic, sessionEvent.sessionId, FlowMapperEvent(sessionEvent))
             }
             Schemas.P2P.P2P_OUT_TOPIC -> {

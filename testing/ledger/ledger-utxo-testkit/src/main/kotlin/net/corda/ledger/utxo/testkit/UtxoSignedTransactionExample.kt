@@ -11,6 +11,7 @@ import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.v5.application.crypto.DigestService
@@ -24,7 +25,7 @@ fun UtxoSignedTransactionFactory.createExample(
     wireTransactionFactory: WireTransactionFactory,
     componentGroups: List<List<ByteArray>> = defaultComponentGroups +
             List(UtxoComponentGroup.values().size - defaultComponentGroups.size - 1) { emptyList() }
-):UtxoSignedTransaction {
+): UtxoSignedTransactionInternal {
     val wireTransaction = wireTransactionFactory.createExample(
         jsonMarshallingService,
         jsonValidator,

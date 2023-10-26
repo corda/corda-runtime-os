@@ -1,6 +1,5 @@
 package net.corda.ledger.utxo.flow.impl
 
-import net.corda.crypto.core.SecureHashImpl
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
@@ -57,7 +56,6 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
             .thenReturn(listOf(inputStateAndRef, referenceStateAndRef))
 
         val command = UtxoCommandExample()
-        val attachment = SecureHashImpl("SHA-256", ByteArray(12))
 
         val signedTransaction = transactionBuilder
             .setNotary(notaryX500Name)
@@ -67,7 +65,6 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
             .addReferenceState(referenceStateRef)
             .addSignatories(listOf(publicKeyExample))
             .addCommand(command)
-            .addAttachment(attachment)
             .toSignedTransaction()
 
         assertIs<UtxoSignedTransaction>(signedTransaction)

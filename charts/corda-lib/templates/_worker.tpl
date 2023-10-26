@@ -8,6 +8,9 @@ Worker deployment.
 {{- $optionalArgs := dict }}
 {{- if gt (len .) 3 }}{{ $optionalArgs = index . 3 }}{{ end }}
 {{- with index . 1 }}
+{{- if ( ( .sharding ).enabled ) }}
+  {{- include "corda.nginx" ( list $ $workerName .sharding ) }}
+{{- end }}
 {{- with .ingress }}
 {{- if gt (len .hosts) 0 }}
 ---
@@ -44,6 +47,29 @@ spec:
                 port:
                   name: http
   {{- end }}
+{{- end }}
+{{- end }}
+{{- with .sharding }}
+{{- if .enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ ( printf "%s-sharded" $workerName ) | quote }}
+  labels:
+    {{- include "corda.workerLabels" ( list $ $worker ) | nindent 4 }}
+  annotations:
+  {{- with .annotations }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+    kubernetes.io/ingress.class: {{ include "corda.nginxName" $workerName | quote }}
+    nginx.ingress.kubernetes.io/upstream-hash-by: "$http_corda_request_key"
+spec:
+  defaultBackend:
+    service:
+      name: {{ include "corda.workerInternalServiceName" $workerName | quote }}
+      port:
+        name: monitor
 {{- end }}
 {{- end }}
 {{- with .service }}
@@ -84,7 +110,7 @@ metadata:
 spec:
   type: ClusterIP
   selector:
-    app: {{ $workerName }}
+    app.kubernetes.io/component: {{ include "corda.workerComponent" $worker }}
   ports:
       - protocol: TCP
         port: {{ include "corda.workerServicePort" . }}
@@ -130,7 +156,7 @@ spec:
       serviceAccountName: {{ . }}
       {{- end }}
       {{- include "corda.topologySpreadConstraints" $ | indent 6 }}
-      {{- include "corda.affinity" (list $ . $worker ) | indent 6 }}
+      {{- include "corda.affinity" (list $ ( include "corda.workerComponent" $worker ) ) | indent 6 }}
       containers:
       - name: {{ $workerName | quote }}
         image: {{ include "corda.workerImage" ( list $ . ) }}
@@ -239,9 +265,11 @@ spec:
         {{- if not (($.Values).vault).url }}
         {{- include "corda.configSaltAndPassphraseEnv" $ | nindent 10 }}
         {{- end }}
-        {{- /* TODO-[CORE-16419]: isolate StateManager database from the Cluster database */ -}}
-        {{- if or $optionalArgs.clusterDbAccess $optionalArgs.stateManagerDbAccess }}
+        {{- if $optionalArgs.clusterDbAccess }}
         {{- include "corda.clusterDbEnv" $ | nindent 10 }}
+        {{- end }}
+        {{- if $optionalArgs.stateManagerDbAccess }}
+        {{- include "corda.stateManagerDbEnv" ( list $ . $worker ) | nindent 10 }}
         {{- end }}
         args:
           - "--workspace-dir=/work"
@@ -287,34 +315,33 @@ spec:
           - "-ddatabase.pool.keepaliveTimeSeconds={{ .clusterDbConnectionPool.keepaliveTimeSeconds }}"
           - "-ddatabase.pool.validationTimeoutSeconds={{ .clusterDbConnectionPool.validationTimeoutSeconds }}"
           {{- end }}
-          {{- /* TODO-[CORE-16419]: isolate StateManager database from the Cluster database */ -}}
           {{- if $optionalArgs.stateManagerDbAccess }}
           - "--stateManager"
           - "type=DATABASE"
           - "--stateManager"
-          - "database.user=$(DB_CLUSTER_USERNAME)"
+          - "database.user=$(STATE_MANAGER_USERNAME)"
           - "--stateManager"
-          - "database.pass=$(DB_CLUSTER_PASSWORD)"
+          - "database.pass=$(STATE_MANAGER_PASSWORD)"
           - "--stateManager"
-          - "database.jdbc.url=jdbc:postgresql://{{ required "Must specify db.cluster.host" $.Values.db.cluster.host }}:{{ $.Values.db.cluster.port }}/{{ $.Values.db.cluster.database }}?currentSchema=STATE_MANAGER"
+          - "database.jdbc.url={{- include "corda.stateManagerJdbcUrl" ( list $ . ) -}}?currentSchema=STATE_MANAGER"
           - "--stateManager"
           - "database.jdbc.directory=/opt/jdbc-driver"
           - "--stateManager"
           - "database.jdbc.driver=org.postgresql.Driver"
           - "--stateManager"
-          - "database.pool.maxSize={{ .stateManagerDbConnectionPool.maxSize }}"
-          {{- if .stateManagerDbConnectionPool.minSize }}
+          - "database.pool.maxSize={{ .stateManager.db.connectionPool.maxSize }}"
+          {{- if .stateManager.db.connectionPool.minSize }}
           - "--stateManager"
-          - "database.pool.minSize={{ .stateManagerDbConnectionPool.minSize }}"
+          - "database.pool.minSize={{ .stateManager.db.connectionPool.minSize }}"
           {{- end }}
           - "--stateManager"
-          - "database.pool.idleTimeoutSeconds={{ .stateManagerDbConnectionPool.idleTimeoutSeconds }}"
+          - "database.pool.idleTimeoutSeconds={{ .stateManager.db.connectionPool.idleTimeoutSeconds }}"
           - "--stateManager"
-          - "database.pool.maxLifetimeSeconds={{ .stateManagerDbConnectionPool.maxLifetimeSeconds }}"
+          - "database.pool.maxLifetimeSeconds={{ .stateManager.db.connectionPool.maxLifetimeSeconds }}"
           - "--stateManager"
-          - "database.pool.keepAliveTimeSeconds={{ .stateManagerDbConnectionPool.keepAliveTimeSeconds }}"
+          - "database.pool.keepAliveTimeSeconds={{ .stateManager.db.connectionPool.keepAliveTimeSeconds }}"
           - "--stateManager"
-          - "database.pool.validationTimeoutSeconds={{ .stateManagerDbConnectionPool.validationTimeoutSeconds }}"
+          - "database.pool.validationTimeoutSeconds={{ .stateManager.db.connectionPool.validationTimeoutSeconds }}"
           {{- end }}
           {{- if $.Values.tracing.endpoint }}
           - "--send-trace-to={{ $.Values.tracing.endpoint }}"
@@ -324,8 +351,7 @@ spec:
           {{- end }}
           {{- if $optionalArgs.servicesAccessed }}
           {{- range $worker := $optionalArgs.servicesAccessed }}
-          {{- $endpoint := include "corda.getWorkerEndpoint" (dict "context" $ "worker" $worker) }}
-          - --serviceEndpoint={{ $endpoint }}
+          - "--serviceEndpoint={{ include "corda.getWorkerEndpoint" (dict "context" $ "worker" $worker) }}"
           {{- end }}
           {{- end }}
           {{- range $i, $arg := $optionalArgs.additionalWorkerArgs }}
@@ -488,39 +514,4 @@ Worker image
 {{- with index . 1 }}
 {{- printf "%s/%s:%s" ( .image.registry | default $.Values.image.registry ) ( .image.repository ) ( .image.tag | default $.Values.image.tag | default $.Chart.AppVersion ) | quote }}
 {{- end }}
-{{- end }}
-
-{{/*
-Worker default affinity
-*/}}
-{{- define "corda.defaultAffinity" -}}
-{{- $weight := index . 0 }}
-{{- $worker := index . 1 }}
-weight: {{ $weight}}
-podAffinityTerm:
-  labelSelector:
-    matchExpressions:
-      - key: "app.kubernetes.io/component"
-        operator: In
-        values:
-          - {{ include "corda.workerComponent" $worker }}
-  topologyKey: "kubernetes.io/hostname"
-{{- end }}
-
-{{/*
-Worker affinity
-*/}}
-{{- define "corda.affinity" -}}
-{{- $ := index . 0 }}
-{{- $worker := index . 2 }}
-{{- $affinity := default ( deepCopy $.Values.affinity ) dict }}
-{{- if not ($affinity.podAntiAffinity) }}
-{{- $_ := set $affinity "podAntiAffinity" dict }}
-{{- end }}
-{{- if not ($affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution) }}
-{{- $_ := set $affinity.podAntiAffinity "preferredDuringSchedulingIgnoredDuringExecution" list }}
-{{- end }}
-{{- $_ := set $affinity.podAntiAffinity "preferredDuringSchedulingIgnoredDuringExecution" ( append $affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution ( fromYaml ( include "corda.defaultAffinity" ( list ( add ( len $affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution ) 1 ) $worker ) ) ) ) }}
-affinity:
-{{- toYaml $affinity | nindent 2 }}
 {{- end }}

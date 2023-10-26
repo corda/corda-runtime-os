@@ -174,7 +174,7 @@ class FlowEventExceptionProcessorImplTest {
         val key = FlowKey()
         val flowStatusUpdateRecord = Record("", key, flowStatusUpdate)
         val flowMapperEvent = mock<FlowMapperEvent>()
-        val flowMapperRecord = Record(Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC, "key", flowMapperEvent)
+        val flowMapperRecord = Record(Schemas.Flow.FLOW_MAPPER_SESSION_OUT, "key", flowMapperEvent)
 
         whenever(
             flowMessageFactory.createFlowFailedStatusMessage(

@@ -104,6 +104,7 @@ import net.corda.p2p.crypto.protocol.api.NoCommonModeError
 import net.corda.p2p.linkmanager.grouppolicy.protocolModes
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import net.corda.membership.lib.exceptions.BadGroupPolicyException
 
 class SessionManagerTest {
 
@@ -461,7 +462,7 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `when no session exists, if network type is missing from network map no message is sent`() {
+    fun `when no session exists, if network type is missing from group policy provider no message is sent`() {
         whenever(outboundSessionPool.constructed().first().getNextSession(counterparties))
             .thenReturn(OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded)
         val initiatorHello = mock<InitiatorHelloMessage>()
@@ -476,21 +477,90 @@ class SessionManagerTest {
         loggingInterceptor.assertSingleWarningContains("Could not find the p2p parameters in the GroupPolicyProvider")
         loggingInterceptor.assertSingleWarningContains("The sessionInit message was not sent.")
     }
+    @Test
+    fun `when no session exists, if group policy is missing from group policy provider, on second lookup no message is sent`() {
+        whenever(outboundSessionPool.constructed().first().getNextSession(counterparties))
+            .thenReturn(OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded)
+        whenever(groupPolicyProvider.getP2PParameters(OUR_PARTY))
+            .thenReturn(parameters)
+            .thenReturn(null)
+        val initiatorHello = mock<InitiatorHelloMessage>()
+        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
+        val anotherInitiatorHello = mock<InitiatorHelloMessage>()
+        whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(anotherInitiatorHello)
+
+        val sessionState = sessionManager.processOutboundMessage(message)
+        assertThat(sessionState).isInstanceOf(NewSessionsNeeded::class.java)
+
+        argumentCaptor<InMemorySessionReplayer.SessionMessageReplay> {
+            verify(sessionReplayer, times(2)).addMessageForReplay(
+                any(),
+                this.capture(),
+                eq(SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY, MembershipStatusFilter.ACTIVE, 1L))
+            )
+            assertThat(this.allValues.size).isEqualTo(2)
+            assertThat(this.allValues).extracting<HoldingIdentity> {
+                it.sessionCounterparties.ourId
+            }.containsOnly(OUR_PARTY)
+            assertThat(this.allValues).extracting<HoldingIdentity> {
+                it.sessionCounterparties.counterpartyId
+            }.containsOnly(PEER_PARTY)
+            assertThat(this.allValues).extracting<InitiatorHelloMessage> { it.message as InitiatorHelloMessage }
+                .containsExactlyInAnyOrder(initiatorHello, anotherInitiatorHello)
+        }
+        loggingInterceptor.assertSingleWarningContains("The sessionInit message was not sent.")
+    }
 
     @Test
-    fun `when no session exists, if protocol mode is missing from network map no message is sent`() {
+    fun `when no session exists, if BadGroupPolicyException is thrown on group policy lookup, no message is sent`() {
         whenever(outboundSessionPool.constructed().first().getNextSession(counterparties))
             .thenReturn(OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded)
         val initiatorHello = mock<InitiatorHelloMessage>()
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
         val anotherInitiatorHello = mock<InitiatorHelloMessage>()
         whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(anotherInitiatorHello)
-        whenever(groupPolicyProvider.getP2PParameters(OUR_PARTY)).thenReturn(null)
+        whenever(groupPolicyProvider.getP2PParameters(OUR_PARTY)).thenThrow(BadGroupPolicyException("Bad group policy"))
 
         val sessionState = sessionManager.processOutboundMessage(message)
         assertThat(sessionState).isInstanceOf(SessionManager.SessionState.CannotEstablishSession::class.java)
-        verify(sessionReplayer, never()).addMessageForReplay(any(), any(), any())
-        loggingInterceptor.assertSingleWarningContains("Could not find the p2p parameters in the GroupPolicyProvider")
+
+        loggingInterceptor.assertSingleWarningContains("Bad group policy")
+        loggingInterceptor.assertSingleWarningContains("The sessionInit message was not sent.")
+    }
+
+    @Test
+    fun `when no session exists, if BadGroupPolicyException is thrown on group policy lookup again, no message is sent`() {
+        whenever(outboundSessionPool.constructed().first().getNextSession(counterparties))
+            .thenReturn(OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded)
+        whenever(groupPolicyProvider.getP2PParameters(OUR_PARTY))
+            .thenReturn(parameters)
+            .thenThrow(BadGroupPolicyException("Bad group policy"))
+        val initiatorHello = mock<InitiatorHelloMessage>()
+        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(initiatorHello)
+        val anotherInitiatorHello = mock<InitiatorHelloMessage>()
+        whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(anotherInitiatorHello)
+
+        val sessionState = sessionManager.processOutboundMessage(message)
+        assertThat(sessionState).isInstanceOf(SessionManager.SessionState.NewSessionsNeeded::class.java)
+
+        argumentCaptor<InMemorySessionReplayer.SessionMessageReplay> {
+            verify(sessionReplayer, times(2)).addMessageForReplay(
+                any(),
+                this.capture(),
+                eq(SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY, MembershipStatusFilter.ACTIVE, 1L))
+            )
+            assertThat(this.allValues.size).isEqualTo(2)
+            assertThat(this.allValues).extracting<HoldingIdentity> {
+                it.sessionCounterparties.ourId
+            }.containsOnly(OUR_PARTY)
+            assertThat(this.allValues).extracting<HoldingIdentity> {
+                it.sessionCounterparties.counterpartyId
+            }.containsOnly(PEER_PARTY)
+            assertThat(this.allValues).extracting<InitiatorHelloMessage> { it.message as InitiatorHelloMessage }
+                .containsExactlyInAnyOrder(initiatorHello, anotherInitiatorHello)
+        }
+
+        loggingInterceptor.assertSingleWarningContains("Bad group policy")
         loggingInterceptor.assertSingleWarningContains("The sessionInit message was not sent.")
     }
 
@@ -654,7 +724,26 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `when an initiator hello is received, but network type is missing from network map, then message is dropped`() {
+    fun `when an initiator hello is received, if BadGroupPolicyException is thrown on group policy lookup, then the message is dropped`() {
+        val initiatorKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
+        val sessionId = "some-session-id"
+        val responderHello = mock<ResponderHelloMessage>()
+        whenever(protocolResponder.generateResponderHello()).thenReturn(responderHello)
+        whenever(groupPolicyProvider.getP2PParameters(OUR_PARTY)).thenThrow(BadGroupPolicyException("Bad group policy"))
+
+        val header = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
+        val initiatorHelloMsg = InitiatorHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded),
+            InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorKeyHash), GROUP_ID))
+        val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHelloMsg))
+
+        assertThat(responseMessage).isNull()
+        loggingInterceptor.assertSingleWarningContains("Bad group policy")
+        loggingInterceptor
+            .assertSingleWarningContains("The ${InitiatorHelloMessage::class.java.simpleName} for sessionId $sessionId was discarded.")
+    }
+
+    @Test
+    fun `when an initiator hello is received, but network type is missing from group policy provider, then message is dropped`() {
         val initiatorKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
         val sessionId = "some-session-id"
         val responderHello = mock<ResponderHelloMessage>()
@@ -809,7 +898,28 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `when responder hello is received, but network type is missing from network map, message is dropped`() {
+    fun `when responder hello is received, if BadGroupPolicyException is thrown on group policy lookup, message is dropped`() {
+        val sessionId = "some-session"
+        whenever(outboundSessionPool.constructed().first().getSession(sessionId)).thenReturn(
+            OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
+        )
+
+        val initiatorHandshakeMsg = mock<InitiatorHandshakeMessage>()
+        whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), eq(null), any())).thenReturn(initiatorHandshakeMsg)
+        whenever(groupPolicyProvider.getP2PParameters(OUR_PARTY)).thenThrow(BadGroupPolicyException("Bad group policy"))
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionId, 4, Instant.now().toEpochMilli())
+        val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded))
+        val responseMessage = sessionManager.processSessionMessage(LinkInMessage(responderHello))
+
+        assertThat(responseMessage).isNull()
+        loggingInterceptor
+            .assertSingleWarningContains("Bad group policy")
+        loggingInterceptor
+            .assertSingleWarningContains("The ${ResponderHelloMessage::class.java.simpleName} for sessionId ${sessionId} was discarded.")
+    }
+
+    @Test
+    fun `when responder hello is received, but p2p params are missing from group policy provider, message is dropped`() {
         val sessionId = "some-session"
         whenever(outboundSessionPool.constructed().first().getSession(sessionId)).thenReturn(
             OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
@@ -1169,7 +1279,36 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `when initiator handshake is received, but network type is missing from the network map, the message is dropped`() {
+    fun `when initiator handshake is received, if BadGroupPolicyException is thrown on group policy lookup, the message is dropped`() {
+        val sessionId = "some-session-id"
+        val initiatorPublicKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
+        val responderPublicKeyHash = messageDigest.hash(OUR_KEY.public.encoded)
+        whenever(protocolResponder.generateResponderHello()).thenReturn(mock())
+
+        val initiatorHelloHeader = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
+        val initiatorHelloMessage = InitiatorHelloMessage(initiatorHelloHeader, ByteBuffer.wrap(PEER_KEY.public.encoded),
+            InitiatorHandshakeIdentity(ByteBuffer.wrap(messageDigest.hash(PEER_KEY.public.encoded)), GROUP_ID))
+        sessionManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))
+
+        val initiatorHandshakeHeader = CommonHeader(MessageType.INITIATOR_HANDSHAKE, 1, sessionId, 3, Instant.now().toEpochMilli())
+        val initiatorHandshake = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
+        whenever(protocolResponder.getInitiatorIdentity())
+            .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
+        whenever(protocolResponder.validatePeerHandshakeMessage(
+            initiatorHandshake,
+            listOf(PEER_KEY.public to SignatureSpecs.ECDSA_SHA256),
+        )).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
+        whenever(groupPolicyProvider.getP2PParameters(OUR_PARTY)).thenThrow(BadGroupPolicyException("Bad Group Policy"))
+        val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
+
+        assertThat(responseMessage).isNull()
+        loggingInterceptor.assertSingleWarningContains("Bad Group Policy.")
+        loggingInterceptor
+            .assertSingleWarningContains("The ${InitiatorHandshakeMessage::class.java.simpleName} for sessionId $sessionId was discarded.")
+    }
+
+    @Test
+    fun `when initiator handshake is received, but network type is missing from the group policy provider, the message is dropped`() {
         val sessionId = "some-session-id"
         val initiatorPublicKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
         val responderPublicKeyHash = messageDigest.hash(OUR_KEY.public.encoded)
@@ -2005,6 +2144,50 @@ class SessionManagerTest {
         whenever(outboundSessionPool.constructed().last().replaceSession(eq(counterparties), eq(sessionId), any())).thenReturn(true)
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
         whenever(groupPolicyProvider.getP2PParameters(OUR_PARTY)).thenReturn(null)
+
+        assertThat(sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))).isNull()
+        mockTimeFacilitiesProvider.advanceTime(5.days + 1.minutes)
+
+        loggingInterceptor.assertInfoContains("Outbound session sessionId" +
+                " (local=HoldingIdentity(x500Name=CN=Alice, O=Alice Corp, L=LDN, C=GB, groupId=myGroup)," +
+                " remote=HoldingIdentity(x500Name=CN=Bob, O=Bob Corp, L=LDN, C=GB, groupId=myGroup))" +
+                " timed out to refresh ephemeral keys and it will be cleaned up."
+        )
+
+        verify(sessionReplayer, times(2)).removeMessageFromReplay(
+            "${protocolInitiator.sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}",
+            counterparties
+        )
+
+        verify(sessionReplayer, times(2)).removeMessageFromReplay(
+            "${protocolInitiator.sessionId}_${InitiatorHelloMessage::class.java.simpleName}",
+            counterparties
+        )
+
+        verify(outboundSessionPool.constructed().last()).removeSessions(counterparties)
+
+    }
+
+    @Test
+    fun `sessions are removed even if BadGroupPolicyException is thrown on group policy lookup`() {
+        whenever(outboundSessionPool.constructed().first().getSession(protocolInitiator.sessionId)).thenReturn(
+            OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
+        )
+
+        whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), eq(null), any())).thenReturn(mock())
+
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, protocolInitiator.sessionId, 4, Instant.now().toEpochMilli())
+        val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded))
+
+        sessionManager.processSessionMessage(LinkInMessage(responderHello))
+        val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
+        val session = mock<Session>()
+
+        whenever(session.sessionId).doAnswer{protocolInitiator.sessionId}
+        whenever(protocolInitiator.getSession()).thenReturn(session)
+        whenever(outboundSessionPool.constructed().last().replaceSession(eq(counterparties), eq(sessionId), any())).thenReturn(true)
+        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
+        whenever(groupPolicyProvider.getP2PParameters(OUR_PARTY)).thenThrow(BadGroupPolicyException("Bad group policy"))
 
         assertThat(sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))).isNull()
         mockTimeFacilitiesProvider.advanceTime(5.days + 1.minutes)

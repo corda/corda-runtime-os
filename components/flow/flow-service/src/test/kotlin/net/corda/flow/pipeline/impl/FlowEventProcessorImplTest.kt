@@ -33,7 +33,7 @@ import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_SESSION
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -89,7 +89,7 @@ class FlowEventProcessorImplTest {
     private val flowState: FlowState = mock()
     private val flowStartContext: FlowStartContext = mock()
     private val externalEventState: ExternalEventState = mock()
-    private val outputRecords = listOf(Record(FLOW_EVENT_TOPIC, "key", "value"))
+    private val outputRecords = listOf(Record(FLOW_SESSION, "key", "value"))
     private val updatedContext = buildFlowEventContext<Any>(
         flowCheckpoint,
         payload,
@@ -286,6 +286,43 @@ class FlowEventProcessorImplTest {
     }
 
     @Test
+    fun `Execute flow pipeline with a checkpoint and start flow event`() {
+        val inputEvent = getFlowEventRecord(FlowEvent(flowKey, startFlowEvent))
+
+        val response = processor.onNext(state, inputEvent)
+
+        assertThat(response).isEqualTo(StateAndEventProcessor.Response(state, emptyList(), false))
+        verify(flowMDCService, times(1)).getMDCLogging(anyOrNull(), any(), any())
+        verify(flowEventPipelineFactory, times(1)).create(any(),any(),any(),any(),any(),any())
+    }
+
+    @Test
+    fun `Execute flow pipeline with a checkpoint and start flow event in retry mode with no FlowState`() {
+        val inputEvent = getFlowEventRecord(FlowEvent(flowKey, startFlowEvent))
+        whenever(flowCheckpoint.inRetryState).thenReturn(true)
+        whenever(checkpoint.flowState).thenReturn(null)
+
+        val response = processor.onNext(state, inputEvent)
+
+        assertThat(response).isEqualTo(outputResponse)
+        verify(flowMDCService, times(1)).getMDCLogging(anyOrNull(), any(), any())
+        verify(flowEventPipelineFactory, times(1)).create(any(),any(),any(),any(),any(),any())
+    }
+
+    @Test
+    fun `Execute flow pipeline with a checkpoint and start flow event in retry mode with a FlowState`() {
+        val inputEvent = getFlowEventRecord(FlowEvent(flowKey, startFlowEvent))
+        whenever(flowCheckpoint.inRetryState).thenReturn(true)
+        whenever(checkpoint.flowState).thenReturn(flowState)
+
+        val response = processor.onNext(state, inputEvent)
+
+        assertThat(response).isEqualTo(StateAndEventProcessor.Response(state, emptyList(), false))
+        verify(flowMDCService, times(1)).getMDCLogging(anyOrNull(), any(), any())
+        verify(flowEventPipelineFactory, times(1)).create(any(),any(),any(),any(),any(),any())
+    }
+
+    @Test
     fun `Execute flow pipeline from null checkpoint and session init event`() {
         val inputEvent = getFlowEventRecord(FlowEvent(flowKey, sessionInitFlowEvent))
 
@@ -347,6 +384,6 @@ class FlowEventProcessorImplTest {
     }
 
     private fun getFlowEventRecord(flowEvent: FlowEvent?): Record<String, FlowEvent> {
-        return Record(FLOW_EVENT_TOPIC, flowKey, flowEvent)
+        return Record(FLOW_SESSION, flowKey, flowEvent)
     }
 }
