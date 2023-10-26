@@ -19,6 +19,7 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.messaging.api.constants.WorkerRPCPaths.CRYPTO_PATH
 import net.corda.messaging.api.constants.WorkerRPCPaths.LEDGER_PATH
 import net.corda.messaging.api.constants.WorkerRPCPaths.PERSISTENCE_PATH
+import net.corda.messaging.api.constants.WorkerRPCPaths.TOKEN_SELECTION_PATH
 import net.corda.messaging.api.constants.WorkerRPCPaths.UNIQUENESS_PATH
 import net.corda.messaging.api.constants.WorkerRPCPaths.VERIFICATION_PATH
 import net.corda.messaging.api.mediator.MediatorMessage
@@ -30,7 +31,6 @@ import net.corda.messaging.api.mediator.factory.MultiSourceEventMediatorFactory
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_OUT
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
-import net.corda.schema.Schemas.Services.TOKEN_CACHE_EVENT
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.FlowConfig
 import org.assertj.core.api.Assertions.assertThat
@@ -75,7 +75,7 @@ class FlowEventMediatorFactoryImplTest {
         )
     }
 
-    private fun endpoint(suffix: String) : String {
+    private fun endpoint(suffix: String): String {
         // As no config is supplied in these tests, the parameterized parts of the endpoint will be null.
         return "http://null/api/null$suffix"
     }
@@ -103,7 +103,9 @@ class FlowEventMediatorFactoryImplTest {
         assertThat(router.getDestination(MediatorMessage(FlowStatus())).endpoint).isEqualTo(FLOW_STATUS_TOPIC)
         assertThat(router.getDestination(MediatorMessage(LedgerPersistenceRequest())).endpoint)
             .isEqualTo(endpoint(LEDGER_PATH))
-        assertThat(router.getDestination(MediatorMessage(TokenPoolCacheEvent())).endpoint).isEqualTo(TOKEN_CACHE_EVENT)
+        assertThat(router.getDestination(MediatorMessage(TokenPoolCacheEvent())).endpoint).isEqualTo(
+            endpoint(TOKEN_SELECTION_PATH)
+        )
         assertThat(router.getDestination(MediatorMessage(TransactionVerificationRequest())).endpoint).isEqualTo(
             endpoint(VERIFICATION_PATH)
         )

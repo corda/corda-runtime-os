@@ -69,8 +69,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         taskManager.executeLongRunningTask(::run)
     }
 
-    private fun stop() =
-        stopped.set(true)
+    private fun stop() = stopped.set(true)
 
     private fun stopped() = stopped.get()
 

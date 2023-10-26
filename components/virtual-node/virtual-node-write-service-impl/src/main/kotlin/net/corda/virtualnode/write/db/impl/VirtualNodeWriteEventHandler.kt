@@ -17,12 +17,17 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriter
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterFactory
+import org.slf4j.LoggerFactory
 
 /** Handles incoming [LifecycleCoordinator] events for [VirtualNodeWriteServiceImpl]. */
 internal class VirtualNodeWriteEventHandler(
     private val configReadService: ConfigurationReadService,
     private val virtualNodeWriterFactory: VirtualNodeWriterFactory
 ) : LifecycleEventHandler {
+
+    private companion object {
+         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
     private var registrationHandle: AutoCloseable? = null
     private var configUpdateHandle: AutoCloseable? = null
@@ -46,11 +51,14 @@ internal class VirtualNodeWriteEventHandler(
         val externalMsgConfig = event.config.getConfig(ConfigKeys.EXTERNAL_MESSAGING_CONFIG)
         val vnodeDatasourceConfig = event.config.getConfig(ConfigKeys.VNODE_DATASOURCE_CONFIG)
 
+        logger.info("Configuration changed event received")
         try {
             virtualNodeWriter?.close()
+            logger.info("Current virtual node writer has been closed")
             virtualNodeWriter = virtualNodeWriterFactory
                 .create(msgConfig, externalMsgConfig, vnodeDatasourceConfig)
                 .apply { start() }
+            logger.info("New virtual node write has been created")
 
             coordinator.updateStatus(UP)
         } catch (e: Exception) {
