@@ -1,6 +1,7 @@
 package net.corda.messaging.mediator
 
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.messaging.api.exception.CordaHTTPClientErrorException
 import net.corda.messaging.api.exception.CordaHTTPServerErrorException
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -14,6 +15,7 @@ import net.corda.messaging.utils.HTTPRetryExecutor
 import net.corda.metrics.CordaMetrics
 import net.corda.utilities.debug
 import net.corda.utilities.trace
+import net.corda.v5.crypto.DigestAlgorithmName
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.IOException
@@ -26,17 +28,21 @@ import java.util.concurrent.TimeoutException
 
 const val CORDA_REQUEST_KEY_HEADER = "corda-request-key"
 
+@Suppress("LongParameterList")
 class RPCClient(
     override val id: String,
     cordaAvroSerializerFactory: CordaAvroSerializationFactory,
+    private val platformDigestService: PlatformDigestService,
     private val onSerializationError: ((ByteArray) -> Unit)?,
     private val httpClient: HttpClient,
     private val retryConfig: HTTPRetryConfig =
         HTTPRetryConfig.Builder()
-            .retryOn(IOException::class.java,
+            .retryOn(
+                IOException::class.java,
                 TimeoutException::class.java,
                 CordaHTTPClientErrorException::class.java,
-                CordaHTTPServerErrorException::class.java)
+                CordaHTTPServerErrorException::class.java
+            )
             .build()
 ) : MessagingClient {
     private val deserializer = cordaAvroSerializerFactory.createAvroDeserializer({}, Any::class.java)
@@ -90,7 +96,13 @@ class RPCClient(
 
         // Add key HTTP header
         message.getPropertyOrNull(MSG_PROP_KEY)?.let { value ->
-            builder.header(CORDA_REQUEST_KEY_HEADER, value.toString())
+            val keyValue = if (value is ByteArray) {
+                platformDigestService.hash(value, DigestAlgorithmName.SHA2_256).toHexString()
+            } else {
+                value.toString()
+            }
+
+            builder.header(CORDA_REQUEST_KEY_HEADER, keyValue)
         }
 
         return builder.build()
@@ -119,7 +131,7 @@ class RPCClient(
     ) {
         val endTime = System.nanoTime()
         val uri = request.method() + request.uri().toString()
-            CordaMetrics.Metric.Messaging.HTTPRPCResponseTime.builder()
+        CordaMetrics.Metric.Messaging.HTTPRPCResponseTime.builder()
             .withTag(CordaMetrics.Tag.OperationStatus, operationStatus)
             .withTag(CordaMetrics.Tag.HttpRequestUri, uri)
             .withTag(CordaMetrics.Tag.HttpResponseCode, response?.statusCode().toString())

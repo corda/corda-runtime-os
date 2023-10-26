@@ -45,6 +45,19 @@ class TokenCacheImplTest {
     }
 
     @Test
+    fun `remove all`() {
+        val target = TokenCacheImpl()
+        val cachedToken1 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s1") }
+        val cachedToken2 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s2") }
+        val cachedToken3 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s3") }
+        target.add(listOf(cachedToken1, cachedToken2, cachedToken3))
+
+        assertThat(target.toList()).containsOnly(cachedToken1, cachedToken2, cachedToken3)
+        target.removeAll()
+        assertThat(target.toList()).isEmpty()
+    }
+
+    @Test
     fun `iterating the cache`() {
         val target = TokenCacheImpl()
         val cachedToken1 = mock<CachedToken>().apply { whenever(stateRef).thenReturn("s1") }
