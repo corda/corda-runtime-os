@@ -2,6 +2,8 @@ package net.corda.ledger.utxo.token.cache.impl.services
 
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaim
 import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
+import net.corda.ledger.utxo.token.cache.entities.TokenCache
+import net.corda.ledger.utxo.token.cache.entities.TokenPoolCache
 import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
 import net.corda.ledger.utxo.token.cache.impl.TOKEN_POOL_CACHE_STATE
 import net.corda.ledger.utxo.token.cache.services.StoredPoolClaimState
@@ -16,7 +18,10 @@ import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.utilities.time.Clock
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.Timer
@@ -30,6 +35,8 @@ class PerformanceClaimStateStoreImplTest {
         TokenPoolCacheStateSerializationImpl(CordaAvroSerializationFactoryImpl(AvroSchemaRegistryImpl()))
     private val now = Instant.ofEpochMilli(1)
     private val clock = mock<Clock>().apply { whenever(instant()).thenReturn(now) }
+    private val tokenCache = mock<TokenCache>()
+    private val tokenPoolCache = mock<TokenPoolCache>().apply { whenever(get(POOL_KEY)).thenReturn(tokenCache) }
     private val baseState = State(
         POOL_KEY.toString(),
         serialization.serialize(TOKEN_POOL_CACHE_STATE),
@@ -54,16 +61,20 @@ class PerformanceClaimStateStoreImplTest {
             this.create(listOf(baseState))
         }
 
-        val initialStoredPoolClaimStateA = StoredPoolClaimState( 0, POOL_KEY, TokenPoolCacheState.newBuilder()
-            .setPoolKey(POOL_KEY.toAvro())
-            .setAvailableTokens(listOf())
-            .setTokenClaims(listOf())
-            .build())
-        val initialStoredPoolClaimStateB = StoredPoolClaimState( 0, POOL_KEY, TokenPoolCacheState.newBuilder()
-            .setPoolKey(POOL_KEY.toAvro())
-            .setAvailableTokens(listOf())
-            .setTokenClaims(listOf())
-            .build())
+        val initialStoredPoolClaimStateA = StoredPoolClaimState(
+            0, POOL_KEY, TokenPoolCacheState.newBuilder()
+                .setPoolKey(POOL_KEY.toAvro())
+                .setAvailableTokens(listOf())
+                .setTokenClaims(listOf())
+                .build()
+        )
+        val initialStoredPoolClaimStateB = StoredPoolClaimState(
+            0, POOL_KEY, TokenPoolCacheState.newBuilder()
+                .setPoolKey(POOL_KEY.toAvro())
+                .setAvailableTokens(listOf())
+                .setTokenClaims(listOf())
+                .build()
+        )
         val instanceA = createTarget(initialStoredPoolClaimStateA, slowStateManager)
         val instanceB = createTarget(initialStoredPoolClaimStateB, slowStateManager)
 
@@ -88,7 +99,7 @@ class PerformanceClaimStateStoreImplTest {
                     isComplete = instanceA.enqueueRequest { poolState ->
                         if (poolState.tokenClaims.any { it.claimId == newAClaim.claimId }) {
                             println("unexpected claim ${newAClaim.claimId}")
-                        }else{
+                        } else {
                             println("${newAClaim.claimId}")
                         }
                         poolState.tokenClaims = poolState.tokenClaims + newAClaim
@@ -114,7 +125,7 @@ class PerformanceClaimStateStoreImplTest {
                     isComplete = instanceB.enqueueRequest { poolState ->
                         if (poolState.tokenClaims.any { it.claimId == newBClaim.claimId }) {
                             println("unexpected claim ${newBClaim.claimId}")
-                        }else{
+                        } else {
                             println("${newBClaim.claimId}")
                         }
                         poolState.tokenClaims = poolState.tokenClaims + newBClaim
@@ -146,6 +157,9 @@ class PerformanceClaimStateStoreImplTest {
         val pool = serialization.deserialize(endState.value)
         assertThat(pool.tokenClaims.map { it.claimId }).containsOnlyOnceElementsOf(allClaimIds)
 
+        // We expect the available tokens cache to be cleared for each concurrency failure
+        verify(tokenCache, atLeast(1)).removeAll()
+
         println("Update Call Count: ${slowStateManager.updateCallCount}")
         println("Update Fail Count: ${slowStateManager.updateFailCount}")
         println("Instance A  Failures: $instanceAFailCount")
@@ -160,8 +174,11 @@ class PerformanceClaimStateStoreImplTest {
             .build()
     }
 
-    private fun createTarget(storedPoolClaimState: StoredPoolClaimState, sm: StateManager): PerformanceClaimStateStoreImpl {
-        return PerformanceClaimStateStoreImpl(POOL_KEY, storedPoolClaimState, serialization, sm, clock)
+    private fun createTarget(
+        storedPoolClaimState: StoredPoolClaimState,
+        sm: StateManager
+    ): PerformanceClaimStateStoreImpl {
+        return PerformanceClaimStateStoreImpl(POOL_KEY, storedPoolClaimState, serialization, sm, tokenPoolCache, clock)
     }
 
     class StateManagerSimulator(private val updateSleepTime: Long = 0) : StateManager {
