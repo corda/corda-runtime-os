@@ -1,5 +1,6 @@
 package net.corda.taskmanager.impl
 
+import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.Timer
 import net.corda.metrics.CordaMetrics
 import net.corda.taskmanager.TaskManager
@@ -7,37 +8,27 @@ import net.corda.utilities.VisibleForTesting
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
 internal class TaskManagerImpl(
     private val name: String,
     private val longRunningThreadName: String,
-    private val executorService: ScheduledExecutorService
+    private val executorService: ExecutorService
 ) : TaskManager {
 
     enum class Type {
-        SHORT_RUNNING, LONG_RUNNING, SCHEDULED
+        SHORT_RUNNING, LONG_RUNNING
     }
 
     @VisibleForTesting
     val liveTaskCounts = ConcurrentHashMap<Type, Int>()
 
-    private val shortRunningTaskGauge = CordaMetrics.Metric.TaskManager.LiveTasks { liveTaskCounts[Type.SHORT_RUNNING] ?: 0 }.builder()
-        .withTag(CordaMetrics.Tag.TaskManagerName, name)
-        .withTag(CordaMetrics.Tag.TaskType, Type.SHORT_RUNNING.name)
-        .build()
-
-    private val longRunningTaskGauge = CordaMetrics.Metric.TaskManager.LiveTasks { liveTaskCounts[Type.LONG_RUNNING] ?: 0 }.builder()
-        .withTag(CordaMetrics.Tag.TaskManagerName, name)
-        .withTag(CordaMetrics.Tag.TaskType, Type.LONG_RUNNING.name)
-        .build()
-
-    private val scheduledTaskGauge = CordaMetrics.Metric.TaskManager.LiveTasks { liveTaskCounts[Type.SCHEDULED] ?: 0 }.builder()
-        .withTag(CordaMetrics.Tag.TaskManagerName, name)
-        .withTag(CordaMetrics.Tag.TaskType, Type.SCHEDULED.name)
-        .build()
+    private val shortRunningTaskCompletionTime = taskCompletionMeter(Type.SHORT_RUNNING)
+    private val longRunningTaskCompletionTime = taskCompletionMeter(Type.LONG_RUNNING)
+    private val shortRunningTaskGauge = liveTaskGauge(Type.SHORT_RUNNING)
+    private val longRunningTaskGauge = liveTaskGauge(Type.LONG_RUNNING)
 
     override fun <T> executeShortRunningTask(command: () -> T): CompletableFuture<T> {
         val start = System.nanoTime()
@@ -46,7 +37,7 @@ internal class TaskManagerImpl(
             { command() },
             executorService
         ).whenComplete { _, _ ->
-            taskCompletionMeter(Type.SHORT_RUNNING).record(System.nanoTime() - start, TimeUnit.NANOSECONDS)
+            shortRunningTaskCompletionTime.record(System.nanoTime() - start, TimeUnit.NANOSECONDS)
             decrementTaskCount(Type.SHORT_RUNNING)
         }
     }
@@ -70,32 +61,9 @@ internal class TaskManagerImpl(
             }
         }
         return result.whenComplete { _, _ ->
-            taskCompletionMeter(Type.LONG_RUNNING).record(System.nanoTime() - start, TimeUnit.NANOSECONDS)
+            longRunningTaskCompletionTime.record(System.nanoTime() - start, TimeUnit.NANOSECONDS)
             decrementTaskCount(Type.LONG_RUNNING)
         }
-    }
-
-    override fun <T> executeScheduledTask(command: () -> T, delay: Long, unit: TimeUnit): CompletableFuture<T> {
-        incrementTaskCount(Type.SCHEDULED)
-        val result = CompletableFuture<T>()
-        executorService.schedule(
-            {
-                val start = System.nanoTime()
-                try {
-                    result.complete(command())
-                } catch (t: Throwable) {
-                    result.completeExceptionally(t)
-                } finally {
-                    // This recording only records the time that the task executed for, not the scheduled time since that seems weird
-                    // for a scheduled task. Consider changing the other ones to not include the scheduling time?
-                    taskCompletionMeter(Type.SCHEDULED).record(System.nanoTime() - start, TimeUnit.NANOSECONDS)
-                    decrementTaskCount(Type.SCHEDULED)
-                }
-            },
-            delay,
-            unit
-        )
-        return result
     }
 
     override fun execute(command: Runnable) {
@@ -106,7 +74,6 @@ internal class TaskManagerImpl(
         executorService.shutdown()
         CordaMetrics.registry.remove(shortRunningTaskGauge)
         CordaMetrics.registry.remove(longRunningTaskGauge)
-        CordaMetrics.registry.remove(scheduledTaskGauge)
         // This [CompletableFuture] must not run on the executor service otherwise it'll never shut down.
         // [runAsync] runs this task in the fork join common pool.
         val shutdownFuture = CompletableFuture.runAsync {
@@ -125,6 +92,13 @@ internal class TaskManagerImpl(
 
     private fun taskCompletionMeter(type: Type): Timer {
         return CordaMetrics.Metric.TaskManager.TaskCompletionTime.builder()
+            .withTag(CordaMetrics.Tag.TaskManagerName, name)
+            .withTag(CordaMetrics.Tag.TaskType, type.name)
+            .build()
+    }
+
+    private fun liveTaskGauge(type: Type): Gauge {
+        return CordaMetrics.Metric.TaskManager.LiveTasks { liveTaskCounts[type] ?: 0 }.builder()
             .withTag(CordaMetrics.Tag.TaskManagerName, name)
             .withTag(CordaMetrics.Tag.TaskType, type.name)
             .build()

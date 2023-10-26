@@ -25,6 +25,8 @@ import net.corda.messaging.api.constants.WorkerRPCPaths.VERIFICATION_PATH
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.RoutingDestination.Companion.routeTo
+import net.corda.messaging.api.mediator.RoutingDestination.Type.ASYNCHRONOUS
+import net.corda.messaging.api.mediator.RoutingDestination.Type.SYNCHRONOUS
 import net.corda.messaging.api.mediator.config.EventMediatorConfigBuilder
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactoryFactory
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
@@ -129,15 +131,24 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
 
         MessageRouter { message ->
             when (val event = message.event()) {
-                is EntityRequest -> routeTo(rpcClient, rpcEndpoint(PERSISTENCE_WORKER_REST_ENDPOINT, PERSISTENCE_PATH))
-                is FlowMapperEvent -> routeTo(messageBusClient, FLOW_MAPPER_SESSION_OUT)
-                is FlowOpsRequest -> routeTo(rpcClient, rpcEndpoint(CRYPTO_WORKER_REST_ENDPOINT, CRYPTO_PATH))
-                is FlowStatus -> routeTo(messageBusClient, FLOW_STATUS_TOPIC)
-                is LedgerPersistenceRequest -> routeTo(rpcClient, rpcEndpoint(PERSISTENCE_WORKER_REST_ENDPOINT, LEDGER_PATH))
-                is TokenPoolCacheEvent -> routeTo(rpcClient, rpcEndpoint(TOKEN_SELECTION_WORKER_REST_ENDPOINT, TOKEN_SELECTION_PATH))
-                is TransactionVerificationRequest -> routeTo(rpcClient, rpcEndpoint(VERIFICATION_WORKER_REST_ENDPOINT, VERIFICATION_PATH))
-                is UniquenessCheckRequestAvro -> routeTo(rpcClient, rpcEndpoint(UNIQUENESS_WORKER_REST_ENDPOINT, UNIQUENESS_PATH))
-                is FlowEvent -> routeTo(messageBusClient, FLOW_EVENT_TOPIC)
+                is EntityRequest -> routeTo(rpcClient,
+                    rpcEndpoint(PERSISTENCE_WORKER_REST_ENDPOINT, PERSISTENCE_PATH), SYNCHRONOUS)
+                is FlowMapperEvent -> routeTo(messageBusClient,
+                    FLOW_MAPPER_SESSION_OUT, ASYNCHRONOUS)
+                is FlowOpsRequest -> routeTo(rpcClient,
+                    rpcEndpoint(CRYPTO_WORKER_REST_ENDPOINT, CRYPTO_PATH), SYNCHRONOUS)
+                is FlowStatus -> routeTo(messageBusClient,
+                    FLOW_STATUS_TOPIC, ASYNCHRONOUS)
+                is LedgerPersistenceRequest -> routeTo(rpcClient,
+                    rpcEndpoint(PERSISTENCE_WORKER_REST_ENDPOINT, LEDGER_PATH), SYNCHRONOUS)
+                is TokenPoolCacheEvent -> routeTo(messageBusClient,
+                    rpcEndpoint(TOKEN_SELECTION_WORKER_REST_ENDPOINT, TOKEN_SELECTION_PATH), ASYNCHRONOUS)
+                is TransactionVerificationRequest -> routeTo(rpcClient,
+                    rpcEndpoint(VERIFICATION_WORKER_REST_ENDPOINT, VERIFICATION_PATH), SYNCHRONOUS)
+                is UniquenessCheckRequestAvro -> routeTo(rpcClient,
+                    rpcEndpoint(UNIQUENESS_WORKER_REST_ENDPOINT, UNIQUENESS_PATH), SYNCHRONOUS)
+                is FlowEvent -> routeTo(messageBusClient,
+                    FLOW_EVENT_TOPIC, ASYNCHRONOUS)
                 else -> {
                     val eventType = event?.let { it::class.java }
                     throw IllegalStateException("No route defined for event type [$eventType]")

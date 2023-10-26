@@ -132,6 +132,10 @@ internal class TaskManagerHelper<K : Any, S : Any, E : Any>(
         }
     }
 
+    fun convertToMessage(record: Record<*, *>): MediatorMessage<Any> {
+        return record.toMessage()
+    }
+
     /**
      * Executes given [ClientTask]s and waits for all to finish.
      *
