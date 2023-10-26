@@ -106,7 +106,7 @@ class RecordFactoryImpl @Activate constructor(
             MessageDirection.INBOUND -> Schemas.Flow.FLOW_SESSION
             MessageDirection.OUTBOUND -> {
                 if (isInteropSession) {
-                    Schemas.Flow.FLOW_MAPPER_SESSION_IN
+                    Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC
                 } else {
                     if (isLocalCluster(sessionEvent)) {
                         Schemas.Flow.FLOW_MAPPER_SESSION_IN
