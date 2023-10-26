@@ -1,10 +1,14 @@
 package net.corda.crypto.softhsm.impl
 
+import net.corda.crypto.config.impl.MasterKeyPolicy
 import net.corda.crypto.persistence.db.model.HSMAssociationEntity
 import net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
@@ -13,6 +17,8 @@ import org.mockito.kotlin.eq
 import java.time.Instant
 import java.util.Collections.emptyList
 import javax.persistence.EntityManager
+import javax.persistence.EntityManagerFactory
+import javax.persistence.EntityTransaction
 
 class HSMRepositoryImplTest {
 
@@ -77,5 +83,80 @@ class HSMRepositoryImplTest {
 
     @Test
     fun associate() {
+    }
+
+    @Test
+    fun `createOrLookupCategoryAssociation returns existing master key alias`() {
+        val hsmAssociation1 = HSMAssociationEntity("2", "tenant", "hsm", Instant.ofEpochMilli(0), "master_key")
+        val hsmCategoryAssociation1 = HSMCategoryAssociationEntity("1", "tenant", "category", hsmAssociation1, Instant.ofEpochMilli(0), 0)
+        //val hsmAssociation2 = HSMAssociationEntity("2", "tenant", "hsm", Instant.ofEpochMilli(0), "master_key")
+        //val hsmCategoryAssociation2 = HSMCategoryAssociationEntity("2", "tenant", "category", hsmAssociation2, Instant.ofEpochMilli(0), 0)
+
+        val et = org.mockito.kotlin.mock<EntityTransaction> {
+        }
+        val em = org.mockito.kotlin.mock<EntityManager> {
+            on { createQuery(any(), eq(HSMAssociationEntity::class.java)) } doAnswer {
+                org.mockito.kotlin.mock {
+                    on { setParameter(any<String>(), any()) } doReturn it
+                    on { resultList } doReturn listOf(hsmAssociation1)
+                }
+            }
+            on { createQuery(any(), eq(HSMCategoryAssociationEntity::class.java)) } doAnswer {
+                org.mockito.kotlin.mock {
+                    on { setParameter(any<String>(), any()) } doReturn it
+                    on { resultList } doReturn listOf(hsmCategoryAssociation1)
+                }
+            }
+            on { transaction } doReturn et
+        }
+        HSMRepositoryImpl(
+            org.mockito.kotlin.mock {
+                on { createEntityManager() } doReturn em
+            }
+        ).use {
+            val association = it.createOrLookupCategoryAssociation("tenant", "hsm", MasterKeyPolicy.SHARED)
+            assertThat(association.masterKeyAlias).isEqualTo("master_key")
+        }
+    }
+
+    companion object {
+        @JvmStatic
+        private fun masterKeyPolicies() = listOf(MasterKeyPolicy.UNIQUE, MasterKeyPolicy.SHARED, MasterKeyPolicy.NONE)
+    }
+
+    @ParameterizedTest
+    @MethodSource("masterKeyPolicies")
+    fun `createOrLookupCategoryAssociation returns null master key alias`(masterKeyPolicy: MasterKeyPolicy) {
+        val entityCap = argumentCaptor<HSMCategoryAssociationEntity>()
+
+        val et = org.mockito.kotlin.mock<EntityTransaction>()
+        val em = org.mockito.kotlin.mock<EntityManager> {
+            on { createQuery(any(), eq(HSMAssociationEntity::class.java)) } doAnswer {
+                org.mockito.kotlin.mock {
+                    on { setParameter(any<String>(), any()) } doReturn it
+                    on { resultList } doReturn listOf<HSMAssociationEntity>()
+                }
+            }
+            on { createQuery(any(), eq(HSMCategoryAssociationEntity::class.java)) } doAnswer {
+                org.mockito.kotlin.mock {
+                    on { setParameter(any<String>(), any()) } doReturn it
+                    on { resultList } doReturn listOf<HSMCategoryAssociationEntity>()
+                }
+            }
+
+            on { transaction } doReturn et
+            on { merge(entityCap.capture()) } doAnswer { entityCap.lastValue }
+        }
+        HSMRepositoryImpl(
+            org.mockito.kotlin.mock {
+                on { createEntityManager() } doReturn em
+            }
+        ).use {
+            val association = it.createOrLookupCategoryAssociation("tenant", "hsm", masterKeyPolicy)
+            when (masterKeyPolicy) {
+                MasterKeyPolicy.UNIQUE -> assertThat(association.masterKeyAlias).isNotNull()
+                MasterKeyPolicy.SHARED, MasterKeyPolicy.NONE-> assertThat(association.masterKeyAlias).isNull()
+            }
+        }
     }
 }
