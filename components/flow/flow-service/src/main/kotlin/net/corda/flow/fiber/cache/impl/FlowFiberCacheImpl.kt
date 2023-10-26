@@ -4,7 +4,8 @@ import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.data.flow.FlowKey
-import net.corda.flow.fiber.FlowFiberImpl
+import net.corda.data.identity.HoldingIdentity
+import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.SandboxedCache
@@ -35,7 +36,9 @@ class FlowFiberCacheImpl @Activate constructor(
     private val maximumSize = java.lang.Long.getLong(FLOW_FIBER_CACHE_MAX_SIZE_PROPERTY_NAME, 10000)
     private val expireAfterWriteSeconds = java.lang.Long.getLong(FLOW_FIBER_CACHE_EXPIRE_AFTER_WRITE_SECONDS_PROPERTY_NAME, 600)
 
-    private val cache: Cache<FlowKey, FlowFiberImpl> = CacheFactoryImpl().build(
+    private data class FiberCacheValue(val fiber: FlowFiber, val suspendCount: Int)
+
+    private val cache: Cache<FlowKey, FiberCacheValue> = CacheFactoryImpl().build(
         "flow-fiber-cache",
         Caffeine.newBuilder()
             .maximumSize(maximumSize)
@@ -64,22 +67,16 @@ class FlowFiberCacheImpl @Activate constructor(
         remove(vnc)
     }
 
-    override fun put(key: FlowKey, fiber: FlowFiberImpl) {
-        cache.put(key, fiber)
+    override fun put(key: FlowKey, suspendCount: Int, fiber: FlowFiber) {
+        cache.put(key, FiberCacheValue(fiber, suspendCount))
     }
 
-    override fun get(key: FlowKey): FlowFiberImpl? {
-        return cache.getIfPresent(key)
+    override fun get(key: FlowKey, suspendCount: Int): FlowFiber? {
+        return cache.getIfPresent(key)?.takeIf { it.suspendCount == suspendCount }?.fiber
     }
 
     override fun remove(key: FlowKey) {
         cache.invalidate(key)
-    }
-
-    override fun remove(keys: Collection<FlowKey>) {
-        logger.debug { "Removing ${keys.size} flow fibers from flow fiber cache: ${keys.joinToString()}" }
-        cache.invalidateAll(keys)
-        cache.cleanUp()
     }
 
     override fun remove(virtualNodeContext: VirtualNodeContext) {
@@ -89,5 +86,11 @@ class FlowFiberCacheImpl @Activate constructor(
         val keysToInvalidate = cache.asMap().keys.filter { holdingIdentityToRemove == it.identity }
         cache.invalidateAll(keysToInvalidate)
         cache.cleanUp()
+    }
+
+    // Yuk ... adding this to support the existing integration test.
+    //  I don't think we should have integration tests knowing about the internals of the cache.
+    internal fun findInCache(holdingId: HoldingIdentity, flowId: String): FlowFiber? {
+        return cache.getIfPresent(FlowKey(flowId, holdingId))?.fiber
     }
 }
