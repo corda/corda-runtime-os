@@ -4,7 +4,7 @@ import net.corda.ledger.common.testkit.anotherPublicKeyExample
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
-import net.corda.ledger.utxo.test.UtxoLedgerWithBatchSignerTest
+import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.getUtxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
@@ -19,7 +19,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import kotlin.test.assertEquals
 
-class SignatureProofTests : UtxoLedgerWithBatchSignerTest() {
+class SignatureProofTests : UtxoLedgerTest() {
     companion object {
         private lateinit var signedTransaction: UtxoSignedTransactionInternal
         private val notaryX500Name = MemberX500Name.parse("O=ExampleNotaryService, L=London, C=GB")
@@ -46,7 +46,7 @@ class SignatureProofTests : UtxoLedgerWithBatchSignerTest() {
 
     @Test
     fun `sign() produces a signature without proof`() {
-        val signatures = signingService.sign(signedTransaction, listOf(publicKeyExample))
+        val signatures = transactionSignatureService.sign(signedTransaction, listOf(publicKeyExample))
         assertEquals(1, signatures.size)
         val signature: DigitalSignatureAndMetadata = signatures.first()
         assertNull(signature.proof)
@@ -54,7 +54,7 @@ class SignatureProofTests : UtxoLedgerWithBatchSignerTest() {
 
     @Test
     fun `signBatch() produces a signature with proof`() {
-        val batchSignatures = signingService.signBatch(listOf(signedTransaction), listOf(publicKeyExample))
+        val batchSignatures = transactionSignatureService.signBatch(listOf(signedTransaction), listOf(publicKeyExample))
         assertEquals(1, batchSignatures.size)
         val batch: List<DigitalSignatureAndMetadata> = batchSignatures.first()
         assertEquals(1, batch.size)
