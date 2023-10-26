@@ -59,12 +59,12 @@ class VirtualNodeDbImplTest {
     }
 
     @Test
-    fun `create schema and users for platform managed DBs - throws if DDL user is missing`() {
+    fun `create schema and users for platform managed DBs - does nothing if DDL user is missing`() {
         val target = createVirtualNodeDb(isPlatformManagedDb = true)
 
         whenever(ddlConnection.getUser()).thenReturn(null)
 
-        assertThrows<DBConfigurationException> { target.createSchemasAndUsers() }
+        assertDoesNotThrow { target.createSchemasAndUsers() }
     }
 
     @Test
@@ -77,12 +77,12 @@ class VirtualNodeDbImplTest {
     }
 
     @Test
-    fun `create schema and users for platform managed DBs - throws if DDL password is missing`() {
+    fun `create schema and users for platform managed DBs - does nothing if DDL password is missing`() {
         val target = createVirtualNodeDb(isPlatformManagedDb = true)
 
         whenever(ddlConnection.getPassword()).thenReturn(null)
 
-        assertThrows<DBConfigurationException> { target.createSchemasAndUsers() }
+        assertDoesNotThrow { target.createSchemasAndUsers() }
     }
 
     @Test
