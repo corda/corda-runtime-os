@@ -28,7 +28,7 @@ import java.time.Instant
 
 
 data class CreateLockFlowArgs(val newOwner: String, val stateId: String, val transactionId: SecureHash,
-                              val publickKey: ByteBuffer, val timeWindow: String)
+                              val publicKey: ByteBuffer, val timeWindow: String)
 
 data class CreateLockFlowResult(
     val transactionId: String,
@@ -88,7 +88,7 @@ class CreateLockFlow : ClientStartableFlow {
                 throw CordaRuntimeException("Only the owner of a state can transfer it to a new owner.")
             }
 
-            val x509publicKey = X509EncodedKeySpec(flowArgs.publickKey.array())
+            val x509publicKey = X509EncodedKeySpec(flowArgs.publicKey.array())
             val kf: KeyFactory = KeyFactory.getInstance("EC")
             val publicKey = kf.generatePublic(x509publicKey)
 
