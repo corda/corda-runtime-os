@@ -2,7 +2,10 @@ package com.r3.corda.atomic.swap.contracts
 
 import com.r3.corda.atomic.swap.states.LockState
 import com.r3.corda.ledger.utxo.ownable.OwnableState
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
+import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.ledger.common.transaction.TransactionSignatureVerificationService
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
@@ -10,9 +13,12 @@ import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 
 class LockContract : Contract {
 
+    @CordaInject
+    lateinit var transactionSignatureVerificationService: TransactionSignatureVerificationService
+
     interface LockCommands : Command {
         class Lock : LockCommands
-        class Unlock(val bool: Boolean) : LockCommands
+        class Unlock(val notarySignature: DigitalSignatureAndMetadata) : LockCommands
         class Reclaim : LockCommands
     }
 
@@ -34,10 +40,11 @@ class LockContract : Contract {
             is LockCommands.Unlock -> {
                 val input = transaction.getInputStates(LockState::class.java).singleOrNull()
                     ?: throw CordaRuntimeException("Can't find lock state for verification")
-                "Unlock takes one command input of type Boolean and the value should be true." using
-                        (command.bool == input.bool)
                 "There should be one input state as the lock state needs to be consumed" using
                         (transaction.getInputStates(LockState::class.java).size == 1)
+                val lock : LockState = transaction.getInputStates(LockState::class.java).single()
+                transactionSignatureVerificationService.verifySignature(lock.transactionIdToVerify,
+                    command.notarySignature, lock.notaryPublicKey)
                 "There should be one output state as an unlocked asset state needs to be created" using
                         (transaction.outputContractStates.size == 1)
                 "There should be no output lock output states" using

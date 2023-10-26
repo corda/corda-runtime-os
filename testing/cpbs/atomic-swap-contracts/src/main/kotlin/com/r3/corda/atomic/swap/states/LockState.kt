@@ -1,6 +1,7 @@
 package com.r3.corda.atomic.swap.states
 
 import com.r3.corda.atomic.swap.contracts.LockContract
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.BelongsToContract
 import net.corda.v5.ledger.utxo.ContractState
 import java.security.PublicKey
@@ -13,7 +14,8 @@ data class LockState(
     val assetId: String,
     val timeWindow: Instant,
     private val participants: List<PublicKey>,
-    val bool: Boolean = true
+    val transactionIdToVerify: SecureHash,
+    val notaryPublicKey: PublicKey
 ) : ContractState {
 
     override fun getParticipants(): List<PublicKey> {

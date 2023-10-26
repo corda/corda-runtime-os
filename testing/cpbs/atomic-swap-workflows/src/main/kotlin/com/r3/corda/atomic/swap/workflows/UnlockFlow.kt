@@ -4,11 +4,12 @@ import com.r3.corda.atomic.swap.contracts.AssetContract
 import com.r3.corda.atomic.swap.contracts.LockContract
 import com.r3.corda.atomic.swap.states.Asset
 import com.r3.corda.atomic.swap.states.LockState
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
-import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.marshalling.InteropJsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -19,7 +20,7 @@ import java.time.Duration
 import java.time.Instant
 
 
-data class UnlockFlowArgs(val newOwner: String, val stateId: String)
+data class UnlockFlowArgs(val newOwner: String, val stateId: String, val signature: DigitalSignatureAndMetadata)
 
 data class UnlockFlowResult(val transactionId: String, val stateId: String, val ownerPublicKey: String)
 
@@ -31,7 +32,7 @@ class UnlockFlow : ClientStartableFlow {
     }
 
     @CordaInject
-    lateinit var jsonMarshallingService: JsonMarshallingService
+    lateinit var jsonMarshallingService: InteropJsonMarshallingService
 
     @CordaInject
     lateinit var memberLookup: MemberLookup
@@ -87,12 +88,11 @@ class UnlockFlow : ClientStartableFlow {
                 .addInputState(stateAndRefLock.ref)
                 .addInputState(stateAndRefAsset.ref)
                 .addOutputState(newState)
-                .addCommand(LockContract.LockCommands.Unlock(true))
+                .addCommand(LockContract.LockCommands.Unlock(flowArgs.signature))
                 .addCommand(AssetContract.AssetCommands.Transfer())
                 .addSignatories(newState.owner)
 
             val signedTransaction = txBuilder.toSignedTransaction()
-            log.info("The signatories on unlock transaction are: ${signedTransaction.signatories}")
 
             val transactionId =
                 flowEngine.subFlow(FinalizeFlow(signedTransaction, listOf(ownerInfo.name, newOwnerInfo.name)))
