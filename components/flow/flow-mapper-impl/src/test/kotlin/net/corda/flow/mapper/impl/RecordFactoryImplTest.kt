@@ -223,7 +223,7 @@ internal class RecordFactoryImplTest {
         )
         assertThat(record).isNotNull
         assertThat(record.topic).isEqualTo(Schemas.P2P.P2P_OUT_TOPIC)
-        assertThat(record.key).isEqualTo(SESSION_ID)
+        assertThat(record.key as? String).startsWith("${alice.x500Name}->${bob.x500Name}")
         assertThat(record.value!!::class).isEqualTo(AppMessage::class)
         val sessionOutput = ((record.value as AppMessage).message as AuthenticatedMessage).payload
         assertThat(sessionOutput).isEqualTo(ByteBuffer.wrap("SessionEventSerialized".toByteArray()))
@@ -280,7 +280,7 @@ internal class RecordFactoryImplTest {
             flowConfig,
         )
         assertThat(record.topic).isEqualTo(Schemas.P2P.P2P_OUT_TOPIC)
-        assertThat(record.key).isEqualTo(SESSION_ID)
+        assertThat(record.key as? String).startsWith("${alice.x500Name}->${bob.x500Name}")
         assertThat(record.value!!::class.java).isEqualTo(AppMessage::class.java)
         val sessionOutput = ((record.value as AppMessage).message as AuthenticatedMessage).payload
         assertThat(sessionOutput).isEqualTo(ByteBuffer.wrap("SessionEventSerialized".toByteArray()))
