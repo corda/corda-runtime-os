@@ -154,7 +154,7 @@ class VirtualNodeDbImplTest {
     }
 
     @Test
-    fun `run cpi migrations throws if no DDL connection present`() {
+    fun `run cpi migrations does nothing if no DDL connection present`() {
         val target = createVirtualNodeDb(
             isPlatformManagedDb = true,
             dbConnections = mapOf(
@@ -181,7 +181,7 @@ class VirtualNodeDbImplTest {
     }
 
     @Test
-    fun `run DB migration throws if no DDL connection set`() {
+    fun `run DB migration does nothing if no DDL connection set`() {
         val target = createVirtualNodeDb(
             isPlatformManagedDb = true,
             dbConnections = mapOf(
