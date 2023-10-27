@@ -32,6 +32,7 @@ import java.time.Instant
 import java.util.UUID
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
+import net.corda.data.interop.InteropProcessorEvent
 import net.corda.interop.identity.registry.InteropIdentityRegistryService
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_IN
@@ -42,11 +43,11 @@ class InteropProcessor(
     private val facadeToFlowMapperService: InteropFacadeToFlowMapperService,
     private val interopIdentityRegistryService: InteropIdentityRegistryService,
     private val flowConfig: SmartConfig
-) : StateAndEventProcessor<String, InteropState, FlowMapperEvent> {
+) : StateAndEventProcessor<String, InteropState, InteropProcessorEvent> {
 
     override val keyClass = String::class.java
     override val stateValueClass = InteropState::class.java
-    override val eventValueClass = FlowMapperEvent::class.java
+    override val eventValueClass = InteropProcessorEvent::class.java
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -240,7 +241,7 @@ class InteropProcessor(
 
     override fun onNext(
         state: StateAndEventProcessor.State<InteropState>?,
-        event: Record<String, FlowMapperEvent>
+        event: Record<String, InteropProcessorEvent>
     ): StateAndEventProcessor.Response<InteropState> {
         val eventPayload = event.value?.payload
 

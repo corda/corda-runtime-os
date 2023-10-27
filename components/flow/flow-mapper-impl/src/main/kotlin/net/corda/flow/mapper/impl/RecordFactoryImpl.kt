@@ -27,6 +27,7 @@ import org.osgi.service.component.annotations.Reference
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
+import net.corda.data.interop.InteropProcessorEvent
 
 @Component(service = [RecordFactory::class])
 class RecordFactoryImpl @Activate constructor(
@@ -156,7 +157,7 @@ class RecordFactoryImpl @Activate constructor(
                 Record(outputTopic, flowId, FlowEvent(flowId, sessionEvent))
             }
             Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC -> {
-                Record(outputTopic, sessionId, FlowMapperEvent(sessionEvent))
+                Record(outputTopic, sessionId, InteropProcessorEvent(sessionEvent))
             }
             Schemas.Flow.FLOW_MAPPER_SESSION_IN -> {
                 Record(outputTopic, sessionEvent.sessionId, FlowMapperEvent(sessionEvent))

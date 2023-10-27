@@ -4,6 +4,7 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.state.mapper.FlowMapperState
+import net.corda.data.interop.InteropProcessorEvent
 import net.corda.data.p2p.app.AppMessage
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
 import net.corda.libs.configuration.SmartConfig
@@ -16,6 +17,7 @@ import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.mediator.factory.MessagingClientFactoryFactory
 import net.corda.messaging.api.mediator.factory.MultiSourceEventMediatorFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.schema.Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_IN
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_OUT
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_START
@@ -102,6 +104,7 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
                     }
                 }
                 is FlowMapperEvent -> routeTo(messageBusClient, FLOW_MAPPER_SESSION_IN)
+                is InteropProcessorEvent -> routeTo(messageBusClient, FLOW_INTEROP_EVENT_TOPIC)
                 else -> {
                     val eventType = event?.let { it::class.java }
                     throw IllegalStateException("No route defined for event type [$eventType]")
