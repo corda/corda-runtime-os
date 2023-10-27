@@ -37,9 +37,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Config.CONFIG_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_CLEANUP_TOPIC
-import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_IN
-import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_OUT
-import net.corda.schema.Schemas.Flow.FLOW_MAPPER_START
+import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import net.corda.schema.Schemas.ScheduledTask
 import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
@@ -147,7 +145,7 @@ class FlowMapperServiceIntegrationTest {
         }
     }
 
-    //@Test
+    @Test
     fun `Test first session event outbound sets up flow mapper state, verify subsequent messages received are passed to flow event topic`
                 () {
         val testId = "test1"
@@ -158,7 +156,7 @@ class FlowMapperServiceIntegrationTest {
 
         //send 2 session init
         val sessionDataAndInitEvent = Record<Any, Any>(
-            FLOW_MAPPER_SESSION_OUT, testSessionId, FlowMapperEvent(
+            FLOW_MAPPER_EVENT_TOPIC, testSessionId, FlowMapperEvent(
                 buildSessionEvent(
                     MessageDirection.OUTBOUND, testSessionId, 1, SessionData(ByteBuffer.wrap("bytes".toByteArray()), SessionInit(
                         testCpiId, testFlowId, emptyKeyValuePairList(), emptyKeyValuePairList()
@@ -183,7 +181,7 @@ class FlowMapperServiceIntegrationTest {
 
         //send data back
         val sessionDataEvent = Record<Any, Any>(
-            FLOW_MAPPER_SESSION_IN, testSessionId, FlowMapperEvent(
+            FLOW_MAPPER_EVENT_TOPIC, testSessionId, FlowMapperEvent(
                 buildSessionEvent(
                     MessageDirection.INBOUND,
                     testSessionId,
@@ -209,7 +207,7 @@ class FlowMapperServiceIntegrationTest {
         flowEventMediator.close()
     }
 
-    //@Test
+    @Test
     fun testStartRPCDuplicatesAndCleanup() {
         val testId = "test2"
         val publisher = publisherFactory.createPublisher(PublisherConfig(testId), messagingConfig)
@@ -230,7 +228,7 @@ class FlowMapperServiceIntegrationTest {
         )
 
         val startRPCEvent = Record<Any, Any>(
-            FLOW_MAPPER_START, testId, FlowMapperEvent(
+            FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
                 StartFlow(
                     context,
                     ""
@@ -279,14 +277,14 @@ class FlowMapperServiceIntegrationTest {
         flowEventMediator.close()
     }
 
-    //@Test
+    @Test
     fun testNoStateForMapper() {
         val testId = "test3"
         val publisher = publisherFactory.createPublisher(PublisherConfig(testId), messagingConfig)
 
         //send data, no state
         val sessionDataEvent = Record<Any, Any>(
-            FLOW_MAPPER_SESSION_OUT, testId, FlowMapperEvent(
+            FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
                 buildSessionEvent(
                     MessageDirection.OUTBOUND,
                     testId,
@@ -319,7 +317,7 @@ class FlowMapperServiceIntegrationTest {
 
         //send 2 session init, 1 is duplicate
         val sessionInitEvent = Record<Any, Any>(
-            FLOW_MAPPER_SESSION_OUT, testSessionId, FlowMapperEvent(
+            FLOW_MAPPER_EVENT_TOPIC, testSessionId, FlowMapperEvent(
                 buildSessionEvent(
                     MessageDirection.OUTBOUND, testSessionId, 1, SessionCounterpartyInfoRequest(SessionInit(
                         testCpiId, testFlowId, emptyKeyValuePairList(), emptyKeyValuePairList()
@@ -347,7 +345,7 @@ class FlowMapperServiceIntegrationTest {
 
         //send data back
         val sessionDataEvent = Record<Any, Any>(
-            FLOW_MAPPER_SESSION_IN, testSessionId, FlowMapperEvent(
+            FLOW_MAPPER_EVENT_TOPIC, testSessionId, FlowMapperEvent(
                 buildSessionEvent(
                     MessageDirection.INBOUND,
                     testSessionId,
@@ -375,14 +373,14 @@ class FlowMapperServiceIntegrationTest {
     }
 
 
-    //@Test
+    @Test
     fun `when the flow mapper receives an inbound session message for a non-existent session, an error is returned`() {
         val testId = "test5"
         val publisher = publisherFactory.createPublisher(PublisherConfig(testId), messagingConfig)
 
         //send data, no state
         val sessionDataEvent = Record<Any, Any>(
-            FLOW_MAPPER_SESSION_IN, testId, FlowMapperEvent(
+            FLOW_MAPPER_EVENT_TOPIC, testId, FlowMapperEvent(
                 buildSessionEvent(
                     MessageDirection.INBOUND,
                     testId,
@@ -398,7 +396,7 @@ class FlowMapperServiceIntegrationTest {
         val mapperLatch = CountDownLatch(2) // The initial message and the error back.
         val records = mutableListOf<SessionEvent>()
         val mapperSub = subscriptionFactory.createPubSubSubscription(
-            SubscriptionConfig("$testId-mapper", FLOW_MAPPER_SESSION_IN),
+            SubscriptionConfig("$testId-mapper", FLOW_MAPPER_EVENT_TOPIC),
             TestFlowMapperProcessor(mapperLatch, records),
             messagingConfig
         )
@@ -418,7 +416,7 @@ class FlowMapperServiceIntegrationTest {
         assertThat(event.payload).isInstanceOf(SessionError::class.java)
     }
 
-    //@Test
+    @Test
     fun `mapper state cleanup correctly cleans up old states`() {
 
         // Create a state in the state manager. Note the modified time has to be further in the past than the configured
