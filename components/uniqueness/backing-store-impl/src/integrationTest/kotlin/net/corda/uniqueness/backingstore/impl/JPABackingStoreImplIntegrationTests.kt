@@ -311,7 +311,7 @@ class JPABackingStoreImplIntegrationTests {
 
             UniquenessAssertions.assertContainingTxId(txnDetails, txIds.single())
             UniquenessAssertions.assertInputStateConflictResult(
-                txnDetails.entries.single().value.result, txId, consumingTxId, 1, testClock
+                txnDetails.entries.single().value.result, txId, consumingTxId, 0, testClock
             )
         }
 
