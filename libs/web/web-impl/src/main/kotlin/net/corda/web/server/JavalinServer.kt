@@ -1,6 +1,7 @@
 package net.corda.web.server
 
 import io.javalin.Javalin
+import io.javalin.http.NotFoundResponse
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
@@ -92,6 +93,11 @@ class JavalinServer(
             it.handlerAdded { meta ->
                 log.info("Handler added to webserver: $meta")
             }
+        }
+        server?.exception(NotFoundResponse::class.java) { _, ctx ->
+            log.warn("Received request on non-existing endpoint: ${ctx.req.requestURI}")
+            ctx.result("404 Not Found")
+            ctx.status(404)
         }
         coordinator.updateStatus(LifecycleStatus.UP)
     }
