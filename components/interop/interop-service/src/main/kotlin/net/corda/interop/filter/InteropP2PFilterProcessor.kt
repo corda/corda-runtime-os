@@ -13,6 +13,7 @@ import net.corda.schema.Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC
 import net.corda.session.manager.Constants
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
+import net.corda.data.interop.InteropProcessorEvent
 
 /**
  * Processes events from the P2P.in topic.
@@ -42,7 +43,7 @@ class InteropP2PFilterProcessor(cordaAvroSerializationFactory: CordaAvroSerializ
     private fun processInteropMessage(
         payload: ByteBuffer,
         key: String
-    ) : Record<String, FlowMapperEvent>? {
+    ) : Record<String, InteropProcessorEvent>? {
         val sessionEvent = cordaAvroDeserializer.deserialize(payload.array())
 
         return if (sessionEvent != null) {
@@ -51,7 +52,7 @@ class InteropP2PFilterProcessor(cordaAvroSerializationFactory: CordaAvroSerializ
             sessionEvent.sessionId = sessionId
             logger.info("Processing message from p2p.in. Key: $key," +
                     " session ${sessionEvent.sessionId}/${sessionEvent.sequenceNum} type ${sessionEvent.payload::class.java}")
-            Record(FLOW_INTEROP_EVENT_TOPIC, sessionId, FlowMapperEvent(sessionEvent))
+            Record(FLOW_INTEROP_EVENT_TOPIC, sessionId, InteropProcessorEvent(sessionEvent))
         } else {
             logger.info("Processing message from p2p.in. Key: $key. with null payload" )
             null
