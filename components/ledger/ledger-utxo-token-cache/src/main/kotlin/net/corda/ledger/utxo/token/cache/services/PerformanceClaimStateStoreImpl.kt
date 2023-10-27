@@ -6,6 +6,8 @@ import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.utilities.time.Clock
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
@@ -20,6 +22,10 @@ class PerformanceClaimStateStoreImpl(
     tokenPoolCache: TokenPoolCache,
     private val clock: Clock
 ) : ClaimStateStore {
+
+    private companion object {
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
     // We use a limited queue executor to ensure we only ever queue one new request if we are currently processing
     // an existing request.
@@ -73,7 +79,10 @@ class PerformanceClaimStateStoreImpl(
                stateManager.update(listOf(stateManagerState))
                     .map { it.value }
                     .firstOrNull()
-            } finally {
+            } catch(ex: Exception) {
+
+                logger.warn("Exception during execution of an update", ex)
+
                 // The current batch of requests aborted and the state set to version -1.
                 // This will force a refresh of the state when the DB is available.
                 State(
