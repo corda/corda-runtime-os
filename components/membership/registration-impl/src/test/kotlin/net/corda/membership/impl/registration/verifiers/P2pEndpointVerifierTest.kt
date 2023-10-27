@@ -173,4 +173,28 @@ class P2pEndpointVerifierTest {
          .hasMessageContaining("Endpoint URL ('https://username:password@www.corda.net:8888') " +
                  "had user info specified, which must not be specified.")
     }
+
+    @Test
+    fun `duplicate URLs will fail validation`() {
+        val url1 = "https://www.r3.com:8080"
+        val url2 = "https://www.corda.net:8888"
+
+        val context = mapOf(
+            "corda.endpoints.0.connectionURL" to url1,
+            "corda.endpoints.0.protocolVersion" to "1",
+            "corda.endpoints.1.connectionURL" to url1,
+            "corda.endpoints.1.protocolVersion" to "1",
+            "corda.endpoints.2.connectionURL" to url2,
+            "corda.endpoints.2.protocolVersion" to "1",
+            "corda.endpoints.3.connectionURL" to url2,
+            "corda.endpoints.3.protocolVersion" to "1",
+        )
+
+        assertThatThrownBy {
+            p2pEndpointVerifier.verifyContext(context)
+        }.isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessageContaining("Duplicate connection URLs found")
+            .hasMessageContaining(url1)
+            .hasMessageContaining(url2)
+    }
 }
