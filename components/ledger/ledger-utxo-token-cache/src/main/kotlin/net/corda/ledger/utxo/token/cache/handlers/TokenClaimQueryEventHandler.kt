@@ -61,11 +61,7 @@ class TokenClaimQueryEventHandler(
 
             // Replace the tokens in the cache with the ones from the query result that have not been claimed
             tokenCache.add(tokens)
-            logger.info(
-                "Claim Created vNode='${event.poolKey.shortHolderId}' FlowId='${event.flowId}' ClaimId='${claimId}' Tokens='${
-                    tokens.map { it.stateRef }.joinToString(", ")
-                }'"
-            )
+
             selectionResult = selectTokens(tokenCache, state, event)
         }
 
@@ -76,6 +72,11 @@ class TokenClaimQueryEventHandler(
             // Claimed tokens should not be stored in the token cache
             tokenCache.removeAll(selectedTokens.map { it.stateRef }.toSet())
             state.addNewClaim(claimId, selectedTokens)
+            logger.info(
+                "Claim Created vNode='${event.poolKey.shortHolderId}' FlowId='${event.flowId}' ClaimId='${claimId}' Tokens='${
+                    selectedTokens.map { it.stateRef }.joinToString(", ")
+                }'"
+            )
             recordFactory.getSuccessfulClaimResponse(
                 event.flowId,
                 event.externalEventRequestId,
