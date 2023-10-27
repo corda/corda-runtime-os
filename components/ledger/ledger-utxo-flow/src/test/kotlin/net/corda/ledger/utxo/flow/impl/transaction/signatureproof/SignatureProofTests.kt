@@ -46,7 +46,7 @@ class SignatureProofTests : UtxoLedgerWithBatchSignerTest() {
 
     @Test
     fun `sign() produces a signature without proof`() {
-        val signatures = singingService.sign(signedTransaction, listOf(publicKeyExample))
+        val signatures = signingService.sign(signedTransaction, listOf(publicKeyExample))
         assertEquals(1, signatures.size)
         val signature: DigitalSignatureAndMetadata = signatures.first()
         assertNull(signature.proof)
@@ -54,7 +54,7 @@ class SignatureProofTests : UtxoLedgerWithBatchSignerTest() {
 
     @Test
     fun `signBatch() produces a signature with proof`() {
-        val batchSignatures = singingService.signBatch(listOf(signedTransaction), listOf(publicKeyExample))
+        val batchSignatures = signingService.signBatch(listOf(signedTransaction), listOf(publicKeyExample))
         assertEquals(1, batchSignatures.size)
         val batch: List<DigitalSignatureAndMetadata> = batchSignatures.first()
         assertEquals(1, batch.size)

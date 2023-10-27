@@ -23,14 +23,14 @@ import java.security.PrivateKey
 import java.security.Signature
 
 /**
- * Extension of [UtxoLedgerTest] base class with [singingService] service. The service can sign a batch of transactions
+ * Extension of [UtxoLedgerTest] base class with [signingService] service. The service can sign a batch of transactions
  * (including size 1). This allows to have a proof [net.corda.v5.crypto.merkle.MerkleProof] inside the signature
  * [DigitalSignatureAndMetadata].
  * The signing uses [net.corda.crypto.cipher.suite.SignatureSpecs.ECDSA_SHA256] algorithm.
  */
 abstract class UtxoLedgerWithBatchSignerTest : UtxoLedgerTest() {
 
-    val singingService = TransactionSignatureServiceImpl(
+    val signingService = TransactionSignatureServiceImpl(
         serializationServiceWithWireTx,
         signingService = mock<SigningService>().also {
             whenever(it.findMySigningKeys(any())).thenReturn(mapOf(publicKeyExample to publicKeyExample))
