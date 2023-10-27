@@ -35,22 +35,23 @@ class JavalinServer(
         platformInfoProvider: PlatformInfoProvider,
     ) : this(
         coordinatorFactory,
-        {
+        ::createJavalin,
+        platformInfoProvider)
+
+    companion object {
+        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+
+        fun createJavalin(maxRequestSize: Long = 100_000_000L) =
             Javalin.create { config ->
                 // hardcode to 100Mb for now
                 // TODO CORE-17986: make configurable
-                config.maxRequestSize = 100_000_000L
+                config.maxRequestSize = maxRequestSize
 
                 if (log.isDebugEnabled) {
                     config.enableDevLogging()
                 }
                 configureJavalinForTracing(config)
             }
-        },
-        platformInfoProvider)
-
-    private companion object {
-        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val apiPathPrefix: String = "/api/${platformInfoProvider.localWorkerSoftwareShortVersion}"
