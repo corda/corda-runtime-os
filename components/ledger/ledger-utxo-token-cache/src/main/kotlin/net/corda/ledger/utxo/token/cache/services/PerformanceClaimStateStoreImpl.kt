@@ -69,9 +69,20 @@ class PerformanceClaimStateStoreImpl(
                 modifiedTime = clock.instant()
             )
 
-            val mismatchedState = stateManager.update(listOf(stateManagerState))
-                .map { it.value }
-                .firstOrNull()
+            val mismatchedState = try {
+               stateManager.update(listOf(stateManagerState))
+                    .map { it.value }
+                    .firstOrNull()
+            } finally {
+                // The current batch of requests aborted and the state set to version -1.
+                // This will force a refresh of the state when the DB is available.
+                State(
+                    key.toString(),
+                    stateManagerState.value,
+                    -1,
+                    modifiedTime = stateManagerState.modifiedTime
+                )
+            }
 
             // If we failed to update the state then fail the batch of requests and rollback the state to the DB
             // version
