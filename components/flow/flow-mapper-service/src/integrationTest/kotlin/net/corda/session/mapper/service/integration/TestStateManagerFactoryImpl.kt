@@ -7,6 +7,7 @@ import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
 import org.osgi.service.component.annotations.Component
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * The real state manager implementation requires postgres to run. As a result, it is impossible to plug it into the
@@ -17,6 +18,11 @@ import org.osgi.service.component.annotations.Component
  */
 @Component
 class TestStateManagerFactoryImpl : StateManagerFactory {
+    companion object {
+        private val storage = ConcurrentHashMap<String, State>()
+
+        fun clear() = storage.clear()
+    }
 
     override fun create(config: SmartConfig): StateManager {
         return object : StateManager {
@@ -24,19 +30,43 @@ class TestStateManagerFactoryImpl : StateManagerFactory {
             }
 
             override fun create(states: Collection<State>): Map<String, Exception> {
-                TODO("Not yet implemented")
+                return states.mapNotNull {
+                    storage.putIfAbsent(it.key, it)
+                }.associate { it.key to RuntimeException("State already exists [$it]") }
             }
 
             override fun get(keys: Collection<String>): Map<String, State> {
-                TODO("Not yet implemented")
+                return keys.mapNotNull { storage[it] }.associateBy { it.key }
             }
 
             override fun update(states: Collection<State>): Map<String, State> {
-                TODO("Not yet implemented")
+                return states.mapNotNull {
+                    var output: State? = null
+                    storage.compute(it.key) { _, existingState ->
+                        if (existingState?.version == it.version) {
+                            it.copy(version = it.version + 1)
+                        } else {
+                            output = it
+                            it
+                        }
+                    }
+                    output
+                }.associateBy { it.key }
             }
 
             override fun delete(states: Collection<State>): Map<String, State> {
-                TODO("Not yet implemented")
+                return states.mapNotNull {
+                    var output: State? = null
+                    storage.compute(it.key) { _, existingState ->
+                        if (existingState?.version == it.version) {
+                            null
+                        } else {
+                            output = it
+                            existingState
+                        }
+                    }
+                    output
+                }.associateBy { it.key }
             }
 
             override fun updatedBetween(interval: IntervalFilter): Map<String, State> {
@@ -51,11 +81,16 @@ class TestStateManagerFactoryImpl : StateManagerFactory {
                 TODO("Not yet implemented")
             }
 
+            // Only supporting equals for now.
             override fun findUpdatedBetweenWithMetadataFilter(
                 intervalFilter: IntervalFilter,
                 metadataFilter: MetadataFilter
             ): Map<String, State> {
-                TODO("Not yet implemented")
+                return storage.filter { (_, state) ->
+                    state.modifiedTime >= intervalFilter.start && state.modifiedTime <= intervalFilter.finish
+                }.filter { (_, state) ->
+                    state.metadata.containsKey(metadataFilter.key) && state.metadata[metadataFilter.key] == metadataFilter.value
+                }
             }
         }
     }

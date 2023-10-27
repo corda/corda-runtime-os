@@ -41,6 +41,7 @@ dependencies {
     implementation project(":libs:serialization:serialization-avro")
 
     implementation 'net.corda:corda-application'
+    implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-db-schema'
     implementation 'net.corda:corda-topic-schema'

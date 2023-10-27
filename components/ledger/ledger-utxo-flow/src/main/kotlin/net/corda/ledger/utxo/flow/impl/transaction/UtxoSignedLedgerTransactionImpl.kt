@@ -21,7 +21,7 @@ import java.security.PublicKey
  */
 data class UtxoSignedLedgerTransactionImpl(
     override val ledgerTransaction: UtxoLedgerTransactionInternal,
-    private val signedTransaction: UtxoSignedTransactionInternal
+    override val signedTransaction: UtxoSignedTransactionInternal
 ) : UtxoSignedLedgerTransaction, UtxoLedgerTransaction by ledgerTransaction, UtxoSignedTransactionInternal by signedTransaction {
 
     override fun getId(): SecureHash {

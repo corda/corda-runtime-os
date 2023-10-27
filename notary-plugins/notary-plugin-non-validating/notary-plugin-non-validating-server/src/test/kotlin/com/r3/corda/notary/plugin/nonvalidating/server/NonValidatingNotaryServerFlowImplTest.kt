@@ -11,6 +11,7 @@ import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateUnk
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorUnhandledExceptionImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.uniqueness.model.UniquenessCheckError
@@ -136,14 +137,17 @@ class NonValidatingNotaryServerFlowImplTest {
 
     @Test
     fun `Non-validating notary plugin server should respond with error if the uniqueness check fails`() {
-        createAndCallServer(mockErrorUniquenessClientService(UniquenessCheckErrorReferenceStateUnknownImpl(emptyList()))) {
-            assertThat(responseFromServer).hasSize(1)
+        val unknownStateRef = UniquenessCheckStateRefImpl(randomSecureHash(), 0)
 
+        createAndCallServer(mockErrorUniquenessClientService(
+            UniquenessCheckErrorReferenceStateUnknownImpl(listOf(unknownStateRef)))) {
+
+            assertThat(responseFromServer).hasSize(1)
             val responseError = responseFromServer.first().error
             assertThat(responseError).isNotNull
             assertThat(responseFromServer.first().signatures).isEmpty()
             assertThat(responseError).isInstanceOf(NotaryExceptionReferenceStateUnknown::class.java)
-            assertThat((responseError as NotaryExceptionReferenceStateUnknown).unknownStates).isEmpty()
+            assertThat((responseError as NotaryExceptionReferenceStateUnknown).unknownStates).containsExactly(unknownStateRef)
         }
     }
 

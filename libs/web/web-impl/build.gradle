@@ -11,6 +11,7 @@ dependencies {
     implementation project(":libs:lifecycle:lifecycle")
     api project(':libs:platform-info')
     implementation project(":libs:rest:rest")
+    implementation project(':libs:tracing')
     implementation project(":libs:web:web")
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'

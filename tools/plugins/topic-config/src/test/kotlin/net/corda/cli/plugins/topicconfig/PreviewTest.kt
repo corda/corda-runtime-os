@@ -41,6 +41,7 @@ class PreviewTest {
             "persistence" to "I",
             "rest" to "J",
             "uniqueness" to "K")
+        preview.create!!.topic!!.namePrefix = "prefix."
         return preview
     }
 }

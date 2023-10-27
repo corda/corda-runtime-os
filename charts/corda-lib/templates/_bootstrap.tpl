@@ -153,12 +153,12 @@ spec:
 
               JDBC_URL="jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}"
 
-              echo 'Generating DB specification'
+              echo 'Generating Cluster DB specification'
               mkdir /tmp/db
               java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar database spec \
-                -s "config,rbac,crypto,statemanager" \
-                -g "config:${DB_CLUSTER_SCHEMA},rbac:${DB_RBAC_SCHEMA},crypto:${DB_CRYPTO_SCHEMA},statemanager:STATE_MANAGER" \
-                -u "${PGUSER}" -p "${PGPASSWORD}" \
+                -s "config,rbac,crypto" \
+                -g "config:${DB_CLUSTER_SCHEMA},rbac:${DB_RBAC_SCHEMA},crypto:${DB_CRYPTO_SCHEMA}" \
+                -u "${CLUSTER_PGUSER}" -p "${CLUSTER_PGPASSWORD}" \
                 --jdbc-url "${JDBC_URL}" \
                 -c -l /tmp/db
 
@@ -257,6 +257,15 @@ spec:
             {{- include "corda.restApiAdminSecretEnv" . | nindent 12 }}
             {{- include "corda.cryptoDbUsernameEnv" . | nindent 12 }}
             {{- include "corda.cryptoDbPasswordEnv" . | nindent 12 }}
+            {{- range $workerName, $authConfig := .Values.bootstrap.db.stateManager -}}
+            {{-   $workerConfig := (index $.Values.workers $workerName) -}}
+            {{/*  No point in trying to bootstrap the State Manager for the specific worker if the host has not been configured */}}
+            {{-   if and (not $workerConfig.stateManager.db.host) (or ( $authConfig.username.value ) ( $authConfig.username.valueFrom.secretKeyRef.name ) ( $authConfig.password.value ) ( $authConfig.password.valueFrom.secretKeyRef.name ) ) -}}
+            {{-     fail ( printf "Can only specify bootstrap.db.stateManager.%s when workers.%s.stateManager.host is configured" $workerName $workerName ) -}}
+            {{-   else -}}
+            {{-     include "corda.bootstrapStateManagerDb" ( list $ $workerName $authConfig ) }}
+            {{-   end -}}
+            {{- end }}
       containers:
         - name: apply
           image: {{ include "corda.bootstrapDbClientImage" . }}
@@ -270,16 +279,17 @@ spec:
               set -ev
 
               echo 'Applying DB specification'
-              find /tmp/db -iname "*.sql" | xargs printf -- ' -f %s' | xargs psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" --dbname "${DB_CLUSTER_NAME}"
+              export PGPASSWORD="${CLUSTER_PGPASSWORD}"
+              find /tmp/db -iname "*.sql" | xargs printf -- ' -f %s' | xargs psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -U "${CLUSTER_PGUSER}" --dbname "${DB_CLUSTER_NAME}"
 
               echo 'Applying initial configurations'
-              psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -f /tmp/rbac/db-config.sql -f /tmp/vnodes/db-config.sql -f /tmp/crypto/db-config.sql -f /tmp/crypto-config.sql --dbname "dbname=${DB_CLUSTER_NAME} options=--search_path=${DB_CLUSTER_SCHEMA}"
+              psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -U "${CLUSTER_PGUSER}" -f /tmp/rbac/db-config.sql -f /tmp/vnodes/db-config.sql -f /tmp/crypto/db-config.sql -f /tmp/crypto-config.sql --dbname "dbname=${DB_CLUSTER_NAME} options=--search_path=${DB_CLUSTER_SCHEMA}"
 
               echo 'Applying initial RBAC configuration'
-              psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -f /tmp/rbac-config.sql --dbname "dbname=${DB_CLUSTER_NAME} options=--search_path=${DB_RBAC_SCHEMA}"
+              psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -U "${CLUSTER_PGUSER}" -f /tmp/rbac-config.sql --dbname "dbname=${DB_CLUSTER_NAME} options=--search_path=${DB_RBAC_SCHEMA}"
 
               echo 'Creating users and granting permissions'
-              psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" "${DB_CLUSTER_NAME}" << SQL
+              psql -v ON_ERROR_STOP=1 -h "${DB_CLUSTER_HOST}" -p "${DB_CLUSTER_PORT}" -U "${CLUSTER_PGUSER}" "${DB_CLUSTER_NAME}" << SQL
                 GRANT USAGE ON SCHEMA ${DB_CLUSTER_SCHEMA} TO "${DB_CLUSTER_USERNAME}";
                 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${DB_CLUSTER_SCHEMA} TO "${DB_CLUSTER_USERNAME}";
                 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA ${DB_CLUSTER_SCHEMA} TO "${DB_CLUSTER_USERNAME}";
@@ -289,8 +299,6 @@ spec:
                 DO \$\$ BEGIN IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${CRYPTO_DB_USER_USERNAME}') THEN RAISE NOTICE 'Role "${CRYPTO_DB_USER_USERNAME}" already exists'; ELSE CREATE USER "${CRYPTO_DB_USER_USERNAME}" WITH ENCRYPTED PASSWORD '$CRYPTO_DB_USER_PASSWORD'; END IF; END \$\$;
                 GRANT USAGE ON SCHEMA ${DB_CRYPTO_SCHEMA} TO "${CRYPTO_DB_USER_USERNAME}";
                 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${DB_CRYPTO_SCHEMA} TO "${CRYPTO_DB_USER_USERNAME}";
-                GRANT USAGE ON SCHEMA STATE_MANAGER TO "${DB_CLUSTER_USERNAME}";
-                GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA STATE_MANAGER TO "${DB_CLUSTER_USERNAME}";
               SQL
 
               echo 'DB Bootstrapped'
@@ -373,6 +381,9 @@ spec:
             {{- end }}
             '-r', '{{ .Values.bootstrap.kafka.replicas }}',
             '-p', '{{ .Values.bootstrap.kafka.partitions }}',
+            {{- if .Values.bootstrap.kafka.overrides }}
+            '-o', '/tmp/overrides.yaml',
+            {{- end }}
             'connect',
             '-w', '{{ .Values.bootstrap.kafka.timeoutSeconds }}'
           ]
@@ -408,7 +419,7 @@ spec:
               {{- end }}
             {{- end }}
       initContainers:
-        - name: create-trust-store
+        - name: setup
           image: {{ include "corda.bootstrapCliImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
@@ -421,6 +432,9 @@ spec:
             - -c
           args:
             - |
+                {{- with .Values.bootstrap.kafka.overrides }}
+                echo -e {{ toYaml . | quote }} > /tmp/overrides.yaml
+                {{- end }}
                 touch /tmp/config.properties
                 {{- if .Values.kafka.tls.enabled }}
                 {{- if .Values.kafka.sasl.enabled }}

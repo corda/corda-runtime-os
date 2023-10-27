@@ -16,7 +16,7 @@ enum class UtxoComponentGroup {
     SIGNATORIES,
     OUTPUTS_INFO,
     COMMANDS_INFO,
-    DATA_ATTACHMENTS,
+    UNUSED, // can't remove to keep the Merkle hash stable
     INPUTS,
     REFERENCES,
     OUTPUTS,

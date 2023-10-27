@@ -38,6 +38,7 @@ import net.corda.flow.testing.fakes.FakeInteropIdentityRegistryService
 import net.corda.flow.testing.fakes.FakeMembershipGroupReaderProvider
 import net.corda.flow.testing.fakes.FakeSandboxGroupContextComponent
 import net.corda.flow.testing.tests.ALL_TEST_VIRTUAL_NODES
+import net.corda.flow.testing.tests.CPK1_CHECKSUM
 import net.corda.flow.testing.tests.FLOW_NAME
 import net.corda.flow.testing.tests.SESSION_PROPERTIES
 import net.corda.flow.utils.KeyValueStore
@@ -56,6 +57,8 @@ import net.corda.libs.packaging.core.CpkType
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
+import net.corda.sandboxgroupcontext.SandboxGroupType.FLOW
+import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.FlowConfig
@@ -424,8 +427,12 @@ class FlowServiceTestContext @Activate constructor(
     }
 
     override fun resetFlowFiberCache() {
-        ALL_TEST_VIRTUAL_NODES.forEach { flowFiberCache.remove(it.toCorda()) }
+    ALL_TEST_VIRTUAL_NODES.forEach {
+        flowFiberCache.remove(
+            VirtualNodeContext(it.toCorda(), setOf(CPK1_CHECKSUM), FLOW, null)
+        )
     }
+}
 
     fun clearTestRuns() {
         testRuns.clear()

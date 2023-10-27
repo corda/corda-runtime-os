@@ -6,6 +6,7 @@ import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.ledger.verification.processor.VerificationSubscriptionFactory
 import net.corda.ledger.verification.sandbox.VerificationSandboxService
 import net.corda.libs.configuration.SmartConfig
+import net.corda.messaging.api.constants.WorkerRPCPaths.VERIFICATION_PATH
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -31,7 +32,6 @@ class VerificationSubscriptionFactoryImpl @Activate constructor(
     companion object {
         internal const val GROUP_NAME = "verification.ledger.processor"
         const val SUBSCRIPTION_NAME = "Verification"
-        const val VERIFICATION_PATH = "/verification"
     }
 
     override fun create(config: SmartConfig): Subscription<String, TransactionVerificationRequest> {

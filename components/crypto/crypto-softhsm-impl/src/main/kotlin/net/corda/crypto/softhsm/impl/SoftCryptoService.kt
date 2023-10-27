@@ -542,10 +542,9 @@ open class SoftCryptoService(
         val keyId = ShortHash.of(requestedFullKeyId)
         val cacheKey = ShortHashCacheKey(tenantId, keyId)
         val signingKeyInfo = shortHashCache.getIfPresent(cacheKey) ?: run {
-            val repo = signingRepositoryFactory.getInstance(tenantId)
-            val result = repo.findKey(publicKey)
-            if (result == null) throw IllegalArgumentException("The public key '${publicKey.publicKeyId()}' was not found")
-            result
+            signingRepositoryFactory.getInstance(tenantId).use { repo ->
+                repo.findKey(publicKey)
+            } ?: throw IllegalArgumentException("The public key '${publicKey.publicKeyId()}' was not found")
         }
 
         return OwnedKeyRecord(publicKey, signingKeyInfo)

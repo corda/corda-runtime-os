@@ -64,6 +64,7 @@ class CreateLockFlow : ClientStartableFlow {
 
             val stateId = flowArgs.stateId
 
+            @Suppress("deprecation")
             val unconsumedStates = ledgerService.findUnconsumedStatesByType(Asset::class.java)
             val unconsumedStatesWithId = unconsumedStates.filter { it.state.contractState.assetId == stateId }
 

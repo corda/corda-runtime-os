@@ -43,6 +43,7 @@ db:
         secretKeyRef:
           name: "prereqs-postgres"
           key: "corda-password"
+
 kafka:
   bootstrapServers: "prereqs-kafka:9092"
   sasl:

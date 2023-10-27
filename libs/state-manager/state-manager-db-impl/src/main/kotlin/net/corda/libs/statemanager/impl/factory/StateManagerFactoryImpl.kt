@@ -67,7 +67,8 @@ class StateManagerFactoryImpl @Activate constructor(
 
         return StateManagerImpl(
             StateRepositoryImpl(queryProvider()),
-            entityManagerFactory
+            entityManagerFactory,
+            dataSource
         )
     }
 

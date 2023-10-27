@@ -42,6 +42,7 @@ class ReserveTokensFlow : ClientStartableFlow {
     override fun call(requestBody: ClientRequestBody): String {
         log.info("${this::class.java.simpleName}.call() starting ...")
 
+        @Suppress("deprecation")
         val unconsumedStates = ledgerService.findUnconsumedStatesByType(TokenState::class.java)
 
         val args = requestBody.getRequestBodyAsMap(jsonMarshallingService, String::class.java, String::class.java)

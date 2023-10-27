@@ -1,13 +1,11 @@
 package net.corda.messaging.mediator
 
-import kotlinx.coroutines.CompletableDeferred
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
 import net.corda.messaging.api.mediator.MediatorConsumer
-import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
@@ -20,9 +18,9 @@ import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.mediator.factory.MessagingClientFactory
 import net.corda.messaging.api.mediator.factory.MessagingClientFinder
-import net.corda.messaging.api.mediator.taskmanager.TaskManager
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.taskmanager.TaskManager
 import net.corda.test.util.waitWhile
 import org.junit.jupiter.api.BeforeEach
 import org.mockito.kotlin.any
@@ -61,7 +59,7 @@ class MultiSourceEventMediatorImplTest {
         whenever(mediatorConsumerFactory.create(any<MediatorConsumerConfig<Any, Any>>())).thenReturn(consumer)
 
         whenever(messagingClient.send(any())).thenAnswer {
-            CompletableDeferred(null as MediatorMessage<Any>?)
+            null
         }
 
         whenever(messagingClientFactory.create(any<MessagingClientConfig>())).thenReturn(messagingClient)
@@ -91,7 +89,7 @@ class MultiSourceEventMediatorImplTest {
 
         whenever(stateSerializer.serialize(any())).thenAnswer { ByteArray(0) }
 
-        whenever(taskManager.execute(any(), any<() -> Any>())).thenAnswer { invocation ->
+        whenever(taskManager.executeLongRunningTask (any<() -> Any>())).thenAnswer { invocation ->
             val command = invocation.getArgument<() -> Any>(1)
             CompletableFuture.supplyAsync(command)
         }

@@ -3,9 +3,11 @@ package net.corda.session.mapper.messaging.mediator
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.state.mapper.FlowMapperState
+import net.corda.data.interop.InteropProcessorEvent
 import net.corda.data.p2p.app.AppMessage
 import net.corda.flow.mapper.factory.FlowMapperEventExecutorFactory
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.RoutingDestination.Companion.routeTo
 import net.corda.messaging.api.mediator.config.EventMediatorConfigBuilder
@@ -15,8 +17,10 @@ import net.corda.messaging.api.mediator.factory.MessagingClientFactoryFactory
 import net.corda.messaging.api.mediator.factory.MultiSourceEventMediatorFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_INTEROP_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
+import net.corda.schema.configuration.FlowConfig
 import net.corda.session.mapper.service.executor.FlowMapperMessageProcessor
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -41,16 +45,21 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
     override fun create(
         flowConfig: SmartConfig,
         messagingConfig: SmartConfig,
+        stateManager: StateManager,
     ) = eventMediatorFactory.create(
         createEventMediatorConfig(
+            flowConfig,
             messagingConfig,
             FlowMapperMessageProcessor(flowMapperEventExecutorFactory, flowConfig),
+            stateManager,
         )
     )
 
     private fun createEventMediatorConfig(
+        flowConfig: SmartConfig,
         messagingConfig: SmartConfig,
         messageProcessor: StateAndEventProcessor<String, FlowMapperState, FlowMapperEvent>,
+        stateManager: StateManager,
     ) = EventMediatorConfigBuilder<String, FlowMapperState, FlowMapperEvent>()
         .name("FlowMapperEventMediator")
         .messagingConfig(messagingConfig)
@@ -66,6 +75,9 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
         )
         .messageProcessor(messageProcessor)
         .messageRouterFactory(createMessageRouterFactory())
+        .threads(flowConfig.getInt(FlowConfig.PROCESSING_THREAD_POOL_SIZE))
+        .threadName("flow-mapper-event-mediator")
+        .stateManager(stateManager)
         .build()
 
     private fun createMessageRouterFactory() = MessageRouterFactory { clientFinder ->
@@ -76,6 +88,7 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
                 is AppMessage -> routeTo(messageBusClient, P2P_OUT_TOPIC)
                 is FlowEvent -> routeTo(messageBusClient, FLOW_EVENT_TOPIC)
                 is FlowMapperEvent -> routeTo(messageBusClient, FLOW_MAPPER_EVENT_TOPIC)
+                is InteropProcessorEvent -> routeTo(messageBusClient, FLOW_INTEROP_EVENT_TOPIC)
                 else -> {
                     val eventType = event?.let { it::class.java }
                     throw IllegalStateException("No route defined for event type [$eventType]")
