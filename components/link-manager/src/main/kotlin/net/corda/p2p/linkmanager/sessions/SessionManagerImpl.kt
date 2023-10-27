@@ -1181,7 +1181,7 @@ internal class SessionManagerImpl(
                 )
                 destroyOutboundSession(counterparties, sessionId)
                 trackedOutboundSessions.remove(sessionId)
-                recordSessionTimeoutMetric(counterparties.ourId, counterparties.counterpartyId)
+                recordOutboundSessionTimeoutMetric(counterparties.ourId, counterparties.counterpartyId)
             } else {
                 executorService.schedule(
                     { outboundSessionTimeout(counterparties, sessionId) },
@@ -1202,6 +1202,7 @@ internal class SessionManagerImpl(
                 )
                 destroyInboundSession(sessionId)
                 trackedInboundSessions.remove(sessionId)
+                recordInboundSessionTimeoutMetric()
             } else {
                 executorService.schedule(
                     { inboundSessionTimeout(sessionId) },
@@ -1286,12 +1287,16 @@ internal class SessionManagerImpl(
             return clock.instant().toEpochMilli()
         }
 
-        private fun recordSessionTimeoutMetric(source: HoldingIdentity, destination: HoldingIdentity) {
+        private fun recordOutboundSessionTimeoutMetric(source: HoldingIdentity, destination: HoldingIdentity) {
             CordaMetrics.Metric.OutboundSessionTimeoutCount.builder()
                 .withTag(CordaMetrics.Tag.SourceVirtualNode, source.x500Name.toString())
                 .withTag(CordaMetrics.Tag.DestinationVirtualNode, destination.x500Name.toString())
                 .withTag(CordaMetrics.Tag.MembershipGroup, source.groupId)
                 .build().increment()
+        }
+
+        private fun recordInboundSessionTimeoutMetric() {
+            CordaMetrics.Metric.InboundSessionTimeoutCount.builder().build().increment()
         }
     }
 }
