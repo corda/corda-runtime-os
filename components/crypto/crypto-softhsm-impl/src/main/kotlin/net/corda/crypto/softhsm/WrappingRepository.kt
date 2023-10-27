@@ -55,4 +55,6 @@ interface WrappingRepository : Closeable {
      * @return A stream of results
      */
     fun findKeysWrappedByAlias(alias: String): Sequence<WrappingKeyInfo>
+
+    fun getKeyById(id: UUID): WrappingKeyInfo?
 }

@@ -25,12 +25,12 @@ class WrappingRepositoryImpl(
 
     override fun close() = entityManagerFactory.close()
 
-    override fun saveKeyWithId(alias: String, key: WrappingKeyInfo, id: UUID?): WrappingKeyInfo =
-        entityManagerFactory.createEntityManager().use {
-            return it.transaction {
-                it.merge(
+    override fun saveKeyWithId(alias: String, key: WrappingKeyInfo, id: UUID?): WrappingKeyInfo {
+        val r = entityManagerFactory.createEntityManager().use {
+            it.transaction {
+                val r2 = it.merge(
                     WrappingKeyEntity(
-                        id = id?:UUID.randomUUID(),
+                        id = id ?: UUID.randomUUID(),
                         generation = key.generation,
                         alias = alias,
                         created = Instant.now(),
@@ -42,10 +42,17 @@ class WrappingRepositoryImpl(
                         parentKeyReference = key.parentKeyAlias,
                     )
                 )
+                check(r2.generation == key.generation)
+                r2
             }.toDto().also {
                 logger.info("Storing wrapping key with alias $alias in tenant $tenantId")
             }
         }
+        if (id!=null)
+            check(getKeyById(id)!!.generation == key.generation)
+        return r
+    }
+
 
     override fun saveKey(alias: String, key: WrappingKeyInfo): WrappingKeyInfo =
         saveKeyWithId(alias, key, null)
@@ -69,6 +76,13 @@ class WrappingRepositoryImpl(
                 WrappingKeyEntity::class.java
             ).setParameter("alias", alias).resultStream.map {dao -> dao.toDto() }.toList().asSequence()
         }
+
+    override fun getKeyById(id: UUID): WrappingKeyInfo? = entityManagerFactory.createEntityManager().use {
+        it.createQuery(
+            "FROM ${WrappingKeyEntity::class.simpleName} AS k WHERE k.id = :id",
+            WrappingKeyEntity::class.java
+        ).setParameter("id", id).resultStream.map {dao -> dao.toDto() }.findFirst().orElse(null)
+    }
 }
 
 // NOTE: this should be on the entity object directly, but this means this repo (and the DTOs) need
