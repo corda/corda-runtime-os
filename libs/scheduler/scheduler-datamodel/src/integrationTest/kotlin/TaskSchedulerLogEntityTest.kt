@@ -140,7 +140,7 @@ class TaskSchedulerLogEntityTest {
     }
 
     @Test
-    fun `duplicate insert throws ConstraintViolationException`() {
+    fun `duplicate insert throws ConstraintViolationException which can be handled in the TX`() {
         val taskId = "foo${UUID.randomUUID()}"
         val log = TaskSchedulerLogEntity(taskId, "bar")
 
@@ -149,7 +149,7 @@ class TaskSchedulerLogEntityTest {
             it.flush()
         }
 
-        emf.createEntityManager().transaction {
+        val retry = emf.createEntityManager().transaction {
             try {
                 it.persist(log)
                 it.flush()
@@ -159,12 +159,17 @@ class TaskSchedulerLogEntityTest {
                 //  of a race condition, however, the JPA exception type doesn't give us enough info, so we check
                 //  the hibernate generated message.
                 if(e.message?.contains("ConstraintViolationException") == true) {
-                    println(e)
+                    it.find(
+                        TaskSchedulerLogEntity::class.java,
+                        taskId
+                    )
                 } else {
                     throw e
                 }
             }
         }
+
+        assertThat(retry).isEqualTo(log)
     }
 
     @Test
