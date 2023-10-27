@@ -12,13 +12,11 @@ import net.corda.orm.utils.use
 import net.corda.v5.base.util.EncodingUtils.toHex
 import org.slf4j.LoggerFactory
 import java.lang.IllegalStateException
-import java.lang.UnsupportedOperationException
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.PersistenceException
-import javax.persistence.RollbackException
 import javax.persistence.Tuple
 
 /**
