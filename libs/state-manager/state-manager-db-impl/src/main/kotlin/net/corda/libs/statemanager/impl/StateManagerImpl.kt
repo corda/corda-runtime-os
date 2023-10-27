@@ -1,6 +1,8 @@
 package net.corda.libs.statemanager.impl
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.db.core.CloseableDataSource
+import net.corda.db.core.utils.transaction
 import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
@@ -15,6 +17,7 @@ import javax.persistence.EntityManagerFactory
 class StateManagerImpl(
     private val stateRepository: StateRepository,
     private val entityManagerFactory: EntityManagerFactory,
+    private val dataSource: CloseableDataSource,
 ) : StateManager {
 
     private companion object {
@@ -58,16 +61,17 @@ class StateManagerImpl(
     }
 
     override fun update(states: Collection<State>): Map<String, State> {
+        if (states.isEmpty()) return emptyMap()
         try {
-            entityManagerFactory.transaction { em ->
-                val failedUpdates = stateRepository.update(em, states.map { it.toPersistentEntity() })
+            val (_, failedUpdates) = dataSource.connection.transaction { conn ->
+                stateRepository.update(conn, states.map { it.toPersistentEntity() })
+            }
 
-                return if (failedUpdates.isEmpty()) {
-                    emptyMap()
-                } else {
-                    logger.warn("Optimistic locking check failed while updating States ${failedUpdates.joinToString()}")
-                    get(failedUpdates)
-                }
+            return if (failedUpdates.isEmpty()) {
+                emptyMap()
+            } else {
+                logger.warn("Optimistic locking check failed while updating States ${failedUpdates.joinToString()}")
+                get(failedUpdates)
             }
         } catch (e: Exception) {
             logger.warn("Failed to updated batch of states - ${states.joinToString { it.key }}", e)

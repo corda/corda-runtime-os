@@ -257,7 +257,7 @@ import kotlin.test.assertTrue
                  )
              ).thenReturn(
                  Record(
-                     Schemas.Flow.FLOW_SESSION,
+                     Schemas.Flow.FLOW_EVENT_TOPIC,
                      flowExternalEventContexts.get(it).flowId,
                      FlowEvent()
                  )
@@ -269,7 +269,7 @@ import kotlin.test.assertTrue
                  )
              ).thenReturn(
                  Record(
-                     Schemas.Flow.FLOW_SESSION,
+                     Schemas.Flow.FLOW_EVENT_TOPIC,
                      flowExternalEventContexts.get(it).flowId,
                      FlowEvent()
                  )
@@ -281,7 +281,7 @@ import kotlin.test.assertTrue
                  )
              ).thenReturn(
                  Record(
-                     Schemas.Flow.FLOW_SESSION,
+                     Schemas.Flow.FLOW_EVENT_TOPIC,
                      flowExternalEventContexts.get(it).flowId,
                      FlowEvent()
                  )

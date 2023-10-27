@@ -18,7 +18,7 @@ fun interface MessageRouterFactory {
      *
      *     MessageRouter { message ->
      *         when (message.payload) {
-     *             is FlowMapperEvent -> routeTo(messageBusClient, FLOW_MAPPER_SESSION_OUT_TOPIC)
+     *             is FlowMapperEvent -> routeTo(messageBusClient, FLOW_MAPPER_EVENT_TOPIC)
      *             is FlowStatus -> routeTo(messageBusClient, FLOW_STATUS_TOPIC)
      *             else -> throw IllegalStateException("No route defined for message $message")
      *         }

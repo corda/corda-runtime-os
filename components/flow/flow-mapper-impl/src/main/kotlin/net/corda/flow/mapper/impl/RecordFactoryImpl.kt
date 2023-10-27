@@ -98,10 +98,10 @@ class RecordFactoryImpl @Activate constructor(
 
     private fun getSessionEventOutputTopic(sessionEvent: SessionEvent): String {
         return when (sessionEvent.messageDirection) {
-            MessageDirection.INBOUND -> Schemas.Flow.FLOW_SESSION
+            MessageDirection.INBOUND -> Schemas.Flow.FLOW_EVENT_TOPIC
             MessageDirection.OUTBOUND -> {
                 if (isLocalCluster(sessionEvent)) {
-                    Schemas.Flow.FLOW_MAPPER_SESSION_IN
+                    Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
                 } else {
                     Schemas.P2P.P2P_OUT_TOPIC
                 }
@@ -121,8 +121,8 @@ class RecordFactoryImpl @Activate constructor(
     ) : Record<*, *> {
         val outputTopic = getSessionEventOutputTopic(sourceEvent)
         val (newDirection, sessionId) = when (outputTopic) {
-            Schemas.Flow.FLOW_MAPPER_SESSION_IN -> Pair(MessageDirection.INBOUND, toggleSessionId(sourceEvent.sessionId))
-            Schemas.Flow.FLOW_SESSION -> Pair(MessageDirection.INBOUND, sourceEvent.sessionId)
+            Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC -> Pair(MessageDirection.INBOUND, toggleSessionId(sourceEvent.sessionId))
+            Schemas.Flow.FLOW_EVENT_TOPIC -> Pair(MessageDirection.INBOUND, sourceEvent.sessionId)
             else -> Pair(MessageDirection.OUTBOUND, sourceEvent.sessionId)
         }
         val sequenceNumber = if (newPayload is SessionError) null else sourceEvent.sequenceNum
@@ -137,14 +137,14 @@ class RecordFactoryImpl @Activate constructor(
             sourceEvent.contextSessionProperties
         )
         return when (outputTopic) {
-            Schemas.Flow.FLOW_SESSION -> {
+            Schemas.Flow.FLOW_EVENT_TOPIC -> {
                 if (flowId == null) {
                     throw IllegalArgumentException("Flow ID is required to forward an event back to the flow event" +
                             "topic, but it was not provided.")
                 }
                 Record(outputTopic, flowId, FlowEvent(flowId, sessionEvent))
             }
-            Schemas.Flow.FLOW_MAPPER_SESSION_IN -> {
+            Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC -> {
                 Record(outputTopic, sessionEvent.sessionId, FlowMapperEvent(sessionEvent))
             }
             Schemas.P2P.P2P_OUT_TOPIC -> {
