@@ -126,8 +126,8 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                         log.error(
                             "${exception.message} Attempts: $attempts. Closing Multi-Source Event Mediator.", exception
                         )
-                        lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, "Error: ${exception.message}")
-                        stop()
+//                        lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, "Error: ${exception.message}")
+//                        stop()
                     }
                 }
             } finally {
@@ -205,93 +205,88 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
             val messages = pollConsumers()
             if (messages.isNotEmpty()) {
                 var groups = allocateGroups(messages.map { it.toRecord() })
-                var states = stateManager.get(messages.map { it.key.toString() })
+                var states = stateManager.get(messages.map { it.key.toString() }.distinct())
                 while (groups.isNotEmpty()) {
                     val newStates = ConcurrentHashMap<String, State?>()
                     val updateStates = ConcurrentHashMap<String, State?>()
                     val deleteStates = ConcurrentHashMap<String, State?>()
                     val flowEvents = ConcurrentHashMap<String, MutableList<Record<K, E>>>()
                     // Process each group on a thread
-                    groups.map { group ->
+                    groups.filter {
+                        it.isNotEmpty()
+                    }.map { group ->
                         taskManager.executeShortRunningTask {
-                            try {
-                                // Process all same flow events in one go
-                                group.map { it ->
-                                    flowEvents.compute(it.key.toString()) { _, v ->
-                                        if (v == null) {
-                                            it.value.toMutableList()
-                                        } else {
-                                            v.addAll(it.value)
-                                            v
-                                        }
-                                    }
-                                    var state = states.getOrDefault(it.key.toString(), null)
-                                    var processorState = stateManagerHelper.deserializeValue(state)?.let { stateValue ->
-                                        StateAndEventProcessor.State(
-                                            stateValue,
-                                            state?.metadata
-                                        )
-                                    }
-                                    val queue = ArrayDeque(it.value)
-                                    while (queue.isNotEmpty()) {
-                                        val event = queue.removeFirst()
-                                        val response = config.messageProcessor.onNext(processorState, event)
-                                        processorState = response.updatedState
-                                        val output =
-                                            response.responseEvents.map { taskManagerHelper.convertToMessage(it) }
-                                        output.forEach { message ->
-                                            val destination = messageRouter.getDestination(message)
-                                            try {
-
-                                                @Suppress("UNCHECKED_CAST")
-                                                val reply = with(destination) {
-                                                    message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
-                                                    client.send(message) as MediatorMessage<E>?
-                                                }
-                                                if (reply != null) {
-                                                    queue.addLast(
-                                                        Record(
-                                                            "",
-                                                            event.key,
-                                                            reply.payload,
-                                                        )
-                                                    )
-                                                }
-                                            } catch (ex: Exception) {
-                                                log.error(ex.message, ex)
-                                            }
-                                        }
-                                    }
-
-                                    // ---- Manage the state ----
-                                    val processedState = stateManagerHelper.createOrUpdateState(
-                                        it.key.toString(),
-                                        state,
-                                        processorState,
-                                    )
-
-                                    // New state
-                                    if (state == null && processedState != null) {
-                                        newStates[it.key.toString()] = processedState
-                                    }
-
-                                    // Update state
-                                    if (state != null && processedState != null) {
-                                        updateStates[it.key.toString()] = processedState
-                                    }
-
-                                    // Delete state
-                                    if (state != null && processorState == null) {
-                                        deleteStates[it.key.toString()] = state
+                            // Process all same flow events in one go
+                            group.map { it ->
+                                // Keep track of all records belonging to one flow
+                                flowEvents.compute(it.key.toString()) { _, v ->
+                                    if (v == null) {
+                                        it.value.toMutableList()
+                                    } else {
+                                        v.addAll(it.value)
+                                        v
                                     }
                                 }
-                            } catch (ex: Exception) {
-                                log.error(ex.message, ex)
+                                var state = states.getOrDefault(it.key.toString(), null)
+                                var processorState = stateManagerHelper.deserializeValue(state)?.let { stateValue ->
+                                    StateAndEventProcessor.State(
+                                        stateValue,
+                                        state?.metadata
+                                    )
+                                }
+                                val queue = ArrayDeque(it.value)
+                                while (queue.isNotEmpty()) {
+                                    val event = queue.removeFirst()
+                                    val response = config.messageProcessor.onNext(processorState, event)
+                                    processorState = response.updatedState
+                                    val output =
+                                        response.responseEvents.map { taskManagerHelper.convertToMessage(it) }
+                                    output.forEach { message ->
+                                        val destination = messageRouter.getDestination(message)
+                                        @Suppress("UNCHECKED_CAST")
+                                        val reply = with(destination) {
+                                            message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
+                                            client.send(message) as MediatorMessage<E>?
+                                        }
+                                        if (reply != null) {
+                                            queue.addLast(
+                                                Record(
+                                                    "",
+                                                    event.key,
+                                                    reply.payload,
+                                                )
+                                            )
+                                        }
+                                    }
+                                }
+
+                                // ---- Manage the state ----
+                                val processedState = stateManagerHelper.createOrUpdateState(
+                                    it.key.toString(),
+                                    state,
+                                    processorState,
+                                )
+
+                                // New state
+                                if (state == null && processedState != null) {
+                                    newStates[it.key.toString()] = processedState
+                                }
+
+                                // Update state
+                                if (state != null && processedState != null) {
+                                    updateStates[it.key.toString()] = processedState
+                                }
+
+                                // Delete state
+                                if (state != null && processorState == null) {
+                                    deleteStates[it.key.toString()] = state
+                                }
                             }
                         }
                     }.map {
                         it.join()
                     }
+
                     // Persist states changes
                     val failedToCreateKeys = stateManager.create(newStates.values.mapNotNull { it })
                     val failedToCreate = stateManager.get(failedToCreateKeys.keys)
@@ -328,11 +323,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     private fun pollConsumers(): List<CordaConsumerRecord<K, E>> {
         return metrics.pollTimer.recordCallable {
             consumers.map { consumer ->
-                taskManager.executeShortRunningTask {
-                    consumer.poll(pollTimeout)
-                }
-            }.map {
-                it.join()
+                consumer.poll(pollTimeout)
             }.flatten()
         }!!
     }
