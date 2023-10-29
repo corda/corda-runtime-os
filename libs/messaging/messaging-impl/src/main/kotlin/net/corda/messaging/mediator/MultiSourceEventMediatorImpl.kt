@@ -29,6 +29,7 @@ import java.lang.Thread.sleep
 import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 @Suppress("LongParameterList")
@@ -201,107 +202,107 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 //    }
 
     private fun pollAndProcessEvents() {
-        metrics.processorTimer.recordCallable {
-            val messages = pollConsumers()
-            if (messages.isNotEmpty()) {
-                var groups = allocateGroups(messages.map { it.toRecord() })
-                var states = stateManager.get(messages.map { it.key.toString() }.distinct())
-                while (groups.isNotEmpty()) {
-                    val newStates = ConcurrentHashMap<String, State?>()
-                    val updateStates = ConcurrentHashMap<String, State?>()
-                    val deleteStates = ConcurrentHashMap<String, State?>()
-                    val flowEvents = ConcurrentHashMap<String, MutableList<Record<K, E>>>()
-                    // Process each group on a thread
-                    groups.filter {
-                        it.isNotEmpty()
-                    }.map { group ->
-                        taskManager.executeShortRunningTask {
-                            // Process all same flow events in one go
-                            group.map { it ->
-                                // Keep track of all records belonging to one flow
-                                flowEvents.compute(it.key.toString()) { _, v ->
-                                    if (v == null) {
-                                        it.value.toMutableList()
-                                    } else {
-                                        v.addAll(it.value)
-                                        v
-                                    }
-                                }
-                                var state = states.getOrDefault(it.key.toString(), null)
-                                var processorState = stateManagerHelper.deserializeValue(state)?.let { stateValue ->
-                                    StateAndEventProcessor.State(
-                                        stateValue,
-                                        state?.metadata
-                                    )
-                                }
-                                val queue = ArrayDeque(it.value)
-                                while (queue.isNotEmpty()) {
-                                    val event = queue.removeFirst()
-                                    val response = config.messageProcessor.onNext(processorState, event)
-                                    processorState = response.updatedState
-                                    val output =
-                                        response.responseEvents.map { taskManagerHelper.convertToMessage(it) }
-                                    output.forEach { message ->
-                                        val destination = messageRouter.getDestination(message)
-                                        @Suppress("UNCHECKED_CAST")
-                                        val reply = with(destination) {
-                                            message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
-                                            client.send(message) as MediatorMessage<E>?
-                                        }
-                                        if (reply != null) {
-                                            queue.addLast(
-                                                Record(
-                                                    "",
-                                                    event.key,
-                                                    reply.payload,
-                                                )
-                                            )
-                                        }
-                                    }
-                                }
-
-                                // ---- Manage the state ----
-                                val processedState = stateManagerHelper.createOrUpdateState(
-                                    it.key.toString(),
-                                    state,
-                                    processorState,
-                                )
-
-                                // New state
-                                if (state == null && processedState != null) {
-                                    newStates[it.key.toString()] = processedState
-                                }
-
-                                // Update state
-                                if (state != null && processedState != null) {
-                                    updateStates[it.key.toString()] = processedState
-                                }
-
-                                // Delete state
-                                if (state != null && processorState == null) {
-                                    deleteStates[it.key.toString()] = state
+        val startTimestamp = System.nanoTime()
+        val messages = pollConsumers()
+        if (messages.isNotEmpty()) {
+            var groups = allocateGroups(messages.map { it.toRecord() })
+            var states = stateManager.get(messages.map { it.key.toString() }.distinct())
+            while (groups.isNotEmpty()) {
+                val newStates = ConcurrentHashMap<String, State?>()
+                val updateStates = ConcurrentHashMap<String, State?>()
+                val deleteStates = ConcurrentHashMap<String, State?>()
+                val flowEvents = ConcurrentHashMap<String, MutableList<Record<K, E>>>()
+                // Process each group on a thread
+                groups.filter {
+                    it.isNotEmpty()
+                }.map { group ->
+                    taskManager.executeShortRunningTask {
+                        // Process all same flow events in one go
+                        group.map { it ->
+                            // Keep track of all records belonging to one flow
+                            flowEvents.compute(it.key.toString()) { _, v ->
+                                if (v == null) {
+                                    it.value.toMutableList()
+                                } else {
+                                    v.addAll(it.value)
+                                    v
                                 }
                             }
-                        }
-                    }.map {
-                        it.join()
-                    }
+                            var state = states.getOrDefault(it.key.toString(), null)
+                            var processorState = stateManagerHelper.deserializeValue(state)?.let { stateValue ->
+                                StateAndEventProcessor.State(
+                                    stateValue,
+                                    state?.metadata
+                                )
+                            }
+                            val queue = ArrayDeque(it.value)
+                            while (queue.isNotEmpty()) {
+                                val event = queue.removeFirst()
+                                val response = config.messageProcessor.onNext(processorState, event)
+                                processorState = response.updatedState
+                                val output =
+                                    response.responseEvents.map { taskManagerHelper.convertToMessage(it) }
+                                output.forEach { message ->
+                                    val destination = messageRouter.getDestination(message)
+                                    @Suppress("UNCHECKED_CAST")
+                                    val reply = with(destination) {
+                                        message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
+                                        client.send(message) as MediatorMessage<E>?
+                                    }
+                                    if (reply != null) {
+                                        queue.addLast(
+                                            Record(
+                                                "",
+                                                event.key,
+                                                reply.payload,
+                                            )
+                                        )
+                                    }
+                                }
+                            }
 
-                    // Persist states changes
-                    val failedToCreateKeys = stateManager.create(newStates.values.mapNotNull { it })
-                    val failedToCreate = stateManager.get(failedToCreateKeys.keys)
-                    val failedToDelete = stateManager.delete(deleteStates.values.mapNotNull { it })
-                    val failedToUpdate = stateManager.update(updateStates.values.mapNotNull { it })
-                    states = failedToCreate + failedToDelete + failedToUpdate
-                    groups = if (states.isNotEmpty()) {
-                        allocateGroups(flowEvents.filterKeys { states.containsKey(it) }.values.flatten())
-                    } else {
-                        listOf()
+                            // ---- Manage the state ----
+                            val processedState = stateManagerHelper.createOrUpdateState(
+                                it.key.toString(),
+                                state,
+                                processorState,
+                            )
+
+                            // New state
+                            if (state == null && processedState != null) {
+                                newStates[it.key.toString()] = processedState
+                            }
+
+                            // Update state
+                            if (state != null && processedState != null) {
+                                updateStates[it.key.toString()] = processedState
+                            }
+
+                            // Delete state
+                            if (state != null && processorState == null) {
+                                deleteStates[it.key.toString()] = state
+                            }
+                        }
                     }
+                }.map {
+                    it.join()
+                }
+
+                // Persist states changes
+                val failedToCreateKeys = stateManager.create(newStates.values.mapNotNull { it })
+                val failedToCreate = stateManager.get(failedToCreateKeys.keys)
+                val failedToDelete = stateManager.delete(deleteStates.values.mapNotNull { it })
+                val failedToUpdate = stateManager.update(updateStates.values.mapNotNull { it })
+                states = failedToCreate + failedToDelete + failedToUpdate
+                groups = if (states.isNotEmpty()) {
+                    allocateGroups(flowEvents.filterKeys { states.containsKey(it) }.values.flatten())
+                } else {
+                    listOf()
                 }
             }
-            commitOffsets()
         }
+        commitOffsets()
+        metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
     }
 
     private fun allocateGroups(events: List<Record<K, E>>): List<Map<K, List<Record<K, E>>>> {
