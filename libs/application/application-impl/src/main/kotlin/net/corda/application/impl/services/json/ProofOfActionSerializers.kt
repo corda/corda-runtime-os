@@ -134,7 +134,6 @@ class SignatureSpecDeserializer : JsonDeserializer<SignatureSpec>() {
     }
 }
 
-
 class DigitalSignatureMetadataSerializer : JsonSerializer<DigitalSignatureMetadata>() {
     override fun serialize(
         metadata: DigitalSignatureMetadata,
