@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.token.cache.services
 
 import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
+import net.corda.ledger.utxo.token.cache.entities.TokenPoolCache
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
@@ -10,12 +11,13 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
-@Suppress("UNUSED")
+@Suppress("LongParameterList")
 class PerformanceClaimStateStoreImpl(
     private val key: TokenPoolKey,
     storedPoolClaimState: StoredPoolClaimState,
     private val serialization: TokenPoolCacheStateSerialization,
     private val stateManager: StateManager,
+    tokenPoolCache: TokenPoolCache,
     private val clock: Clock
 ) : ClaimStateStore {
 
@@ -28,7 +30,7 @@ class PerformanceClaimStateStoreImpl(
         ThreadPoolExecutor.DiscardPolicy()
     )
     private val requestQueue = LinkedBlockingQueue<QueuedRequestItem>()
-
+    private val tokenCache = tokenPoolCache.get(key)
     private var currentState = storedPoolClaimState
 
     private data class QueuedRequestItem(
@@ -79,6 +81,11 @@ class PerformanceClaimStateStoreImpl(
                     key,
                     serialization.deserialize(mismatchedState.value)
                 )
+
+                // When fail to save the state we have to assume the available token cache could be invalid
+                // and therefore clear it to force a refresh from the DB on the next request.
+                tokenCache.removeAll()
+
                 unexceptionalRequests.abort()
             } else {
                 currentState = currentState.copy(dbVersion = currentState.dbVersion + 1)
