@@ -413,10 +413,13 @@ class SandboxGroupContextServiceImpl @Activate constructor(
         missingCpks.isEmpty()
     }
 
+    override fun close() = shutdown()
+
     @Deactivate
-    override fun close() = lock.withLock {
+    fun shutdown() = lock.withLock {
         cache.close()
     }
+
 
     /**
      * An [AutoCloseable] associated with an injectable service, i.e. one which
