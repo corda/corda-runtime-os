@@ -1,6 +1,7 @@
 package net.corda.web.server
 
 import io.javalin.Javalin
+import io.javalin.http.NotFoundResponse
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
@@ -35,22 +36,23 @@ class JavalinServer(
         platformInfoProvider: PlatformInfoProvider,
     ) : this(
         coordinatorFactory,
-        {
+        ::createJavalin,
+        platformInfoProvider)
+
+    companion object {
+        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+
+        fun createJavalin(maxRequestSize: Long = 100_000_000L) =
             Javalin.create { config ->
                 // hardcode to 100Mb for now
                 // TODO CORE-17986: make configurable
-                config.maxRequestSize = 100_000_000L
+                config.maxRequestSize = maxRequestSize
 
                 if (log.isDebugEnabled) {
                     config.enableDevLogging()
                 }
                 configureJavalinForTracing(config)
             }
-        },
-        platformInfoProvider)
-
-    private companion object {
-        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val apiPathPrefix: String = "/api/${platformInfoProvider.localWorkerSoftwareShortVersion}"
@@ -91,6 +93,11 @@ class JavalinServer(
             it.handlerAdded { meta ->
                 log.info("Handler added to webserver: $meta")
             }
+        }
+        server?.exception(NotFoundResponse::class.java) { _, ctx ->
+            log.warn("Received request on non-existing endpoint: ${ctx.req.requestURI}")
+            ctx.result("404 Not Found")
+            ctx.status(404)
         }
         coordinator.updateStatus(LifecycleStatus.UP)
     }
