@@ -192,17 +192,14 @@ internal class CordaPublisherImpl(
         val future = CompletableFuture<Unit>()
         try {
             tryWithSingleRecoveryAttempt {
-                log.info("BOGDAN - BEGINNING TRANSACTION")
                 cordaProducer.beginTransaction()
                 block(cordaProducer)
-                log.info("BOGDAN - COMMITTING TRANSACTION")
                 cordaProducer.commitTransaction()
                 future.complete(Unit)
             }
         } catch (ex: Exception) {
             when (ex) {
                 is CordaMessageAPIProducerRequiresReset -> {
-                    log.error("BOGDAN - NEED TO RESET PRODUCER BECAUSE: \n MESSAGE: ${ex.message}\nCAUSE: ${ex.cause}")
                     logErrorAndSetFuture(
                         "Producer clientId ${config.clientId}, transactional ${config.transactional}, " +
                                 "failed to send, resetting producer", ex, future, false
@@ -217,7 +214,6 @@ internal class CordaPublisherImpl(
                 }
 
                 is CordaMessageAPIIntermittentException -> {
-                    log.error("BOGDAN - INTERMITTENT API MESSAGE BECAUSE: \n MESSAGE: ${ex.message}\nCAUSE: ${ex.cause}")
                     logErrorAndSetFuture(
                         "Producer clientId ${config.clientId}, transactional ${config.transactional}, " +
                                 "failed to send", ex, future, false
@@ -225,7 +221,6 @@ internal class CordaPublisherImpl(
                 }
 
                 else -> {
-                    log.error("BOGDAN - DON'T KNOW ERROR: \n MESSAGE: ${ex.message}\nCAUSE: ${ex.cause}")
                     logErrorAndSetFuture(
                         "Producer clientId ${config.clientId}, transactional ${config.transactional}, " +
                                 "failed to send", ex, future, true
@@ -254,22 +249,16 @@ internal class CordaPublisherImpl(
             }
 
             is CordaMessageAPIFatalException -> {
-                log.error("BOGDAN - ERROR WHEN SETTING FROM RESPONSE FATAL: \nMESSAGE: ${exception.message}" +
-                        "\nCAUSE: ${exception.cause}")
                 log.warn("$message. Fatal producer error occurred.", exception)
                 future.completeExceptionally(CordaMessageAPIFatalException(message, exception))
             }
 
             is CordaMessageAPIIntermittentException -> {
-                log.error("BOGDAN - ERROR WHEN SETTING FROM RESPONSE INTERMITTENT: \nMESSAGE: ${exception.message}" +
-                        "\nCAUSE: ${exception.cause}")
                 log.warn(message, exception)
                 future.completeExceptionally(CordaMessageAPIIntermittentException(message, exception))
             }
 
             else -> {
-                log.error("BOGDAN - ERROR WHEN SETTING FROM RESPONSE UNKNOWN: \nMESSAGE: ${exception.message}" +
-                        "\nCAUSE: ${exception.cause}")
                 log.warn("$message. Unknown error occurred.", exception)
                 future.completeExceptionally(CordaMessageAPIFatalException(message, exception))
             }
@@ -296,7 +285,6 @@ internal class CordaPublisherImpl(
 
     override fun close() {
         lock.write {
-            log.info("BOGDAN - CLOSING PUBLISHER ${config.clientId}")
             closeProducerAndSuppressExceptions()
         }
     }
@@ -308,7 +296,6 @@ internal class CordaPublisherImpl(
      */
     private fun resetProducer() {
         closeProducerAndSuppressExceptions()
-        log.error("BOGDAN - RESETTING PRODUCER USING ID ${producerConfig.clientId} and instance ID ${producerConfig.instanceId}")
         cordaProducer = cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig)
     }
 
@@ -317,10 +304,8 @@ internal class CordaPublisherImpl(
      */
     private fun closeProducerAndSuppressExceptions() {
         try {
-            log.info("BOGDAN - CLOSING PRODUCER ${config.clientId}")
             cordaProducer.close()
         } catch (ex: Exception) {
-            log.error("BOGDAN - CORDA PRODUCER ${config.clientId} failed to close properly")
             log.warn("CordaPublisherImpl failed to close producer safely. ClientId: ${config.clientId}", ex)
         }
     }

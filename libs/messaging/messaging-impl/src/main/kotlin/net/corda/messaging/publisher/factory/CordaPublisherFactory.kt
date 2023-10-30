@@ -48,9 +48,7 @@ class CordaPublisherFactory @Activate constructor(
         messagingConfig: SmartConfig
     ): Publisher {
         val configBuilder = MessagingConfigResolver(messagingConfig.factory)
-        logger.info("BOGDAN - PUBLISHER CONFIG BEFORE MERGING IS $publisherConfig")
         val config = configBuilder.buildPublisherConfig(publisherConfig, messagingConfig)
-        logger.info("BOGDAN - CREATING PUBLISHER WITH CONFIG $config")
         // TODO 3781 - topic prefix
         val producerConfig = ProducerConfig(config.clientId, config.instanceId, config.transactional, ProducerRoles.PUBLISHER)
         return CordaPublisherImpl(config, producerConfig, cordaProducerBuilder)

@@ -309,7 +309,6 @@ class CordaKafkaProducerImpl(
      */
     override fun close() {
         try {
-            log.info("BOGDAN - CLOSING CORDA KAFKA PRODUCER ${config.clientId}")
             producer.close()
         } catch (ex: Exception) {
             log.info(
@@ -383,14 +382,12 @@ class CordaKafkaProducerImpl(
         val errorString = "$operation for CordaKafkaProducer with clientId ${config.clientId}"
         when (ex::class.java) {
             in fatalExceptions -> {
-                log.error("BOGDAN - FATAL ERROR \n MSG = ${ex.message} \nCAUSE = ${ex.cause}")
                 throw CordaMessageAPIFatalException("FatalError occurred $errorString", ex)
             }
 
             IllegalStateException::class.java -> {
                 // It's not clear whether the producer is ok to abort and continue or not in this case, so play it safe
                 // and let the client know to create a new one.
-                log.error("BOGDAN - ILLEGAL STATE EXCEPTION \n MSG = ${ex.message} \nCAUSE = ${ex.cause}")
                 throw CordaMessageAPIProducerRequiresReset("Error occurred $errorString", ex)
             }
 
@@ -406,7 +403,6 @@ class CordaKafkaProducerImpl(
                 // Here we do not know what the exact cause of the exception is, but we do know Kafka has not told us we
                 // must close down, nor has it told us we can abort and retry. In this instance the most sensible thing
                 // for the client to do would be to close this producer and create a new one.
-                log.error("BOGDAN - DON'T KNOW WHAT IS GOING ON \n MSG = ${ex.message} \nCAUSE = ${ex.cause}")
                 throw CordaMessageAPIProducerRequiresReset("Unexpected error occurred $errorString", ex)
             }
         }
