@@ -246,7 +246,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
      * Identify which of these services should be registered with the OSGi framework
      * as "injectable" services, i.e. candidates for `@CordaInject`.
      */
-    @Suppress("ComplexMethod
+    @Suppress("ComplexMethod")
     private fun createSandboxServiceContext(
         sandboxId: UUID,
         vnc: VirtualNodeContext,
