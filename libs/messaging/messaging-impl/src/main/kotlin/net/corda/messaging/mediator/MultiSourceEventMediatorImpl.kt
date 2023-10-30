@@ -202,7 +202,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 //    }
 
     private fun pollAndProcessEvents() {
-        consumers.map {consumer ->
+        consumers.map { consumer ->
             taskManager.executeShortRunningTask {
                 val startTimestamp = System.nanoTime()
                 val messages = consumer.poll(pollTimeout)
@@ -307,6 +307,8 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                 consumer.syncCommitOffsets()
                 metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
             }
+        }.map {
+            it.join()
         }
     }
 
