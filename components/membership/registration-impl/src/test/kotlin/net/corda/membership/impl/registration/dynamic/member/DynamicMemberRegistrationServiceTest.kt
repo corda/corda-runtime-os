@@ -85,6 +85,7 @@ import net.corda.membership.lib.schema.validation.MembershipSchemaValidationExce
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.lib.toMap
+import net.corda.membership.lib.toWire
 import net.corda.membership.locally.hosted.identities.IdentityInfo
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -455,6 +456,12 @@ class DynamicMemberRegistrationServiceTest {
         )
     }
 
+    private fun ByteBuffer.toBytes(): ByteArray {
+        val bytes = ByteArray(this.remaining())
+        this.get(bytes)
+        return bytes
+    }
+
     @Nested
     inner class SuccessfulRegistrationTests {
         @BeforeEach
@@ -492,11 +499,12 @@ class DynamicMemberRegistrationServiceTest {
             val capturedContext = argumentCaptor<KeyValuePairList>()
             val capturedRequest = argumentCaptor<MembershipRegistrationRequest>()
             registrationService.register(registrationResultId, member, context)
-            verify(keyValuePairListSerializer, times(2)).serialize(capturedContext.capture())
+            verify(keyValuePairListSerializer, times(3)).serialize(capturedContext.capture())
             verify(registrationRequestSerializer).serialize(capturedRequest.capture())
             SoftAssertions.assertSoftly {
                 it.assertThat(capturedContext.firstValue.toMap()).doesNotContainKey(SERIAL)
                 it.assertThat(capturedContext.secondValue.toMap()).doesNotContainKey(SERIAL)
+                it.assertThat(capturedContext.thirdValue.toMap()).doesNotContainKey(SERIAL)
                 it.assertThat(capturedRequest.firstValue.serial).isEqualTo(0)
             }
         }
@@ -544,6 +552,20 @@ class DynamicMemberRegistrationServiceTest {
             )
             assertThat(capturedRequest.firstValue.memberContext.signatureSpec.signatureName)
                 .isEqualTo(SignatureSpecs.ECDSA_SHA512.signatureName)
+        }
+
+        @Test
+        fun `registration request contains the context submitted by member - without any additional information or key mapping`() {
+            val contextBytes = byteArrayOf(1, 2, 3, 4, 5, 6)
+            whenever(keyValuePairListSerializer.serialize(
+                context.filterNot { it.key == SERIAL || it.key == PRE_AUTH_TOKEN }.toWire())
+            ).thenReturn(contextBytes)
+            val capturedRequest = argumentCaptor<RegistrationRequest>()
+            registrationService.register(registrationResultId, member, context)
+            verify(membershipPersistenceClient).persistRegistrationRequest(eq(member), capturedRequest.capture())
+            assertThat(capturedRequest.firstValue.memberContext.data.toBytes()).isEqualTo(
+                contextBytes
+            )
         }
 
         @Test

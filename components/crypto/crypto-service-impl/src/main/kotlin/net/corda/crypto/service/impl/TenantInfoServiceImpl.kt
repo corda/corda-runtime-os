@@ -21,18 +21,7 @@ class TenantInfoServiceImpl(
     override fun populate(tenantId: String, category: String, cryptoService: CryptoService): HSMAssociationInfo {
         logger.info("assignSoftHSM(tenant={}, category={})", tenantId, category)
         return hsmRepositoryFactory().use { hsmRepository ->
-            val existing = hsmRepository.findTenantAssociation(tenantId, category)
-            if (existing != null) {
-                logger.warn("Already have tenant information populated for tenant={}, category={}", tenantId, category)
-                ensureWrappingKey(existing, cryptoService)
-                return existing
-            }
-            hsmRepository.associate(
-                tenantId = tenantId,
-                category = category,
-                // Defaulting the below to what it used be in crypto default config - but it probably needs be removed now
-                masterKeyPolicy = MasterKeyPolicy.UNIQUE
-            )
+            hsmRepository.createOrLookupCategoryAssociation(tenantId, category, MasterKeyPolicy.UNIQUE)
         }.also {
             ensureWrappingKey(it, cryptoService)
         }
