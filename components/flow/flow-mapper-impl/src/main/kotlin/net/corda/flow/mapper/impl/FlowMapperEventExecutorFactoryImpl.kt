@@ -17,7 +17,7 @@ import net.corda.flow.mapper.impl.executor.SessionEventExecutor
 import net.corda.flow.mapper.impl.executor.SessionInitProcessor
 import net.corda.flow.mapper.impl.executor.StartFlowExecutor
 import net.corda.libs.configuration.SmartConfig
-import net.corda.schema.Schemas.Flow.FLOW_START
+import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -66,7 +66,7 @@ class FlowMapperEventExecutorFactoryImpl @Activate constructor(
                 }
             }
 
-            is StartFlow -> StartFlowExecutor(eventKey, FLOW_START, flowMapperEventPayload, state)
+            is StartFlow -> StartFlowExecutor(eventKey, FLOW_EVENT_TOPIC, flowMapperEventPayload, state)
             is ExecuteCleanup -> ExecuteCleanupEventExecutor(eventKey)
             is ScheduleCleanup -> ScheduleCleanupEventExecutor(eventKey, flowMapperEventPayload, state)
 

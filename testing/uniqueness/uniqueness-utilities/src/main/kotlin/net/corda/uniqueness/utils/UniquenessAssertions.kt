@@ -69,7 +69,10 @@ object UniquenessAssertions {
     ) {
         getResultOfType<UniquenessCheckResultInputStateUnknownAvro>(response).run {
             assertThat(unknownStates)
-                .containsExactlyInAnyOrder(*expectedUnknownStates.toTypedArray())
+                // This is necessary due to tactical fix CORE-18025 only storing a single failing
+                // state. This should be restored to containsExactlyInAnyOrder when strategic fix
+                // CORE-17155 is implemented.
+                .containsAnyOf(*expectedUnknownStates.toTypedArray())
         }
     }
 
@@ -83,7 +86,10 @@ object UniquenessAssertions {
     ) {
         getResultOfType<UniquenessCheckResultInputStateConflictAvro>(response).run {
             assertThat(conflictingStates)
-                .containsExactlyInAnyOrder(*expectedConflictingStates.toTypedArray())
+                // This is necessary due to tactical fix CORE-18025 only storing a single failing
+                // state. This should be restored to containsExactlyInAnyOrder when strategic fix
+                // CORE-17155 is implemented.
+                .containsAnyOf(*expectedConflictingStates.toTypedArray())
         }
     }
 
@@ -97,7 +103,10 @@ object UniquenessAssertions {
     ) {
         getResultOfType<UniquenessCheckResultReferenceStateUnknownAvro>(response).run {
             assertThat(unknownStates)
-                .containsExactlyInAnyOrder(*expectedUnknownStates.toTypedArray())
+                // This is necessary due to tactical fix CORE-18025 only storing a single failing
+                // state. This should be restored to containsExactlyInAnyOrder when strategic fix
+                // CORE-17155 is implemented.
+                .containsAnyOf(*expectedUnknownStates.toTypedArray())
         }
     }
 
@@ -111,7 +120,10 @@ object UniquenessAssertions {
     ) {
         getResultOfType<UniquenessCheckResultReferenceStateConflictAvro>(response).run {
             assertThat(conflictingStates)
-                .containsExactlyInAnyOrder(*expectedConflictingStates.toTypedArray())
+                // This is necessary due to tactical fix CORE-18025 only storing a single failing
+                // state. This should be restored to containsExactlyInAnyOrder when strategic fix
+                // CORE-17155 is implemented.
+                .containsAnyOf(*expectedConflictingStates.toTypedArray())
         }
     }
 
