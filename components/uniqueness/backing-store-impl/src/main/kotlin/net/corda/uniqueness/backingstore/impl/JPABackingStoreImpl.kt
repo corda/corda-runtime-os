@@ -9,7 +9,6 @@ import net.corda.db.schema.CordaDb
 import net.corda.metrics.CordaMetrics
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.uniqueness.backingstore.BackingStore
-import net.corda.uniqueness.datamodel.common.UniquenessConstants.HIBERNATE_JDBC_BATCH_SIZE
 import net.corda.uniqueness.datamodel.common.UniquenessConstants.RESULT_ACCEPTED_REPRESENTATION
 import net.corda.uniqueness.datamodel.common.UniquenessConstants.RESULT_REJECTED_REPRESENTATION
 import net.corda.uniqueness.datamodel.common.toCharacterRepresentation

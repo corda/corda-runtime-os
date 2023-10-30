@@ -83,7 +83,7 @@ internal class UniquenessTxAlgoIdKey(
 
 @Entity
 @Table(name = "uniqueness_state_details")
-
+@Suppress("ForbiddenComment")
 // TODO this query needs refining because this way records are retrieved one-by-one which is extremely slow
 @NamedQueries(
     NamedQuery(
