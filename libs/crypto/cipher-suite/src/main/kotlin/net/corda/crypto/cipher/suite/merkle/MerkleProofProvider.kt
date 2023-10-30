@@ -1,6 +1,5 @@
 package net.corda.crypto.cipher.suite.merkle
 
-import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
@@ -20,7 +19,6 @@ interface MerkleProofProvider {
      *
      * @return A new [MerkleProof] instance.
      */
-    @Suspendable
     fun createMerkleProof(
       proofType: MerkleProofType,
       treeSize: Int,
@@ -28,7 +26,15 @@ interface MerkleProofProvider {
       hashes: List<SecureHash>
     ) : MerkleProof
 
-    @Suspendable
+    /**
+     * Creates a [IndexedMerkleLeaf]
+     *
+     * @property index The leaf's index.
+     * @property nonce The leaf's optional nonce.
+     * @property leafData The leaf's data.
+     *
+     * @return A new [IndexedMerkleLeaf] instance.
+     */
     fun createIndexedMerkleLeaf(
         index: Int,
         nonce: ByteArray?,

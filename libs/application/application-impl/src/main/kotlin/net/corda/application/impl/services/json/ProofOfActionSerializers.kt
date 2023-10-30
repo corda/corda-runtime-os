@@ -143,7 +143,7 @@ class DigitalSignatureMetadataSerializer : JsonSerializer<DigitalSignatureMetada
         generator.writeStartObject()
         generator.writeStringField("timestamp", metadata.timestamp.toString())
         generator.writeObjectField("signatureSpec", metadata.signatureSpec)
-        generator.writeObjectField("properties", metadata.properties)
+        generator.writeObjectField("properties", metadata.properties.toSortedMap())
         generator.writeEndObject()
     }
 }
@@ -157,8 +157,8 @@ class DigitalSignatureMetadataDeserializer : JsonDeserializer<DigitalSignatureMe
         val timestamp = Instant.parse(node.get("timestamp").asText())
         val signatureSpec = parser.codec.treeToValue(node.get("signatureSpec"), SignatureSpec::class.java)
         @Suppress("unchecked_cast")
-        val properties = parser.codec.treeToValue(node.get("properties"), Map::class.java)
-            .toMutableMap() as MutableMap<String, String>
+        val properties = (parser.codec.treeToValue(node.get("properties"), Map::class.java) as Map<String, String>)
+            .toSortedMap()
         return DigitalSignatureMetadata(timestamp, signatureSpec, properties)
     }
 }
