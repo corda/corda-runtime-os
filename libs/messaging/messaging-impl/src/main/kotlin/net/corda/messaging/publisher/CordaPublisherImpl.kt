@@ -18,8 +18,9 @@ import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 /**
  * Publisher will use a [CordaProducer] to communicate with the message bus. Failed producers are closed and recreated.
@@ -45,7 +46,7 @@ internal class CordaPublisherImpl(
 
     private data class Batch(val records: List<Record<*, *>>, val future: CompletableFuture<Unit>)
     private val queue = ArrayBlockingQueue<Batch>(QUEUE_SIZE)
-    private val lock = ReentrantLock(true)
+    private val lock = ReentrantReadWriteLock(true)
 
     /**
      * Publish a record.
@@ -60,10 +61,12 @@ internal class CordaPublisherImpl(
      */
     override fun publish(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
         val futures = mutableListOf<CompletableFuture<Unit>>()
-        if (config.transactional) {
-            futures.add(publishTransaction(records))
-        } else {
-            publishRecordsAsync(records, futures)
+        lock.read {
+            if (config.transactional) {
+                futures.add(publishTransaction(records))
+            } else {
+                publishRecordsAsync(records, futures)
+            }
         }
 
         return futures
@@ -73,10 +76,12 @@ internal class CordaPublisherImpl(
 
         val cordaRecords = records.map { Pair(it.first, it.second.toCordaProducerRecord()) }
         val futures = mutableListOf<CompletableFuture<Unit>>()
-        if (config.transactional) {
-            futures.add(publishTransactionWithPartitions(cordaRecords))
-        } else {
-            publishRecordsToPartitionsAsync(cordaRecords, futures)
+        lock.read {
+            if (config.transactional) {
+                futures.add(publishTransactionWithPartitions(cordaRecords))
+            } else {
+                publishRecordsToPartitionsAsync(cordaRecords, futures)
+            }
         }
 
         return futures
@@ -90,7 +95,7 @@ internal class CordaPublisherImpl(
         }
         val batch = Batch(records, CompletableFuture())
         queue.put(batch)
-        lock.withLock {
+        lock.read {
             val batches = mutableListOf<Batch>()
             queue.drainTo(batches)
             // Ensure we only go to Kafka if there are records to publish, as empty transactions incur a performance
@@ -202,7 +207,13 @@ internal class CordaPublisherImpl(
                         "Producer clientId ${config.clientId}, transactional ${config.transactional}, " +
                                 "failed to send, resetting producer", ex, future, false
                     )
-                    resetProducer()
+                    lock.readLock().unlock()
+                    // Upgrade lock to keep other threads from trying to use the producer while it's being reset
+                    lock.write {
+                        resetProducer()
+                    }
+                    // Downgrade the lock and allow other threads to publish
+                    lock.readLock().lock()
                 }
 
                 is CordaMessageAPIIntermittentException -> {
@@ -284,8 +295,10 @@ internal class CordaPublisherImpl(
     }
 
     override fun close() {
-        log.info("BOGDAN - CLOSING PUBLISHER ${config.clientId}")
-        closeProducerAndSuppressExceptions()
+        lock.write {
+            log.info("BOGDAN - CLOSING PUBLISHER ${config.clientId}")
+            closeProducerAndSuppressExceptions()
+        }
     }
 
     /**
