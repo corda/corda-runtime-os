@@ -204,7 +204,7 @@ class RecordFactoryImpl @Activate constructor(
             Constants.FLOW_SESSION_SUBSYSTEM,
             MembershipStatusFilter.ACTIVE
         )
-        val random = Random.nextInt(2)
+        val random = Random.nextInt(10)
         val key = "${sourceIdentity.x500Name}->${destinationIdentity.x500Name}-$random"
         val appMessage = AppMessage(AuthenticatedMessage(header, ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))))
         return Record(Schemas.P2P.P2P_OUT_TOPIC, key, appMessage)
