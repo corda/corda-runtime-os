@@ -39,9 +39,6 @@ class CordaPublisherFactory @Activate constructor(
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : PublisherFactory {
 
-    companion object {
-        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
 
     override fun createPublisher(
         publisherConfig: PublisherConfig,
