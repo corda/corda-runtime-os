@@ -9,7 +9,6 @@ import net.corda.v5.application.interop.evm.Parameter
 import net.corda.v5.application.interop.evm.Type
 import net.corda.v5.application.interop.evm.options.TransactionOptions
 import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.annotations.Suspendable
 import org.slf4j.LoggerFactory
 
@@ -22,11 +21,7 @@ class EvmDemoFlow : ClientStartableFlow {
     private companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val TRANSFER_FUNCTION = "sendTokenOne"
-
     }
-
-    @CordaInject
-    lateinit var memberLookupService: MemberLookup
 
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
@@ -42,18 +37,17 @@ class EvmDemoFlow : ClientStartableFlow {
             val inputs = requestBody.getRequestBodyAs(jsonMarshallingService, EvmDemoInput::class.java)
 
             // Step 1.  Do the token transfer on Corda
-
-
+            // ...
 
             // Step 2.  Call to the Evm to do the asset transfer
             val dummyGasNumber = BigInteger("a41c5", 16)
             val transactionOptions = TransactionOptions(
-                dummyGasNumber,
-                0.toBigInteger(),
-                20000000000.toBigInteger(),
-                20000000000.toBigInteger(),
-                inputs.rpcUrl!!,
-                inputs.buyerAddress!!,
+                dummyGasNumber,                 // gasLimit
+                0.toBigInteger(),               // value
+                20000000000.toBigInteger(),     // maxFeePerGas
+                20000000000.toBigInteger(),     // maxPriorityFeePerGas
+                inputs.rpcUrl!!,                // rpcUrl
+                inputs.buyerAddress!!,          // from
             )
 
             val parameters = listOf(
@@ -70,7 +64,6 @@ class EvmDemoFlow : ClientStartableFlow {
             )
 
             val response = EvmDemoOutput(hash)
-
             return jsonMarshallingService.format(response)
 
         } catch (e: Exception) {
@@ -79,4 +72,3 @@ class EvmDemoFlow : ClientStartableFlow {
         }
     }
 }
-

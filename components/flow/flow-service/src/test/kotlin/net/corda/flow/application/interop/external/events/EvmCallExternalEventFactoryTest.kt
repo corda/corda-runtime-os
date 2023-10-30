@@ -3,6 +3,7 @@ package net.corda.flow.application.interop.external.events
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.interop.evm.EvmRequest
+import net.corda.data.interop.evm.EvmResponse
 import net.corda.data.interop.evm.request.Call
 import net.corda.data.interop.evm.request.CallOptions
 import net.corda.data.interop.evm.request.Parameter
@@ -43,7 +44,7 @@ class EvmCallExternalEventFactoryTest {
                 net.corda.v5.application.interop.evm.options.CallOptions("latest", "rpcUrl", "from"),
                 "test",
                 "to",
-                String::class.java,
+                Type.STRING,
                 listOf(
                     net.corda.v5.application.interop.evm.Parameter.of("one", Type.INT64, 1),
                     net.corda.v5.application.interop.evm.Parameter("two", Type.ADDRESS_LIST, listOf("one", "two")),
@@ -53,5 +54,13 @@ class EvmCallExternalEventFactoryTest {
             )
         )
         assertThat(result.payload).isEqualTo(expectedRequest)
+    }
+
+    @Test
+    fun `call correctly returns expected type`() {
+        val payload = "{ }"
+        val eventExecutor = EvmCallExternalEventFactory(mock())
+
+        assertThat(eventExecutor.resumeWith(mock(), EvmResponse(payload))).isEqualTo(payload)
     }
 }

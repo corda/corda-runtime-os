@@ -18,14 +18,9 @@ import net.corda.interop.evm.encoder.TransactionEncoder
  * @param evmConnector The evmConnector class used to make rpc calls to the node
  */
 class CallDispatcher(private val evmConnector: EthereumConnector) : EvmDispatcher {
-
-    private val encoder = TransactionEncoder()
-
-//    private val decoder = TransactionDecoder()
     override fun dispatch(evmRequest: EvmRequest): EvmResponse {
-         val request = evmRequest.payload as Call
-
-        val data = encoder.encode(request.function, request.parameters)
+        val request = evmRequest.payload as Call
+        val data = TransactionEncoder.encode(request.function, request.parameters)
         // EVM Expects both data & input
         val callData = JsonNodeFactory.instance.objectNode()
             .put("to", evmRequest.to)
@@ -33,9 +28,6 @@ class CallDispatcher(private val evmConnector: EthereumConnector) : EvmDispatche
             .put("input", data)
 
         val resp = evmConnector.send<GenericResponse>(evmRequest.rpcUrl, CALL, listOf(callData, LATEST))
-//        return EvmResponse(decoder.decode(resp.result.toString(), evmRequest.returnType))
-        // Temporary to test the call is working
-        return EvmResponse(resp.result.toString())
-
+        return EvmResponse(TransactionDecoder.decode(resp.result.toString(), evmRequest.returnType))
     }
 }

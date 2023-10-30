@@ -43,7 +43,7 @@ class EvmDemoCall : ClientStartableFlow {
 
             log.info("Querying Transaction Receipt for ${inputs.address} ...")
             val receipt = evmService.call(
-                "balanceOf", inputs.contractAddress!!, options, Type.STRING::class.java, listOf(
+                "balanceOf", inputs.contractAddress!!, options, Type.UINT256, listOf(
                     Parameter.of("from", Type.ADDRESS, inputs.address!!),
                     Parameter.of("id", Type.UINT256, 1.toBigInteger())
                 )

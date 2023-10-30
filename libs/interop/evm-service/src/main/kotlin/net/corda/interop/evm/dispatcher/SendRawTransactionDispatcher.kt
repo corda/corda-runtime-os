@@ -23,17 +23,12 @@ import org.web3j.utils.Numeric
  * @param evmConnector The evmConnector class used to make rpc calls to the node
  */
 class SendRawTransactionDispatcher(private val evmConnector: EthereumConnector) : EvmDispatcher {
-    private val encoder = TransactionEncoder()
-
     // This is used in absence of the crypto worker being able to sign these transactions for use
     private val temporaryPrivateKey = TEMPORARY_PRIVATE_KEY
 
-    // Temporary Max Fee Per Gas Multiplier
-
-
     override fun dispatch(evmRequest: EvmRequest): EvmResponse {
         val request = evmRequest.payload as Transaction
-        val data = encoder.encode(request.function, request.parameters)
+        val data = TransactionEncoder.encode(request.function, request.parameters)
 
 
         val transactionCountResponse = evmConnector.send<GenericResponse>(
@@ -62,6 +57,5 @@ class SendRawTransactionDispatcher(private val evmConnector: EthereumConnector) 
         )
 
         return EvmResponse(tReceipt.result.toString())
-
     }
 }

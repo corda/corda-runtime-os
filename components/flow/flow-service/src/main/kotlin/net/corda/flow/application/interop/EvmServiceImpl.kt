@@ -13,9 +13,11 @@ import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.interop.evm.EvmService
 import net.corda.v5.application.interop.evm.Parameter
 import net.corda.v5.application.interop.evm.TransactionReceipt
+import net.corda.v5.application.interop.evm.Type
 import net.corda.v5.application.interop.evm.options.CallOptions
 import net.corda.v5.application.interop.evm.options.EvmOptions
 import net.corda.v5.application.interop.evm.options.TransactionOptions
+import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -29,6 +31,8 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
     scope = PROTOTYPE
 )
 class EvmServiceImpl @Activate constructor(
+    @Reference(service = JsonMarshallingService::class)
+    private val jsonMarshallingService: JsonMarshallingService,
     @Reference(service = ExternalEventExecutor::class)
     private val externalEventExecutor: ExternalEventExecutor,
 ) : EvmService, UsedByFlow, SingletonSerializeAsToken {
@@ -38,7 +42,7 @@ class EvmServiceImpl @Activate constructor(
         functionName: String,
         to: String,
         options: CallOptions,
-        returnType: Class<T>,
+        returnType: Type<T>,
         vararg parameters: Parameter<*>,
     ): T {
         return call(functionName, to, options, returnType, parameters.toList())
@@ -49,17 +53,28 @@ class EvmServiceImpl @Activate constructor(
         functionName: String,
         to: String,
         options: CallOptions,
-        returnType: Class<T>,
+        returnType: Type<T>,
         parameters: List<Parameter<*>>,
     ): T {
         return try {
-            @Suppress("UNCHECKED_CAST")
-            externalEventExecutor.execute(
+            val response = externalEventExecutor.execute(
                 EvmCallExternalEventFactory::class.java,
                 EvmCallExternalEventParams(
-                    options, to, functionName, returnType, parameters
+                    callOptions = options,
+                    functionName = functionName,
+                    to = to,
+                    returnType = returnType,
+                    parameters = parameters
                 )
-            ) as T
+            )
+            @Suppress("UNCHECKED_CAST")
+            if (returnType.isList) {
+                jsonMarshallingService.parseList(response, returnType.asClass()) as T
+            } else if (returnType.isArray) {
+                jsonMarshallingService.parseList(response, returnType.asClass()).toTypedArray() as T
+            } else {
+                jsonMarshallingService.parse(response, returnType.asClass()) as T
+            }
         } catch (e: ClassCastException) {
             throw CordaRuntimeException("Incorrect type received for call on $functionName.", e)
         }
@@ -89,7 +104,7 @@ class EvmServiceImpl @Activate constructor(
                     transactionOptions = options,
                     functionName = functionName,
                     to = to,
-                    parameters = parameters
+                    parameters = parameters,
                 )
             )
         } catch (e: ClassCastException) {
@@ -106,7 +121,8 @@ class EvmServiceImpl @Activate constructor(
             externalEventExecutor.execute(
                 EvmTransactionReceiptExternalEventFactory::class.java,
                 EvmTransactionReceiptExternalEventParams(
-                    options, hash
+                    options = options,
+                    hash = hash,
                 )
             )
         } catch (e: ClassCastException) {

@@ -12,10 +12,7 @@ import net.corda.schema.Schemas
 import net.corda.v5.application.interop.evm.Log
 import net.corda.v5.application.interop.evm.TransactionReceipt
 import net.corda.v5.application.interop.evm.options.EvmOptions
-import net.corda.v5.application.marshalling.JsonMarshallingService
-import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
 
 data class EvmTransactionReceiptExternalEventParams(
     val options: EvmOptions,
@@ -23,16 +20,12 @@ data class EvmTransactionReceiptExternalEventParams(
 )
 
 @Component(service = [ExternalEventFactory::class])
-class EvmTransactionReceiptExternalEventFactory @Activate constructor(
-    @Reference(service = JsonMarshallingService::class)
-    private val jsonMarshallingService: JsonMarshallingService
-) : ExternalEventFactory<EvmTransactionReceiptExternalEventParams, EvmResponse, TransactionReceipt> {
+class EvmTransactionReceiptExternalEventFactory
+    : ExternalEventFactory<EvmTransactionReceiptExternalEventParams, EvmResponse, TransactionReceipt> {
     override val responseType: Class<EvmResponse> = EvmResponse::class.java
 
     override fun resumeWith(checkpoint: FlowCheckpoint, response: EvmResponse): TransactionReceipt {
-        println("EvmTransactionReceiptExternalEventFactory: resumeWith")
-        val receipt = jsonMarshallingService.parse(response.payload.toString(), net.corda.data.interop.evm.response.TransactionReceipt::class.java)
-        return receipt.toCorda()
+        return (response.payload as net.corda.data.interop.evm.response.TransactionReceipt).toCorda()
     }
 
     override fun createExternalEvent(
@@ -60,20 +53,31 @@ class EvmTransactionReceiptExternalEventFactory @Activate constructor(
     private fun net.corda.data.interop.evm.response.TransactionReceipt.toCorda(): TransactionReceipt {
         return TransactionReceipt(
             blockHash,
-            BigInteger(blockNumber),
+            blockNumber.toBigInteger(),
             contractAddress,
-            BigInteger(cumulativeGasUsed),
-            BigInteger(effectiveGasPrice),
+            cumulativeGasUsed.toBigInteger(),
+            effectiveGasPrice.toBigInteger(),
             from,
-            BigInteger(gasUsed),
+            gasUsed.toBigInteger(),
             logs.toCorda(),
             logsBloom,
             status,
             to,
             transactionHash,
-            BigInteger(transactionIndex),
+            transactionIndex.toBigInteger(),
             type,
         )
+    }
+
+    private fun String?.toBigInteger(): BigInteger {
+        return if (isNullOrEmpty()) {
+            BigInteger.ZERO
+        }
+        else if (startsWith("0x")) {
+            BigInteger(this.substring(2), 16)
+        } else {
+            BigInteger(this, 16)
+        }
     }
 
     private fun List<net.corda.data.interop.evm.response.Log>.toCorda() = map { it.toCorda() }

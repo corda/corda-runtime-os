@@ -1,140 +1,48 @@
 package net.corda.flow.application.interop
 
-import org.junit.jupiter.api.Disabled
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import java.math.BigInteger
+import net.corda.flow.TestMarshallingService
+import net.corda.flow.application.interop.external.events.EvmCallExternalEventFactory
+import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.v5.application.interop.evm.EvmService
+import net.corda.v5.application.interop.evm.Parameter
+import net.corda.v5.application.interop.evm.Type
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
+import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
 
-@Disabled
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EvmServiceImplTest {
 
-/*
-    @Test
-    fun `transaction with correct parameter list sends external event`() {
-
-        val expected = "0x123456789abcdef123456789abcdef"
-        val expectedRequest = EvmRequest(
-            "from",
-            "to",
-            "rpcUrl",
-            String::class.java.name,
-            Transaction(
-                "test",
-                TransactionOptions("1", "2", "3", "4"),
-                listOf(
-                    net.corda.data.interop.evm.request.Parameter("one", "int64", "1"),
-                    net.corda.data.interop.evm.request.Parameter("two", "address", "\"two\""),
-                )
+    private fun callParams() =
+            listOf(
+                Arguments.of("test", Type.STRING),
+                Arguments.of(1, Type.INT32),
+                Arguments.of(1L, Type.INT64),
+                Arguments.of(BigInteger.ONE, Type.UINT256),
+                Arguments.of(true, Type.BOOLEAN),
+                Arguments.of(listOf(true, false), Type.BOOLEAN_LIST),
+                Arguments.of(arrayOf(true, false), Type.BOOLEAN_ARRAY),
+                Arguments.of(listOf(1L, 2L, 3L), Type.INT64_LIST),
+                Arguments.of(arrayOf(1L, 2L, 3L), Type.INT64_ARRAY),
+                Arguments.of(listOf(BigInteger.valueOf(1L), BigInteger.valueOf(2L), BigInteger.valueOf(3L)), Type.UINT256_LIST),
+                Arguments.of(arrayOf(BigInteger.valueOf(1L), BigInteger.valueOf(2L), BigInteger.valueOf(3L)), Type.UINT256_ARRAY),
             )
-        )
 
-        val event = argumentCaptor<EvmTransactionExternalEventParams>()
+    @ParameterizedTest
+    @MethodSource("callParams")
+    fun `call result is correctly deserialized`(value: Any, type: Type<*>) {
+        val expected = jacksonObjectMapper().writeValueAsString(value)
         val eventExecutor = mock<ExternalEventExecutor> {
-            on { execute(eq(EvmTransactionExternalEventFactory::class.java), event.capture()) }.thenReturn(expected)
+            on { execute(eq(EvmCallExternalEventFactory::class.java), any()) }.thenReturn(expected)
         }
-
-        val service: EvmService = EvmServiceImpl(
-            eventExecutor
-        )
-
-        val options = net.corda.v5.application.interop.evm.options.TransactionOptions(
-            BigInteger.ONE,
-            BigInteger.TWO,
-            BigInteger.valueOf(4),
-            BigInteger.valueOf(3),
-            "rpcUrl",
-            "from"
-        )
-        val result = service.transaction(
-            "test",
-            "to",
-            options,
-            listOf(Parameter("one", INT64, 1), Parameter("two", Type.ADDRESS, "two"))
-        )
-        assertThat(result).isEqualTo(expected)
-//        assertThat(event.allValues.single().payload).isEqualTo(expectedRequest)
+        val service: EvmService = EvmServiceImpl(TestMarshallingService(), eventExecutor)
+        assertThat(service.call("function", "to", mock(), type, Parameter.of("name", ""))).isEqualTo(value)
     }
-
-    @Test
-    fun `getTransactionReceipt correctly sends external event`() {
-
-        val expectedLog = net.corda.v5.application.interop.evm.Log(
-            "contract",
-            listOf(""),
-            "data",
-            BigInteger.valueOf(1),
-            "transactionHash",
-            BigInteger.valueOf(5),
-            "blockHash",
-            0,
-            false
-        )
-        val expected = net.corda.v5.application.interop.evm.TransactionReceipt(
-            "blockHash",
-            BigInteger.valueOf(1),
-            "contract",
-            BigInteger.valueOf(2),
-            BigInteger.valueOf(3),
-            "from",
-            BigInteger.valueOf(4),
-            listOf(expectedLog),
-            "logsBloom",
-            true,
-            "to",
-            "transactionHash",
-            BigInteger.valueOf(5),
-            "type"
-        )
-
-        val log = Log.newBuilder()
-            .setBlockHash("blockHash")
-            .setBlockNumber(1)
-            .setTransactionHash("transactionHash")
-            .setTransactionIndex(5)
-            .setLogIndex(0)
-            .setAddress("contract")
-            .setData("data")
-            .setRemoved(false)
-            .setTopics(listOf(""))
-            .build()
-
-        val receipt = TransactionReceipt.newBuilder()
-            .setBlockHash("blockHash")
-            .setBlockNumber("1")
-            .setContractAddress("contract")
-            .setCumulativeGasUsed("2")
-            .setEffectiveGasPrice("3")
-            .setFrom("from")
-            .setGasUsed("4")
-            .setLogs(listOf(log))
-            .setLogsBloom("logsBloom")
-            .setStatus(true)
-            .setTo("to")
-            .setTransactionHash("transactionHash")
-            .setTransactionIndex("5")
-            .setType("type")
-            .build()
-
-        val event = argumentCaptor<EvmTransactionReceiptExternalEventParams>()
-        val expectedRequest = EvmRequest(
-            "",
-            "",
-            "rpcUrl",
-            String::class.java.name,
-            GetTransactionReceipt("test")
-        )
-
-        val eventExecutor = mock<ExternalEventExecutor> {
-            on { execute(eq(EvmTransactionReceiptExternalEventFactory::class.java), event.capture()) }.thenReturn(
-                expected
-            )
-        }
-
-        val service: EvmService = EvmServiceImpl(
-            eventExecutor
-        )
-
-        val result = service.getTransactionReceipt("test", EvmOptions("rpcUrl", "from"))
-        assertThat(result).usingRecursiveComparison().isEqualTo(expected)
-//        assertThat(event.allValues.single().payload).isEqualTo(expectedRequest)
-    }
-
- */
 }

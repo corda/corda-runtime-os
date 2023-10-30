@@ -9,6 +9,7 @@ import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.schema.Schemas
 import net.corda.v5.application.interop.evm.Parameter
+import net.corda.v5.application.interop.evm.Type
 import net.corda.v5.application.interop.evm.options.CallOptions
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import org.osgi.service.component.annotations.Activate
@@ -19,7 +20,7 @@ data class EvmCallExternalEventParams(
     val callOptions: CallOptions,
     val functionName: String,
     val to: String,
-    val returnType: Class<*>,
+    val returnType: Type<*>,
     val parameters: List<Parameter<*>>,
 )
 
@@ -27,11 +28,11 @@ data class EvmCallExternalEventParams(
 class EvmCallExternalEventFactory @Activate constructor(
     @Reference(service = JsonMarshallingService::class)
     private val jsonMarshallingService: JsonMarshallingService
-) : ExternalEventFactory<EvmCallExternalEventParams, EvmResponse, Any> {
+) : ExternalEventFactory<EvmCallExternalEventParams, EvmResponse, String> {
     override val responseType: Class<EvmResponse> = EvmResponse::class.java
 
-    override fun resumeWith(checkpoint: FlowCheckpoint, response: EvmResponse): Any {
-        return response.payload
+    override fun resumeWith(checkpoint: FlowCheckpoint, response: EvmResponse): String {
+        return response.payload as String
     }
 
     override fun createExternalEvent(
