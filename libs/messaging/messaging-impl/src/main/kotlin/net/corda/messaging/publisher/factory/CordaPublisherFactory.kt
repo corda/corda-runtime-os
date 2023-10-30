@@ -37,7 +37,6 @@ class CordaPublisherFactory @Activate constructor(
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 ) : PublisherFactory {
 
-
     override fun createPublisher(
         publisherConfig: PublisherConfig,
         messagingConfig: SmartConfig
