@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.util.LRUMap
 import com.fasterxml.jackson.databind.util.LookupCache
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import net.corda.crypto.cipher.suite.merkle.MerkleTreeProofProvider
+import net.corda.crypto.cipher.suite.merkle.MerkleProofProvider
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.marshalling.InteropJsonMarshallingService
 import net.corda.v5.crypto.SecureHash
@@ -32,8 +32,8 @@ import java.util.Collections.unmodifiableMap
 )
 class InteropJsonMarshallingServiceImpl
 @Activate constructor(
-    @Reference(service = MerkleTreeProofProvider::class)
-    private val merkleTreeProofProvider: MerkleTreeProofProvider
+    @Reference(service = MerkleProofProvider::class)
+    private val merkleProofProvider: MerkleProofProvider
 ) : InteropJsonMarshallingService, UsedByFlow, SingletonSerializeAsToken {
     private companion object {
         private const val INITIAL_SIZE = 16
@@ -52,7 +52,7 @@ class InteropJsonMarshallingServiceImpl
         module.addDeserializer(SecureHash::class.java, SecureHashDeserializer)
 
         // Interoperability
-        registerModule(ProofOfActionSerialisationModule(merkleTreeProofProvider).module)
+        registerModule(ProofOfActionSerialisationModule(merkleProofProvider).module)
         registerModule(JavaTimeModule())
 
         // Register Kotlin after resetting the AnnotationIntrospector.

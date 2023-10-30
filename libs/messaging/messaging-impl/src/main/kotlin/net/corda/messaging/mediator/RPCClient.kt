@@ -58,7 +58,7 @@ class RPCClient(
             log.trace { "Received RPC external event send request for endpoint ${message.endpoint()}" }
             processMessage(message)
         } catch (e: Exception) {
-            handleExceptions(e)
+            handleExceptions(e, message.endpoint())
         }
     }
 
@@ -146,25 +146,25 @@ class RPCClient(
         }
     }
 
-    private fun handleExceptions(e: Exception): Nothing {
+    private fun handleExceptions(e: Exception, endpoint: String): Nothing {
         val exceptionToThrow = when (e) {
             is IOException,
             is InterruptedException,
             is TimeoutException,
             is CordaHTTPClientErrorException,
             is CordaHTTPServerErrorException -> {
-                log.warn("Intermittent error in RPCClient: ", e)
+                log.warn("Intermittent error in RPCClient request $endpoint: ", e)
                 CordaMessageAPIIntermittentException(e.message, e)
             }
 
             is IllegalArgumentException,
             is SecurityException -> {
-                log.warn("Fatal error in RPCClient: ", e)
+                log.warn("Fatal error in RPCClient request $endpoint: ", e)
                 CordaMessageAPIFatalException(e.message, e)
             }
 
             else -> {
-                log.warn("Unhandled exception in RPCClient: ", e)
+                log.warn("Unhandled exception in RPCClient request $endpoint: ", e)
                 e
             }
         }

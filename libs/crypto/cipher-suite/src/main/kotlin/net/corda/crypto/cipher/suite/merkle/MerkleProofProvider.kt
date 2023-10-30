@@ -1,6 +1,5 @@
 package net.corda.crypto.cipher.suite.merkle
 
-import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleProofType
@@ -8,10 +7,9 @@ import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
 import net.corda.v5.crypto.merkle.MerkleProof
 
 /**
- * [MerkleTreeProofProvider] creates [MerkleProof]s.
+ * [MerkleProofProvider] creates [MerkleProof]s.
  */
-@DoNotImplement
-interface MerkleTreeProofProvider {
+interface MerkleProofProvider {
     /**
      * Creates a [MerkleProof]
      *

@@ -73,8 +73,7 @@ class MessageBusConfigResolverTest {
                     mapOf(
                         BOOTSTRAP_SERVERS_PROP to "kafka:1001",
                         SSL_KEYSTORE_PROP to "foo/bar",
-                        CLIENT_ID_PROP to "eventConsumer--$CLIENT_ID",
-                        GROUP_ID_PROP to "group-cooperative"
+                        CLIENT_ID_PROP to "eventConsumer--$CLIENT_ID"
                     )
                 ),
                 ConsumerRoles.EVENT_LOG to getExpectedConsumerProperties(
