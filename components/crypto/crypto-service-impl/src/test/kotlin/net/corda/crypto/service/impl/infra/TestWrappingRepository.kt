@@ -28,6 +28,9 @@ class TestWrappingRepository(
 
     override fun findKeysWrappedByAlias(alias: String): Sequence<WrappingKeyInfo> = TODO("Not needed")
 
+
+    override fun getKeyById(id: UUID): WrappingKeyInfo? =TODO("Not yet implemented")
+
     override fun close() {
     }
 }

@@ -72,6 +72,7 @@ class SoftCryptoServiceOperationsTests {
                         knownWrappingKeyMaterial,
                         1,
                         "root",
+                        "k1"
                     )
                 ).toMap()
             )
@@ -85,6 +86,7 @@ class SoftCryptoServiceOperationsTests {
                         knownWrappingKeyMaterial,
                         1,
                         "root",
+                        "k1"
                     )
                 ).toMap()
             )
@@ -438,15 +440,16 @@ class SoftCryptoServiceOperationsTests {
             expected1.algorithm,
             rootWrappingKey.wrap(expected1),
             1,
-            "root"
-
+            "root",
+            "k1"
         )
         val info2 = WrappingKeyInfo(
             WRAPPING_KEY_ENCODING_VERSION,
             expected2.algorithm,
             rootWrappingKey.wrap(expected2),
             1,
-            "root"
+            "root",
+            "k1"
         )
         val key1Missing = wrappingKeyCache.getIfPresent(alias1)
         assertNull(key1Missing)
@@ -487,7 +490,7 @@ class SoftCryptoServiceOperationsTests {
                 WRAPPING_KEY_ENCODING_VERSION + 1,
                 knownWrappingKey.algorithm,
                 rootWrappingKey.wrap(knownWrappingKey),
-                1, "enoch"
+                1, "enoch", "k1"
             )
         )
         val exception = assertThrows<IllegalArgumentException> {
@@ -506,7 +509,8 @@ class SoftCryptoServiceOperationsTests {
                 knownWrappingKey.algorithm + "!",
                 rootWrappingKey.wrap(knownWrappingKey),
                 1,
-                "Enoch"
+                "Enoch",
+                "k1"
             )
         )
         val exception =  assertThrows<IllegalStateException> {
@@ -531,7 +535,7 @@ class SoftCryptoServiceOperationsTests {
         val unknownAlias = UUID.randomUUID().toString()
         assertNull(clusterWrappingRepository.findKey(storeAlias))
         assertNull(clusterWrappingRepository.findKey(unknownAlias))
-        clusterWrappingRepository.saveKey(storeAlias, WrappingKeyInfo(1, "t", byteArrayOf(), 1, "Enoch"))
+        clusterWrappingRepository.saveKey(storeAlias, WrappingKeyInfo(1, "t", byteArrayOf(), 1, "Enoch", "k1"))
         assertNotNull(clusterWrappingRepository.findKey(storeAlias))
         assertNull(clusterWrappingRepository.findKey(unknownAlias))
     }

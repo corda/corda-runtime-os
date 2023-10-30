@@ -22,7 +22,7 @@ class WrappingRepositoryImplTests {
     fun `JPA equality on primary key only rule for WrappingKeyEntities`() {
         val uuidAlpha = UUID.randomUUID()
         val uuidBeta = UUID.randomUUID()
-        val golden = WrappingKeyInfo(1, "DES", byteArrayOf(), 1, "root")
+        val golden = WrappingKeyInfo(1, "DES", byteArrayOf(), 1, "root", "k1")
         val alpha1 = makeWrappingKeyEntity(uuidAlpha, golden)
         val alpha2 = makeWrappingKeyEntity(uuidAlpha, golden.copy(algorithmName = "AES", generation = 2))
         val beta = makeWrappingKeyEntity(uuidBeta, golden)
@@ -34,7 +34,7 @@ class WrappingRepositoryImplTests {
     fun `save a wrapping key`() {
         val stored = ArrayList<WrappingKeyEntity>()
         val wrappingKeyInfo = WrappingKeyInfo(
-            1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch")
+            1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch", "k1")
         val savedWrappingKey = makeWrappingKeyEntity(UUID.randomUUID(), wrappingKeyInfo)
         val em = mock<EntityManager> {
             on { merge(any<WrappingKeyEntity>()) } doReturn(savedWrappingKey)
@@ -62,7 +62,7 @@ class WrappingRepositoryImplTests {
     fun `save a wrapping key with id`() {
         val stored = ArrayList<WrappingKeyEntity>()
         val wrappingKeyInfo = WrappingKeyInfo(
-            1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch")
+            1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch", "k1")
         val savedWrappingKey = makeWrappingKeyEntity(UUID.randomUUID(), wrappingKeyInfo)
         val em = mock<EntityManager> {
             on { merge(any<WrappingKeyEntity>()) } doReturn(savedWrappingKey)
@@ -103,7 +103,7 @@ class WrappingRepositoryImplTests {
     @Test
     fun `find a wrapping key and it's id`() {
         val wrappingKeyInfo = WrappingKeyInfo(
-            1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch")
+            1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch", "k1")
         val newId  = UUID.randomUUID()
         val savedWrappingKey = makeWrappingKeyEntity(newId, wrappingKeyInfo)
         val em = mock<EntityManager> {

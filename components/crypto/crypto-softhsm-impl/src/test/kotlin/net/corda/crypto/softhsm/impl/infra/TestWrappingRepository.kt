@@ -30,7 +30,15 @@ class TestWrappingRepository(
         return keys[alias]?.let {
             UUID.randomUUID() to it
         }
-    } 
+    }
+
+    override fun getKeyById(id: UUID): WrappingKeyInfo? {
+        TODO("Not yet implemented")
+    }
+
+    override fun findKeysWrappedByAlias(alias: String): Sequence<WrappingKeyInfo> {
+        TODO("Not yet implemented")
+    }
     
     override fun close() {
     }
