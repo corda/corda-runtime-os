@@ -27,7 +27,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Config.CONFIG_TOPIC
-import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_IN
+import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_IN_TOPIC
 import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
@@ -138,7 +138,7 @@ class FlowFilterServiceIntegrationTest {
         //validate mapper receives 2 inits
         val mapperLatch = CountDownLatch(2)
         val p2pOutSub = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$testId-flow-mapper", FLOW_MAPPER_SESSION_IN),
+            SubscriptionConfig("$testId-flow-mapper", FLOW_MAPPER_EVENT_TOPIC),
             TestFlowSessionFilterProcessor("$testId-INITIATED", mapperLatch, 2),
             bootConfig,
             null
