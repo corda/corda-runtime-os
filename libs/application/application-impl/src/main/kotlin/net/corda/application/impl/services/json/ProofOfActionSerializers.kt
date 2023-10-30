@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.JsonSerializer
 import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.module.SimpleModule
 import net.corda.crypto.cipher.suite.SignatureSpecImpl
-import net.corda.crypto.cipher.suite.merkle.MerkleTreeProofProvider
+import net.corda.crypto.cipher.suite.merkle.MerkleProofProvider
 import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
@@ -21,7 +21,7 @@ import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.crypto.merkle.MerkleProofType
 import java.time.Instant
 
-class ProofOfActionSerialisationModule(private val merkleTreeProofProvider: MerkleTreeProofProvider) {
+class ProofOfActionSerialisationModule(private val merkleProofProvider: MerkleProofProvider) {
     val module = SimpleModule().apply {
         addSerializer(DigitalSignatureAndMetadata::class.java, DigitalSignatureAndMetadataSerializer())
         addDeserializer(DigitalSignatureAndMetadata::class.java, DigitalSignatureAndMetadataDeserializer())
@@ -32,9 +32,9 @@ class ProofOfActionSerialisationModule(private val merkleTreeProofProvider: Merk
         addSerializer(SignatureSpec::class.java, SignatureSpecSerializer()) //optional
         addDeserializer(SignatureSpec::class.java, SignatureSpecDeserializer())
         addSerializer(MerkleProof::class.java, MerkleProofSerializer()) //optional
-        addDeserializer(MerkleProof::class.java, MerkleProofDeserializer(merkleTreeProofProvider))
+        addDeserializer(MerkleProof::class.java, MerkleProofDeserializer(merkleProofProvider))
         addSerializer(IndexedMerkleLeaf::class.java, IndexedMerkleLeafSerializer()) //optional
-        addDeserializer(IndexedMerkleLeaf::class.java, IndexedMerkleLeafDeserializer(merkleTreeProofProvider))
+        addDeserializer(IndexedMerkleLeaf::class.java, IndexedMerkleLeafDeserializer(merkleProofProvider))
     }
 }
 
@@ -52,7 +52,7 @@ class IndexedMerkleLeafSerializer : JsonSerializer<IndexedMerkleLeaf>() {
     }
 }
 
-class IndexedMerkleLeafDeserializer(private val merkleTreeProofProvider: MerkleTreeProofProvider) :
+class IndexedMerkleLeafDeserializer(private val merkleProofProvider: MerkleProofProvider) :
     JsonDeserializer<IndexedMerkleLeaf>() {
     override fun deserialize(
         parser: JsonParser,
@@ -62,7 +62,7 @@ class IndexedMerkleLeafDeserializer(private val merkleTreeProofProvider: MerkleT
         val index = node.get("index").asInt()
         val nonce = if (node.has("nonce")) node.get("nonce").binaryValue() else null
         val leafData = node.get("leafData").binaryValue()
-        return merkleTreeProofProvider.createIndexedMerkleLeaf(index, nonce, leafData)
+        return merkleProofProvider.createIndexedMerkleLeaf(index, nonce, leafData)
     }
 }
 
@@ -89,7 +89,7 @@ class MerkleProofSerializer : JsonSerializer<MerkleProof>() {
     }
 }
 
-class MerkleProofDeserializer(private val merkleTreeProofProvider: MerkleTreeProofProvider) :
+class MerkleProofDeserializer(private val merkleProofProvider: MerkleProofProvider) :
     JsonDeserializer<MerkleProof>() {
     override fun deserialize(
         parser: JsonParser,
@@ -110,7 +110,7 @@ class MerkleProofDeserializer(private val merkleTreeProofProvider: MerkleTreePro
             val hash = parser.codec.treeToValue(hashNode, SecureHash::class.java)
             hashes.add(hash)
         }
-        return merkleTreeProofProvider.createMerkleProof(proofType, treeSize, leaves, hashes)
+        return merkleProofProvider.createMerkleProof(proofType, treeSize, leaves, hashes)
     }
 }
 
@@ -192,12 +192,13 @@ class DigitalSignatureAndMetadataDeserializer : JsonDeserializer<DigitalSignatur
 
 class DigitalSignatureWithKeyIdSerializer : JsonSerializer<DigitalSignature.WithKeyId>() {
     override fun serialize(
-        signature: DigitalSignature.WithKeyId?,
-        generator: JsonGenerator?,
+        signature: DigitalSignature.WithKeyId,
+        generator: JsonGenerator,
         provider: SerializerProvider
     ) {
-        generator!!.writeStartObject()
-        generator.writeObjectField("by", signature!!.by) //TODO NPE
+        generator.writeStartObject()
+        val signatureBy = signature.by
+        generator.writeObjectField("by", signatureBy)
         generator.writeFieldName("bytes")
         generator.writeBinary(signature.bytes)
         generator.writeEndObject()
