@@ -40,6 +40,7 @@ import net.corda.metrics.CordaMetrics.Metric.InboundSessionCount
 import net.corda.metrics.CordaMetrics.Metric.OutboundSessionCount
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
+import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.CertificateCheckMode
@@ -143,7 +144,7 @@ internal class SessionManagerImpl(
     // This default needs to be removed and the lifecycle dependency graph adjusted to ensure the inbound subscription starts only after
     // the configuration has been received and the session manager has started (see CORE-6730).
     private val config = AtomicReference(
-        SessionManagerConfig(1000000, 4, RevocationCheckMode.OFF, 432000)
+        SessionManagerConfig(1000000, 2, 1, RevocationCheckMode.OFF, 432000)
     )
 
     private val heartbeatManager: HeartbeatManager = HeartbeatManager(
@@ -196,7 +197,8 @@ internal class SessionManagerImpl(
     @VisibleForTesting
     internal data class SessionManagerConfig(
         val maxMessageSize: Int,
-        val sessionsPerCounterparties: Int,
+        val sessionsPerCounterpartiesForMembers: Int,
+        val sessionsPerCounterpartiesForMgm: Int,
         val revocationConfigMode: RevocationCheckMode,
         val sessionRefreshThreshold: Int,
     )
@@ -240,7 +242,8 @@ internal class SessionManagerImpl(
     private fun fromConfig(config: Config): SessionManagerConfig {
         return SessionManagerConfig(
             config.getInt(LinkManagerConfiguration.MAX_MESSAGE_SIZE_KEY),
-            config.getInt(LinkManagerConfiguration.SESSIONS_PER_PEER_KEY),
+            config.getInt(LinkManagerConfiguration.SESSIONS_PER_PEER_FOR_MEMBER_KEY),
+            config.getInt(LinkManagerConfiguration.SESSIONS_PER_PEER_FOR_MGM_KEY),
             config.getEnum(RevocationCheckMode::class.java, LinkManagerConfiguration.REVOCATION_CHECK_KEY),
             config.getInt(LinkManagerConfiguration.SESSION_REFRESH_THRESHOLD_KEY),
         )
@@ -250,12 +253,35 @@ internal class SessionManagerImpl(
         val peer = message.header.destination
         val us = message.header.source
         val status = message.header.statusFilter
-        val info = membershipGroupReaderProvider.lookup(us.toCorda(), peer.toCorda(), status)
-        if (info == null) {
+        val ourInfo = membershipGroupReaderProvider.lookup(
+            us.toCorda(), us.toCorda(), MembershipStatusFilter.ACTIVE_OR_SUSPENDED
+        )
+        // could happen when member has pending registration or something went wrong
+        if (ourInfo == null) {
+            logger.warn("Could not get member information about us from message sent from $us" +
+                    " to $peer with ID `${message.header.messageId}`.")
+        }
+        val counterpartyInfo = membershipGroupReaderProvider.lookup(us.toCorda(), peer.toCorda(), status)
+        if (counterpartyInfo == null) {
             logger.couldNotFindSessionInformation(us.toCorda().shortHash, peer.toCorda().shortHash, message.header.messageId)
             return null
         }
-        return SessionCounterparties(us.toCorda(), peer.toCorda(), status, info.serial)
+        return SessionCounterparties(
+            us.toCorda(),
+            peer.toCorda(),
+            status,
+            counterpartyInfo.serial,
+            isCommunicationBetweenMgmAndMember(ourInfo, counterpartyInfo)
+        )
+    }
+
+    private fun isCommunicationBetweenMgmAndMember(ourInfo: MemberInfo?, counterpartyInfo: MemberInfo): Boolean {
+        if (counterpartyInfo.isMgm) {
+            return true
+        } else if (ourInfo != null && ourInfo.isMgm) {
+            return true
+        }
+        return false
     }
 
     override fun processOutboundMessage(message: AuthenticatedMessageAndKey): SessionState {
@@ -271,7 +297,7 @@ internal class SessionManagerImpl(
                         SessionState.SessionAlreadyPending(counterparties)
                     }
                     is OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded -> {
-                        val initMessages = genSessionInitMessages(counterparties, config.get().sessionsPerCounterparties)
+                        val initMessages = genSessionInitMessages(counterparties, counterparties.calculateSessionMultiplicity())
                         if (initMessages.isEmpty()) return@read SessionState.CannotEstablishSession
                         outboundSessionPool.addPendingSessions(counterparties, initMessages.map { it.first })
                         val messages = linkOutMessagesFromSessionInitMessages(
@@ -284,6 +310,13 @@ internal class SessionManagerImpl(
                 }
             }
         }
+    }
+
+    private fun SessionCounterparties.calculateSessionMultiplicity(): Int {
+        if (communicationWithMgm) {
+            return config.get().sessionsPerCounterpartiesForMgm
+        }
+        return config.get().sessionsPerCounterpartiesForMembers
     }
 
     override fun getSessionById(uuid: String): SessionManager.SessionDirection {
