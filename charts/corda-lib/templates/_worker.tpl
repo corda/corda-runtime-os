@@ -110,6 +110,8 @@ metadata:
 spec:
   type: ClusterIP
   selector:
+    app.kubernetes.io/name: {{ include "corda.name" $ }}
+    app.kubernetes.io/instance: {{ $.Release.Name }}
     app.kubernetes.io/component: {{ include "corda.workerComponent" $worker }}
   ports:
       - protocol: TCP

@@ -43,7 +43,7 @@ class TestExternalEventResponseMonitor(
         val responses = requestIds.associateWith { CompletableFuture<ExternalEventResponse>() }
 
         val responseSubscription = subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig(SUBSCRIPTION_GROUP_NAME, Schemas.Flow.FLOW_SESSION),
+            SubscriptionConfig(SUBSCRIPTION_GROUP_NAME, Schemas.Flow.FLOW_EVENT_TOPIC),
             object : CompactedProcessor<String, FlowEvent> {
                 override val keyClass = String::class.java
                 override val valueClass = FlowEvent::class.java

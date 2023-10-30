@@ -34,4 +34,6 @@ dependencies {
 
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 }

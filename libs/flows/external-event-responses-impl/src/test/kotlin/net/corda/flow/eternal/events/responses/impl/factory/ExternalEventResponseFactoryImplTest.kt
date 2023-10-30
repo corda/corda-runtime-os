@@ -1,5 +1,8 @@
 package net.corda.flow.eternal.events.responses.impl.factory
 
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
@@ -18,9 +21,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.time.temporal.ChronoUnit
 
 class ExternalEventResponseFactoryImplTest {
 
@@ -51,7 +51,7 @@ class ExternalEventResponseFactoryImplTest {
         val flowEvent = record.value!!
         val response = flowEvent.payload as ExternalEventResponse
 
-        assertEquals(Schemas.Flow.FLOW_SESSION, record.topic)
+        assertEquals(Schemas.Flow.FLOW_EVENT_TOPIC, record.topic)
         assertEquals(EXTERNAL_EVENT_CONTEXT.flowId, record.key)
         assertEquals(EXTERNAL_EVENT_CONTEXT.flowId, flowEvent.flowId)
         assertEquals(EXTERNAL_EVENT_CONTEXT.requestId, response.requestId)
@@ -75,7 +75,7 @@ class ExternalEventResponseFactoryImplTest {
         val flowEvent = record.value!!
         val response = flowEvent.payload as ExternalEventResponse
 
-        assertEquals(Schemas.Flow.FLOW_SESSION, record.topic)
+        assertEquals(Schemas.Flow.FLOW_EVENT_TOPIC, record.topic)
         assertEquals(EXTERNAL_EVENT_CONTEXT.flowId, record.key)
         assertEquals(EXTERNAL_EVENT_CONTEXT.flowId, flowEvent.flowId)
         assertEquals(EXTERNAL_EVENT_CONTEXT.requestId, response.requestId)
@@ -136,7 +136,7 @@ class ExternalEventResponseFactoryImplTest {
         val flowEvent = record.value!!
         val response = flowEvent.payload as ExternalEventResponse
 
-        assertEquals(Schemas.Flow.FLOW_SESSION, record.topic)
+        assertEquals(Schemas.Flow.FLOW_EVENT_TOPIC, record.topic)
         assertEquals(EXTERNAL_EVENT_CONTEXT.flowId, record.key)
         assertEquals(EXTERNAL_EVENT_CONTEXT.flowId, flowEvent.flowId)
         assertEquals(EXTERNAL_EVENT_CONTEXT.requestId, response.requestId)
