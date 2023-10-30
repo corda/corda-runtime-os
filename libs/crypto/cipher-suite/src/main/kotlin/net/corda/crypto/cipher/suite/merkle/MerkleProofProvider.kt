@@ -33,7 +33,7 @@ interface MerkleProofProvider {
      * @property nonce The leaf's optional nonce.
      * @property leafData The leaf's data.
      *
-     * @return A new [MerkleProof] instance.
+     * @return A new [IndexedMerkleLeaf] instance.
      */
     fun createIndexedMerkleLeaf(
         index: Int,
