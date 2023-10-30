@@ -62,7 +62,10 @@ class CryptoRekeyBusProcessor(
 
             truncatedWrappingKeys.map { (tenantId, wrappingKeyInfo) ->
                 val newGeneration = cryptoService.rewrapWrappingKey(tenantId, wrappingKeyInfo.alias, request.newKeyAlias)
-                logger.info("Rewrapped ${wrappingKeyInfo.alias} in tenant ${tenantId} from ${wrappingKeyInfo.parentKeyAlias} to ${request.newKeyAlias}; generation number now ${newGeneration}")
+                logger.info("Rewrapped ${wrappingKeyInfo.alias} in tenant ${tenantId} from "+
+                        "${wrappingKeyInfo.parentKeyAlias} to ${request.newKeyAlias}; "+
+                        "generation number now ${newGeneration}")
+
             }.count()
             publisher.close()
         }
