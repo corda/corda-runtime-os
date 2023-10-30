@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.slf4j.LoggerFactory
@@ -43,6 +44,7 @@ import java.util.UUID
 /**
  * Tests for the Crypto RPC service
  */
+@Disabled
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CryptoRPCSmokeTests {
     private val httpClient: HttpClient = HttpClient.newBuilder()

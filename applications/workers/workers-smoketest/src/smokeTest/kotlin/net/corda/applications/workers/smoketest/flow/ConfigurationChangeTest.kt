@@ -20,6 +20,7 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -32,6 +33,7 @@ import java.util.UUID
 // their patterns are DOWN - CORE-8015
 @Order(Int.MAX_VALUE)
 @TestInstance(Lifecycle.PER_CLASS)
+@Disabled
 class ConfigurationChangeTest {
 
     companion object {

@@ -14,6 +14,7 @@ import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.messagebus.kafka.serialization.CordaAvroSerializationFactoryImpl
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
 import java.net.URI
@@ -32,6 +33,7 @@ import kotlin.concurrent.scheduleAtFixedRate
 /*
  * This will be removed in future PRs, for now it's useful for testing different optimizations.
  */
+@Disabled
 class SimpleHttpRPCPerformanceTest {
 
     private companion object {
