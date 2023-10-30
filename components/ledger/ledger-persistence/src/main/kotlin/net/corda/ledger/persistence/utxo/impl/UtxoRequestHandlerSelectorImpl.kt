@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.utxo.impl
 
+import net.corda.data.ledger.persistence.FindBatchTransactions
 import net.corda.data.ledger.persistence.FindSignedGroupParameters
 import net.corda.data.ledger.persistence.FindSignedLedgerTransaction
 import net.corda.data.ledger.persistence.FindTransaction
@@ -20,6 +21,7 @@ import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFacto
 import net.corda.ledger.persistence.query.execution.impl.VaultNamedQueryExecutorImpl
 import net.corda.ledger.persistence.utxo.UtxoRequestHandlerSelector
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoExecuteNamedQueryHandler
+import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindBatchTransactionsRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindTransactionIdsAndStatusesRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindSignedGroupParametersRequestHandler
 import net.corda.ledger.persistence.utxo.impl.request.handlers.UtxoFindSignedLedgerTransactionRequestHandler
@@ -79,6 +81,15 @@ class UtxoRequestHandlerSelectorImpl @Activate constructor(
                     externalEventContext,
                     persistenceService,
                     outputRecordFactory
+                )
+            }
+            is FindBatchTransactions -> {
+                UtxoFindBatchTransactionsRequestHandler(
+                    req,
+                    externalEventContext,
+                    persistenceService,
+                    externalEventResponseFactory,
+                    serializationService
                 )
             }
             is FindSignedLedgerTransaction -> {

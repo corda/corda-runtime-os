@@ -26,6 +26,8 @@ interface UtxoPersistenceService {
      */
     fun findSignedTransaction(id: String, transactionStatus: TransactionStatus): Pair<SignedTransactionContainer?, String?>
 
+    fun findBatchSignedTransactions(ids: List<String>, transactionStatus: TransactionStatus): List<SignedTransactionContainer>
+
     /**
      * Find transactions with the given [transactionIds] that are present in the persistence context and return
      * their IDs and statuses.

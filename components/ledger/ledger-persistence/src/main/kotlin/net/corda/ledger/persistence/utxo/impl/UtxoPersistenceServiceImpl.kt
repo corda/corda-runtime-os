@@ -68,6 +68,15 @@ class UtxoPersistenceServiceImpl(
         }
     }
 
+    override fun findBatchSignedTransactions(
+        ids: List<String>,
+        transactionStatus: TransactionStatus
+    ): List<SignedTransactionContainer> {
+        return entityManagerFactory.transaction { em ->
+            repository.findBatchTransactions(em, ids, transactionStatus)
+        }
+    }
+
     override fun findTransactionIdsAndStatuses(
         transactionIds: List<String>
     ): Map<SecureHash, String> {

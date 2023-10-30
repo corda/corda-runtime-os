@@ -26,6 +26,8 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
+import org.junit.jupiter.api.Timeout
+import java.util.concurrent.TimeUnit
 
 @Suppress("Unused", "FunctionName")
 @TestInstance(PER_CLASS)
@@ -100,6 +102,36 @@ class UtxoLedgerTests {
         registerStaticMember(notaryHoldingId, NOTARY_SERVICE_X500)
     }
 
+    @Test
+    @Timeout(value = 1, unit = TimeUnit.HOURS)
+    fun play() {
+        println("Issuing states")
+        val issuedStates = mutableListOf<String>()
+        for (i in 0..300) {
+            println("Issuing state: $i")
+            val input = "test input"
+            val utxoFlowRequestId = startRpcFlow(
+                aliceHoldingId,
+                mapOf("input" to input, "members" to listOf(bobX500, charlieX500), "notary" to NOTARY_SERVICE_X500),
+                "com.r3.corda.demo.utxo.UtxoDemoFlow"
+            )
+            val utxoFlowResult = awaitRpcFlowFinished(aliceHoldingId, utxoFlowRequestId)
+            assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+            assertThat(utxoFlowResult.flowError).isNull()
+            issuedStates.add(utxoFlowResult.flowResult!!)
+        }
+
+        println("All states issued!")
+
+        val findTransactionFlowRequestId = startRpcFlow(
+            aliceHoldingId,
+            mapOf("transactionIds" to issuedStates),
+            "com.r3.corda.demo.utxo.UtxoFindFlow"
+        )
+        val transactionResult = awaitRpcFlowFinished(aliceHoldingId, findTransactionFlowRequestId)
+        assertThat(transactionResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(transactionResult.flowError).isNull()
+    }
 
     @Test
     fun `Utxo Ledger - create a transaction containing states and finalize it then evolve it`() {

@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.persistence
 
+import net.corda.data.ledger.persistence.FindTransactionIdsAndStatuses
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedLedgerTransaction
 import net.corda.v5.application.persistence.CordaPersistenceException
@@ -26,6 +27,14 @@ interface UtxoLedgerPersistenceService {
      */
     @Suspendable
     fun findSignedTransaction(id: SecureHash, transactionStatus: TransactionStatus = TransactionStatus.VERIFIED): UtxoSignedTransaction?
+
+    /**
+     * TODO
+     */
+    fun findSignedTransactions(
+        transactionIds: List<SecureHash>,
+        transactionStatus: TransactionStatus = TransactionStatus.VERIFIED
+    ): List<UtxoSignedTransaction>
 
     /**
      * Find a [UtxoSignedTransaction] in the persistence context given it's [id] and return it with the status it is stored with.
