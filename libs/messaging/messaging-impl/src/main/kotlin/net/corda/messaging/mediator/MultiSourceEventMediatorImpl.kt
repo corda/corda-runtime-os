@@ -247,7 +247,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                                     v
                                 }
                             }
-                            var state = states.getOrDefault(it.key.toString(), null)
+                            val state = states.getOrDefault(it.key.toString(), null)
                             var processorState = stateManagerHelper.deserializeValue(state)?.let { stateValue ->
                                 StateAndEventProcessor.State(
                                     stateValue,
