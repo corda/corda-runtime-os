@@ -28,9 +28,9 @@ import org.osgi.service.component.annotations.ServiceScope
 )
 @Suppress("LongParameterList")
 class WireTransactionFactoryImpl @Activate constructor(
-    @Reference(service = MerkleTreeProvider::class)
+    @Reference(service = MerkleTreeProvider::class, scope = PROTOTYPE_REQUIRED)
     private val merkleTreeProvider: MerkleTreeProvider,
-    @Reference(service = DigestService::class)
+    @Reference(service = DigestService::class, scope = PROTOTYPE_REQUIRED)
     private val digestService: DigestService,
     @Reference(service = JsonMarshallingService::class, scope = PROTOTYPE_REQUIRED)
     private val jsonMarshallingService: JsonMarshallingService,
