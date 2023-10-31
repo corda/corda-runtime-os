@@ -16,7 +16,8 @@ class RPCClientFactoryTest {
         cordaSerializationFactory = mock(CordaAvroSerializationFactory::class.java)
         rpcClientFactory = RPCClientFactory(
             "RPCClient1",
-            mock(CordaAvroSerializationFactory::class.java)
+            mock(),
+            mock()
         )
     }
 

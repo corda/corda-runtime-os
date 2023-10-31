@@ -1,5 +1,6 @@
 package net.corda.flow.external.events.responses.impl.factory
 
+import java.nio.ByteBuffer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
@@ -16,7 +17,6 @@ import net.corda.utilities.time.UTCClock
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.nio.ByteBuffer
 
 @Component(service = [ExternalEventResponseFactory::class])
 class ExternalEventResponseFactoryImpl(
@@ -128,7 +128,7 @@ class ExternalEventResponseFactoryImpl(
         response: ExternalEventResponse
     ): Record<String, FlowEvent> {
         return Record(
-            Schemas.Flow.FLOW_SESSION,
+            Schemas.Flow.FLOW_EVENT_TOPIC,
             flowId,
             FlowEvent(flowId, response)
         )

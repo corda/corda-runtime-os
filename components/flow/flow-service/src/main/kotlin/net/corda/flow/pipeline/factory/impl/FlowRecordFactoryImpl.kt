@@ -6,8 +6,8 @@ import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.output.FlowStatus
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_OUT
-import net.corda.schema.Schemas.Flow.FLOW_SESSION
+import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
 import org.osgi.service.component.annotations.Component
 
@@ -16,7 +16,7 @@ class FlowRecordFactoryImpl : FlowRecordFactory {
 
     override fun createFlowEventRecord(flowId: String, payload: Any): Record<String, FlowEvent> {
         return Record(
-            topic = FLOW_SESSION,
+            topic = FLOW_EVENT_TOPIC,
             key = flowId,
             value = FlowEvent(flowId, payload)
         )
@@ -32,7 +32,7 @@ class FlowRecordFactoryImpl : FlowRecordFactory {
 
     override fun createFlowMapperEventRecord(key: String, payload: Any): Record<*, FlowMapperEvent> {
         return Record(
-            topic = FLOW_MAPPER_SESSION_OUT,
+            topic = FLOW_MAPPER_EVENT_TOPIC,
             key = key,
             value = FlowMapperEvent(payload)
         )
