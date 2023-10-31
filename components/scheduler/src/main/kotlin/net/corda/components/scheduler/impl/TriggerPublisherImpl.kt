@@ -99,27 +99,27 @@ class TriggerPublisherImpl constructor(
     }
 
     private fun onStopEvent() {
-        lock.write {
             registration?.close()
             registration = null
 
             configSubscription?.close()
             configSubscription = null
 
+        lock.write {
             publisher?.close()
             publisher = null
         }
     }
 
     private fun onConfigChangedEvent(coordinator: LifecycleCoordinator, event: ConfigChangedEvent) {
-        lock.write {
+
             val config = event.config[ConfigKeys.MESSAGING_CONFIG] ?: return
             coordinator.updateStatus(LifecycleStatus.DOWN)
-
+        lock.write {
             publisher?.close()
             publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), config)
-            coordinator.updateStatus(LifecycleStatus.UP)
         }
+            coordinator.updateStatus(LifecycleStatus.UP)
     }
 
     private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent) {
@@ -128,10 +128,10 @@ class TriggerPublisherImpl constructor(
             configSubscription =
                 configurationReadService.registerComponentForUpdates(coordinator, setOf(ConfigKeys.MESSAGING_CONFIG))
         } else {
+            coordinator.updateStatus(event.status)
+            configSubscription?.close()
+            configSubscription = null
             lock.write {
-                coordinator.updateStatus(event.status)
-                configSubscription?.close()
-                configSubscription = null
                 publisher?.close()
                 publisher = null
             }

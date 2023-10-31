@@ -116,10 +116,10 @@ class CpiInfoWriterComponentImpl @Activate constructor(
     }
 
     private fun onConfigChangedEvent(coordinator: LifecycleCoordinator, event: ConfigChangedEvent) {
-        lock.write {
-            val config = event.config[ConfigKeys.MESSAGING_CONFIG] ?: return
-            coordinator.updateStatus(LifecycleStatus.DOWN)
 
+        val config = event.config[ConfigKeys.MESSAGING_CONFIG] ?: return
+        coordinator.updateStatus(LifecycleStatus.DOWN)
+        lock.write {
             publisher?.close()
             publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), config)
             coordinator.updateStatus(LifecycleStatus.UP)
@@ -132,10 +132,10 @@ class CpiInfoWriterComponentImpl @Activate constructor(
             configSubscription =
                 configurationReadService.registerComponentForUpdates(coordinator, setOf(ConfigKeys.MESSAGING_CONFIG))
         } else {
+            coordinator.updateStatus(event.status)
+            configSubscription?.close()
+            configSubscription = null
             lock.write {
-                coordinator.updateStatus(event.status)
-                configSubscription?.close()
-                configSubscription = null
                 publisher?.close()
                 publisher = null
             }
