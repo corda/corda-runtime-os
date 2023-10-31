@@ -11,6 +11,7 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
@@ -59,6 +60,9 @@ class CreateLockFlow : ClientStartableFlow {
     @CordaInject
     lateinit var compositeKeyGenerator: CompositeKeyGenerator
 
+    @CordaInject
+    lateinit var serializationService: SerializationService
+
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
         log.info("CreateLockFlow.call() called")
@@ -88,9 +92,7 @@ class CreateLockFlow : ClientStartableFlow {
                 throw CordaRuntimeException("Only the owner of a state can transfer it to a new owner.")
             }
 
-            val x509publicKey = X509EncodedKeySpec(flowArgs.publicKey.array())
-            val kf: KeyFactory = KeyFactory.getInstance("EC")
-            val publicKey = kf.generatePublic(x509publicKey)
+            val publicKey = parameterToNotaryPublicKey(flowArgs.publicKey.array())
 
             val lockState = LockState(
                 inputState.owner,
@@ -142,6 +144,14 @@ class CreateLockFlow : ClientStartableFlow {
             log.warn("Failed to process utxo flow for request body '$requestBody' because: '${e.message}'")
             throw e
         }
+    }
+
+    private fun parameterToNotaryPublicKey(notaryPublicKeyArg: ByteArray): PublicKey {
+        val x509publicKey = X509EncodedKeySpec(notaryPublicKeyArg)
+        val kf: KeyFactory = KeyFactory.getInstance("EC")
+        val incomingPublicKey = kf.generatePublic(x509publicKey)
+        val serializedPublicKey = serializationService.serialize(incomingPublicKey)
+        return serializationService.deserialize(serializedPublicKey, PublicKey::class.java)
     }
 
     private fun constructCompositeKey(asset: Asset, newOwner: MemberInfo): PublicKey = compositeKeyGenerator.create(
