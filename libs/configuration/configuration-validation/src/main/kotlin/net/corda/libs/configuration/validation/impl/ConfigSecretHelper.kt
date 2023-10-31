@@ -1,6 +1,7 @@
 package net.corda.libs.configuration.validation.impl
 
 import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.node.ArrayNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.databind.node.TextNode
 import net.corda.libs.configuration.secret.MaskedSecretsLookupService
@@ -37,16 +38,11 @@ class ConfigSecretHelper {
     // and "foo" returns []
     //
     // (except the second half of the pairs are actually JsonNode instances)
-    private fun getFieldValues(node: JsonNode): List<Pair<String, JsonNode>> =
-        if (node.isObject) {
-            node.fields().asSequence().toList().map { it.key to it.value }
-        } else {
-            if (node.isArray) {
-                node.toList().withIndex().map { it.index.toString() to it.value }
-            } else {
-                emptyList()
-            }
-        }
+    private fun getFieldValues(node: JsonNode): List<Pair<String, JsonNode>> = when(node) {
+        is ObjectNode -> node.fields().asSequence().toList().map { it.key to it.value }
+        is ArrayNode -> node.toList().withIndex().map { it.index.toString() to it.value }
+        else -> emptyList()
+    }
 
     private fun hideSecretsRecursive(
         parentNode: JsonNode,
