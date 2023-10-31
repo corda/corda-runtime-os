@@ -1,8 +1,5 @@
 package net.corda.messaging.mediator
 
-import java.lang.Thread.sleep
-import java.util.UUID
-import java.util.concurrent.atomic.AtomicBoolean
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.libs.statemanager.api.StateManager
@@ -22,6 +19,10 @@ import net.corda.messaging.mediator.metrics.EventMediatorMetrics
 import net.corda.taskmanager.TaskManager
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
+import java.lang.Thread.sleep
+import java.util.UUID
+import java.util.concurrent.CompletionException
+import java.util.concurrent.atomic.AtomicBoolean
 
 @Suppress("LongParameterList")
 class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
@@ -145,7 +146,8 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                 processEvents()
                 keepProcessing = false
             } catch (exception: Exception) {
-                when (exception) {
+                val cause = if (exception is CompletionException) exception.cause else exception
+                when (cause) {
                     is CordaMessageAPIIntermittentException -> {
                         attempts++
                         handleProcessEventRetries(attempts, exception)
