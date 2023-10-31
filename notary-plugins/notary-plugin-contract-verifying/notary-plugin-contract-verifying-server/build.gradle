@@ -27,6 +27,7 @@ dependencies {
 
     // Common package pulled in as transitive dependency through API
     cordapp project(":notary-plugins:notary-plugin-contract-verifying:notary-plugin-contract-verifying-api")
+    cordapp project(":testing:cpbs:ledger-utxo-demo-contract")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
