@@ -61,7 +61,7 @@ class CreateLockFlow : ClientStartableFlow {
 
     @Suspendable
     override fun call(requestBody: ClientRequestBody): String {
-        log.info("TransferFlow.call() called")
+        log.info("CreateLockFlow.call() called")
 
         try {
             val flowArgs = requestBody.getRequestBodyAs(jsonMarshallingService, CreateLockFlowArgs::class.java)

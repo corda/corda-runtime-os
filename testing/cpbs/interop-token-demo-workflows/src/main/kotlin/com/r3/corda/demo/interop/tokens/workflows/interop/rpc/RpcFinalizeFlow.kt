@@ -33,7 +33,7 @@ class RpcFinalizeFlow(private val signedTransaction: UtxoSignedTransaction, priv
 
     @Suspendable
     override fun call(): DigitalSignatureAndMetadata {
-        log.info("FinalizeFlow.call() called")
+        log.info("RpcFinalizeFlow.call() called")
 
         val sessions = otherMember.map { flowMessaging.initiateFlow(it) }
 
