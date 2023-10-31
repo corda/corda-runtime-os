@@ -34,6 +34,8 @@ class SmartConfigTest {
             a: b,
             c: d,
         },
+        test_array: [{prime:2},{prime:3},{prime:5}]
+        test_int_array: [2,3,5]
         """.trimIndent()
     val config = ConfigFactory.parseString(configString).resolve()
 
@@ -315,6 +317,33 @@ class SmartConfigTest {
 
         assertThat(c.getString("jon")).isEqualTo("fallback-secret")
     }
+
+
+    @Test
+    fun `getObjectList works`() {
+        val r = smartConfig.getObjectList("test_array")
+        assertThat(r.size).isEqualTo(3)
+    }
+
+    @Test
+    fun `getList works on int array`() {
+        val r = smartConfig.getList("test_int_array")
+        assertThat(r.size).isEqualTo(3)
+    }
+
+    @Test
+    fun `getList works on object array`() {
+        val r = smartConfig.getList("test_array")
+        assertThat(r.size).isEqualTo(3)
+    }
+
+    @Test
+    fun `getConfigList works on object array`() {
+        val r = smartConfig.getConfigList("test_array")
+        assertThat(r.size).isEqualTo(3)
+        assertThat(r[0].getInt("prime")).isEqualTo(2)
+    }
+
 
     enum class Snack {
         DONUTS,

@@ -182,7 +182,8 @@ class SmartConfigImpl(
 
     override fun getObjectList(path: String?): MutableList<out ConfigObject> = typeSafeConfig.getObjectList(path)
 
-    override fun getConfigList(path: String?): MutableList<out Config> = typeSafeConfig.getConfigList(path)
+    override fun getConfigList(path: String?): List<Config> =
+        typeSafeConfig.getConfigList(path).map { SmartConfigImpl(it, factory, secretsLookupService) }
 
     override fun getAnyRefList(path: String?): MutableList<out Any> = typeSafeConfig.getAnyRefList(path)
 
