@@ -20,6 +20,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
 
 
 @Component(service = [WebServer::class])
@@ -59,7 +60,7 @@ class JavalinServer(
     private var server: Javalin? = null
     private val coordinator = coordinatorFactory.createCoordinator<WebServer> { _, _ -> }
 
-    override val endpoints: MutableSet<Endpoint> = mutableSetOf<Endpoint>()
+    override val endpoints: MutableSet<Endpoint> = ConcurrentHashMap.newKeySet()
 
     override fun start(port: Int) {
         check(null == server) { "The Javalin webserver is already initialized" }
