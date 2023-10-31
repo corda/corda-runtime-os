@@ -1,5 +1,6 @@
 package net.corda.libs.configuration.secret
 
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import net.corda.schema.configuration.ConfigKeys
 import org.assertj.core.api.Assertions.assertThat
@@ -134,5 +135,16 @@ class EncryptionSecretsServiceTest {
 
         assertThat(secretConfig.getString("configSecret.encryptedSecret")).isNotBlank
         assertThat(service.getValue(secretConfig)).isEqualTo("")
+    }
+
+    @Test
+    fun `well known key`() {
+        val service = EncryptionSecretsServiceImpl("soup", "fish")
+        val config = ConfigFactory.parseString("""
+        configSecret {
+            "encryptedSecret":"iUUaENwGC+z0PnVjvYHIZz3AACs0mUz2OpIjCg4ZKcCImvsdacgdX+gy8xAIkoR8BAW3vJ3aXenUmNJLbWdrdDPXc8EfWSbL",
+        }   
+    """.trimIndent())
+        assertThat( service.getValue(config)).isEqualTo("C8DMac5wpGagNSuruAjY/6wbKOLtVL66QAuaN5emA/I=")
     }
 }
