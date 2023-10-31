@@ -93,7 +93,11 @@ osgiRun {
         'java.base/java.time',\
         'java.base/java.time.chrono',\
         'java.base/java.time.zone',\
-        'java.base/java.util'
+        'java.base/java.util',\
+        'jdk.crypto.ec/sun.security.ec',\
+        'java.base/java.security',\
+        'java.base/java.security.spec',\
+        'java.base/sun.security.jca'
 }
 
 @CompileStatic
