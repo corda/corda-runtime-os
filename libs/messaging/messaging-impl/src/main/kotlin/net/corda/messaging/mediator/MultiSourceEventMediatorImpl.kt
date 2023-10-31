@@ -99,7 +99,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
             messageRouter = mediatorComponentFactory.createRouter(clients)
             lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
             config.consumerFactories.map { consumerFactory ->
-//                taskManager.executeLongRunningTask {
+                taskManager.executeLongRunningTask {
                     var attempts = 0
                     while (!stopped()) {
                         attempts++
@@ -141,11 +141,9 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                             consumer?.close()
                         }
                     }
-//                }
+                }
             }.map {
-//                it.exceptionally {
-//                    stop()
-//                }.join()
+                it.join()
             }
         }
         catch (exception: Exception) {
