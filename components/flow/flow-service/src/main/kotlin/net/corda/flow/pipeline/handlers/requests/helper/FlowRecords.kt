@@ -12,7 +12,7 @@ import net.corda.virtualnode.toCorda
 import java.time.Instant
 
 /**
- * Generate the key used to store RPC started flow mapper states
+ * Generate the key used to store RPC start flow flow mapper states
  */
 fun getRPCMapperKey(flowKey: FlowKey): String {
     val identityShortHash = flowKey.identity.toCorda().shortHash
