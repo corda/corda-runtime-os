@@ -14,7 +14,8 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.utxo.StateAndRef
-import net.corda.v5.ledger.utxo.StateRef
+import net.corda.v5.ledger.utxo.UtxoLedgerService
+import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckerClientService
 import org.slf4j.Logger
@@ -34,6 +35,9 @@ class ContractVerifyingNotaryServerFlowImpl : ResponderFlow {
     @CordaInject
     private lateinit var transactionSignatureService: TransactionSignatureService
 
+    @CordaInject
+    lateinit var utxoLedgerService: UtxoLedgerService
+
     @Suspendable
     override fun call(session: FlowSession) {
         try {
@@ -42,32 +46,28 @@ class ContractVerifyingNotaryServerFlowImpl : ResponderFlow {
             val requestPayload = session.receive(ContractVerifyingNotarizationPayload::class.java)
 
             if (logger.isTraceEnabled) {
-                logger.trace("Received notarization request for transaction {}", requestPayload.initialFilteredTransaction.id)
+                logger.trace("Received notarization request for transaction {}", requestPayload.initialTransaction.id)
             }
 
-            logger.info("Received notarization request for transaction {}", requestPayload.initialFilteredTransaction.id)
-
-            // 2. Extract the data from the filtered transaction
+            // 2. Extract the data from the signed transaction
             val txDetails = extractParts(requestPayload)
 
+            // 3. Verify the signatures
             if (logger.isTraceEnabled) {
                 logger.trace("Verifying signatures for the following dependencies: {}",
                     requestPayload.filteredTransactionsAndSignatures.map { it.filteredTransaction.id })
             }
 
-            logger.info("Verifying signatures for the following dependencies: {}",
-                requestPayload.filteredTransactionsAndSignatures.map { it.filteredTransaction.id })
-
-            // 3. Verify the dependencies' signatures
             verifySignatures(requestPayload.notaryKey, requestPayload.filteredTransactionsAndSignatures)
 
+            // 4. Verify the contract
+            verifyContract(requestPayload.initialTransaction, requestPayload.filteredTransactionsAndSignatures)
+
+            // 5. Request a uniqueness check on the transaction
             if (logger.isTraceEnabled) {
                 logger.trace("Requesting uniqueness check for transaction {}", txDetails.id)
             }
 
-            logger.info("Requesting uniqueness check for transaction {}", txDetails.id)
-
-            // 4. Request a uniqueness check on the transaction
             val uniquenessResult = clientService.requestUniquenessCheck(
                 txDetails.id.toString(),
                 session.counterparty.toString(),
@@ -80,13 +80,10 @@ class ContractVerifyingNotaryServerFlowImpl : ResponderFlow {
 
             if (logger.isDebugEnabled) {
                 logger.debug("Uniqueness check completed for transaction {}, result is: {}. Sending response to {}",
-                    txDetails.id, uniquenessResult, session.counterparty)
+                    requestPayload.initialTransaction.id, uniquenessResult, session.counterparty)
             }
 
-            logger.info("Uniqueness check completed for transaction {}, result is: {}. Sending response to {}",
-                txDetails.id, uniquenessResult, session.counterparty)
-
-            // 5. Sign the request if the uniqueness check was successful
+            // 6. Sign the request if the uniqueness check was successful
             val signature = if (uniquenessResult is UniquenessCheckResultSuccess) {
                 transactionSignatureService.signBatch(
                     listOf(txDetails), // TODO Batch size is always just one for now
@@ -94,7 +91,7 @@ class ContractVerifyingNotaryServerFlowImpl : ResponderFlow {
                 ).first().first()
             } else null
 
-            // 6. Send the response back to the client
+            // 7. Send the response back to the client
             session.send(uniquenessResult.toNotarizationResponse(txDetails.id, signature))
         } catch (e: Exception) {
             logger.warn("Error while processing request from client. Cause: $e ${e.stackTraceToString()}")
@@ -113,6 +110,7 @@ class ContractVerifyingNotaryServerFlowImpl : ResponderFlow {
     /**
      * A function that will verify the signatures of the given [filteredTransactionsAndSignatures].
      */
+    @Suspendable
     private fun verifySignatures(
         notaryKey: PublicKey,
         filteredTransactionsAndSignatures: List<FilteredTransactionAndSignatures>
@@ -131,54 +129,50 @@ class ContractVerifyingNotaryServerFlowImpl : ResponderFlow {
         }
     }
 
+    @Suspendable
+    private fun verifyContract(
+        initialTransaction: UtxoSignedTransaction,
+        filteredTransactionsAndSignatures: List<FilteredTransactionAndSignatures>
+    ) {
+        val dependantStateAndRefs = filteredTransactionsAndSignatures.flatMap { (filteredTransaction, _) ->
+            (filteredTransaction.outputStateAndRefs as UtxoFilteredData.Audit<StateAndRef<*>>).values.values
+        }.associateBy { it.ref }
+
+        val inputStateAndRefs = initialTransaction.inputStateRefs.map { stateRef ->
+            requireNotNull(dependantStateAndRefs[stateRef]) {
+                "Missing input state and ref from the filtered transaction"
+            }
+        }
+        val referenceStateAndRefs = initialTransaction.referenceStateRefs.map { stateRef ->
+            requireNotNull(dependantStateAndRefs[stateRef]) {
+                "Missing reference state and ref from the filtered transaction"
+            }
+        }
+
+        val ledgerTransaction = if (inputStateAndRefs.isNotEmpty() || referenceStateAndRefs.isNotEmpty()) {
+            initialTransaction.toLedgerTransaction(inputStateAndRefs, referenceStateAndRefs)
+        } else {
+            initialTransaction.toLedgerTransaction()
+        }
+
+        utxoLedgerService.verifyContract(ledgerTransaction)
+    }
+
     /**
      * A helper function that constructs an instance of [NotaryFilteredTransactionDetails] from the given transaction.
      */
     @Suspendable
     private fun extractParts(requestPayload: ContractVerifyingNotarizationPayload): NotaryFilteredTransactionDetails {
-        val filteredTx = requestPayload.initialFilteredTransaction
-
-        // The notary component is not needed by us, but we validate that it is present just in case
-        requireNotNull(filteredTx.notaryName) {
-            "Notary name component could not be found on the transaction"
-        }
-
-        requireNotNull(filteredTx.notaryKey) {
-            "Notary key component could not be found on the transaction"
-        }
-
-        requireNotNull(filteredTx.metadata) {
-            "Metadata component could not be found on the transaction"
-        }
-
-        requireNotNull(filteredTx.timeWindow) {
-            "Time window component could not be found on the transaction"
-        }
-
-        val inputStates = filteredTx.inputStateRefs.castOrThrow<UtxoFilteredData.Audit<StateRef>> {
-            "Could not fetch input states from the filtered transaction"
-        }
-
-        val refStates = filteredTx.referenceStateRefs.castOrThrow<UtxoFilteredData.Audit<StateRef>> {
-            "Could not fetch reference states from the filtered transaction"
-        }
-
-        val outputStates = filteredTx.outputStateAndRefs.castOrThrow<UtxoFilteredData.SizeOnly<StateAndRef<*>>> {
-            "Could not fetch output states from the filtered transaction"
-        }
 
         return NotaryFilteredTransactionDetails(
-            filteredTx.id,
-            filteredTx.metadata,
-            outputStates.size,
-            filteredTx.timeWindow!!,
-            inputStates.values.values.toList(),
-            refStates.values.values.toList(),
-            filteredTx.notaryName!!,
-            filteredTx.notaryKey!!
+            requestPayload.initialTransaction.id,
+            requestPayload.initialTransaction.metadata,
+            requestPayload.initialTransaction.outputStateAndRefs.count(),
+            requestPayload.initialTransaction.timeWindow,
+            requestPayload.initialTransaction.inputStateRefs,
+            requestPayload.initialTransaction.referenceStateRefs,
+            requestPayload.initialTransaction.notaryName,
+            requestPayload.initialTransaction.notaryKey
         )
     }
-
-    private inline fun <reified T> Any.castOrThrow(error: () -> String) = this as? T
-        ?: throw java.lang.IllegalStateException(error())
 }

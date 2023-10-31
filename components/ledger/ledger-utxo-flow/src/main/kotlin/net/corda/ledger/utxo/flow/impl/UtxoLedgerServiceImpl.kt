@@ -18,6 +18,7 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInterna
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionBuilderImpl
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactory
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
@@ -63,7 +64,9 @@ class UtxoLedgerServiceImpl @Activate constructor(
     @Reference(service = CurrentSandboxGroupContext::class) private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     @Reference(service = NotaryLookup::class) private val notaryLookup: NotaryLookup,
     @Reference(service = ExternalEventExecutor::class) private val externalEventExecutor: ExternalEventExecutor,
-    @Reference(service = ResultSetFactory::class) private val resultSetFactory: ResultSetFactory
+    @Reference(service = ResultSetFactory::class) private val resultSetFactory: ResultSetFactory,
+    @Reference(service = UtxoLedgerTransactionVerificationService::class)
+    private val ledgerTransactionVerificationService: UtxoLedgerTransactionVerificationService
 ) : UtxoLedgerService, UsedByFlow, SingletonSerializeAsToken {
 
     private companion object {
@@ -105,6 +108,11 @@ class UtxoLedgerServiceImpl @Activate constructor(
         return UtxoFilteredTransactionBuilderImpl(
             utxoFilteredTransactionFactory, signedTransaction as UtxoSignedTransactionInternal
         )
+    }
+
+    @Suspendable
+    override fun verifyContract(ledgerTransaction: UtxoLedgerTransaction) {
+        ledgerTransactionVerificationService.verify(ledgerTransaction)
     }
 
     @Suspendable

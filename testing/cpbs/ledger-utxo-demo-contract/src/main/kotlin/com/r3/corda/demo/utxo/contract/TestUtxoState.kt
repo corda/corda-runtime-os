@@ -1,10 +1,12 @@
 package com.r3.corda.demo.utxo.contract
 
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.ledger.utxo.BelongsToContract
 import net.corda.v5.ledger.utxo.ContractState
 import java.security.PublicKey
 
 @BelongsToContract(TestContract::class)
+@CordaSerializable
 class TestUtxoState(
     val identifier: Int,
     val testField: String,

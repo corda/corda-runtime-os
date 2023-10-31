@@ -54,13 +54,6 @@ class ContractVerifyingNotaryClientFlowImpl(
 
     @Suspendable
     internal fun generatePayload(): ContractVerifyingNotarizationPayload {
-        val initialFilteredTx = utxoLedgerService.filterSignedTransaction(stx)
-            .withInputStates()
-            .withReferenceStates()
-            .withOutputStatesSize()
-            .withNotary()
-            .withTimeWindow()
-            .build()
 
         val hashedNotaryKey = digestService.hash(stx.notaryKey.encoded, DigestAlgorithmName.SHA2_256)
 
@@ -82,6 +75,6 @@ class ContractVerifyingNotaryClientFlowImpl(
                     dependency.signatures.filter { hashedNotaryKey == it.by }
                 )
             }
-        return ContractVerifyingNotarizationPayload(initialFilteredTx, filteredDependenciesAndSignatures, stx.notaryKey)
+        return ContractVerifyingNotarizationPayload(stx, filteredDependenciesAndSignatures, stx.notaryKey)
     }
 }
