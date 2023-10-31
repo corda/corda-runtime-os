@@ -76,7 +76,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     override fun start() {
         log.debug { "Starting multi-source event mediator with config: $config" }
         lifecycleCoordinator.start()
-        run()
+        taskManager.executeLongRunningTask(::run)
     }
 
     private fun stop() = stopped.set(true)
@@ -99,7 +99,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
             messageRouter = mediatorComponentFactory.createRouter(clients)
             lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
             config.consumerFactories.map { consumerFactory ->
-                taskManager.executeLongRunningTask {
+//                taskManager.executeLongRunningTask {
                     var attempts = 0
                     while (!stopped()) {
                         attempts++
@@ -141,11 +141,11 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                             consumer?.close()
                         }
                     }
-                }
+//                }
             }.map {
-                it.exceptionally {
-                    stop()
-                }.join()
+//                it.exceptionally {
+//                    stop()
+//                }.join()
             }
         }
         catch (exception: Exception) {
