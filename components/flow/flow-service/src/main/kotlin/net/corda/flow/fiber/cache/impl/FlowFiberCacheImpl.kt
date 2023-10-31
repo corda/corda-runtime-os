@@ -72,7 +72,17 @@ class FlowFiberCacheImpl @Activate constructor(
     }
 
     override fun get(key: FlowKey, suspendCount: Int): FlowFiber? {
-        return cache.getIfPresent(key)?.takeIf { it.suspendCount == suspendCount }?.fiber
+        val fiber = cache.getIfPresent(key)
+        return if(null == fiber) {
+            logger.info("Fiber not found in cache: ${key.id}")
+            null
+        } else if (fiber.suspendCount == suspendCount) {
+            logger.debug { "Fiber found in cache: ${key.id}" }
+            fiber.fiber
+        } else {
+            logger.info("Fiber found in cache but at wrong suspendCount (${fiber.suspendCount} <-> $suspendCount): ${key.id}")
+            null
+        }
     }
 
     override fun remove(key: FlowKey) {
