@@ -1,6 +1,5 @@
 package net.corda.ledger.persistence.utxo
 
-import net.corda.data.ledger.persistence.FindTransactionIdsAndStatuses
 import net.corda.data.membership.SignedGroupParameters
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
@@ -27,23 +26,11 @@ interface UtxoRepository {
         id: String
     ): SignedTransactionContainer?
 
-    /** Retrieves transaction by [id] */
-    fun findBatchTransactions(
-        entityManager: EntityManager,
-        transactionIds: List<String>,
-        transactionStatus: TransactionStatus
-    ): List<SignedTransactionContainer>
-
     /** Retrieves transaction component leafs except metadata which is stored separately */
     fun findTransactionComponentLeafs(
         entityManager: EntityManager,
         transactionId: String
     ): Map<Int, List<ByteArray>>
-
-    fun findBatchTransactionsComponentLeafs(
-        entityManager: EntityManager,
-        transactionIds: List<String>
-    ): Map<String, Map<Int, List<ByteArray>>>
 
     /** Retrieves transaction component leaves related to visible unspent states and subclass states.*/
     fun findUnconsumedVisibleStatesByType(
@@ -61,11 +48,6 @@ interface UtxoRepository {
         entityManager: EntityManager,
         transactionId: String
     ): List<DigitalSignatureAndMetadata>
-
-    fun findBatchTransactionSignatures(
-        entityManager: EntityManager,
-        transactionIds: List<String>
-    ): Map<String, List<DigitalSignatureAndMetadata>>
 
     /** Retrieves a transaction's status */
     fun findTransactionStatus(

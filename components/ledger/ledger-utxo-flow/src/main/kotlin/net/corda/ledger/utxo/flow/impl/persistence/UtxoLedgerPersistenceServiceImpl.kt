@@ -14,8 +14,6 @@ import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperat
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.PersistTransaction
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.PersistTransactionIfDoesNotExist
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.UpdateTransactionStatus
-import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindBatchTransactionsExternalEventFactory
-import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindBatchTransactionsParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedLedgerTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedLedgerTransactionParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
@@ -74,23 +72,6 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     @Suspendable
     override fun findSignedTransaction(id: SecureHash, transactionStatus: TransactionStatus): UtxoSignedTransaction? {
         return findSignedTransactionWithStatus(id, transactionStatus)?.first
-    }
-
-    override fun findSignedTransactions(
-        transactionIds: List<SecureHash>,
-        transactionStatus: TransactionStatus
-    ): List<UtxoSignedTransaction> {
-        return recordSuspendable({ ledgerPersistenceFlowTimer(FindTransactionWithStatus) }) @Suspendable {
-            wrapWithPersistenceException {
-                externalEventExecutor.execute(
-                    FindBatchTransactionsExternalEventFactory::class.java,
-                    FindBatchTransactionsParameters(transactionIds.map { it.toString() }, transactionStatus)
-                )
-            }
-        }.firstOrNull()?.let {
-            val transactions = serializationService.deserialize<List<SignedTransactionContainer>>(it.array())
-            transactions.map { it.toSignedTransaction() }
-        } ?: emptyList()
     }
 
     @Suspendable

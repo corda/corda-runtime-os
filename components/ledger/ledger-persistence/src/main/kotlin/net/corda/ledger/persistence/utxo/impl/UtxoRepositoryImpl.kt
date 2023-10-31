@@ -71,37 +71,6 @@ class UtxoRepositoryImpl @Activate constructor(
         )
     }
 
-    override fun findBatchTransactions(
-        entityManager: EntityManager,
-        transactionIds: List<String>,
-        transactionStatus: TransactionStatus
-    ): List<SignedTransactionContainer> {
-        val transactionStatuses = findBatchTransactionsStatus(entityManager, transactionIds)
-        logger.info("LOADED TRANSACTION STATUSES: $transactionStatuses, count: ${transactionStatuses.size}")
-
-        val privacySaltAndMetadata = findBatchTransactionsPrivacySaltAndMetadata(entityManager, transactionIds)
-        logger.info("LOADED PRIVACY SALTS AND METADATAS: $privacySaltAndMetadata, count: ${privacySaltAndMetadata.size}")
-
-        val componentLeafs = findBatchTransactionsComponentLeafs(entityManager, transactionIds)
-        logger.info("LOADED COMP LEAFS: $componentLeafs, count: ${componentLeafs.size}")
-
-        val signatures = findBatchTransactionSignatures(entityManager, transactionIds)
-        logger.info("LOADED SIGNATURES: $signatures, count: ${signatures.size}")
-
-        return transactionIds.filter {
-            transactionStatuses[it] == transactionStatus.value
-        }.map {
-            val wireTransaction = wireTransactionFactory.create(
-                mapOf(0 to listOf(privacySaltAndMetadata[it]!!.second)) + componentLeafs[it]!!,
-                privacySaltAndMetadata[it]!!.first
-            )
-            SignedTransactionContainer(
-                wireTransaction,
-                signatures[it]!!
-            )
-        }
-    }
-
     override fun findTransactionIdsAndStatuses(
         entityManager: EntityManager,
         transactionIds: List<String>
@@ -129,28 +98,6 @@ class UtxoRepositoryImpl @Activate constructor(
             .firstOrNull()
     }
 
-    private fun findBatchTransactionsPrivacySaltAndMetadata(
-        entityManager: EntityManager,
-        transactionIds: List<String>
-    ): Map<String, Pair<PrivacySaltImpl, ByteArray>> {
-        return entityManager.createNativeQuery("""
-            SELECT id, 
-            privacy_salt,
-            utm.canonical_data
-            FROM {h-schema}utxo_transaction AS ut
-            JOIN {h-schema}utxo_transaction_metadata AS utm
-                ON ut.metadata_hash = utm.hash
-            WHERE id IN (:transactionIds)"""
-            .trimIndent(),
-            Tuple::class.java
-        )
-            .setParameter("transactionIds", transactionIds)
-            .resultListAsTuples()
-            .associate {
-                it.get(0) as String to Pair(PrivacySaltImpl(it.get(1) as ByteArray), it.get(2) as ByteArray)
-            }
-    }
-
     override fun findTransactionComponentLeafs(
         entityManager: EntityManager,
         transactionId: String
@@ -159,28 +106,6 @@ class UtxoRepositoryImpl @Activate constructor(
             .setParameter("transactionId", transactionId)
             .resultListAsTuples()
             .mapToComponentGroups(UtxoComponentGroupMapper(transactionId))
-    }
-
-    override fun findBatchTransactionsComponentLeafs(
-        entityManager: EntityManager,
-        transactionIds: List<String>
-    ): Map<String, Map<Int, List<ByteArray>>> {
-        val tuples = entityManager.createNativeQuery(
-            """
-            SELECT transaction_id, group_idx, leaf_idx, data
-            FROM {h-schema}utxo_transaction_component
-            WHERE transaction_id IN (:transactionIds)
-            ORDER BY transaction_id, group_idx, leaf_idx""",
-            Tuple::class.java
-        )
-            .setParameter("transactionIds", transactionIds)
-            .resultListAsTuples()
-
-        return tuples.groupBy {
-            it.get(0) as String
-        }.mapValues { (transactionId, tuples) ->
-            tuples.mapToComponentGroups(UtxoComponentGroupMapperBatch(transactionId))
-        }
     }
 
     private fun findUnconsumedVisibleStates(
@@ -225,46 +150,12 @@ class UtxoRepositoryImpl @Activate constructor(
             .map { r -> serializationService.deserialize(r.get(0) as ByteArray) }
     }
 
-    override fun findBatchTransactionSignatures(
-        entityManager: EntityManager,
-        transactionIds: List<String>
-    ): Map<String, List<DigitalSignatureAndMetadata>> {
-        return entityManager.createNativeQuery(
-            """
-            SELECT transaction_id, signature
-            FROM {h-schema}utxo_transaction_signature
-            WHERE transaction_id IN (:transactionIds)
-            ORDER BY signature_idx""",
-            Tuple::class.java
-        )
-            .setParameter("transactionIds", transactionIds)
-            .resultListAsTuples()
-            .groupBy { it.get(0) as String }
-            .mapValues { (_, tuples) ->
-                tuples.map { serializationService.deserialize(it.get(1) as ByteArray) }
-            }
-    }
-
     override fun findTransactionStatus(entityManager: EntityManager, id: String): String? {
         return entityManager.createNativeQuery(queryProvider.findTransactionStatus, Tuple::class.java)
             .setParameter("transactionId", id)
             .resultListAsTuples()
             .map { r -> r.get(0) as String }
             .singleOrNull()
-    }
-
-    private fun findBatchTransactionsStatus(entityManager: EntityManager, ids: List<String>): Map<String, String> {
-        return entityManager.createNativeQuery("""
-            SELECT id, status
-            FROM {h-schema}utxo_transaction
-            WHERE id IN (:transactionIds)""",
-            Tuple::class.java
-        )
-            .setParameter("transactionIds", ids)
-            .resultListAsTuples()
-            .associate {
-                it.get(0) as String to it.get(1) as String
-            }
     }
 
     override fun markTransactionVisibleStatesConsumed(
