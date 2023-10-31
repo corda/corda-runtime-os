@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.databind.node.TextNode
 import net.corda.libs.configuration.secret.MaskedSecretsLookupService
 import net.corda.schema.configuration.ConfigKeys
+import org.slf4j.LoggerFactory
 
 /**
  *
@@ -14,6 +15,7 @@ class ConfigSecretHelper {
     private companion object {
         const val TMP_SECRET = MaskedSecretsLookupService.MASK_VALUE
         val TMP_SECRET_NODE: JsonNode = TextNode(TMP_SECRET)
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
     }
 
@@ -27,6 +29,25 @@ class ConfigSecretHelper {
         return hideSecretsRecursive(node, node)
     }
 
+    // Make it easy to walk JSON node structures by returning the names of paths
+    // within a node, paired with the value of each path, at one layer only.
+
+    // e.g. {"a":1, "b":2} returns ["a" to JsonNode("1"), "b" to JsonNode("2")]
+    // and  ["alpha", "beta"] returns ["1" to JsonNode("alpha"), "2" to JsonNode("beta")]
+    // and "foo" returns []
+    //
+    // (except the second half of the pairs are actually JsonNode instances)
+    private fun getFieldValues(node: JsonNode): List<Pair<String, JsonNode>> =
+        if (node.isObject) {
+            node.fields().asSequence().toList().map { it.key to it.value }
+        } else {
+            if (node.isArray) {
+                node.toList().withIndex().map { it.index.toString() to it.value }
+            } else {
+                emptyList()
+            }
+        }
+
     private fun hideSecretsRecursive(
         parentNode: JsonNode,
         node: JsonNode,
@@ -35,25 +56,15 @@ class ConfigSecretHelper {
         nodeName: String = ""
     ): MutableMap<String, JsonNode> {
         val newPath = if (nodePath == "") nodeName else "$nodePath.$nodeName"
-        if (node.isObject) {
-            for ((fieldName, fieldNode) in node.fields().asSequence().toList()) {
-                if (fieldName == ConfigKeys.SECRET_KEY) {
-                    secrets[newPath] = node
-                    (parentNode as ObjectNode).remove(nodeName)
-                    parentNode.set(nodeName, TMP_SECRET_NODE)
-                } else {
-                    hideSecretsRecursive(node, fieldNode, secrets, newPath, fieldName)
-                }
+        getFieldValues(node).forEach { (fieldName, fieldNode) ->
+            if ( fieldName == ConfigKeys.SECRET_KEY) {
+                secrets[newPath] = node
+                (parentNode as ObjectNode).remove(nodeName)
+                parentNode.set(nodeName, TMP_SECRET_NODE)
+            } else {
+                hideSecretsRecursive(node, fieldNode, secrets, newPath, fieldName)
             }
         }
-        if (node.isArray) {
-            var i = 0
-            for (fieldNode in node.toList()) {
-                hideSecretsRecursive(node, fieldNode, secrets, newPath, i.toString())
-                i++
-            }
-        }
-
         return secrets
     }
 
@@ -71,17 +82,15 @@ class ConfigSecretHelper {
         secretsNode: MutableMap<String, JsonNode>,
         nodeName: String = ""
     ) {
-        if (node.isObject) {
-            for ((name, newNode) in node.fields().asSequence().toList()) {
-                val nodePath = if (nodeName == "") name else "$nodeName.$name"
-                val secret = secretsNode[nodePath]
-                if (secret != null) {
-                    (node as ObjectNode).set<ObjectNode>(name, secret)
-                } else {
-                    insertSecretsRecursive(newNode, secretsNode, nodePath)
-                }
+        getFieldValues(node).forEach { (name, newNode) ->
+            val nodePath = if (nodeName == "") name else "$nodeName.$name"
+            val secret = secretsNode[nodePath]
+            logger.info("insertSecretsRecursive node name $name newNode $newNode, secret $secret")
+            if (secret != null) {
+                (node as ObjectNode).set<ObjectNode>(name, secret)
+            } else {
+                insertSecretsRecursive(newNode, secretsNode, nodePath)
             }
         }
     }
-
 }
