@@ -1,9 +1,11 @@
 package net.corda.messaging.mediator
 
+import java.time.Duration
 import java.util.LinkedList
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.thread
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
@@ -29,8 +31,10 @@ import net.corda.messaging.api.mediator.factory.MessageRouterFactory
 import net.corda.messaging.api.mediator.factory.MessagingClientFactory
 import net.corda.messaging.api.mediator.factory.MessagingClientFinder
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.taskmanager.TaskManager
+import net.corda.test.util.waitWhile
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -61,8 +65,8 @@ class MultiSourceEventMediatorImplTest {
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
 
     private val messageProcessor: StateAndEventProcessor<Any, Any, Any> = mock()
-    private val consumerFactory: MediatorConsumerFactory = mock()
-    private val clientFactory: MessagingClientFactory = mock()
+    private val mediatorConsumerFactory: MediatorConsumerFactory = mock()
+    private val messagingClientFactory: MessagingClientFactory = mock()
     private val messageRouterFactory: MessageRouterFactory = mock()
 
     private val consumer: MediatorConsumer<Any, Any> = mock()
@@ -99,14 +103,25 @@ class MultiSourceEventMediatorImplTest {
     private fun createMockConfig() : EventMediatorConfig<Any, Any, Any> {
         whenever(messagingConfig.getInt(MessagingConfig.Subscription.PROCESSOR_RETRIES)).thenReturn(PROCESSOR_RETRIES)
 
+        whenever(
+            messageProcessor.onNext(
+                anyOrNull(),
+                any()
+            )
+        ).thenAnswer {
+            StateAndEventProcessor.Response<Any>(
+                updatedState = mock(),
+                responseEvents = listOf(Record(topic = "", "key", value = mock(), timestamp = 0)),
+            )
+        }
         whenever(messageProcessor.keyClass).thenReturn(Any::class.java)
         whenever(messageProcessor.eventValueClass).thenReturn(Any::class.java)
 
-        whenever(consumerFactory.create(any<MediatorConsumerConfig<Any, Any>>())).thenReturn(consumer)
+        whenever(mediatorConsumerFactory.create(any<MediatorConsumerConfig<Any, Any>>())).thenReturn(consumer)
 
         whenever(messagingClient.send(any())).thenAnswer { null }
 
-        whenever(clientFactory.create(any<MessagingClientConfig>())).thenReturn(messagingClient)
+        whenever(messagingClientFactory.create(any<MessagingClientConfig>())).thenReturn(messagingClient)
 
         whenever(messageRouterFactory.create(any<MessagingClientFinder>())).thenReturn(MessageRouter { _ ->
             RoutingDestination.routeTo(messagingClient, "endpoint")
@@ -116,12 +131,12 @@ class MultiSourceEventMediatorImplTest {
             .name("TestConfig")
             .messagingConfig(messagingConfig)
             .messageProcessor(messageProcessor)
-            .consumerFactories(consumerFactory)
-            .clientFactories(clientFactory)
+            .consumerFactories(mediatorConsumerFactory)
+            .clientFactories(messagingClientFactory)
             .messageRouterFactory(messageRouterFactory)
             .stateManager(stateManager)
             .threads(1)
-            .threadName("test")
+            .threadName("mediator-thread")
             .build()
             .also { whenever(it.processorRetries).thenReturn(PROCESSOR_RETRIES) }
     }
@@ -212,8 +227,8 @@ class MultiSourceEventMediatorImplTest {
 
         mediator.close()
 
-        verify(consumerFactory).create(any<MediatorConsumerConfig<Any, Any>>())
-        verify(clientFactory).create(any<MessagingClientConfig>())
+        verify(mediatorConsumerFactory).create(any<MediatorConsumerConfig<Any, Any>>())
+        verify(messagingClientFactory).create(any<MessagingClientConfig>())
         verify(messageRouterFactory).create(any<MessagingClientFinder>())
         verify(messageProcessor, times(events.size)).onNext(anyOrNull(), any())
         verify(stateManager, times(eventBatches.size)).get(any())
@@ -258,8 +273,8 @@ class MultiSourceEventMediatorImplTest {
 
         mediator.close()
 
-        verify(consumerFactory, times(2)).create<Any, Any>(any())
-        verify(clientFactory, times(2)).create(any())
+        verify(mediatorConsumerFactory, times(2)).create<Any, Any>(any())
+        verify(messagingClientFactory, times(2)).create(any())
         verify(messageRouterFactory, times(2)).create(any())
     }
 
@@ -277,8 +292,8 @@ class MultiSourceEventMediatorImplTest {
         mediator.close()
 
         // Ensure our components haven't been recreated
-        verify(consumerFactory, times(1)).create<Any, Any>(any())
-        verify(clientFactory, times(1)).create(any())
+        verify(mediatorConsumerFactory, times(1)).create<Any, Any>(any())
+        verify(messagingClientFactory, times(1)).create(any())
         verify(messageRouterFactory, times(1)).create(any())
 
         verify(lifecycleCoordinator).updateStatus(
@@ -300,8 +315,8 @@ class MultiSourceEventMediatorImplTest {
             mediator.close()
         }.join()
 
-        verify(consumerFactory, times(1)).create<Any, Any>(any())
-        verify(clientFactory, times(1)).create(any())
+        verify(mediatorConsumerFactory, times(1)).create<Any, Any>(any())
+        verify(messagingClientFactory, times(1)).create(any())
         verify(messageRouterFactory, times(1)).create(any())
 
         verify(lifecycleCoordinator).close()
@@ -324,10 +339,44 @@ class MultiSourceEventMediatorImplTest {
 
         mediator.close()
 
-        verify(consumerFactory, times(2)).create<Any, Any>(any())
-        verify(clientFactory, times(2)).create(any())
+        verify(mediatorConsumerFactory, times(2)).create<Any, Any>(any())
+        verify(messagingClientFactory, times(2)).create(any())
         verify(messageRouterFactory, times(2)).create(any())
         verify(lifecycleCoordinator).updateStatus(eq(LifecycleStatus.ERROR), any())
+    }
+
+    @Test
+    fun `mediator retries after intermittent exceptions`() {
+        val event1 = cordaConsumerRecords(KEY1, "event1")
+        val sendCount = AtomicInteger(0)
+        val errorsCount = PROCESSOR_RETRIES + 1
+        val expectedProcessingCount = errorsCount + 1
+        whenever(consumer.poll(any())).thenAnswer {
+            if (sendCount.get() < expectedProcessingCount) {
+                listOf(event1)
+            } else {
+                Thread.sleep(10)
+                emptyList()
+            }
+        }
+
+        whenever(messagingClient.send(any())).thenAnswer {
+            if (sendCount.getAndIncrement() < errorsCount) {
+                throw CordaMessageAPIIntermittentException("IntermittentException")
+            }
+            null
+        }
+
+        mediator.start()
+        waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { sendCount.get() < expectedProcessingCount }
+        mediator.close()
+
+        verify(mediatorConsumerFactory, times(2)).create(any<MediatorConsumerConfig<Any, Any>>())
+        verify(messagingClientFactory, times(2)).create(any<MessagingClientConfig>())
+        verify(messageRouterFactory, times(2)).create(any<MessagingClientFinder>())
+        verify(messageProcessor, times(expectedProcessingCount)).onNext(anyOrNull(), any())
+        verify(consumer, atLeast(expectedProcessingCount)).poll(any())
+        verify(messagingClient, times(expectedProcessingCount)).send(any())
     }
 
     @AfterEach
