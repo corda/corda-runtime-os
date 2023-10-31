@@ -60,6 +60,9 @@ dependencies {
     testImplementation project(':libs:serialization:serialization-kryo')
     testImplementation project(':testing:ledger:ledger-utxo-base-test')
 
+    testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    testImplementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation project(':testing:sandboxes-testkit')
     integrationTestImplementation project(':libs:messaging:messaging')
