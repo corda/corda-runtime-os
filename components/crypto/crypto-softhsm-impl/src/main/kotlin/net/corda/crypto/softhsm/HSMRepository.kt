@@ -6,8 +6,10 @@ import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import java.io.Closeable
 
 interface HSMRepository : Closeable {
+
     /**
      * Finds a tenant association with an HSM for the given category.
+     *
      */
     fun findTenantAssociation(tenantId: String, category: String): HSMAssociationInfo?
 
@@ -24,4 +26,18 @@ interface HSMRepository : Closeable {
         category: String,
         masterKeyPolicy: MasterKeyPolicy,
     ): HSMAssociationInfo
+
+    /**
+     * Returns existing association, otherwise creates association with specified masterKeyPolicy
+     *
+     * @param tenantId The tenant ID to consider
+     * @param category The category to consider (acts like a string enum)
+     * @param masterKeyPolicy The master key policy to set if the association does not exist
+     */
+    fun createOrLookupCategoryAssociation(
+        tenantId: String,
+        category: String,
+        masterKeyPolicy: MasterKeyPolicy,
+    ): HSMAssociationInfo
+
 }

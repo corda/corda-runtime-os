@@ -280,6 +280,42 @@ class JPABackingStoreImplIntegrationTests {
         }
 
         @Test
+        // Temporary test for tactical fix delivered in CORE-18025. Should be removed / replaced when
+        // CORE-17155 (strategic fix) is implemented.
+        fun `Persisting rejected transaction with multiple input state conflicts only stores first failure`() {
+            val txId = SecureHashUtils.randomSecureHash()
+            val txIds = listOf(txId)
+            val consumingTxId = SecureHashUtils.randomSecureHash()
+            val txns = listOf(
+                Pair(
+                    generateRequestInternal(txId), UniquenessCheckResultFailureImpl(
+                        testClock.instant(), UniquenessCheckErrorInputStateConflictImpl(
+                            List(2) {
+                                UniquenessCheckStateDetailsImpl(
+                                    UniquenessCheckStateRefImpl(txId, it), consumingTxId
+                                )
+                            }
+                        )
+                    )
+                )
+            )
+
+            backingStoreImpl.session(notaryVNodeIdentity) { session ->
+                session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
+            }
+
+            val txnDetails = mutableMapOf<SecureHash, UniquenessCheckTransactionDetailsInternal>()
+            backingStoreImpl.session(notaryVNodeIdentity) { session ->
+                txnDetails.putAll(session.getTransactionDetails(txIds))
+            }
+
+            UniquenessAssertions.assertContainingTxId(txnDetails, txIds.single())
+            UniquenessAssertions.assertInputStateConflictResult(
+                txnDetails.entries.single().value.result, txId, consumingTxId, 0, testClock
+            )
+        }
+
+        @Test
         fun `Persisting rejected transaction due to reference state conflict succeeds`() {
             val txId = SecureHashUtils.randomSecureHash()
             val txIds = listOf(txId)

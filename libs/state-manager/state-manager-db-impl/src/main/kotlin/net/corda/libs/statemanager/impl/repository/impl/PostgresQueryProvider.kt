@@ -3,6 +3,7 @@ package net.corda.libs.statemanager.impl.repository.impl
 import net.corda.libs.statemanager.api.Operation
 import net.corda.db.schema.DbSchema.STATE_MANAGER_TABLE
 import net.corda.libs.statemanager.api.MetadataFilter
+import net.corda.libs.statemanager.impl.model.v1.StateEntity
 
 class PostgresQueryProvider : AbstractQueryProvider() {
 
@@ -12,11 +13,20 @@ class PostgresQueryProvider : AbstractQueryProvider() {
             VALUES (:$KEY_PARAMETER_NAME, :$VALUE_PARAMETER_NAME, :$VERSION_PARAMETER_NAME, CAST(:$METADATA_PARAMETER_NAME as JSONB), CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
         """.trimIndent()
 
-    override val updateState: String
-        get() = """
-            UPDATE $STATE_MANAGER_TABLE SET
-            key = :$KEY_PARAMETER_NAME, value = :$VALUE_PARAMETER_NAME, version = version + 1, metadata = CAST(:$METADATA_PARAMETER_NAME as JSONB), modified_time = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-            WHERE key = :$KEY_PARAMETER_NAME AND version = :$VERSION_PARAMETER_NAME
+    override fun updateStates(states: Collection<StateEntity>): String = """
+            UPDATE $STATE_MANAGER_TABLE AS s 
+            SET 
+                key = temp.key, 
+                value = temp.value, 
+                version = s.version + 1, 
+                metadata = CAST(temp.metadata as JSONB), 
+                modified_time = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+            FROM
+            (
+                VALUES ${List(states.size) { "(?, ?, ?, ?)" }.joinToString(",")}
+            ) AS temp(key, value, metadata, version)
+            WHERE temp.key = s.key AND temp.version = s.version
+            RETURNING s.key
         """.trimIndent()
 
     override fun findStatesByMetadataMatchingAll(filters: Collection<MetadataFilter>) =

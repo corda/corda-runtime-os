@@ -178,7 +178,7 @@ class MGMRegistrationService @Activate constructor(
                 if (groupParametersPersistenceResult is MembershipPersistenceResult.Failure) {
                     throw NotReadyMembershipRegistrationException(groupParametersPersistenceResult.errorMsg)
                 }
-                mgmRegistrationRequestHandler.persistRegistrationRequest(registrationId, member, mgmInfo)
+                mgmRegistrationRequestHandler.persistRegistrationRequest(registrationId, member, context)
 
                 // Publish group parameters to Kafka
                 val groupParameters = groupParametersPersistenceResult.getOrThrow()
