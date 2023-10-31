@@ -28,6 +28,8 @@ import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.write
 
 @Suppress("UNUSED")
 @Component(service = [ChunkReadService::class])
@@ -49,6 +51,7 @@ class ChunkReadServiceImpl @Activate constructor(
 
     private val coordinator = coordinatorFactory.createCoordinator<ChunkReadService>(this)
 
+    private val lock = ReentrantReadWriteLock()
     private var chunkDbWriter: ChunkDbWriter? = null
     private var registration: RegistrationHandle? = null
     private var configSubscription: AutoCloseable? = null
@@ -85,10 +88,12 @@ class ChunkReadServiceImpl @Activate constructor(
     }
 
     private fun onStopEvent(coordinator: LifecycleCoordinator) {
-        chunkDbWriter?.close()
-        chunkDbWriter = null
+        lock.write {
+            chunkDbWriter?.close()
+            chunkDbWriter = null
 
-        coordinator.updateStatus(LifecycleStatus.DOWN)
+            coordinator.updateStatus(LifecycleStatus.DOWN)
+        }
     }
 
     private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent) {
@@ -107,20 +112,29 @@ class ChunkReadServiceImpl @Activate constructor(
     }
 
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
-        val bootConfig = event.config.getConfig(BOOT_CONFIG)
-        chunkDbWriter?.close()
-        chunkDbWriter = chunkDbWriterFactory
-            .create(messagingConfig, bootConfig, dbConnectionManager.getClusterEntityManagerFactory(), cpiInfoWriteService)
-            .apply { start() }
+        lock.write {
+            val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+            val bootConfig = event.config.getConfig(BOOT_CONFIG)
+            chunkDbWriter?.close()
+            chunkDbWriter = chunkDbWriterFactory
+                .create(
+                    messagingConfig,
+                    bootConfig,
+                    dbConnectionManager.getClusterEntityManagerFactory(),
+                    cpiInfoWriteService
+                )
+                .apply { start() }
 
-        coordinator.updateStatus(LifecycleStatus.UP)
+            coordinator.updateStatus(LifecycleStatus.UP)
+        }
     }
 
     @Deactivate
     fun close() {
-        configSubscription?.close()
-        registration?.close()
-        chunkDbWriter?.close()
+        lock.write {
+            configSubscription?.close()
+            registration?.close()
+            chunkDbWriter?.close()
+        }
     }
 }

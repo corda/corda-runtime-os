@@ -26,7 +26,9 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Instant
-import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 @Component(service = [TriggerPublisher::class])
 class TriggerPublisherImpl constructor(
@@ -53,17 +55,24 @@ class TriggerPublisherImpl constructor(
     override val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<TriggerPublisher>()
 
     private val coordinator = coordinatorFactory.createCoordinator(lifecycleCoordinatorName, this)
-    private val publisher: AtomicReference<Publisher?> = AtomicReference()
+    private val lock = ReentrantReadWriteLock()
+    private var publisher: Publisher? = null
     private var registration: RegistrationHandle? = null
     private var configSubscription: AutoCloseable? = null
 
     override fun publish(taskName: String, topicName: String) {
-        logger.trace { "Publishing trigger for $taskName to $topicName" }
-        publisher.get()?.publish(listOf(
-            Record(
-                topicName,
-                taskName,
-                ScheduledTaskTrigger(taskName, clock()))))
+        lock.read {
+            logger.trace { "Publishing trigger for $taskName to $topicName" }
+            publisher?.publish(
+                listOf(
+                    Record(
+                        topicName,
+                        taskName,
+                        ScheduledTaskTrigger(taskName, clock())
+                    )
+                )
+            )
+        }
     }
 
     override val isRunning: Boolean
@@ -90,23 +99,27 @@ class TriggerPublisherImpl constructor(
     }
 
     private fun onStopEvent() {
-        registration?.close()
-        registration = null
+        lock.write {
+            registration?.close()
+            registration = null
 
-        configSubscription?.close()
-        configSubscription = null
+            configSubscription?.close()
+            configSubscription = null
 
-        publisher.get()?.close()
-        publisher.set(null)
+            publisher?.close()
+            publisher = null
+        }
     }
 
     private fun onConfigChangedEvent(coordinator: LifecycleCoordinator, event: ConfigChangedEvent) {
-        val config = event.config[ConfigKeys.MESSAGING_CONFIG] ?: return
-        coordinator.updateStatus(LifecycleStatus.DOWN)
+        lock.write {
+            val config = event.config[ConfigKeys.MESSAGING_CONFIG] ?: return
+            coordinator.updateStatus(LifecycleStatus.DOWN)
 
-        publisher.get()?.close()
-        publisher.set(publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), config))
-        coordinator.updateStatus(LifecycleStatus.UP)
+            publisher?.close()
+            publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), config)
+            coordinator.updateStatus(LifecycleStatus.UP)
+        }
     }
 
     private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent) {
@@ -115,11 +128,13 @@ class TriggerPublisherImpl constructor(
             configSubscription =
                 configurationReadService.registerComponentForUpdates(coordinator, setOf(ConfigKeys.MESSAGING_CONFIG))
         } else {
-            coordinator.updateStatus(event.status)
-            configSubscription?.close()
-            configSubscription = null
-            publisher.get()?.close()
-            publisher.set(null)
+            lock.write {
+                coordinator.updateStatus(event.status)
+                configSubscription?.close()
+                configSubscription = null
+                publisher?.close()
+                publisher = null
+            }
         }
     }
 }
