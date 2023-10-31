@@ -225,15 +225,6 @@ spec:
               {{- end }}
                 -l /tmp/crypto
 
-              echo 'Generating State Manager DB specification'
-              STATE_MANAGER_JDBC_URL="{{- include "corda.stateManagerJdbcUrl" . -}}"
-              mkdir /tmp/stateManager
-              java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar database spec \
-                -s "statemanager" -g "statemanager:state_manager" \
-                -u "${STATE_MANAGER_PGUSER}" -p "${STATE_MANAGER_PGPASSWORD}" \
-                --jdbc-url "${STATE_MANAGER_JDBC_URL}" \
-                -c -l /tmp/stateManager
-
               echo 'Generating REST API user initial configuration'
               java -Dpf4j.pluginsDir=/opt/override/plugins -Dlog4j2.debug=false -jar /opt/override/cli.jar initial-config create-user-config \
                 -u "${REST_API_ADMIN_USERNAME}" -p "${REST_API_ADMIN_PASSWORD}" \
@@ -266,7 +257,15 @@ spec:
             {{- include "corda.restApiAdminSecretEnv" . | nindent 12 }}
             {{- include "corda.cryptoDbUsernameEnv" . | nindent 12 }}
             {{- include "corda.cryptoDbPasswordEnv" . | nindent 12 }}
-            {{- include "corda.bootstrapStateManagerDbEnv" . | nindent 12 }}
+            {{- range $workerName, $authConfig := .Values.bootstrap.db.stateManager -}}
+            {{-   $workerConfig := (index $.Values.workers $workerName) -}}
+            {{/*  No point in trying to bootstrap the State Manager for the specific worker if the host has not been configured */}}
+            {{-   if and (not $workerConfig.stateManager.db.host) (or ( $authConfig.username.value ) ( $authConfig.username.valueFrom.secretKeyRef.name ) ( $authConfig.password.value ) ( $authConfig.password.valueFrom.secretKeyRef.name ) ) -}}
+            {{-     fail ( printf "Can only specify bootstrap.db.stateManager.%s when workers.%s.stateManager.host is configured" $workerName $workerName ) -}}
+            {{-   else -}}
+            {{-     include "corda.bootstrapStateManagerDb" ( list $ $workerName $authConfig ) }}
+            {{-   end -}}
+            {{- end }}
       containers:
         - name: apply
           image: {{ include "corda.bootstrapDbClientImage" . }}
@@ -303,20 +302,6 @@ spec:
               SQL
 
               echo 'DB Bootstrapped'
-
-              echo 'Applying State Manager Specification'
-              export PGPASSWORD="${STATE_MANAGER_PGPASSWORD}"
-              find /tmp/stateManager -iname "*.sql" | xargs printf -- ' -f %s' | xargs psql -v ON_ERROR_STOP=1 -h "${STATE_MANAGER_DB_HOST}" -p "${STATE_MANAGER_DB_PORT}" -U "${STATE_MANAGER_PGUSER}" --dbname "${STATE_MANAGER_DB_NAME}"
-
-              echo 'Creating users and granting permissions for State Manager'
-              psql -v ON_ERROR_STOP=1 -h "${STATE_MANAGER_DB_HOST}" -p "${STATE_MANAGER_DB_PORT}" -U "${STATE_MANAGER_PGUSER}" "${STATE_MANAGER_DB_NAME}" << SQL
-                DO \$\$ BEGIN IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${STATE_MANAGER_DB_USERNAME}') THEN RAISE NOTICE 'Role "${STATE_MANAGER_DB_USERNAME}" already exists'; ELSE CREATE USER "${STATE_MANAGER_DB_USERNAME}" WITH ENCRYPTED PASSWORD '${STATE_MANAGER_DB_PASSWORD}'; END IF; END \$\$;
-                GRANT USAGE ON SCHEMA STATE_MANAGER TO "${STATE_MANAGER_DB_USERNAME}";
-                GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA STATE_MANAGER TO "${STATE_MANAGER_DB_USERNAME}";
-                GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA STATE_MANAGER TO "${STATE_MANAGER_DB_USERNAME}";
-              SQL
-
-              echo 'State Manager Bootstrapped'
           volumeMounts:
             - mountPath: /tmp
               name: temp
@@ -333,19 +318,11 @@ spec:
               value: {{ .Values.bootstrap.db.rbac.schema | quote }}
             - name: DB_CRYPTO_SCHEMA
               value: {{ .Values.bootstrap.db.crypto.schema | quote }}
-            - name: STATE_MANAGER_DB_HOST
-              value: {{ include "corda.stateManagerDbHost" . | quote }}
-            - name: STATE_MANAGER_DB_PORT
-              value: {{ include "corda.stateManagerDbPort" . | quote }}
-            - name: STATE_MANAGER_DB_NAME
-              value: {{ include "corda.stateManagerDbName" . | quote }}
             {{- include "corda.bootstrapClusterDbEnv" . | nindent 12 }}
             {{- include "corda.rbacDbUserEnv" . | nindent 12 }}
             {{- include "corda.cryptoDbUsernameEnv" . | nindent 12 }}
             {{- include "corda.cryptoDbPasswordEnv" . | nindent 12 }}
             {{- include "corda.clusterDbEnv" . | nindent 12 }}
-            {{- include "corda.bootstrapStateManagerDbEnv" . | nindent 12 }}
-            {{- include "corda.stateManagerDbEnv" . | nindent 12 }}
       volumes:
         - name: temp
           emptyDir: {}

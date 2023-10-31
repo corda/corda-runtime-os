@@ -110,6 +110,8 @@ metadata:
 spec:
   type: ClusterIP
   selector:
+    app.kubernetes.io/name: {{ include "corda.name" $ }}
+    app.kubernetes.io/instance: {{ $.Release.Name }}
     app.kubernetes.io/component: {{ include "corda.workerComponent" $worker }}
   ports:
       - protocol: TCP
@@ -269,7 +271,7 @@ spec:
         {{- include "corda.clusterDbEnv" $ | nindent 10 }}
         {{- end }}
         {{- if $optionalArgs.stateManagerDbAccess }}
-        {{- include "corda.stateManagerDbEnv" $ | nindent 10 }}
+        {{- include "corda.stateManagerDbEnv" ( list $ . $worker ) | nindent 10 }}
         {{- end }}
         args:
           - "--workspace-dir=/work"
@@ -319,29 +321,29 @@ spec:
           - "--stateManager"
           - "type=DATABASE"
           - "--stateManager"
-          - "database.user=$(STATE_MANAGER_DB_USERNAME)"
+          - "database.user=$(STATE_MANAGER_USERNAME)"
           - "--stateManager"
-          - "database.pass=$(STATE_MANAGER_DB_PASSWORD)"
+          - "database.pass=$(STATE_MANAGER_PASSWORD)"
           - "--stateManager"
-          - "database.jdbc.url={{- include "corda.stateManagerJdbcUrl" $ -}}?currentSchema=STATE_MANAGER"
+          - "database.jdbc.url={{- include "corda.stateManagerJdbcUrl" ( list $ . ) -}}?currentSchema=STATE_MANAGER"
           - "--stateManager"
           - "database.jdbc.directory=/opt/jdbc-driver"
           - "--stateManager"
           - "database.jdbc.driver=org.postgresql.Driver"
           - "--stateManager"
-          - "database.pool.maxSize={{ .stateManagerDbConnectionPool.maxSize }}"
-          {{- if .stateManagerDbConnectionPool.minSize }}
+          - "database.pool.maxSize={{ .stateManager.db.connectionPool.maxSize }}"
+          {{- if .stateManager.db.connectionPool.minSize }}
           - "--stateManager"
-          - "database.pool.minSize={{ .stateManagerDbConnectionPool.minSize }}"
+          - "database.pool.minSize={{ .stateManager.db.connectionPool.minSize }}"
           {{- end }}
           - "--stateManager"
-          - "database.pool.idleTimeoutSeconds={{ .stateManagerDbConnectionPool.idleTimeoutSeconds }}"
+          - "database.pool.idleTimeoutSeconds={{ .stateManager.db.connectionPool.idleTimeoutSeconds }}"
           - "--stateManager"
-          - "database.pool.maxLifetimeSeconds={{ .stateManagerDbConnectionPool.maxLifetimeSeconds }}"
+          - "database.pool.maxLifetimeSeconds={{ .stateManager.db.connectionPool.maxLifetimeSeconds }}"
           - "--stateManager"
-          - "database.pool.keepAliveTimeSeconds={{ .stateManagerDbConnectionPool.keepAliveTimeSeconds }}"
+          - "database.pool.keepAliveTimeSeconds={{ .stateManager.db.connectionPool.keepAliveTimeSeconds }}"
           - "--stateManager"
-          - "database.pool.validationTimeoutSeconds={{ .stateManagerDbConnectionPool.validationTimeoutSeconds }}"
+          - "database.pool.validationTimeoutSeconds={{ .stateManager.db.connectionPool.validationTimeoutSeconds }}"
           {{- end }}
           {{- if $.Values.tracing.endpoint }}
           - "--send-trace-to={{ $.Values.tracing.endpoint }}"
