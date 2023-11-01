@@ -38,6 +38,7 @@ import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
+import kotlin.streams.asStream
 
 
 class CryptoRekeyBusProcessorTests {
@@ -127,20 +128,21 @@ class CryptoRekeyBusProcessorTests {
     }
 
     /**
-     * The test checks the wrapping repo for a tenant and if it finds the key with oldKeyAlias.
+     * The test checks that if the wrapping repo of the particular tenant contains the wrapping key info with the correct
+     * oldKeyAlias that we want to re-wrap, it would run the rewrapWrappingKey function
+     *
+     * TenantId1 and tenantId3 only would return the wrapping key info containing the oldKeyAlias.
+     * Other tenants return null, therefore no rewrapWrappingKey function is called.
      */
     @Test
     fun `key rotation re-wraps only those keys where oldKeyAlias alias in the wrapping repo for the tenant`() {
         val oldKeyAlias = "Eris"
-        val tenantId1 = ShortHash.of(parseSecureHash("SHA-256:ABC12345678911111111111111")).toString()
-        val tenantId2 = ShortHash.of(parseSecureHash("SHA-256:BCC12345678911111111111111")).toString()
-        val tenantId3 = ShortHash.of(parseSecureHash("SHA-256:DEC12345678911111111111111")).toString()
-
         val newId = UUID.randomUUID()
         val wrappingKeyInfo = WrappingKeyInfo(
             1, "caesar", SecureHashUtils.randomBytes(), 1, "Eris", "alias1"
         )
         val savedWrappingKey = makeWrappingKeyEntity(newId, oldKeyAlias, wrappingKeyInfo)
+        // Mock the entity manager's functions used by findKeysWrappedByAlias
         val em1 = createEntityManager(listOf(savedWrappingKey))
         val repo1 = createWrappingRepo(em1, tenantId1)
 
@@ -193,9 +195,8 @@ class CryptoRekeyBusProcessorTests {
         on { createQuery(any(), eq(WrappingKeyEntity::class.java)) } doAnswer {
             mock {
                 on { setParameter(any<String>(), any()) } doReturn it
-                on { setMaxResults(any()) } doReturn it
                 // Here we set the empty list on a check, if the tenant's wrapping repo contains the key with oldKeyAlias alias.
-                on { resultList } doReturn wrappingKeyEntity
+                on { resultStream } doReturn wrappingKeyEntity.asSequence().asStream()
             }
         }
     }
@@ -218,9 +219,6 @@ class CryptoRekeyBusProcessorTests {
             val holdingIdentity = mock<HoldingIdentity> {
                 on { shortHash } doReturn ShortHash.of(identity)
             }
-//            virtualNodesInfos.add(mock<VirtualNodeInfo> {
-//                on { holdingIdentity } doReturn holdingIdentity
-//            })
 
             virtualNodesInfos.add(
                 VirtualNodeInfo(
@@ -240,7 +238,6 @@ class CryptoRekeyBusProcessorTests {
                     timestamp = Instant.now(),
                 )
             )
-
         }
         return virtualNodesInfos
     }
