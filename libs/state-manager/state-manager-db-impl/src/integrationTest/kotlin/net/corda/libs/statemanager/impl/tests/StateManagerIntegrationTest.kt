@@ -254,8 +254,7 @@ class StateManagerIntegrationTest {
     }
 
     @Test
-    @DisplayName(value = "optimistic locking checks for concurrent updates do not halt the entire batch")
-    fun optimisticLockingChecksForConcurrentUpdatesDoNotHaltTheEntireBatch() {
+    fun `optimistic locking prevents sequentially updating states with mismatched versions and does not halt entire batch`() {
         val totalCount = 20
         persistStateEntities(
             (1..totalCount),
@@ -364,7 +363,7 @@ class StateManagerIntegrationTest {
     }
 
     @Test
-    fun `optimistic locking checks for concurrent deletes do not halt the entire batch`() {
+    fun `optimistic locking prevents sequentially deleting states with mismatched versions and does not halt entire batch`() {
         val totalCount = 20
         persistStateEntities(
             (1..totalCount),
