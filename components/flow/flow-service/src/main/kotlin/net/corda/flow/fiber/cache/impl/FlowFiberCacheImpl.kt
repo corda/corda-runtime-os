@@ -80,7 +80,7 @@ class FlowFiberCacheImpl @Activate constructor(
             logger.debug { "Fiber found in cache: ${key.id}" }
             fiber.fiber
         } else {
-            logger.info("Fiber found in cache but at wrong suspendCount (${fiber.suspendCount} <-> $suspendCount): ${key.id}")
+            logger.warn("Fiber found in cache but at wrong suspendCount (${fiber.suspendCount} <-> $suspendCount): ${key.id}")
             null
         }
     }
