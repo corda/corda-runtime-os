@@ -18,9 +18,11 @@ internal class P2pEndpointVerifier(
             require(isNotEmpty()) { "No endpoint protocol was provided." }
             require(orderVerifier.isOrdered(this, 2)) { "Provided endpoint protocols are incorrectly numbered." }
         }
-        urlEntries.map { it.value }.forEach {
+        val urls = urlEntries.map { it.value }
+        urls.forEach {
             verifyP2pUrl(it)
         }
+        verifyUniqueUrls(urls)
     }
 
     private fun verifyP2pUrl(url: String) {
@@ -34,5 +36,17 @@ internal class P2pEndpointVerifier(
         require(uri.host != null) { "The host of the endpoint URL ('$url') was not specified or had an invalid value." }
         require(uri.port > 0) { "The port of the endpoint URL ('$url') was not specified or had an invalid value." }
         require(uri.userInfo == null) { "Endpoint URL ('$url') had user info specified, which must not be specified." }
+    }
+
+    private fun verifyUniqueUrls(urls: List<String>) {
+        val nonUniqueUrls = urls.map { URI.create(it) }
+            .groupingBy { it }
+            .eachCount()
+            .filter { it.value > 1 }
+            .keys
+
+        require(nonUniqueUrls.isEmpty()) {
+            "Duplicate connection URLs found: $nonUniqueUrls"
+        }
     }
 }
