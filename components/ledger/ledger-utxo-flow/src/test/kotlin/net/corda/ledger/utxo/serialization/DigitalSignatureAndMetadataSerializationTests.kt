@@ -15,7 +15,7 @@ import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import net.corda.application.impl.services.json.ProofOfActionSerialisationModule
+import net.corda.application.impl.services.json.DigitalSignatureAndMetadataSerialisationModule
 import net.corda.common.json.serializers.standardTypesModule
 import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.merkle.impl.MerkleProofProviderImpl
@@ -41,7 +41,7 @@ import java.util.*
 import kotlin.test.assertContains
 
 
-class ProofOfActionSerializationTests : UtxoLedgerTest() {
+class DigitalSignatureAndMetadataSerializationTests : UtxoLedgerTest() {
 
     private val signedTransaction: UtxoSignedTransactionInternal =
         UtxoTransactionBuilderImpl(utxoSignedTransactionFactory, mockNotaryLookup)
@@ -77,15 +77,13 @@ class ProofOfActionSerializationTests : UtxoLedgerTest() {
                 setTimeZone(TimeZone.getTimeZone("UTC"))
                 disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
                 registerModule(standardTypesModule())
-                // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 // Here is a partial System under test (SUT):
                 registerModule(serializersFromJsonMarshallingService)
             }
 
         private val mapper = mapperWithoutProofOfActionModule.copy().apply {
-            // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             // Here is System under test 'ProofOfActionSerialisationModule.module':
-            registerModule(ProofOfActionSerialisationModule(MerkleProofProviderImpl()).module)
+            registerModule(DigitalSignatureAndMetadataSerialisationModule(MerkleProofProviderImpl()).module)
         }
     }
 
