@@ -6,6 +6,7 @@ import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.messaging.mediator.FlowEventMediatorFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
+import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -58,10 +59,10 @@ class FlowExecutorImpl constructor(
 
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        // TODO private const val STATE_MANAGER = "flow.engine.state.manager"
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<FlowExecutor> { event, _ -> eventHandler(event) }
+    private var stateManager: StateManager? = null
     private var subscriptionRegistrationHandle: RegistrationHandle? = null
     private var multiSourceEventMediator: MultiSourceEventMediator<String, Checkpoint, FlowEvent>? = null
 
@@ -74,22 +75,14 @@ class FlowExecutorImpl constructor(
             // close the lifecycle registration first to prevent down being signaled
             subscriptionRegistrationHandle?.close()
             multiSourceEventMediator?.close()
+            stateManager?.stop()
 
-            // TODO Create as managed resource once issue with stateManager is fixed
-            val stateManager = // coordinator.createManagedResource(STATE_MANAGER) {
-                stateManagerFactory.create(stateManagerConfig)
-            // }
-
-            multiSourceEventMediator = flowEventMediatorFactory.create(
-                updatedConfigs,
-                messagingConfig,
-                stateManager,
-            )
-
+            stateManager = stateManagerFactory.create(stateManagerConfig)
+            multiSourceEventMediator = flowEventMediatorFactory.create(updatedConfigs, messagingConfig, stateManager!!)
             subscriptionRegistrationHandle = coordinator.followStatusChangesByName(
-                setOf(multiSourceEventMediator!!.subscriptionName)
+                setOf(multiSourceEventMediator!!.subscriptionName, stateManager!!.name)
             )
-
+            stateManager?.start()
             multiSourceEventMediator?.start()
         } catch (ex: Exception) {
             val reason = "Failed to configure the flow executor using '${config}'"
@@ -137,6 +130,7 @@ class FlowExecutorImpl constructor(
                 log.trace { "Flow executor is stopping..." }
                 subscriptionRegistrationHandle?.close()
                 multiSourceEventMediator?.close()
+                stateManager?.stop()
                 log.trace { "Flow executor stopped" }
             }
         }

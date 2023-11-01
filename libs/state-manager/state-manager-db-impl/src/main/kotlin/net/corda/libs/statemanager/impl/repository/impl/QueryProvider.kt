@@ -1,7 +1,6 @@
 package net.corda.libs.statemanager.impl.repository.impl
 
 import net.corda.libs.statemanager.api.MetadataFilter
-import net.corda.libs.statemanager.impl.model.v1.StateEntity
 
 /**
  * Provider for SQL queries executed by [StateRepositoryImpl].
@@ -13,15 +12,14 @@ interface QueryProvider {
 
     val createState: String
 
-    val findStatesByKey: String
-
     val deleteStatesByKey: String
 
     val findStatesUpdatedBetween: String
 
-    fun updateStates(states: Collection<StateEntity>): String
+    fun updateStates(size: Int): String
 
-    // TODO-[CORE-17025]: make below methods regular queries with parameters instead of embedding the filter value.
+    fun findStatesByKey(size: Int): String
+
     fun findStatesByMetadataMatchingAll(filters: Collection<MetadataFilter>): String
 
     fun findStatesByMetadataMatchingAny(filters: Collection<MetadataFilter>): String
