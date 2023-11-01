@@ -26,7 +26,6 @@ import net.corda.schema.configuration.MessagingConfig
 import net.corda.taskmanager.TaskManager
 import net.corda.test.util.waitWhile
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.atLeast
