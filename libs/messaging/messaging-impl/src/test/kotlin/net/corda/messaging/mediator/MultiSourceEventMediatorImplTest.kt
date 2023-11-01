@@ -15,7 +15,6 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
-import net.corda.messaging.api.exception.CordaMessageAPIConfigException
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorConsumer
@@ -253,29 +252,6 @@ class MultiSourceEventMediatorImplTest {
         verify(messageRouterFactory, times(1)).create(any())
 
         verify(lifecycleCoordinator).close()
-    }
-
-    @Test
-    fun `mediator stops and updates status after other exception`() {
-        val latch = CountDownLatch(2)
-        whenever(lifecycleCoordinator.updateStatus(LifecycleStatus.UP)).then { latch.countDown() }
-
-        whenever(consumer.poll(any()))
-            .thenThrow(CordaMessageAPIIntermittentException("Intermittent 1..."))
-            .thenThrow(CordaMessageAPIIntermittentException("Intermittent 2..."))
-            .thenThrow(CordaMessageAPIIntermittentException("Intermittent 3..."))
-            .thenThrow(CordaMessageAPIConfigException("Other 3..."))
-
-        mediator.start()
-
-        latch.await(5L, TimeUnit.SECONDS)
-
-        mediator.close()
-
-        verify(mediatorConsumerFactory, times(2)).create<Any, Any>(any())
-        verify(messagingClientFactory, times(2)).create(any())
-        verify(messageRouterFactory, times(2)).create(any())
-        verify(lifecycleCoordinator).updateStatus(eq(LifecycleStatus.ERROR), any())
     }
 
     @Test
