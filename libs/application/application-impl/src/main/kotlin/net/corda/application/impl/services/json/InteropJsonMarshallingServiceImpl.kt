@@ -52,7 +52,7 @@ class InteropJsonMarshallingServiceImpl
         module.addDeserializer(SecureHash::class.java, SecureHashDeserializer)
 
         // Interoperability
-        registerModule(ProofOfActionSerialisationModule(merkleProofProvider).module)
+        registerModule(DigitalSignatureAndMetadataSerialisationModule(merkleProofProvider).module)
         registerModule(JavaTimeModule())
 
         // Register Kotlin after resetting the AnnotationIntrospector.

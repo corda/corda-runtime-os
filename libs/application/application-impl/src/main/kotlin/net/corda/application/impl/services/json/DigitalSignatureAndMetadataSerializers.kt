@@ -21,7 +21,7 @@ import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.crypto.merkle.MerkleProofType
 import java.time.Instant
 
-class ProofOfActionSerialisationModule(private val merkleProofProvider: MerkleProofProvider) {
+class DigitalSignatureAndMetadataSerialisationModule(private val merkleProofProvider: MerkleProofProvider) {
     val module = SimpleModule().apply {
         addSerializer(DigitalSignatureAndMetadata::class.java, DigitalSignatureAndMetadataSerializer())
         addDeserializer(DigitalSignatureAndMetadata::class.java, DigitalSignatureAndMetadataDeserializer())
