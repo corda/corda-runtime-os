@@ -148,6 +148,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                 )
                 null
             }
+        }.map {
             it.join()?.close()
         }
         clients.forEach { it.close() }
