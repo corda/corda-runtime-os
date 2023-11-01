@@ -35,8 +35,9 @@ import org.mockito.kotlin.mock
 import java.sql.SQLException
 import java.time.Instant
 import java.util.UUID
-import javax.persistence.PersistenceException
-import org.junit.jupiter.api.assertDoesNotThrow
+import java.util.concurrent.Callable
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
 
 // TODO-[CORE-16663]: make database provider pluggable
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -300,6 +301,48 @@ class StateManagerIntegrationTest {
         )
     }
 
+    @Test
+    fun `optimistic locking ensures no double updates across threads`() {
+        val totalStates = 100
+        val numThreads = 10
+        val sharedStatesPerThread = 5
+
+        persistStateEntities(
+            (1..totalStates),
+            { _, _ -> State.VERSION_INITIAL_VALUE },
+            { i, _ -> "existingState_$i" },
+            { i, _ -> """{"k1": "v$i", "k2": $i}""" }
+        )
+
+        val allKeys = (1..totalStates).map { buildStateKey(it) }
+        val states = stateManager.get(allKeys).values.toList()
+
+        val groupsOfStates = divideStatesBetweenThreads(states, numThreads, sharedStatesPerThread)
+
+        val latch = CountDownLatch(numThreads)
+        val updaterJob: (states: List<State>) -> List<String> = { s ->
+            // try to make the call to update as contentious among threads as possible
+            val updatedStates = updateStateObjects(s, testUniqueId)
+            latch.countDown()
+            latch.await()
+            stateManager.update(updatedStates).map { it.key }
+        }
+
+        val executor = Executors.newFixedThreadPool(numThreads)
+        val futures = executor.invokeAll((0 until numThreads).map { threadGroup ->
+            Callable {
+                updaterJob(groupsOfStates[threadGroup])
+            }
+        })
+
+        val failedKeysPerThread = futures.map { it.get() }
+
+        val expectedFailedKeys = sharedStatesPerThread * numThreads
+        assertThat(failedKeysPerThread.flatten())
+            .hasSize(expectedFailedKeys)
+            .withFailMessage("Expected one failure for every state shared between another thread")
+    }
+
     @ValueSource(ints = [1, 5, 10, 20, 50])
     @ParameterizedTest(name = "can delete existing states (batch size: {0})")
     fun canDeleteExistingStates(stateCount: Int) {
@@ -321,8 +364,7 @@ class StateManagerIntegrationTest {
     }
 
     @Test
-    @DisplayName(value = "optimistic locking checks for concurrent deletes do not halt the entire batch")
-    fun optimisticLockingCheckForConcurrentDeletesDoesNotHaltTheEntireBatch() {
+    fun `optimistic locking checks for concurrent deletes do not halt the entire batch`() {
         val totalCount = 20
         persistStateEntities(
             (1..totalCount),
@@ -366,6 +408,26 @@ class StateManagerIntegrationTest {
             { _, key -> "u1_$key" },
             { _, key -> metadata("u1" to key) },
         )
+    }
+
+    @Test
+    fun `stateManager delete is idempotent, returns no keys when states are already deleted`() {
+        val totalCount = 20
+        persistStateEntities(
+            (1..totalCount),
+            { _, _ -> State.VERSION_INITIAL_VALUE },
+            { i, _ -> "existingState_$i" },
+            { i, _ -> """{"k1": "v$i", "k2": $i}""" }
+        )
+
+        val allKeys = (1..totalCount).map { buildStateKey(it) }
+        val persistedStates = stateManager.get(allKeys)
+
+        val failedKeysFirstDelete = stateManager.delete(persistedStates.values)
+        assertThat(failedKeysFirstDelete).isEmpty()
+
+        val failedKeysSecondDelete = stateManager.delete(persistedStates.values)
+        assertThat(failedKeysSecondDelete).isEmpty()
     }
 
     @Test
