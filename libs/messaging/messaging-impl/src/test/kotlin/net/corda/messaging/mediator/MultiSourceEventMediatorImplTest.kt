@@ -4,6 +4,7 @@ import java.time.Duration
 import java.util.LinkedList
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.thread
@@ -240,15 +241,17 @@ class MultiSourceEventMediatorImplTest {
 
     @Test
     fun `processEventWithRetries retries correct number of times`() {
-        val latch = CountDownLatch(1)
-        whenever(consumer.close()).then { latch.countDown() }
+        val barrier = CyclicBarrier(2)
+        whenever(consumer.close()).then {
+            barrier.await()
+        }
 
         whenever(consumer.poll(any()))
             .thenThrow(CordaMessageAPIIntermittentException("Intermittent"))
 
         mediator.start()
 
-        latch.await(5L, TimeUnit.SECONDS)
+        barrier.await(5L, TimeUnit.SECONDS)
 
         mediator.close()
 
@@ -305,11 +308,9 @@ class MultiSourceEventMediatorImplTest {
 
     @Test
     fun `mediator stops after interrupted exception`() {
-        val latch = CountDownLatch(1)
-
         mediator.start()
-
-        latch.await(5L, TimeUnit.SECONDS)
+        
+        Thread.sleep(1000)
 
         thread(name = "Interruption") {
             mediator.close()
