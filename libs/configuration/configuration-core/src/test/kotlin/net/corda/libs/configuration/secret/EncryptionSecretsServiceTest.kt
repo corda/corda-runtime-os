@@ -1,6 +1,5 @@
 package net.corda.libs.configuration.secret
 
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import net.corda.schema.configuration.ConfigKeys
 import org.assertj.core.api.Assertions.assertThat
