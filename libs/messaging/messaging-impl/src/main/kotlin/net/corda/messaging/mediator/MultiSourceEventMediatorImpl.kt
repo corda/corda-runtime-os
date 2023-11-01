@@ -94,123 +94,123 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         lifecycleCoordinator.close()
     }
 
-//    private fun run() {
-//        running.set(true)
-//        try {
-//            clients = mediatorComponentFactory.createClients(::onSerializationError)
-//            messageRouter = mediatorComponentFactory.createRouter(clients)
-//            lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
-//            config.consumerFactories.map { consumerFactory ->
-//                taskManager.executeLongRunningTask {
-//                    var attempts = 0
-//                    while (!stopped()) {
-//                        attempts++
-//                        var consumer: MediatorConsumer<K, E>? = null
-//                        try {
-//                            consumer = consumerFactory.create(
-//                                MediatorConsumerConfig(
-//                                    config.messageProcessor.keyClass,
-//                                    config.messageProcessor.eventValueClass,
-//                                    ::onSerializationError
-//                                )
-//                            )
-//                            consumer.subscribe()
-//                            while (!stopped()) {
-//                                processEventsWithRetries(consumer)
-//                            }
-//
-//                        } catch (exception: Exception) {
-//                            when (exception) {
-//                                is InterruptedException -> {
-//                                    log.info("Multi-Source Event Mediator is stopped. Closing consumers and clients.")
-//                                }
-//
-//                                is CordaMessageAPIIntermittentException -> {
-//                                    log.warn(
-//                                        "${exception.message} Attempts: $attempts. Recreating consumers and clients and retrying.",
-//                                        exception
-//                                    )
-//                                }
-//
-//                                else -> {
-//                                    log.error(
-//                                        "${exception.message} Attempts: $attempts. Closing Multi-Source Event Mediator.",
-//                                        exception
-//                                    )
-//                                }
-//                            }
-//                        } finally {
-//                            consumer?.close()
-//                        }
-//                    }
-//                }
-//            }.map {
-//                it.exceptionally {
-//                    stop()
-//                }
-//                it.join()
-//            }
-//        }
-//        catch (exception: Exception) {
-//            stop()
-//            lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, "Error: ${exception.message}")
-//            log.error(
-//                "${exception.message}. Closing Multi-Source Event Mediator.",
-//                exception
-//            )
-//        }
-//        finally {
-//            running.set(false)
-//            clients.forEach { it.close() }
-//        }
-//    }
-
     private fun run() {
         running.set(true)
-        var attempts = 0
+        try {
+            clients = mediatorComponentFactory.createClients(::onSerializationError)
+            messageRouter = mediatorComponentFactory.createRouter(clients)
+            lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+            config.consumerFactories.map { consumerFactory ->
+                taskManager.executeLongRunningTask {
+                    var attempts = 0
+                    while (!stopped()) {
+                        attempts++
+                        var consumer: MediatorConsumer<K, E>? = null
+                        try {
+                            consumer = consumerFactory.create(
+                                MediatorConsumerConfig(
+                                    config.messageProcessor.keyClass,
+                                    config.messageProcessor.eventValueClass,
+                                    ::onSerializationError
+                                )
+                            )
+                            consumer.subscribe()
+                            while (!stopped()) {
+                                processEventsWithRetries(consumer)
+                            }
 
-        while (!stopped()) {
-            attempts++
-            try {
-                consumers = mediatorComponentFactory.createConsumers(::onSerializationError)
-                clients = mediatorComponentFactory.createClients(::onSerializationError)
-                messageRouter = mediatorComponentFactory.createRouter(clients)
+                        } catch (exception: Exception) {
+                            when (exception) {
+                                is InterruptedException -> {
+                                    log.info("Multi-Source Event Mediator is stopped. Closing consumers and clients.")
+                                }
 
-                consumers.forEach { it.subscribe() }
-                lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+                                is CordaMessageAPIIntermittentException -> {
+                                    log.warn(
+                                        "${exception.message} Attempts: $attempts. Recreating consumers and clients and retrying.",
+                                        exception
+                                    )
+                                }
 
-                while (!stopped()) {
-                    processEventsWithRetries(consumers[0])
+                                else -> {
+                                    log.error(
+                                        "${exception.message} Attempts: $attempts. Closing Multi-Source Event Mediator.",
+                                        exception
+                                    )
+                                }
+                            }
+                        } finally {
+                            consumer?.close()
+                        }
+                    }
                 }
-
-            } catch (exception: Exception) {
-                when (exception) {
-                    is InterruptedException -> {
-                        log.info("Multi-Source Event Mediator is stopped. Closing consumers and clients.")
-                    }
-
-                    is CordaMessageAPIIntermittentException -> {
-                        log.warn(
-                            "${exception.message} Attempts: $attempts. Recreating consumers and clients and retrying.",
-                            exception
-                        )
-                    }
-
-                    else -> {
-                        log.error(
-                            "${exception.message} Attempts: $attempts. Closing Multi-Source Event Mediator.", exception
-                        )
-                        lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, "Error: ${exception.message}")
-                        stop()
-                    }
+            }.map {
+                it.exceptionally {
+                    stop()
                 }
-            } finally {
-                consumers.forEach { it.close() }
-                clients.forEach { it.close() }
+                it.join()
             }
         }
-        running.set(false)
+        catch (exception: Exception) {
+            stop()
+            lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, "Error: ${exception.message}")
+            log.error(
+                "${exception.message}. Closing Multi-Source Event Mediator.",
+                exception
+            )
+        }
+        finally {
+            running.set(false)
+            clients.forEach { it.close() }
+        }
     }
+
+//    private fun run() {
+//        running.set(true)
+//        var attempts = 0
+//
+//        while (!stopped()) {
+//            attempts++
+//            try {
+//                consumers = mediatorComponentFactory.createConsumers(::onSerializationError)
+//                clients = mediatorComponentFactory.createClients(::onSerializationError)
+//                messageRouter = mediatorComponentFactory.createRouter(clients)
+//
+//                consumers.forEach { it.subscribe() }
+//                lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+//
+//                while (!stopped()) {
+//                    processEventsWithRetries(consumers[0])
+//                }
+//
+//            } catch (exception: Exception) {
+//                when (exception) {
+//                    is InterruptedException -> {
+//                        log.info("Multi-Source Event Mediator is stopped. Closing consumers and clients.")
+//                    }
+//
+//                    is CordaMessageAPIIntermittentException -> {
+//                        log.warn(
+//                            "${exception.message} Attempts: $attempts. Recreating consumers and clients and retrying.",
+//                            exception
+//                        )
+//                    }
+//
+//                    else -> {
+//                        log.error(
+//                            "${exception.message} Attempts: $attempts. Closing Multi-Source Event Mediator.", exception
+//                        )
+//                        lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, "Error: ${exception.message}")
+//                        stop()
+//                    }
+//                }
+//            } finally {
+//                consumers.forEach { it.close() }
+//                clients.forEach { it.close() }
+//            }
+//        }
+//        running.set(false)
+//    }
 
     private fun onSerializationError(event: ByteArray) {
         // TODO CORE-17012 Subscription error handling (DLQ)
@@ -223,7 +223,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         var keepProcessing = true
         while (keepProcessing && !stopped()) {
             try {
-                pollAndProcessEvents()
+                pollAndProcessEvents(consumer)
                 keepProcessing = false
             } catch (exception: Exception) {
                 when (exception) {
@@ -270,9 +270,9 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 //        }
 //    }
 
-    private fun pollAndProcessEvents() {
+    private fun pollAndProcessEvents(consumer: MediatorConsumer<K, E>) {
         val startTimestamp = System.nanoTime()
-        val messages = pollConsumers()
+        val messages = consumer.poll(pollTimeout)
         if (messages.isNotEmpty()) {
             var groups = allocateGroups(messages.map { it.toRecord() })
             var states = stateManager.get(messages.map { it.key.toString() }.distinct())
@@ -370,7 +370,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                     listOf()
                 }
             }
-            commitOffsets()
+            consumer.syncCommitOffsets()
         }
         metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
     }
@@ -393,19 +393,19 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         return groups
     }
 
-    private fun pollConsumers(): List<CordaConsumerRecord<K, E>> {
-        return consumers.map { consumer ->
-            consumer.poll(pollTimeout)
-        }.flatten()
-    }
-
-    private fun commitOffsets() {
-        metrics.commitTimer.recordCallable {
-            consumers.map { consumer ->
-                consumer.syncCommitOffsets()
-            }
-        }
-    }
+//    private fun pollConsumers(): List<CordaConsumerRecord<K, E>> {
+//        return consumers.map { consumer ->
+//            consumer.poll(pollTimeout)
+//        }.flatten()
+//    }
+//
+//    private fun commitOffsets() {
+//        metrics.commitTimer.recordCallable {
+//            consumers.map { consumer ->
+//                consumer.syncCommitOffsets()
+//            }
+//        }
+//    }
 
     /**
      * Handle retries for event processing.
