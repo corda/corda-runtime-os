@@ -1,7 +1,6 @@
 package net.corda.messaging.mediator
 
 import java.time.Duration
-import java.util.LinkedList
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.CyclicBarrier
@@ -170,73 +169,6 @@ class MultiSourceEventMediatorImplTest {
             val command = invocation.getArgument<() -> Any>(0)
             CompletableFuture.supplyAsync(command)
         }
-    }
-
-    // @Test
-    // TODO Test temporarily disabled as it seems to be flaky
-    fun `mediator processes multiples events by key`() {
-        val events = (1..6).map { "event$it" }
-
-        val eventBatches = listOf(
-            listOf(
-                cordaConsumerRecords(KEY1, events[0]),
-                cordaConsumerRecords(KEY2, events[1]),
-                cordaConsumerRecords(KEY1, events[2]),
-            ),
-            listOf(
-                cordaConsumerRecords(KEY2, events[3]),
-                cordaConsumerRecords(KEY2, events[4]),
-                cordaConsumerRecords(KEY1, events[5]),
-            ),
-        )
-
-        val batchesQueue = LinkedList(eventBatches)
-        val latch = CountDownLatch(eventBatches.size)
-
-        whenever(consumer.poll(any())).thenAnswer {
-            Thread.sleep(10) // Sleep for 10 milliseconds before each poll
-            latch.countDown()
-            batchesQueue.poll() ?: emptyList<Any>()
-        }
-
-        val processorResult: ProcessorTask.Result<String, Int, Double> = mock()
-        val processorTask: ProcessorTask<String, Int, Double> = mock()
-        whenever(processorTask.persistedState).thenReturn(null)
-        whenever(processorResult.outputEvents).thenReturn(listOf(mock()))
-        whenever(processorResult.updatedState).thenReturn(mock())
-        whenever(processorResult.processorTask).thenReturn(processorTask)
-        whenever(processorResult.key).thenReturn(KEY1)
-        whenever(processorResult.outputEvents).thenReturn(emptyList())
-
-        val clientResult: ClientTask.Result<String, Int, Double> = mock()
-        whenever(clientResult.processorTask).thenReturn(processorTask)
-        whenever(clientResult.key).thenReturn(KEY1)
-
-        whenever(taskManager.executeShortRunningTask(any<() -> Any>())).thenAnswer {
-            val task = it.getArgument<() -> Any>(0)  // getting the first argument of the mocked method
-
-            when (val result = task.invoke()) {
-                is ProcessorTask.Result<*, *, *> -> CompletableFuture.completedFuture(processorResult)
-                is ClientTask.Result<*, *, *> -> CompletableFuture.completedFuture(clientResult)
-                else -> result
-            }
-        }
-
-        mediator.start()
-
-        latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-
-        mediator.close()
-
-        verify(mediatorConsumerFactory).create(any<MediatorConsumerConfig<Any, Any>>())
-        verify(messagingClientFactory).create(any<MessagingClientConfig>())
-        verify(messageRouterFactory).create(any<MessagingClientFinder>())
-        verify(messageProcessor, times(events.size)).onNext(anyOrNull(), any())
-        verify(stateManager, times(eventBatches.size)).get(any())
-        verify(stateManager, times(eventBatches.size)).create(any())
-        verify(consumer, atLeast(eventBatches.size)).poll(any())
-        verify(consumer, times(eventBatches.size)).syncCommitOffsets()
-        verify(messagingClient, times(events.size)).send(any())
     }
 
     @Test
