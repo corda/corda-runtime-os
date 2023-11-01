@@ -3,7 +3,6 @@ package net.corda.virtualnode.write.db.impl.writer
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.crypto.core.ShortHash
-import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
@@ -48,7 +47,7 @@ internal class VirtualNodeDbFactoryImpl(
      */
     override fun createVNodeDbs(
         holdingIdentityShortHash: ShortHash,
-        request: VirtualNodeCreateRequest
+        request: VirtualNodeConnectionStrings
     ): Map<VirtualNodeDbType, VirtualNodeDb> {
         with(request) {
             return mapOf(

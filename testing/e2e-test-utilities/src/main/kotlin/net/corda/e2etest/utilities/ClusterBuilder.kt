@@ -49,6 +49,15 @@ class ClusterBuilder {
         val vaultDmlConnection: String?
     )
 
+    data class VNodeChangeConnectionStringsBody(
+        val cryptoDdlConnection: String?,
+        val cryptoDmlConnection: String?,
+        val uniquenessDdlConnection: String?,
+        val uniquenessDmlConnection: String?,
+        val vaultDdlConnection: String?,
+        val vaultDmlConnection: String?
+    )
+
     data class ExternalDBConnectionParams(
         val cryptoDdlConnection: String? = null,
         val cryptoDmlConnection: String? = null,
@@ -257,6 +266,26 @@ class ClusterBuilder {
         return jacksonObjectMapper().writeValueAsString(body)
     }
 
+    @Suppress("LongParameterList")
+    private fun vNodeChangeConnectionStringsBody(
+        cryptoDdlConnection: String?,
+        cryptoDmlConnection: String?,
+        uniquenessDdlConnection: String?,
+        uniquenessDmlConnection: String?,
+        vaultDdlConnection: String?,
+        vaultDmlConnection: String?
+    ): String {
+        val body = VNodeChangeConnectionStringsBody(
+            cryptoDdlConnection,
+            cryptoDmlConnection,
+            uniquenessDdlConnection,
+            uniquenessDmlConnection,
+            vaultDdlConnection,
+            vaultDmlConnection
+        )
+        return jacksonObjectMapper().writeValueAsString(body)
+    }
+
     private fun registerMemberBody(
         customMetadata: Map<String, String>,
     ): String {
@@ -370,6 +399,24 @@ class ClusterBuilder {
                 externalDBConnectionParams?.vaultDmlConnection
             )
         )
+
+    @Suppress("LongParameterList")
+    fun vNodeChangeConnectionStrings(
+        holdingIdShortHash: String,
+        externalDBConnectionParams: ExternalDBConnectionParams? = null
+    ) =
+        put(
+            "/api/$REST_API_VERSION_PATH/virtualnode/$holdingIdShortHash",
+            vNodeChangeConnectionStringsBody(
+                externalDBConnectionParams?.cryptoDdlConnection,
+                externalDBConnectionParams?.cryptoDmlConnection,
+                externalDBConnectionParams?.uniquenessDdlConnection,
+                externalDBConnectionParams?.uniquenessDmlConnection,
+                externalDBConnectionParams?.vaultDdlConnection,
+                externalDBConnectionParams?.vaultDmlConnection
+            )
+        )
+
 
     /** Trigger upgrade of a virtual node's CPI to the given  */
     fun vNodeUpgrade(virtualNodeShortHash: String, targetCpiFileChecksum: String) =
