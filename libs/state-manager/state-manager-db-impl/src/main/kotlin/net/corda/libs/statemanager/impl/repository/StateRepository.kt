@@ -4,7 +4,6 @@ import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import java.sql.Connection
-import javax.persistence.EntityManager
 
 /**
  * Repository for entity operations on state manager entities.
@@ -26,20 +25,20 @@ interface StateRepository {
      * Create state into the persistence context.
      * Transaction should be controlled by the caller.
      *
-     * @param entityManager Used to interact with the state manager persistence context.
+     * @param connection The JDBC connection used to interact with the database.
      * @param state State entity to persist.
      */
-    fun create(entityManager: EntityManager, state: StateEntity)
+    fun create(connection: Connection, state: StateEntity)
 
     /**
      * Get states with the given keys.
      * Transaction should be controlled by the caller.
      *
-     * @param entityManager Used to interact with the state manager persistence context.
+     * @param connection The JDBC connection used to interact with the database.
      * @param keys Collection of state keys to get entities for.
      * @return Collection of states found.
      */
-    fun get(entityManager: EntityManager, keys: Collection<String>): Collection<StateEntity>
+    fun get(connection: Connection, keys: Collection<String>): Collection<StateEntity>
 
     /**
      * Update a collection of states within the database using JDBC connection.
@@ -56,57 +55,57 @@ interface StateRepository {
      * Delete states with the given keys from the persistence context.
      * Transaction should be controlled by the caller.
      *
-     * @param entityManager Used to interact with the state manager persistence context.
+     * @param connection The JDBC connection used to interact with the database.
      * @param states Collection of states to be deleted.
      * @return Collection of keys for states that could not be deleted due to optimistic locking check failure.
      */
-    fun delete(entityManager: EntityManager, states: Collection<StateEntity>): Collection<String>
+    fun delete(connection: Connection, states: Collection<StateEntity>): Collection<String>
 
     /**
      * Retrieve entities that were lastly updated between [IntervalFilter.start] and [IntervalFilter.finish].
      * Transaction should be controlled by the caller.
      *
-     * @param entityManager Used to interact with the state manager persistence context.
+     * @param connection The JDBC connection used to interact with the database.
      * @param interval Lower and upper bounds to use when filtering by last modified time.
      * @return Collection of states found.
      */
-    fun updatedBetween(entityManager: EntityManager, interval: IntervalFilter): Collection<StateEntity>
+    fun updatedBetween(connection: Connection, interval: IntervalFilter): Collection<StateEntity>
 
     /**
      * Filter states based on a list of custom single key filters over the [StateEntity.metadata], only states matching
      * all [filters] are returned.
      * Transaction should be controlled by the caller.
      *
-     * @param entityManager Used to interact with the state manager persistence context.
+     * @param connection The JDBC connection used to interact with the database.
      * @param filters List of filter to use when searching for entities.
      * @return Collection of states found.
      */
-    fun filterByAll(entityManager: EntityManager, filters: Collection<MetadataFilter>): Collection<StateEntity>
+    fun filterByAll(connection: Connection, filters: Collection<MetadataFilter>): Collection<StateEntity>
 
     /**
      * Filter states based on a list of custom single key filters over the [StateEntity.metadata], states matching
      * any of the [filters] are returned.
      * Transaction should be controlled by the caller.
      *
-     * @param entityManager Used to interact with the state manager persistence context.
+     * @param connection The JDBC connection used to interact with the database.
      * @param filters List of filter to use when searching for entities.
      * @return Collection of states found.
      */
-    fun filterByAny(entityManager: EntityManager, filters: Collection<MetadataFilter>): Collection<StateEntity>
+    fun filterByAny(connection: Connection, filters: Collection<MetadataFilter>): Collection<StateEntity>
 
     /**
      * Filter states based on a custom comparison operation to be executed against a single key within the metadata and
      * the last updated time.
      * Transaction should be controlled by the caller.
      *
-     * @param entityManager used to interact with the state manager persistence context.
+     * @param connection The JDBC connection used to interact with the database.
      * @param interval Lower and upper bound to use when filtering by time.
      * @param filter Filter to use when searching for entities.
      * @return Collection of states found.
      */
     @Suppress("LongParameterList")
     fun filterByUpdatedBetweenAndMetadata(
-        entityManager: EntityManager,
+        connection: Connection,
         interval: IntervalFilter,
         filter: MetadataFilter
     ): Collection<StateEntity>
