@@ -122,6 +122,8 @@ import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_MESSAGE_PERIOD_KEY_FOR_MGM_PEER
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY_FOR_MGM_PEER
 
 class P2PLayerEndToEndTest {
 
@@ -516,6 +518,8 @@ class P2PLayerEndToEndTest {
                 .withValue(MAX_REPLAYING_MESSAGES_PER_PEER, ConfigValueFactory.fromAnyRef(100))
                 .withValue(HEARTBEAT_MESSAGE_PERIOD_KEY, ConfigValueFactory.fromAnyRef(Duration.ofSeconds(2)))
                 .withValue(SESSION_TIMEOUT_KEY, ConfigValueFactory.fromAnyRef(Duration.ofSeconds(10)))
+                .withValue(HEARTBEAT_MESSAGE_PERIOD_KEY_FOR_MGM_PEER, ConfigValueFactory.fromAnyRef(Duration.ofSeconds(60)))
+                .withValue(SESSION_TIMEOUT_KEY_FOR_MGM_PEER, ConfigValueFactory.fromAnyRef(Duration.ofSeconds(300)))
                 .withValue(SESSIONS_PER_PEER_KEY, ConfigValueFactory.fromAnyRef(4))
                 .withValue(SESSION_REFRESH_THRESHOLD_KEY, ConfigValueFactory.fromAnyRef(432000))
                 .withValue(

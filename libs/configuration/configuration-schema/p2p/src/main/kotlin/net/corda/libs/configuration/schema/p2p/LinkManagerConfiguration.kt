@@ -10,6 +10,8 @@ class LinkManagerConfiguration {
         const val MAX_REPLAYING_MESSAGES_PER_PEER = "maxReplayingMessages"
         const val HEARTBEAT_MESSAGE_PERIOD_KEY = "heartbeatMessagePeriod"
         const val SESSION_TIMEOUT_KEY = "sessionTimeout"
+        const val HEARTBEAT_MESSAGE_PERIOD_KEY_FOR_MGM_PEER = "heartbeatMessagePeriodForMgmPeer"
+        const val SESSION_TIMEOUT_KEY_FOR_MGM_PEER = "sessionTimeoutForMgmPeer"
         const val SESSIONS_PER_PEER_KEY = "sessionsPerPeer"
         const val REPLAY_ALGORITHM_KEY = "replayAlgorithm"
         const val REVOCATION_CHECK_KEY = "revocationCheck.mode"

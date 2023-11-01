@@ -1,6 +1,7 @@
 package net.corda.p2p.linkmanager.delivery
 
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -8,6 +9,7 @@ import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -71,7 +73,8 @@ internal class InMemorySessionReplayer(
         val message: Any,
         val sessionId: String,
         val sessionCounterparties: SessionManager.SessionCounterparties,
-        val sentSessionMessageCallback: (counterparties: SessionManager.SessionCounterparties, sessionId: String) -> Unit
+        val sentSessionMessageCallback:
+            (counterparties: SessionManager.SessionCounterparties, sessionId: String, isPartyMgm: Boolean) -> Unit
     )
 
     fun addMessageForReplay(
@@ -163,10 +166,17 @@ internal class InMemorySessionReplayer(
             networkType
         )
         logger.debug { "Replaying session message ${message.payload.javaClass} for session ${messageReplay.sessionId}." }
+        val senderIsMgm = membershipGroupReaderProvider.lookup(
+            messageReplay.sessionCounterparties.ourId,
+            messageReplay.sessionCounterparties.ourId,
+            MembershipStatusFilter.ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING
+        )?.isMgm ?: false
+
         publisher.publish(listOf(Record(LINK_OUT_TOPIC, LinkManager.generateKey(), message)))
         messageReplay.sentSessionMessageCallback(
             messageReplay.sessionCounterparties,
-            messageReplay.sessionId
+            messageReplay.sessionId,
+            senderIsMgm || destinationMemberInfo.isMgm
         )
     }
 }

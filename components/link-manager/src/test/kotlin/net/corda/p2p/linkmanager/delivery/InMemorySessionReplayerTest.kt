@@ -117,7 +117,7 @@ class InMemorySessionReplayerTest {
         ).generateInitiatorHello()
 
         setRunning()
-        val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, SESSION_COUNTERPARTIES) { _,_ -> }
+        val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, SESSION_COUNTERPARTIES) { _,_,_ -> }
         replayer.addMessageForReplay(id, messageReplay, SESSION_COUNTERPARTIES)
         @Suppress("UNCHECKED_CAST")
         verify(replayScheduler.constructed().last()
@@ -166,9 +166,12 @@ class InMemorySessionReplayerTest {
         setRunning()
         var sessionId: String? = null
         var counterparties: SessionManager.SessionCounterparties? = null
-        val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, SESSION_COUNTERPARTIES) { key, callbackId  ->
+        var isMgmInCallback: Boolean? = null
+        val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, SESSION_COUNTERPARTIES)
+        { key, callbackId, isMgm  ->
             counterparties = key
             sessionId = callbackId
+            isMgmInCallback = isMgm
         }
         replayCallback(messageReplay, "foo-bar")
 
@@ -180,6 +183,7 @@ class InMemorySessionReplayerTest {
         assertThat(counterparties!!.ourId).isEqualTo(US)
         assertThat(counterparties!!.counterpartyId).isEqualTo(COUNTER_PARTY)
         assertThat(sessionId).isEqualTo(id)
+        assertThat(isMgmInCallback).isFalse
     }
 
     @Test
@@ -202,7 +206,7 @@ class InMemorySessionReplayerTest {
         ).generateInitiatorHello()
 
         setRunning()
-        val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, SESSION_COUNTERPARTIES) { _,_ -> }
+        val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, SESSION_COUNTERPARTIES) { _,_,_ -> }
         replayCallback(messageReplay, "foo-bar")
 
         loggingInterceptor.assertSingleWarning("Attempted to replay a session negotiation message (type " +
@@ -227,7 +231,7 @@ class InMemorySessionReplayerTest {
         ).generateInitiatorHello()
 
         setRunning()
-        val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, SESSION_COUNTERPARTIES) { _,_ -> }
+        val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, SESSION_COUNTERPARTIES) { _,_,_ -> }
         replayCallback(messageReplay, "foo-bar")
 
         loggingInterceptor.assertSingleWarningContains("Bad group policy.")
@@ -261,7 +265,7 @@ class InMemorySessionReplayerTest {
         ).generateInitiatorHello()
 
         setRunning()
-        val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, SESSION_COUNTERPARTIES) { _,_ -> }
+        val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, SESSION_COUNTERPARTIES) { _,_,_ -> }
         replayCallback(messageReplay, "foo-bar")
 
         loggingInterceptor.assertSingleWarning("Attempted to replay a session negotiation message (type " +
@@ -291,7 +295,7 @@ class InMemorySessionReplayerTest {
         ).generateInitiatorHello()
 
         setRunning()
-        val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, SESSION_COUNTERPARTIES) { _,_ -> }
+        val messageReplay = InMemorySessionReplayer.SessionMessageReplay(helloMessage, id, SESSION_COUNTERPARTIES) { _,_,_ -> }
         replayCallback(messageReplay, "foo-bar")
 
         loggingInterceptor.assertWarnings(
@@ -326,7 +330,7 @@ class InMemorySessionReplayerTest {
         assertThrows<IllegalStateException> {
             replayer.addMessageForReplay(
                 "",
-                InMemorySessionReplayer.SessionMessageReplay(helloMessage, "", SESSION_COUNTERPARTIES) {_, _->},
+                InMemorySessionReplayer.SessionMessageReplay(helloMessage, "", SESSION_COUNTERPARTIES) { _,_,_ -> },
                 SESSION_COUNTERPARTIES
             )
         }

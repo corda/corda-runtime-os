@@ -25,6 +25,9 @@ import org.mockito.kotlin.mock
 import java.security.KeyPairGenerator
 import java.security.MessageDigest
 import java.security.PublicKey
+import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
+import net.corda.utilities.parseOrNull
+import net.corda.v5.membership.MGMContext
 
 fun mockMembersAndGroups(
     vararg members: HoldingIdentity
@@ -37,6 +40,7 @@ fun mockMemberInfo(
     endPoint: String,
     publicKey: PublicKey,
     serialNumber: Long = 1,
+    isMgm: Boolean = false
 ): MemberInfo {
     val endpoints = mock<EndpointInfo> {
         on { url } doReturn endPoint
@@ -47,10 +51,18 @@ fun mockMemberInfo(
         on { parseList(ENDPOINTS, EndpointInfo::class.java) } doReturn listOf(endpoints)
         on { parseList(SESSION_KEYS, PublicKey::class.java) } doReturn listOf(publicKey)
     }
+    val mgmContext = mock<MGMContext> {
+        on { parseOrNull(IS_MGM, Boolean::class.java) } doReturn if (isMgm) {
+            true
+        } else {
+            null
+        }
+    }
     return mock {
         on { memberProvidedContext } doReturn context
         on { name } doReturn holdingIdentity.x500Name
         on { serial } doReturn serialNumber
+        on { mgmProvidedContext } doReturn mgmContext
     }
 }
 

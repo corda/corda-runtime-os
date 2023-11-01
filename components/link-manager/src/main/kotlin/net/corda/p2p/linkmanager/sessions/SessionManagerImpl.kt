@@ -95,6 +95,7 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReentrantReadWriteLock
+import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.p2p.crypto.protocol.api.InvalidSelectedModeError
 import net.corda.p2p.crypto.protocol.api.NoCommonModeError
@@ -573,8 +574,17 @@ internal class SessionManagerImpl(
         }
 
         val linkOutMessages = mutableListOf<Pair<String, LinkOutMessage>>()
+        val senderIsMgm = membershipGroupReaderProvider.lookup(
+            sessionCounterparties.ourId,
+            sessionCounterparties.ourId,
+            MembershipStatusFilter.ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING
+        )?.isMgm ?: false
         for (message in messages) {
-            heartbeatManager.sessionMessageSent(sessionCounterparties, message.first.sessionId)
+            heartbeatManager.sessionMessageSent(
+                sessionCounterparties,
+                message.first.sessionId,
+                senderIsMgm || responderMemberInfo.isMgm
+            )
             linkOutMessages.add(
                 Pair(
                     message.first.sessionId,
@@ -673,9 +683,17 @@ internal class SessionManagerImpl(
             logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, ourIdentityInfo.holdingIdentity)
             return null
         }
+
+        val senderIsMgm = membershipGroupReaderProvider.lookup(
+            ourIdentityInfo.holdingIdentity,
+            ourIdentityInfo.holdingIdentity,
+            MembershipStatusFilter.ACTIVE_OR_SUSPENDED_IF_PRESENT_OR_PENDING
+        )?.isMgm ?: false
+
         heartbeatManager.sessionMessageSent(
             sessionInfo,
             message.header.sessionId,
+            senderIsMgm || responderMemberInfo.isMgm
         )
 
         return createLinkOutMessage(payload, sessionInfo.ourId, responderMemberInfo, p2pParams.networkType)
@@ -980,7 +998,9 @@ internal class SessionManagerImpl(
         @VisibleForTesting
         internal data class HeartbeatManagerConfig(
             val heartbeatPeriod: Duration,
-            val sessionTimeout: Duration
+            val sessionTimeout: Duration,
+            val heartbeatPeriodForMgmPeer: Duration,
+            val sessionTimeoutForMgmPeer: Duration
         )
 
         @VisibleForTesting
@@ -1006,7 +1026,9 @@ internal class SessionManagerImpl(
         private fun fromConfig(config: Config): HeartbeatManagerConfig {
             return HeartbeatManagerConfig(
                 Duration.ofMillis(config.getLong(LinkManagerConfiguration.HEARTBEAT_MESSAGE_PERIOD_KEY)),
-                Duration.ofMillis(config.getLong(LinkManagerConfiguration.SESSION_TIMEOUT_KEY))
+                Duration.ofMillis(config.getLong(LinkManagerConfiguration.SESSION_TIMEOUT_KEY)),
+                Duration.ofMillis(config.getLong(LinkManagerConfiguration.HEARTBEAT_MESSAGE_PERIOD_KEY_FOR_MGM_PEER)),
+                Duration.ofMillis(config.getLong(LinkManagerConfiguration.SESSION_TIMEOUT_KEY_FOR_MGM_PEER)),
             )
         }
 
@@ -1044,12 +1066,14 @@ internal class SessionManagerImpl(
         /**
          * For each Outbound Session we track the following.
          * [identityData]: The source and destination identities for this Session.
+         * [isDestinationMgm]: Is the destination identity an MGM.
          * [lastSendTimestamp]: The last time we sent a message using this Session.
          * [lastAckTimestamp]: The last time a message we sent via this Session was acknowledged by the other side.
          * [sendingHeartbeats]: If true we send heartbeats to the counterparty (this happens after the session established).
          */
         class TrackedOutboundSession(
             val identityData: SessionCounterparties,
+            val isDestinationMgm: Boolean,
             @Volatile
             var lastSendTimestamp: Long,
             @Volatile
@@ -1076,11 +1100,12 @@ internal class SessionManagerImpl(
             trackedOutboundSessions.remove(sessionId)
         }
 
-        fun sessionMessageSent(counterparties: SessionCounterparties, sessionId: String) {
+        fun sessionMessageSent(counterparties: SessionCounterparties, sessionId: String, isCounterpartyMgm: Boolean) {
             dominoTile.withLifecycleLock {
                 if (!isRunning) {
                     throw IllegalStateException("A session message was added before the HeartbeatManager was started.")
                 }
+                val sessionTimeout = config.getSessionTimeOut(isCounterpartyMgm)
                 trackedOutboundSessions.compute(sessionId) { _, initialTrackedSession ->
                     if (initialTrackedSession != null) {
                         initialTrackedSession.lastSendTimestamp = timeStamp()
@@ -1088,10 +1113,10 @@ internal class SessionManagerImpl(
                     } else {
                         executorService.schedule(
                             { outboundSessionTimeout(counterparties, sessionId) },
-                            config.get().sessionTimeout.toMillis(),
+                            sessionTimeout,
                             TimeUnit.MILLISECONDS
                         )
-                        TrackedOutboundSession(counterparties, timeStamp(), timeStamp())
+                        TrackedOutboundSession(counterparties, isCounterpartyMgm, timeStamp(), timeStamp())
                     }
                 }
             }
@@ -1104,9 +1129,10 @@ internal class SessionManagerImpl(
                 }
                 trackedOutboundSessions.computeIfPresent(session.sessionId) { _, trackedSession ->
                     if (!trackedSession.sendingHeartbeats) {
+                        val heartbeatPeriod = config.getHeartbeatPeriod(trackedSession.isDestinationMgm)
                         executorService.schedule(
                             { sendHeartbeat(trackedSession.identityData, session) },
-                            config.get().heartbeatPeriod.toMillis(),
+                            heartbeatPeriod,
                             TimeUnit.MILLISECONDS
                         )
                         trackedSession.sendingHeartbeats = true
@@ -1172,7 +1198,7 @@ internal class SessionManagerImpl(
         private fun outboundSessionTimeout(counterparties: SessionCounterparties, sessionId: String) {
             val sessionInfo = trackedOutboundSessions[sessionId] ?: return
             val timeSinceLastAck = timeStamp() - sessionInfo.lastAckTimestamp
-            val sessionTimeoutMs = config.get().sessionTimeout.toMillis()
+            val sessionTimeoutMs = config.getSessionTimeOut(sessionInfo.isDestinationMgm)
             if (timeSinceLastAck >= sessionTimeoutMs) {
                 logger.info(
                     "Outbound session $sessionId (local=${counterparties.ourId}, remote=" +
@@ -1217,10 +1243,10 @@ internal class SessionManagerImpl(
                 logger.info("Stopped sending heartbeats for session (${session.sessionId}), which expired.")
                 return
             }
-            val config = config.get()
+            val heartbeatPeriod = config.getHeartbeatPeriod(sessionInfo.isDestinationMgm)
 
             val timeSinceLastSend = timeStamp() - sessionInfo.lastSendTimestamp
-            if (timeSinceLastSend >= config.heartbeatPeriod.toMillis()) {
+            if (timeSinceLastSend >= heartbeatPeriod) {
                 logger.trace {
                     "Sending heartbeat message between ${counterparties.ourId} (our Identity) and " +
                         "${counterparties.counterpartyId}."
@@ -1234,13 +1260,13 @@ internal class SessionManagerImpl(
                 )
                 executorService.schedule(
                     { sendHeartbeat(counterparties, session) },
-                    config.heartbeatPeriod.toMillis(),
+                    heartbeatPeriod,
                     TimeUnit.MILLISECONDS
                 )
             } else {
                 executorService.schedule(
                     { sendHeartbeat(counterparties, session) },
-                    config.heartbeatPeriod.toMillis() - timeSinceLastSend,
+                    heartbeatPeriod - timeSinceLastSend,
                     TimeUnit.MILLISECONDS
                 )
             }
@@ -1284,6 +1310,22 @@ internal class SessionManagerImpl(
 
         private fun timeStamp(): Long {
             return clock.instant().toEpochMilli()
+        }
+
+        private fun AtomicReference<HeartbeatManagerConfig>.getHeartbeatPeriod(isDestinationMgm: Boolean): Long {
+            return if (isDestinationMgm) {
+                this.get().heartbeatPeriodForMgmPeer.toMillis()
+            } else {
+                this.get().heartbeatPeriod.toMillis()
+            }
+        }
+
+        private fun AtomicReference<HeartbeatManagerConfig>.getSessionTimeOut(isDestinationMgm: Boolean): Long {
+            return if (isDestinationMgm) {
+                this.get().sessionTimeoutForMgmPeer.toMillis()
+            } else {
+                this.get().sessionTimeout.toMillis()
+            }
         }
 
         private fun recordSessionTimeoutMetric(source: HoldingIdentity, destination: HoldingIdentity) {

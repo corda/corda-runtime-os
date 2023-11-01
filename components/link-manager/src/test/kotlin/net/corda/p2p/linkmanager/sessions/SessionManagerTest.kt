@@ -120,11 +120,15 @@ class SessionManagerTest {
         private val sixDaysInMillis = 6.days.toMillis()
         private val configWithHeartbeat = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
             Duration.ofMillis(100),
+            Duration.ofMillis(500),
+            Duration.ofMillis(100),
             Duration.ofMillis(500)
         )
         private val configNoHeartbeat = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
             Duration.ofMillis(sixDaysInMillis),
-            Duration.ofMillis(sixDaysInMillis)
+            Duration.ofMillis(sixDaysInMillis),
+            Duration.ofMillis(sixDaysInMillis),
+            Duration.ofMillis(sixDaysInMillis),
         )
 
         private val keyGenerator = KeyPairGenerator.getInstance("EC", BouncyCastleProvider())
@@ -2038,6 +2042,8 @@ class SessionManagerTest {
     @Test
     fun `sessions that have been refreshed are not tracked by the heartbeat manager`() {
         val longTimePeriodConfigWithHeartbeat = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
+            Duration.ofDays(1),
+            Duration.ofDays(10),
             Duration.ofDays(1),
             Duration.ofDays(10)
         )
