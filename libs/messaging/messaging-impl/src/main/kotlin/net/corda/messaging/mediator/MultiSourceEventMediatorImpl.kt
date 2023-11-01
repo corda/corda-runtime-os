@@ -377,7 +377,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 
     private fun allocateGroups(events: List<Record<K, E>>): List<Map<K, List<Record<K, E>>>> {
         val groups = mutableListOf<MutableMap<K, List<Record<K, E>>>>()
-        val groupCountBasedOnEvents = events.size / 20
+        val groupCountBasedOnEvents = (events.size / 20).coerceAtLeast(1)
         val groupsCount = if (groupCountBasedOnEvents < config.threads) groupCountBasedOnEvents else config.threads
         for (i in 0 until groupsCount) {
             groups.add(mutableMapOf())
