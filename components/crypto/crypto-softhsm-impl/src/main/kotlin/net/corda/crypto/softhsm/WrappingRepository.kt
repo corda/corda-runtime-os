@@ -19,7 +19,7 @@ interface WrappingRepository : Closeable {
      * @param key The key material and metadata about version and algorithm.
      * @return The wrapping key that was persisted.
      */
-    fun saveKey(alias: String, key: WrappingKeyInfo): WrappingKeyInfo
+    fun saveKey(key: WrappingKeyInfo): WrappingKeyInfo
 
     /**
      * Update a wrapping key in the database
@@ -30,7 +30,7 @@ interface WrappingRepository : Closeable {
      *           otherwise it creates a new entry with random id.
      * @return The wrapping key that was persisted.
      */
-    fun saveKeyWithId(alias: String, key: WrappingKeyInfo, id: UUID?): WrappingKeyInfo
+    fun saveKeyWithId(key: WrappingKeyInfo, id: UUID?): WrappingKeyInfo
 
     /**
      * Find a wrapping key in the database

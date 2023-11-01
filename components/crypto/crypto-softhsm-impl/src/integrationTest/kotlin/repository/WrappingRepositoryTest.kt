@@ -33,7 +33,7 @@ class WrappingRepositoryTest : CryptoRepositoryTest() {
         val keyAlias = "save-key-${UUID.randomUUID()}"
         val repo = WrappingRepositoryImpl(emf, "test")
 
-        val savedKey = repo.saveKey(keyAlias, wrappingKeyInfo)
+        val savedKey = repo.saveKey(wrappingKeyInfo)
 
         val loadedKey = emf.createEntityManager().use {
             it
@@ -50,13 +50,12 @@ class WrappingRepositoryTest : CryptoRepositoryTest() {
     @ParameterizedTest
     @MethodSource("emfs")
     fun `saveKey duplicate alias should throw`(emf: EntityManagerFactory) {
-        val keyAlias = "save-key-${UUID.randomUUID()}"
         val repo = WrappingRepositoryImpl(emf, "test")
 
-        repo.saveKey(keyAlias, wrappingKeyInfo)
+        repo.saveKey(wrappingKeyInfo)
 
         assertThrows<PersistenceException> {
-            repo.saveKey(keyAlias, wrappingKeyInfo.copy(encodingVersion = 1234))
+            repo.saveKey(wrappingKeyInfo.copy(encodingVersion = 1234))
         }
     }
 
@@ -65,7 +64,7 @@ class WrappingRepositoryTest : CryptoRepositoryTest() {
     fun findKey(emf: EntityManagerFactory) {
         val keyAlias = "find-key-${UUID.randomUUID()}"
         val repo = WrappingRepositoryImpl(emf, "test")
-        repo.saveKey(keyAlias, wrappingKeyInfo)
+        repo.saveKey(wrappingKeyInfo)
 
         val loadedKey = repo.findKey(keyAlias)
 
@@ -83,10 +82,9 @@ class WrappingRepositoryTest : CryptoRepositoryTest() {
     @ParameterizedTest
     @MethodSource("emfs")
     fun `findKeyWithId returns the UUID and the key`(emf: EntityManagerFactory) {
-        val keyAlias = "find-key-${UUID.randomUUID()}"
         val repo = WrappingRepositoryImpl(emf, "test")
-        repo.saveKey(keyAlias, wrappingKeyInfo)
-        val loadedKeyAndId = repo.findKeyAndId(keyAlias)
+        repo.saveKey(wrappingKeyInfo)
+        val loadedKeyAndId = repo.findKeyAndId(wrappingKeyInfo.alias)
 
         assertThat(loadedKeyAndId).isNotNull()
         assertInstanceOf(UUID::class.java, loadedKeyAndId!!.first)
@@ -96,8 +94,6 @@ class WrappingRepositoryTest : CryptoRepositoryTest() {
     @ParameterizedTest
     @MethodSource("emfs")
     fun `saveKeyWithId with existing UUID updates the record`(emf: EntityManagerFactory) {
-        val keyAlias = "save-key-with-ID-${UUID.randomUUID()}"
-
         val wrappingKeyInfo2 = WrappingKeyInfo(
             encodingVersion = 234,
             algorithmName = "algo-234",
@@ -108,10 +104,10 @@ class WrappingRepositoryTest : CryptoRepositoryTest() {
         )
 
         val repo = WrappingRepositoryImpl(emf, "test")
-        repo.saveKey(keyAlias, wrappingKeyInfo)
-        val loadedKeyAndId = repo.findKeyAndId(keyAlias)
-        val updatedKey = repo.saveKeyWithId(keyAlias, wrappingKeyInfo2, loadedKeyAndId?.first)
-        val loadedKeyAndId2 = repo.findKeyAndId(keyAlias)
+        repo.saveKey(wrappingKeyInfo)
+        val loadedKeyAndId = repo.findKeyAndId(wrappingKeyInfo.alias)
+        val updatedKey = repo.saveKeyWithId(wrappingKeyInfo2, loadedKeyAndId?.first)
+        val loadedKeyAndId2 = repo.findKeyAndId(wrappingKeyInfo.alias)
 
         assertThat(updatedKey).isEqualTo(wrappingKeyInfo2)
         assertThat(loadedKeyAndId).isNotNull()

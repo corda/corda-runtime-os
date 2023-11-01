@@ -168,7 +168,7 @@ open class SoftCryptoService(
             )
         recoverable("createWrappingKey save key") {
             wrappingRepositoryFactory.create(tenantId).use {
-                it.saveKey(wrappingKeyAlias, wrappingKeyInfo)
+                it.saveKey(wrappingKeyInfo)
             }
         }
         logger.trace("Stored wrapping key alias $wrappingKeyAlias context ${context.toString()}")
@@ -590,7 +590,7 @@ open class SoftCryptoService(
                     parentKeyAlias = newParentKeyAlias,
                     generation = newGeneration)
                 check(newInfo.alias == wrappingKeyInfo.alias)
-                wrappingRepo.saveKeyWithId(targetAlias, newInfo, id)
+                wrappingRepo.saveKeyWithId(newInfo, id)
                 val readback2 = wrappingRepo.getKeyById(id)
                 check(readback2!!.alias == newInfo.alias)
                 check(readback2.generation == newInfo.generation)

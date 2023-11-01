@@ -58,7 +58,6 @@ class CryptoRekeyBusProcessor(
                 logger.info("Rewrapped ${wrappingKeyInfo.alias} in tenant ${tenantId} from "+
                         "${wrappingKeyInfo.parentKeyAlias} to ${request.newKeyAlias}; "+
                         "generation number now ${newGeneration}")
-
             }.count()
         }
         return emptyList()

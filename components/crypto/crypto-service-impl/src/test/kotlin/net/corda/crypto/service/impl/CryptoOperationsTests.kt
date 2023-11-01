@@ -666,7 +666,7 @@ class CryptoOperationsTests {
         val alias = UUID.randomUUID().toString()
         val myFactory = TestServicesFactory()
         val rsaScheme = myFactory.schemeMetadata.findKeyScheme(RSA_CODE_NAME)
-        myFactory.wrappingRepository.saveKey(alias, info(myFactory))
+        myFactory.wrappingRepository.saveKey(info(myFactory))
         return assertThrows<java.lang.IllegalArgumentException> {
             myFactory.cryptoService.generateKeyPair(
                 tenantId,

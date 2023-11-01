@@ -456,8 +456,8 @@ class SoftCryptoServiceOperationsTests {
         val key2Missing = wrappingKeyCache.getIfPresent(alias2)
         assertNull(key2Missing)
 
-        clusterWrappingRepository.saveKey(alias1, info1)
-        clusterWrappingRepository.saveKey(alias2, info2)
+        clusterWrappingRepository.saveKey(info1)
+        clusterWrappingRepository.saveKey(info2)
 
         val key1StillMissing = wrappingKeyCache.getIfPresent(alias1)
         assertNull(key1StillMissing)
@@ -486,7 +486,7 @@ class SoftCryptoServiceOperationsTests {
     fun `generateKeyPair should throw IllegalArgumentException when encoding version is not recognised`() {
         val alias = UUID.randomUUID().toString()
         clusterWrappingRepository.saveKey(
-            alias, WrappingKeyInfo(
+            WrappingKeyInfo(
                 WRAPPING_KEY_ENCODING_VERSION + 1,
                 knownWrappingKey.algorithm,
                 rootWrappingKey.wrap(knownWrappingKey),
@@ -504,7 +504,7 @@ class SoftCryptoServiceOperationsTests {
     fun `generateKeyPair should throw IllegalArgumentException when key algorithm does not match master key`() {
         val alias = UUID.randomUUID().toString()
         clusterWrappingRepository.saveKey(
-            alias, WrappingKeyInfo(
+            WrappingKeyInfo(
                 WRAPPING_KEY_ENCODING_VERSION,
                 knownWrappingKey.algorithm + "!",
                 rootWrappingKey.wrap(knownWrappingKey),
@@ -535,7 +535,7 @@ class SoftCryptoServiceOperationsTests {
         val unknownAlias = UUID.randomUUID().toString()
         assertNull(clusterWrappingRepository.findKey(storeAlias))
         assertNull(clusterWrappingRepository.findKey(unknownAlias))
-        clusterWrappingRepository.saveKey(storeAlias, WrappingKeyInfo(1, "t", byteArrayOf(), 1, "Enoch", "k1"))
+        clusterWrappingRepository.saveKey(WrappingKeyInfo(1, "t", byteArrayOf(), 1, "Enoch", storeAlias))
         assertNotNull(clusterWrappingRepository.findKey(storeAlias))
         assertNull(clusterWrappingRepository.findKey(unknownAlias))
     }

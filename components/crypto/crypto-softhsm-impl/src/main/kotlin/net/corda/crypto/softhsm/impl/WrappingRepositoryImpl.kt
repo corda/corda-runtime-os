@@ -11,7 +11,6 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
-import kotlin.streams.asSequence
 
 class WrappingRepositoryImpl(
     private val entityManagerFactory: EntityManagerFactory,
@@ -24,14 +23,14 @@ class WrappingRepositoryImpl(
 
     override fun close() = entityManagerFactory.close()
 
-    override fun saveKeyWithId(alias: String, key: WrappingKeyInfo, id: UUID?): WrappingKeyInfo {
+    override fun saveKeyWithId(key: WrappingKeyInfo, id: UUID?): WrappingKeyInfo {
         val r = entityManagerFactory.createEntityManager().use {
             it.transaction {
                 val r2 = it.merge(
                     WrappingKeyEntity(
                         id = id ?: UUID.randomUUID(),
                         generation = key.generation,
-                        alias = alias,
+                        alias = key.alias,
                         created = Instant.now(),
                         rotationDate = LocalDate.parse("9999-12-31").atStartOfDay().toInstant(ZoneOffset.UTC),
                         encodingVersion = key.encodingVersion,
@@ -44,7 +43,7 @@ class WrappingRepositoryImpl(
                 check(r2.generation == key.generation)
                 r2
             }.toDto().also {
-                logger.info("Storing wrapping key with alias $alias in tenant $tenantId")
+                logger.info("Storing wrapping key with alias ${key.alias} in tenant $tenantId")
             }
         }
         if (id!=null)
@@ -53,8 +52,8 @@ class WrappingRepositoryImpl(
     }
 
 
-    override fun saveKey(alias: String, key: WrappingKeyInfo): WrappingKeyInfo =
-        saveKeyWithId(alias, key, null)
+    override fun saveKey(key: WrappingKeyInfo): WrappingKeyInfo =
+        saveKeyWithId(key, null)
 
     override fun findKey(alias: String): WrappingKeyInfo? = findKeyAndId(alias)?.second
     override fun findKeyAndId(alias: String): Pair<UUID, WrappingKeyInfo>? =

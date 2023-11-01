@@ -47,7 +47,7 @@ class WrappingRepositoryImplTests {
             },
             "test"
         )
-        val savedKey = repo.saveKey("a", wrappingKeyInfo)
+        val savedKey = repo.saveKey(wrappingKeyInfo)
         verify(em).merge(argThat<WrappingKeyEntity>{
                     this.encodingVersion == 1 &&
                     this.algorithmName == "caesar" &&
@@ -76,7 +76,7 @@ class WrappingRepositoryImplTests {
             "test"
         )
         val id = UUID.randomUUID()
-        val savedKey1 = repo.saveKeyWithId("a", wrappingKeyInfo, id)
+        val savedKey1 = repo.saveKeyWithId(wrappingKeyInfo, id)
         verify(em).merge(argThat<WrappingKeyEntity>{
             this.encodingVersion == 1 &&
                     this.algorithmName == "caesar" &&
@@ -87,7 +87,7 @@ class WrappingRepositoryImplTests {
         })
         assertThat(savedKey1).isEqualTo(wrappingKeyInfo)
 
-        val savedKey2 = repo.saveKeyWithId("a", wrappingKeyInfo, null)
+        val savedKey2 = repo.saveKeyWithId(wrappingKeyInfo, null)
         verify(em).merge(argThat<WrappingKeyEntity>{
             this.encodingVersion == 1 &&
                     this.algorithmName == "caesar" &&
