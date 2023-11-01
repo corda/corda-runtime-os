@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.databind.node.TextNode
 import net.corda.libs.configuration.secret.MaskedSecretsLookupService
 import net.corda.schema.configuration.ConfigKeys
-import org.slf4j.LoggerFactory
 
 /**
  *
