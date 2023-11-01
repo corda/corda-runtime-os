@@ -135,10 +135,8 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                             }
                         }
                     }
-                    finally {
-                        consumer?.close()
-                    }
                 }
+                consumer
             }
         }.map {
             it.exceptionally { exception ->
@@ -148,11 +146,13 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                     "${exception.message}. Closing Multi-Source Event Mediator.",
                     exception
                 )
+                null
             }
-            it.join()
+            it.join()?.close()
         }
-        running.set(false)
         clients.forEach { it.close() }
+        lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+        running.set(false)
     }
 
     private fun onSerializationError(event: ByteArray) {
