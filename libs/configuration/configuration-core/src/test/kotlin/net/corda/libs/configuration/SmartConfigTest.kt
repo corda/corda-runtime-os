@@ -342,7 +342,7 @@ class SmartConfigTest {
         val r = smartConfig.getConfigList("test_array")
         assertThat(r.size).isEqualTo(3)
         assertThat(r[0].getInt("prime")).isEqualTo(2)
-        assertThat(r[0]).isInstanceOf(SmartConfig)
+        assertThat(r[0]).isInstanceOf(SmartConfig::class.java)
     }
 
 
