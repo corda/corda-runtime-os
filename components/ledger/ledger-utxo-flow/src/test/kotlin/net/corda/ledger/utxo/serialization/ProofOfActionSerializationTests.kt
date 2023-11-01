@@ -1,15 +1,17 @@
 package net.corda.ledger.utxo.serialization
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.MapperFeature
-import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.databind.*
 import com.fasterxml.jackson.databind.exc.InvalidDefinitionException
 import com.fasterxml.jackson.databind.json.JsonMapper
+import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.application.impl.services.json.ProofOfActionSerialisationModule
 import net.corda.common.json.serializers.standardTypesModule
-import net.corda.crypto.cipher.suite.merkle.MerkleProofProvider
+import net.corda.crypto.core.parseSecureHash
+import net.corda.crypto.merkle.impl.MerkleProofProviderImpl
 import net.corda.ledger.common.testkit.anotherPublicKeyExample
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.ledger.common.testkit.publicKeyExample
@@ -18,37 +20,25 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.getUtxoStateExample
+import net.corda.ledger.utxo.testkit.notaryX500Name
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
-import net.corda.v5.crypto.merkle.MerkleProof
-import net.corda.v5.crypto.merkle.MerkleProofType
-import net.corda.v5.membership.NotaryInfo
-import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertThrowsExactly
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
-import java.security.KeyPairGenerator
-import java.security.spec.ECGenParameterSpec
 import java.util.*
+
 
 class ProofOfActionSerializationTests : UtxoLedgerTest() {
 
     companion object {
 
         private lateinit var signedTransaction: UtxoSignedTransactionInternal
-
-        private val kpg: KeyPairGenerator = KeyPairGenerator.getInstance("EC").apply {
-            initialize(ECGenParameterSpec("secp256r1"))
-        }
-        private val notaryNode1PublicKey = kpg.generateKeyPair().public
-
-        private val notaryX500Name = MemberX500Name.parse("O=ExampleNotaryService, L=London, C=GB")
-        private val notary = notaryX500Name
 
         private val jsonMapper =
             JsonMapper.builder().enable(MapperFeature.BLOCK_UNSAFE_POLYMORPHIC_BASE_TYPES).build().apply {
@@ -58,41 +48,34 @@ class ProofOfActionSerializationTests : UtxoLedgerTest() {
                 setTimeZone(TimeZone.getTimeZone("UTC"))
                 disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
                 registerModule(standardTypesModule())
-                /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-                /* Here is System under the test : ProofOfActionSerialisationModule.module */
-                registerModule(ProofOfActionSerialisationModule(object : MerkleProofProvider {
-                    override fun createMerkleProof(
-                        proofType: MerkleProofType,
-                        treeSize: Int,
-                        leaves: List<IndexedMerkleLeaf>,
-                        hashes: List<SecureHash>
-                    ): MerkleProof {
-                        TODO("Not yet implemented")
-                    }
 
-                    override fun createIndexedMerkleLeaf(
-                        index: Int,
-                        nonce: ByteArray?,
-                        leafData: ByteArray
-                    ): IndexedMerkleLeaf {
-                        TODO("Not yet implemented")
-                    }
-                }).module)
+                // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                // Here is system under the test 'ProofOfActionSerialisationModule.module'
+                // and SecureHash serializer clone from JsonMarshallingServiceImpl
+                // (JsonMarshallingServiceImpl doesn't expose them outside)
+                registerModule(ProofOfActionSerialisationModule(MerkleProofProviderImpl()).module)
+                registerModule(SimpleModule().apply {
+                    this.addSerializer(SecureHash::class.java,
+                        object : JsonSerializer<SecureHash>() {
+                            override fun serialize(obj: SecureHash, generator: JsonGenerator, provider: SerializerProvider) {
+                                generator.writeString(obj.toString())
+                            }
+                        }
+                    )
+                    this.addDeserializer(SecureHash::class.java,
+                        object : JsonDeserializer<SecureHash>() {
+                            override fun deserialize(parser: JsonParser, ctxt: DeserializationContext): SecureHash =
+                                parseSecureHash(parser.text)
+                        }
+                    )
+                })
             }
     }
 
     @BeforeEach
     fun beforeEach() {
-        val notaryInfo = mock<NotaryInfo>().also {
-            whenever(it.name).thenReturn(notaryX500Name)
-            whenever(it.publicKey).thenReturn(publicKeyExample)
-        }
-        whenever(mockNotaryLookup.lookup(notaryX500Name)).thenReturn(notaryInfo)
-        signedTransaction = UtxoTransactionBuilderImpl(
-            utxoSignedTransactionFactory,
-            mockNotaryLookup
-        )
-            .setNotary(notary)
+        signedTransaction = UtxoTransactionBuilderImpl(utxoSignedTransactionFactory, mockNotaryLookup)
+            .setNotary(notaryX500Name)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
             .addOutputState(getUtxoStateExample())
             .addSignatories(listOf(anotherPublicKeyExample))
@@ -102,37 +85,37 @@ class ProofOfActionSerializationTests : UtxoLedgerTest() {
 
     @Test
     fun secureHash() {
-        val by: SecureHash = getSignatureWithMetadataExample(notaryNode1PublicKey).by
+        val by: SecureHash = getSignatureWithMetadataExample().by
         val json = jsonMapper.writeValueAsString(by)
         val deserializeObject = jsonMapper.readValue(json, SecureHash::class.java)
-        Assertions.assertEquals(by, deserializeObject)
+        assertEquals(by, deserializeObject)
     }
 
     @Test
     fun digitalSignatureWithKeyId() {
-        val signature: DigitalSignature.WithKeyId = getSignatureWithMetadataExample(notaryNode1PublicKey).signature
+        val signature: DigitalSignature.WithKeyId = getSignatureWithMetadataExample().signature
         val json = jsonMapper.writeValueAsString(signature)
         val deserializeObject = jsonMapper.readValue(json, DigitalSignature.WithKeyId::class.java)
-        Assertions.assertEquals(signature, deserializeObject)
+        assertEquals(signature, deserializeObject)
     }
 
     @Test
     fun digitalSignatureAndMetadataWithoutProof() {
-        val signature: DigitalSignatureAndMetadata = getSignatureWithMetadataExample(notaryNode1PublicKey)
-        Assertions.assertNull(signature.proof)
+        val signature: DigitalSignatureAndMetadata = getSignatureWithMetadataExample()
+        assertNull(signature.proof)
         val json = jsonMapper.writeValueAsString(signature)
         val deserializeObject = jsonMapper.readValue(json, DigitalSignatureAndMetadata::class.java)
-        Assertions.assertEquals(signature, deserializeObject)
+        assertEquals(signature, deserializeObject)
     }
 
     @Test
     fun digitalSignatureAndMetadata() {
         val batchSignatures = transactionSignatureService.signBatch(listOf(signedTransaction), listOf(publicKeyExample))
         val signature: DigitalSignatureAndMetadata = batchSignatures.first().first()
-        Assertions.assertNotNull(signature.proof)
+        assertNotNull(signature.proof)
         val json = jsonMapper.writeValueAsString(signature)
         val deserializedObject = jsonMapper.readValue(json, DigitalSignatureAndMetadata::class.java)
-        Assertions.assertEquals(signature, deserializedObject)
+        assertEquals(signature, deserializedObject)
     }
 
     @Test
@@ -148,9 +131,9 @@ class ProofOfActionSerializationTests : UtxoLedgerTest() {
         }
         val batchSignatures = transactionSignatureService.signBatch(listOf(signedTransaction), listOf(publicKeyExample))
         val signature: DigitalSignatureAndMetadata = batchSignatures.first().first()
-        Assertions.assertNotNull(signature.proof)
+        assertNotNull(signature.proof)
         val json = jsonMapper.writeValueAsString(signature)
-        Assertions.assertThrowsExactly(InvalidDefinitionException::class.java) {
+        assertThrowsExactly(InvalidDefinitionException::class.java) {
             jsonMapper.readValue(json, DigitalSignatureAndMetadata::class.java)
         }
     }
