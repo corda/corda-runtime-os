@@ -16,8 +16,6 @@ class ConfigSecretHelper {
     private companion object {
         const val TMP_SECRET = MaskedSecretsLookupService.MASK_VALUE
         val TMP_SECRET_NODE: JsonNode = TextNode(TMP_SECRET)
-        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-
     }
 
     /**
@@ -81,7 +79,6 @@ class ConfigSecretHelper {
         getFieldValues(node).forEach { (name, newNode) ->
             val nodePath = if (nodeName == "") name else "$nodeName.$name"
             val secret = secretsNode[nodePath]
-            logger.info("insertSecretsRecursive node name $name newNode $newNode, secret $secret")
             if (secret != null) {
                 (node as ObjectNode).set<ObjectNode>(name, secret)
             } else {
