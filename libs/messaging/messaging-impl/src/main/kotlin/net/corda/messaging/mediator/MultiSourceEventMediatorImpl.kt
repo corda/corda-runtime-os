@@ -46,7 +46,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.name}")
 
-    private var consumers = listOf<MediatorConsumer<K, E>>()
+//    private var consumers = listOf<MediatorConsumer<K, E>>()
     private var clients = listOf<MessagingClient>()
     private lateinit var messageRouter: MessageRouter
     private val mediatorComponentFactory = MediatorComponentFactory(
