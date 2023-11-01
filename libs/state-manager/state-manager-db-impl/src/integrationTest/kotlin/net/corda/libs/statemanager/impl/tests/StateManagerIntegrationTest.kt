@@ -3,29 +3,23 @@ package net.corda.libs.statemanager.impl.tests
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
+import net.corda.db.core.utils.transaction
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.Metadata
-import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.MetadataFilter
+import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.metadata
 import net.corda.libs.statemanager.impl.StateManagerImpl
 import net.corda.libs.statemanager.impl.convertToMetadata
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
-import net.corda.libs.statemanager.impl.model.v1.StateManagerEntities
-import net.corda.libs.statemanager.impl.repository.impl.KEY_PARAMETER_NAME
-import net.corda.libs.statemanager.impl.repository.impl.METADATA_PARAMETER_NAME
+import net.corda.libs.statemanager.impl.model.v1.resultSetAsStateEntityCollection
 import net.corda.libs.statemanager.impl.repository.impl.PostgresQueryProvider
 import net.corda.libs.statemanager.impl.repository.impl.StateRepositoryImpl
-import net.corda.libs.statemanager.impl.repository.impl.VALUE_PARAMETER_NAME
-import net.corda.libs.statemanager.impl.repository.impl.VERSION_PARAMETER_NAME
-import net.corda.orm.EntityManagerConfiguration
-import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
-import net.corda.orm.utils.transaction
-import net.corda.orm.utils.use
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.AfterAll
@@ -37,18 +31,17 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import org.mockito.kotlin.mock
+import java.sql.SQLException
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
-import javax.persistence.PersistenceException
 import kotlin.concurrent.thread
-import org.junit.jupiter.api.assertDoesNotThrow
 
 // TODO-[CORE-16663]: make database provider pluggable
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StateManagerIntegrationTest {
-
-    private val dbConfig: EntityManagerConfiguration = DbUtils.getEntityManagerConfiguration("state_manager_db")
+    private val dataSource = DbUtils.createPostgresDataSource()
 
     init {
         val dbChange = ClassloaderChangeLog(
@@ -60,26 +53,23 @@ class StateManagerIntegrationTest {
                 )
             )
         )
-        dbConfig.dataSource.connection.use { connection ->
+        dataSource.connection.use { connection ->
             LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange)
         }
     }
 
     private val objectMapper = ObjectMapper()
     private val testUniqueId = UUID.randomUUID()
-    private val entityManagerFactoryFactory = EntityManagerFactoryFactoryImpl().create(
-        "state_manager_test",
-        StateManagerEntities.classes.toList(),
-        dbConfig
+    private val queryProvider = PostgresQueryProvider()
+
+    private val stateManager: StateManager = StateManagerImpl(
+        lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>(),
+        dataSource = dataSource,
+        stateRepository = StateRepositoryImpl(queryProvider)
     )
 
-    private val queryProvider = PostgresQueryProvider()
-    private val stateManager: StateManager =
-        StateManagerImpl(StateRepositoryImpl(queryProvider), entityManagerFactoryFactory, dbConfig.dataSource)
-
-    private fun cleanStates() = entityManagerFactoryFactory.createEntityManager().transaction {
-        it.createNativeQuery("DELETE FROM state s WHERE s.key LIKE '%$testUniqueId%'").executeUpdate()
-        it.flush()
+    private fun cleanStates() = dataSource.connection.transaction {
+        it.createStatement().executeUpdate("DELETE FROM state s WHERE s.key LIKE '%$testUniqueId%'")
     }
 
     @BeforeEach
@@ -96,19 +86,18 @@ class StateManagerIntegrationTest {
         stateContent: (index: Int, key: String) -> String,
         metadataContent: (index: Int, key: String) -> String,
     ) = indexRange.forEach { i ->
-        entityManagerFactoryFactory.createEntityManager().transaction {
+        dataSource.connection.transaction { connection ->
             val key = buildStateKey(i)
             val stateEntity =
                 StateEntity(key, stateContent(i, key).toByteArray(), metadataContent(i, key), version(i, key))
 
-            it.createNativeQuery(queryProvider.createState)
-                .setParameter(KEY_PARAMETER_NAME, stateEntity.key)
-                .setParameter(VALUE_PARAMETER_NAME, stateEntity.value)
-                .setParameter(VERSION_PARAMETER_NAME, stateEntity.version)
-                .setParameter(METADATA_PARAMETER_NAME, stateEntity.metadata)
-                .executeUpdate()
-
-            it.flush()
+            connection.prepareStatement(queryProvider.createState).use {
+                it.setString(1, stateEntity.key)
+                it.setBytes(2, stateEntity.value)
+                it.setInt(3, stateEntity.version)
+                it.setString(4, stateEntity.metadata)
+                it.executeUpdate()
+            }
         }
     }
 
@@ -117,10 +106,15 @@ class StateManagerIntegrationTest {
         version: (index: Int, key: String) -> Int,
         stateContent: (index: Int, key: String) -> String,
         metadataContent: (index: Int, key: String) -> Metadata,
-    ) = entityManagerFactoryFactory.createEntityManager().use { em ->
+    ) = dataSource.connection.transaction { connection ->
         indexRange.forEach { i ->
             val key = buildStateKey(i)
-            val loadedEntity = em.find(StateEntity::class.java, key)
+            val loadedEntity = connection
+                .prepareStatement(queryProvider.findStatesByKey(1))
+                .use {
+                    it.setString(1, key)
+                    it.executeQuery().resultSetAsStateEntityCollection()
+                }.elementAt(0)
 
             assertSoftly {
                 it.assertThat(loadedEntity.key).isEqualTo(key)
@@ -192,7 +186,7 @@ class StateManagerIntegrationTest {
         val failures = stateManager.create(states)
         assertThat(failures).hasSize(failedSates)
         for (i in 1..failedSates) {
-            assertThat(failures[buildStateKey(i)]).isInstanceOf(PersistenceException::class.java)
+            assertThat(failures[buildStateKey(i)]).isInstanceOf(SQLException::class.java)
         }
         softlyAssertPersistedStateEntities(
             (failedSates + 1..totalStates),
@@ -256,13 +250,6 @@ class StateManagerIntegrationTest {
             { i, _ -> "state_$i$i" },
             { _, _ -> metadata("updatedK2" to "updatedV2") }
         )
-    }
-
-    @Test
-    fun `does not throw when updating states of size 0`() {
-        val failedUpdates = assertDoesNotThrow { stateManager.update(emptyList()) }
-
-        assertThat(failedUpdates).isEmpty()
     }
 
     @Test
@@ -468,14 +455,20 @@ class StateManagerIntegrationTest {
                 it.assertThat(loadedState.metadata).containsExactlyInAnyOrderEntriesOf(mutableMapOf("k1" to "v$i"))
             }
         }
-
     }
 
     private fun getIntervalBetweenEntities(startEntityKey: String, finishEntityKey: String): Pair<Instant, Instant> {
-        return entityManagerFactoryFactory.createEntityManager().transaction { em ->
+        return dataSource.connection.transaction { connection ->
+            val loadedEntities = connection.prepareStatement(queryProvider.findStatesByKey(2))
+                .use {
+                    it.setString(1, startEntityKey)
+                    it.setString(2, finishEntityKey)
+                    it.executeQuery().resultSetAsStateEntityCollection()
+                }
+
             Pair(
-                em.find(StateEntity::class.java, startEntityKey).modifiedTime,
-                em.find(StateEntity::class.java, finishEntityKey).modifiedTime
+                loadedEntities.elementAt(0).modifiedTime,
+                loadedEntities.elementAt(1).modifiedTime
             )
         }
     }
@@ -640,6 +633,6 @@ class StateManagerIntegrationTest {
 
     @AfterAll
     fun cleanUp() {
-        entityManagerFactoryFactory.close()
+        dataSource.close()
     }
 }

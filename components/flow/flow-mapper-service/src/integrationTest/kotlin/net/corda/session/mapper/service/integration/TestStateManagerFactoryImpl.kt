@@ -6,7 +6,9 @@ import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import org.osgi.service.component.annotations.Component
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -26,8 +28,7 @@ class TestStateManagerFactoryImpl : StateManagerFactory {
 
     override fun create(config: SmartConfig): StateManager {
         return object : StateManager {
-            override fun close() {
-            }
+            override val name = LifecycleCoordinatorName("MockStateManager", UUID.randomUUID().toString())
 
             override fun create(states: Collection<State>): Map<String, Exception> {
                 return states.mapNotNull {
@@ -91,6 +92,15 @@ class TestStateManagerFactoryImpl : StateManagerFactory {
                 }.filter { (_, state) ->
                     state.metadata.containsKey(metadataFilter.key) && state.metadata[metadataFilter.key] == metadataFilter.value
                 }
+            }
+
+            override val isRunning: Boolean
+                get() = true
+
+            override fun start() {
+            }
+
+            override fun stop() {
             }
         }
     }
