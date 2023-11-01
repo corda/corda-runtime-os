@@ -4,16 +4,11 @@ package net.corda.crypto.service.impl.bus
 import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.softhsm.WrappingRepositoryFactory
-import net.corda.data.crypto.wire.ops.key.rotation.IndividualKeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
-import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationStatus
 import net.corda.messaging.api.processor.DurableProcessor
-import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Crypto.REWRAP_MESSAGE_TOPIC
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.LoggerFactory
-import java.time.Instant
 
 /**
  * This processor goes through the databases and find out what keys need re-wrapping.
@@ -23,7 +18,6 @@ class CryptoRekeyBusProcessor(
     val cryptoService: CryptoService,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val wrappingRepositoryFactory: WrappingRepositoryFactory,
-    private val publisher: Publisher
 ) : DurableProcessor<String, KeyRotationRequest> {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -31,7 +25,6 @@ class CryptoRekeyBusProcessor(
 
     override val keyClass: Class<String> = String::class.java
     override val valueClass = KeyRotationRequest::class.java
-    private val uploadTopic = REWRAP_MESSAGE_TOPIC
 
     @Suppress("NestedBlockDepth")
     override fun onNext(events: List<Record<String, KeyRotationRequest>>): List<Record<*, *>> {
@@ -58,7 +51,7 @@ class CryptoRekeyBusProcessor(
                 }
             }.flatten()
 
-            val truncatedWrappingKeys = targetWrappingKeys.take(request.limit?:Int.MAX_VALUE)
+            val truncatedWrappingKeys = targetWrappingKeys.take(request.limit ?: Int.MAX_VALUE)
 
             truncatedWrappingKeys.map { (tenantId, wrappingKeyInfo) ->
                 val newGeneration = cryptoService.rewrapWrappingKey(tenantId, wrappingKeyInfo.alias, request.newKeyAlias)
@@ -67,39 +60,7 @@ class CryptoRekeyBusProcessor(
                         "generation number now ${newGeneration}")
 
             }.count()
-            publisher.close()
         }
         return emptyList()
     }
-
-    private fun createKeyRotationStatus(
-        request: KeyRotationRequest,
-        numberOfKeysToBeRotated: Int,
-        alreadyRotatedKeys: Int
-    ) = KeyRotationStatus(
-        request.requestId,
-        request.managedKey,
-        request.oldKeyAlias,
-        request.newKeyAlias,
-        request.oldGeneration,
-        request.tenantId,
-        request.simulate,
-        null,
-        alreadyRotatedKeys,
-        numberOfKeysToBeRotated,
-        Instant.now(),
-        Instant.now()
-    )
-
-    private fun createIndividualKeyRotationRequest(
-        requestId: String,
-        tenantId: String,
-        oldKeyAlias: String,
-        newKeyAlias: String
-    ) = IndividualKeyRotationRequest(
-        requestId,
-        tenantId,
-        oldKeyAlias,
-        newKeyAlias
-    )
 }

@@ -24,6 +24,7 @@ class WrappingRepositoryTest : CryptoRepositoryTest() {
         keyMaterial = SecureHashUtils.randomBytes(),
         generation = 666,
         parentKeyAlias = "Ned Flanders",
+        alias = "alias"
     )
 
     @ParameterizedTest
@@ -103,6 +104,7 @@ class WrappingRepositoryTest : CryptoRepositoryTest() {
             keyMaterial = SecureHashUtils.randomBytes(),
             generation = 777,
             parentKeyAlias = "Salamander",
+            alias = "alias"
         )
 
         val repo = WrappingRepositoryImpl(emf, "test")

@@ -4,7 +4,10 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.core.CryptoService
+import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.SecureHashImpl
+import net.corda.crypto.core.ShortHash
+import net.corda.crypto.core.parseSecureHash
 import net.corda.crypto.persistence.WrappingKeyInfo
 import net.corda.crypto.persistence.db.model.WrappingKeyEntity
 import net.corda.crypto.softhsm.WrappingRepository
@@ -16,15 +19,12 @@ import net.corda.data.crypto.wire.ops.key.rotation.KeyType
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.messaging.api.publisher.Publisher
-import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.test.util.identity.createTestHoldingIdentity
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.never
 import org.mockito.Mockito.times
@@ -39,13 +39,18 @@ import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
 
+
 class CryptoRekeyBusProcessorTests {
     private lateinit var tenantId: String
+    private val tenantId1 = ShortHash.of(parseSecureHash("SHA-256:ABC12345678911111111111111")).toString()
+    private val tenantId2 = ShortHash.of(parseSecureHash("SHA-256:BCC12345678911111111111111")).toString()
+    private val tenantId3 = ShortHash.of(parseSecureHash("SHA-256:CBC12345678911111111111111")).toString()
+    private val tenantId4 = ShortHash.of(parseSecureHash("SHA-256:DBC12345678911111111111111")).toString()
+    private val tenantId5 = ShortHash.of(parseSecureHash("SHA-256:EBC12345678911111111111111")).toString()
     private lateinit var cryptoRekeyBusProcessor: CryptoRekeyBusProcessor
     private lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
     private lateinit var wrappingRepositoryFactory: WrappingRepositoryFactory
-    private lateinit var publisherFactory: PublisherFactory
-    private lateinit var publisher: Publisher
+    private lateinit var cryptoService: CryptoService
     private lateinit var config: Map<String, SmartConfig>
     private val oldKeyAlias = "oldKeyAlias"
 
@@ -62,80 +67,78 @@ class CryptoRekeyBusProcessorTests {
         )
         config = configEvent.config
 
-        val cryptoService: CryptoService = mock<CryptoService> { }
+        cryptoService = mock<CryptoService> { }
 
         tenantId = UUID.randomUUID().toString()
         virtualNodeInfoReadService = mock()
 
         val wrappingRepository: WrappingRepository = mock {
-            on { findKey(any()) } doReturn WrappingKeyInfo(0, "", byteArrayOf(), 0, oldKeyAlias, "alias1")
+            on { findKeysWrappedByAlias(any()) } doReturn sequenceOf(WrappingKeyInfo(0, "", byteArrayOf(), 0, oldKeyAlias, "alias1"))
         }
 
         wrappingRepositoryFactory = mock {
             on { create(any()) } doReturn wrappingRepository
         }
 
-        publisher = mock()
-
         cryptoRekeyBusProcessor = CryptoRekeyBusProcessor(
             cryptoService, virtualNodeInfoReadService,
-            wrappingRepositoryFactory, publisher)
+            wrappingRepositoryFactory)
     }
 
     @Test
     fun `do a mocked key rotation`() {
-        val virtualNodes = getStubVirtualNodes(listOf("Bob"))
+        val virtualNodes = getStubVirtualNodes(listOf(tenantId1))
         whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
 
         cryptoRekeyBusProcessor.onNext(listOf(getKafkaRecord("", null)))
 
-        verify(publisher, times(1)).publish(any())
+        // This now counts the CryptoTenants.CRYPTO, P2P and REST values
+        verify(cryptoService, times(4)).rewrapWrappingKey(any(), any(), any())
     }
 
     @Test
-    fun `key rotation posts Kafka message for all the keys if limit is not specified`() {
-        val virtualNodes = getStubVirtualNodes(listOf("Alice", "Bob", "Charlie"))
+    fun `key rotation re-wraps all the keys if limit is not specified`() {
+        val virtualNodes = getStubVirtualNodes(listOf(tenantId1, tenantId2, tenantId3))
         whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
 
         cryptoRekeyBusProcessor.onNext(listOf(getKafkaRecord("", null)))
 
-        verify(publisher, times(3)).publish(any())
+        verify(cryptoService, times(6)).rewrapWrappingKey(any(), any(), any())
     }
 
     @Test
     fun `zero limit for key rotation operations is reflected`() {
-        val virtualNodes = getStubVirtualNodes(listOf("Alice", "Bob", "Charlie", "David", "Erin"))
+        val virtualNodes = getStubVirtualNodes(listOf(tenantId1, tenantId2, tenantId3, tenantId4, tenantId5))
         whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
 
         cryptoRekeyBusProcessor.onNext(listOf(getKafkaRecord("", 0)))
 
-        verify(publisher, never()).publish(any())
+        verify(cryptoService, never()).rewrapWrappingKey(any(), any(), any())
     }
 
     @Test
-    @Disabled
     fun `limit for key rotation operations is reflected`() {
-        val virtualNodes = getStubVirtualNodes(listOf("Alice", "Bob", "Charlie", "David", "Erin"))
+        val virtualNodes = getStubVirtualNodes(listOf(tenantId1, tenantId2, tenantId3, tenantId4, tenantId5))
         whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
 
         cryptoRekeyBusProcessor.onNext(listOf(getKafkaRecord("", 2)))
 
-        verify(publisher, times(2)).publish(any())
+        verify(cryptoService, times(2)).rewrapWrappingKey(any(), any(), any())
     }
 
     /**
-     * The test checks the wrapping repo for a tenant and if it finds the key with oldKeyAlias, it publishes Kafka message
-     * for that tenant to do the actual key rotation.
+     * The test checks the wrapping repo for a tenant and if it finds the key with oldKeyAlias.
      */
     @Test
-    fun `key rotation posts new Kafka message only for keys with oldKeyAlias alias in the wrapping repo`() {
+    fun `key rotation re-wraps only those keys where oldKeyAlias alias in the wrapping repo for the tenant`() {
         val oldKeyAlias = "Eris"
-        val tenantId1 = UUID.randomUUID().toString()
-        val tenantId2 = UUID.randomUUID().toString()
-        val tenantId3 = UUID.randomUUID().toString()
+        val tenantId1 = ShortHash.of(parseSecureHash("SHA-256:ABC12345678911111111111111")).toString()
+        val tenantId2 = ShortHash.of(parseSecureHash("SHA-256:BCC12345678911111111111111")).toString()
+        val tenantId3 = ShortHash.of(parseSecureHash("SHA-256:DEC12345678911111111111111")).toString()
+
         val newId = UUID.randomUUID()
         val wrappingKeyInfo = WrappingKeyInfo(
-            1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch", "alias1"
+            1, "caesar", SecureHashUtils.randomBytes(), 1, "Eris", "alias1"
         )
         val savedWrappingKey = makeWrappingKeyEntity(newId, oldKeyAlias, wrappingKeyInfo)
         val em1 = createEntityManager(listOf(savedWrappingKey))
@@ -153,20 +156,20 @@ class CryptoRekeyBusProcessorTests {
         whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
 
         val wrappingRepositoryFactory = mock<WrappingRepositoryFactory> {
-            on { create(virtualNodes[0].holdingIdentity.x500Name.commonName.toString()) } doReturn repo1
-            on { create(virtualNodes[1].holdingIdentity.x500Name.commonName.toString()) } doReturn repo2
-            on { create(virtualNodes[2].holdingIdentity.x500Name.commonName.toString()) } doReturn repo3
+            on { create(tenantId1) } doReturn repo1
+            on { create(tenantId2) } doReturn repo2
+            on { create(tenantId3) } doReturn repo3
+            on { create(CryptoTenants.CRYPTO) } doReturn repo2
+            on { create(CryptoTenants.P2P) } doReturn repo2
+            on { create(CryptoTenants.REST) } doReturn repo2
         }
 
-        val cryptoService: CryptoService = mock<CryptoService> { }
         cryptoRekeyBusProcessor = CryptoRekeyBusProcessor(
-            cryptoService, virtualNodeInfoReadService,
-            wrappingRepositoryFactory, publisher
-        )
+            cryptoService, virtualNodeInfoReadService, wrappingRepositoryFactory)
 
         cryptoRekeyBusProcessor.onNext(listOf(getKafkaRecord(oldKeyAlias, null)))
 
-        verify(publisher, times(2)).publish(any())
+        verify(cryptoService, times(2)).rewrapWrappingKey(any(), any(), any())
     }
 
     private fun makeWrappingKeyEntity(
@@ -212,9 +215,16 @@ class CryptoRekeyBusProcessorTests {
     private fun getStubVirtualNodes(identities: List<String>): List<VirtualNodeInfo> {
         val virtualNodesInfos = mutableListOf<VirtualNodeInfo>()
         identities.forEach { identity ->
+            val holdingIdentity = mock<HoldingIdentity> {
+                on { shortHash } doReturn ShortHash.of(identity)
+            }
+//            virtualNodesInfos.add(mock<VirtualNodeInfo> {
+//                on { holdingIdentity } doReturn holdingIdentity
+//            })
+
             virtualNodesInfos.add(
                 VirtualNodeInfo(
-                    createTestHoldingIdentity("CN=$identity, O=Bob Corp, L=LDN, C=GB", ""),
+                    holdingIdentity,
                     CpiIdentifier(
                         "", "",
                         SecureHashImpl("", "bytes".toByteArray())
@@ -230,6 +240,7 @@ class CryptoRekeyBusProcessorTests {
                     timestamp = Instant.now(),
                 )
             )
+
         }
         return virtualNodesInfos
     }
