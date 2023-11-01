@@ -223,7 +223,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         var keepProcessing = true
         while (keepProcessing && !stopped()) {
             try {
-                pollAndProcessEvents(consumer)
+                pollAndProcessEvents()
                 keepProcessing = false
             } catch (exception: Exception) {
                 when (exception) {
@@ -270,7 +270,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 //        }
 //    }
 
-    private fun pollAndProcessEvents(consumer: MediatorConsumer<K, E>) {
+    private fun pollAndProcessEvents() {
         val startTimestamp = System.nanoTime()
         val messages = pollConsumers()
         if (messages.isNotEmpty()) {
