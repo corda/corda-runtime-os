@@ -129,6 +129,7 @@ class FlowFiberImpl(
         parkAndCustomSerialize { _ ->
             resetLoggingContext()
             log.trace { "Parking..." }
+            log.info("Fiber stack: ${this.interruptStack}")
             val fiberState = CordaMetrics.Metric.FlowFiberSerializationTime.builder()
                 .forVirtualNode(getExecutionContext().flowCheckpoint.holdingIdentity.shortHash.toString())
                 .withTag(CordaMetrics.Tag.FlowClass, getExecutionContext().flowCheckpoint.flowStartContext.flowClassName)
