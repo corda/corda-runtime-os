@@ -138,14 +138,11 @@ class HSMRepositoryImpl(
             //  of a race condition, however, the JPA exception type doesn't give us enough info, so we check
             //  the hibernate generated message.
             if (match) {
-                findTenantAssociation(tenantId, category) ?:
-                    throw IllegalStateException("unable to find tenant assocation $tenantId:$category after constraint violation")
+                findTenantAssociation(tenantId, category)
+                    ?: throw IllegalStateException("unable to find tenant assocation $tenantId:$category after constraint violation")
             } else {
                 throw e
             }
-        } catch (e: Throwable) {
-            logger.error("Uncaught exception $e")
-            throw e
         }
     }
 
