@@ -81,6 +81,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         )
     )
 
+    @Suppress("unused_parameter")
     private fun createEventMediatorConfig(
         configs: Map<String, SmartConfig>,
         messagingConfig: SmartConfig,
