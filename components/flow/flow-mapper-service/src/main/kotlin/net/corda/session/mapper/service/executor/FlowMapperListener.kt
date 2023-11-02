@@ -6,7 +6,7 @@ import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.flow.state.mapper.FlowMapperStateType
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
-import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_IN
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
@@ -38,7 +38,7 @@ class FlowMapperListener(
                     publisher?.publish(
                         listOf(
                             Record(
-                                FLOW_MAPPER_EVENT_TOPIC, key, FlowMapperEvent(
+                                FLOW_MAPPER_SESSION_IN, key, FlowMapperEvent(
                                     ExecuteCleanup(listOf())
                                 )
                             )
@@ -81,7 +81,7 @@ class FlowMapperListener(
             executorService.schedule(
                 {
                     log.debug { "Clearing up mapper state for key $eventKey" }
-                    publisher?.publish(listOf(Record(FLOW_MAPPER_EVENT_TOPIC, eventKey, FlowMapperEvent(ExecuteCleanup(listOf())))))
+                    publisher?.publish(listOf(Record(FLOW_MAPPER_SESSION_IN, eventKey, FlowMapperEvent(ExecuteCleanup(listOf())))))
                 },
                 expiryTime - clock.millis(),
                 TimeUnit.MILLISECONDS

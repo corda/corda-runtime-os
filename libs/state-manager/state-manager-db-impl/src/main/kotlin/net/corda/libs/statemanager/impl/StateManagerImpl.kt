@@ -1,21 +1,31 @@
 package net.corda.libs.statemanager.impl
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.db.core.CloseableDataSource
+import net.corda.db.core.utils.transaction
 import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.libs.statemanager.impl.lifecycle.CheckConnectionEventHandler
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.repository.StateRepository
-import net.corda.orm.utils.transaction
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import org.slf4j.LoggerFactory
-import javax.persistence.EntityManagerFactory
+import java.util.UUID
 
-// TODO-[CORE-17025]: remove Hibernate.
 class StateManagerImpl(
+    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    private val dataSource: CloseableDataSource,
     private val stateRepository: StateRepository,
-    private val entityManagerFactory: EntityManagerFactory,
 ) : StateManager {
+    override val name = LifecycleCoordinatorName(
+        "StateManager",
+        UUID.randomUUID().toString()
+    )
+    private val eventHandler = CheckConnectionEventHandler(name) { dataSource.connection.close() }
+    private val lifecycleCoordinator = lifecycleCoordinatorFactory.createCoordinator(name, eventHandler)
 
     private companion object {
         private val objectMapper = ObjectMapper()
@@ -33,14 +43,14 @@ class StateManagerImpl(
 
         states.map {
             it.toPersistentEntity()
-        }.forEach {
+        }.forEach { state ->
             try {
-                entityManagerFactory.transaction { em ->
-                    stateRepository.create(em, it)
+                dataSource.connection.transaction {
+                    stateRepository.create(it, state)
                 }
             } catch (e: Exception) {
-                logger.warn("Failed to create state with id ${it.key}", e)
-                failures[it.key] = e
+                logger.warn("Failed to create state with id ${state.key}", e)
+                failures[state.key] = e
             }
         }
 
@@ -48,8 +58,8 @@ class StateManagerImpl(
     }
 
     override fun get(keys: Collection<String>): Map<String, State> {
-        return entityManagerFactory.transaction { em ->
-            stateRepository.get(em, keys)
+        return dataSource.connection.transaction { connection ->
+            stateRepository.get(connection, keys)
         }.map {
             it.fromPersistentEntity()
         }.associateBy {
@@ -58,16 +68,18 @@ class StateManagerImpl(
     }
 
     override fun update(states: Collection<State>): Map<String, State> {
-        try {
-            entityManagerFactory.transaction { em ->
-                val failedUpdates = stateRepository.update(em, states.map { it.toPersistentEntity() })
+        if (states.isEmpty()) return emptyMap()
 
-                return if (failedUpdates.isEmpty()) {
-                    emptyMap()
-                } else {
-                    logger.warn("Optimistic locking check failed while updating States ${failedUpdates.joinToString()}")
-                    get(failedUpdates)
-                }
+        try {
+            val (_, failedUpdates) = dataSource.connection.transaction { conn ->
+                stateRepository.update(conn, states.map { it.toPersistentEntity() })
+            }
+
+            return if (failedUpdates.isEmpty()) {
+                emptyMap()
+            } else {
+                logger.warn("Optimistic locking check failed while updating States ${failedUpdates.joinToString()}")
+                get(failedUpdates)
             }
         } catch (e: Exception) {
             logger.warn("Failed to updated batch of states - ${states.joinToString { it.key }}", e)
@@ -76,16 +88,18 @@ class StateManagerImpl(
     }
 
     override fun delete(states: Collection<State>): Map<String, State> {
-        try {
-            entityManagerFactory.transaction { em ->
-                val failedDeletes = stateRepository.delete(em, states.map { it.toPersistentEntity() })
+        if (states.isEmpty()) return emptyMap()
 
-                return if (failedDeletes.isEmpty()) {
-                    emptyMap()
-                } else {
-                    logger.warn("Optimistic locking check failed while deleting States ${failedDeletes.joinToString()}")
-                    get(failedDeletes)
-                }
+        try {
+            val failedDeletes = dataSource.connection.transaction { connection ->
+                stateRepository.delete(connection, states.map { it.toPersistentEntity() })
+            }
+
+            return if (failedDeletes.isEmpty()) {
+                emptyMap()
+            } else {
+                logger.warn("Optimistic locking check failed while deleting States ${failedDeletes.joinToString()}")
+                get(failedDeletes)
             }
         } catch (e: Exception) {
             logger.warn("Failed to delete batch of states - ${states.joinToString { it.key }}", e)
@@ -94,16 +108,16 @@ class StateManagerImpl(
     }
 
     override fun updatedBetween(interval: IntervalFilter): Map<String, State> {
-        return entityManagerFactory.transaction { em ->
-            stateRepository.updatedBetween(em, interval)
+        return dataSource.connection.transaction { connection ->
+            stateRepository.updatedBetween(connection, interval)
         }
             .map { it.fromPersistentEntity() }
             .associateBy { it.key }
     }
 
     override fun findByMetadataMatchingAll(filters: Collection<MetadataFilter>): Map<String, State> {
-        return entityManagerFactory.transaction { em ->
-            stateRepository.filterByAll(em, filters)
+        return dataSource.connection.transaction { connection ->
+            stateRepository.filterByAll(connection, filters)
         }.map {
             it.fromPersistentEntity()
         }.associateBy {
@@ -112,8 +126,8 @@ class StateManagerImpl(
     }
 
     override fun findByMetadataMatchingAny(filters: Collection<MetadataFilter>): Map<String, State> {
-        return entityManagerFactory.transaction { em ->
-            stateRepository.filterByAny(em, filters)
+        return dataSource.connection.transaction { connection ->
+            stateRepository.filterByAny(connection, filters)
         }.map {
             it.fromPersistentEntity()
         }.associateBy {
@@ -125,8 +139,8 @@ class StateManagerImpl(
         intervalFilter: IntervalFilter,
         metadataFilter: MetadataFilter
     ): Map<String, State> {
-        return entityManagerFactory.transaction { em ->
-            stateRepository.filterByUpdatedBetweenAndMetadata(em, intervalFilter, metadataFilter)
+        return dataSource.connection.transaction { connection ->
+            stateRepository.filterByUpdatedBetweenAndMetadata(connection, intervalFilter, metadataFilter)
         }.map {
             it.fromPersistentEntity()
         }.associateBy {
@@ -134,7 +148,14 @@ class StateManagerImpl(
         }
     }
 
-    override fun close() {
-        entityManagerFactory.close()
+    override val isRunning: Boolean
+        get() = lifecycleCoordinator.isRunning
+
+    override fun start() {
+        lifecycleCoordinator.start()
+    }
+
+    override fun stop() {
+        lifecycleCoordinator.close()
     }
 }

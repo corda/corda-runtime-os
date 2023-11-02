@@ -8,12 +8,27 @@ bootstrap:
           secretKeyRef:
             key: "postgres-password"
     stateManager:
-      username:
-        value: "state-manager-user"
-      password:
-        valueFrom:
-          secretKeyRef:
-            key: "password"
+      flow:
+        username:
+          value: "state-manager-user"
+        password:
+          valueFrom:
+            secretKeyRef:
+              key: "password"
+      flowMapper:
+        username:
+          value: "state-manager-user"
+        password:
+          valueFrom:
+            secretKeyRef:
+              key: "password"
+      tokenSelection:
+        username:
+          value: "state-manager-user"
+        password:
+          valueFrom:
+            secretKeyRef:
+              key: "password"
   kafka:
     sasl:
       username:
@@ -36,15 +51,6 @@ db:
           key: "password"
     username:
       value: "user"
-
-stateManager:
-  db:
-    username:
-      value: "state-manager-user"
-    password:
-      valueFrom:
-        secretKeyRef:
-          key: "password"
 
 kafka:
   bootstrapServers: "prereqs-kafka:9092"
@@ -89,6 +95,15 @@ workers:
             secretKeyRef:
               name: "kafka-credentials"
               key: "flow"
+    stateManager:
+      db:
+        name: state-manager
+        username:
+          value: "state-manager-user"
+        password:
+          valueFrom:
+            secretKeyRef:
+              key: "password"
   flowMapper:
     kafka:
       sasl:
@@ -99,6 +114,15 @@ workers:
             secretKeyRef:
               name: "kafka-credentials"
               key: "flowMapper"
+    stateManager:
+      db:
+        name: state-manager
+        username:
+          value: "state-manager-user"
+        password:
+          valueFrom:
+            secretKeyRef:
+              key: "password"
   verification:
     kafka:
       sasl:
@@ -159,6 +183,15 @@ workers:
             secretKeyRef:
               name: "kafka-credentials"
               key: "tokenSelection"
+    stateManager:
+      db:
+        name: state-manager
+        username:
+          value: "state-manager-user"
+        password:
+          valueFrom:
+            secretKeyRef:
+              key: "password"
   rest:
     kafka:
       sasl:

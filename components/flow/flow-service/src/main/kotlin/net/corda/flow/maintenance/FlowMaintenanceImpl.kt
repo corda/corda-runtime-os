@@ -1,5 +1,6 @@
 package net.corda.flow.maintenance
 
+import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.statemanager.api.StateManager
@@ -8,6 +9,7 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
@@ -15,6 +17,8 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
+import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.osgi.service.component.annotations.Activate
@@ -30,39 +34,68 @@ class FlowMaintenanceImpl @Activate constructor(
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = StateManagerFactory::class)
     private val stateManagerFactory: StateManagerFactory,
+    @Reference(service = FlowMaintenanceHandlersFactory::class)
+    private val flowMaintenanceHandlersFactory: FlowMaintenanceHandlersFactory
 ) : FlowMaintenance {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<FlowMaintenance>(::eventHandler)
-    private var stateManagerConfig: SmartConfig? = null
     private var stateManager: StateManager? = null
+    private var subscriptionRegistrationHandle: RegistrationHandle? = null
 
     override fun onConfigChange(config: Map<String, SmartConfig>) {
-        // Top level component is using ConfigurationReadService#registerComponentForUpdates, so either both or none of the keys
+        // Top level component is using ConfigurationReadService#registerComponentForUpdates, so all the below keys
         // should be present.
-        if (config.containsKey(ConfigKeys.STATE_MANAGER_CONFIG) && config.containsKey(ConfigKeys.MESSAGING_CONFIG)) {
+        val requiredKeys = listOf(ConfigKeys.STATE_MANAGER_CONFIG, ConfigKeys.MESSAGING_CONFIG, ConfigKeys.FLOW_CONFIG)
+        if (requiredKeys.all { config.containsKey(it) }) {
             val messagingConfig = config.getConfig(ConfigKeys.MESSAGING_CONFIG)
             val newStateManagerConfig = config.getConfig(ConfigKeys.STATE_MANAGER_CONFIG)
+            val flowConfig = getFlowConfig(config, messagingConfig)
 
-            stateManager?.close()
-            stateManagerConfig = newStateManagerConfig
-            stateManager = stateManagerFactory.create(newStateManagerConfig)
+            // close the lifecycle registration first to prevent down being signaled
+            subscriptionRegistrationHandle?.close()
+            stateManager?.stop()
 
+            stateManager = stateManagerFactory.create(newStateManagerConfig).also { it.start() }
             coordinator.createManagedResource("FLOW_MAINTENANCE_SUBSCRIPTION") {
                 subscriptionFactory.createDurableSubscription(
                     SubscriptionConfig(
                         "flow.maintenance.tasks",
                         Schemas.ScheduledTask.SCHEDULED_TASK_TOPIC_FLOW_PROCESSOR
                     ),
-                    SessionTimeoutTaskProcessor(stateManager!!),
+                    flowMaintenanceHandlersFactory.createScheduledTaskHandler(stateManager!!),
                     messagingConfig,
                     null
                 )
             }.start()
+
+            coordinator.createManagedResource("FLOW_TIMEOUT_SUBSCRIPTION") {
+                subscriptionFactory.createDurableSubscription(
+                    SubscriptionConfig(
+                        "flow.timeout.task",
+                        Schemas.Flow.FLOW_TIMEOUT_TOPIC
+                    ),
+                    flowMaintenanceHandlersFactory.createTimeoutEventHandler(stateManager!!, flowConfig),
+                    messagingConfig,
+                    null
+                )
+            }.start()
+
+            subscriptionRegistrationHandle = coordinator.followStatusChangesByName(setOf(stateManager!!.name))
         }
     }
+
+    /**
+     * Flow logic requires some messaging config values
+     */
+    private fun getFlowConfig(
+        config: Map<String, SmartConfig>,
+        messagingConfig: SmartConfig
+    ) = config.getConfig(ConfigKeys.FLOW_CONFIG)
+        .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(messagingConfig.getLong(MAX_ALLOWED_MSG_SIZE)))
+        .withValue(PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(messagingConfig.getLong(PROCESSOR_TIMEOUT)))
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
@@ -72,8 +105,6 @@ class FlowMaintenanceImpl @Activate constructor(
     }
 
     override fun stop() {
-        stateManager?.close()
-        stateManager = null
         coordinator.stop()
     }
 
@@ -83,11 +114,12 @@ class FlowMaintenanceImpl @Activate constructor(
         when (event) {
             is StartEvent -> {
                 coordinator.updateStatus(LifecycleStatus.UP)
-                // TODO - this should register to follow the State Manager's lifecycle
             }
 
             is StopEvent -> {
                 logger.trace { "Flow maintenance is stopping..." }
+                subscriptionRegistrationHandle?.close()
+                stateManager?.stop()
             }
         }
     }

@@ -285,33 +285,45 @@ class BatchedUniquenessCheckerImpl(
 
                     val result = when {
                         // Unknown input state -> Immediate failure
-                        unknownInputStates.isNotEmpty() ->
+                        unknownInputStates.isNotEmpty() -> {
+                            log.info("Request for transaction ${request.txId} failed due to unknown " +
+                                    "input states $unknownInputStates")
                             handleRejectedRequest(
                                 request,
                                 UniquenessCheckErrorInputStateUnknownImpl(unknownInputStates)
                             )
+                        }
                         // Unknown reference state -> Immediate failure
-                        unknownReferenceStates.isNotEmpty() ->
+                        unknownReferenceStates.isNotEmpty() -> {
+                            log.info("Request for transaction ${request.txId} failed due to unknown " +
+                                    "reference states $unknownReferenceStates")
                             handleRejectedRequest(
                                 request,
                                 UniquenessCheckErrorReferenceStateUnknownImpl(unknownReferenceStates)
                             )
+                        }
                         // Input state conflict check
-                        inputStateConflicts.isNotEmpty() ->
+                        inputStateConflicts.isNotEmpty() -> {
+                            log.info("Request for transaction ${request.txId} failed due to conflicting " +
+                                    "input states $inputStateConflicts")
                             handleRejectedRequest(
                                 request,
                                 UniquenessCheckErrorInputStateConflictImpl(
                                     inputStateConflicts.map { stateDetailsCache[it]!! }
                                 )
                             )
+                        }
                         // Reference state conflict check
-                        referenceStateConflicts.isNotEmpty() ->
+                        referenceStateConflicts.isNotEmpty() -> {
+                            log.info("Request for transaction ${request.txId} failed due to conflicting " +
+                                    "reference states $referenceStateConflicts")
                             handleRejectedRequest(
                                 request,
                                 UniquenessCheckErrorReferenceStateConflictImpl(
                                     referenceStateConflicts.map { stateDetailsCache[it]!! }
                                 )
                             )
+                        }
                         // Time window check
                         !isTimeWindowValid(
                             timeWindowEvaluationTime,
