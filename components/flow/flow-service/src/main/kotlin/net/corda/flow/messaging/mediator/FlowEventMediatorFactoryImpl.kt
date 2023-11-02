@@ -141,7 +141,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
                     FLOW_STATUS_TOPIC, ASYNCHRONOUS)
                 is LedgerPersistenceRequest -> routeTo(rpcClient,
                     rpcEndpoint(PERSISTENCE_WORKER_REST_ENDPOINT, LEDGER_PATH), SYNCHRONOUS)
-                is TokenPoolCacheEvent -> routeTo(messageBusClient,
+                is TokenPoolCacheEvent -> routeTo(rpcClient,
                     rpcEndpoint(TOKEN_SELECTION_WORKER_REST_ENDPOINT, TOKEN_SELECTION_PATH), SYNCHRONOUS)
                 is TransactionVerificationRequest -> routeTo(rpcClient,
                     rpcEndpoint(VERIFICATION_WORKER_REST_ENDPOINT, VERIFICATION_PATH), SYNCHRONOUS)
