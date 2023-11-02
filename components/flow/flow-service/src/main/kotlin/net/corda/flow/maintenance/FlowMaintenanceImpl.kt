@@ -83,7 +83,7 @@ class FlowMaintenanceImpl @Activate constructor(
                 )
             }.start()
 
-            coordinator.followStatusChangesByName(setOf(stateManager!!.name))
+            subscriptionRegistrationHandle = coordinator.followStatusChangesByName(setOf(stateManager!!.name))
         }
     }
 
