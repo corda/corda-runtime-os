@@ -41,7 +41,7 @@ import net.corda.rest.response.ResponseEntity
 import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.rest.ws.DuplexChannel
 import net.corda.rest.ws.WebSocketValidationException
-import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_MAPPER_START
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
 import net.corda.tracing.TraceTag
 import net.corda.tracing.addTraceContextToRecord
@@ -203,7 +203,7 @@ class FlowRestResourceImpl @Activate constructor(
             val status = messageFactory.createStartFlowStatus(clientRequestId, vNode, flowClassName)
 
             val records = listOf(
-                addTraceContextToRecord(Record(FLOW_MAPPER_EVENT_TOPIC,
+                addTraceContextToRecord(Record(FLOW_MAPPER_START,
                     getKeyForStartEvent(status.key, holdingIdentityShortHash), startEvent)),
                 Record(FLOW_STATUS_TOPIC, status.key, status),
             )
