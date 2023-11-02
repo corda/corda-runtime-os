@@ -37,9 +37,9 @@ class KryoCheckpointSerializerBuilderImpl(
         (Fiber.getFiberSerializer(classResolver, false) as KryoSerializer).kryo
     }
 ) : CheckpointSerializerBuilder {
-
     private val serializers: MutableMap<Class<*>, Serializer<*>> = mutableMapOf()
     private val singletonInstances: MutableMap<String, SingletonSerializeAsToken> = mutableMapOf()
+    private val maximumCapacity = Integer.getInteger("net.corda.kryo.serialization.pool.maximumCapacity", 1000)
 
     override fun addSerializer(
         clazz: Class<*>,
@@ -69,7 +69,7 @@ class KryoCheckpointSerializerBuilderImpl(
         return this
     }
 
-    override fun build(maximumCapacity: Int): KryoCheckpointSerializer {
+    override fun build(): KryoCheckpointSerializer {
         val publicKeySerializers = listOf(
             PublicKey::class.java, EdDSAPublicKey::class.java, CompositeKey::class.java,
             BCECPublicKey::class.java, BCRSAPublicKey::class.java, BCSphincs256PublicKey::class.java
