@@ -60,14 +60,15 @@ class JavalinServer(
     override val endpoints: MutableSet<Endpoint> = ConcurrentHashMap.newKeySet()
 
     override fun start(port: Int) {
-        check(null == server) { "The Javalin webserver is already initialized" }
-        coordinator.start()
-        startServer(port)
+        serverStartLock.withLock {
+            check(null == server) { "The Javalin webserver is already initialized" }
+            coordinator.start()
+            startServer(port)
+        }
     }
 
     private fun startServer(port: Int) {
         // Ensure the server can only be started once at a time.
-        serverStartLock.withLock {
             log.info("Starting Worker Web Server on port: $port")
             server = javalinFactory()
             endpoints.forEach {
@@ -91,7 +92,6 @@ class JavalinServer(
                 ctx.status(404)
             }
             coordinator.updateStatus(LifecycleStatus.UP)
-        }
     }
 
     private fun stopServer() {
@@ -100,18 +100,22 @@ class JavalinServer(
     }
 
     private fun restartServer() {
-        // restart server without marking the component down.
-        checkNotNull(server) { "Cannot restart a non-existing server" }
-        val port = server?.port()
-        stopServer()
-        checkNotNull(port) { "Required port is null" }
-        startServer(port)
+        serverStartLock.withLock {
+            // restart server without marking the component down.
+            checkNotNull(server) { "Cannot restart a non-existing server" }
+            val port = server?.port()
+            stopServer()
+            checkNotNull(port) { "Required port is null" }
+            startServer(port)
+        }
     }
 
     override fun stop() {
-        coordinator.updateStatus(LifecycleStatus.DOWN)
-        stopServer()
-        coordinator.stop()
+        serverStartLock.withLock {
+            coordinator.updateStatus(LifecycleStatus.DOWN)
+            stopServer()
+            coordinator.stop()
+        }
     }
 
     override fun registerEndpoint(endpoint: Endpoint) {
