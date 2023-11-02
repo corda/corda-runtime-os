@@ -20,7 +20,9 @@ import net.corda.taskmanager.TaskManager
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.lang.Thread.sleep
+import java.time.Duration
 import java.util.UUID
+import java.util.concurrent.CompletionException
 import java.util.concurrent.atomic.AtomicBoolean
 
 @Suppress("LongParameterList")
@@ -60,6 +62,9 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 
     private val stopped = AtomicBoolean(false)
     private val running = AtomicBoolean(false)
+    // TODO This timeout was set with CORE-17768 (changing configuration value would affect other messaging patterns)
+    //  This should be reverted to use configuration value once event mediator polling is refactored (planned for 5.2)
+    private val pollTimeout = Duration.ofMillis(20)
 
     override fun start() {
         log.debug { "Starting multi-source event mediator with config: $config" }
@@ -145,7 +150,8 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                 processEvents()
                 keepProcessing = false
             } catch (exception: Exception) {
-                when (exception) {
+                val cause = if (exception is CompletionException) exception.cause else exception
+                when (cause) {
                     is CordaMessageAPIIntermittentException -> {
                         attempts++
                         handleProcessEventRetries(attempts, exception)
@@ -192,7 +198,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     private fun pollConsumers(): List<CordaConsumerRecord<K, E>> {
         return metrics.pollTimer.recordCallable {
             consumers.map { consumer ->
-                consumer.poll(config.pollTimeout)
+                consumer.poll(pollTimeout)
             }.flatten()
         }!!
     }
