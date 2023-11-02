@@ -13,7 +13,6 @@ import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.constants.WorkerRPCPaths.CRYPTO_PATH
@@ -41,8 +40,6 @@ import net.corda.schema.configuration.BootConfig.PERSISTENCE_WORKER_REST_ENDPOIN
 import net.corda.schema.configuration.BootConfig.TOKEN_SELECTION_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.UNIQUENESS_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.VERIFICATION_WORKER_REST_ENDPOINT
-import net.corda.schema.configuration.ConfigKeys
-import net.corda.schema.configuration.FlowConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
