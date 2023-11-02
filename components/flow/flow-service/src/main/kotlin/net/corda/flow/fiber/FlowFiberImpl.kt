@@ -129,13 +129,17 @@ class FlowFiberImpl(
         parkAndCustomSerialize { _ ->
             resetLoggingContext()
             log.trace { "Parking..." }
-            log.info("Fiber stack: ${this.interruptStack}")
             val fiberState = CordaMetrics.Metric.FlowFiberSerializationTime.builder()
                 .forVirtualNode(getExecutionContext().flowCheckpoint.holdingIdentity.shortHash.toString())
                 .withTag(CordaMetrics.Tag.FlowClass, getExecutionContext().flowCheckpoint.flowStartContext.flowClassName)
                 .build()
                 .recordCallable {
-                    getExecutionContext().sandboxGroupContext.checkpointSerializer.serialize(this)
+                    try {
+                        getExecutionContext().sandboxGroupContext.checkpointSerializer.serialize(this)
+                    } catch (e: Exception) {
+                        log.warn("Failed to serialize. Fiber stack: ${this.stackTrace.joinToString("\n")}")
+                        throw e
+                    }
                 }!!
             flowCompletion.complete(FlowIORequest.FlowSuspended(ByteBuffer.wrap(fiberState), request, prepareForCaching()))
         }
