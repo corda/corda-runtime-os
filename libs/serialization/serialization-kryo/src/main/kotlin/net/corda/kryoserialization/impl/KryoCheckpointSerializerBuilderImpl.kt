@@ -25,6 +25,7 @@ import org.bouncycastle.jcajce.interfaces.EdDSAPublicKey
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey
 import org.bouncycastle.jcajce.provider.asymmetric.rsa.BCRSAPublicKey
 import org.bouncycastle.pqc.jcajce.provider.sphincs.BCSphincs256PublicKey
+import org.slf4j.LoggerFactory
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.util.function.Function
@@ -39,7 +40,10 @@ class KryoCheckpointSerializerBuilderImpl(
 ) : CheckpointSerializerBuilder {
     private val serializers: MutableMap<Class<*>, Serializer<*>> = mutableMapOf()
     private val singletonInstances: MutableMap<String, SingletonSerializeAsToken> = mutableMapOf()
-    private val maximumCapacity = Integer.getInteger("net.corda.kryo.serialization.pool.maximumCapacity", 1000)
+
+    private companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
     override fun addSerializer(
         clazz: Class<*>,
@@ -80,7 +84,8 @@ class KryoCheckpointSerializerBuilderImpl(
             X500Principal::class.java to X500PrincipalSerializer()
         )
 
-        val pool = object : Pool<Kryo>(true, false, maximumCapacity) {
+        logger.info("Building Kryo Pool With No Maximum Capacity")
+        val pool = object : Pool<Kryo>(true, false) {
             override fun create(): Kryo {
                 val classResolver = CordaClassResolver(sandboxGroup)
                 val classSerializer = ClassSerializer(sandboxGroup)
