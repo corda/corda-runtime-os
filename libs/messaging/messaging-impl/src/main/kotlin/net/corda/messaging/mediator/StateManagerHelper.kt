@@ -71,7 +71,7 @@ class StateManagerHelper<K : Any, S : Any, E : Any>(
      * @param value State value.
      * @return Serialized state value.
      */
-    fun serialize(value: S?) =
+    private fun serialize(value: S?) =
         value?.let { stateSerializer.serialize(it) }
 
     /**
