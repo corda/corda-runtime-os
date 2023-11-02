@@ -6,9 +6,14 @@ package net.corda.messaging.api.mediator
 data class RoutingDestination(
     val client: MessagingClient,
     val endpoint: String,
+    val type: Type
 ) {
+    enum class Type {
+        SYNCHRONOUS, ASYNCHRONOUS
+    }
+
     companion object {
-        fun routeTo(client: MessagingClient, endpoint: String) =
-            RoutingDestination(client, endpoint)
+        fun routeTo(client: MessagingClient, endpoint: String, type: Type) =
+            RoutingDestination(client, endpoint, type)
     }
 }
