@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.sandbox.impl
 
+import net.corda.flow.FiberConstants
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl.Companion.CHECKPOINT_SERIALIZER
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl.Companion.NON_INJECTABLE_SINGLETONS
 import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
@@ -59,7 +60,7 @@ class CheckpointSerializerProvider @Activate constructor(
                 logger.trace("Registering internal checkpoint serializer {}", serializer::class.java.name)
                 builder.addSerializer(serializer.type, serializer)
             }
-            builder.build()
+            builder.build(FiberConstants.maximumCacheSize)
         }
 
         context.putObjectByKey(CHECKPOINT_SERIALIZER, checkpointSerializer)

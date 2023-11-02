@@ -5,6 +5,7 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.data.flow.FlowKey
 import net.corda.data.identity.HoldingIdentity
+import net.corda.flow.FiberConstants
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.sandboxgroupcontext.SandboxGroupType
@@ -29,11 +30,9 @@ class FlowFiberCacheImpl @Activate constructor(
 
     private companion object {
         private val logger = LoggerFactory.getLogger(FlowFiberCacheImpl::class.java)
-        private const val FLOW_FIBER_CACHE_MAX_SIZE_PROPERTY_NAME = "net.corda.flow.fiber.cache.maximumSize"
         private const val FLOW_FIBER_CACHE_EXPIRE_AFTER_WRITE_SECONDS_PROPERTY_NAME = "net.corda.flow.fiber.cache.expireAfterWriteSeconds"
     }
 
-    private val maximumSize = java.lang.Long.getLong(FLOW_FIBER_CACHE_MAX_SIZE_PROPERTY_NAME, 10000)
     private val expireAfterWriteSeconds = java.lang.Long.getLong(FLOW_FIBER_CACHE_EXPIRE_AFTER_WRITE_SECONDS_PROPERTY_NAME, 600)
 
     private data class FiberCacheValue(val fiber: FlowFiber, val suspendCount: Int)
@@ -41,7 +40,7 @@ class FlowFiberCacheImpl @Activate constructor(
     private val cache: Cache<FlowKey, FiberCacheValue> = CacheFactoryImpl().build(
         "flow-fiber-cache",
         Caffeine.newBuilder()
-            .maximumSize(maximumSize)
+            .maximumSize(FiberConstants.maximumCacheSize.toLong())
             .expireAfterWrite(Duration.ofSeconds(expireAfterWriteSeconds))
     )
 

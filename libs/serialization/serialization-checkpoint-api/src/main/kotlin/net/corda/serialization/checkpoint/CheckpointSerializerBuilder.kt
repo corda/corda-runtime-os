@@ -44,7 +44,9 @@ interface CheckpointSerializerBuilder {
 
     /**
      * Builds and returns the configured [CheckpointSerializer]
+     *
+     * @param maximumCapacity Maximum number of the internal cache size.
      * @return the completed and ready [CheckpointSerializer]
      */
-    fun build(): CheckpointSerializer
+    fun build(maximumCapacity: Int = 10): CheckpointSerializer
 }

@@ -69,7 +69,7 @@ class KryoCheckpointSerializerBuilderImpl(
         return this
     }
 
-    override fun build(): KryoCheckpointSerializer {
+    override fun build(maximumCapacity: Int): KryoCheckpointSerializer {
         val publicKeySerializers = listOf(
             PublicKey::class.java, EdDSAPublicKey::class.java, CompositeKey::class.java,
             BCECPublicKey::class.java, BCRSAPublicKey::class.java, BCSphincs256PublicKey::class.java
@@ -80,7 +80,7 @@ class KryoCheckpointSerializerBuilderImpl(
             X500Principal::class.java to X500PrincipalSerializer()
         )
 
-        val pool = object : Pool<Kryo>(true, false, 8) {
+        val pool = object : Pool<Kryo>(true, false, maximumCapacity) {
             override fun create(): Kryo {
                 val classResolver = CordaClassResolver(sandboxGroup)
                 val classSerializer = ClassSerializer(sandboxGroup)
