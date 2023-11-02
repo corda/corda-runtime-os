@@ -14,16 +14,16 @@ import java.util.LinkedHashMap
 internal object LinkedKeySetSerializer : Serializer<Set<*>>() {
     val serializedType: Class<out Set<*>> = LinkedHashMap<Any, Any>().keys::class.java
 
+    private val outerMapField = serializedType.getDeclaredField("this$0").apply {
+        isAccessible = true
+    }
+
     override fun write(kryo: Kryo, output: Output?, obj: Set<*>) {
-        kryo.writeClassAndObject(output, obj.toList())
+        kryo.writeClassAndObject(output, outerMapField.get(obj))
     }
 
     override fun read(kryo: Kryo, input: Input?, type: Class<out Set<*>>): Set<*> {
-        @Suppress("UNCHECKED_CAST")
-        val deserializedList = kryo.readClassAndObject(input) as List<*>
-
-        // Grant that the return is a LinkedKeySet
-        val collectionMap = deserializedList.associateBy({ it }, { Any() }) as Map<*, *>
-        return collectionMap.entries
+        val map = kryo.readClassAndObject(input) as Map<*,*>
+        return map.keys
     }
 }
