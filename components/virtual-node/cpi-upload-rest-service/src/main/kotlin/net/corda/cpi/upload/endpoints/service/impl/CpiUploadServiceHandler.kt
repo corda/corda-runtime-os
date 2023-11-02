@@ -93,7 +93,7 @@ class CpiUploadServiceHandler(
     ) {
         log.info("CPI Upload Service Handler event - config changed")
         val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
-        cpiUploadManager?.close()
+        cpiUploadManager?.close() //TODO: re-write this to allow updates of publisher instead of recreating the whole thing
         cpiUploadManager = cpiUploadManagerFactory.create(
             messagingConfig,
             publisherFactory,

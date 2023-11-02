@@ -4,6 +4,7 @@ import net.corda.crypto.core.toCorda
 import net.corda.cpk.write.impl.services.kafka.CpkChunksPublisher
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.CpkChunkId
+import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.utilities.concurrent.getOrThrow
@@ -31,6 +32,10 @@ class KafkaCpkChunksPublisher(
         responses.forEach {
             it.getOrThrow(timeout)
         }
+    }
+
+    override fun updatePublisherConfig(configuration: SmartConfig) {
+        publisher.updateConfiguration(configuration)
     }
 
     override fun close() {

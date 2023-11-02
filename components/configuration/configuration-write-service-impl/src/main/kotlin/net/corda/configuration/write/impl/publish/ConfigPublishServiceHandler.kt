@@ -39,11 +39,15 @@ class ConfigPublishServiceHandler(
     private fun onBootstrapConfigEvent(event: BootstrapConfigEvent, coordinator: LifecycleCoordinator) {
         val bootstrapConfig = event.bootstrapConfig
         val messagingConfig = configMerger.getMessagingConfig(bootstrapConfig)
-        publisher?.close()
-        publisher = publisherFactory.createPublisher(
-            PublisherConfig(CONFIG_PUBLISH_CLIENT),
-            messagingConfig
-        ).also { it.start() }
+        if (publisher == null) {
+            publisher = publisherFactory.createPublisher(
+                PublisherConfig(CONFIG_PUBLISH_CLIENT),
+                messagingConfig
+            ).also { it.start() }
+        } else {
+            publisher?.updateConfiguration(messagingConfig)
+        }
+
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 }

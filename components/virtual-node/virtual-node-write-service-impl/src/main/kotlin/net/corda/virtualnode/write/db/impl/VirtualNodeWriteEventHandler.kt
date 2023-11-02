@@ -47,10 +47,13 @@ internal class VirtualNodeWriteEventHandler(
         val vnodeDatasourceConfig = event.config.getConfig(ConfigKeys.VNODE_DATASOURCE_CONFIG)
 
         try {
-            virtualNodeWriter?.close()
-            virtualNodeWriter = virtualNodeWriterFactory
-                .create(msgConfig, externalMsgConfig, vnodeDatasourceConfig)
-                .apply { start() }
+            if (virtualNodeWriter == null) {
+                virtualNodeWriter = virtualNodeWriterFactory
+                    .create(msgConfig, externalMsgConfig, vnodeDatasourceConfig)
+                    .apply { start() }
+            } else {
+                virtualNodeWriter?.updatePublisherConfig(msgConfig)
+            }
 
             coordinator.updateStatus(UP)
         } catch (e: Exception) {

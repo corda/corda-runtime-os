@@ -26,7 +26,6 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Instant
-import java.util.concurrent.atomic.AtomicReference
 
 @Component(service = [TriggerPublisher::class])
 class TriggerPublisherImpl constructor(
@@ -53,13 +52,13 @@ class TriggerPublisherImpl constructor(
     override val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<TriggerPublisher>()
 
     private val coordinator = coordinatorFactory.createCoordinator(lifecycleCoordinatorName, this)
-    private val publisher: AtomicReference<Publisher?> = AtomicReference()
+    private var publisher: Publisher? = null
     private var registration: RegistrationHandle? = null
     private var configSubscription: AutoCloseable? = null
 
     override fun publish(taskName: String, topicName: String) {
         logger.trace { "Publishing trigger for $taskName to $topicName" }
-        publisher.get()?.publish(listOf(
+        publisher?.publish(listOf(
             Record(
                 topicName,
                 taskName,
@@ -96,16 +95,18 @@ class TriggerPublisherImpl constructor(
         configSubscription?.close()
         configSubscription = null
 
-        publisher.get()?.close()
-        publisher.set(null)
+        publisher?.close()
+        publisher = null
     }
 
     private fun onConfigChangedEvent(coordinator: LifecycleCoordinator, event: ConfigChangedEvent) {
         val config = event.config[ConfigKeys.MESSAGING_CONFIG] ?: return
         coordinator.updateStatus(LifecycleStatus.DOWN)
-
-        publisher.get()?.close()
-        publisher.set(publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), config))
+        if (publisher == null) {
+            publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), config)
+        } else {
+            publisher?.updateConfiguration(config)
+        }
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 
@@ -118,8 +119,8 @@ class TriggerPublisherImpl constructor(
             coordinator.updateStatus(event.status)
             configSubscription?.close()
             configSubscription = null
-            publisher.get()?.close()
-            publisher.set(null)
+            publisher?.close()
+            publisher = null
         }
     }
 }

@@ -1,5 +1,6 @@
 package net.corda.messaging.api.publisher
 
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Resource
 import net.corda.messaging.api.records.Record
 import java.util.concurrent.CompletableFuture
@@ -57,4 +58,6 @@ interface Publisher : Resource {
      * transactional, then a [CordaMessageAPIFatalException] will also be thrown.
      */
     fun batchPublish(records: List<Record<*, *>>): CompletableFuture<Unit>
+
+    fun updateConfiguration(configuration: SmartConfig)
 }

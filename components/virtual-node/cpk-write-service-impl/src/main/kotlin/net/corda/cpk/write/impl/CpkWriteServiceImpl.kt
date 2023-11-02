@@ -162,7 +162,7 @@ class CpkWriteServiceImpl @Activate constructor(
         logger.info("CPK write reconciliation interval set to $timerEventIntervalMs ms.")
 
         try {
-            createCpkChunksPublisher(messagingConfig)
+            createOrUpdateCpkChunksPublisher(messagingConfig)
         } catch (e: Exception) {
             closeResources()
             coordinator.updateStatus(LifecycleStatus.DOWN)
@@ -271,13 +271,16 @@ class CpkWriteServiceImpl @Activate constructor(
         ).also { it.start() }
     }
 
-    private fun createCpkChunksPublisher(config: SmartConfig) {
-        cpkChunksPublisher?.close()
-        val publisher = publisherFactory.createPublisher(
-            PublisherConfig(CPK_WRITE_CLIENT),
-            config
-        ).also { it.start() }
-        cpkChunksPublisher = KafkaCpkChunksPublisher(publisher, timeout!!, VirtualNode.CPK_FILE_TOPIC)
+    private fun createOrUpdateCpkChunksPublisher(config: SmartConfig) {
+        if (cpkChunksPublisher == null) {
+            val publisher = publisherFactory.createPublisher(
+                PublisherConfig(CPK_WRITE_CLIENT),
+                config
+            ).also { it.start() }
+            cpkChunksPublisher = KafkaCpkChunksPublisher(publisher, timeout!!, VirtualNode.CPK_FILE_TOPIC)
+        } else {
+            cpkChunksPublisher?.updatePublisherConfig(config)
+        }
     }
 
     private fun createCpkStorage() {

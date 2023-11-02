@@ -1,5 +1,6 @@
 package net.corda.messaging.emulation.publisher
 
+import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -67,5 +68,9 @@ class CordaPublisher(
                     topicService.addRecordsToPartition(recordList, partitionId)
                 }
         }
+    }
+
+    override fun updateConfiguration(configuration: SmartConfig) {
+
     }
 }

@@ -3,6 +3,7 @@ package net.corda.virtualnode.write.db.impl.writer
 import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Resource
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.subscription.RPCSubscription
@@ -26,6 +27,10 @@ internal class VirtualNodeWriter internal constructor(
         rpcSubscription.start()
         publisher.start()
         asyncOperationSubscription.start()
+    }
+
+    fun updatePublisherConfig(configuration: SmartConfig) {
+        publisher.updateConfiguration(configuration)
     }
 
     override fun close() {

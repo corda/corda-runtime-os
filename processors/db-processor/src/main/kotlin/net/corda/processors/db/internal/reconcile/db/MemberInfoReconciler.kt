@@ -258,6 +258,7 @@ class MemberInfoReconciler(
 
                 is ConfigChangedEvent -> {
                     val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
+                    // TODO: have a look at this
                     coordinator.createManagedResource(PUBLISHER_RESOURCE_NAME) {
                         publisherFactory.createPublisher(
                             messagingConfig = messagingConfig,

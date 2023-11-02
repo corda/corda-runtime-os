@@ -77,7 +77,7 @@ class GroupParametersWriterServiceImpl @Activate constructor(
     private var _publisher: Publisher? = null
 
     /**
-     * Publisher for Kafka messaging. Recreated after every [MESSAGING_CONFIG] change.
+     * Publisher for Kafka messaging. Updated after every [MESSAGING_CONFIG] change.
      */
     private val publisher: Publisher
         get() = _publisher ?: throw IllegalArgumentException("Publisher is not initialized.")
@@ -186,11 +186,16 @@ class GroupParametersWriterServiceImpl @Activate constructor(
 
     private fun handleConfigChange(event: ConfigChangedEvent) {
         logger.info("Handling config changed event.")
-        _publisher?.close()
-        _publisher = publisherFactory.createPublisher(
-            PublisherConfig("group-parameters-writer-service"),
-            event.config.getConfig(MESSAGING_CONFIG)
-        ).also { it.start() }
+        val msgConfig = event.config.getConfig(MESSAGING_CONFIG)
+        if (_publisher == null) {
+            _publisher = publisherFactory.createPublisher(
+                PublisherConfig("group-parameters-writer-service"),
+                event.config.getConfig(MESSAGING_CONFIG)
+            ).also { it.start() }
+        } else {
+            _publisher?.updateConfiguration(msgConfig)
+        }
+
         activate(coordinator)
     }
 }

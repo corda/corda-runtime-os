@@ -1,5 +1,6 @@
 package net.corda.messaging.publisher
 
+import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
@@ -46,7 +47,7 @@ internal class CordaPublisherImpl(
 
     private data class Batch(val records: List<Record<*, *>>, val future: CompletableFuture<Unit>)
     private val queue = ArrayBlockingQueue<Batch>(QUEUE_SIZE)
-    private val lock = ReentrantReadWriteLock(true)
+    private val lock = ReentrantReadWriteLock()
 
     /**
      * Publish a record.
@@ -73,7 +74,6 @@ internal class CordaPublisherImpl(
     }
 
     override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
-
         val cordaRecords = records.map { Pair(it.first, it.second.toCordaProducerRecord()) }
         val futures = mutableListOf<CompletableFuture<Unit>>()
         lock.read {
@@ -114,6 +114,13 @@ internal class CordaPublisherImpl(
             }
         }
         return batch.future
+    }
+
+    override fun updateConfiguration(configuration: SmartConfig) {
+        lock.write {
+            closeProducerAndSuppressExceptions()
+            cordaProducer = cordaProducerBuilder.createProducer(producerConfig, configuration)
+        }
     }
 
     /**
@@ -206,6 +213,11 @@ internal class CordaPublisherImpl(
                     )
                     lock.readLock().unlock()
                     // Upgrade lock to keep other threads from trying to use the producer while it's being reset
+                    if (lock.isWriteLocked) {
+                        // some other thread is resetting the producer
+                        log.warn("Producer clientId ${config.clientId}, transactional ${config.transactional}, " +
+                        "is being reset by another thread.")
+                    }
                     lock.write {
                         resetProducer()
                     }

@@ -60,11 +60,12 @@ class VirtualNodeStatusCacheServiceImpl @Activate constructor(
     override fun onConfiguration(config: SmartConfig) {
         subReg?.close()
         vNodeStatusSubscription?.close()
-        publisher?.close()
-        publisher = publisherFactory.createPublisher(
-            PublisherConfig("VIRTUAL_NODE_STATUS_CACHE", true),
-            config
-        )
+
+        if (publisher == null) {
+            publisher = publisherFactory.createPublisher(PublisherConfig("VIRTUAL_NODE_STATUS_CACHE", true), config)
+        } else {
+            publisher?.updateConfiguration(config)
+        }
 
         vNodeStatusSubscription = subscriptionFactory.createCompactedSubscription(
             SubscriptionConfig(

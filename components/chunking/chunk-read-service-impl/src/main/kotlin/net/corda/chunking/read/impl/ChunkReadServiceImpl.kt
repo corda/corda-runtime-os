@@ -109,7 +109,7 @@ class ChunkReadServiceImpl @Activate constructor(
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         val bootConfig = event.config.getConfig(BOOT_CONFIG)
-        chunkDbWriter?.close()
+        chunkDbWriter?.close() //TODO: REWORK THIS TO UPDATE CONFIG INSTEAD OF RE-CREATING THE WHOLE DAMN THING AGAIN
         chunkDbWriter = chunkDbWriterFactory
             .create(messagingConfig, bootConfig, dbConnectionManager.getClusterEntityManagerFactory(), cpiInfoWriteService)
             .apply { start() }

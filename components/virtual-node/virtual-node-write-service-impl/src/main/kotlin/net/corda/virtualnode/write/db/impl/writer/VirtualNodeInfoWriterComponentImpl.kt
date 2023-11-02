@@ -145,16 +145,13 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
     private fun onConfigChangedEventReceived(coordinator: LifecycleCoordinator, event: ConfigChangedEvent) {
         log.debug { "Creating resources" }
         coordinator.updateStatus(LifecycleStatus.DOWN)
-        createPublisher(event)
+        val config = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
+        if (publisher == null) {
+            publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), config)
+        } else {
+            publisher?.updateConfiguration(config)
+        }
         coordinator.updateStatus(LifecycleStatus.UP)
-    }
-
-    private fun createPublisher(event: ConfigChangedEvent) {
-        publisher?.close()
-        publisher = publisherFactory.createPublisher(
-            PublisherConfig(CLIENT_ID),
-            event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
-        )
     }
 
     @Deactivate
