@@ -129,10 +129,10 @@ class FlowEventProcessorImpl(
             log.error("DEBUG '${flowEvent?.flowId}'", e)
             flowEventExceptionProcessor.process(e, pipeline.context)
         } catch (e: FlowMarkedForKillException) {
-            log.error("DEBUG", e)
+            log.error("DEBUG '${flowEvent?.flowId}'", e)
             flowEventExceptionProcessor.process(e, pipeline.context)
         } catch (t: Throwable) {
-            log.error("DEBUG", t)
+            log.error("DEBUG '${flowEvent?.flowId}'", t)
             flowEventExceptionProcessor.process(t, pipeline.context)
         }
 
