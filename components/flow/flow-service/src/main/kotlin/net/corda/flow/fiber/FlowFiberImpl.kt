@@ -134,12 +134,7 @@ class FlowFiberImpl(
                 .withTag(CordaMetrics.Tag.FlowClass, getExecutionContext().flowCheckpoint.flowStartContext.flowClassName)
                 .build()
                 .recordCallable {
-                    try {
-                        getExecutionContext().sandboxGroupContext.checkpointSerializer.serialize(this)
-                    } catch (e: Exception) {
-                        log.warn("Failed to serialize. Fiber stack: ${this.stackTrace.joinToString("\n")}")
-                        throw e
-                    }
+                    getExecutionContext().sandboxGroupContext.checkpointSerializer.serialize(this)
                 }!!
             flowCompletion.complete(FlowIORequest.FlowSuspended(ByteBuffer.wrap(fiberState), request, prepareForCaching()))
         }
