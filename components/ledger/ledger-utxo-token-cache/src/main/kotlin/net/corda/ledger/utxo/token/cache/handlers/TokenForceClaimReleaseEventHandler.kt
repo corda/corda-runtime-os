@@ -24,6 +24,9 @@ class TokenForceClaimReleaseEventHandler : TokenEventHandler<ForceClaimRelease> 
         if (!state.claimExists(event.claimId)) {
             log.warn("Couldn't find existing claim for claimId='${event.claimId}'")
         } else {
+            log.info(
+                "Claim Removed (auto) vNode='${event.poolKey.shortHolderId}' FlowId='${event.flowId}' ClaimId='${event.claimId}'"
+            )
             state.removeClaim(event.claimId)
         }
 

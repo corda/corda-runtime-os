@@ -7,6 +7,7 @@ import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
 import net.corda.utilities.time.Clock
+import org.slf4j.LoggerFactory
 import java.time.Duration
 
 class PoolCacheStateImpl(
@@ -15,6 +16,10 @@ class PoolCacheStateImpl(
     private val entityConverter: EntityConverter,
     private val clock: Clock
 ) : PoolCacheState {
+
+    private companion object {
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
     private var claimedTokens: Map<String, CachedToken>
     private val claimTimeoutOffsetMillis = Duration
@@ -77,6 +82,9 @@ class PoolCacheStateImpl(
             .toSet()
 
         if (claimsToRemove.isNotEmpty()) {
+            log.info(
+                "Claims Removed (timeout)='${ claimsToRemove.joinToString (", ")}'"
+            )
             cacheState.tokenClaims = cacheState.tokenClaims.filterNot { claimsToRemove.contains(it.claimId) }
             claimedTokens = createClaimedTokenMap()
         }
