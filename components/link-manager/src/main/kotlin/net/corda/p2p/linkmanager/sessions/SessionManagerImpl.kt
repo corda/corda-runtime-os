@@ -1258,6 +1258,7 @@ internal class SessionManagerImpl(
                     counterparties.status,
                     counterparties.serial
                 )
+                recordHeartbeatMetric(counterparties.ourId, counterparties.counterpartyId)
                 executorService.schedule(
                     { sendHeartbeat(counterparties, session) },
                     heartbeatPeriod,
@@ -1330,6 +1331,14 @@ internal class SessionManagerImpl(
 
         private fun recordSessionTimeoutMetric(source: HoldingIdentity, destination: HoldingIdentity) {
             CordaMetrics.Metric.OutboundSessionTimeoutCount.builder()
+                .withTag(CordaMetrics.Tag.SourceVirtualNode, source.x500Name.toString())
+                .withTag(CordaMetrics.Tag.DestinationVirtualNode, destination.x500Name.toString())
+                .withTag(CordaMetrics.Tag.MembershipGroup, source.groupId)
+                .build().increment()
+        }
+
+        private fun recordHeartbeatMetric(source: HoldingIdentity, destination: HoldingIdentity) {
+            CordaMetrics.Metric.SessionHeartbeatCount.builder()
                 .withTag(CordaMetrics.Tag.SourceVirtualNode, source.x500Name.toString())
                 .withTag(CordaMetrics.Tag.DestinationVirtualNode, destination.x500Name.toString())
                 .withTag(CordaMetrics.Tag.MembershipGroup, source.groupId)

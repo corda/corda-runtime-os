@@ -208,6 +208,11 @@ object CordaMetrics {
         object OutboundSessionTimeoutCount : Metric<Counter>("p2p.session.outbound.timeout", Metrics::counter)
 
         /**
+         * Number of outbound heartbeat messages sent.
+         */
+        object SessionHeartbeatCount : Metric<Counter>("p2p.session.heartbeat", Metrics::counter)
+
+        /**
          * Number of outbound peer-to-peer sessions.
          */
         class OutboundSessionCount(computation: Supplier<Number>): ComputedValue<Nothing>("p2p.session.outbound", computation)
