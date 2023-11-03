@@ -126,9 +126,9 @@ class ChunkReadServiceImpl @Activate constructor(
 
     @Deactivate
     fun close() {
+        configSubscription?.close()
+        registration?.close()
         lock.withLock {
-            configSubscription?.close()
-            registration?.close()
             chunkDbWriter?.close()
         }
     }
