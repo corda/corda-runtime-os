@@ -117,22 +117,22 @@ class FlowEventProcessorImpl(
                 .globalPostProcessing()
                 .context
         } catch (e: FlowTransientException) {
-            log.error("DEBUG '${flowEvent?.flowId}'", e)
+            log.error("DEBUG '${flowEvent.flowId}'", e)
             flowEventExceptionProcessor.process(e, pipeline.context)
         } catch (e: FlowEventException) {
-            log.error("DEBUG '${flowEvent?.flowId}'", e)
+            log.error("DEBUG '${flowEvent.flowId}'", e)
             flowEventExceptionProcessor.process(e, pipeline.context)
         } catch (e: FlowPlatformException) {
-            log.error("DEBUG '${flowEvent?.flowId}'", e)
+            log.error("DEBUG '${flowEvent.flowId}'", e)
             flowEventExceptionProcessor.process(e, pipeline.context)
         } catch (e: FlowFatalException) {
-            log.error("DEBUG '${flowEvent?.flowId}'", e)
+            log.error("DEBUG '${flowEvent.flowId}'", e)
             flowEventExceptionProcessor.process(e, pipeline.context)
         } catch (e: FlowMarkedForKillException) {
-            log.error("DEBUG '${flowEvent?.flowId}'", e)
+            log.error("DEBUG '${flowEvent.flowId}'", e)
             flowEventExceptionProcessor.process(e, pipeline.context)
         } catch (t: Throwable) {
-            log.error("DEBUG '${flowEvent?.flowId}'", t)
+            log.error("DEBUG '${flowEvent.flowId}'", t)
             flowEventExceptionProcessor.process(t, pipeline.context)
         }
 
