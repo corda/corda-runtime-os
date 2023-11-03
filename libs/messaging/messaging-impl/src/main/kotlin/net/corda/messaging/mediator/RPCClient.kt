@@ -117,7 +117,7 @@ class RPCClient(
             buildMetricForResponse(startTime, SUCCESS, request, response)
             response
         } catch (ex: Exception) {
-            log.debug { "Catching exception in HttpClient sendWithRetry in order to log metrics, $ex" }
+            log.warn( "Catching exception in HttpClient sendWithRetry in order to log metrics, $ex" )
             buildMetricForResponse(startTime, FAILED, request)
             throw ex
         }
