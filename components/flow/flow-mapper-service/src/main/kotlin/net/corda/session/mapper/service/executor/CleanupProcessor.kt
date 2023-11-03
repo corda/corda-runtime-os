@@ -26,16 +26,16 @@ class CleanupProcessor(
         logger.debug { "Cleanup event received with ${event.ids.size} IDs to remove" }
         val states = stateManager.get(event.ids)
         logger.trace { "Looked up ${states.size} states" }
-        val failed = stateManager.delete(states.values)
-        if (failed.isNotEmpty()) {
-            logger.info(
-                "Failed to delete ${failed.size} mapper states when executing a cleanup event. Failed IDs: ${
-                    failed.keys.joinToString(
-                        ","
-                    )
-                }"
-            )
-        }
+//        val failed = stateManager.delete(states.values)
+//        if (failed.isNotEmpty()) {
+//            logger.info(
+//                "Failed to delete ${failed.size} mapper states when executing a cleanup event. Failed IDs: ${
+//                    failed.keys.joinToString(
+//                        ","
+//                    )
+//                }"
+//            )
+//        }
     }
 
     override val keyClass = String::class.java
