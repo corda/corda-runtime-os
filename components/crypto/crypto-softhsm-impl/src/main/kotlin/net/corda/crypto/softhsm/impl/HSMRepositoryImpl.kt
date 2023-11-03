@@ -133,12 +133,13 @@ class HSMRepositoryImpl(
                 }
             }
         } catch(e: PersistenceException) {
+            val match = e.cause?.message?.contains("ConstraintViolationException") ?: false
             // NOTE: this is not great, but we must be able to detect a constraint violation in case
             //  of a race condition, however, the JPA exception type doesn't give us enough info, so we check
             //  the hibernate generated message.
-            if (e.message?.contains("ConstraintViolationException") == true) {
-                findTenantAssociation(tenantId, category) ?:
-                throw IllegalStateException("unable to find tenant assocation $tenantId:$category after constraint violation")
+            if (match) {
+                findTenantAssociation(tenantId, category)
+                    ?: throw IllegalStateException("unable to find tenant assocation $tenantId:$category after constraint violation")
             } else {
                 throw e
             }
