@@ -209,14 +209,6 @@ internal class CordaPublisherImpl(
                     )
                 }
 
-                is CordaMessageAPIFatalException -> {
-                    // THIS CAN BE FENCING - we need to close this producer
-                    logErrorAndSetFuture(
-                        "Producer clientId ${config.clientId}, transactional ${config.transactional}, " +
-                                "failed to send", ex, future, true
-                    )
-                }
-
                 else -> {
                     logErrorAndSetFuture(
                         "Producer clientId ${config.clientId}, transactional ${config.transactional}, " +
@@ -234,7 +226,6 @@ internal class CordaPublisherImpl(
     private fun setFutureFromResponse(exception: Exception?, future: CompletableFuture<Unit>, topic: String) {
         val message = "Producer clientId ${config.clientId}, transactional ${config.transactional}, " +
                 "for topic $topic failed to send"
-
         when (exception) {
             null -> {
                 //transaction operation can still fail at commit stage  so do not set to true until it is committed
@@ -301,6 +292,7 @@ internal class CordaPublisherImpl(
         try {
             cordaProducer.close()
         } catch (ex: Exception) {
+
             log.warn("CordaPublisherImpl failed to close producer safely. ClientId: ${config.clientId}", ex)
         }
     }
