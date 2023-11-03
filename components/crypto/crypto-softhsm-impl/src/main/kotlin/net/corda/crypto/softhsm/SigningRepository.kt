@@ -17,9 +17,15 @@ interface SigningRepository : Closeable {
     /**
      * Saving a new key information.
      *
-     * @throws [IllegalStateException] if the key already exists.
+     * @param context data about the key store (the DTO)
+     * @param replace allow keys to be replaced in the database normally this is used
+     *                to add keys. If this is set it is permitted to replace the
+     *                records for a key pair. There's no problem setting replace to true
+     *                when adding a fresh key.
+     *
+     * @throws [IllegalStateException] if the key already exists and replace is false.
      */
-    fun savePrivateKey(context: SigningWrappedKeySaveContext): SigningKeyInfo
+    fun savePrivateKey(context: SigningWrappedKeySaveContext, replace: Boolean = false): SigningKeyInfo
 
     /**
      * Find a key record by its alias.

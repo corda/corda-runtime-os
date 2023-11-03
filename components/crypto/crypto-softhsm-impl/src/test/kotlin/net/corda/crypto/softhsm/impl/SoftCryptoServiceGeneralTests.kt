@@ -622,7 +622,7 @@ class SoftCryptoServiceGeneralTests {
             on { publicKey } doReturn generatedKey.publicKey
         }
         val repo = mock<SigningRepository> {
-            on { savePrivateKey(any()) } doReturn signingKeyInfo
+            on { savePrivateKey(any(), any()) } doReturn signingKeyInfo
         }
         val scheme = ECDSA_SECP256R1_TEMPLATE.makeScheme("BC")
         val wrappingRepository = mock<WrappingRepository>() {
@@ -669,7 +669,8 @@ class SoftCryptoServiceGeneralTests {
                         alias == expectedAlias &&
                         externalId == null &&
                         keyScheme == scheme
-            }
+            },
+            any()
         )
         verify(repo, times(1)).savePrivateKey(
             argThat {
@@ -677,7 +678,8 @@ class SoftCryptoServiceGeneralTests {
                         alias == expectedAlias &&
                         externalId == expectedExternalId &&
                         keyScheme == scheme
-            }
+            },
+            any()
         )
     }
 
@@ -915,5 +917,31 @@ class SoftCryptoServiceGeneralTests {
 
         // AES may have a different initialisation vector so wrappedWithRoot1Again will usually not equal
         // wrappedWithRoot1
+    }
+
+    @Test
+    fun `can rewrap a private signing key`() {
+        val tenantId = "ID"
+        val wrap1 = "wrap1"
+        val wrap2 = "wrap2"
+        val keyAlias = "alias1"
+        val rootWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
+        val myCryptoService = makeSoftCryptoService(
+            wrappingRepository = cryptoRepositoryWrapping,
+            schemeMetadata = schemeMetadata,
+            rootWrappingKey = rootWrappingKey,
+        )
+        myCryptoService.createWrappingKey(wrap1, true, emptyMap())
+        myCryptoService.createWrappingKey(wrap2, true, emptyMap())
+        val keyPair = myCryptoService.generateKeyPair(
+            tenantId = tenantId,
+            category = CryptoConsts.Categories.LEDGER,
+            alias = keyAlias,
+            externalId = UUID.randomUUID().toString(),
+            scheme = schemeMetadata.findKeyScheme(ECDSA_SECP256R1_CODE_NAME),
+            context = mapOf("parentKeyAlias" to wrap1)
+        )
+        val newKeyPair: SigningKeyInfo = myCryptoService.rewrapSigningKey(tenantId, keyPair.publicKey, wrap2)
+        assertThat(newKeyPair.keyMaterial).isNotEqualTo(keyPair.keyMaterial)
     }
 }

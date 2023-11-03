@@ -610,6 +610,28 @@ open class SoftCryptoService(
         }
     }
 
+    override fun rewrapSigningKey(tenantId: String, publicKey: PublicKey, newWrappingKeyAlias: String): SigningKeyInfo {
+        val newWrappingKey = obtainAndStoreWrappingKey(newWrappingKeyAlias, tenantId)
+        signingRepositoryFactory.getInstance(tenantId).use {signingRepo ->
+            val signingKeyInfo = checkNotNull(signingRepo.findKey(publicKey))
+            val oldWrappingKey = obtainAndStoreWrappingKey(signingKeyInfo.wrappingKeyAlias, tenantId)
+            val clearPrivateKeyBytes = oldWrappingKey.unwrap(signingKeyInfo.keyMaterial)
+            val newKeyMaterial = newWrappingKey.wrap(clearPrivateKeyBytes)
+            val keyScheme = supportedSchemes.keys.first { it.codeName == signingKeyInfo.schemeCodeName }
+            val alias = checkNotNull(signingKeyInfo.alias)
+            return signingRepo.savePrivateKey(
+                SigningWrappedKeySaveContext(
+                    key = GeneratedWrappedKey(publicKey, newKeyMaterial, PRIVATE_KEY_ENCODING_VERSION),
+                    wrappingKeyAlias = newWrappingKeyAlias,
+                    externalId = signingKeyInfo.externalId,
+                    alias = alias,
+                    category = signingKeyInfo.category,
+                    keyScheme = keyScheme
+                ),
+                replace = true
+            )
+        }
+    }
     override fun close() {
     }
 

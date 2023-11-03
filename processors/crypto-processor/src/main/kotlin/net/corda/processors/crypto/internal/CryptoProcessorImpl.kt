@@ -156,7 +156,7 @@ class CryptoProcessorImpl @Activate constructor(
 
     @Volatile
     private var dependenciesUp: Boolean = false
-    
+
     private lateinit var cryptoService: CryptoService
     private lateinit var tenantInfoService: TenantInfoService
 
@@ -218,7 +218,7 @@ class CryptoProcessorImpl @Activate constructor(
             }
         }
     }
-    
+
     @Suppress("ThrowsCount")
     private fun startCryptoService(config: SmartConfig, tenantInfoService: TenantInfoService): CryptoService {
         logger.info("Creating instance of the {}", SoftCryptoService::class.java.name)
@@ -268,7 +268,7 @@ class CryptoProcessorImpl @Activate constructor(
                 ),
                 tenantId = tenantId
             )
-        } 
+        }
         val signingRepositoryFactory = { tenantId: String ->
             SigningRepositoryImpl(
                 entityManagerFactory = getEntityManagerFactory(
@@ -297,12 +297,12 @@ class CryptoProcessorImpl @Activate constructor(
             wrappingKeyCache = wrappingKeyCache,
             privateKeyCache = privateKeyCache,
             shortHashCache = shortHashCache,
-            keyPairGeneratorFactory = keyPairGeneratorFactory, 
+            keyPairGeneratorFactory = keyPairGeneratorFactory,
             wrappingKeyFactory = wrappingKeyFactory,
             tenantInfoService = tenantInfoService
         )
     }
-    
+
     private fun startTenantInfoService() = TenantInfoServiceImpl {
         HSMRepositoryImpl(
             getEntityManagerFactory(

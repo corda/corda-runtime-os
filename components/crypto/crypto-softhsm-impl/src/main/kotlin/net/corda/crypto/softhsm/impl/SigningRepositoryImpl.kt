@@ -50,7 +50,7 @@ class SigningRepositoryImpl(
     override fun close() = entityManagerFactory.close()
 
     @Suppress("NestedBlockDepth")
-    override fun savePrivateKey(context: SigningWrappedKeySaveContext): SigningKeyInfo {
+    override fun savePrivateKey(context: SigningWrappedKeySaveContext, replace:Boolean): SigningKeyInfo {
         val publicKeyBytes = keyEncodingService.encodeAsByteArray(context.key.publicKey)
         val keyId = publicKeyIdFromBytes(publicKeyBytes)
         val fullKeyId = fullPublicKeyIdFromBytes(publicKeyBytes, digestService)
@@ -90,8 +90,12 @@ class SigningRepositoryImpl(
         )
 
         entityManagerFactory.createEntityManager().use {
-            it.transaction {
-                it.persist(materialEntity)
+            it.transaction { em ->
+                if (replace) {
+                    em.merge(materialEntity)
+                } else {
+                    em.persist(materialEntity)
+                }
             }
         }
 

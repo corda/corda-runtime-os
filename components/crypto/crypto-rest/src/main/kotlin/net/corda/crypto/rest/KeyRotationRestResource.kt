@@ -36,7 +36,7 @@ interface KeyRotationRestResource : RestResource {
     fun getKeyRotationStatus(): List<Pair<String, List<String>>>
 
     /**
-     * Initiates the key rotation process. 
+3     * Initiates the key rotation process.
      *
      * @param oldKeyAlias Alias of the key to be rotated.
      * @param newKeyAlias Alias of the new key the [oldKeyAlias] key will be rotated with.

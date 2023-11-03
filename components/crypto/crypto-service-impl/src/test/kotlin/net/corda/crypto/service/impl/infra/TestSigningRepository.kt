@@ -27,7 +27,7 @@ class TestSigningRepository: SigningRepository {
     private val lock = ReentrantLock()
     private val keys = mutableMapOf<ShortHash, SigningKeyInfo>()
 
-    override fun savePrivateKey(context: SigningWrappedKeySaveContext): SigningKeyInfo = lock.withLock {
+    override fun savePrivateKey(context: SigningWrappedKeySaveContext, replace:Boolean): SigningKeyInfo = lock.withLock {
         val encodedKey = context.key.publicKey.encoded
         return SigningKeyInfo(
             id = publicKeyShortHashFromBytes(encodedKey),

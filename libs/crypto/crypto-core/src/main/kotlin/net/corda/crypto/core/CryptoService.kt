@@ -314,4 +314,23 @@ interface CryptoService {
      *         in the configuration unmanaged keys map or targetAlias is not found
      */
     fun rewrapWrappingKey(tenantId: String, targetAlias: String, newParentKeyAlias: String): Int
+
+    /**
+     * Rotate the encryption of a private key withing a signing key itself, without changing the private key itself,
+     * just the way it is stored in the database. The crypto processor must have access to the wrapping key currently
+     * used to protect the private key in the database. This updates the database.
+     *
+     * We call this 'rewrapSigningKey' since we typically name asymmetric key pairs as signing keys. We treat
+     * only the private key pair of the key pair as sensitive.
+     *
+     * @param tenantId the tenant that owns the private key
+     * @param publicKey the public key within the key pair to rotate
+     * @param newWrappingKeyAlias the new wrapping key to use
+     * @return updated information about the signing key pair
+     *
+     * @throws IllegalStateException if:
+     *    - the public key cannot be found in the specified tenant's signing keys table
+     *    - the new wrapping key cannot be found
+     */
+    fun rewrapSigningKey(tenantId: String, publicKey: PublicKey, newWrappingKeyAlias: String): SigningKeyInfo
 }

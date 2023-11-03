@@ -14,8 +14,9 @@ import java.time.Instant
 
 class TestSigningRepository(val tenantId: String="test") : SigningRepository {
     private val keys = mutableMapOf<ShortHash, SigningKeyInfo>()
+    private val keysByPublicKey = mutableMapOf<PublicKey, SigningKeyInfo>()
 
-    override fun savePrivateKey(context: SigningWrappedKeySaveContext): SigningKeyInfo {
+    override fun savePrivateKey(context: SigningWrappedKeySaveContext, replace: Boolean): SigningKeyInfo {
         val encodedKey = context.key.publicKey.encoded
         return SigningKeyInfo(
             id = publicKeyShortHashFromBytes(encodedKey),
@@ -34,14 +35,19 @@ class TestSigningRepository(val tenantId: String="test") : SigningRepository {
             "SOFT",
             status = SigningKeyStatus.NORMAL
         ).also {
-            if (keys.putIfAbsent(it.id, it) != null) {
-                throw IllegalArgumentException("The key ${it.id} already exists.")
+            if (replace) {
+                keys.put(it.id, it)
+            } else {
+                if (keys.putIfAbsent(it.id, it) != null) {
+                    throw IllegalArgumentException("The key ${it.id} already exists.")
+                }
             }
+            keysByPublicKey.put(it.publicKey, it)
         }
     }
 
     override fun findKey(alias: String): SigningKeyInfo? = null
-    override fun findKey(publicKey: PublicKey): SigningKeyInfo? = null
+    override fun findKey(publicKey: PublicKey): SigningKeyInfo? = keysByPublicKey.get(publicKey)
 
     override fun query(
         skip: Int,
