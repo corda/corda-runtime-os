@@ -26,13 +26,13 @@ class LinkedKeySetSerializerTest {
         )
 
         val output = Output(200)
-        kryo.writeClassAndObject(output, map)
-        kryo.writeClassAndObject(output, keySet)
+        // Need to serialize map and keyset together in the same call, as a second call resets all of Kryo's reference
+        // resolvers, preventing the deserialized objects from having the correct references.
+        kryo.writeClassAndObject(output, map to keySet)
         output.close()
 
         val input = Input(output.buffer)
-        val newMap = kryo.readClassAndObject(input) as Map<String, *>
-        val testedEntries = kryo.readClassAndObject(input) as MutableSet<*>
+        val (newMap, testedEntries) = kryo.readClassAndObject(input) as Pair<Map<String, *>, MutableSet<*>>
         input.close()
 
         assertThat(testedEntries).isEqualTo(keySet)
