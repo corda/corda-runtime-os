@@ -100,10 +100,7 @@ class TriggerPublisherImpl constructor(
         configSubscription?.close()
         configSubscription = null
 
-        lock.withLock {
-            publisher?.close()
-            publisher = null
-        }
+        closePublisher()
     }
 
     private fun onConfigChangedEvent(coordinator: LifecycleCoordinator, event: ConfigChangedEvent) {
@@ -125,10 +122,12 @@ class TriggerPublisherImpl constructor(
             coordinator.updateStatus(event.status)
             configSubscription?.close()
             configSubscription = null
-            lock.withLock {
-                publisher?.close()
-                publisher = null
-            }
+            closePublisher()
         }
+    }
+
+    private fun closePublisher() = lock.withLock {
+        publisher?.close()
+        publisher = null
     }
 }

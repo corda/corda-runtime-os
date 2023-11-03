@@ -102,16 +102,13 @@ class CpiInfoWriterComponentImpl @Activate constructor(
     }
 
     private fun onStopEvent() {
-        lock.withLock {
-            registration?.close()
-            registration = null
+        registration?.close()
+        registration = null
 
-            configSubscription?.close()
-            configSubscription = null
+        configSubscription?.close()
+        configSubscription = null
 
-            publisher?.close()
-            publisher = null
-        }
+        closePublisher()
     }
 
     private fun onConfigChangedEvent(coordinator: LifecycleCoordinator, event: ConfigChangedEvent) {
@@ -133,10 +130,12 @@ class CpiInfoWriterComponentImpl @Activate constructor(
             coordinator.updateStatus(event.status)
             configSubscription?.close()
             configSubscription = null
-            lock.withLock {
-                publisher?.close()
-                publisher = null
-            }
+            closePublisher()
         }
+    }
+
+    private fun closePublisher() = lock.withLock {
+        publisher?.close()
+        publisher = null
     }
 }
