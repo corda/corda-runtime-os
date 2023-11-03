@@ -8,6 +8,8 @@ import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityFlow
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoReceiveFinalityFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.ReceiveAndUpdateTransactionBuilderFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.SendTransactionBuilderDiffFlow
+import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.ReceiveTransactionFlow
+import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.SendTransactionFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
 import net.corda.ledger.utxo.flow.impl.persistence.VaultNamedParameterizedQueryImpl
@@ -104,6 +106,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
     }
 
     @Suspendable
+    @Suppress("deprecation", "removal")
     override fun <T : ContractState> findUnconsumedStatesByType(type: Class<T>): List<StateAndRef<T>> {
         return utxoLedgerStateQueryService.findUnconsumedStatesByType(type)
     }
@@ -220,6 +223,16 @@ class UtxoLedgerServiceImpl @Activate constructor(
         return UtxoBaselinedTransactionBuilder(
             receivedTransactionBuilder as UtxoTransactionBuilderInternal
         )
+    }
+
+    @Suspendable
+    override fun receiveTransaction(session: FlowSession): UtxoSignedTransaction {
+        return flowEngine.subFlow(ReceiveTransactionFlow(session))
+    }
+
+    @Suspendable
+    override fun sendTransaction(sessions: List<FlowSession>, signedTransaction: UtxoSignedTransaction) {
+        flowEngine.subFlow(SendTransactionFlow(signedTransaction, sessions))
     }
 
     @Suspendable
