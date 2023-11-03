@@ -58,7 +58,7 @@ class TokenCacheEventProcessor(
             )
         }
 
-        log.debug { "Token event received: $tokenEvent" }
+        log.info( "Token event received: $tokenEvent")
 
         return traceStateAndEventExecution(event, "Token Event - ${tokenEvent.javaClass.simpleName}") {
             try {
@@ -106,6 +106,7 @@ class TokenCacheEventProcessor(
                     )
                 }
             } catch (e: Exception) {
+                log.warn("Token event failed: $tokenEvent", e)
                 val responseMessage = externalEventResponseFactory.platformError(
                     ExternalEventContext(
                         tokenEvent.externalEventRequestId,
