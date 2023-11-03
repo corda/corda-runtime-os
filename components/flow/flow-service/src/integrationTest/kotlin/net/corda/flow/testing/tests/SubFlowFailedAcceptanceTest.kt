@@ -2,7 +2,7 @@ package net.corda.flow.testing.tests
 
 import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.testing.context.ALICE_FLOW_KEY
+import net.corda.flow.testing.context.ALICE_FLOW_KEY_MAPPER
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.startFlow
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -54,7 +54,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 sessionErrorEvents(SESSION_ID_1, SESSION_ID_2)
-                scheduleFlowMapperCleanupEvents(ALICE_FLOW_KEY, SESSION_ID_1, SESSION_ID_2)
+                scheduleFlowMapperCleanupEvents(ALICE_FLOW_KEY_MAPPER, SESSION_ID_1, SESSION_ID_2)
             }
         }
     }
@@ -86,7 +86,7 @@ fun `Given a subFlow contains an initiated and closed session when the subFlow f
 
         expectOutputForFlow(FLOW_ID1) {
             sessionErrorEvents(SESSION_ID_2)
-            scheduleFlowMapperCleanupEvents(ALICE_FLOW_KEY, SESSION_ID_1, SESSION_ID_2)
+            scheduleFlowMapperCleanupEvents(ALICE_FLOW_KEY_MAPPER, SESSION_ID_1, SESSION_ID_2)
         }
     }
 }
@@ -157,7 +157,7 @@ fun `Given a subFlow contains an initiated and closed session when the subFlow f
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                scheduleFlowMapperCleanupEvents(ALICE_FLOW_KEY)
+                scheduleFlowMapperCleanupEvents(ALICE_FLOW_KEY_MAPPER)
                 sessionErrorEvents()
             }
         }

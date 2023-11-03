@@ -61,6 +61,14 @@ class StateManagerImplTest {
     }
 
     @Test
+    fun getReturnsEmptyMapAndDoesNotInteractWithTheDatabaseWhenEmptyListOfKeysIsUsedAsInput() {
+        val results = stateManager.get(emptyList())
+
+        assertThat(results).isEmpty()
+        verifyNoInteractions(dataSource)
+    }
+
+    @Test
     fun updateReturnsEmptyMapWhenOptimisticLockingCheckSucceedsForAllStates() {
         whenever(stateRepository.update(any(), any()))
             .thenReturn(StateRepository.StateUpdateSummary(
@@ -92,7 +100,7 @@ class StateManagerImplTest {
     }
 
     @Test
-    fun updateReturnsEmptyAndDoesNotInteractWithTheDatabaseEmptyListOfStatesInput() {
+    fun updateReturnsEmptyMapAndDoesNotInteractWithTheDatabaseWhenEmptyListOfStatesIsUsedAsInput() {
         val failedUpdates = assertDoesNotThrow { stateManager.update(emptyList()) }
 
         assertThat(failedUpdates).isEmpty()
@@ -123,10 +131,26 @@ class StateManagerImplTest {
     }
 
     @Test
-    fun deleteReturnsEmptyAndDoesNotInteractWithTheDatabaseEmptyListOfStatesInput() {
+    fun deleteReturnsEmptyAndDoesNotInteractWithTheDatabaseWhenEmptyListOfStatesIsUsedInput() {
         val failedDeletes = assertDoesNotThrow { stateManager.delete(emptyList()) }
 
         assertThat(failedDeletes).isEmpty()
+        verifyNoInteractions(dataSource)
+    }
+
+    @Test
+    fun findByMetadataMatchingAllReturnsEmptyMapAndDoesNotInteractWithTheDatabaseWhenEmptyListOfFiltersIsUsedInput() {
+        val result = stateManager.findByMetadataMatchingAll(emptyList())
+
+        assertThat(result).isEmpty()
+        verifyNoInteractions(dataSource)
+    }
+
+    @Test
+    fun findByMetadataMatchingAnyReturnsEmptyMapAndDoesNotInteractWithTheDatabaseWhenEmptyListOfFiltersIsUsedInput() {
+        val result = stateManager.findByMetadataMatchingAny(emptyList())
+
+        assertThat(result).isEmpty()
         verifyNoInteractions(dataSource)
     }
 }
