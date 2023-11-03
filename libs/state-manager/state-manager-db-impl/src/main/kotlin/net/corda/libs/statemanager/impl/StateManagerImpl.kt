@@ -58,12 +58,16 @@ class StateManagerImpl(
     }
 
     override fun get(keys: Collection<String>): Map<String, State> {
-        return dataSource.connection.transaction { connection ->
-            stateRepository.get(connection, keys)
-        }.map {
-            it.fromPersistentEntity()
-        }.associateBy {
-            it.key
+        return if (keys.isEmpty()) {
+            emptyMap()
+        } else {
+            dataSource.connection.transaction { connection ->
+                stateRepository.get(connection, keys)
+            }.map {
+                it.fromPersistentEntity()
+            }.associateBy {
+                it.key
+            }
         }
     }
 
@@ -116,22 +120,30 @@ class StateManagerImpl(
     }
 
     override fun findByMetadataMatchingAll(filters: Collection<MetadataFilter>): Map<String, State> {
-        return dataSource.connection.transaction { connection ->
-            stateRepository.filterByAll(connection, filters)
-        }.map {
-            it.fromPersistentEntity()
-        }.associateBy {
-            it.key
+        return if (filters.isEmpty()) {
+            emptyMap()
+        } else {
+            dataSource.connection.transaction { connection ->
+                stateRepository.filterByAll(connection, filters)
+            }.map {
+                it.fromPersistentEntity()
+            }.associateBy {
+                it.key
+            }
         }
     }
 
     override fun findByMetadataMatchingAny(filters: Collection<MetadataFilter>): Map<String, State> {
-        return dataSource.connection.transaction { connection ->
-            stateRepository.filterByAny(connection, filters)
-        }.map {
-            it.fromPersistentEntity()
-        }.associateBy {
-            it.key
+        return if (filters.isEmpty()) {
+            emptyMap()
+        } else {
+            dataSource.connection.transaction { connection ->
+                stateRepository.filterByAny(connection, filters)
+            }.map {
+                it.fromPersistentEntity()
+            }.associateBy {
+                it.key
+            }
         }
     }
 

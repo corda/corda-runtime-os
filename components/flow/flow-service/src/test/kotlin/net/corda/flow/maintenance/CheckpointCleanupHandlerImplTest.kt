@@ -113,7 +113,7 @@ class CheckpointCleanupHandlerImplTest {
         inactiveSessions: List<String> = listOf()
     ): FlowCheckpoint {
         val checkpoint = mock<FlowCheckpoint>()
-        whenever(checkpoint.flowKey).thenReturn(FlowKey("foo", HoldingIdentity("bar", "baz")))
+        whenever(checkpoint.flowKey).thenReturn(FlowKey("foo", HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "baz")))
         val howStarted = if (rpcStarted) FlowInitiatorType.RPC else FlowInitiatorType.P2P
         val startContext = mock<FlowStartContext>().apply {
             whenever(initiatorType).thenReturn(howStarted)
