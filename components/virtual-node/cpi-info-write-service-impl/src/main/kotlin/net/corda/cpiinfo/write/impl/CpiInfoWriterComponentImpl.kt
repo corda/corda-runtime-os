@@ -26,9 +26,8 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.read
-import kotlin.concurrent.write
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 import net.corda.data.packaging.CpiIdentifier as CpiIdentifierAvro
 import net.corda.data.packaging.CpiMetadata as CpiMetadataAvro
 
@@ -54,7 +53,7 @@ class CpiInfoWriterComponentImpl @Activate constructor(
     override val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<CpiInfoWriteService>()
 
     private val coordinator = coordinatorFactory.createCoordinator(lifecycleCoordinatorName, this)
-    private val lock = ReentrantReadWriteLock()
+    private val lock = ReentrantLock()
     private var publisher: Publisher? = null
     private var registration: RegistrationHandle? = null
     private var configSubscription: AutoCloseable? = null
@@ -67,7 +66,7 @@ class CpiInfoWriterComponentImpl @Activate constructor(
 
     /** Synchronous publish */
     private fun publish(records: List<Record<CpiIdentifierAvro, CpiMetadataAvro>>) {
-        lock.read {
+        lock.withLock {
             if (publisher == null) {
                 log.error("Cpi Info Writer publisher is null, not publishing, this error will addressed in a later PR")
                 return
@@ -103,7 +102,7 @@ class CpiInfoWriterComponentImpl @Activate constructor(
     }
 
     private fun onStopEvent() {
-        lock.write {
+        lock.withLock {
             registration?.close()
             registration = null
 
@@ -116,10 +115,9 @@ class CpiInfoWriterComponentImpl @Activate constructor(
     }
 
     private fun onConfigChangedEvent(coordinator: LifecycleCoordinator, event: ConfigChangedEvent) {
-
         val config = event.config[ConfigKeys.MESSAGING_CONFIG] ?: return
         coordinator.updateStatus(LifecycleStatus.DOWN)
-        lock.write {
+        lock.withLock {
             publisher?.close()
             publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), config)
             coordinator.updateStatus(LifecycleStatus.UP)
@@ -135,7 +133,7 @@ class CpiInfoWriterComponentImpl @Activate constructor(
             coordinator.updateStatus(event.status)
             configSubscription?.close()
             configSubscription = null
-            lock.write {
+            lock.withLock {
                 publisher?.close()
                 publisher = null
             }

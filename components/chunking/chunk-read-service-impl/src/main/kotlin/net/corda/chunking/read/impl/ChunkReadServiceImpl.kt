@@ -28,8 +28,8 @@ import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.write
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 @Suppress("UNUSED")
 @Component(service = [ChunkReadService::class])
@@ -51,7 +51,7 @@ class ChunkReadServiceImpl @Activate constructor(
 
     private val coordinator = coordinatorFactory.createCoordinator<ChunkReadService>(this)
 
-    private val lock = ReentrantReadWriteLock()
+    private val lock = ReentrantLock()
     private var chunkDbWriter: ChunkDbWriter? = null
     private var registration: RegistrationHandle? = null
     private var configSubscription: AutoCloseable? = null
@@ -88,7 +88,7 @@ class ChunkReadServiceImpl @Activate constructor(
     }
 
     private fun onStopEvent(coordinator: LifecycleCoordinator) {
-        lock.write {
+        lock.withLock {
             chunkDbWriter?.close()
             chunkDbWriter = null
 
@@ -112,17 +112,12 @@ class ChunkReadServiceImpl @Activate constructor(
     }
 
     private fun onConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        lock.write {
+        lock.withLock {
             val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
             val bootConfig = event.config.getConfig(BOOT_CONFIG)
             chunkDbWriter?.close()
             chunkDbWriter = chunkDbWriterFactory
-                .create(
-                    messagingConfig,
-                    bootConfig,
-                    dbConnectionManager.getClusterEntityManagerFactory(),
-                    cpiInfoWriteService
-                )
+                .create(messagingConfig, bootConfig, dbConnectionManager.getClusterEntityManagerFactory(), cpiInfoWriteService)
                 .apply { start() }
 
             coordinator.updateStatus(LifecycleStatus.UP)
@@ -131,7 +126,7 @@ class ChunkReadServiceImpl @Activate constructor(
 
     @Deactivate
     fun close() {
-        lock.write {
+        lock.withLock {
             configSubscription?.close()
             registration?.close()
             chunkDbWriter?.close()
