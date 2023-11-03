@@ -141,6 +141,7 @@ class FlowFiberImpl(
                         throw e
                     }
                 }!!
+            log.info("Flow [$flowId] suspended" )
             flowCompletion.complete(FlowIORequest.FlowSuspended(ByteBuffer.wrap(fiberState), request, prepareForCaching()))
         }
 
@@ -183,6 +184,7 @@ class FlowFiberImpl(
         if (sessions.isNotEmpty()) {
             suspend(FlowIORequest.SubFlowFinished(sessions))
         }
+        log.info("Flow [$flowId] completed successfully" )
         flowCompletion.complete(outcomeOfFlow)
     }
 
@@ -195,6 +197,7 @@ class FlowFiberImpl(
         if (sessions.isNotEmpty()) {
             suspend(FlowIORequest.SubFlowFailed(throwable, sessions))
         }
+        log.info("Flow [$flowId] failed" )
         flowCompletion.complete(FlowIORequest.FlowFailed(throwable))
     }
 
