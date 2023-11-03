@@ -161,7 +161,7 @@ class HSMRepositoryTest : CryptoRepositoryTest() {
         }
 
         // but saving it with the same should fail
-        assertThrows<PersistenceException> {
+        val e = assertThrows<PersistenceException> {
             emf.createEntityManager().transaction {
                 it.persist(
                     HSMCategoryAssociationEntity(
@@ -175,5 +175,6 @@ class HSMRepositoryTest : CryptoRepositoryTest() {
                 )
             }
         }
+        assertThat(e.cause?.message).contains("ConstraintViolationException")
     }
 }

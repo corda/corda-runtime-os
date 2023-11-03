@@ -1,7 +1,9 @@
 package net.corda.flow.testing.tests
 
-import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStates
+import net.corda.flow.testing.context.ALICE_FLOW_KEY_MAPPER
+import net.corda.flow.testing.context.BOB_FLOW_KEY_MAPPER
+import net.corda.flow.testing.context.CHARLIE_FLOW_KEY_MAPPER
 import net.corda.flow.testing.context.FlowServiceTestBase
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -46,7 +48,7 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
                 flowStatus(FlowStates.COMPLETED, result = DONE)
-                scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, ALICE_HOLDING_IDENTITY).toString())
+                scheduleFlowMapperCleanupEvents(ALICE_FLOW_KEY_MAPPER)
             }
         }
     }
@@ -79,7 +81,7 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
                 flowStatus(FlowStates.COMPLETED, result = DONE)
-                scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, CHARLIE_HOLDING_IDENTITY).toString())
+                scheduleFlowMapperCleanupEvents(CHARLIE_FLOW_KEY_MAPPER)
             }
         }
     }
@@ -95,7 +97,7 @@ class FlowFinishedAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
                 flowStatus(FlowStates.COMPLETED, result = DONE)
-                scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, BOB_HOLDING_IDENTITY).toString())
+                scheduleFlowMapperCleanupEvents(BOB_FLOW_KEY_MAPPER)
                 flowFiberCacheDoesNotContainKey(BOB_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }

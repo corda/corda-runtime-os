@@ -166,6 +166,8 @@ class ExternalEventManagerImpl(
             }
             ExternalEventStateType.RETRY -> {
                 checkRetry(externalEventState, instant, retryWindow)
+                // Hacky wacky. Will be removed very soon
+                Thread.sleep(externalEventState.retries * 100L)
                 generateRecord(externalEventState, instant)
             }
             else -> {
