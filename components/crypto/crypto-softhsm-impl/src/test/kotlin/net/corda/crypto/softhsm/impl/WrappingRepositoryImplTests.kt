@@ -103,7 +103,7 @@ class WrappingRepositoryImplTests {
     @Test
     fun `find a wrapping key and it's id`() {
         val wrappingKeyInfo = WrappingKeyInfo(
-            1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch", "k1")
+            1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch", "alias1")
         val newId  = UUID.randomUUID()
         val savedWrappingKey = makeWrappingKeyEntity(newId, wrappingKeyInfo)
         val em = mock<EntityManager> {
