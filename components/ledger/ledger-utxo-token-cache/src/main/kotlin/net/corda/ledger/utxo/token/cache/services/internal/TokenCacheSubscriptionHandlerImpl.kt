@@ -55,11 +55,15 @@ class TokenCacheSubscriptionHandlerImpl(
 
     override fun onConfigChange(config: Map<String, SmartConfig>) {
         try {
+            log.info("Configuring token selection processor...")
             serviceConfiguration.init(toTokenConfig(config))
             val messagingConfig = toMessagingConfig(config)
             val newStateManagerConfig = toStateManagerConfig(config)
 
             // close the lifecycle registration first to prevent a down signal to the coordinator
+            subscriptionRegistrationHandle?.let {
+                log.info("Existing lifecycle registrations found, closing first.")
+            }
             subscriptionRegistrationHandle?.close()
             subscription?.close()
             stateManager?.stop()
@@ -74,6 +78,7 @@ class TokenCacheSubscriptionHandlerImpl(
             )
 
             stateManager = stateManagerFactory.create(newStateManagerConfig)
+            log.info("State manager created '${stateManager?.name}")
             val delegatedProcessor = tokenCacheEventProcessorFactory.createDelegatedProcessor(stateManager!!, processor)
 
             // Create the HTTP RPC subscription
@@ -85,6 +90,7 @@ class TokenCacheSubscriptionHandlerImpl(
 
             stateManager?.start()
             subscription?.start()
+            log.info("Configuration completed.")
         } catch (ex: Exception) {
             val reason = "Failed to configure the Token Event Handler using '${config}'"
             log.error(reason, ex)
