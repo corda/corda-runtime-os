@@ -591,13 +591,6 @@ open class SoftCryptoService(
                     generation = newGeneration)
                 check(newInfo.alias == wrappingKeyInfo.alias)
                 wrappingRepo.saveKeyWithId(newInfo, id)
-                val readback2 = wrappingRepo.getKeyById(id)
-                check(readback2!!.alias == newInfo.alias)
-                check(readback2.generation == newInfo.generation)
-                val readback = wrappingRepo.findKey(targetAlias)
-                check(readback!!.generation == newInfo.generation)
-                check(readback.alias == targetAlias)
-                check(readback.parentKeyAlias == newParentKeyAlias)
             }
             return newGeneration
         }
