@@ -13,6 +13,7 @@ import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messagebus.kafka.serialization.CordaAvroSerializationFactoryImpl
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
 import net.corda.utilities.time.Clock
@@ -20,11 +21,11 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.Timer
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.scheduleAtFixedRate
@@ -186,6 +187,9 @@ class PerformanceClaimStateStoreImplTest {
         private val store = mutableMapOf<String, State>()
         var updateCallCount = 0
         var updateFailCount = 0
+
+        override val name = LifecycleCoordinatorName("StateManagerSimulator", UUID.randomUUID().toString())
+
         override fun create(states: Collection<State>): Map<String, Exception> {
             return lock.withLock {
                 val invalidStates = states
@@ -256,9 +260,13 @@ class PerformanceClaimStateStoreImplTest {
             TODO("Not yet implemented")
         }
 
-        override fun close() {
-            TODO("Not yet implemented")
+        override val isRunning: Boolean
+            get() = true
+
+        override fun start() {
         }
 
+        override fun stop() {
+        }
     }
 }

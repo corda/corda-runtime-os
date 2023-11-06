@@ -7,6 +7,7 @@ import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.Resource
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -29,7 +30,10 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class FlowMaintenanceImplTests {
-    private val stateManager = mock<StateManager>()
+    private val stateManager = mock<StateManager> {
+        on { name } doReturn (LifecycleCoordinatorName("MockManager", "MockId"))
+    }
+
     private val stateManagerFactory = mock<StateManagerFactory> {
         on { create(any()) } doReturn (stateManager)
     }
@@ -79,7 +83,8 @@ class FlowMaintenanceImplTests {
     @Test
     fun `when config provided create subscription and start it`() {
         flowMaintenance.onConfigChange(config)
-        verify(lifecycleCoordinator, times(3)).createManagedResource(any(), any<() -> Resource>())
+
+        verify(lifecycleCoordinator, times(2)).createManagedResource(any(), any<() -> Resource>())
         verify(subscriptionFactory, times(1)).createDurableSubscription(
             argThat { it ->
                 it.eventTopic == Schemas.ScheduledTask.SCHEDULED_TASK_TOPIC_FLOW_PROCESSOR
@@ -97,8 +102,10 @@ class FlowMaintenanceImplTests {
             isNull()
         )
         verify(stateManagerFactory).create(stateManagerConfig)
+        verify(stateManager).start()
         verify(subscription).start()
         verify(timeoutSubscription).start()
+        verify(lifecycleCoordinator).followStatusChangesByName(setOf(stateManager.name))
     }
 
     @Test
@@ -120,9 +127,11 @@ class FlowMaintenanceImplTests {
     @Test
     fun `when new state manager config pushed create another StateManager and close old`() {
         flowMaintenance.onConfigChange(config)
-        val newConfig = mock<SmartConfig>().apply {
-            whenever(withValue(any(), any())).thenReturn(this)
+        val newConfig = mock<SmartConfig>().apply { whenever(withValue(any(), any())).thenReturn(this) }
+        val newStateManager = mock<StateManager> {
+            on { name } doReturn (LifecycleCoordinatorName("StateManager", "2"))
         }
+        whenever(stateManagerFactory.create(newConfig)).thenReturn(newStateManager)
         flowMaintenance.onConfigChange(
             mapOf(
                 ConfigKeys.MESSAGING_CONFIG to newConfig,
@@ -132,7 +141,9 @@ class FlowMaintenanceImplTests {
         )
 
         verify(stateManagerFactory).create(newConfig)
-        verify(lifecycleCoordinator, times(6)).createManagedResource(any(), any<() -> Resource>())
+        verify(stateManager).stop()
+        verify(lifecycleCoordinator).followStatusChangesByName(setOf(newStateManager.name))
+        verify(lifecycleCoordinator, times(4)).createManagedResource(any(), any<() -> Resource>())
     }
 
     @Test

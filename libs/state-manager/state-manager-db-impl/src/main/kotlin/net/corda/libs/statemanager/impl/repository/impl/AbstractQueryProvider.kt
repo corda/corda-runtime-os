@@ -1,34 +1,30 @@
 package net.corda.libs.statemanager.impl.repository.impl
 
 import net.corda.db.schema.DbSchema.STATE_MANAGER_TABLE
-
-const val KEY_PARAMETER_NAME = "key"
-const val KEYS_PARAMETER_NAME = "keys"
-const val VALUE_PARAMETER_NAME = "value"
-const val VERSION_PARAMETER_NAME = "version"
-const val METADATA_PARAMETER_NAME = "metadata"
-const val START_TIMESTAMP_PARAMETER_NAME = "startTime"
-const val FINISH_TIMESTAMP_PARAMETER_NAME = "finishTime"
+import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.KEY_COLUMN
+import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.VALUE_COLUMN
+import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.METADATA_COLUMN
+import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.VERSION_COLUMN
+import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.MODIFIED_TIME_COLUMN
 
 abstract class AbstractQueryProvider : QueryProvider {
 
-    override val findStatesByKey: String
-        get() = """
-            SELECT s.key, s.value, s.metadata, s.version, s.modified_time FROM $STATE_MANAGER_TABLE s
-            WHERE s.key IN (:$KEYS_PARAMETER_NAME)
+    override fun findStatesByKey(size: Int) =
+        """
+            SELECT s.$KEY_COLUMN, s.$VALUE_COLUMN, s.$METADATA_COLUMN, s.$VERSION_COLUMN, s.modified_time FROM $STATE_MANAGER_TABLE s
+            WHERE s.$KEY_COLUMN IN (${List(size) { "?" }.joinToString(",")} )
         """.trimIndent()
 
     override val deleteStatesByKey: String
         get() = """
-            DELETE FROM $STATE_MANAGER_TABLE s WHERE s.key = :$KEY_PARAMETER_NAME AND s.version = :$VERSION_PARAMETER_NAME
+            DELETE FROM $STATE_MANAGER_TABLE s WHERE s.$KEY_COLUMN = ? AND s.$VERSION_COLUMN = ?
         """.trimIndent()
 
     override val findStatesUpdatedBetween: String
         get() = """
-            SELECT s.key, s.value, s.metadata, s.version, s.modified_time FROM $STATE_MANAGER_TABLE s
+            SELECT s.$KEY_COLUMN, s.$VALUE_COLUMN, s.$METADATA_COLUMN, s.$VERSION_COLUMN, s.$MODIFIED_TIME_COLUMN FROM $STATE_MANAGER_TABLE s
             WHERE ${updatedBetweenFilter()}
         """.trimIndent()
 
-    fun updatedBetweenFilter() =
-        "s.modified_time BETWEEN :$START_TIMESTAMP_PARAMETER_NAME AND :$FINISH_TIMESTAMP_PARAMETER_NAME"
+    fun updatedBetweenFilter() = "s.$MODIFIED_TIME_COLUMN BETWEEN ? AND ?"
 }

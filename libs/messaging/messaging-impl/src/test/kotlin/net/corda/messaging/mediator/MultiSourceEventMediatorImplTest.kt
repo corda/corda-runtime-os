@@ -36,7 +36,6 @@ import net.corda.taskmanager.TaskManager
 import net.corda.test.util.waitWhile
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.atLeast
@@ -123,7 +122,7 @@ class MultiSourceEventMediatorImplTest {
         whenever(messagingClientFactory.create(any<MessagingClientConfig>())).thenReturn(messagingClient)
 
         whenever(messageRouterFactory.create(any<MessagingClientFinder>())).thenReturn(MessageRouter { _ ->
-            RoutingDestination.routeTo(messagingClient, "endpoint")
+            RoutingDestination.routeTo(messagingClient, "endpoint", RoutingDestination.Type.ASYNCHRONOUS)
         })
 
         return EventMediatorConfigBuilder<Any, Any, Any>()

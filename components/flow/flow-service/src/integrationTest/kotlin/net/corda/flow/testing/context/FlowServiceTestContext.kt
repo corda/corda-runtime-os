@@ -58,7 +58,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
 import net.corda.sandboxgroupcontext.SandboxGroupType.FLOW
 import net.corda.sandboxgroupcontext.VirtualNodeContext
-import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
+import net.corda.schema.Schemas.Flow.FLOW_SESSION
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.FlowConfig
 import net.corda.schema.configuration.MessagingConfig
@@ -513,7 +513,7 @@ class FlowServiceTestContext @Activate constructor(
     }
 
     private fun createFlowEventRecord(key: String, payload: Any): Record<String, FlowEvent> {
-        return Record(FLOW_EVENT_TOPIC, key, FlowEvent(key, payload))
+        return Record(FLOW_SESSION, key, FlowEvent(key, payload))
     }
 
     private fun getCpiIdentifier(cpiId: String): CpiIdentifier {
