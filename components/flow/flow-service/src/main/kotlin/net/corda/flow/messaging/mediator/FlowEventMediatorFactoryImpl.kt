@@ -34,7 +34,6 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_OUT
 import net.corda.schema.Schemas.Flow.FLOW_SESSION
-import net.corda.schema.Schemas.Flow.FLOW_START
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
 import net.corda.schema.configuration.BootConfig.CRYPTO_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.PERSISTENCE_WORKER_REST_ENDPOINT
@@ -95,7 +94,7 @@ class FlowEventMediatorFactoryImpl @Activate constructor(
         .consumerFactories(
             mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
                 listOf(
-                    FLOW_START,
+                    // FLOW_START,
                     FLOW_SESSION,
                     FLOW_EVENT_TOPIC,
                 ),

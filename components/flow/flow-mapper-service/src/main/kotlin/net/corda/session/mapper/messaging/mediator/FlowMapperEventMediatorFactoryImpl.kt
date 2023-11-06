@@ -1,7 +1,6 @@
 package net.corda.session.mapper.messaging.mediator
 
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.state.mapper.FlowMapperState
 import net.corda.data.p2p.app.AppMessage
@@ -18,9 +17,7 @@ import net.corda.messaging.api.mediator.factory.MultiSourceEventMediatorFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_IN
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_OUT
-import net.corda.schema.Schemas.Flow.FLOW_MAPPER_START
 import net.corda.schema.Schemas.Flow.FLOW_SESSION
-import net.corda.schema.Schemas.Flow.FLOW_START
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import net.corda.schema.configuration.FlowConfig
 import net.corda.session.mapper.service.executor.FlowMapperMessageProcessor
@@ -68,7 +65,7 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
         .consumerFactories(
             mediatorConsumerFactoryFactory.createMessageBusConsumerFactory(
                 listOf(
-                    FLOW_MAPPER_START,
+                    // FLOW_MAPPER_START,
                     FLOW_MAPPER_SESSION_IN,
                     FLOW_MAPPER_SESSION_OUT,
                 ),
@@ -94,13 +91,7 @@ class FlowMapperEventMediatorFactoryImpl @Activate constructor(
         MessageRouter { message ->
             when (val event = message.payload) {
                 is AppMessage -> routeTo(messageBusClient, P2P_OUT_TOPIC)
-                is FlowEvent -> {
-                    if (event.payload is StartFlow) {
-                        routeTo(messageBusClient, FLOW_START)
-                    } else {
-                        routeTo(messageBusClient, FLOW_SESSION)
-                    }
-                }
+                is FlowEvent -> routeTo(messageBusClient, FLOW_SESSION)
                 is FlowMapperEvent -> routeTo(messageBusClient, FLOW_MAPPER_SESSION_IN)
                 else -> {
                     val eventType = event?.let { it::class.java }
