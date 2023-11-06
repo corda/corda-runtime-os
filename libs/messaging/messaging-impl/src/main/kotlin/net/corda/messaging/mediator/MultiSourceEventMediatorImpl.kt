@@ -265,30 +265,6 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
     }
 
-    /**
-     * Handle retries for event processing.
-     * Reset [MediatorConsumer]s position and retry poll and process of event records
-     * Retry a max of [EventMediatorConfig.processorRetries] times.
-     * If [EventMediatorConfig.processorRetries] is exceeded then throw a [CordaMessageAPIIntermittentException]
-     */
-    private fun handleProcessEventRetries(
-        attempts: Int,
-        exception: Exception,
-    ) {
-        if (attempts <= config.processorRetries) {
-            log.warn(
-                "Multi-source event mediator ${config.name} failed to process records, " +
-                        "Retrying poll and process. Attempts: $attempts."
-            )
-            consumers.forEach { it.resetEventOffsetPosition() }
-        } else {
-            val message = "Multi-source event mediator ${config.name} failed to process records, " +
-                    "Attempts: $attempts. Max retries exceeded."
-            log.warn(message, exception)
-            throw CordaMessageAPIIntermittentException(message, exception)
-        }
-    }
-
     private fun allocateGroups(events: List<Record<K, E>>): List<Map<K, List<Record<K, E>>>> {
         val groups = mutableListOf<MutableMap<K, List<Record<K, E>>>>()
         val groupCountBasedOnEvents = (events.size / 20).coerceAtLeast(1)
