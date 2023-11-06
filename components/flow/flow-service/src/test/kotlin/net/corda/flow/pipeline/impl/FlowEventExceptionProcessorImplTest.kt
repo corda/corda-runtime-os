@@ -12,6 +12,7 @@ import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.cache.FlowFiberCache
+import net.corda.flow.maintenance.CheckpointCleanupHandler
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowEventException
@@ -60,6 +61,8 @@ class FlowEventExceptionProcessorImplTest {
     private val flowFiberCache = mock<FlowFiberCache>()
     private val serializedFiber = ByteBuffer.wrap("mock fiber".toByteArray())
 
+    private val checkpointCleanupHandler = mock<CheckpointCleanupHandler>()
+
     private val sessionIdOpen = "sesh-id"
     private val sessionIdClosed = "sesh-id-closed"
     private val flowActiveSessionState = SessionState().apply {
@@ -74,7 +77,8 @@ class FlowEventExceptionProcessorImplTest {
         flowMessageFactory,
         flowRecordFactory,
         flowSessionManager,
-        flowFiberCache
+        flowFiberCache,
+        checkpointCleanupHandler
     )
 
     @BeforeEach
