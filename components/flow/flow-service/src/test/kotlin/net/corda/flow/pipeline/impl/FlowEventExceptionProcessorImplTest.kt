@@ -3,6 +3,7 @@ package net.corda.flow.pipeline.impl
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.FlowKey
+import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.mapper.FlowMapperEvent
@@ -35,6 +36,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -172,31 +174,23 @@ class FlowEventExceptionProcessorImplTest {
 
     @Test
     fun `flow fatal exception marks flow for dlq and publishes status update`() {
+        val flowId = "f1"
         val error = FlowFatalException("error")
-        val flowStatusUpdate = FlowStatus()
         val key = FlowKey()
-        val flowStatusUpdateRecord = Record("", key, flowStatusUpdate)
         val flowMapperEvent = mock<FlowMapperEvent>()
         val flowMapperRecord = Record(Schemas.Flow.FLOW_MAPPER_SESSION_OUT, "key", flowMapperEvent)
-
-        whenever(
-            flowMessageFactory.createFlowFailedStatusMessage(
-                flowCheckpoint,
-                FlowProcessingExceptionTypes.FLOW_FAILED,
-                error.message
-            )
-        ).thenReturn(flowStatusUpdate)
-        whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)
         whenever(flowCheckpoint.doesExist).thenReturn(true)
+        whenever(flowCheckpoint.flowId).thenReturn(flowId)
+        val startContext = mock<FlowStartContext>()
+        whenever(flowCheckpoint.flowStartContext).thenReturn(startContext)
         whenever(flowCheckpoint.flowKey).thenReturn(key)
-        whenever(flowCheckpoint.sessions).thenReturn(listOf(flowActiveSessionState, flowInactiveSessionState))
-        whenever(flowCheckpoint.suspendCount).thenReturn(123)
-        whenever(flowRecordFactory.createFlowMapperEventRecord(any(), any())).thenReturn(flowMapperRecord)
+        val cleanupRecords = listOf (flowMapperRecord)
+        whenever(checkpointCleanupHandler.cleanupCheckpoint(any(), any(), any())).thenReturn(cleanupRecords)
 
         val result = target.process(error, context)
 
-        verify(result.checkpoint).markDeleted()
-        assertThat(result.outputRecords).contains(flowStatusUpdateRecord, flowMapperRecord)
+        verify(checkpointCleanupHandler).cleanupCheckpoint(eq(flowCheckpoint), any(), eq(error))
+        assertThat(result.outputRecords).containsOnly(flowMapperRecord)
         assertThat(result.sendToDlq).isTrue
         verify(flowFiberCache).remove(key)
     }
