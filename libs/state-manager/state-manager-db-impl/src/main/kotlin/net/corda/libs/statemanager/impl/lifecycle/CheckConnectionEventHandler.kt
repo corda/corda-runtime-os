@@ -4,6 +4,7 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
+import net.corda.lifecycle.LifecycleException
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
@@ -50,8 +51,13 @@ class CheckConnectionEventHandler(
         }
     }
 
-    private fun scheduleConnectionCheck(coordinator: LifecycleCoordinator, delay: Long = interval.toMillis()) =
-        coordinator.setTimer(CHECK_EVENT_KEY, delay) { key ->
-            CheckConnectionEvent(key)
+    fun scheduleConnectionCheck(coordinator: LifecycleCoordinator, delay: Long = interval.toMillis()) {
+        // TODO-[CORE-18202]: Remove try catch once ticket is fixed.
+        try {
+            coordinator.setTimer(CHECK_EVENT_KEY, delay) { key -> CheckConnectionEvent(key) }
+        } catch (lifecycleException : LifecycleException) {
+            // Coordinator has been closed, ignore the exception until CORE-XXXX is fixed
+            logger.warn("Component {} is already closed, ignoring scheduling of {} event", componentName, CHECK_EVENT_KEY)
         }
+    }
 }
