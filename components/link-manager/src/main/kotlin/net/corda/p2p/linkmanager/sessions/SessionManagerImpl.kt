@@ -338,15 +338,15 @@ internal class SessionManagerImpl(
         }
     }
 
-    override fun sessionMessageReceived(sessionId: String) {
+    override fun sessionMessageReceived(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity?) {
         dominoTile.withLifecycleLock {
-            heartbeatManager.sessionMessageReceived(sessionId)
+            heartbeatManager.sessionMessageReceived(sessionId, source, destination)
         }
     }
 
-    override fun dataMessageReceived(sessionId: String) {
+    override fun dataMessageReceived(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity) {
         dominoTile.withLifecycleLock {
-            heartbeatManager.dataMessageReceived(sessionId)
+            heartbeatManager.dataMessageReceived(sessionId, source, destination)
         }
     }
 
@@ -781,6 +781,7 @@ internal class SessionManagerImpl(
         }
 
         val (hostedIdentityInSameGroup, peerMemberInfo) = locallyHostedIdentityWithPeerMemberInfo
+        sessionMessageReceived(message.header.sessionId, peerMemberInfo.holdingIdentity, null)
         val p2pParams = try {
             groupPolicyProvider.getP2PParameters(hostedIdentityInSameGroup)
         } catch (except: BadGroupPolicyException) {
@@ -902,6 +903,7 @@ internal class SessionManagerImpl(
             SessionManager.Counterparties(ourIdentityInfo.holdingIdentity, peer.holdingIdentity),
             session.getSession()
         )
+        sessionMessageReceived(message.header.sessionId, peer.holdingIdentity, ourIdentityInfo.holdingIdentity)
         logger.info(
             "Inbound session ${message.header.sessionId} established " +
                 "(local=${ourIdentityInfo.holdingIdentity}, remote=${peer.holdingIdentity})."
@@ -1139,28 +1141,28 @@ internal class SessionManagerImpl(
             }
         }
 
-        fun sessionMessageReceived(sessionId: String) {
+        fun sessionMessageReceived(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity?) {
             dominoTile.withLifecycleLock {
                 check(isRunning) { "A session message was received before the HeartbeatManager was started." }
-                messageReceived(sessionId)
+                messageReceived(sessionId, source, destination)
             }
         }
 
-        fun dataMessageReceived(sessionId: String) {
+        fun dataMessageReceived(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity) {
             dominoTile.withLifecycleLock {
                 check(isRunning) { "A data message was received before the HeartbeatManager was started." }
-                messageReceived(sessionId)
+                messageReceived(sessionId, source, destination)
             }
         }
 
-        private fun messageReceived(sessionId: String) {
+        private fun messageReceived(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity?) {
             trackedInboundSessions.compute(sessionId) { _, initialTrackedSession ->
                 if (initialTrackedSession != null) {
                     initialTrackedSession.lastReceivedTimestamp = timeStamp()
                     initialTrackedSession
                 } else {
                     executorService.schedule(
-                        { inboundSessionTimeout(sessionId) },
+                        { inboundSessionTimeout(sessionId, source, destination) },
                         config.get().sessionTimeout.toMillis(),
                         TimeUnit.MILLISECONDS
                     )
@@ -1191,7 +1193,7 @@ internal class SessionManagerImpl(
             }
         }
 
-        private fun inboundSessionTimeout(sessionId: String) {
+        private fun inboundSessionTimeout(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity?) {
             val sessionInfo = trackedInboundSessions[sessionId] ?: return
             val timeSinceLastReceived = timeStamp() - sessionInfo.lastReceivedTimestamp
             val sessionTimeoutMs = config.get().sessionTimeout.toMillis()
@@ -1202,10 +1204,10 @@ internal class SessionManagerImpl(
                 )
                 destroyInboundSession(sessionId)
                 trackedInboundSessions.remove(sessionId)
-                recordInboundSessionTimeoutMetric()
+                recordInboundSessionTimeoutMetric(source, destination)
             } else {
                 executorService.schedule(
-                    { inboundSessionTimeout(sessionId) },
+                    { inboundSessionTimeout(sessionId, source, destination) },
                     sessionTimeoutMs - timeSinceLastReceived,
                     TimeUnit.MILLISECONDS
                 )
@@ -1295,8 +1297,12 @@ internal class SessionManagerImpl(
                 .build().increment()
         }
 
-        private fun recordInboundSessionTimeoutMetric() {
-            CordaMetrics.Metric.InboundSessionTimeoutCount.builder().build().increment()
+        private fun recordInboundSessionTimeoutMetric(source: HoldingIdentity, destination: HoldingIdentity?) {
+            CordaMetrics.Metric.InboundSessionTimeoutCount.builder()
+                .withTag(CordaMetrics.Tag.SourceVirtualNode, source.x500Name.toString())
+                .withTag(CordaMetrics.Tag.DestinationVirtualNode, destination?.x500Name?.toString() ?: "not_available")
+                .withTag(CordaMetrics.Tag.MembershipGroup, source.groupId)
+                .build().increment()
         }
     }
 }

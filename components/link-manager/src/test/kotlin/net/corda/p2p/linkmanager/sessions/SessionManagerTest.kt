@@ -146,6 +146,10 @@ class SessionManagerTest {
             PEER_KEY.public,
         )
 
+        private val mockResponderHelloMessage: ResponderHelloMessage = mock {
+            on { responderPublicKey } doReturn ByteBuffer.wrap(OUR_KEY.public.encoded)
+        }
+
         lateinit var loggingInterceptor: LoggingInterceptor
 
         @BeforeAll
@@ -633,8 +637,7 @@ class SessionManagerTest {
     @Test
     fun `when an initiator hello is received, a responder hello is returned`() {
         val sessionId = "some-session-id"
-        val responderHello = mock<ResponderHelloMessage>()
-        whenever(protocolResponder.generateResponderHello()).thenReturn(responderHello)
+        whenever(protocolResponder.generateResponderHello()).thenReturn(mockResponderHelloMessage)
 
         val header = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
         val initiatorHelloMsg = InitiatorHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded),
@@ -649,8 +652,7 @@ class SessionManagerTest {
     @Test
     fun `when there are multiple locally hosted identities, the member info with latest serial is used`() {
         val sessionId = "some-session-id"
-        val responderHello = mock<ResponderHelloMessage>()
-        whenever(protocolResponder.generateResponderHello()).thenReturn(responderHello)
+        whenever(protocolResponder.generateResponderHello()).thenReturn(mockResponderHelloMessage)
         val ourSecondParty = createTestHoldingIdentity("CN=Charlie, O=BigCorp, L=LDN, C=GB", GROUP_ID)
         val secondPeerEndpoint = "https://bob2.com"
         val secondPeerMemberInfo = mockMemberInfo(PEER_PARTY, secondPeerEndpoint, PEER_KEY.public, 2)
@@ -676,7 +678,6 @@ class SessionManagerTest {
     @Test
     fun `when an initiator hello is received, we do a lookup for the public key hash, using all the locally hosted identities`() {
         val sessionId = "some-session-id"
-        val responderHello = mock<ResponderHelloMessage>()
         val carol = createTestHoldingIdentity("CN=Carol, O=Alice Corp, L=LDN, C=GB", GROUP_ID)
         val david = createTestHoldingIdentity("CN=David, O=Alice Corp, L=LDN, C=GB", GROUP_ID)
         whenever(linkManagerHostingMap.allLocallyHostedIdentities()).thenReturn(
@@ -686,7 +687,7 @@ class SessionManagerTest {
                 OUR_PARTY,
             )
         )
-        whenever(protocolResponder.generateResponderHello()).thenReturn(responderHello)
+        whenever(protocolResponder.generateResponderHello()).thenReturn(mockResponderHelloMessage)
 
         val header = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
         val initiatorHelloMsg = InitiatorHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded),
@@ -942,7 +943,7 @@ class SessionManagerTest {
         val sessionId = "some-session-id"
         val initiatorPublicKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
         val responderPublicKeyHash = messageDigest.hash(OUR_KEY.public.encoded)
-        whenever(protocolResponder.generateResponderHello()).thenReturn(mock())
+        whenever(protocolResponder.generateResponderHello()).thenReturn(mockResponderHelloMessage)
 
         val initiatorHelloHeader = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
         val initiatorHelloMessage = InitiatorHelloMessage(initiatorHelloHeader, ByteBuffer.wrap(PEER_KEY.public.encoded),
@@ -975,7 +976,7 @@ class SessionManagerTest {
         val sessionId = "some-session-id"
         val initiatorPublicKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
         val responderPublicKeyHash = messageDigest.hash(OUR_KEY.public.encoded)
-        whenever(protocolResponder.generateResponderHello()).thenReturn(mock())
+        whenever(protocolResponder.generateResponderHello()).thenReturn(mockResponderHelloMessage)
         val carol = createTestHoldingIdentity("CN=Carol, O=Alice Corp, L=LDN, C=GB", GROUP_ID)
         val david = createTestHoldingIdentity("CN=David, O=Alice Corp, L=LDN, C=GB", GROUP_ID)
         whenever(linkManagerHostingMap.allLocallyHostedIdentities()).thenReturn(
@@ -1017,7 +1018,7 @@ class SessionManagerTest {
         val sessionId = "some-session-id"
         val initiatorPublicKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
         val responderPublicKeyHash = messageDigest.hash(OUR_KEY.public.encoded)
-        whenever(protocolResponder.generateResponderHello()).thenReturn(mock())
+        whenever(protocolResponder.generateResponderHello()).thenReturn(mockResponderHelloMessage)
 
         val initiatorHelloHeader = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
         val initiatorHelloMessage = InitiatorHelloMessage(
@@ -1083,7 +1084,7 @@ class SessionManagerTest {
     @Test
     fun `when initiator handshake is received but no locally hosted identity in the same group as the initiator, message is dropped`() {
         val sessionId = "some-session-id"
-        whenever(protocolResponder.generateResponderHello()).thenReturn(mock())
+        whenever(protocolResponder.generateResponderHello()).thenReturn(mockResponderHelloMessage)
 
         val initiatorHelloHeader = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
         val initiatorHandshakeIdentity = InitiatorHandshakeIdentity(ByteBuffer.wrap(messageDigest.hash(PEER_KEY.public.encoded)), GROUP_ID)
@@ -1108,7 +1109,7 @@ class SessionManagerTest {
     fun `when initiator handshake is received, but peer's member info is missing from network map, message is dropped`() {
         val sessionId = "some-session-id"
         val initiatorPublicKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
-        whenever(protocolResponder.generateResponderHello()).thenReturn(mock())
+        whenever(protocolResponder.generateResponderHello()).thenReturn(mockResponderHelloMessage)
 
         val initiatorHelloHeader = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
         val initiatorHelloMessage = InitiatorHelloMessage(initiatorHelloHeader, ByteBuffer.wrap(PEER_KEY.public.encoded),
@@ -1137,7 +1138,7 @@ class SessionManagerTest {
     fun `when initiator handshake is received, but validation of the message fails due to invalid hash, the message is dropped`() {
         val sessionId = "some-session-id"
         val initiatorPublicKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
-        whenever(protocolResponder.generateResponderHello()).thenReturn(mock())
+        whenever(protocolResponder.generateResponderHello()).thenReturn(mockResponderHelloMessage)
 
         val initiatorHelloHeader = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
         val initiatorHelloMessage = InitiatorHelloMessage(initiatorHelloHeader, ByteBuffer.wrap(PEER_KEY.public.encoded),
@@ -1162,7 +1163,7 @@ class SessionManagerTest {
     fun `when initiator handshake is received, but validation of the message fails due to invalid handshake, the message is dropped`() {
         val sessionId = "some-session-id"
         val initiatorPublicKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
-        whenever(protocolResponder.generateResponderHello()).thenReturn(mock())
+        whenever(protocolResponder.generateResponderHello()).thenReturn(mockResponderHelloMessage)
 
         val initiatorHelloHeader = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
         val initiatorHelloMessage = InitiatorHelloMessage(initiatorHelloHeader, ByteBuffer.wrap(PEER_KEY.public.encoded),
@@ -1187,7 +1188,7 @@ class SessionManagerTest {
     fun `when initiator handshake is received, but validation fails due to InvalidPeerCertificate, the message is dropped`() {
         val sessionId = "some-session-id"
         val initiatorPublicKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
-        whenever(protocolResponder.generateResponderHello()).thenReturn(mock())
+        whenever(protocolResponder.generateResponderHello()).thenReturn(mockResponderHelloMessage)
 
         val initiatorHelloHeader = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
         val initiatorHelloMessage = InitiatorHelloMessage(initiatorHelloHeader, ByteBuffer.wrap(PEER_KEY.public.encoded),
@@ -1220,7 +1221,7 @@ class SessionManagerTest {
     fun `when initiator handshake is received, but validation fails due to NoCommonModeError, the message is dropped`() {
         val sessionId = "some-session-id"
         val initiatorPublicKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
-        whenever(protocolResponder.generateResponderHello()).thenReturn(mock())
+        whenever(protocolResponder.generateResponderHello()).thenReturn(mockResponderHelloMessage)
 
         val initiatorHelloHeader = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
         val initiatorHelloMessage = InitiatorHelloMessage(initiatorHelloHeader, ByteBuffer.wrap(PEER_KEY.public.encoded),
@@ -1254,7 +1255,7 @@ class SessionManagerTest {
         val sessionId = "some-session-id"
         val initiatorPublicKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
         val responderPublicKeyHash = messageDigest.hash(OUR_KEY.public.encoded)
-        whenever(protocolResponder.generateResponderHello()).thenReturn(mock())
+        whenever(protocolResponder.generateResponderHello()).thenReturn(mockResponderHelloMessage)
 
         val initiatorHelloHeader = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
         val initiatorHelloMessage = InitiatorHelloMessage(initiatorHelloHeader, ByteBuffer.wrap(PEER_KEY.public.encoded),
@@ -1283,7 +1284,7 @@ class SessionManagerTest {
         val sessionId = "some-session-id"
         val initiatorPublicKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
         val responderPublicKeyHash = messageDigest.hash(OUR_KEY.public.encoded)
-        whenever(protocolResponder.generateResponderHello()).thenReturn(mock())
+        whenever(protocolResponder.generateResponderHello()).thenReturn(mockResponderHelloMessage)
 
         val initiatorHelloHeader = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
         val initiatorHelloMessage = InitiatorHelloMessage(initiatorHelloHeader, ByteBuffer.wrap(PEER_KEY.public.encoded),
@@ -1312,7 +1313,7 @@ class SessionManagerTest {
         val sessionId = "some-session-id"
         val initiatorPublicKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
         val responderPublicKeyHash = messageDigest.hash(OUR_KEY.public.encoded)
-        whenever(protocolResponder.generateResponderHello()).thenReturn(mock())
+        whenever(protocolResponder.generateResponderHello()).thenReturn(mockResponderHelloMessage)
 
         val initiatorHelloHeader = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
         val initiatorHelloMessage = InitiatorHelloMessage(initiatorHelloHeader, ByteBuffer.wrap(PEER_KEY.public.encoded),
@@ -1341,7 +1342,7 @@ class SessionManagerTest {
         val sessionId = "some-session-id"
         val initiatorPublicKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
         val responderPublicKeyHash = messageDigest.hash(OUR_KEY.public.encoded)
-        whenever(protocolResponder.generateResponderHello()).thenReturn(mock())
+        whenever(protocolResponder.generateResponderHello()).thenReturn(mockResponderHelloMessage)
 
         val initiatorHelloHeader = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
         val initiatorHelloMessage = InitiatorHelloMessage(initiatorHelloHeader, ByteBuffer.wrap(PEER_KEY.public.encoded),
@@ -1369,7 +1370,7 @@ class SessionManagerTest {
         val sessionId = "some-session-id"
         val initiatorPublicKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
         val responderPublicKeyHash = messageDigest.hash(OUR_KEY.public.encoded)
-        whenever(protocolResponder.generateResponderHello()).thenReturn(mock())
+        whenever(protocolResponder.generateResponderHello()).thenReturn(mockResponderHelloMessage)
         whenever(linkManagerHostingMap.getInfo(responderPublicKeyHash, OUR_PARTY.groupId)).doReturn(null)
 
         val initiatorHelloHeader = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
@@ -2282,7 +2283,7 @@ class SessionManagerTest {
     @Test
     fun `first dataMessageReceived call schedules a timeout on the inbound session`() {
         val sessionId = UUID(0, 1).toString()
-        sessionManager.dataMessageReceived(sessionId)
+        sessionManager.dataMessageReceived(sessionId, PEER_PARTY, OUR_PARTY)
 
         verify(mockTimeFacilitiesProvider.mockScheduledExecutor).schedule(
             any(),
@@ -2296,8 +2297,8 @@ class SessionManagerTest {
         val sessionId = UUID(0, 1).toString()
 
         // call twice
-        sessionManager.dataMessageReceived(sessionId)
-        sessionManager.dataMessageReceived(sessionId)
+        sessionManager.dataMessageReceived(sessionId, PEER_PARTY, OUR_PARTY)
+        sessionManager.dataMessageReceived(sessionId, PEER_PARTY, OUR_PARTY)
 
         // verify schedule called only once
         verify(mockTimeFacilitiesProvider.mockScheduledExecutor).schedule(
@@ -2310,7 +2311,7 @@ class SessionManagerTest {
     @Test
     fun `inbound session timeout is not rescheduled if session has timed out after dataMessageReceived`() {
         val sessionId = UUID(0, 1).toString()
-        sessionManager.dataMessageReceived(sessionId)
+        sessionManager.dataMessageReceived(sessionId, PEER_PARTY, OUR_PARTY)
 
         mockTimeFacilitiesProvider.advanceTime(Duration.ofMillis(sixDaysInMillis))
 
@@ -2328,11 +2329,11 @@ class SessionManagerTest {
     @Test
     fun `inbound session timeout is rescheduled if session has not timed out after dataMessageReceived`() {
         val sessionId = UUID(0, 1).toString()
-        sessionManager.dataMessageReceived(sessionId)
+        sessionManager.dataMessageReceived(sessionId, PEER_PARTY, OUR_PARTY)
 
         mockTimeFacilitiesProvider.advanceTime(Duration.ofMillis(sixDaysInMillis / 2))
 
-        sessionManager.dataMessageReceived(sessionId)
+        sessionManager.dataMessageReceived(sessionId, PEER_PARTY, OUR_PARTY)
 
         mockTimeFacilitiesProvider.advanceTime(Duration.ofMillis(sixDaysInMillis / 2))
 
@@ -2347,7 +2348,7 @@ class SessionManagerTest {
     @Test
     fun `first sessionMessageReceived call schedules a timeout on the inbound session`() {
         val sessionId = UUID(0, 1).toString()
-        sessionManager.sessionMessageReceived(sessionId)
+        sessionManager.sessionMessageReceived(sessionId, PEER_PARTY, OUR_PARTY)
 
         verify(mockTimeFacilitiesProvider.mockScheduledExecutor).schedule(
             any(),
@@ -2361,8 +2362,8 @@ class SessionManagerTest {
         val sessionId = UUID(0, 1).toString()
 
         // call twice
-        sessionManager.sessionMessageReceived(sessionId)
-        sessionManager.sessionMessageReceived(sessionId)
+        sessionManager.sessionMessageReceived(sessionId, PEER_PARTY, OUR_PARTY)
+        sessionManager.sessionMessageReceived(sessionId, PEER_PARTY, OUR_PARTY)
 
         // verify schedule called only once
         verify(mockTimeFacilitiesProvider.mockScheduledExecutor).schedule(
@@ -2375,7 +2376,7 @@ class SessionManagerTest {
     @Test
     fun `inbound session timeout is not rescheduled if session has timed out after sessionMessageReceived`() {
         val sessionId = UUID(0, 1).toString()
-        sessionManager.sessionMessageReceived(sessionId)
+        sessionManager.sessionMessageReceived(sessionId, PEER_PARTY, OUR_PARTY)
 
         mockTimeFacilitiesProvider.advanceTime(Duration.ofMillis(sixDaysInMillis))
 
@@ -2393,11 +2394,11 @@ class SessionManagerTest {
     @Test
     fun `inbound session timeout is rescheduled if session has not timed out after sessionMessageReceived`() {
         val sessionId = UUID(0, 1).toString()
-        sessionManager.sessionMessageReceived(sessionId)
+        sessionManager.sessionMessageReceived(sessionId, PEER_PARTY, OUR_PARTY)
 
         mockTimeFacilitiesProvider.advanceTime(Duration.ofMillis(sixDaysInMillis / 2))
 
-        sessionManager.sessionMessageReceived(sessionId)
+        sessionManager.sessionMessageReceived(sessionId, PEER_PARTY, OUR_PARTY)
 
         mockTimeFacilitiesProvider.advanceTime(Duration.ofMillis(sixDaysInMillis / 2))
 
