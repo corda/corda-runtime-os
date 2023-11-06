@@ -9,10 +9,11 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorConsumer
+import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
-import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
+import net.corda.messaging.api.mediator.RoutingDestination
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.mediator.config.MediatorConsumerConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
@@ -165,6 +166,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
             var groups = allocateGroups(messages.map { it.toRecord() })
             var states = stateManager.get(messages.map { it.key.toString() }.distinct())
             while (groups.isNotEmpty()) {
+                val busEvents = mutableListOf<MediatorMessage<Any>>()
                 val newStates = ConcurrentHashMap<String, State?>()
                 val updateStates = ConcurrentHashMap<String, State?>()
                 val deleteStates = ConcurrentHashMap<String, State?>()
@@ -201,20 +203,23 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                                     response.responseEvents.map { taskManagerHelper.convertToMessage(it) }
                                 output.forEach { message ->
                                     val destination = messageRouter.getDestination(message)
-
-                                    @Suppress("UNCHECKED_CAST")
-                                    val reply = with(destination) {
-                                        message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
-                                        client.send(message) as MediatorMessage<E>?
-                                    }
-                                    if (reply != null) {
-                                        queue.addLast(
-                                            Record(
-                                                "",
-                                                event.key,
-                                                reply.payload,
+                                    if (destination.type == RoutingDestination.Type.ASYNCHRONOUS) {
+                                        busEvents.add(message)
+                                    } else {
+                                        @Suppress("UNCHECKED_CAST")
+                                        val reply = with(destination) {
+                                            message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
+                                            client.send(message) as MediatorMessage<E>?
+                                        }
+                                        if (reply != null) {
+                                            queue.addLast(
+                                                Record(
+                                                    "",
+                                                    event.key,
+                                                    reply.payload,
+                                                )
                                             )
-                                        )
+                                        }
                                     }
                                 }
                             }
@@ -244,6 +249,14 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                     }
                 }.map {
                     it.join()
+                }
+
+                //Send asynchronous events
+                busEvents.forEach { message ->
+                    with(messageRouter.getDestination(message)) {
+                        message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
+                        client.send(message)
+                    }
                 }
 
                 // Persist states changes
@@ -280,6 +293,8 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
             val records = buckets[key]!!
             group[key] = records
         }
+
+        log.info("groups keys: ${groups.map { it.keys }}")
         return groups
     }
 }
