@@ -815,7 +815,7 @@ workers:
         # flow worker JDBC connection pool configuration for State Manager DB
         connectionPool:
           # -- flow worker maximum JDBC connection pool size for state manager DB
-          maxSize: 5
+          maxSize: 8
           # -- flow worker minimum JDBC connection pool size for state manager DB; null value means pool's min size will default to pool's max size value
           minSize: null
           # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
@@ -935,7 +935,7 @@ workers:
         # flow mapper worker JDBC connection pool configuration for State Manager DB
         connectionPool:
           # -- flow mapper worker maximum JDBC connection pool size for state manager DB
-          maxSize: 5
+          maxSize: 8
           # -- flow mapper worker minimum JDBC connection pool size for state manager DB; null value means pool's min size will default to pool's max size value
           minSize: null
           # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
@@ -1531,7 +1531,7 @@ workers:
         # token selection worker JDBC connection pool configuration for State Manager DB
         connectionPool:
           # -- token selection maximum JDBC connection pool size for state manager DB
-          maxSize: 5
+          maxSize: 8
           # -- token selection minimum JDBC connection pool size for state manager DB; null value means pool's min size will default to pool's max size value
           minSize: null
           # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool

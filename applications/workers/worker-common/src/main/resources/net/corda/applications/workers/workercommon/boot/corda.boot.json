@@ -252,7 +252,7 @@
               "properties": {
                 "maxSize": {
                   "description": "Maximum connection pool size for State Manager DB",
-                  "default": 5,
+                  "default": 8,
                   "type": [
                     "integer",
                     "null"

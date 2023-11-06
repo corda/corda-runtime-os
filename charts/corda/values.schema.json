@@ -3621,10 +3621,10 @@
                             "properties": {
                                 "maxSize": {
                                     "type": "integer",
-                                    "default": 5,
+                                    "default": 8,
                                     "title": "JDBC connection pool size for State Manager DB",
                                     "examples": [
-                                        5
+                                        8
                                     ]
                                 },
                                 "minSize": {
