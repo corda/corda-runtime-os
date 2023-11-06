@@ -141,7 +141,7 @@ class FlowFiberImpl(
                         throw e
                     }
                 }!!
-            log.info("Flow [$flowId] suspended" )
+            log.info("Flow [$flowId] suspended $request" )
             flowCompletion.complete(FlowIORequest.FlowSuspended(ByteBuffer.wrap(fiberState), request, prepareForCaching()))
         }
 
