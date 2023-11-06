@@ -663,7 +663,6 @@ class CryptoOperationsTests {
 
 
     private fun testWithBadWrappingKeyInfo(info: (TestServicesFactory) -> WrappingKeyInfo): java.lang.IllegalArgumentException {
-        val alias = UUID.randomUUID().toString()
         val myFactory = TestServicesFactory()
         val rsaScheme = myFactory.schemeMetadata.findKeyScheme(RSA_CODE_NAME)
         myFactory.wrappingRepository.saveKey(info(myFactory))
@@ -674,7 +673,7 @@ class CryptoOperationsTests {
                 "key1",
                 null,
                 rsaScheme,
-                mapOf("parentKeyAlias" to alias)
+                mapOf("parentKeyAlias" to "key1")
             )
         }
     }

@@ -48,5 +48,5 @@ class CryptoRewrapBusProcessor(
         newKeyAlias: String,
         endTimestamp: Instant,
     ): IndividualKeyRotationResponse =
-        IndividualKeyRotationResponse(requestId, tenantId, oldKeyAlias, newKeyAlias, endTimestamp)
+        IndividualKeyRotationResponse(requestId, tenantId, oldKeyAlias, newKeyAlias, "", endTimestamp)
 }

@@ -55,14 +55,19 @@ import kotlin.test.assertNull
 
 private val schemeMetadata = CipherSchemeMetadataImpl()
 
+
 /* Tests that need wrapping keys */
 class SoftCryptoServiceOperationsTests {
+
     companion object {
+        private const val rootKeyAlias = "root"
+        private const val managedWrappingKey1Alias = "k1"
         private val rootWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         private val knownWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
         private val knownWrappingKeyMaterial = rootWrappingKey.wrap(knownWrappingKey)
         private val knownWrappingKeyAlias = UUID.randomUUID().toString()
         private val tenantId = UUID.randomUUID().toString()
+        //  TODO - reuse these two fixtures?
         private val clusterWrappingRepository = TestWrappingRepository(
             ConcurrentHashMap(
                 listOf(
@@ -71,8 +76,8 @@ class SoftCryptoServiceOperationsTests {
                         knownWrappingKey.algorithm,
                         knownWrappingKeyMaterial,
                         1,
-                        "root",
-                        "k1"
+                        rootKeyAlias,
+                        managedWrappingKey1Alias
                     )
                 ).toMap()
             )
@@ -85,8 +90,8 @@ class SoftCryptoServiceOperationsTests {
                         knownWrappingKey.algorithm,
                         knownWrappingKeyMaterial,
                         1,
-                        "root",
-                        "k1"
+                        rootKeyAlias,
+                        managedWrappingKey1Alias
                     )
                 ).toMap()
             )
@@ -103,8 +108,8 @@ class SoftCryptoServiceOperationsTests {
                 }
             },
             schemeMetadata = schemeMetadata,
-            defaultUnmanagedWrappingKeyName = "root",
-            unmanagedWrappingKeys = mapOf("root" to rootWrappingKey),
+            defaultUnmanagedWrappingKeyName = rootKeyAlias,
+            unmanagedWrappingKeys = mapOf(rootKeyAlias to rootWrappingKey),
             digestService = PlatformDigestServiceImpl(schemeMetadata),
             keyPairGeneratorFactory = { algorithm: String, provider: Provider ->
                 KeyPairGenerator.getInstance(algorithm, provider)
@@ -440,16 +445,16 @@ class SoftCryptoServiceOperationsTests {
             expected1.algorithm,
             rootWrappingKey.wrap(expected1),
             1,
-            "root",
-            "k1"
+            rootKeyAlias,
+            alias1
         )
         val info2 = WrappingKeyInfo(
             WRAPPING_KEY_ENCODING_VERSION,
             expected2.algorithm,
             rootWrappingKey.wrap(expected2),
             1,
-            "root",
-            "k1"
+            rootKeyAlias,
+            alias2
         )
         val key1Missing = wrappingKeyCache.getIfPresent(alias1)
         assertNull(key1Missing)
@@ -490,11 +495,11 @@ class SoftCryptoServiceOperationsTests {
                 WRAPPING_KEY_ENCODING_VERSION + 1,
                 knownWrappingKey.algorithm,
                 rootWrappingKey.wrap(knownWrappingKey),
-                1, "enoch", "k1"
+                1, rootKeyAlias, alias
             )
         )
         val exception = assertThrows<IllegalArgumentException> {
-            cryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "key1", alias), emptyMap())
+            cryptoService.generateKeyPair(KeyGenerationSpec(rsaScheme, "k1", alias), emptyMap())
         }
         assertThat(exception.message).contains("Unknown wrapping key encoding")
     }
@@ -510,7 +515,7 @@ class SoftCryptoServiceOperationsTests {
                 rootWrappingKey.wrap(knownWrappingKey),
                 1,
                 "Enoch",
-                "k1"
+                alias
             )
         )
         val exception =  assertThrows<IllegalStateException> {
