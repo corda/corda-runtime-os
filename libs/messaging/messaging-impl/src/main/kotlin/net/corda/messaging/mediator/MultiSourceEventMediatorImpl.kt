@@ -229,9 +229,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                     it.join()
                 }
 
-                //Send asynchronous events
                 sendAsynchronousEvents(asynchronousOutputs)
-
                 // Persist states changes
                 val failedToCreateKeys = stateManager.create(newStates.values.mapNotNull { it })
                 val failedToCreate = stateManager.get(failedToCreateKeys.keys)
