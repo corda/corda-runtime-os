@@ -166,7 +166,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
             var groups = allocateGroups(messages.map { it.toRecord() })
             var states = stateManager.get(messages.map { it.key.toString() }.distinct())
             while (groups.isNotEmpty()) {
-                val busEvents = mutableListOf<MediatorMessage<Any>>()
+                val asynchronousOutputs = mutableListOf<MediatorMessage<Any>>()
                 val newStates = ConcurrentHashMap<String, State?>()
                 val updateStates = ConcurrentHashMap<String, State?>()
                 val deleteStates = ConcurrentHashMap<String, State?>()
@@ -199,7 +199,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                                 val event = queue.removeFirst()
                                 val response = config.messageProcessor.onNext(processorState, event)
                                 processorState = response.updatedState
-                                processOutputEvents(response, busEvents, queue, event)
+                                processOutputEvents(response, asynchronousOutputs, queue, event)
                             }
 
                             // ---- Manage the state ----
@@ -230,12 +230,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                 }
 
                 //Send asynchronous events
-                busEvents.forEach { message ->
-                    with(messageRouter.getDestination(message)) {
-                        message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
-                        client.send(message)
-                    }
-                }
+                sendAsynchronousEvents(asynchronousOutputs)
 
                 // Persist states changes
                 val failedToCreateKeys = stateManager.create(newStates.values.mapNotNull { it })
@@ -254,6 +249,15 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
             }
         }
         metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
+    }
+
+    private fun sendAsynchronousEvents(busEvents: MutableList<MediatorMessage<Any>>) {
+        busEvents.forEach { message ->
+            with(messageRouter.getDestination(message)) {
+                message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
+                client.send(message)
+            }
+        }
     }
 
     /**
