@@ -257,7 +257,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     }
 
     /**
-     * Send any synchronous events immediately, add asynchronous events to the busEvents map to be sent later
+     * Send any synchronous events immediately, add asynchronous events to the busEvents collection to be sent later
      */
     private fun processOutputEvents(
         response: StateAndEventProcessor.Response<S>,
