@@ -265,8 +265,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         queue: ArrayDeque<Record<K, E>>,
         event: Record<K, E>
     ) {
-        val output =
-            response.responseEvents.map { taskManagerHelper.convertToMessage(it) }
+        val output = response.responseEvents.map { taskManagerHelper.convertToMessage(it) }
         output.forEach { message ->
             val destination = messageRouter.getDestination(message)
             if (destination.type == RoutingDestination.Type.ASYNCHRONOUS) {
