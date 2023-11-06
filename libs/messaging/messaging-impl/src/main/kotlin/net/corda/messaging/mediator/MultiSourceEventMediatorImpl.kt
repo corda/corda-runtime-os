@@ -199,29 +199,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                                 val event = queue.removeFirst()
                                 val response = config.messageProcessor.onNext(processorState, event)
                                 processorState = response.updatedState
-                                val output =
-                                    response.responseEvents.map { taskManagerHelper.convertToMessage(it) }
-                                output.forEach { message ->
-                                    val destination = messageRouter.getDestination(message)
-                                    if (destination.type == RoutingDestination.Type.ASYNCHRONOUS) {
-                                        busEvents.add(message)
-                                    } else {
-                                        @Suppress("UNCHECKED_CAST")
-                                        val reply = with(destination) {
-                                            message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
-                                            client.send(message) as MediatorMessage<E>?
-                                        }
-                                        if (reply != null) {
-                                            queue.addLast(
-                                                Record(
-                                                    "",
-                                                    event.key,
-                                                    reply.payload,
-                                                )
-                                            )
-                                        }
-                                    }
-                                }
+                                processOutputEvents(response, busEvents, queue, event)
                             }
 
                             // ---- Manage the state ----
@@ -278,6 +256,40 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
     }
 
+    /**
+     * Send any synchronous events immediately, add asynchronous events to the busEvents map to be sent later
+     */
+    private fun processOutputEvents(
+        response: StateAndEventProcessor.Response<S>,
+        busEvents: MutableList<MediatorMessage<Any>>,
+        queue: ArrayDeque<Record<K, E>>,
+        event: Record<K, E>
+    ) {
+        val output =
+            response.responseEvents.map { taskManagerHelper.convertToMessage(it) }
+        output.forEach { message ->
+            val destination = messageRouter.getDestination(message)
+            if (destination.type == RoutingDestination.Type.ASYNCHRONOUS) {
+                busEvents.add(message)
+            } else {
+                @Suppress("UNCHECKED_CAST")
+                val reply = with(destination) {
+                    message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
+                    client.send(message) as MediatorMessage<E>?
+                }
+                if (reply != null) {
+                    queue.addLast(
+                        Record(
+                            "",
+                            event.key,
+                            reply.payload,
+                        )
+                    )
+                }
+            }
+        }
+    }
+
     private fun allocateGroups(events: List<Record<K, E>>): List<Map<K, List<Record<K, E>>>> {
         val groups = mutableListOf<MutableMap<K, List<Record<K, E>>>>()
         val groupCountBasedOnEvents = (events.size / 20).coerceAtLeast(1)
@@ -294,7 +306,6 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
             group[key] = records
         }
 
-        log.info("groups keys: ${groups.map { it.keys }}")
         return groups
     }
 }
