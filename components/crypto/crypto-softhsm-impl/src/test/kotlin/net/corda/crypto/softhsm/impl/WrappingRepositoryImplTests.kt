@@ -34,7 +34,7 @@ class WrappingRepositoryImplTests {
     fun `save a wrapping key`() {
         val stored = ArrayList<WrappingKeyEntity>()
         val wrappingKeyInfo = WrappingKeyInfo(
-            1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch", "k1")
+            1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch", "alias1")
         val savedWrappingKey = makeWrappingKeyEntity(UUID.randomUUID(), wrappingKeyInfo)
         val em = mock<EntityManager> {
             on { merge(any<WrappingKeyEntity>()) } doReturn(savedWrappingKey)
@@ -62,7 +62,7 @@ class WrappingRepositoryImplTests {
     fun `save a wrapping key with id`() {
         val stored = ArrayList<WrappingKeyEntity>()
         val wrappingKeyInfo = WrappingKeyInfo(
-            1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch", "k1")
+            1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch", "alias1")
         val savedWrappingKey = makeWrappingKeyEntity(UUID.randomUUID(), wrappingKeyInfo)
         val em = mock<EntityManager> {
             on { merge(any<WrappingKeyEntity>()) } doReturn(savedWrappingKey)
