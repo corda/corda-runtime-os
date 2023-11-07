@@ -22,7 +22,9 @@ import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.createDog
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getDogClass
 import net.corda.db.schema.DbSchema
-import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
+import net.corda.entityprocessor.impl.internal.EntityRequestProcessor
+import net.corda.entityprocessor.impl.tests.helpers.assertEventResponseWithError
+import net.corda.entityprocessor.impl.tests.helpers.assertEventResponseWithoutError
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
 import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
 import net.corda.flow.utils.toKeyValuePairList
@@ -49,8 +51,6 @@ import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -105,7 +105,7 @@ class PersistenceExceptionTests {
     private lateinit var dbConnectionManager: FakeDbConnectionManager
 
     private lateinit var entitySandboxService: EntitySandboxService
-    private lateinit var processor: EntityMessageProcessor
+    private lateinit var processor: EntityRequestProcessor
 
     private lateinit var virtualNodeInfo: VirtualNodeInfo
     private lateinit var cpkFileHashes: Set<SecureHash>
@@ -157,7 +157,7 @@ class PersistenceExceptionTests {
                     virtualNodeInfoReadService,
                     dbConnectionManager
                 )
-            processor = EntityMessageProcessor(
+            processor = EntityRequestProcessor(
                 currentSandboxGroupContext,
                 entitySandboxService,
                 responseFactory,
@@ -217,7 +217,7 @@ class PersistenceExceptionTests {
                 dbConnectionManager
             )
 
-        val processor = EntityMessageProcessor(
+        val processor = EntityRequestProcessor(
             currentSandboxGroupContext,
             brokenEntitySandboxService,
             responseFactory,
@@ -286,6 +286,8 @@ class PersistenceExceptionTests {
         createDogDb(DOGS_TABLE_WITHOUT_PK)
         val persistEntitiesRequest = createDogPersistRequest()
 
+        val initialDogDbCount = getDogDbCount(virtualNodeInfo.vaultDmlConnectionId)
+
         val record1 = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), persistEntitiesRequest)))
         assertEventResponseWithoutError(record1.single())
         // duplicate request
@@ -294,7 +296,7 @@ class PersistenceExceptionTests {
 
         val dogDbCount = getDogDbCount(virtualNodeInfo.vaultDmlConnectionId)
         // There shouldn't be a dog duplicate entry in the DB, i.e. dogs count in the DB should still be 1
-        assertEquals(1, dogDbCount)
+        assertEquals(initialDogDbCount + 1, dogDbCount)
     }
 
     @Test
@@ -384,10 +386,3 @@ class PersistenceExceptionTests {
             }
 }
 
-private fun assertEventResponseWithoutError(record: Record<*, *>) {
-    assertNull(((record.value as FlowEvent).payload as ExternalEventResponse).error)
-}
-
-private fun assertEventResponseWithError(record: Record<*, *>) {
-    assertNotNull(((record.value as FlowEvent).payload as ExternalEventResponse).error)
-}

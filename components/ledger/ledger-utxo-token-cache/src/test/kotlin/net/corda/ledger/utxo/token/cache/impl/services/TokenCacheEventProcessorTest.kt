@@ -16,17 +16,15 @@ import net.corda.ledger.utxo.token.cache.handlers.TokenEventHandler
 import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY
 import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
 import net.corda.ledger.utxo.token.cache.services.TokenCacheEventProcessor
-import net.corda.ledger.utxo.token.cache.services.TokenSelectionMetricsImpl
 import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
-import net.corda.utilities.time.UTCClock
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -41,7 +39,6 @@ class TokenCacheEventProcessorTest {
     private val event = FakeTokenEvent()
     private val tokenPoolCache = TokenPoolCacheImpl()
     private val cachePoolState = mock<PoolCacheState>()
-    private val tokenSelectionMetrics = TokenSelectionMetricsImpl(UTCClock())
     private val externalEventResponseFactory = mock<ExternalEventResponseFactory> {
         on { platformError(any(), any<Throwable>()) } doReturn mock<Record<String, FlowEvent>>()
     }
@@ -85,8 +82,7 @@ class TokenCacheEventProcessorTest {
                 entityConverter,
                 tokenPoolCache,
                 tokenCacheEventHandlerMap,
-                externalEventResponseFactory,
-                tokenSelectionMetrics
+                externalEventResponseFactory
             )
 
         val result = target.onNext(
@@ -120,8 +116,7 @@ class TokenCacheEventProcessorTest {
                 entityConverter,
                 tokenPoolCache,
                 tokenCacheEventHandlerMap,
-                externalEventResponseFactory,
-                tokenSelectionMetrics
+                externalEventResponseFactory
             )
 
         val result = target.onNext(
@@ -246,8 +241,7 @@ class TokenCacheEventProcessorTest {
             entityConverter,
             tokenPoolCache,
             tokenCacheEventHandlerMap,
-            mock(),
-            tokenSelectionMetrics
+            mock()
         )
     }
 

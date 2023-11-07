@@ -5,6 +5,8 @@ import co.paralleluniverse.io.serialization.kryo.KryoSerializer
 import com.esotericsoftware.kryo.ClassResolver
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.Serializer
+import com.esotericsoftware.kryo.util.Pool
+import java.lang.reflect.Method
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.kryoserialization.CordaKryoException
 import net.corda.kryoserialization.DefaultKryoCustomizer
@@ -28,6 +30,7 @@ import java.security.PrivateKey
 import java.security.PublicKey
 import java.util.function.Function
 import javax.security.auth.x500.X500Principal
+import net.corda.kryoserialization.serializers.MethodSerializer
 
 class KryoCheckpointSerializerBuilderImpl(
     private val keyEncodingService: KeyEncodingService,
@@ -69,9 +72,6 @@ class KryoCheckpointSerializerBuilderImpl(
     }
 
     override fun build(): KryoCheckpointSerializer {
-        val classResolver = CordaClassResolver(sandboxGroup)
-        val classSerializer = ClassSerializer(sandboxGroup)
-
         val publicKeySerializers = listOf(
             PublicKey::class.java, EdDSAPublicKey::class.java, CompositeKey::class.java,
             BCECPublicKey::class.java, BCRSAPublicKey::class.java, BCSphincs256PublicKey::class.java
@@ -79,19 +79,24 @@ class KryoCheckpointSerializerBuilderImpl(
 
         val otherCustomSerializers = mapOf(
             SingletonSerializeAsToken::class.java to SingletonSerializeAsTokenSerializer(singletonInstances.toMap()),
-            X500Principal::class.java to X500PrincipalSerializer()
+            X500Principal::class.java to X500PrincipalSerializer(),
+            Method::class.java to MethodSerializer()
         )
 
-        val kryo = DefaultKryoCustomizer.customize(
-            kryoFactory.apply(classResolver),
-            serializers + publicKeySerializers + otherCustomSerializers,
-            classSerializer
-        )
-
-        return KryoCheckpointSerializer(kryo).also {
-            // Clear the builder state
-            serializers.clear()
-            singletonInstances.clear()
+        val pool = object : Pool<Kryo>(true, false, 8) {
+            override fun create(): Kryo {
+                val classResolver = CordaClassResolver(sandboxGroup)
+                val classSerializer = ClassSerializer(sandboxGroup)
+                return DefaultKryoCustomizer.customize(
+                    kryoFactory.apply(classResolver),
+                    serializers + publicKeySerializers + otherCustomSerializers,
+                    classSerializer
+                ).also {
+                    classResolver.setKryo(it)
+                }
+            }
         }
+
+        return KryoCheckpointSerializer(pool)
     }
 }

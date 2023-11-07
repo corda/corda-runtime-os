@@ -43,6 +43,7 @@ class TransferSubFlow(private val params: TransferFlowArgs): SubFlow<TransferFlo
 
             val stateId = flowArgs.stateId
 
+            @Suppress("deprecation")
             val unconsumedStates = ledgerService.findUnconsumedStatesByType(TokenState::class.java)
             val unconsumedStatesWithId = unconsumedStates.filter { it.state.contractState.linearId == stateId }
 

@@ -24,7 +24,6 @@ import net.corda.kryoserialization.serializers.LinkedHashMapEntrySerializer
 import net.corda.kryoserialization.serializers.LinkedHashMapIteratorSerializer
 import net.corda.kryoserialization.serializers.LinkedListItrSerializer
 import net.corda.kryoserialization.serializers.LoggerSerializer
-import net.corda.kryoserialization.serializers.MethodSerializer
 import net.corda.kryoserialization.serializers.NonSerializableSerializer
 import net.corda.kryoserialization.serializers.ThrowableSerializer
 import net.corda.kryoserialization.serializers.X509CertificateSerializer
@@ -36,7 +35,6 @@ import org.objenesis.strategy.InstantiatorStrategy
 import org.objenesis.strategy.StdInstantiatorStrategy
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.lang.reflect.Method
 import java.io.BufferedInputStream
 import java.io.FileInputStream
 import java.io.InputStream
@@ -135,9 +133,6 @@ class DefaultKryoCustomizer {
                 addDefaultSerializer(SpecificRecord::class.java, AvroRecordRejectSerializer)
                 // Register a serializer to reject the serialization of NonSerializable classes
                 addDefaultSerializer(NonSerializable::class.java, NonSerializableSerializer)
-
-                //TODO CORE-15338 remove this serializer
-                kryo.register(Method::class.java, MethodSerializer())
             }
         }
     }

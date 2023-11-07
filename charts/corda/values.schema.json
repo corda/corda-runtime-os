@@ -526,6 +526,24 @@
                                 ]
                             },
                             "examples": [{}]
+                        },
+                        "keepNames": {
+                            "type": "array",
+                            "items": {
+                                "type": "string",
+                                "format": "regex"
+                            },
+                            "title": "A list of regular expressions for the names of metrics that Prometheus should keep; if empty, all metrics are kept",
+                            "examples": [[ "jvm_.*" ]]
+                        },
+                        "dropLabels": {
+                            "type": "array",
+                            "items": {
+                                "type": "string",
+                                "format": "regex"
+                            },
+                            "title": "A list of regular expressions for labels that Prometheus should drop across all metrics; if empty, all labels are kept",
+                            "examples": [[ "virtualnode_destination" ]]
                         }
                     },
                     "examples": [
@@ -1259,93 +1277,27 @@
                             }]
                         },
                         "stateManager": {
-                            "type": "object",
-                            "default": {},
-                            "title": "State Manager db configuration",
-                            "required": [
-                                "dbConnectionPool"
-                            ],
-                            "properties": {
-                                "username": {
-                                    "$ref": "#/$defs/config"
-                                },
-                                "password": {
-                                    "$ref": "#/$defs/config"
-                                },
-                                "dbConnectionPool": {
-                                    "type": "object",
-                                    "default": {},
-                                    "title": "JDBC connection pool configuration for State Manager DB",
-                                    "required": [
-                                        "maxSize",
-                                        "idleTimeoutSeconds",
-                                        "maxLifetimeSeconds",
-                                        "keepAliveTimeSeconds",
-                                        "validationTimeoutSeconds"
-                                    ],
-                                    "properties": {
-                                        "maxSize": {
-                                            "type": "integer",
-                                            "default": 5,
-                                            "title": "maximum JDBC connection pool size for State Manager DB",
-                                            "examples": [
-                                                5
-                                            ]
-                                        },
-                                        "minSize": {
-                                            "anyOf": [
-                                                {
-                                                    "type": "integer",
-                                                    "minimum": 0
-                                                },
-                                                {
-                                                    "type": "null"
-                                                }
-                                            ],
-                                            "default": null,
-                                            "title": "minimum JDBC connection pool size for State Manager DB; null value means pool's min size will default to pool's max size value"
-                                        },
-                                        "idleTimeoutSeconds": {
-                                            "type": "integer",
-                                            "default": 120,
-                                            "minimum": 0,
-                                            "title": "maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool"
-                                        },
-                                        "maxLifetimeSeconds": {
-                                            "type": "integer",
-                                            "default": 1800,
-                                            "minimum": 1,
-                                            "title": "maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached \"maxLifetime\" timeout, it will be removed from the pool only when it becomes idle"
-                                        },
-                                        "keepAliveTimeSeconds": {
-                                            "type": "integer",
-                                            "default": 0,
-                                            "minimum": 0,
-                                            "title": "interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled"
-                                        },
-                                        "validationTimeoutSeconds": {
-                                            "type": "integer",
-                                            "minimum": 1,
-                                            "default": 5,
-                                            "title": "maximum time (in seconds) that the pool will wait for a connection to be validated as alive"
-                                        }
-                                    },
-                                    "examples": [{
-                                        "maxSize": 5
-                                    }]
-                                }
+                            "flow": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/basicAuthConfig"
+                                    }
+                                ]
                             },
-                            "examples": [{
-                                "password": {
-                                    "value": "password"
-                                },
-                                "username": {
-                                    "value": "username"
-                                },
-                                "dbConnectionPool": {
-                                    "maxSize": 5
-                                }
-                            }]
+                            "flowMapper": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/basicAuthConfig"
+                                    }
+                                ]
+                            },
+                            "tokenSelection": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/basicAuthConfig"
+                                    }
+                                ]
+                            }
                         },
                         "clientImage": {
                             "type": "object",
@@ -1440,6 +1392,19 @@
                             "title": "kafka topic replicas",
                             "examples": [
                                 3
+                            ]
+                        },
+                        "overrides": {
+                            "type": "object",
+                            "default": null,
+                            "title": "overrides for Kafka topic configuration",
+                            "examples": [
+                                {
+                                    "topics": [{
+                                        "name": "avro.schema",
+                                        "partitions": 5
+                                    }]
+                                }
                             ]
                         },
                         "timeoutSeconds": {
@@ -1871,8 +1836,8 @@
                         },
                         {
                             "required": [
-                                "verifyInstrumentation",
-                                "stateManagerDbConnectionPool"
+                                "stateManager",
+                                "verifyInstrumentation"
                             ],
                             "properties": {
                                 "image": {},
@@ -1884,8 +1849,8 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
-                                "stateManagerDbConnectionPool": {
-                                    "$ref": "#/$defs/stateManagerDbConnectionPool"
+                                "stateManager": {
+                                    "$ref": "#/$defs/stateManager"
                                 },
                                 "verifyInstrumentation": {
                                     "type": "boolean",
@@ -1935,8 +1900,8 @@
                         },
                         {
                             "required": [
-                                "verifyInstrumentation",
-                                "stateManagerDbConnectionPool"
+                                "stateManager",
+                                "verifyInstrumentation"
                             ],
                             "properties": {
                                 "image": {},
@@ -1948,8 +1913,8 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
-                                "stateManagerDbConnectionPool" : {
-                                    "$ref": "#/$defs/stateManagerDbConnectionPool"
+                                "stateManager" : {
+                                    "$ref": "#/$defs/stateManager"
                                 },
                                 "verifyInstrumentation": {
                                     "type": "boolean",
@@ -2630,7 +2595,92 @@
                                 "logging": {},
                                 "profiling": {},
                                 "resources": {},
+                                "stateManager": {
+                                    "$ref": "#/$defs/stateManager"
+                                },
                                 "kafka": {},
+                                "sharding": {
+                                    "type": "object",
+                                    "default": {
+                                        "enabled":  false,
+                                        "image": {
+                                            "registry": "registry.k8s.io",
+                                            "repository": "ingress-nginx/controller",
+                                            "tag": "v1.9.3@sha256:8fd21d59428507671ce0fb47f818b1d859c92d2ad07bb7c947268d433030ba98"
+                                        },
+                                        "replicaCount": 2
+                                    },
+                                    "title": "token selection sharding configuration",
+                                    "required": [
+                                        "enabled",
+                                        "image",
+                                        "replicaCount"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "enabled": {
+                                            "type": "boolean",
+                                            "default": "false",
+                                            "title": "enable sharding of requests"
+                                        },
+                                        "image": {
+                                            "type": "object",
+                                            "default": {
+                                                "registry": "registry.k8s.io",
+                                                "repository": "ingress-nginx/controller",
+                                                "tag": "v1.9.3@sha256:8fd21d59428507671ce0fb47f818b1d859c92d2ad07bb7c947268d433030ba98"
+                                            },
+                                            "title": "sharding image configuration",
+                                            "required": [
+                                                "registry",
+                                                "repository",
+                                                "tag"
+                                            ],
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "registry": {
+                                                    "type": "string",
+                                                    "default": "registry.k8s.io",
+                                                    "title": "sharding image registry",
+                                                    "examples": [
+                                                        "registry.k8s.io"
+                                                    ],
+                                                    "minLength": 1
+                                                },
+                                                "repository": {
+                                                    "type": "string",
+                                                    "title": "sharding image repository",
+                                                    "examples": [
+                                                        "ingress-nginx/controller"
+                                                    ],
+                                                    "minLength": 1
+                                                },
+                                                "tag": {
+                                                    "type": "string",
+                                                    "default": "v1.9.3@sha256:8fd21d59428507671ce0fb47f818b1d859c92d2ad07bb7c947268d433030ba98",
+                                                    "title": "sharding image tag",
+                                                    "examples": [
+                                                        "v1.9.3@sha256:8fd21d59428507671ce0fb47f818b1d859c92d2ad07bb7c947268d433030ba98"
+                                                    ],
+                                                    "minLength": 1
+                                                }
+                                            },
+                                            "examples": [{
+                                                "registry": "corda-os-docker.software.r3.com",
+                                                "repository": "corda-os-xxx-worker",
+                                                "tag": ""
+                                            }]
+                                        },
+                                        "replicaCount": {
+                                            "type": "integer",
+                                            "default": 2,
+                                            "title": "sharding replica count",
+                                            "examples": [
+                                                2
+                                            ]
+                                        }
+                                    }
+                                },
                                 "clusterDbConnectionPool": {
                                     "type": "object",
                                     "default": {},
@@ -3487,63 +3537,163 @@
                 }
             }
         },
-        "stateManagerDbConnectionPool": {
+        "stateManager": {
             "type": "object",
             "default": {},
-            "title": "JDBC connection pool configuration for State Manager DB",
-            "required": [
-                "maxSize",
-                "idleTimeoutSeconds",
-                "maxLifetimeSeconds",
-                "keepAliveTimeSeconds",
-                "validationTimeoutSeconds"
-            ],
+            "title": "State Manager configuration",
+            "additionalProperties": true,
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "default": "DATABASE",
+                    "title": "The type of State Manager",
+                    "examples": [
+                        "DATABASE"
+                    ],
+                    "enum": ["DATABASE"]
+                },
+                "db": {
+                    "type": "object",
+                    "default": {},
+                    "title": "State Manager database configuration",
+                    "additionalProperties": false,
+                    "properties": {
+                        "username": {
+                            "$ref": "#/$defs/config"
+                        },
+                        "password": {
+                            "$ref": "#/$defs/config"
+                        },
+                        "host": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "hostname"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "default": null,
+                            "title": "the State Manager database host",
+                            "examples": [
+                                "postgresql.example.com"
+                            ]
+                        },
+                        "type": {
+                            "type": "string",
+                            "default": "postgresql",
+                            "title": "the State Manager database type",
+                            "examples": [
+                                "postgresql"
+                            ],
+                            "enum": ["postgresql"]
+                        },
+                        "port": {
+                            "type": "integer",
+                            "default": 5432,
+                            "title": "the State Manager database port",
+                            "examples": [
+                                5432
+                            ]
+                        },
+                        "name": {
+                            "type": "string",
+                            "default": "state-manager",
+                            "title": "the name of the State Manager database",
+                            "examples": [
+                                "state-manager"
+                            ],
+                            "minLength": 1
+                        },
+                        "connectionPool": {
+                            "type": "object",
+                            "default": {},
+                            "title": "JDBC connection pool configuration for State Manager DB",
+                            "required": [
+                                "maxSize",
+                                "idleTimeoutSeconds",
+                                "maxLifetimeSeconds",
+                                "keepAliveTimeSeconds",
+                                "validationTimeoutSeconds"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                                "maxSize": {
+                                    "type": "integer",
+                                    "default": 5,
+                                    "title": "JDBC connection pool size for State Manager DB",
+                                    "examples": [
+                                        5
+                                    ]
+                                },
+                                "minSize": {
+                                    "anyOf": [
+                                        {
+                                            "type": "integer",
+                                            "minimum": 0
+                                        },
+                                        {
+                                            "type": "null"
+                                        }
+                                    ],
+                                    "default": null,
+                                    "title": "Minimum JDBC connection pool size for State Manager DB; null value means pool's min size will default to pool's max size value"
+                                },
+                                "idleTimeoutSeconds": {
+                                    "type": "integer",
+                                    "default": 120,
+                                    "minimum": 0,
+                                    "title": "Maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool"
+                                },
+                                "maxLifetimeSeconds": {
+                                    "type": "integer",
+                                    "default": 1800,
+                                    "minimum": 1,
+                                    "title": "Maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached \"maxLifetime\" timeout, it will be removed from the pool only when it becomes idle"
+                                },
+                                "keepAliveTimeSeconds": {
+                                    "type": "integer",
+                                    "default": 0,
+                                    "minimum": 0,
+                                    "title": "Interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled"
+                                },
+                                "validationTimeoutSeconds": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "default": 5,
+                                    "title": "Maximum time (in seconds) that the pool will wait for a connection to be validated as alive"
+                                }
+                            }
+                        }
+                    },
+                    "examples": [{
+                        "host": "postgresql.example.com",
+                        "type": "postgresql",
+                        "port": 5432,
+                        "username": {
+                            "value": "user"
+                        },
+                        "password": {
+                            "value": "password"
+                        },
+                        "database": "state-manager",
+                        "connectionPool": {}
+                    }]
+                }
+            }
+        },
+        "basicAuthConfig": {
+            "type": "object",
+            "default": {},
+            "title": "Configuration for which username and password may be provided inline or via a secret",
             "additionalProperties": false,
             "properties": {
-                "maxSize": {
-                    "type": "integer",
-                    "default": 5,
-                    "title": "JDBC connection pool size for State Manager DB",
-                    "examples": [
-                        5
-                    ]
+                "username": {
+                    "$ref": "#/$defs/config"
                 },
-                "minSize": {
-                    "anyOf": [
-                        {
-                            "type": "integer",
-                            "minimum": 0
-                        },
-                        {
-                            "type": "null"
-                        }
-                    ],
-                    "default": null,
-                    "title": "Minimum JDBC connection pool size for State Manager DB; null value means pool's min size will default to pool's max size value"
-                },
-                "idleTimeoutSeconds": {
-                    "type": "integer",
-                    "default": 120,
-                    "minimum": 0,
-                    "title": "Maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool"
-                },
-                "maxLifetimeSeconds": {
-                    "type": "integer",
-                    "default": 1800,
-                    "minimum": 1,
-                    "title": "Maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached \"maxLifetime\" timeout, it will be removed from the pool only when it becomes idle"
-                },
-                "keepAliveTimeSeconds": {
-                    "type": "integer",
-                    "default": 0,
-                    "minimum": 0,
-                    "title": "Interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled"
-                },
-                "validationTimeoutSeconds": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "default": 5,
-                    "title": "Maximum time (in seconds) that the pool will wait for a connection to be validated as alive"
+                "password": {
+                    "$ref": "#/$defs/config"
                 }
             }
         }

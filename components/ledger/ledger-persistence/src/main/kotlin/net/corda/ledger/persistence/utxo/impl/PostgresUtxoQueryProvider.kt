@@ -19,17 +19,33 @@ class PostgresUtxoQueryProvider @Activate constructor(
 
     override val persistTransaction: String
         get() = """
-            INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created, status, updated)
-                VALUES (:id, :privacySalt, :accountId, :createdAt, :status, :updatedAt)
+            INSERT INTO {h-schema}utxo_transaction(id, privacy_salt, account_id, created, status, updated, metadata_hash)
+                VALUES (:id, :privacySalt, :accountId, :createdAt, :status, :updatedAt, :metadataHash)
             ON CONFLICT(id) DO
                 UPDATE SET status = EXCLUDED.status, updated = EXCLUDED.updated
             WHERE utxo_transaction.status = EXCLUDED.status OR utxo_transaction.status = '$UNVERIFIED'"""
             .trimIndent()
 
+    override val persistTransactionMetadata: String
+        get() = """
+            INSERT INTO {h-schema}utxo_transaction_metadata(hash, canonical_data, group_parameters_hash, cpi_file_checksum)
+                VALUES (:hash, :canonicalData, :groupParametersHash, :cpiFileChecksum)
+            ON CONFLICT DO NOTHING"""
+            .trimIndent()
+
+    override val persistTransactionSource: String
+        get() = """
+            INSERT INTO {h-schema}utxo_transaction_sources(
+                transaction_id, group_idx, leaf_idx, source_state_transaction_id, source_state_idx)
+            VALUES(
+                :transactionId, :groupIndex, :leafIndex, :sourceStateTransactionId, :sourceStateIndex)
+            ON CONFLICT DO NOTHING"""
+            .trimIndent()
+
     override val persistTransactionComponentLeaf: String
         get() = """
             INSERT INTO {h-schema}utxo_transaction_component(transaction_id, group_idx, leaf_idx, data, hash)
-            VALUES(:transactionId, :groupIndex, :leafIndex, :data, :hash)
+                VALUES(:transactionId, :groupIndex, :leafIndex, :data, :hash)
             ON CONFLICT DO NOTHING"""
             .trimIndent()
 

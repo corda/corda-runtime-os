@@ -42,6 +42,7 @@ import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import javax.persistence.PersistenceException
 import kotlin.concurrent.thread
+import org.junit.jupiter.api.assertDoesNotThrow
 
 // TODO-[CORE-16663]: make database provider pluggable
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -74,7 +75,7 @@ class StateManagerIntegrationTest {
 
     private val queryProvider = PostgresQueryProvider()
     private val stateManager: StateManager =
-        StateManagerImpl(StateRepositoryImpl(queryProvider), entityManagerFactoryFactory)
+        StateManagerImpl(StateRepositoryImpl(queryProvider), entityManagerFactoryFactory, dbConfig.dataSource)
 
     private fun cleanStates() = entityManagerFactoryFactory.createEntityManager().transaction {
         it.createNativeQuery("DELETE FROM state s WHERE s.key LIKE '%$testUniqueId%'").executeUpdate()
@@ -230,30 +231,38 @@ class StateManagerIntegrationTest {
         }
     }
 
-    @ValueSource(ints = [1, 10])
+    @ValueSource(ints = [1, 5, 10, 20, 50])
     @ParameterizedTest(name = "can update existing states (batch size: {0})")
     fun canUpdateExistingStates(stateCount: Int) {
         persistStateEntities(
             (1..stateCount),
             { i, _ -> i },
             { i, _ -> "existingState_$i" },
-            { i, _ -> """{"k1": "v$i", "k2": $i}""" }
+            { i, _ -> """{"originalK1": "v$i", "originalK2": $i}""" }
         )
         val statesToUpdate = mutableSetOf<State>()
         for (i in 1..stateCount) {
             statesToUpdate.add(
-                State(buildStateKey(i), "state_$i$i".toByteArray(), i, metadata("1yek" to "1eulav"))
+                State(buildStateKey(i), "state_$i$i".toByteArray(), i, metadata("updatedK2" to "updatedV2"))
             )
         }
 
         val failedUpdates = stateManager.update(statesToUpdate)
+
         assertThat(failedUpdates).isEmpty()
         softlyAssertPersistedStateEntities(
             (1..stateCount),
             { i, _ -> i + 1 },
             { i, _ -> "state_$i$i" },
-            { _, _ -> metadata("1yek" to "1eulav") }
+            { _, _ -> metadata("updatedK2" to "updatedV2") }
         )
+    }
+
+    @Test
+    fun `does not throw when updating states of size 0`() {
+        val failedUpdates = assertDoesNotThrow { stateManager.update(emptyList()) }
+
+        assertThat(failedUpdates).isEmpty()
     }
 
     @Test
@@ -313,7 +322,7 @@ class StateManagerIntegrationTest {
         )
     }
 
-    @ValueSource(ints = [1, 10])
+    @ValueSource(ints = [1, 5, 10, 20, 50])
     @ParameterizedTest(name = "can delete existing states (batch size: {0})")
     fun canDeleteExistingStates(stateCount: Int) {
         persistStateEntities(

@@ -21,10 +21,13 @@ import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.state.impl.CheckpointMetadataKeys.STATE_META_SESSION_EXPIRY_KEY
 import net.corda.flow.test.utils.buildFlowEventContext
+import net.corda.libs.statemanager.api.Metadata
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
+import net.corda.schema.configuration.FlowConfig.SESSION_TIMEOUT_WINDOW
 import net.corda.session.manager.SessionManager
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
@@ -43,6 +46,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Duration
 import java.time.Instant
 import net.corda.interop.identity.registry.InteropIdentityRegistryService
 
@@ -358,5 +362,63 @@ class FlowGlobalPostProcessorImplTest {
 
         verify(sessionManager, times(1)).errorSession(any())
         verify(checkpoint, times(0)).putSessionState(any())
+    }
+
+    @Test
+    fun `when open session exists session timeout is set in metadata`() {
+        val earliestInstant = Instant.now().minusSeconds(20)
+        sessionState1.apply {
+            lastReceivedMessageTime = earliestInstant
+            status = SessionStateType.CONFIRMED
+        }
+        sessionState2.apply {
+            lastReceivedMessageTime = earliestInstant.plusSeconds(4)
+            status = SessionStateType.CONFIRMED
+        }
+        whenever(checkpoint.sessions).thenReturn(listOf(sessionState1, sessionState2))
+        val output = flowGlobalPostProcessor.postProcess(testContext)
+        val window = Duration.ofMillis(testContext.flowConfig.getLong(SESSION_TIMEOUT_WINDOW))
+        val expectedExpiry = (earliestInstant + window).epochSecond
+        assertThat(output.metadata).containsEntry(STATE_META_SESSION_EXPIRY_KEY, expectedExpiry)
+    }
+
+    @Test
+    fun `when no open session exists and metadata previously had expiry key it is removed`() {
+        val earliestInstant = Instant.now().minusSeconds(20)
+        sessionState1.apply {
+            lastReceivedMessageTime = earliestInstant
+            status = SessionStateType.CLOSED
+        }
+        sessionState2.apply {
+            lastReceivedMessageTime = earliestInstant.plusSeconds(4)
+            status = SessionStateType.CLOSED
+        }
+        whenever(checkpoint.sessions).thenReturn(listOf(sessionState1, sessionState2))
+        val context = testContext.copy(
+            metadata = Metadata(mapOf(STATE_META_SESSION_EXPIRY_KEY to earliestInstant.epochSecond))
+        )
+        val output = flowGlobalPostProcessor.postProcess(context)
+        assertThat(output.metadata).doesNotContainKey(STATE_META_SESSION_EXPIRY_KEY)
+    }
+
+    @Test
+    fun `when open session exists previous metadata key is overwritten`() {
+        val earliestInstant = Instant.now().minusSeconds(20)
+        sessionState1.apply {
+            lastReceivedMessageTime = earliestInstant
+            status = SessionStateType.CONFIRMED
+        }
+        sessionState2.apply {
+            lastReceivedMessageTime = earliestInstant.plusSeconds(4)
+            status = SessionStateType.CONFIRMED
+        }
+        whenever(checkpoint.sessions).thenReturn(listOf(sessionState1, sessionState2))
+        val context = testContext.copy(
+            metadata = Metadata(mapOf(STATE_META_SESSION_EXPIRY_KEY to earliestInstant.epochSecond))
+        )
+        val output = flowGlobalPostProcessor.postProcess(context)
+        val window = Duration.ofMillis(testContext.flowConfig.getLong(SESSION_TIMEOUT_WINDOW))
+        val expectedExpiry = (earliestInstant + window).epochSecond
+        assertThat(output.metadata).containsEntry(STATE_META_SESSION_EXPIRY_KEY, expectedExpiry)
     }
 }

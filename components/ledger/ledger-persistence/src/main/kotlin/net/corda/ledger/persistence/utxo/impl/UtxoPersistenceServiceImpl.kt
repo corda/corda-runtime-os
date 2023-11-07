@@ -117,14 +117,6 @@ class UtxoPersistenceServiceImpl(
         }
     }
 
-    override fun <T: ContractState> findUnconsumedVisibleStatesByExactType(
-        stateClass: Class<out T>
-    ): List<UtxoVisibleTransactionOutputDto> {
-        return entityManagerFactory.transaction { em ->
-            repository.findUnconsumedVisibleStatesByExactType(em, stateClass.canonicalName)
-        }
-    }
-
     override fun resolveStateRefs(stateRefs: List<StateRef>): List<UtxoVisibleTransactionOutputDto> {
         return entityManagerFactory.transaction { em ->
             repository.resolveStateRefs(em, stateRefs)
@@ -145,6 +137,18 @@ class UtxoPersistenceServiceImpl(
         val nowUtc = utcClock.instant()
         val transactionIdString = transaction.id.toString()
 
+        val metadataBytes = transaction.rawGroupLists[0][0]
+        val metadataHash = sandboxDigestService.hash(metadataBytes, DigestAlgorithmName.SHA2_256).toString()
+
+        val metadata = transaction.metadata
+        repository.persistTransactionMetadata(
+            em,
+            metadataHash,
+            metadataBytes,
+            requireNotNull(metadata.getMembershipGroupParametersHash()) { "Metadata without membership group parameters hash" },
+            requireNotNull(metadata.getCpiMetadata()) { "Metadata without CPI metadata" }.fileChecksum
+        )
+
         // Insert the Transaction
         repository.persistTransaction(
             em,
@@ -152,7 +156,8 @@ class UtxoPersistenceServiceImpl(
             transaction.privacySalt.bytes,
             transaction.account,
             nowUtc,
-            transaction.status
+            transaction.status,
+            metadataHash
         )
 
         // Insert the Transactions components
@@ -167,6 +172,30 @@ class UtxoPersistenceServiceImpl(
                     sandboxDigestService.hash(data, DigestAlgorithmName.SHA2_256).toString()
                 )
             }
+        }
+
+        // Insert inputs data
+        transaction.getConsumedStateRefs().forEachIndexed { index, input ->
+            repository.persistTransactionSource(
+                em,
+                transactionIdString,
+                UtxoComponentGroup.INPUTS.ordinal,
+                index,
+                input.transactionId.toString(),
+                input.index
+            )
+        }
+
+        // Insert reference data
+        transaction.getReferenceStateRefs().forEachIndexed { index, reference ->
+            repository.persistTransactionSource(
+                em,
+                transactionIdString,
+                UtxoComponentGroup.REFERENCES.ordinal,
+                index,
+                reference.transactionId.toString(),
+                reference.index
+            )
         }
 
         // Insert outputs data

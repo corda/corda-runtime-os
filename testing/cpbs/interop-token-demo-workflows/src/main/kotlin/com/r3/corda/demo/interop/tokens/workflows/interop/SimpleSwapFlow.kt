@@ -60,6 +60,7 @@ class SimpleSwapFlow : ClientStartableFlow {
 
             val stateId = flowArgs.stateId
 
+            @Suppress("deprecation")
             val unconsumedStates = ledgerService.findUnconsumedStatesByType(TokenState::class.java)
             val unconsumedStatesWithId = unconsumedStates.filter { it.state.contractState.linearId == stateId }
 

@@ -26,7 +26,7 @@ interface UtxoRepository {
         id: String
     ): SignedTransactionContainer?
 
-    /** Retrieves transaction component leafs */
+    /** Retrieves transaction component leafs except metadata which is stored separately */
     fun findTransactionComponentLeafs(
         entityManager: EntityManager,
         transactionId: String
@@ -35,12 +35,6 @@ interface UtxoRepository {
     /** Retrieves transaction component leaves related to visible unspent states and subclass states.*/
     fun findUnconsumedVisibleStatesByType(
         entityManager: EntityManager
-    ):  List<UtxoVisibleTransactionOutputDto>
-
-    /** Retrieves transaction component leaves related to visible unspent states */
-    fun findUnconsumedVisibleStatesByExactType(
-        entityManager: EntityManager,
-        stateClassType: String
     ):  List<UtxoVisibleTransactionOutputDto>
 
     /** Retrieves transaction component leafs related to specific StateRefs */
@@ -76,7 +70,28 @@ interface UtxoRepository {
         privacySalt: ByteArray,
         account: String,
         timestamp: Instant,
-        status: TransactionStatus
+        status: TransactionStatus,
+        metadataHash: String
+    )
+
+    /** Persists transaction metadata (operation is idempotent) */
+    fun persistTransactionMetadata(
+        entityManager: EntityManager,
+        hash: String,
+        metadataBytes: ByteArray,
+        groupParametersHash: String,
+        cpiFileChecksum: String
+    )
+
+    /** Persists transaction source (operation is idempotent) */
+    @Suppress("LongParameterList")
+    fun persistTransactionSource(
+        entityManager: EntityManager,
+        transactionId: String,
+        groupIndex: Int,
+        leafIndex: Int,
+        sourceStateTransactionId: String,
+        sourceStateIndex: Int
     )
 
     /** Persists transaction component leaf [data] (operation is idempotent) */

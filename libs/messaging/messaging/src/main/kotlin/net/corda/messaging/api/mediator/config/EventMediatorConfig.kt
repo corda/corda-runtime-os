@@ -1,6 +1,7 @@
 package net.corda.messaging.api.mediator.config
 
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
 import net.corda.messaging.api.mediator.factory.MessageRouterFactory
@@ -21,14 +22,20 @@ import java.time.Duration
  * @property clientFactories Factories for creating messaging clients.
  * @property messageProcessor State and event processor.
  * @property messageRouterFactory Message router factory.
+ * @property threads Number of threads used by task manager.
+ * @property threadName Name (prefix) for task manager threads.
+ * @property stateManager State manager.
  */
 data class EventMediatorConfig<K: Any, S: Any, E: Any>(
     val name: String,
-    val messagingConfig : SmartConfig,
+    val messagingConfig: SmartConfig,
     val consumerFactories: Collection<MediatorConsumerFactory>,
     val clientFactories: Collection<MessagingClientFactory>,
-    val messageProcessor : StateAndEventProcessor<K, S, E>,
+    val messageProcessor: StateAndEventProcessor<K, S, E>,
     val messageRouterFactory: MessageRouterFactory,
+    val threads: Int,
+    val threadName: String,
+    val stateManager: StateManager,
 ) {
     /**
      * Timeout for polling consumers.

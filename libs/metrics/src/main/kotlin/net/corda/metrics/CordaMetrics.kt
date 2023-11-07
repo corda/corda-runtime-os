@@ -7,7 +7,6 @@ import io.micrometer.core.instrument.Meter
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Metrics
 import io.micrometer.core.instrument.Tags
-import io.micrometer.core.instrument.Tag as micrometerTag
 import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.binder.BaseUnits
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry
@@ -19,6 +18,7 @@ import java.nio.file.Path
 import java.util.function.Supplier
 import java.util.function.ToDoubleFunction
 import java.util.function.ToLongFunction
+import io.micrometer.core.instrument.Tag as micrometerTag
 
 
 object CordaMetrics {
@@ -660,6 +660,29 @@ object CordaMetrics {
                 "consumer.partitioned.inmemory.store",
                 computation
             )
+
+            /**
+             * Record how long a HTTP RPC call from the messaging library takes to receive a response
+             */
+            object HTTPRPCResponseTime : Metric<Timer>("rpc.http.response.time", CordaMetrics::timer)
+
+            /**
+             * Record the size of HTTP RPC responses
+             */
+            object HTTPRPCResponseSize : Metric<DistributionSummary>("rpc.http.response.size", Metrics::summary)
+
+        }
+
+        object TaskManager {
+            /**
+             * Time it took to execute a task, includes time waiting to be scheduled.
+             */
+            object TaskCompletionTime : Metric<Timer>("taskmanager.completion.time", CordaMetrics::timer)
+
+            /**
+             * The number of live tasks running or scheduled in the task manager.
+             */
+            class LiveTasks(computation: Supplier<Number>) : ComputedValue<Nothing>("taskmanager.live.tasks", computation)
         }
     }
 
@@ -679,6 +702,16 @@ object CordaMetrics {
          * Http method for which the metric is applicable.
          */
         HttpMethod("http.method"),
+
+        /**
+         * The URI that a HTTP request was sent to
+         */
+        HttpRequestUri("http.request.uri"),
+
+        /**
+         * Response code received for a HTTP response
+         */
+        HttpResponseCode("http.response.code"),
 
         /**
          * Type of the SandboxGroup to which the metric applies.
@@ -796,6 +829,16 @@ object CordaMetrics {
          * Identifies the signature signing scheme name to create signatures during crypto signing operations.
          */
         SignatureSpec("signature.spec"),
+
+        /**
+         * Task manager name.
+         */
+        TaskManagerName("task.manager.name"),
+
+        /**
+         * Task type.
+         */
+        TaskType("task.type"),
 
         /**
          * Identifier of a tenant either a virtual node identifier or cluster level tenant id.

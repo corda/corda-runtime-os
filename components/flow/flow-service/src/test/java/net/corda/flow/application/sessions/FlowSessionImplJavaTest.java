@@ -106,6 +106,10 @@ public class FlowSessionImplJavaTest {
         public Future<FlowIORequest<?>> resume(@NotNull FlowFiberExecutionContext flowFiberExecutionContext, @NotNull FlowContinuation suspensionOutcome, @NotNull FiberScheduler scheduler) {
             return null;
         }
+
+        @Override
+        public void attemptInterrupt() {
+        }
     }
 
     @BeforeEach

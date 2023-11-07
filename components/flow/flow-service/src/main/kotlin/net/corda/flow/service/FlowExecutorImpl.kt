@@ -6,6 +6,7 @@ import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.messaging.mediator.FlowEventMediatorFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
+import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
@@ -16,8 +17,10 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.schema.configuration.BootConfig.CRYPTO_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.PERSISTENCE_WORKER_REST_ENDPOINT
+import net.corda.schema.configuration.BootConfig.TOKEN_SELECTION_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.UNIQUENESS_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.BootConfig.VERIFICATION_WORKER_REST_ENDPOINT
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
@@ -34,6 +37,7 @@ import org.slf4j.LoggerFactory
 class FlowExecutorImpl constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val flowEventMediatorFactory: FlowEventMediatorFactory,
+    private val stateManagerFactory: StateManagerFactory,
     private val toMessagingConfig: (Map<String, SmartConfig>) -> SmartConfig,
 ) : FlowExecutor {
 
@@ -43,14 +47,18 @@ class FlowExecutorImpl constructor(
         coordinatorFactory: LifecycleCoordinatorFactory,
         @Reference(service = FlowEventMediatorFactory::class)
         flowEventMediatorFactory: FlowEventMediatorFactory,
+        @Reference(service = StateManagerFactory::class)
+        stateManagerFactory: StateManagerFactory,
     ) : this(
         coordinatorFactory,
         flowEventMediatorFactory,
+        stateManagerFactory,
         { cfg -> cfg.getConfig(MESSAGING_CONFIG) }
     )
 
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        // TODO private const val STATE_MANAGER = "flow.engine.state.manager"
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<FlowExecutor> { event, _ -> eventHandler(event) }
@@ -61,14 +69,21 @@ class FlowExecutorImpl constructor(
         try {
             val messagingConfig = toMessagingConfig(config).withServiceEndpoints(config)
             val updatedConfigs = updateConfigsWithFlowConfig(config, messagingConfig)
+            val stateManagerConfig = config.getConfig(ConfigKeys.STATE_MANAGER_CONFIG)
 
             // close the lifecycle registration first to prevent down being signaled
             subscriptionRegistrationHandle?.close()
             multiSourceEventMediator?.close()
 
+            // TODO Create as managed resource once issue with stateManager is fixed
+            val stateManager = // coordinator.createManagedResource(STATE_MANAGER) {
+                stateManagerFactory.create(stateManagerConfig)
+            // }
+
             multiSourceEventMediator = flowEventMediatorFactory.create(
                 updatedConfigs,
                 messagingConfig,
+                stateManager,
             )
 
             subscriptionRegistrationHandle = coordinator.followStatusChangesByName(
@@ -134,7 +149,8 @@ class FlowExecutorImpl constructor(
             CRYPTO_WORKER_REST_ENDPOINT,
             PERSISTENCE_WORKER_REST_ENDPOINT,
             UNIQUENESS_WORKER_REST_ENDPOINT,
-            VERIFICATION_WORKER_REST_ENDPOINT
+            VERIFICATION_WORKER_REST_ENDPOINT,
+            TOKEN_SELECTION_WORKER_REST_ENDPOINT
         ).fold(this) { msgConfig: SmartConfig, endpoint: String ->
             msgConfig.withValue(endpoint, ConfigValueFactory.fromAnyRef(bootConfig.getString(endpoint)))
         }

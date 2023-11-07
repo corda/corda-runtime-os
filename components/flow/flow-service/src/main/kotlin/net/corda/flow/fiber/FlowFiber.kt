@@ -7,7 +7,7 @@ import java.util.UUID
 import java.util.concurrent.Future
 
 @DoNotImplement
-interface FlowFiber {
+interface FlowFiber: Interruptable {
     val flowId: UUID
     val flowLogic: FlowLogicAndArgs
 

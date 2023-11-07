@@ -115,44 +115,6 @@ class ReceiveAndUpdateTransactionBuilderFlowV1Test : UtxoLedgerTest() {
     }
 
     @Test
-    fun `receiving new attachments appends them`() {
-        whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(attachments = listOf(hash1, hash2))
-        )
-
-        val returnedTransactionBuilder = callSendFlow()
-
-        assertContentEquals(listOf(hash1, hash2), returnedTransactionBuilder.attachments)
-        verify(mockFlowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
-    }
-
-    @Test
-    fun `receiving existing attachment does not append it`() {
-        originalTransactionalBuilder.addAttachment(hash1)
-        whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(attachments = mutableListOf(hash1))
-        )
-
-        val returnedTransactionBuilder = callSendFlow()
-
-        assertContentEquals(listOf(hash1), returnedTransactionBuilder.attachments)
-        verify(mockFlowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
-    }
-
-    @Test
-    fun `receiving duplicated attachments appends once`() {
-        originalTransactionalBuilder.addAttachment(hash1)
-        whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(
-            UtxoTransactionBuilderContainer(attachments = mutableListOf(hash1, hash2, hash2))
-        )
-
-        val returnedTransactionBuilder = callSendFlow()
-
-        assertContentEquals(listOf(hash1, hash2), returnedTransactionBuilder.attachments)
-        verify(mockFlowEngine, never()).subFlow(any<TransactionBackchainResolutionFlow>())
-    }
-
-    @Test
     fun `receiving commands appends them (new, old, duplicated)`() {
         originalTransactionalBuilder.addCommand(command1)
         whenever(session.receive(UtxoTransactionBuilderContainer::class.java)).thenReturn(

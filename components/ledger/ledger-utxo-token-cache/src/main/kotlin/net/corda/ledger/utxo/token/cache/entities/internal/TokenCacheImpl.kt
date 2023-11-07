@@ -16,6 +16,10 @@ class TokenCacheImpl: TokenCache {
         stateRefs.forEach { cachedTokens.remove(it) }
     }
 
+    override fun removeAll() {
+        cachedTokens.clear()
+    }
+
     override fun iterator(): Iterator<CachedToken> {
         return cachedTokens.values.iterator()
     }

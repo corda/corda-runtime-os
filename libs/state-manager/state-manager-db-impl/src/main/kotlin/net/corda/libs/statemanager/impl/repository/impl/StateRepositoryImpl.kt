@@ -1,18 +1,15 @@
 package net.corda.libs.statemanager.impl.repository.impl
 
+import java.sql.Connection
+import javax.persistence.EntityManager
+import javax.persistence.Query
 import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.repository.StateRepository
-import org.slf4j.LoggerFactory
-import javax.persistence.EntityManager
-import javax.persistence.Query
 
+// TODO-[CORE-17733]: batch update and delete.
 class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepository {
-
-    private companion object {
-        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
 
     @Suppress("UNCHECKED_CAST")
     private fun Query.resultListAsStateEntityCollection() = resultList as Collection<StateEntity>
@@ -33,31 +30,46 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
             .setParameter(KEYS_PARAMETER_NAME, keys)
             .resultListAsStateEntityCollection()
 
-    override fun update(entityManager: EntityManager, states: Collection<StateEntity>) =
-        try {
-            states.forEach {
-                entityManager
-                    .createNativeQuery(queryProvider.updateState)
-                    .setParameter(KEY_PARAMETER_NAME, it.key)
-                    .setParameter(VALUE_PARAMETER_NAME, it.value)
-                    .setParameter(METADATA_PARAMETER_NAME, it.metadata)
-                    .executeUpdate()
-            }
-        } catch (e: Exception) {
-            logger.warn("Failed to updated batch of states - ${states.joinToString { it.key }}", e)
-            throw e
-        }
+    override fun update(connection: Connection, states: List<StateEntity>): StateRepository.StateUpdateSummary {
+        fun getParameterIndex(currentRow:Int, index: Int) = (currentRow * 4) + index // 4 columns in the temp table
 
-    override fun delete(entityManager: EntityManager, keys: Collection<String>) {
-        try {
+        if (states.isEmpty()) return StateRepository.StateUpdateSummary(emptyList(), emptyList())
+        val updatedKeys = mutableListOf<String>()
+        connection.prepareStatement(queryProvider.updateStates(states)).use { stmt ->
+            repeat(states.size) { stateIterator ->
+                stmt.setString(getParameterIndex(stateIterator, 1), states[stateIterator].key)
+                stmt.setBytes(getParameterIndex(stateIterator, 2), states[stateIterator].value)
+                stmt.setString(getParameterIndex(stateIterator, 3), states[stateIterator].metadata)
+                stmt.setInt(getParameterIndex(stateIterator, 4), states[stateIterator].version)
+            }
+            stmt.execute()
+            val results = stmt.resultSet
+            while (results.next()) {
+                updatedKeys.add(results.getString(1))
+            }
+        }
+        return StateRepository.StateUpdateSummary(
+            updatedKeys,
+            states.map { it.key }.filterNot { updatedKeys.contains(it) }
+        )
+    }
+
+    override fun delete(entityManager: EntityManager, states: Collection<StateEntity>): Collection<String> {
+        val failedKeys = mutableListOf<String>()
+
+        states.forEach { state ->
             entityManager
                 .createNativeQuery(queryProvider.deleteStatesByKey)
-                .setParameter(KEYS_PARAMETER_NAME, keys)
-                .executeUpdate()
-        } catch (e: Exception) {
-            logger.warn("Failed to delete batch of states - ${keys.joinToString()}", e)
-            throw e
+                .setParameter(KEY_PARAMETER_NAME, state.key)
+                .setParameter(VERSION_PARAMETER_NAME, state.version)
+                .executeUpdate().also {
+                    if (it == 0) {
+                        failedKeys.add(state.key)
+                    }
+                }
         }
+
+        return failedKeys
     }
 
     override fun updatedBetween(entityManager: EntityManager, interval: IntervalFilter): Collection<StateEntity> =

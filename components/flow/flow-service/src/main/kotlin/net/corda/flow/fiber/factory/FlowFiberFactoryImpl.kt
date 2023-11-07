@@ -1,13 +1,11 @@
 package net.corda.flow.fiber.factory
 
-import co.paralleluniverse.concurrent.util.ScheduledSingleThreadExecutor
+import co.paralleluniverse.common.util.SameThreadExecutor
 import co.paralleluniverse.fibers.FiberExecutorScheduler
-import co.paralleluniverse.fibers.FiberScheduler
-import java.util.UUID
-import java.util.concurrent.ExecutorService
 import net.corda.flow.fiber.FiberExceptionConstants
 import net.corda.flow.fiber.FiberFuture
 import net.corda.flow.fiber.FlowContinuation
+import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberImpl
 import net.corda.flow.fiber.FlowLogicAndArgs
@@ -16,9 +14,9 @@ import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.metrics.CordaMetrics
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.util.UUID
 
 @Component
 @Suppress("Unused")
@@ -31,10 +29,12 @@ class FlowFiberFactoryImpl @Activate constructor(
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val currentScheduler: FiberScheduler = FiberExecutorScheduler(
-        "Same thread scheduler",
-        ScheduledSingleThreadExecutor()
-    )
+    private val currentThreadFiberExecutor = object : FiberExecutorScheduler("Flow Fiber scheduler", SameThreadExecutor.getExecutor()) {
+
+        override fun isCurrentThreadInScheduler(): Boolean {
+            return true
+        }
+    }
 
     override fun createAndStartFlowFiber(
         flowFiberExecutionContext: FlowFiberExecutionContext,
@@ -47,7 +47,7 @@ class FlowFiberFactoryImpl @Activate constructor(
             throw FlowFatalException(FiberExceptionConstants.INVALID_FLOW_KEY.format(flowId), e)
         }
         try {
-            val flowFiber = FlowFiberImpl(id, logic, currentScheduler)
+            val flowFiber = FlowFiberImpl(id, logic, currentThreadFiberExecutor)
             return FiberFuture(flowFiber, flowFiber.startFlow(flowFiberExecutionContext))
         } catch (e: Throwable) {
             throw FlowFatalException(FiberExceptionConstants.UNABLE_TO_EXECUTE.format(e.message ?: "No exception message provided."), e)
@@ -66,12 +66,14 @@ class FlowFiberFactoryImpl @Activate constructor(
                 getFromCacheOrDeserialize(flowFiberExecutionContext)
             }!!
 
-        return FiberFuture(fiber, fiber.resume(flowFiberExecutionContext, suspensionOutcome, currentScheduler))
+        return FiberFuture(fiber, fiber.resume(flowFiberExecutionContext, suspensionOutcome, currentThreadFiberExecutor))
     }
 
-    private fun getFromCacheOrDeserialize(flowFiberExecutionContext: FlowFiberExecutionContext): FlowFiberImpl {
-        val cachedFiber: FlowFiberImpl? = try {
-            flowFiberCache.get(flowFiberExecutionContext.flowCheckpoint.flowKey)
+    private fun getFromCacheOrDeserialize(flowFiberExecutionContext: FlowFiberExecutionContext): FlowFiber {
+        val cachedFiber: FlowFiber? = try {
+            flowFiberCache.get(
+                flowFiberExecutionContext.flowCheckpoint.flowKey,
+                flowFiberExecutionContext.flowCheckpoint.suspendCount)
         } catch (e: Exception) {
             logger.warn("Exception when getting from flow fiber cache.", e)
             null
@@ -80,11 +82,5 @@ class FlowFiberFactoryImpl @Activate constructor(
             flowFiberExecutionContext.flowCheckpoint.serializedFiber.array(),
             FlowFiberImpl::class.java
         )
-    }
-
-    @Deactivate
-    fun shutdown() {
-        currentScheduler.shutdown()
-        (currentScheduler.executor as? ExecutorService)?.shutdownNow()
     }
 }
