@@ -96,6 +96,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
+import net.corda.metrics.CordaMetrics.NOT_APPLICABLE_TAG_VALUE
 import net.corda.p2p.crypto.protocol.api.InvalidSelectedModeError
 import net.corda.p2p.crypto.protocol.api.NoCommonModeError
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.badGroupPolicy
@@ -1300,7 +1301,7 @@ internal class SessionManagerImpl(
         private fun recordInboundSessionTimeoutMetric(source: HoldingIdentity, destination: HoldingIdentity?) {
             CordaMetrics.Metric.InboundSessionTimeoutCount.builder()
                 .withTag(CordaMetrics.Tag.SourceVirtualNode, source.x500Name.toString())
-                .withTag(CordaMetrics.Tag.DestinationVirtualNode, destination?.x500Name?.toString() ?: "not_available")
+                .withTag(CordaMetrics.Tag.DestinationVirtualNode, destination?.x500Name?.toString() ?: NOT_APPLICABLE_TAG_VALUE)
                 .withTag(CordaMetrics.Tag.MembershipGroup, source.groupId)
                 .build().increment()
         }
