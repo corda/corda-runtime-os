@@ -1,6 +1,7 @@
 package net.corda.messagebus.kafka.consumer
 
 import io.micrometer.core.instrument.binder.MeterBinder
+import java.time.Duration
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import net.corda.messagebus.api.CordaTopicPartition
@@ -38,7 +39,6 @@ import org.apache.kafka.common.errors.RebalanceInProgressException
 import org.apache.kafka.common.errors.TimeoutException
 import org.apache.kafka.common.errors.WakeupException
 import org.slf4j.LoggerFactory
-import java.time.Duration
 
 
 /**
@@ -370,8 +370,10 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         subscribe(listOf(topic), listener)
 
     override fun subscribe(topics: Collection<String>, listener: CordaConsumerRebalanceListener?) {
+        log.info("Attempting to assign topics: $topics")
         val newTopics = topics.map {
-            if (!it.contains(config.topicPrefix)) {
+            if (!it.startsWith(config.topicPrefix)) {
+                log.info("Adding topic prefix to: $it")
                 config.topicPrefix + it
             } else {
                 it
