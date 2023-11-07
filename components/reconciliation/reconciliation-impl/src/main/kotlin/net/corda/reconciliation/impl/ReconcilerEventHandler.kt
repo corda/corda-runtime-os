@@ -64,7 +64,7 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
 
     private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
         if (event.status == LifecycleStatus.UP) {
-            logger.debug { "Starting reconciliations" }
+            logger.info("Starting reconciliations")
             coordinator.updateStatus(LifecycleStatus.UP)
             reconcileAndScheduleNext(coordinator)
         } else {
@@ -75,8 +75,6 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
     }
 
     private fun reconcileAndScheduleNext(coordinator: LifecycleCoordinator) {
-        // Should give more context around what is being reconciled.
-        // Not sure if this should be debug or trace, I want to say trace but staying safe for now.
         logger.debug { "Initiating reconciliation" }
         var reconciliationOutcome = "FAILED"
         val startTime = System.nanoTime()

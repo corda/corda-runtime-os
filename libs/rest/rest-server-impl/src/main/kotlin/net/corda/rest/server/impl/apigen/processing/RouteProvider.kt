@@ -16,6 +16,7 @@ import net.corda.rest.server.impl.websocket.WebSocketRouteAdaptor
 import net.corda.rest.tools.HttpPathUtils.joinResourceAndEndpointPaths
 import net.corda.rest.tools.isDuplexChannel
 import net.corda.rest.tools.isStaticallyExposedGet
+import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.lang.reflect.InvocationTargetException
@@ -184,7 +185,7 @@ internal class RouteInfo(
                 wsConfig.onError(adaptor)
 
                 adaptors.add(adaptor)
-                log.trace { "Setup for WS call for \"$fullPath\" completed." }
+                log.debug { "Setup for WS call for \"$fullPath\" completed." }
             } catch (e: Exception) {
                 log.warn("Error setting-up WS call for \"$fullPath\"", e)
                 throw HttpExceptionMapper.mapToResponse(e)
