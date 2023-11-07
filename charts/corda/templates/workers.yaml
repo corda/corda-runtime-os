@@ -1,5 +1,5 @@
 {{- include "corda.worker" ( list $ .Values.workers.crypto "crypto"
-  ( dict "clusterDbAccess" true "additionalWorkerArgs" ( list "--hsm-id=SOFT" ) )
+  ( dict "stateManagerDbAccess" true "clusterDbAccess" true "additionalWorkerArgs" ( list "--hsm-id=SOFT" ) )
 ) }}
 {{- include "corda.worker" ( list $ .Values.workers.db "db"
   ( dict "clusterDbAccess" true )

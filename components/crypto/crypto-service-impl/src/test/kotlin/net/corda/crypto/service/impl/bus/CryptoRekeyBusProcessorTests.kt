@@ -82,8 +82,11 @@ class CryptoRekeyBusProcessorTests {
         }
 
         cryptoRekeyBusProcessor = CryptoRekeyBusProcessor(
-            cryptoService, virtualNodeInfoReadService,
-            wrappingRepositoryFactory)
+            cryptoService,
+            virtualNodeInfoReadService,
+            wrappingRepositoryFactory,
+            mock()
+        )
     }
 
     @Test
@@ -167,7 +170,7 @@ class CryptoRekeyBusProcessorTests {
         }
 
         cryptoRekeyBusProcessor = CryptoRekeyBusProcessor(
-            cryptoService, virtualNodeInfoReadService, wrappingRepositoryFactory)
+            cryptoService, virtualNodeInfoReadService, wrappingRepositoryFactory, mock())
 
         cryptoRekeyBusProcessor.onNext(listOf(getKafkaRecord(oldKeyAlias, null)))
 

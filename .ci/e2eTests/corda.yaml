@@ -47,7 +47,7 @@ db:
   cluster:
     password:
       valueFrom:
-        secretKeyRef:
+        secretKeyRef:`
           key: "password"
     username:
       value: "user"
