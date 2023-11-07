@@ -144,7 +144,13 @@ internal class SessionManagerImpl(
     // This default needs to be removed and the lifecycle dependency graph adjusted to ensure the inbound subscription starts only after
     // the configuration has been received and the session manager has started (see CORE-6730).
     private val config = AtomicReference(
-        SessionManagerConfig(1000000, 2, 1, RevocationCheckMode.OFF, 432000)
+        SessionManagerConfig(
+            1000000,
+            null,
+            NumberOfSessionsPerPeer(2, 1),
+            RevocationCheckMode.OFF,
+            432000
+        )
     )
 
     private val heartbeatManager: HeartbeatManager = HeartbeatManager(
@@ -197,10 +203,16 @@ internal class SessionManagerImpl(
     @VisibleForTesting
     internal data class SessionManagerConfig(
         val maxMessageSize: Int,
-        val sessionsPerCounterpartiesForMembers: Int,
-        val sessionsPerCounterpartiesForMgm: Int,
+        val sessionsPerCounterparties: Int?,
+        val numberOfSessionsPerPeer: NumberOfSessionsPerPeer,
         val revocationConfigMode: RevocationCheckMode,
         val sessionRefreshThreshold: Int,
+    )
+
+    @VisibleForTesting
+    internal data class NumberOfSessionsPerPeer(
+        val forMembers: Int,
+        val forMgm: Int,
     )
 
     internal inner class SessionManagerConfigChangeHandler : ConfigurationChangeHandler<SessionManagerConfig>(
@@ -242,8 +254,15 @@ internal class SessionManagerImpl(
     private fun fromConfig(config: Config): SessionManagerConfig {
         return SessionManagerConfig(
             config.getInt(LinkManagerConfiguration.MAX_MESSAGE_SIZE_KEY),
-            config.getInt(LinkManagerConfiguration.SESSIONS_PER_PEER_FOR_MEMBER_KEY),
-            config.getInt(LinkManagerConfiguration.SESSIONS_PER_PEER_FOR_MGM_KEY),
+            if (config.getIsNull(LinkManagerConfiguration.SESSIONS_PER_PEER_KEY)) {
+                null
+            } else {
+                config.getInt(LinkManagerConfiguration.SESSIONS_PER_PEER_KEY)
+            },
+            NumberOfSessionsPerPeer(
+                config.getInt(LinkManagerConfiguration.SESSIONS_PER_PEER_FOR_MEMBER_KEY),
+                config.getInt(LinkManagerConfiguration.SESSIONS_PER_PEER_FOR_MGM_KEY)
+            ),
             config.getEnum(RevocationCheckMode::class.java, LinkManagerConfiguration.REVOCATION_CHECK_KEY),
             config.getInt(LinkManagerConfiguration.SESSION_REFRESH_THRESHOLD_KEY),
         )
@@ -276,9 +295,7 @@ internal class SessionManagerImpl(
     }
 
     private fun isCommunicationBetweenMgmAndMember(ourInfo: MemberInfo?, counterpartyInfo: MemberInfo): Boolean {
-        if (counterpartyInfo.isMgm) {
-            return true
-        } else if (ourInfo != null && ourInfo.isMgm) {
+        if (counterpartyInfo.isMgm || ourInfo?.isMgm == true) {
             return true
         }
         return false
@@ -313,10 +330,13 @@ internal class SessionManagerImpl(
     }
 
     private fun SessionCounterparties.calculateSessionMultiplicity(): Int {
-        if (communicationWithMgm) {
-            return config.get().sessionsPerCounterpartiesForMgm
+        return if (config.get().sessionsPerCounterparties != null) {
+            config.get().sessionsPerCounterparties!!
+        } else if (communicationWithMgm) {
+            config.get().numberOfSessionsPerPeer.forMgm
+        } else {
+            config.get().numberOfSessionsPerPeer.forMembers
         }
-        return config.get().sessionsPerCounterpartiesForMembers
     }
 
     override fun getSessionById(uuid: String): SessionManager.SessionDirection {
