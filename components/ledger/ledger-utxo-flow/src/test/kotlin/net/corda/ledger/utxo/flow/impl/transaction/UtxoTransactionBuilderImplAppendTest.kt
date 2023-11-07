@@ -87,27 +87,6 @@ class UtxoTransactionBuilderImplAppendTest : UtxoLedgerTest() {
     }
 
     @Test
-    fun `Does not add again already added attachments`() {
-        originalTransactionalBuilder.addAttachment(hash1)
-        val result = originalTransactionalBuilder.append(
-            UtxoTransactionBuilderContainer(
-                attachments = listOf(hash1)
-            )
-        )
-        assertContentEquals(listOf(hash1), result.attachments)
-    }
-
-    @Test
-    fun `Appends and deduplicates new attachments`() {
-        val result = originalTransactionalBuilder.append(
-            UtxoTransactionBuilderContainer(
-                attachments = listOf(hash1, hash1, hash2)
-            )
-        )
-        assertContentEquals(listOf(hash1, hash2), result.attachments)
-    }
-
-    @Test
     fun `Appends commands`() {
         originalTransactionalBuilder.addCommand(command1)
         val result = originalTransactionalBuilder.append(

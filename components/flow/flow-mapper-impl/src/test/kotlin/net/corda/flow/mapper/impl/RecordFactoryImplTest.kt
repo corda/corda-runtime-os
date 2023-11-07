@@ -25,10 +25,8 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.lang.IllegalArgumentException
 import java.nio.ByteBuffer
 import java.time.Instant
 
@@ -58,10 +56,10 @@ internal class RecordFactoryImplTest {
         val byteArray = "SessionEventSerialized".toByteArray()
 
         whenever(cordaAvroSerializer.serialize(any<SessionEvent>())).thenReturn(byteArray)
-        whenever(locallyHostedIdentitiesServiceSameCluster.getIdentityInfo(any())).thenReturn(mock())
+        whenever(locallyHostedIdentitiesServiceSameCluster.isHostedLocally(any())).thenReturn(true)
 
         val locallyHostedIdentitiesServiceDifferentCluster: LocallyHostedIdentitiesService = mock()
-        whenever(locallyHostedIdentitiesServiceDifferentCluster.getIdentityInfo(any())).thenReturn(null)
+        whenever(locallyHostedIdentitiesServiceDifferentCluster.isHostedLocally(any())).thenReturn(false)
 
         recordFactoryImplSameCluster = RecordFactoryImpl(cordaAvroSerializationFactory, locallyHostedIdentitiesServiceSameCluster)
         recordFactoryImplDifferentCluster = RecordFactoryImpl(cordaAvroSerializationFactory, locallyHostedIdentitiesServiceDifferentCluster)
@@ -99,9 +97,9 @@ internal class RecordFactoryImplTest {
             "my-flow-id"
         )
         assertThat(record).isNotNull
-        assertThat(record.topic).isEqualTo(Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC)
+        assertThat(record.topic).isEqualTo(Schemas.Flow.FLOW_MAPPER_SESSION_IN)
         assertThat(record.value!!::class).isEqualTo(FlowMapperEvent::class)
-        verify(locallyHostedIdentitiesServiceSameCluster).getIdentityInfo(bobId.toCorda())
+        verify(locallyHostedIdentitiesServiceSameCluster).isHostedLocally(bobId.toCorda())
         val sessionOutput = (record.value as FlowMapperEvent).payload as SessionEvent
         assertThat(sessionOutput.messageDirection).isEqualTo(MessageDirection.INBOUND)
         assertThat(sessionOutput.sessionId).isEqualTo("$SESSION_ID-INITIATED")
@@ -166,7 +164,7 @@ internal class RecordFactoryImplTest {
             flowConfig,
             FLOW_ID
         )
-        assertThat(record.topic).isEqualTo(Schemas.Flow.FLOW_EVENT_TOPIC)
+        assertThat(record.topic).isEqualTo(Schemas.Flow.FLOW_SESSION)
         assertThat(record.key).isEqualTo(FLOW_ID)
         assertThat(record.value!!::class.java).isEqualTo(FlowEvent::class.java)
         val sessionOutput = (record.value as FlowEvent).payload as SessionEvent
@@ -195,7 +193,7 @@ internal class RecordFactoryImplTest {
             FLOW_ID
         )
         assertThat(record).isNotNull
-        assertThat(record.topic).isEqualTo(Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC)
+        assertThat(record.topic).isEqualTo(Schemas.Flow.FLOW_MAPPER_SESSION_IN)
         assertThat(record.value!!::class).isEqualTo(FlowMapperEvent::class)
         val sessionOutput = (record.value as FlowMapperEvent).payload as SessionEvent
         assertThat(sessionOutput.sessionId).isEqualTo("$SESSION_ID-INITIATED")
@@ -250,7 +248,7 @@ internal class RecordFactoryImplTest {
             flowConfig,
             FLOW_ID
         )
-        assertThat(record.topic).isEqualTo(Schemas.Flow.FLOW_EVENT_TOPIC)
+        assertThat(record.topic).isEqualTo(Schemas.Flow.FLOW_SESSION)
         assertThat(record.key).isEqualTo(FLOW_ID)
         assertThat(record.value!!::class.java).isEqualTo(FlowEvent::class.java)
         val sessionOutput = (record.value as FlowEvent).payload as SessionEvent
@@ -317,7 +315,7 @@ internal class RecordFactoryImplTest {
             timestamp,
             flowConfig,
         )
-        assertThat(record.topic).isEqualTo(Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC)
+        assertThat(record.topic).isEqualTo(Schemas.Flow.FLOW_MAPPER_SESSION_IN)
         assertThat(record.key).isEqualTo("$SESSION_ID-INITIATED")
         assertThat(record.value!!::class).isEqualTo(FlowMapperEvent::class)
         val sessionOutput = (record.value as FlowMapperEvent).payload as SessionEvent

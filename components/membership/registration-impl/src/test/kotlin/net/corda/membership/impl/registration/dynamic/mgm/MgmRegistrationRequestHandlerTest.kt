@@ -7,8 +7,8 @@ import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.v2.RegistrationStatus
-import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequest
+import net.corda.membership.lib.toWire
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -38,14 +38,9 @@ class MgmRegistrationRequestHandlerTest {
         MemberX500Name.parse("O=Alice, L=London, C=GB"),
         UUID(0, 1).toString()
     )
-    private val serializedMemberContext = "1".toByteArray()
+    private val memberContext = mapOf("key" to "value")
     private val signature = CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf()))
     private val signatureSpec = CryptoSignatureSpec("", null, null)
-    private val signedMemberInfo: SelfSignedMemberInfo = mock {
-        on { memberContextBytes } doReturn serializedMemberContext
-        on { memberSignature } doReturn signature
-        on { memberSignatureSpec } doReturn signatureSpec
-    }
     private val cordaAvroSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
         on { serialize(any()) } doReturn "".toByteArray()
     }
@@ -70,14 +65,14 @@ class MgmRegistrationRequestHandlerTest {
     @Test
     fun `persistRegistrationRequest sends request to persistence client`() {
         val serialisedPayload = "test1".toByteArray()
-
-        val contextCaptor = argumentCaptor<KeyValuePairList>()
-        whenever(cordaAvroSerializer.serialize(contextCaptor.capture())).thenReturn(serialisedPayload)
+        val serializedMemberContext = "1".toByteArray()
+        whenever(cordaAvroSerializer.serialize(eq(memberContext.toWire()))).thenReturn(serializedMemberContext)
+        whenever(cordaAvroSerializer.serialize(eq(KeyValuePairList(emptyList())))).thenReturn(serialisedPayload)
         assertDoesNotThrow {
             mgmRegistrationRequestHandler.persistRegistrationRequest(
                 registrationId,
                 holdingIdentity,
-                signedMemberInfo
+                memberContext,
             )
         }
 
@@ -90,9 +85,6 @@ class MgmRegistrationRequestHandlerTest {
         assertThat(captor.firstValue.serial).isEqualTo(0)
         assertThat(captor.firstValue.memberContext.signature).isEqualTo(signature)
         assertThat(captor.firstValue.memberContext.signatureSpec).isEqualTo(signatureSpec)
-
-        assertThat(contextCaptor.allValues).hasSize(1)
-        assertThat(contextCaptor.firstValue).isEqualTo(KeyValuePairList(emptyList()))
     }
 
     @Test
@@ -117,7 +109,7 @@ class MgmRegistrationRequestHandlerTest {
             mgmRegistrationRequestHandler.persistRegistrationRequest(
                 registrationId,
                 holdingIdentity,
-                signedMemberInfo
+                memberContext,
             )
         }
     }
@@ -130,7 +122,7 @@ class MgmRegistrationRequestHandlerTest {
             mgmRegistrationRequestHandler.persistRegistrationRequest(
                 registrationId,
                 holdingIdentity,
-                signedMemberInfo
+                memberContext,
             )
         }
     }

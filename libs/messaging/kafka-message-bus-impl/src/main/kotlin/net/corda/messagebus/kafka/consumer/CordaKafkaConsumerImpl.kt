@@ -34,6 +34,7 @@ import org.apache.kafka.common.errors.AuthorizationException
 import org.apache.kafka.common.errors.FencedInstanceIdException
 import org.apache.kafka.common.errors.InconsistentGroupProtocolException
 import org.apache.kafka.common.errors.InterruptException
+import org.apache.kafka.common.errors.RebalanceInProgressException
 import org.apache.kafka.common.errors.TimeoutException
 import org.apache.kafka.common.errors.WakeupException
 import org.slf4j.LoggerFactory
@@ -77,7 +78,8 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
             WakeupException::class.java,
             InterruptException::class.java,
             KafkaException::class.java,
-            ConcurrentModificationException::class.java
+            ConcurrentModificationException::class.java,
+            RebalanceInProgressException::class.java
         )
     }
 
@@ -304,14 +306,31 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
-    override fun asyncCommitOffsets(callback: CordaConsumer.Callback?) {
-        consumer.commitAsync { offsets, exception ->
-            callback?.onCompletion(
-                offsets.entries.associate {
-                    it.key!!.toCordaTopicPartition(config.topicPrefix) to it.value.offset()
-                },
-                exception
-            )
+    override fun syncCommitOffsets() {
+        var attemptCommit = true
+
+        while (attemptCommit) {
+            try {
+                consumer.commitSync()
+                attemptCommit = false
+            } catch (ex: Exception) {
+                when (ex::class.java) {
+                    in fatalExceptions -> {
+                        logErrorAndThrowFatalException(
+                            "Error attempting to commitSync offsets.",
+                            ex
+                        )
+                    }
+                    in transientExceptions -> {
+                        logWarningAndThrowIntermittentException("Failed to commitSync offsets.", ex)
+                    }
+                    else -> {
+                        logErrorAndThrowFatalException(
+                            "Unexpected error attempting to commitSync offsets .", ex
+                        )
+                    }
+                }
+            }
         }
     }
 

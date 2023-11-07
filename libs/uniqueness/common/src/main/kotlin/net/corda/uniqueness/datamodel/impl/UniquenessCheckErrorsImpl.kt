@@ -12,28 +12,35 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import java.time.Instant
 import java.util.Collections.unmodifiableList
 
+// NOTE: All state based errors are currently capped to only return the details of the first state,
+// since the size of each one in the DB is large and more than one conflicting state exceeds the
+// 1024 storage limit. This will be fixed properly by CORE-17155
 data class UniquenessCheckErrorInputStateConflictImpl(
     private val conflictingStates: List<UniquenessCheckStateDetails>
 ) : UniquenessCheckErrorInputStateConflict {
-    override fun getConflictingStates() = conflictingStates
+    override fun getConflictingStates() : List<UniquenessCheckStateDetails> =
+        unmodifiableList(listOf(conflictingStates.first()))
 }
 
 data class UniquenessCheckErrorInputStateUnknownImpl(
     private val unknownStates: List<UniquenessCheckStateRef>
 ) : UniquenessCheckErrorInputStateUnknown {
-    override fun getUnknownStates() = unknownStates
+    override fun getUnknownStates() : List<UniquenessCheckStateRef> =
+        unmodifiableList(listOf(unknownStates.first()))
 }
 
 data class UniquenessCheckErrorReferenceStateConflictImpl(
     private val conflictingStates: List<UniquenessCheckStateDetails>
 ) : UniquenessCheckErrorReferenceStateConflict {
-    override fun getConflictingStates(): List<UniquenessCheckStateDetails> = unmodifiableList(conflictingStates)
+    override fun getConflictingStates(): List<UniquenessCheckStateDetails> =
+        unmodifiableList(listOf(conflictingStates.first()))
 }
 
 data class UniquenessCheckErrorReferenceStateUnknownImpl(
     private val unknownStates: List<UniquenessCheckStateRef>
 ) : UniquenessCheckErrorReferenceStateUnknown {
-    override fun getUnknownStates(): List<UniquenessCheckStateRef> = unmodifiableList(unknownStates)
+    override fun getUnknownStates(): List<UniquenessCheckStateRef> =
+        unmodifiableList(listOf(unknownStates.first()))
 }
 
 data class UniquenessCheckErrorTimeWindowOutOfBoundsImpl(

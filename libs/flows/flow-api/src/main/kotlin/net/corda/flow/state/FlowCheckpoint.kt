@@ -1,6 +1,5 @@
 package net.corda.flow.state
 
-import java.nio.ByteBuffer
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
@@ -12,6 +11,7 @@ import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.serialization.checkpoint.NonSerializable
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
+import java.nio.ByteBuffer
 import java.time.Instant
 
 /**
@@ -59,6 +59,10 @@ interface FlowCheckpoint : NonSerializable {
 
     val initialPlatformVersion: Int
 
+    val isCompleted: Boolean
+
+    val suspendCount: Int
+
     fun initFlowState(flowStartContext: FlowStartContext, cpkFileHashes: Set<SecureHash>)
 
     fun getSessionState(sessionId: String): SessionState?
@@ -81,9 +85,9 @@ interface FlowCheckpoint : NonSerializable {
 
     fun setPendingPlatformError(type: String, message: String)
 
-    fun <T> readCustomState(clazz:Class<T>): T?
+    fun <T> readCustomState(clazz: Class<T>): T?
 
-    fun writeCustomState(state:Any)
+    fun writeCustomState(state: Any)
 
     fun toAvro(): Checkpoint?
 }

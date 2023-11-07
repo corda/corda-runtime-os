@@ -49,6 +49,16 @@ class ClusterBuilder {
         val vaultDmlConnection: String?
     )
 
+    data class ExternalDBConnectionParams(
+        val cryptoDdlConnection: String? = null,
+        val cryptoDmlConnection: String? = null,
+        val uniquenessDdlConnection: String? = null,
+        val uniquenessDmlConnection: String? = null,
+        val vaultDdlConnection: String? = null,
+        val vaultDmlConnection: String? = null
+    )
+
+
     /** POST, but most useful for running flows */
     fun post(cmd: String, body: String) = client!!.post(cmd, body)
 
@@ -343,24 +353,19 @@ class ClusterBuilder {
     fun vNodeCreate(
         cpiHash: String,
         x500Name: String,
-        cryptoDdlConnection: String? = null,
-        cryptoDmlConnection: String? = null,
-        uniquenessDdlConnection: String? = null,
-        uniquenessDmlConnection: String? = null,
-        vaultDdlConnection: String? = null,
-        vaultDmlConnection: String? = null
+        externalDBConnectionParams: ExternalDBConnectionParams? = null
     ) =
         post(
             "/api/$REST_API_VERSION_PATH/virtualnode",
             vNodeBody(
                 cpiHash,
                 x500Name,
-                cryptoDdlConnection,
-                cryptoDmlConnection,
-                uniquenessDdlConnection,
-                uniquenessDmlConnection,
-                vaultDdlConnection,
-                vaultDmlConnection
+                externalDBConnectionParams?.cryptoDdlConnection,
+                externalDBConnectionParams?.cryptoDmlConnection,
+                externalDBConnectionParams?.uniquenessDdlConnection,
+                externalDBConnectionParams?.uniquenessDmlConnection,
+                externalDBConnectionParams?.vaultDdlConnection,
+                externalDBConnectionParams?.vaultDmlConnection
             )
         )
 

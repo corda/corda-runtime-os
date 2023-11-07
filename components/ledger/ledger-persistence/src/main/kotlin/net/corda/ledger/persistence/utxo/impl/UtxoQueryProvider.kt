@@ -11,9 +11,9 @@ package net.corda.ledger.persistence.utxo.impl
  */
 interface UtxoQueryProvider {
     /**
-     * @property findTransactionPrivacySalt SQL text for [UtxoRepositoryImpl.findTransactionPrivacySalt].
+     * @property findTransactionPrivacySaltAndMetadata SQL text for [UtxoRepositoryImpl.findTransactionPrivacySaltAndMetadata].
      */
-    val findTransactionPrivacySalt: String
+    val findTransactionPrivacySaltAndMetadata: String
 
     /**
      * @property findTransactionComponentLeafs SQL text for [UtxoRepositoryImpl.findTransactionComponentLeafs].
@@ -57,30 +57,9 @@ interface UtxoQueryProvider {
     val persistTransaction: String
 
     /**
-     * @property persistTransactionComponentLeaf SQL text for [UtxoRepositoryImpl.persistTransactionComponentLeaf].
+     * @property persistTransactionMetadata SQL text for [UtxoRepositoryImpl.persistTransactionMetadata].
      */
-    val persistTransactionComponentLeaf: String
-
-    /**
-     * @property persistTransactionCpk SQL text for [UtxoRepositoryImpl.persistTransactionCpk].
-     */
-    val persistTransactionCpk: String
-
-    /**
-     * @property persistTransactionOutput SQL text for [UtxoRepositoryImpl.persistTransactionOutput].
-     */
-    val persistTransactionOutput: String
-
-    /**
-     * @param consumed Whether the persisted states have been consumed.
-     * @return SQL text for [UtxoRepositoryImpl.persistTransactionVisibleStates].
-     */
-    fun persistTransactionVisibleStates(consumed: Boolean): String
-
-    /**
-     * @property persistTransactionSignature SQL text for [UtxoRepositoryImpl.persistTransactionSignature].
-     */
-    val persistTransactionSignature: String
+    val persistTransactionMetadata: String
 
     /**
      * @property persistTransactionSource SQL text for [UtxoRepositoryImpl.persistTransactionSource].
@@ -88,9 +67,25 @@ interface UtxoQueryProvider {
     val persistTransactionSource: String
 
     /**
-     * @property persistTransactionStatus SQL text for [UtxoRepositoryImpl.persistTransactionStatus].
+     * @property persistTransactionComponentLeaf SQL text for [UtxoRepositoryImpl.persistTransactionComponentLeaf].
      */
-    val persistTransactionStatus: String
+    val persistTransactionComponentLeaf: String
+
+    /**
+     * @param consumed Whether the persisted states have been consumed.
+     * @property persistVisibleTransactionOutput SQL text for [UtxoRepositoryImpl.persistVisibleTransactionOutput].
+     */
+    fun persistVisibleTransactionOutput(consumed: Boolean): String
+
+    /**
+     * @property persistTransactionSignature SQL text for [UtxoRepositoryImpl.persistTransactionSignature].
+     */
+    val persistTransactionSignature: String
+
+    /**
+     * @property updateTransactionStatus SQL text for [UtxoRepositoryImpl.updateTransactionStatus].
+     */
+    val updateTransactionStatus: String
 
     /**
      * @property persistSignedGroupParameters SQL text for [UtxoRepositoryImpl.persistSignedGroupParameters].

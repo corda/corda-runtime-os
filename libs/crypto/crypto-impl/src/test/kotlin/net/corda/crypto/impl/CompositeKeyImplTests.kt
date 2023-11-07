@@ -75,6 +75,17 @@ class CompositeKeyImplTests {
         assertFalse { KeyUtils.isKeyFulfilledBy(aliceOrBob, charlieSignature.by) }
     }
 
+    @Test
+    fun `Composite keys are distinct from their components`(){
+        val aliceOrBob = target.createFromKeys(alicePublicKey, bobPublicKey)
+        val aliceOrBobList = listOf(aliceOrBob)
+        assertEquals(1, aliceOrBobList.count())
+        assertEquals(1, aliceOrBobList.distinct().size)
+        val aliceBobList = listOf(alicePublicKey, bobPublicKey)
+        assertEquals(2, aliceBobList.count())
+        assertEquals(2, aliceBobList.distinct().size)
+        assertTrue(aliceBobList.intersect(aliceOrBobList.toSet()).isEmpty())
+    }
 
     @Test
     fun `(Alice and Bob) fulfilled by Alice, Bob signatures`() {

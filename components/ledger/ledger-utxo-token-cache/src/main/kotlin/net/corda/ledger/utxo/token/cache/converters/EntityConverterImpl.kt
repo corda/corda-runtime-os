@@ -5,6 +5,7 @@ import net.corda.data.ledger.utxo.token.selection.data.TokenAmount
 import net.corda.data.ledger.utxo.token.selection.data.TokenBalanceQuery
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimQuery
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimRelease
+import net.corda.data.ledger.utxo.token.selection.data.TokenForceClaimRelease
 import net.corda.data.ledger.utxo.token.selection.data.TokenLedgerChange
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
@@ -13,6 +14,7 @@ import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.internal.CachedTokenImpl
 import net.corda.ledger.utxo.token.cache.entities.ClaimQuery
 import net.corda.ledger.utxo.token.cache.entities.ClaimRelease
+import net.corda.ledger.utxo.token.cache.entities.ForceClaimRelease
 import net.corda.ledger.utxo.token.cache.entities.LedgerChange
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.internal.PoolCacheStateImpl
@@ -51,6 +53,16 @@ class EntityConverterImpl(
             tokenClaimRelease.requestContext.requestId,
             tokenClaimRelease.requestContext.flowId,
             tokenClaimRelease.usedTokenStateRefs.toSet(),
+            toTokenPoolKey(avroPoolKey)
+        )
+    }
+
+    override fun toForceClaimRelease(
+        avroPoolKey: TokenPoolCacheKey,
+        tokenClaimRelease: TokenForceClaimRelease
+    ): ForceClaimRelease {
+        return ForceClaimRelease(
+            tokenClaimRelease.claimId,
             toTokenPoolKey(avroPoolKey)
         )
     }

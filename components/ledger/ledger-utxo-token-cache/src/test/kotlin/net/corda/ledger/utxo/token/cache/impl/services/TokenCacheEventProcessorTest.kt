@@ -16,14 +16,15 @@ import net.corda.ledger.utxo.token.cache.handlers.TokenEventHandler
 import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY
 import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
 import net.corda.ledger.utxo.token.cache.services.TokenCacheEventProcessor
+import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -59,14 +60,16 @@ class TokenCacheEventProcessorTest {
 
     @Test
     fun `when an unexpected processing exception is thrown the event will be sent to the DLQ`() {
-        val target =
-            TokenCacheEventProcessor(eventConverter, entityConverter, tokenPoolCache, tokenCacheEventHandlerMap, mock())
+        val target = createTokenCacheEventProcessor()
         whenever(eventConverter.convert(any())).thenThrow(IllegalStateException())
 
-        val result = target.onNext(stateIn, eventIn)
+        val result = target.onNext(
+            State(stateIn, metadata = null),
+            eventIn
+        )
 
         assertThat(result.responseEvents).isEmpty()
-        assertThat(result.updatedState).isSameAs(stateIn)
+        assertThat(result.updatedState?.value).isSameAs(stateIn)
         assertThat(result.markForDLQ).isTrue
     }
 
@@ -82,7 +85,10 @@ class TokenCacheEventProcessorTest {
                 externalEventResponseFactory
             )
 
-        val result = target.onNext(stateIn, eventIn)
+        val result = target.onNext(
+            State(stateIn, metadata = null),
+            eventIn
+        )
 
         verify(externalEventResponseFactory).platformError(
             eq(
@@ -96,7 +102,7 @@ class TokenCacheEventProcessorTest {
         )
 
         assertThat(result.responseEvents).isNotEmpty()
-        assertThat(result.updatedState).isSameAs(stateIn)
+        assertThat(result.updatedState?.value).isSameAs(stateIn)
         assertThat(result.markForDLQ).isFalse()
     }
 
@@ -113,7 +119,10 @@ class TokenCacheEventProcessorTest {
                 externalEventResponseFactory
             )
 
-        val result = target.onNext(stateIn, eventIn)
+        val result = target.onNext(
+            State(stateIn, metadata = null),
+            eventIn
+        )
 
         verify(externalEventResponseFactory).platformError(
             eq(
@@ -127,7 +136,7 @@ class TokenCacheEventProcessorTest {
         )
 
         assertThat(result.responseEvents).isNotEmpty()
-        assertThat(result.updatedState).isSameAs(stateIn)
+        assertThat(result.updatedState?.value).isSameAs(stateIn)
         assertThat(result.markForDLQ).isFalse()
     }
 
@@ -136,7 +145,7 @@ class TokenCacheEventProcessorTest {
         tokenPoolCacheEvent.payload = "message"
 
         val outputState = TokenPoolCacheState()
-        val handlerResponse = Record<String, FlowEvent>("", "", null)
+        val handlerResponse = Record<String, FlowEvent>("test", "key1", null)
 
         val stateIn = TokenPoolCacheState().apply {
             this.poolKey = POOL_CACHE_KEY
@@ -150,14 +159,16 @@ class TokenCacheEventProcessorTest {
         whenever(mockHandler.handle(any(), eq(cachePoolState), eq(event)))
             .thenReturn(handlerResponse)
 
-        val target =
-            TokenCacheEventProcessor(eventConverter, entityConverter, tokenPoolCache, tokenCacheEventHandlerMap, mock())
+        val target = createTokenCacheEventProcessor()
 
-        val result = target.onNext(stateIn, eventIn)
+        val result = target.onNext(
+            State(stateIn, metadata = null),
+            eventIn
+        )
 
         assertThat(result.responseEvents).hasSize(1)
-        assertThat(result.responseEvents.first()).isSameAs(handlerResponse)
-        assertThat(result.updatedState).isSameAs(outputState)
+        assertThat(result.responseEvents.first()).isEqualTo(handlerResponse)
+        assertThat(result.updatedState?.value).isSameAs(outputState)
         assertThat(result.markForDLQ).isFalse
     }
 
@@ -166,7 +177,7 @@ class TokenCacheEventProcessorTest {
         tokenPoolCacheEvent.payload = "message"
 
         val outputState = TokenPoolCacheState()
-        val handlerResponse = Record<String, FlowEvent>("", "", null)
+        val handlerResponse = Record<String, FlowEvent>("test", "key1", null)
 
         whenever(entityConverter.toPoolCacheState(any())).thenReturn(cachePoolState)
         whenever(cachePoolState.toAvro()).thenReturn(outputState)
@@ -174,8 +185,7 @@ class TokenCacheEventProcessorTest {
         whenever(mockHandler.handle(any(), eq(cachePoolState), eq(event)))
             .thenReturn(handlerResponse)
 
-        val target =
-            TokenCacheEventProcessor(eventConverter, entityConverter, tokenPoolCache, tokenCacheEventHandlerMap, mock())
+        val target = createTokenCacheEventProcessor()
 
         val result = target.onNext(null, eventIn)
 
@@ -188,8 +198,8 @@ class TokenCacheEventProcessorTest {
         verify(entityConverter).toPoolCacheState(expected)
 
         assertThat(result.responseEvents).hasSize(1)
-        assertThat(result.responseEvents.first()).isSameAs(handlerResponse)
-        assertThat(result.updatedState).isSameAs(outputState)
+        assertThat(result.responseEvents.first()).isEqualTo(handlerResponse)
+        assertThat(result.updatedState?.value).isSameAs(outputState)
         assertThat(result.markForDLQ).isFalse
     }
 
@@ -212,15 +222,27 @@ class TokenCacheEventProcessorTest {
         whenever(mockHandler.handle(any(), eq(cachePoolState), eq(event)))
             .thenReturn(handlerResponse)
 
-        val target =
-            TokenCacheEventProcessor(eventConverter, entityConverter, tokenPoolCache, tokenCacheEventHandlerMap, mock())
+        val target = createTokenCacheEventProcessor()
 
-        target.onNext(stateIn, eventIn)
+        target.onNext(
+            State(stateIn, metadata = null),
+            eventIn
+        )
 
         val inOrder = inOrder(cachePoolState, mockHandler)
 
         inOrder.verify(cachePoolState).removeExpiredClaims()
-        inOrder.verify(mockHandler).handle(any(),any(),any())
+        inOrder.verify(mockHandler).handle(any(), any(), any())
+    }
+
+    private fun createTokenCacheEventProcessor(): TokenCacheEventProcessor {
+        return TokenCacheEventProcessor(
+            eventConverter,
+            entityConverter,
+            tokenPoolCache,
+            tokenCacheEventHandlerMap,
+            mock()
+        )
     }
 
     class FakeTokenEvent : TokenEvent {

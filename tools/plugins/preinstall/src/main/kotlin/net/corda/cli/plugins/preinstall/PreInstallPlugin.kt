@@ -35,6 +35,7 @@ class PreInstallPlugin : Plugin() {
     @Extension
     @CommandLine.Command(name = "preinstall",
         subcommands = [CheckLimits::class, CheckPostgres::class, CheckKafka::class, RunAll::class],
+        mixinStandardHelpOptions = true,
         description = ["Preinstall checks for Corda."])
     class PreInstallPluginEntry : CordaCliPlugin
 

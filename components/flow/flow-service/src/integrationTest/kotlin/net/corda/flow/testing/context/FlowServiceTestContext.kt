@@ -37,6 +37,7 @@ import net.corda.flow.testing.fakes.FakeFlowFiberFactory
 import net.corda.flow.testing.fakes.FakeMembershipGroupReaderProvider
 import net.corda.flow.testing.fakes.FakeSandboxGroupContextComponent
 import net.corda.flow.testing.tests.ALL_TEST_VIRTUAL_NODES
+import net.corda.flow.testing.tests.CPK1_CHECKSUM
 import net.corda.flow.testing.tests.FLOW_NAME
 import net.corda.flow.testing.tests.SESSION_PROPERTIES
 import net.corda.flow.utils.KeyValueStore
@@ -53,8 +54,11 @@ import net.corda.libs.packaging.core.CpkManifest
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
+import net.corda.sandboxgroupcontext.SandboxGroupType.FLOW
+import net.corda.sandboxgroupcontext.VirtualNodeContext
+import net.corda.schema.Schemas.Flow.FLOW_SESSION
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.FlowConfig
 import net.corda.schema.configuration.MessagingConfig
@@ -420,8 +424,12 @@ class FlowServiceTestContext @Activate constructor(
     }
 
     override fun resetFlowFiberCache() {
-        ALL_TEST_VIRTUAL_NODES.forEach { flowFiberCache.remove(it.toCorda()) }
+    ALL_TEST_VIRTUAL_NODES.forEach {
+        flowFiberCache.remove(
+            VirtualNodeContext(it.toCorda(), setOf(CPK1_CHECKSUM), FLOW, null)
+        )
     }
+}
 
     fun clearTestRuns() {
         testRuns.clear()
@@ -438,10 +446,13 @@ class FlowServiceTestContext @Activate constructor(
             log.info("Start test run for input/output set $iteration")
             flowFiberFactory.fiber.reset()
             flowFiberFactory.fiber.setIoRequests(testRun.ioRequests)
-            val response = flowEventProcessor.onNext(lastPublishedState, testRun.event)
+            val response = flowEventProcessor.onNext(
+                State(lastPublishedState, metadata = null),
+                testRun.event
+            )
             testRun.flowContinuation = flowFiberFactory.fiber.flowContinuation
             testRun.response = response
-            lastPublishedState = response.updatedState
+            lastPublishedState = response.updatedState?.value
         }
     }
 
@@ -502,7 +513,7 @@ class FlowServiceTestContext @Activate constructor(
     }
 
     private fun createFlowEventRecord(key: String, payload: Any): Record<String, FlowEvent> {
-        return Record(FLOW_EVENT_TOPIC, key, FlowEvent(key, payload))
+        return Record(FLOW_SESSION, key, FlowEvent(key, payload))
     }
 
     private fun getCpiIdentifier(cpiId: String): CpiIdentifier {

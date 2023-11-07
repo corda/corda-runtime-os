@@ -1,27 +1,59 @@
 package net.corda.ledger.persistence.utxo.tests.datamodel
 
+import net.corda.orm.utils.transaction
 import java.time.Instant
 import javax.persistence.EntityManagerFactory
 
-class UtxoEntityFactory(entityManagerFactory: EntityManagerFactory) {
+class UtxoEntityFactory(private val entityManagerFactory: EntityManagerFactory) {
     private val entityMap = entityManagerFactory.metamodel.entities.associate { it.name to it.bindableJavaType }
 
     val utxoTransaction: Class<*> get() = classFor("UtxoTransactionEntity")
+    val utxoTransactionMetadata: Class<*> get() = classFor("UtxoTransactionMetadataEntity")
     val utxoTransactionComponent: Class<*> get() = classFor("UtxoTransactionComponentEntity")
-    val utxoTransactionOutput: Class<*> get() = classFor("UtxoTransactionOutputEntity")
-    val utxoVisibleTransactionState: Class<*> get() = classFor("UtxoVisibleTransactionStateEntity")
-    val utxoTransactionSource: Class<*> get() = classFor("UtxoTransactionSourceEntity")
-    val utxoTransactionStatus: Class<*> get() = classFor("UtxoTransactionStatusEntity")
+    val utxoVisibleTransactionOutput: Class<*> get() = classFor("UtxoVisibleTransactionOutputEntity")
     val utxoTransactionSignature: Class<*> get() = classFor("UtxoTransactionSignatureEntity")
+    val utxoTransactionSource: Class<*> get() = classFor("UtxoTransactionSourceEntity")
 
     fun createUtxoTransactionEntity(
         transactionId: String,
         privacySalt: ByteArray,
         accountId: String,
-        created: Instant
+        created: Instant,
+        status: String,
+        updated: Instant,
+        utxoTransactionMetadata: Any
     ): Any {
-        return utxoTransaction.constructors.single { it.parameterCount == 4 }.newInstance(
-            transactionId, privacySalt, accountId, created
+        return utxoTransaction.constructors.single { it.parameterCount == 7 }.newInstance(
+            transactionId, privacySalt, accountId, created, status, updated, utxoTransactionMetadata
+        )
+    }
+
+    fun createOrFindUtxoTransactionMetadataEntity(
+        hash: String,
+        canonicalData: ByteArray,
+        groupParametersHash: String,
+        cpiFileChecksum: String,
+    ): Any {
+        return entityManagerFactory.transaction { em ->
+            em.find(utxoTransactionMetadata, hash) ?: createUtxoTransactionMetadataEntity(
+                hash,
+                canonicalData,
+                groupParametersHash,
+                cpiFileChecksum,
+            ).also {
+                em.persist(it)
+            }
+        }
+    }
+
+    fun createUtxoTransactionMetadataEntity(
+        hash: String,
+        canonicalData: ByteArray,
+        groupParametersHash: String,
+        cpiFileChecksum: String,
+    ): Any {
+        return utxoTransactionMetadata.constructors.single { it.parameterCount == 4 }.newInstance(
+            hash, canonicalData, groupParametersHash, cpiFileChecksum
         )
     }
 
@@ -30,21 +62,10 @@ class UtxoEntityFactory(entityManagerFactory: EntityManagerFactory) {
         groupIdx: Int,
         leafIdx: Int,
         component: ByteArray,
-        hash: String,
-        created: Instant
+        hash: String
     ): Any {
-        return utxoTransactionComponent.constructors.single { it.parameterCount == 6 }.newInstance(
-            utxoTransaction, groupIdx, leafIdx, component, hash, created
-        )
-    }
-
-    fun createUtxoTransactionStatusEntity(
-        utxoTransaction: Any,
-        status: String,
-        created: Instant
-    ): Any {
-        return utxoTransactionStatus.constructors.single { it.parameterCount == 3 }.newInstance(
-            utxoTransaction, status, created
+        return utxoTransactionComponent.constructors.single { it.parameterCount == 5 }.newInstance(
+            utxoTransaction, groupIdx, leafIdx, component, hash
         )
     }
 

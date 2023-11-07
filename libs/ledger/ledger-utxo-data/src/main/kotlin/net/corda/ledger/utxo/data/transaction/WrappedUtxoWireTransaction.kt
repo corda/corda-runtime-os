@@ -7,7 +7,6 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
-import net.corda.v5.ledger.utxo.Attachment
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
@@ -51,15 +50,6 @@ class WrappedUtxoWireTransaction(
         deserialize(UtxoComponentGroup.NOTARY, timeWindowIndex)
     }
 
-    val attachmentIds: List<SecureHash> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        deserialize(UtxoComponentGroup.DATA_ATTACHMENTS)
-    }
-
-    val attachments: List<Attachment> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        //TODO("Not yet implemented.")
-        emptyList()
-    }
-
     val commands: List<Command> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         deserialize(UtxoComponentGroup.COMMANDS)
     }
@@ -81,7 +71,7 @@ class WrappedUtxoWireTransaction(
             wireTransaction
                 .getComponentGroupList(UtxoComponentGroup.OUTPUTS.ordinal).size
         ) { index ->
-            UtxoTransactionOutputDto(
+            UtxoVisibleTransactionOutputDto(
                 id.toString(), index,
                 wireTransaction
                     .getComponentGroupList(UtxoComponentGroup.OUTPUTS_INFO.ordinal)[index],
@@ -98,5 +88,22 @@ class WrappedUtxoWireTransaction(
     private inline fun <reified T> deserialize(group: UtxoComponentGroup, index: Int): T {
         val serializedBytes = wireTransaction.getComponentGroupList(group.ordinal)[index]
         return serializationService.deserialize(serializedBytes)
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as WrappedUtxoWireTransaction
+
+        return wireTransaction == other.wireTransaction
+    }
+
+    override fun hashCode(): Int {
+        return wireTransaction.hashCode()
+    }
+
+    override fun toString(): String {
+        return "WrappedUtxoWireTransaction(wireTransaction=$wireTransaction)"
     }
 }

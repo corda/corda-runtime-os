@@ -78,6 +78,30 @@ metrics:
     enabled: false
     # -- Labels that can be used so PodMonitor is discovered by Prometheus
     labels: {}
+    # -- A list of regular expressions for the names of metrics that Prometheus should keep; if empty, all metrics are kept
+    keepNames:
+      - "corda_flow_execution_time_seconds_(count|sum|max)"
+      - "corda_http_server_request_time_seconds_(count|sum|max)"
+      - "corda_p2p_gateway_inbound_request_time_seconds_(count|sum|max)"
+      - "corda_p2p_gateway_outbound_request_time_seconds_(count|sum|max)"
+      - "corda_p2p_gateway_outbound_tls_connections_total"
+      - "corda_p2p_message_outbound_total"
+      - "corda_p2p_message_outbound_replayed_total"
+      - "corda_p2p_message_outbound_latency_seconds_(count|sum|max)"
+      - "corda_p2p_message_inbound_total"
+      - "corda_p2p_session_outbound_total"
+      - "corda_p2p_session_inbound_total"
+      - "corda_membership_actions_handler_time_seconds_(count|sum|max)"
+      - "corda_consumer_poll_time_seconds_(count|sum|max)"
+      - "corda_messaging_commit_time_seconds_(count|sum|max)"
+      - "corda_messaging_processor_time_seconds_(count|sum|max)"
+      - "corda_taskmanager_.*"
+      - "jvm_.*"
+      - "process_cpu_usage"
+    # -- A list of regular expressions for labels that Prometheus should drop across all metrics; if empty, all labels are kept
+    dropLabels:
+      - "virtualnode_destination"
+      - "virtualnode_source"
 
 # Distributed tracing configuration
 tracing:
@@ -212,7 +236,7 @@ kafka:
 
 # Configuration for cluster bootstrap
 bootstrap:
-  # Configuration for the preinstall check
+  # Configuration for the pre-installation check
   preinstallCheck:
     # -- indicates whether the preinstall check is enabled
     enabled: true
@@ -222,6 +246,7 @@ bootstrap:
       create: true
       # -- name of the service account, if not set and create is true, a name is generated from a template
       name: ""
+
   # Configuration for the REST API admin to be created during cluster bootstrap
   restApiAdmin:
     # the username configuration for the REST API admin to be created during cluster bootstrap
@@ -248,8 +273,12 @@ bootstrap:
           name: ""
           # -- the key for the field in the secret containing the password for the REST API admin created during cluster bootstrap
           key: ""
+
   # Configuration for database bootstrap
   db:
+    # -- Indicates whether DB bootstrap is enabled as part of installation
+    enabled: true
+
     # Bootstrap cluster database configuration
     cluster:
       # the bootstrap cluster database password configuration
@@ -276,8 +305,7 @@ bootstrap:
             name: ""
             # -- the bootstrap cluster database user secret key
             key: ""
-    # -- Indicates whether DB bootstrap is enabled as part of installation
-    enabled: true
+
     # crypto configuration
     crypto:
       # -- the schema in which the cluster database crypto entities will be stored
@@ -366,47 +394,81 @@ bootstrap:
 
     # State Manager DB Bootstrap Configuration
     stateManager:
-      # -- the schema in which the state-manager entities will be stored
-      schema: state_manager
-      # JDBC connection pool configuration for state-manager DB
-      dbConnectionPool:
-        # -- maximum JDBC connection pool size for state-manager DB
-        maxSize: 5
-        # -- minimum JDBC connection pool size for state-manager DB; null value means pool's min size will default to pool's max size value
-        minSize: null
-        # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
-        idleTimeoutSeconds: 120
-        # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
-        maxLifetimeSeconds: 1800
-        # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
-        keepAliveTimeSeconds: 0
-        # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
-        validationTimeoutSeconds: 5
-      # the username configuration
-      username:
-        # -- the username, defaults to this value
-        value: "state_manager_user"
-        # the username secret configuration; used in preference to value if name is set
-        valueFrom:
-          # the username secret key reference
-          secretKeyRef:
-            # -- the username secret name
-            name: ""
-            # -- the username secret key
-            key: ""
-      # password configuration
-      password:
-        # -- the password, defaults to a value randomly-generated on install
-        value: ""
-        # the password secret configuration
-        valueFrom:
-          # the password secret key reference
-          secretKeyRef:
-            # -- the password secret name
-            name: ""
-            # -- the password secret key
-            key: ""
-
+      flow:
+        # the username configuration
+        username:
+          # -- the username, defaults to this value
+          value: ""
+          # the username secret configuration; used in preference to value if name is set
+          valueFrom:
+            # the username secret key reference
+            secretKeyRef:
+              # -- the username secret name
+              name: ""
+              # -- the username secret key
+              key: ""
+        # password configuration
+        password:
+          # -- the password, defaults to a value randomly-generated on install
+          value: ""
+          # the password secret configuration
+          valueFrom:
+            # the password secret key reference
+            secretKeyRef:
+              # -- the password secret name
+              name: ""
+              # -- the password secret key
+              key: ""
+      flowMapper:
+        # the username configuration
+        username:
+          # -- the username, defaults to this value
+          value: ""
+          # the username secret configuration; used in preference to value if name is set
+          valueFrom:
+            # the username secret key reference
+            secretKeyRef:
+              # -- the username secret name
+              name: ""
+              # -- the username secret key
+              key: ""
+        # password configuration
+        password:
+          # -- the password, defaults to a value randomly-generated on install
+          value: ""
+          # the password secret configuration
+          valueFrom:
+            # the password secret key reference
+            secretKeyRef:
+              # -- the password secret name
+              name: ""
+              # -- the password secret key
+              key: ""
+      tokenSelection:
+        # the username configuration
+        username:
+          # -- the username, defaults to this value
+          value: ""
+          # the username secret configuration; used in preference to value if name is set
+          valueFrom:
+            # the username secret key reference
+            secretKeyRef:
+              # -- the username secret name
+              name: ""
+              # -- the username secret key
+              key: ""
+        # password configuration
+        password:
+          # -- the password, defaults to a value randomly-generated on install
+          value: ""
+          # the password secret configuration
+          valueFrom:
+            # the password secret key reference
+            secretKeyRef:
+              # -- the password secret name
+              name: ""
+              # -- the password secret key
+              key: ""
     # Image containing DB client, used to set up the DB
     clientImage:
       # -- registry for image containing a db client, used to set up the db
@@ -425,8 +487,6 @@ bootstrap:
   kafka:
     # -- Indicates whether Kafka bootstrap is enabled as part of installation
     enabled: true
-    # -- Specifies whether existing topics with the given prefix should be deleted before trying to create new ones (deletes all existing topics if no prefix is given)
-    cleanup: false
     # -- Kafka topic partitions
     partitions: 10
     # -- Kafka topic replicas
@@ -714,20 +774,58 @@ workers:
       limits: {}
     # -- run flow worker with Quasar's verifyInstrumentation enabled
     verifyInstrumentation: false
-    # flow worker JDBC connection pool configuration for State Manager DB
-    stateManagerDbConnectionPool:
-      # -- flow worker maximum JDBC connection pool size for state manager DB
-      maxSize: 5
-      # -- flow worker minimum JDBC connection pool size for state manager DB; null value means pool's min size will default to pool's max size value
-      minSize: null
-      # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
-      idleTimeoutSeconds: 120
-      # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
-      maxLifetimeSeconds: 1800
-      # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
-      keepAliveTimeSeconds: 0
-      # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
-      validationTimeoutSeconds: 5
+    # Flow Worker State Manager configuration
+    stateManager:
+      # Type of State Manager
+      type: DATABASE
+      # State Manager database configuration
+      db:
+        # -- the State Manager database host
+        host: null
+        # -- the State Manager database type
+        type: "postgresql"
+        # -- the State Manager database port
+        port: 5432
+        # -- the State Manager database name
+        name: flow_state_manager
+        # the State Manager database user configuration
+        username:
+          # -- the State Manager database user
+          value: "flow_state_manager_user"
+          # the State Manager database user secret configuration; used in preference to value if name is set
+          valueFrom:
+            # the State Manager database user secret key reference
+            secretKeyRef:
+              # -- the State Manager database user secret name
+              name: ""
+              # -- the State Manager database user secret key
+              key: ""
+        # the State Manager database password configuration
+        password:
+          # -- the State Manager database password
+          value: ""
+          # the State Manager database password secret configuration; used in preference to value if name is set
+          valueFrom:
+            # the State Manager database password secret key reference
+            secretKeyRef:
+              # -- the State Manager database password secret name
+              name: ""
+              # -- the State Manager database password secret key
+              key: ""
+        # flow worker JDBC connection pool configuration for State Manager DB
+        connectionPool:
+          # -- flow worker maximum JDBC connection pool size for state manager DB
+          maxSize: 5
+          # -- flow worker minimum JDBC connection pool size for state manager DB; null value means pool's min size will default to pool's max size value
+          minSize: null
+          # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
+          idleTimeoutSeconds: 120
+          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+          maxLifetimeSeconds: 1800
+          # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
+          keepAliveTimeSeconds: 0
+          # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
+          validationTimeoutSeconds: 5
     # flow worker Kafka configuration
     kafka:
       # if kafka.sasl.enabled, the credentials to connect to Kafka with for the flow worker
@@ -796,6 +894,58 @@ workers:
       limits: { }
     # -- run flow mapper worker with Quasar's verifyInstrumentation enabled
     verifyInstrumentation: false
+    # Flow Mapper Worker State Manager configuration
+    stateManager:
+      # Type of State Manager
+      type: DATABASE
+      # State Manager database configuration
+      db:
+        # -- the State Manager database host
+        host: null
+        # -- the State Manager database type
+        type: "postgresql"
+        # -- the State Manager database port
+        port: 5432
+        # -- the State Manager database name
+        name: flow_mapper_state_manager
+        # the State Manager database user configuration
+        username:
+          # -- the State Manager database user
+          value: "flow_mapper_state_manager_user"
+          # the State Manager database user secret configuration; used in preference to value if name is set
+          valueFrom:
+            # the State Manager database user secret key reference
+            secretKeyRef:
+              # -- the State Manager database user secret name
+              name: ""
+              # -- the State Manager database user secret key
+              key: ""
+        # the State Manager database password configuration
+        password:
+          # -- the State Manager database password
+          value: ""
+          # the State Manager database password secret configuration; used in preference to value if name is set
+          valueFrom:
+            # the State Manager database password secret key reference
+            secretKeyRef:
+              # -- the State Manager database password secret name
+              name: ""
+              # -- the State Manager database password secret key
+              key: ""
+        # flow mapper worker JDBC connection pool configuration for State Manager DB
+        connectionPool:
+          # -- flow mapper worker maximum JDBC connection pool size for state manager DB
+          maxSize: 5
+          # -- flow mapper worker minimum JDBC connection pool size for state manager DB; null value means pool's min size will default to pool's max size value
+          minSize: null
+          # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
+          idleTimeoutSeconds: 120
+          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+          maxLifetimeSeconds: 1800
+          # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
+          keepAliveTimeSeconds: 0
+          # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
+          validationTimeoutSeconds: 5
     # flow mapper worker Kafka configuration
     kafka:
       # if kafka.sasl.enabled, the credentials to connect to Kafka with for the flow mapper worker
@@ -1172,6 +1322,14 @@ workers:
     service:
       # -- The P2P gateway HTTP port
       port: 8080
+    # P2P gateway worker ingress configuration
+    ingress:
+      # -- the annotations for the P2P gateway worker ingress
+      annotations: {}
+      # -- the className for the P2P gateway worker ingress
+      className: ""
+      # -- the hosts for the P2P gateway worker ingress
+      hosts: []
     # P2P gateway worker Kafka configuration
     kafka:
       # if kafka.sasl.enabled, the credentials to connect to Kafka with for the P2P gateway worker
@@ -1281,6 +1439,153 @@ workers:
               # -- the persistence worker SASL password secret key for client connection to Kafka
               key: ""
 
+  # token selection worker configuration
+  tokenSelection:
+    # token selection worker image configuration
+    image:
+      # -- token selection worker image registry, defaults to image.registry
+      registry: ""
+      # -- token selection worker image repository
+      repository: "corda-os-token-selection-worker"
+      # -- token selection worker image tag, defaults to image.tag
+      tag: ""
+    # -- token selection worker replica count
+    replicaCount: 1
+    # -- token selection worker extra annotations
+    annotations: { }
+    # -- token selection Java options for the persistence worker
+    javaOptions: "-XX:MaxRAMPercentage=75"
+    # token selection worker debug configuration
+    debug:
+      # -- run token selection worker with debug enabled
+      enabled: false
+      # -- if debug is enabled, suspend the token selection worker until the debugger is attached
+      suspend: false
+    # logging configuration
+    logging:
+      # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
+      level: null
+      # -- additional Log4j 2 XML configuration
+      override: ""
+    profiling:
+      # -- run token selection worker with profiling enabled
+      enabled: false
+    # resource limits and requests configuration for the token selection worker containers.
+    resources:
+      # -- the CPU/memory resource requests for the token selection worker containers
+      requests: { }
+      # -- the CPU/memory resource limits for the token selection worker containers
+      limits: { }
+    # token selection worker JDBC connection pool configuration for cluster DB
+    clusterDbConnectionPool:
+      # -- token selection worker maximum JDBC connection pool size for cluster DB
+      maxSize: 5
+      # -- token selection worker minimum JDBC connection pool size for cluster DB; null value means pool's min size will default to pool's max size value
+      minSize: null
+      # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
+      idleTimeoutSeconds: 120
+      # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+      maxLifetimeSeconds: 1800
+      # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
+      keepaliveTimeSeconds: 0
+      # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
+      validationTimeoutSeconds: 5
+
+    stateManager:
+      # Type of State Manager
+      type: DATABASE
+      # State Manager database configuration
+      db:
+        # -- the State Manager database host
+        host: null
+        # -- the State Manager database type
+        type: "postgresql"
+        # -- the State Manager database port
+        port: 5432
+        # -- the State Manager database name
+        name: token_selection_state_manager
+        # the State Manager database user configuration
+        username:
+          # -- the State Manager database user
+          value: "token_selection_state_manager_user"
+          # the State Manager database user secret configuration; used in preference to value if name is set
+          valueFrom:
+            # the State Manager database user secret key reference
+            secretKeyRef:
+              # -- the State Manager database user secret name
+              name: ""
+              # -- the State Manager database user secret key
+              key: ""
+        # the State Manager database password configuration
+        password:
+          # -- the State Manager database password
+          value: ""
+          # the State Manager database password secret configuration; used in preference to value if name is set
+          valueFrom:
+            # the State Manager database password secret key reference
+            secretKeyRef:
+              # -- the State Manager database password secret name
+              name: ""
+              # -- the State Manager database password secret key
+              key: ""
+        # token selection worker JDBC connection pool configuration for State Manager DB
+        connectionPool:
+          # -- token selection maximum JDBC connection pool size for state manager DB
+          maxSize: 5
+          # -- token selection minimum JDBC connection pool size for state manager DB; null value means pool's min size will default to pool's max size value
+          minSize: null
+          # -- maximum time (in seconds) a connection can stay idle in the pool; A value of 0 means that idle connections are never removed from the pool
+          idleTimeoutSeconds: 120
+          # -- maximum time (in seconds) a connection can stay in the pool, regardless if it has been idle or has been recently used; If a connection is in-use and has reached "maxLifetime" timeout, it will be removed from the pool only when it becomes idle
+          maxLifetimeSeconds: 1800
+          # -- interval time (in seconds) in which connections will be tested for aliveness; Connections which are no longer alive are removed from the pool; A value of 0 means this check is disabled
+          keepAliveTimeSeconds: 0
+          # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
+          validationTimeoutSeconds: 5
+
+    # token selection worker Kafka configuration
+    kafka:
+      # if kafka.sasl.enabled, the credentials to connect to Kafka with for the token selection worker
+      sasl:
+        # token selection worker SASL username configuration for client connection to Kafka; defaults to kafka.sasl.username
+        username:
+          # -- the token selection worker SASL username for client connection to Kafka
+          value: ""
+          # the boostrap SASL username secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the token selection worker SASL username secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the token selection worker SASL username secret name for client connection to Kafka
+              name: ""
+              # -- the token selection worker SASL username secret key for client connection to Kafka
+              key: ""
+        # token selection worker SASL password configuration for client connection to Kafka; defaults to kafka.sasl.password
+        password:
+          # -- the token selection worker SASL password for client connection to Kafka
+          value: ""
+          # the token selection worker SASL password secret configuration for client connection to Kafka; used in preference to value if name is set
+          valueFrom:
+            # the token selection worker SASL password secret key reference for client connection to Kafka
+            secretKeyRef:
+              # -- the token selection worker SASL password secret name for client connection to Kafka
+              name: ""
+              # -- the token selection worker SASL password secret key for client connection to Kafka
+              key: ""
+    # token selection sharding configuration
+    sharding:
+      # -- enable sharding of token selection requests
+      enabled: false
+      # token selection sharding image configuration
+      image:
+        # -- token selection sharding image registry
+        registry: "registry.k8s.io"
+        # -- token selection sharding image repository
+        repository: "ingress-nginx/controller"
+        # -- token selection sharding image tag
+        tag: "v1.9.3@sha256:8fd21d59428507671ce0fb47f818b1d859c92d2ad07bb7c947268d433030ba98"
+      # -- token selection replica count
+      replicaCount: 2
+
   # uniqueness worker configuration
   uniqueness:
     # uniqueness worker image configuration
@@ -1332,6 +1637,7 @@ workers:
       keepaliveTimeSeconds: 0
       # -- maximum time (in seconds) that the pool will wait for a connection to be validated as alive
       validationTimeoutSeconds: 5
+
     # uniqueness worker Kafka configuration
     kafka:
       # if kafka.sasl.enabled, the credentials to connect to Kafka with for the uniqueness worker

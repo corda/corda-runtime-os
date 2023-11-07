@@ -72,7 +72,9 @@ internal class CreateVirtualNodeOperationHandler(
                 execLog.measureExecTime("create schema and user in ${vNodeDb.dbType} DB") {
                     vNodeDb.createSchemasAndUsers()
                 }
+            }
 
+            for (vNodeDb in vNodeDbs.values.filter { it.isPlatformManagedDb || it.ddlConnectionProvided }) {
                 execLog.measureExecTime("apply DB migrations in ${vNodeDb.dbType} DB") {
                     vNodeDb.runDbMigration(VirtualNodeWriterProcessor.systemTerminatorTag)
                 }
@@ -93,6 +95,8 @@ internal class CreateVirtualNodeOperationHandler(
                 cpiMetadata.cpiId,
                 cpiMetadata.cpksMetadata
             )
+            
+            logger.info("Generated new ExternalMessagingRouteConfig as: $externalMessagingRouteConfig")
 
             val vNodeConnections = execLog.measureExecTime("persist holding ID and virtual node") {
                 createVirtualNodeService.persistHoldingIdAndVirtualNode(

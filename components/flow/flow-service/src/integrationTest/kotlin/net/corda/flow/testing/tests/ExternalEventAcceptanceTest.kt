@@ -80,7 +80,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
             cpkMetadata(CPI1, CPK1, CPK1_CHECKSUM)
             sandboxCpk(CPK1_CHECKSUM)
             membershipGroupFor(ALICE_HOLDING_IDENTITY)
-            flowConfiguration(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW, -50000L) // -5 seconds (in the past)
+            flowConfiguration(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW, 500L)
         }
     }
 
@@ -221,10 +221,8 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Receiving an event does not resend the external event unless a 'transient' error is received`() {
+    fun `Receiving an event does not resend the external event if status is OK but the retry window has been surpassed`() {
         given {
-            flowConfiguration(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW, 500000L) // 50 seconds
-
             startFlowEventReceived(
                 FLOW_ID1,
                 REQUEST_ID1,
@@ -257,41 +255,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Receiving an event resends the external event if status is OK but the retry window has been surpassed`() {
-        given {
-            startFlowEventReceived(
-                FLOW_ID1,
-                REQUEST_ID1,
-                ALICE_HOLDING_IDENTITY,
-                CPI1,
-                "flow start data",
-                FLOW_START_CONTEXT
-            )
-                .suspendsWith(
-                    FlowIORequest.ExternalEvent(
-                        REQUEST_ID,
-                        AnyResponseReceivedFactory::class.java,
-                        ANY_INPUT,
-                        EXTERNAL_EVENT_CONTEXT
-                    )
-                )
-        }
-
-        `when` {
-            // Use this as a trigger for the pipeline - an external event not the one we are expecting.
-            externalEventReceived(FLOW_ID1, SECOND_REQUEST_ID, ANY_INPUT)
-        }
-
-        then {
-            expectOutputForFlow(FLOW_ID1) {
-                flowDidNotResume()
-                externalEvent(TOPIC, KEY, ANY_INPUT)
-            }
-        }
-    }
-
-    @Test
-    fun `Receiving a 'transient' error response resends the external event if the retry window has been surpassed`() {
+    fun `Receiving a 'transient' error response resends the external event`() {
         given {
             startFlowEventReceived(
                 FLOW_ID1,
@@ -318,89 +282,6 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 flowDidNotResume()
-                externalEvent(TOPIC, KEY, ANY_INPUT)
-            }
-        }
-    }
-
-    @Test
-    fun `Receiving a 'transient' error response does not resend the external event if the retry window has not been surpassed`() {
-        given {
-            flowConfiguration(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW, 50000L) // 5 seconds
-
-            startFlowEventReceived(
-                FLOW_ID1,
-                REQUEST_ID1,
-                ALICE_HOLDING_IDENTITY,
-                CPI1,
-                "flow start data",
-                FLOW_START_CONTEXT
-            )
-                .suspendsWith(
-                    FlowIORequest.ExternalEvent(
-                        REQUEST_ID,
-                        AnyResponseReceivedFactory::class.java,
-                        ANY_INPUT,
-                        EXTERNAL_EVENT_CONTEXT
-                    )
-                )
-        }
-
-        `when` {
-            externalEventErrorReceived(FLOW_ID1, REQUEST_ID, ExternalEventResponseErrorType.TRANSIENT)
-        }
-
-        then {
-            expectOutputForFlow(FLOW_ID1) {
-                flowDidNotResume()
-                noExternalEvent(TOPIC)
-            }
-        }
-    }
-
-    @Test
-    fun `Given a 'transient' error response has been received receiving an event will resend the external event if the retry window has been surpassed`() {
-        given {
-            flowConfiguration(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW, 10.seconds.toMillis())
-
-            startFlowEventReceived(
-                FLOW_ID1,
-                REQUEST_ID1,
-                ALICE_HOLDING_IDENTITY,
-                CPI1,
-                "flow start data",
-                FLOW_START_CONTEXT
-            )
-                .suspendsWith(
-                    FlowIORequest.ExternalEvent(
-                        REQUEST_ID,
-                        AnyResponseReceivedFactory::class.java,
-                        ANY_INPUT,
-                        EXTERNAL_EVENT_CONTEXT
-                    )
-                )
-        }
-
-        `when` {
-            externalEventErrorReceived(FLOW_ID1, REQUEST_ID, ExternalEventResponseErrorType.TRANSIENT)
-        }
-
-        then {
-            expectOutputForFlow(FLOW_ID1) {
-                noExternalEvent(TOPIC)
-            }
-        }
-
-        // Wait for the resend window to be passed
-        Thread.sleep(10.seconds.toMillis())
-
-        `when` {
-            // Use this as a trigger for the pipeline - an external event not the one we are expecting.
-            externalEventReceived(FLOW_ID1, SECOND_REQUEST_ID, ANY_INPUT)
-        }
-
-        then {
-            expectOutputForFlow(FLOW_ID1) {
                 externalEvent(TOPIC, KEY, ANY_INPUT)
             }
         }

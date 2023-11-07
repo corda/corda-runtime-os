@@ -2,8 +2,10 @@ package net.corda.ledger.persistence.utxo.impl
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
+import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.ledger.common.data.transaction.PrivacySalt
+import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.json.DefaultContractStateVaultJsonFactory
 import net.corda.ledger.persistence.json.impl.DefaultContractStateVaultJsonFactoryImpl
@@ -12,6 +14,7 @@ import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoRepository
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.utilities.time.UTCClock
+import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
@@ -28,6 +31,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -43,16 +47,22 @@ class UtxoPersistenceServiceImplTest {
     private val persistedJsonStrings = mutableMapOf<String, CustomRepresentation>()
 
     private val mockRepository = mock<UtxoRepository> {
-        on { persistTransactionVisibleStates(any(), any(), any(), any(), any(), any(), any()) } doAnswer {
+        on { persistVisibleTransactionOutput(
+            any(), any(), any(), any(), any(), any(), any(), any(),
+            anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull()
+        ) } doAnswer {
             val txId = it.getArgument<String>(1)
-            val customRepresentation = it.getArgument<CustomRepresentation>(5)
+            val customRepresentation = it.arguments.single {
+                it as? CustomRepresentation != null
+            } as CustomRepresentation
             persistedJsonStrings[txId] = customRepresentation
         }
 
-        on { persistTransaction(any(), any(), any(), any(), any()) } doAnswer {}
-        on { persistTransactionComponentLeaf(any(), any(), any(), any(), any(), any(), any()) } doAnswer {}
-        on { persistTransactionOutput(any(), any(), any(), any(), any(), any(), any(), any(), any(),
-            any(), any(), any(), any()) } doAnswer {}
+        on { persistTransaction(any(), any(), any(), any(), any(), any(), any()) } doAnswer {}
+        on { persistTransactionComponentLeaf(any(), any(), any(), any(), any(), any()) } doAnswer {}
+    }
+    private val mockDigestService = mock<DigestService> {
+        on { hash(any<ByteArray>(), any())} doAnswer { SecureHashImpl("algo", byteArrayOf(1, 2, 11)) }
     }
 
     private val mockPrivacySalt = mock<PrivacySalt> {
@@ -77,7 +87,7 @@ class UtxoPersistenceServiceImplTest {
         mockEmFactory,
         mockRepository,
         mock(),
-        mock(),
+        mockDigestService,
         storage,
         DefaultContractStateVaultJsonFactoryImpl(),
         JsonMarshallingServiceImpl(), // We could mock this but this is basically just a layer on top of Jackson
@@ -128,7 +138,7 @@ class UtxoPersistenceServiceImplTest {
             mockEmFactory,
             mockRepository,
             mock(),
-            mock(),
+            mockDigestService,
             storage,
             emptyDefaultContractStateVaultJsonFactory,
             JsonMarshallingServiceImpl(),
@@ -213,7 +223,7 @@ class UtxoPersistenceServiceImplTest {
             mockEmFactory,
             mockRepository,
             mock(),
-            mock(),
+            mockDigestService,
             ContractStateVaultJsonFactoryRegistryImpl(), // Empty storage
             DefaultContractStateVaultJsonFactoryImpl(),
             JsonMarshallingServiceImpl(),
@@ -252,7 +262,7 @@ class UtxoPersistenceServiceImplTest {
             mockEmFactory,
             mockRepository,
             mock(),
-            mock(),
+            mockDigestService,
             storage,
             DefaultContractStateVaultJsonFactoryImpl(),
             JsonMarshallingServiceImpl(),
@@ -286,7 +296,7 @@ class UtxoPersistenceServiceImplTest {
     private fun createMockTransaction(producedStates: Map<Int, StateAndRef<ContractState>>): UtxoTransactionReader {
         return mock {
             on { getConsumedStateRefs() } doReturn emptyList()
-            on { rawGroupLists } doReturn emptyList()
+            on { rawGroupLists } doReturn listOf(listOf("{}".toByteArray()))
             on { visibleStatesIndexes } doReturn listOf(0)
             on { status } doReturn TransactionStatus.UNVERIFIED
             on { signatures } doReturn emptyList()
@@ -294,6 +304,17 @@ class UtxoPersistenceServiceImplTest {
             on { privacySalt } doReturn mockPrivacySalt
             on { account } doReturn ""
             on { getVisibleStates() } doReturn producedStates
+            on { metadata } doReturn TransactionMetadataImpl(
+                mapOf(
+                    "membershipGroupParametersHash" to "membershipGroupParametersHash",
+                    "cpiMetadata" to mapOf(
+                        "name" to "name",
+                        "version" to "version",
+                        "signerSummaryHash" to "signerSummaryHash",
+                        "fileChecksum" to "cpiFileChecksum"
+                    )
+                )
+            )
         }
     }
 

@@ -1,29 +1,25 @@
 package net.corda.libs.statemanager.impl.tests
 
-import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
+import net.corda.db.core.utils.transaction
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
-import net.corda.libs.statemanager.api.Operation
+import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.Metadata
+import net.corda.libs.statemanager.api.MetadataFilter
+import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.metadata
 import net.corda.libs.statemanager.impl.StateManagerImpl
-import net.corda.libs.statemanager.impl.model.v1.CREATE_STATE_QUERY_NAME
-import net.corda.libs.statemanager.impl.model.v1.KEY_ID
-import net.corda.libs.statemanager.impl.model.v1.METADATA_ID
+import net.corda.libs.statemanager.impl.convertToMetadata
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
-import net.corda.libs.statemanager.impl.model.v1.StateManagerEntities
-import net.corda.libs.statemanager.impl.model.v1.VALUE_ID
-import net.corda.libs.statemanager.impl.model.v1.VERSION_ID
+import net.corda.libs.statemanager.impl.model.v1.resultSetAsStateEntityCollection
+import net.corda.libs.statemanager.impl.repository.impl.PostgresQueryProvider
 import net.corda.libs.statemanager.impl.repository.impl.StateRepositoryImpl
-import net.corda.orm.EntityManagerConfiguration
-import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
-import net.corda.orm.utils.transaction
-import net.corda.orm.utils.use
+import net.corda.lifecycle.LifecycleCoordinatorFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.AfterAll
@@ -35,17 +31,17 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import org.mockito.kotlin.mock
+import java.sql.SQLException
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
-import javax.persistence.PersistenceException
 import kotlin.concurrent.thread
 
 // TODO-[CORE-16663]: make database provider pluggable
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StateManagerIntegrationTest {
-
-    private val dbConfig: EntityManagerConfiguration = DbUtils.getEntityManagerConfiguration("state_manager_db")
+    private val dataSource = DbUtils.createPostgresDataSource()
 
     init {
         val dbChange = ClassloaderChangeLog(
@@ -57,26 +53,23 @@ class StateManagerIntegrationTest {
                 )
             )
         )
-        dbConfig.dataSource.connection.use { connection ->
+        dataSource.connection.use { connection ->
             LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange)
         }
     }
 
     private val objectMapper = ObjectMapper()
     private val testUniqueId = UUID.randomUUID()
-    private val entityManagerFactoryFactory = EntityManagerFactoryFactoryImpl().create(
-        "state_manager_test",
-        StateManagerEntities.classes.toList(),
-        dbConfig
+    private val queryProvider = PostgresQueryProvider()
+
+    private val stateManager: StateManager = StateManagerImpl(
+        lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>(),
+        dataSource = dataSource,
+        stateRepository = StateRepositoryImpl(queryProvider)
     )
-    private val stateManager: StateManager = StateManagerImpl(StateRepositoryImpl(), entityManagerFactoryFactory)
 
-    private fun ObjectMapper.toMetadata(metadata: String) =
-        this.readValue(metadata, object : TypeReference<Metadata>() {})
-
-    private fun cleanStates() = entityManagerFactoryFactory.createEntityManager().transaction {
-        it.createNativeQuery("DELETE FROM state s WHERE s.key LIKE '%$testUniqueId%'").executeUpdate()
-        it.flush()
+    private fun cleanStates() = dataSource.connection.transaction {
+        it.createStatement().executeUpdate("DELETE FROM state s WHERE s.key LIKE '%$testUniqueId%'")
     }
 
     @BeforeEach
@@ -93,19 +86,18 @@ class StateManagerIntegrationTest {
         stateContent: (index: Int, key: String) -> String,
         metadataContent: (index: Int, key: String) -> String,
     ) = indexRange.forEach { i ->
-        entityManagerFactoryFactory.createEntityManager().transaction {
+        dataSource.connection.transaction { connection ->
             val key = buildStateKey(i)
             val stateEntity =
                 StateEntity(key, stateContent(i, key).toByteArray(), metadataContent(i, key), version(i, key))
 
-            it.createNamedQuery(CREATE_STATE_QUERY_NAME.trimIndent())
-                .setParameter(KEY_ID, stateEntity.key)
-                .setParameter(VALUE_ID, stateEntity.value)
-                .setParameter(VERSION_ID, stateEntity.version)
-                .setParameter(METADATA_ID, stateEntity.metadata)
-                .executeUpdate()
-
-            it.flush()
+            connection.prepareStatement(queryProvider.createState).use {
+                it.setString(1, stateEntity.key)
+                it.setBytes(2, stateEntity.value)
+                it.setInt(3, stateEntity.version)
+                it.setString(4, stateEntity.metadata)
+                it.executeUpdate()
+            }
         }
     }
 
@@ -114,17 +106,22 @@ class StateManagerIntegrationTest {
         version: (index: Int, key: String) -> Int,
         stateContent: (index: Int, key: String) -> String,
         metadataContent: (index: Int, key: String) -> Metadata,
-    ) = entityManagerFactoryFactory.createEntityManager().use { em ->
+    ) = dataSource.connection.transaction { connection ->
         indexRange.forEach { i ->
             val key = buildStateKey(i)
-            val loadedEntity = em.find(StateEntity::class.java, key)
+            val loadedEntity = connection
+                .prepareStatement(queryProvider.findStatesByKey(1))
+                .use {
+                    it.setString(1, key)
+                    it.executeQuery().resultSetAsStateEntityCollection()
+                }.elementAt(0)
 
             assertSoftly {
                 it.assertThat(loadedEntity.key).isEqualTo(key)
                 it.assertThat(loadedEntity.modifiedTime).isNotNull
                 it.assertThat(loadedEntity.version).isEqualTo(version(i, key))
                 it.assertThat(loadedEntity.value).isEqualTo((stateContent(i, key).toByteArray()))
-                it.assertThat(objectMapper.toMetadata(loadedEntity.metadata))
+                it.assertThat(objectMapper.convertToMetadata(loadedEntity.metadata))
                     .containsExactlyInAnyOrderEntriesOf(metadataContent(i, key))
             }
         }
@@ -189,7 +186,7 @@ class StateManagerIntegrationTest {
         val failures = stateManager.create(states)
         assertThat(failures).hasSize(failedSates)
         for (i in 1..failedSates) {
-            assertThat(failures[buildStateKey(i)]).isInstanceOf(PersistenceException::class.java)
+            assertThat(failures[buildStateKey(i)]).isInstanceOf(SQLException::class.java)
         }
         softlyAssertPersistedStateEntities(
             (failedSates + 1..totalStates),
@@ -228,29 +225,30 @@ class StateManagerIntegrationTest {
         }
     }
 
-    @ValueSource(ints = [1, 10])
+    @ValueSource(ints = [1, 5, 10, 20, 50])
     @ParameterizedTest(name = "can update existing states (batch size: {0})")
     fun canUpdateExistingStates(stateCount: Int) {
         persistStateEntities(
             (1..stateCount),
             { i, _ -> i },
             { i, _ -> "existingState_$i" },
-            { i, _ -> """{"k1": "v$i", "k2": $i}""" }
+            { i, _ -> """{"originalK1": "v$i", "originalK2": $i}""" }
         )
         val statesToUpdate = mutableSetOf<State>()
         for (i in 1..stateCount) {
             statesToUpdate.add(
-                State(buildStateKey(i), "state_$i$i".toByteArray(), i, metadata("1yek" to "1eulav"))
+                State(buildStateKey(i), "state_$i$i".toByteArray(), i, metadata("updatedK2" to "updatedV2"))
             )
         }
 
         val failedUpdates = stateManager.update(statesToUpdate)
+
         assertThat(failedUpdates).isEmpty()
         softlyAssertPersistedStateEntities(
             (1..stateCount),
             { i, _ -> i + 1 },
             { i, _ -> "state_$i$i" },
-            { _, _ -> metadata("1yek" to "1eulav") }
+            { _, _ -> metadata("updatedK2" to "updatedV2") }
         )
     }
 
@@ -311,7 +309,7 @@ class StateManagerIntegrationTest {
         )
     }
 
-    @ValueSource(ints = [1, 10])
+    @ValueSource(ints = [1, 5, 10, 20, 50])
     @ParameterizedTest(name = "can delete existing states (batch size: {0})")
     fun canDeleteExistingStates(stateCount: Int) {
         persistStateEntities(
@@ -402,7 +400,7 @@ class StateManagerIntegrationTest {
             buildStateKey(keyIndexRange.last)
         )
 
-        val filteredStates = stateManager.getUpdatedBetween(startTime, finishTime)
+        val filteredStates = stateManager.updatedBetween(IntervalFilter(startTime, finishTime))
         assertThat(filteredStates).hasSize(count)
 
         for (i in keyIndexRange) {
@@ -419,13 +417,58 @@ class StateManagerIntegrationTest {
                 it.assertThat(loadedState.metadata).containsExactlyInAnyOrderEntriesOf(emptyMap())
             }
         }
+
+        // Update half the states, filter by updated time and check results again
+        val keyUpdateIndexRange = 1..count / 2
+        val statesToUpdate = mutableSetOf<State>()
+        for (i in keyUpdateIndexRange) {
+            statesToUpdate.add(
+                State(
+                    buildStateKey(i),
+                    "updated_state_$i".toByteArray(),
+                    State.VERSION_INITIAL_VALUE,
+                    metadata("k1" to "v$i")
+                )
+            )
+        }
+
+        assertThat(stateManager.update(statesToUpdate)).isEmpty()
+        val (updateStartTime, updateFinishTime) = getIntervalBetweenEntities(
+            buildStateKey(keyUpdateIndexRange.first),
+            buildStateKey(keyUpdateIndexRange.last)
+        )
+
+        val filteredUpdateStates = stateManager.updatedBetween(IntervalFilter(updateStartTime, updateFinishTime))
+        assertThat(filteredUpdateStates).hasSize(count / 2)
+
+        for (i in keyUpdateIndexRange) {
+            val key = buildStateKey(i)
+            val loadedState = filteredUpdateStates[key]
+            assertThat(loadedState).isNotNull
+            loadedState!!
+
+            assertSoftly {
+                it.assertThat(loadedState.modifiedTime).isNotNull
+                it.assertThat(loadedState.value).isEqualTo("updated_state_$i".toByteArray())
+                it.assertThat(loadedState.key).isEqualTo(key)
+                it.assertThat(loadedState.version).isEqualTo(State.VERSION_INITIAL_VALUE + 1)
+                it.assertThat(loadedState.metadata).containsExactlyInAnyOrderEntriesOf(mutableMapOf("k1" to "v$i"))
+            }
+        }
     }
 
     private fun getIntervalBetweenEntities(startEntityKey: String, finishEntityKey: String): Pair<Instant, Instant> {
-        return entityManagerFactoryFactory.createEntityManager().transaction { em ->
+        return dataSource.connection.transaction { connection ->
+            val loadedEntities = connection.prepareStatement(queryProvider.findStatesByKey(2))
+                .use {
+                    it.setString(1, startEntityKey)
+                    it.setString(2, finishEntityKey)
+                    it.executeQuery().resultSetAsStateEntityCollection()
+                }
+
             Pair(
-                em.find(StateEntity::class.java, startEntityKey).modifiedTime,
-                em.find(StateEntity::class.java, finishEntityKey).modifiedTime
+                loadedEntities.elementAt(0).modifiedTime,
+                loadedEntities.elementAt(1).modifiedTime
             )
         }
     }
@@ -442,22 +485,145 @@ class StateManagerIntegrationTest {
         )
 
         // Numeric
-        assertThat(stateManager.find("number", Operation.Equals, count)).hasSize(1)
-        assertThat(stateManager.find("number", Operation.NotEquals, count)).hasSize(count - 1)
-        assertThat(stateManager.find("number", Operation.GreaterThan, count)).isEmpty()
-        assertThat(stateManager.find("number", Operation.LesserThan, count)).hasSize(count - 1)
+        assertThat(stateManager.findByMetadata(MetadataFilter("number", Operation.Equals, count))).hasSize(1)
+        assertThat(stateManager.findByMetadata(MetadataFilter("number", Operation.NotEquals, count))).hasSize(count - 1)
+        assertThat(stateManager.findByMetadata(MetadataFilter("number", Operation.GreaterThan, count))).isEmpty()
+        assertThat(stateManager.findByMetadata(MetadataFilter("number", Operation.LesserThan, count))).hasSize(count - 1)
 
         // String
-        assertThat(stateManager.find("string", Operation.Equals, "random_$count")).hasSize(1)
-        assertThat(stateManager.find("string", Operation.NotEquals, "random")).hasSize(count)
-        assertThat(stateManager.find("string", Operation.GreaterThan, "random_1")).hasSize(count - 1)
-        assertThat(stateManager.find("string", Operation.LesserThan, "random_1")).isEmpty()
+        assertThat(stateManager.findByMetadata(MetadataFilter("string", Operation.Equals, "random_$count"))).hasSize(1)
+        assertThat(stateManager.findByMetadata(MetadataFilter("string", Operation.NotEquals, "random"))).hasSize(count)
+        assertThat(stateManager.findByMetadata(MetadataFilter("string", Operation.GreaterThan, "random_1"))).hasSize(count - 1)
+        assertThat(stateManager.findByMetadata(MetadataFilter("string", Operation.LesserThan, "random_1"))).isEmpty()
 
         // Booleans
-        assertThat(stateManager.find("boolean", Operation.Equals, true)).hasSize(count / 2)
-        assertThat(stateManager.find("boolean", Operation.NotEquals, true)).hasSize(count / 2)
-        assertThat(stateManager.find("boolean", Operation.GreaterThan, false)).hasSize(count / 2)
-        assertThat(stateManager.find("boolean", Operation.LesserThan, false)).isEmpty()
+        assertThat(stateManager.findByMetadata(MetadataFilter("boolean", Operation.Equals, true))).hasSize(count / 2)
+        assertThat(stateManager.findByMetadata(MetadataFilter("boolean", Operation.NotEquals, true))).hasSize(count / 2)
+        assertThat(stateManager.findByMetadata(MetadataFilter("boolean", Operation.GreaterThan, false))).hasSize(count / 2)
+        assertThat(stateManager.findByMetadata(MetadataFilter("boolean", Operation.LesserThan, false))).isEmpty()
+    }
+
+    @Test
+    @DisplayName(value = "can filter states using multiple conjunctive comparisons on metadata values")
+    fun canFilterStatesUsingMultipleConjunctiveComparisonsOnMetadataValues() {
+        val count = 20
+        persistStateEntities(
+            (1..count),
+            { _, _ -> State.VERSION_INITIAL_VALUE },
+            { i, _ -> "state_$i" },
+            { i, _ -> """{ "number": $i, "boolean": ${i % 2 == 0}, "string": "random_$i" }""" }
+        )
+
+        assertThat(stateManager.findByMetadataMatchingAll(listOf(
+            MetadataFilter("number", Operation.GreaterThan, 5),
+            MetadataFilter("number", Operation.LesserThan, 7),
+            MetadataFilter("boolean", Operation.Equals, true),
+            MetadataFilter("string", Operation.Equals, "random_6"),
+        ))).hasSize(1)
+
+        assertThat(stateManager.findByMetadataMatchingAll(listOf(
+            MetadataFilter("number", Operation.GreaterThan, 5),
+            MetadataFilter("number", Operation.LesserThan, 7),
+            MetadataFilter("boolean", Operation.Equals, true),
+            MetadataFilter("string", Operation.Equals, "non_existing_value"),
+        ))).isEmpty()
+
+        assertThat(stateManager.findByMetadataMatchingAll(listOf(
+            MetadataFilter("number", Operation.GreaterThan, 0),
+            MetadataFilter("boolean", Operation.Equals, true),
+        ))).hasSize(count / 2)
+
+        assertThat(stateManager.findByMetadataMatchingAll(listOf(
+            MetadataFilter("number", Operation.NotEquals, 0),
+            MetadataFilter("string", Operation.Equals, "non_existing_key"),
+        ))).isEmpty()
+    }
+
+    @Test
+    @DisplayName(value = "can filter states using multiple disjunctive comparisons on metadata values")
+    fun canFilterStatesUsingMultipleDisjunctiveComparisonsOnMetadataValues() {
+        val count = 20
+        persistStateEntities(
+            (1..count),
+            { _, _ -> State.VERSION_INITIAL_VALUE },
+            { i, _ -> "state_$i" },
+            { i, _ -> """{ "number": $i, "boolean": ${i % 2 == 0}, "string": "random_$i" }""" }
+        )
+
+        assertThat(stateManager.findByMetadataMatchingAny(listOf(
+            MetadataFilter("number", Operation.Equals, 5),
+            MetadataFilter("number", Operation.Equals, 7),
+            MetadataFilter("string", Operation.Equals, "random_6"),
+        ))).hasSize(3)
+
+        assertThat(stateManager.findByMetadataMatchingAny(listOf(
+            MetadataFilter("number", Operation.GreaterThan, 5),
+            MetadataFilter("number", Operation.LesserThan, 7),
+        ))).hasSize(count)
+
+        assertThat(stateManager.findByMetadataMatchingAny(listOf(
+            MetadataFilter("boolean", Operation.Equals, false),
+            MetadataFilter("boolean", Operation.Equals, true),
+        ))).hasSize(count)
+
+        assertThat(stateManager.findByMetadataMatchingAny(listOf(
+            MetadataFilter("number", Operation.GreaterThan, 20),
+            MetadataFilter("boolean", Operation.Equals, true),
+        ))).hasSize(count / 2)
+
+        assertThat(stateManager.findByMetadataMatchingAny(listOf(
+            MetadataFilter("number", Operation.Equals, 0),
+            MetadataFilter("string", Operation.Equals, "non_existing_key"),
+        ))).isEmpty()
+    }
+
+    @Test
+    @DisplayName(value = "can filter states using simple comparisons on metadata values and last update time")
+    fun canFilterStatesUsingSimpleComparisonsOnMetadataValuesAndLastUpdatedTime() {
+        val count = 20
+        val half = count / 2
+        val keyIndexRange = 1..count
+        persistStateEntities(
+            (keyIndexRange),
+            { _, _ -> State.VERSION_INITIAL_VALUE },
+            { i, _ -> "state_$i" },
+            { i, _ -> """{ "number": $i }""" }
+        )
+        val (halfTime, finishTime) = getIntervalBetweenEntities(
+            buildStateKey(keyIndexRange.elementAt(half)),
+            buildStateKey(keyIndexRange.last)
+        )
+
+        assertThat(
+            stateManager.findUpdatedBetweenWithMetadataFilter(
+                IntervalFilter(halfTime, finishTime),
+                MetadataFilter("number", Operation.Equals, 1)
+            )
+        ).hasSize(0)
+        assertThat(
+            stateManager.findUpdatedBetweenWithMetadataFilter(
+                IntervalFilter(halfTime, finishTime),
+                MetadataFilter("number", Operation.NotEquals, 1)
+            )
+        ).hasSize(half)
+        assertThat(
+            stateManager.findUpdatedBetweenWithMetadataFilter(
+                IntervalFilter(halfTime, finishTime),
+                MetadataFilter("number", Operation.GreaterThan, half)
+            )
+        ).hasSize(half)
+        assertThat(
+            stateManager.findUpdatedBetweenWithMetadataFilter(
+                IntervalFilter(halfTime, finishTime),
+                MetadataFilter("number", Operation.LesserThan, count)
+            )
+        ).hasSize(half - 1)
+        assertThat(
+            stateManager.findUpdatedBetweenWithMetadataFilter(
+                IntervalFilter(finishTime, finishTime.plusSeconds(30)),
+                MetadataFilter("number", Operation.LesserThan, count)
+            )
+        ).isEmpty()
     }
 
     @AfterEach
@@ -467,6 +633,6 @@ class StateManagerIntegrationTest {
 
     @AfterAll
     fun cleanUp() {
-        entityManagerFactoryFactory.close()
+        dataSource.close()
     }
 }

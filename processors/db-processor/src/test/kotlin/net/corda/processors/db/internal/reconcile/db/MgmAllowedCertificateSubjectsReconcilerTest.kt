@@ -81,6 +81,7 @@ class MgmAllowedCertificateSubjectsReconcilerTest {
                 eq(MgmAllowedCertificateSubject::class.java),
                 eq(MgmAllowedCertificateSubject::class.java),
                 any(),
+                any(),
             )
         } doReturn reconciler
     }

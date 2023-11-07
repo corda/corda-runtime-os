@@ -1,11 +1,20 @@
 package net.corda.libs.statemanager.api
 
-import java.time.Instant
+import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinatorName
 
 /**
  * The [StateManager] provides functions to manage states within the underlying persistent storage.
  */
-interface StateManager : AutoCloseable {
+interface StateManager : Lifecycle {
+
+    /**
+     * The State Manager lifecycle coordinator identifier.
+     *
+     * There might be multiple State Manager instances within a single process, the [name] should identify each one
+     * uniquely so the [Lifecycle] library can be used to follow regular component events.
+     */
+    val name: LifecycleCoordinatorName
 
     /**
      * Persist new [states].
@@ -73,23 +82,56 @@ interface StateManager : AutoCloseable {
     fun delete(states: Collection<State>): Map<String, State>
 
     /**
-     * Retrieve all states that were updated for the last time between [start] (inclusive) and [finish] (inclusive).
+     * Retrieve all states that were updated for the last time between [IntervalFilter.start] (inclusive)
+     * and [IntervalFilter.finish] (inclusive). Only states that have been successfully committed and distributed
+     * within the underlying persistent storage are returned.
      *
-     * @param start Time filter lower bound (inclusive).
-     * @param finish Time filter upper bound (inclusive).
-     * @return States that were last updated between [start] and [finish] times.
+     * @param interval Time filter to use when searching for states.
+     * @return States that were last updated between [IntervalFilter.start] and [IntervalFilter.finish] times.
      */
-    fun getUpdatedBetween(start: Instant, finish: Instant): Map<String, State>
+    fun updatedBetween(interval: IntervalFilter): Map<String, State>
 
     /**
-     * Retrieve states based on custom [operation] to be executed against a single [key] within the [State.metadata].
-     * Only states that have been successfully committed and distributed within the underlying persistent
-     * storage are returned.
+     *  Retrieve all states that have a value associated with [MetadataFilter.key] in their [State.metadata] matching
+     *  the provided [MetadataFilter.value] when evaluated through [MetadataFilter.operation]. Only states that have
+     *  been successfully committed and distributed within the underlying persistent storage are returned.
      *
-     * @param key The name of the key in the [State.metadata] to apply the comparison on.
-     * @param operation The comparison operation to perform (">", "=", "<", "<>", etc.).
-     * @param value The value to compare against.
-     * @return states for which the [State.metadata] has [key] for which [value] matches [operation].
+     * @param filter Filter parameters to use when searching for states.
+     * @return states matching the specified filter.
      */
-    fun find(key: String, operation: Operation, value: Any): Map<String, State>
+    fun findByMetadata(filter: MetadataFilter) = findByMetadataMatchingAll(listOf(filter))
+
+    /**
+     * Retrieve all states exclusively matching all specified [filters]. Only states that have been successfully
+     * committed and distributed within the underlying persistent storage are returned.
+     *
+     * @param filters Filter parameters to use when searching for states.
+     * @return states matching the specified filter.
+     */
+    fun findByMetadataMatchingAll(filters: Collection<MetadataFilter>): Map<String, State>
+
+    /**
+     * Retrieve all states matching any of the [filters]. Only states that have been successfully committed
+     * and distributed within the underlying persistent storage are returned.
+     *
+     * @param filters Filter parameters to use when searching for states.
+     * @return states matching the specified filter.
+     */
+    fun findByMetadataMatchingAny(filters: Collection<MetadataFilter>): Map<String, State>
+
+    /**
+     * Retrieve all states, updated for the last time between [IntervalFilter.start] (inclusive) and
+     * [IntervalFilter.finish] (inclusive), that have a value associated with [MetadataFilter.key] in their
+     * [State.metadata] matching the provided [MetadataFilter.value] when evaluated through [MetadataFilter.operation].
+     * Only states that have been successfully committed and distributed within the underlying
+     * persistent storage are returned.
+     *
+     * @param intervalFilter Time filter to use when searching for states.
+     * @param metadataFilter Filter parameters to use when searching for states.
+     * @return states matching the specified filters.
+     */
+    fun findUpdatedBetweenWithMetadataFilter(
+        intervalFilter: IntervalFilter,
+        metadataFilter: MetadataFilter
+    ): Map<String, State>
 }

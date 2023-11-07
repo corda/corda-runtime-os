@@ -295,7 +295,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 logger.debug("Member roles: {}, notary keys: {}", roles, notaryKeys)
                 val groupReader = membershipGroupReaderProvider.getGroupReader(member)
                 val previousInfo = groupReader.lookup(member.x500Name, MembershipStatusFilter.ACTIVE_OR_SUSPENDED)
-                val memberContext = buildMemberContext(
+                val platformTransformedMemberContext = buildMemberContext(
                     context,
                     registrationId,
                     member,
@@ -306,11 +306,24 @@ class DynamicMemberRegistrationService @Activate constructor(
                     .toWire()
                 val registrationContext = buildRegistrationContext(context)
 
-                val publicKey = keyEncodingService.decodePublicKey(memberContext.getFirst(PARTY_SESSION_KEYS_PEM))
-                val signatureSpec = memberContext.getFirst(SESSION_KEYS_SIGNATURE_SPEC)
+                val publicKey = keyEncodingService.decodePublicKey(platformTransformedMemberContext.getFirst(PARTY_SESSION_KEYS_PEM))
+                val signatureSpec = platformTransformedMemberContext.getFirst(SESSION_KEYS_SIGNATURE_SPEC)
 
-                val signedMemberContext = sign(memberId, publicKey, signatureSpec, memberContext)
+                // This is the user provided part of registration context with transformations. It will be the member
+                // provided context of the member information after successful registration.
+                val signedPlatformTransformedMemberContext = sign(memberId, publicKey, signatureSpec, platformTransformedMemberContext)
+                // This is the context used during registration process, e.g. pre-auth tokens will be placed here.
                 val signedRegistrationContext = sign(memberId, publicKey, signatureSpec, registrationContext)
+                // This is the user provided part of registration context in its original form without any
+                // transformations.
+                val signedUserProvidedMemberContext = sign(
+                    memberId,
+                    publicKey,
+                    signatureSpec,
+                    context.filterNot {
+                        it.key == SERIAL || REGISTRATION_CONTEXT_FIELDS.contains(it.key)
+                    }.toWire()
+                )
 
                 val mgm = groupReader.lookup().firstOrNull { it.isMgm }
                     ?: throw IllegalArgumentException("Failed to look up MGM information.")
@@ -323,7 +336,7 @@ class DynamicMemberRegistrationService @Activate constructor(
 
                 val message = MembershipRegistrationRequest(
                     registrationId.toString(),
-                    signedMemberContext,
+                    signedPlatformTransformedMemberContext,
                     signedRegistrationContext,
                     serialInfo,
                 )
@@ -366,13 +379,17 @@ class DynamicMemberRegistrationService @Activate constructor(
                     memberId.value
                 )
 
+                // This call will update the serial information only, if the request got persisted before,
+                // in this scenario all the existing data in the persistence will remain the same, except the serial.
+                // If the request wasn't persisted before successfully, we will persist the whole here.
+                // We will persist here the platform transformed data in 5.2 as part of CORE-18001
                 val commands = membershipPersistenceClient.persistRegistrationRequest(
                     viewOwningIdentity = member,
                     registrationRequest = RegistrationRequest(
                         status = RegistrationStatus.SENT_TO_MGM,
                         registrationId = registrationId.toString(),
                         requester = member,
-                        memberContext = signedMemberContext,
+                        memberContext = signedUserProvidedMemberContext,
                         registrationContext = signedRegistrationContext,
                         serial = serialInfo,
                     )
@@ -487,7 +504,7 @@ class DynamicMemberRegistrationService @Activate constructor(
         private fun getTlsSubject(member: HoldingIdentity): Map<String, String> {
             return if (TlsType.getClusterType(configurationGetService::getSmartConfig) == TlsType.MUTUAL) {
                 val info =
-                    locallyHostedIdentitiesService.getIdentityInfo(member)
+                    locallyHostedIdentitiesService.pollForIdentityInfo(member)
                         ?: throw CordaRuntimeException(
                             "Member $member is not locally hosted. " +
                                     "If it had been configured, please retry the registration in a few seconds. " +
@@ -514,7 +531,11 @@ class DynamicMemberRegistrationService @Activate constructor(
             p2pEndpointVerifier.verifyContext(context)
             val isNotary = context.entries.any { it.key.startsWith(ROLES_PREFIX) && it.value == NOTARY_ROLE }
             context.keys.filter { ledgerIdRegex.matches(it) }.apply {
-                if (!isNotary) require(isNotEmpty()) { "No ledger key ID was provided." }
+                if (!isNotary) {
+                    require(isNotEmpty()) { "No ledger key ID was provided." }
+                } else {
+                    require(isEmpty()) { "A ledger key ID was provided for a notary virtual node." }
+                }
                 require(orderVerifier.isOrdered(this, 3)) { "Provided ledger key IDs are incorrectly numbered." }
                 this.forEach {
                     validateKey(it, context[it]!!)

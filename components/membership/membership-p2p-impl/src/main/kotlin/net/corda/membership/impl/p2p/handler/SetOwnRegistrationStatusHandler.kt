@@ -52,6 +52,6 @@ internal class SetOwnRegistrationStatusHandler(
             RegistrationStatus.FAILED -> RegistrationStatusV2.FAILED
             else -> throw IllegalArgumentException("Unknown status '${newStatus.name}' received.")
         }
-        return SetOwnRegistrationStatusV2(registrationId, status)
+        return SetOwnRegistrationStatusV2(registrationId, status, null)
     }
 }

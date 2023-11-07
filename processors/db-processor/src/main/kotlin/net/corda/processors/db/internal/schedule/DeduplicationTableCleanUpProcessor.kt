@@ -8,6 +8,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.orm.JpaEntitiesSet
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
+import net.corda.schema.Schemas
 import net.corda.utilities.debug
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -21,9 +22,6 @@ class DeduplicationTableCleanUpProcessor(
 ) : DurableProcessor<String, ScheduledTaskTrigger> {
     companion object {
         private val log = LoggerFactory.getLogger(DeduplicationTableCleanUpProcessor::class.java)
-
-        // Need to merge with `SchedulerProcessorImpl.DEDUPLICATION_TABLE_CLEAN_UP_TASK` but there isn't currently a good candidate module
-        private const val DEDUPLICATION_TABLE_CLEAN_UP_TASK = "deduplication-table-clean-up-task"
     }
 
     override val keyClass: Class<String>
@@ -36,7 +34,7 @@ class DeduplicationTableCleanUpProcessor(
         events
             .forEach {
                 val taskName = it.key
-                if (taskName == DEDUPLICATION_TABLE_CLEAN_UP_TASK) {
+                if (taskName == Schemas.ScheduledTask.SCHEDULED_TASK_NAME_DB_PROCESSOR) {
                     log.debug { "Cleaning up deduplication table for all vnodes" }
                     val startTime = System.nanoTime()
                     virtualNodeInfoReadService.getAll()

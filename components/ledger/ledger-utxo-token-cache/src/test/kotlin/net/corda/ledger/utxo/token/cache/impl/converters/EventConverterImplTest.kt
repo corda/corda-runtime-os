@@ -2,12 +2,14 @@ package net.corda.ledger.utxo.token.cache.impl.converters
 
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimQuery
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimRelease
+import net.corda.data.ledger.utxo.token.selection.data.TokenForceClaimRelease
 import net.corda.data.ledger.utxo.token.selection.data.TokenLedgerChange
 import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.ledger.utxo.token.cache.converters.EntityConverter
 import net.corda.ledger.utxo.token.cache.converters.EventConverterImpl
 import net.corda.ledger.utxo.token.cache.entities.ClaimQuery
 import net.corda.ledger.utxo.token.cache.entities.ClaimRelease
+import net.corda.ledger.utxo.token.cache.entities.ForceClaimRelease
 import net.corda.ledger.utxo.token.cache.entities.LedgerChange
 import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY
 import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
@@ -23,14 +25,16 @@ import java.math.BigDecimal
 class EventConverterImplTest {
 
     private val entityConverter = mock<EntityConverter>()
-    private val claimQuery = ClaimQuery("","", BigDecimal(0), "", "", POOL_KEY)
-    private val claimRelease = ClaimRelease("","", "", setOf(), POOL_KEY)
-    private val ledgerChange = LedgerChange(POOL_KEY,"","", "", listOf(), listOf())
+    private val claimQuery = ClaimQuery("", "", BigDecimal(0), "", "", POOL_KEY)
+    private val claimRelease = ClaimRelease("", "", "", setOf(), POOL_KEY)
+    private val forceClaimRelease = ForceClaimRelease("", POOL_KEY)
+    private val ledgerChange = LedgerChange(POOL_KEY, "", "", "", listOf(), listOf())
 
     @BeforeEach
     fun setup() {
         whenever(entityConverter.toClaimQuery(any(), any())).thenReturn(claimQuery)
         whenever(entityConverter.toClaimRelease(any(), any())).thenReturn(claimRelease)
+        whenever(entityConverter.toForceClaimRelease(any(), any())).thenReturn(forceClaimRelease)
         whenever(entityConverter.toLedgerChange(any(), any())).thenReturn(ledgerChange)
     }
 
@@ -56,6 +60,18 @@ class EventConverterImplTest {
         val outputEvent = EventConverterImpl(entityConverter).convert(inputEvent)
 
         assertThat(outputEvent).isSameAs(claimRelease)
+    }
+
+    @Test
+    fun `converts a TokenForceClaimRelease payload to a ForceClaimRelease event`() {
+        val inputEvent = TokenPoolCacheEvent().apply {
+            poolKey = POOL_CACHE_KEY
+            payload = TokenForceClaimRelease()
+        }
+
+        val outputEvent = EventConverterImpl(entityConverter).convert(inputEvent)
+
+        assertThat(outputEvent).isSameAs(forceClaimRelease)
     }
 
     @Test

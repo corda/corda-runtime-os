@@ -5,58 +5,62 @@ import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
-import net.corda.ledger.utxo.token.cache.converters.EntityConverterImpl
-import net.corda.ledger.utxo.token.cache.converters.EventConverterImpl
+import net.corda.ledger.utxo.token.cache.converters.EntityConverter
+import net.corda.ledger.utxo.token.cache.converters.EventConverter
 import net.corda.ledger.utxo.token.cache.entities.TokenEvent
 import net.corda.ledger.utxo.token.cache.entities.internal.TokenPoolCacheImpl
 import net.corda.ledger.utxo.token.cache.handlers.TokenBalanceQueryEventHandler
 import net.corda.ledger.utxo.token.cache.handlers.TokenClaimQueryEventHandler
 import net.corda.ledger.utxo.token.cache.handlers.TokenClaimReleaseEventHandler
 import net.corda.ledger.utxo.token.cache.handlers.TokenEventHandler
+import net.corda.ledger.utxo.token.cache.handlers.TokenForceClaimReleaseEventHandler
 import net.corda.ledger.utxo.token.cache.handlers.TokenLedgerChangeEventHandler
 import net.corda.ledger.utxo.token.cache.queries.impl.SqlQueryProviderTokens
 import net.corda.ledger.utxo.token.cache.repositories.impl.UtxoTokenRepositoryImpl
+import net.corda.ledger.utxo.token.cache.services.ClaimStateStoreCacheImpl
+import net.corda.ledger.utxo.token.cache.services.ClaimStateStoreFactoryImpl
 import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
 import net.corda.ledger.utxo.token.cache.services.SimpleTokenFilterStrategy
 import net.corda.ledger.utxo.token.cache.services.TokenCacheEventProcessor
+import net.corda.ledger.utxo.token.cache.services.TokenPoolCacheStateSerialization
+import net.corda.ledger.utxo.token.cache.services.TokenSelectionDelegatedProcessor
+import net.corda.ledger.utxo.token.cache.services.TokenSelectionDelegatedProcessorImpl
+import net.corda.ledger.utxo.token.cache.services.TokenSelectionMetricsImpl
 import net.corda.ledger.utxo.token.cache.services.internal.AvailableTokenServiceImpl
+import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.orm.JpaEntitiesRegistry
+import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
 
-@Suppress("LongParameterList", "Unused")
-@Component(service = [ TokenCacheEventProcessorFactory::class ])
-class TokenCacheEventProcessorFactoryImpl @Activate constructor(
-    @Reference
+@Suppress("LongParameterList")
+class TokenCacheEventProcessorFactoryImpl constructor(
     private val serviceConfiguration: ServiceConfiguration,
-    @Reference
     private val externalEventResponseFactory: ExternalEventResponseFactory,
-    @Reference
     private val virtualNodeInfoService: VirtualNodeInfoReadService,
-    @Reference
     private val dbConnectionManager: DbConnectionManager,
-    @Reference
-    private val jpaEntitiesRegistry: JpaEntitiesRegistry
+    private val jpaEntitiesRegistry: JpaEntitiesRegistry,
+    private val entityConverter: EntityConverter,
+    private val eventConverter: EventConverter,
+    private val serialization: TokenPoolCacheStateSerialization,
+    private val clock: Clock
 ) : TokenCacheEventProcessorFactory {
 
+    private val tokenPoolCache = TokenPoolCacheImpl()
+
     override fun create(): StateAndEventProcessor<TokenPoolCacheKey, TokenPoolCacheState, TokenPoolCacheEvent> {
-        val entityConverter = EntityConverterImpl(serviceConfiguration, UTCClock())
-        val eventConverter = EventConverterImpl(entityConverter)
         val recordFactory = RecordFactoryImpl(externalEventResponseFactory)
         val tokenFilterStrategy = SimpleTokenFilterStrategy()
         val sqlQueryProvider = SqlQueryProviderTokens()
         val utxoTokenRepository = UtxoTokenRepositoryImpl(sqlQueryProvider)
-        val tokenPoolCache = TokenPoolCacheImpl()
+        val tokenSelectionMetrics = TokenSelectionMetricsImpl(clock)
         val availableTokenService = AvailableTokenServiceImpl(
             virtualNodeInfoService,
             dbConnectionManager,
             jpaEntitiesRegistry,
             utxoTokenRepository,
-            serviceConfiguration
+            tokenSelectionMetrics
         )
 
         val eventHandlerMap = mapOf<Class<*>, TokenEventHandler<in TokenEvent>>(
@@ -64,14 +68,38 @@ class TokenCacheEventProcessorFactoryImpl @Activate constructor(
                 TokenClaimQueryEventHandler(
                     tokenFilterStrategy,
                     recordFactory,
-                    availableTokenService
+                    availableTokenService,
+                    serviceConfiguration
                 )
             ),
             createHandler(TokenClaimReleaseEventHandler(recordFactory)),
+            createHandler(TokenForceClaimReleaseEventHandler()),
             createHandler(TokenLedgerChangeEventHandler()),
             createHandler(TokenBalanceQueryEventHandler(recordFactory, availableTokenService)),
         )
-        return TokenCacheEventProcessor(eventConverter, entityConverter, tokenPoolCache, eventHandlerMap, externalEventResponseFactory)
+        return TokenCacheEventProcessor(
+            eventConverter,
+            entityConverter,
+            tokenPoolCache,
+            eventHandlerMap,
+            externalEventResponseFactory
+        )
+    }
+
+    override fun createDelegatedProcessor(
+        stateManager: StateManager,
+        processor: StateAndEventProcessor<TokenPoolCacheKey, TokenPoolCacheState, TokenPoolCacheEvent>
+    ): TokenSelectionDelegatedProcessor {
+        val claimStateStoreFactory = ClaimStateStoreFactoryImpl(stateManager, serialization, tokenPoolCache, clock)
+        val tokenSelectionMetrics = TokenSelectionMetricsImpl(UTCClock())
+        return TokenSelectionDelegatedProcessorImpl(
+            eventConverter,
+            entityConverter,
+            create(),
+            ClaimStateStoreCacheImpl(stateManager, serialization, claimStateStoreFactory, clock),
+            externalEventResponseFactory,
+            tokenSelectionMetrics
+        )
     }
 
     private inline fun <reified T : TokenEvent> createHandler(

@@ -2,6 +2,7 @@ package net.corda.cli.plugins.topicconfig
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
 import com.fasterxml.jackson.module.kotlin.KotlinFeature
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -11,8 +12,15 @@ import java.nio.charset.Charset
 import java.util.jar.JarEntry
 import java.util.jar.JarFile
 import picocli.CommandLine
+import java.nio.file.Files
+import java.nio.file.Paths
 
-@CommandLine.Command(name = "create", description = ["Create Kafka topics"], subcommands = [CreateScript::class, CreateConnect::class])
+@CommandLine.Command(
+    name = "create",
+    description = ["Create Kafka topics"],
+    subcommands = [Preview::class, CreateConnect::class],
+    mixinStandardHelpOptions = true
+)
 class Create(
     private val cl: ClassLoader = TopicPlugin.classLoader,
     private val resourceGetter: (String) -> List<URL> = { path -> cl.getResources(path).toList().filterNotNull() }
@@ -34,6 +42,12 @@ class Create(
     var partitionOverride: Int = 1
 
     @CommandLine.Option(
+        names = ["-o", "--overrides"],
+        description = ["Relative path of override Kafka topic configuration file in YAML format"]
+    )
+    var overrideFilePath: String? = null
+
+    @CommandLine.Option(
         names = ["-u", "--user"],
         description = ["One or more Corda workers and their respective Kafka users e.g. -u crypto=Charlie -u rest=Rob"]
     )
@@ -50,8 +64,45 @@ class Create(
         val topics: Map<String, TopicConfig>
     )
 
-    private val mapper: ObjectMapper = ObjectMapper(YAMLFactory()).registerModule(
-        KotlinModule.Builder()
+    data class PreviewTopicConfigurations(
+        val topics: List<PreviewTopicConfiguration>,
+        val acls: List<PreviewTopicACL>
+    )
+
+    data class OverrideTopicConfigurations(
+        val topics: List<OverrideTopicConfiguration>,
+        val acls: List<PreviewTopicACL>
+    )
+
+    data class PreviewTopicConfiguration(
+        val name: String,
+        val partitions: Int,
+        val replicas: Short,
+        val config: Map<String, String> = emptyMap()
+    )
+
+    data class OverrideTopicConfiguration(
+        val name: String,
+        val partitions: Int?,
+        val replicas: Short?,
+        val config: Map<String, String> = emptyMap()
+    )
+
+    data class PreviewTopicACL(
+        val topic: String,
+        val users: List<UserConfig>
+    )
+
+    data class UserConfig(
+        val name: String,
+        val operations: List<String>
+    )
+
+    val mapper: ObjectMapper = ObjectMapper(YAMLFactory()
+        .enable(YAMLGenerator.Feature.MINIMIZE_QUOTES)
+        .enable(YAMLGenerator.Feature.LITERAL_BLOCK_STYLE)
+        .disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER))
+        .registerModule(KotlinModule.Builder()
             .withReflectionCacheSize(512)
             .configure(KotlinFeature.NullToEmptyCollection, true)
             .configure(KotlinFeature.NullToEmptyMap, true)
@@ -71,6 +122,7 @@ class Create(
         "gateway" to listOf("p2pGateway", "combined"),
         "link-manager" to listOf("p2pLinkManager", "combined"),
         "persistence" to listOf("persistence", "combined"),
+        "tokenSelection" to listOf("tokenSelection", "combined"),
         "rest" to listOf("rest", "combined"),
         "uniqueness" to listOf("uniqueness", "combined")
     )
@@ -131,5 +183,76 @@ class Create(
             }
         }.toMap()
     }
+
+    fun getTopicConfigsForPreview(): PreviewTopicConfigurations {
+        return applyOverrides(getTopicConfigsForPreview(getTopicConfigs()))
+    }
+
+    fun applyOverrides(config: PreviewTopicConfigurations) : PreviewTopicConfigurations =
+        if (overrideFilePath == null) {
+            config
+        } else {
+            mergeConfigurations(
+                config,
+                applyPrefix(mapper.readValue(Files.readString(Paths.get(overrideFilePath!!))))
+            )
+        }
+
+    private fun applyPrefix(overrides: OverrideTopicConfigurations): OverrideTopicConfigurations =
+        OverrideTopicConfigurations(
+            overrides.topics.map { it.copy(name = topic!!.namePrefix + it.name) },
+            overrides.acls.map { it.copy(topic = topic!!.namePrefix + it.topic) }
+        )
+
+    fun getTopicConfigsForPreview(topicConfigurations: List<TopicConfig>): PreviewTopicConfigurations {
+        val topicConfigs = mutableListOf<PreviewTopicConfiguration>()
+        val acls = mutableListOf<PreviewTopicACL>()
+
+        topicConfigurations.forEach { topicConfig ->
+            val topicName = getTopicName(topicConfig)
+            topicConfigs.add(PreviewTopicConfiguration(topicName, partitionOverride, replicaOverride, topicConfig.config))
+
+            val usersReadAccess = getUsersForProcessors(topicConfig.consumers)
+            val usersWriteAccess = getUsersForProcessors(topicConfig.producers)
+
+            val users = (usersReadAccess + usersWriteAccess).toSet().map {
+                val operations = mutableListOf("describe")
+                if (it in usersWriteAccess)
+                    operations.add("write")
+                if (it in usersReadAccess)
+                    operations.add("read")
+                UserConfig(it, operations.reversed())
+            }
+
+            acls.add(PreviewTopicACL(topicName, users))
+        }
+
+        return PreviewTopicConfigurations(topicConfigs, acls)
+    }
+
+    private fun mergeConfigurations(source: PreviewTopicConfigurations, overrides: OverrideTopicConfigurations) =
+        PreviewTopicConfigurations(
+            overrides.topics.fold(source.topics, ::mergeTopicConfiguration),
+            overrides.acls.fold(source.acls, ::mergeTopicACL)
+        )
+
+    private fun mergeTopicConfiguration(source: List<PreviewTopicConfiguration>, override: OverrideTopicConfiguration) =
+        source.map {
+            if (it.name == override.name) {
+                PreviewTopicConfiguration(
+                    it.name,
+                    override.partitions ?: it.partitions,
+                    override.replicas ?: it.replicas,
+                    it.config + override.config
+                )
+            } else {
+                it
+            }
+        }.toList()
+
+    private fun mergeTopicACL(source: List<PreviewTopicACL>, override: PreviewTopicACL) =
+        source.map {
+            if (it.topic == override.topic) PreviewTopicACL(it.topic, it.users + override.users) else it
+        }.toList()
 
 }

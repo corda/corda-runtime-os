@@ -12,7 +12,7 @@ import net.corda.ledger.persistence.utxo.UtxoPersistenceService
 import net.corda.ledger.persistence.utxo.UtxoTransactionReader
 import net.corda.ledger.utxo.data.state.cast
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
-import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
+import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.persistence.common.exceptions.MissingAccountContextPropertyException
 import net.corda.persistence.common.getSerializationService
@@ -75,6 +75,9 @@ class UtxoTransactionReaderImpl(
     override val privacySalt: PrivacySalt
         get() = signedTransaction.wireTransaction.privacySalt
 
+    override val metadata: TransactionMetadataInternal
+        get() = signedTransaction.wireTransaction.metadata as TransactionMetadataInternal
+
     override val rawGroupLists: List<List<ByteArray>>
         get() = signedTransaction.wireTransaction.componentGroupLists
 
@@ -91,7 +94,7 @@ class UtxoTransactionReaderImpl(
             .withIndex()
             .filter { indexed -> visibleStatesSet.contains(indexed.index) }
             .associate { (index, value) ->
-                index to UtxoTransactionOutputDto(id.toString(), index, value.second, value.first).toStateAndRef(
+                index to UtxoVisibleTransactionOutputDto(id.toString(), index, value.second, value.first).toStateAndRef(
                     serializer
                 )
             }
@@ -118,4 +121,6 @@ class UtxoTransactionReaderImpl(
     }
 
     override fun getConsumedStateRefs(): List<StateRef> = wrappedWireTransaction.inputStateRefs
+
+    override fun getReferenceStateRefs(): List<StateRef> = wrappedWireTransaction.referenceStateRefs
 }

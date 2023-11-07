@@ -9,6 +9,7 @@ import net.corda.ledger.common.data.transaction.TransactionStatus.Companion.toTr
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.ledger.utxo.flow.impl.cache.StateAndRefCache
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindSignedLedgerTransactionWithStatus
+import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindTransactionIdsAndStatuses
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.FindTransactionWithStatus
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.PersistTransaction
 import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperationName.PersistTransactionIfDoesNotExist
@@ -16,6 +17,8 @@ import net.corda.ledger.utxo.flow.impl.persistence.LedgerPersistenceMetricOperat
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedLedgerTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindSignedLedgerTransactionParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionIdsAndStatusesExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionIdsAndStatusesParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionIfDoesNotExistExternalEventFactory
@@ -68,6 +71,14 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun findSignedTransaction(id: SecureHash, transactionStatus: TransactionStatus): UtxoSignedTransaction? {
+        return findSignedTransactionWithStatus(id, transactionStatus)?.first
+    }
+
+    @Suspendable
+    override fun findSignedTransactionWithStatus(
+        id: SecureHash,
+        transactionStatus: TransactionStatus
+    ): Pair<UtxoSignedTransaction?, TransactionStatus>? {
         return recordSuspendable({ ledgerPersistenceFlowTimer(FindTransactionWithStatus) }) @Suspendable {
             wrapWithPersistenceException {
                 externalEventExecutor.execute(
@@ -75,12 +86,29 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
                     FindTransactionParameters(id.toString(), transactionStatus)
                 )
             }.firstOrNull()?.let {
-                // Ignore the status returned from the database request. `FindTransaction` is an existing avro schema and discarding the
-                // returned status allows us to continue using it without upgrading issues.
-                val (transaction, _) = serializationService.deserialize<Pair<SignedTransactionContainer?, String?>>(it.array())
-                transaction?.toSignedTransaction()
+                val (transaction, status) = serializationService.deserialize<Pair<SignedTransactionContainer?, String?>>(it.array())
+                if (status == null)
+                    return@let null
+                transaction?.toSignedTransaction() to status.toTransactionStatus()
             }
         }
+    }
+
+    @Suspendable
+    override fun findTransactionIdsAndStatuses(ids: Collection<SecureHash>): Map<SecureHash, TransactionStatus> {
+        return recordSuspendable({ ledgerPersistenceFlowTimer(FindTransactionIdsAndStatuses) }) @Suspendable {
+            wrapWithPersistenceException {
+                externalEventExecutor.execute(
+                    FindTransactionIdsAndStatusesExternalEventFactory::class.java,
+                    FindTransactionIdsAndStatusesParameters(
+                        ids.map { it.toString() }
+                    )
+                )
+            }
+        }.firstOrNull()?.let {
+            serializationService.deserialize<Map<SecureHash, String>>(it.array())
+                .mapValues { (_, status) -> status.toTransactionStatus() }
+        } ?: emptyMap()
     }
 
     @Suspendable
@@ -99,8 +127,7 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
                     FindSignedLedgerTransactionExternalEventFactory::class.java,
                     FindSignedLedgerTransactionParameters(id.toString(), transactionStatus)
                 )
-            }.firstOrNull().let {
-                if (it == null) return@let null
+            }.firstOrNull()?.let {
                 val (transaction, status) = serializationService.deserialize<Pair<SignedLedgerTransactionContainer?, String?>>(it.array())
                 if (status == null)
                     return@let null

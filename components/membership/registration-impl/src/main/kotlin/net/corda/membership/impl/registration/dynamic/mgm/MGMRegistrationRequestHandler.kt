@@ -9,8 +9,8 @@ import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.SignedData
 import net.corda.data.membership.common.RegistrationRequestDetails
 import net.corda.data.membership.common.v2.RegistrationStatus
-import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.registration.RegistrationRequest
+import net.corda.membership.lib.toWire
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -34,13 +34,17 @@ internal class MGMRegistrationRequestHandler(
             logger.error("Failed to serialize key value pair list.")
         }
 
+    private val signatureWithKey = CryptoSignatureWithKey(ByteBuffer.wrap(byteArrayOf()), ByteBuffer.wrap(byteArrayOf()))
+    private val signatureSpec = CryptoSignatureSpec("", null, null)
+
     fun persistRegistrationRequest(
         registrationId: UUID,
         holdingIdentity: HoldingIdentity,
-        mgmInfo: SelfSignedMemberInfo,
+        context: Map<String, String>,
         serial: Long = 0L,
     ) {
         val serializedRegistrationContext = serialize(KeyValuePairList(emptyList()))
+        val serializedMemberContext = serialize(context.toWire())
 
         val registrationRequestPersistenceResult = membershipPersistenceClient.persistRegistrationRequest(
             viewOwningIdentity = holdingIdentity,
@@ -49,17 +53,14 @@ internal class MGMRegistrationRequestHandler(
                 registrationId = registrationId.toString(),
                 requester = holdingIdentity,
                 memberContext = SignedData(
-                    ByteBuffer.wrap(mgmInfo.memberContextBytes),
-                    mgmInfo.memberSignature,
-                    mgmInfo.memberSignatureSpec
+                    ByteBuffer.wrap(serializedMemberContext),
+                    signatureWithKey,
+                    signatureSpec,
                 ),
                 registrationContext = SignedData(
                     ByteBuffer.wrap(serializedRegistrationContext),
-                    CryptoSignatureWithKey(
-                        ByteBuffer.wrap(byteArrayOf()),
-                        ByteBuffer.wrap(byteArrayOf())
-                    ),
-                    CryptoSignatureSpec("", null, null)
+                    signatureWithKey,
+                    signatureSpec,
                 ),
                 serial = serial,
             )

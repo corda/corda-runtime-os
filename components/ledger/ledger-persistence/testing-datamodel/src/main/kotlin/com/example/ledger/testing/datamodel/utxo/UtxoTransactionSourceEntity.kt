@@ -2,7 +2,6 @@ package com.example.ledger.testing.datamodel.utxo
 
 import net.corda.v5.base.annotations.CordaSerializable
 import java.io.Serializable
-import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Embeddable
 import javax.persistence.Entity
@@ -35,17 +34,11 @@ data class UtxoTransactionSourceEntity(
     @get:Column(name = "leaf_idx", nullable = false)
     var leafIndex: Int,
 
-    @get:Column(name = "ref_transaction_id", nullable = false)
+    @get:Column(name = "source_state_transaction_id", nullable = false)
     var refTransactionId: String,
 
-    @get:Column(name = "ref_leaf_idx", nullable = false)
-    var refLeafIndex: Int,
-
-    @get:Column(name = "is_ref_input", nullable = false)
-    var isRefInput: Boolean,
-
-    @get:Column(name = "created", nullable = false)
-    var created: Instant
+    @get:Column(name = "source_state_idx", nullable = false)
+    var refLeafIndex: Int
 )
 
 @Embeddable

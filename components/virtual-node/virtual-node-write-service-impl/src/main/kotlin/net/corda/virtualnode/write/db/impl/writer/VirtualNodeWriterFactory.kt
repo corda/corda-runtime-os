@@ -144,7 +144,7 @@ internal class VirtualNodeWriterFactory(
                 externalMessagingRouteConfigGenerator,
                 cordaAvroSerializationFactory,
                 recordFactory,
-                groupPolicyParser
+                groupPolicyParser,
             ),
 
             VirtualNodeCreateRequest::class.java to CreateVirtualNodeOperationHandler(

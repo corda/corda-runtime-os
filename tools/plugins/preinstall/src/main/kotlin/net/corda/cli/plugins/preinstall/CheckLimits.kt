@@ -9,7 +9,11 @@ import net.corda.cli.plugins.preinstall.PreInstallPlugin.ResourceValues
 import picocli.CommandLine
 import picocli.CommandLine.Parameters
 
-@CommandLine.Command(name = "check-limits", description = ["Check the resource limits have been assigned correctly."])
+@CommandLine.Command(
+    name = "check-limits",
+    description = ["Check the resource limits have been assigned correctly."],
+    mixinStandardHelpOptions = true
+)
 class CheckLimits : Callable<Int>, PluginContext() {
 
     @Parameters(index = "0", description = ["YAML file containing resource limit overrides for the Corda install"])

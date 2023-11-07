@@ -11,13 +11,17 @@ import net.corda.cli.plugins.network.utils.PrintUtils.printJsonOutput
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import picocli.CommandLine
 
-@CommandLine.Command(name = "members", description = ["Shows the list of members on the network."])
+@CommandLine.Command(
+    name = "members",
+    description = ["Shows the list of members on the network."],
+    mixinStandardHelpOptions = true
+)
 class MemberLookup(private val output: Output = ConsoleOutput()) : RestCommand(), Runnable {
 
     @CommandLine.Option(
         names = ["-h", "--holding-identity-short-hash"],
         arity = "1",
-        description = ["Short hash of the holding identity to be checked."]
+        description = ["Short hash of the holding identity performing the lookup."]
     )
     var holdingIdentityShortHash: String? = null
 
@@ -91,7 +95,7 @@ class MemberLookup(private val output: Output = ConsoleOutput()) : RestCommand()
         val holdingIdentity = getHoldingIdentity(holdingIdentityShortHash, name, group)
         val result: List<RestMemberInfo> = createRestClient(MemberLookupRestResource::class).use { client ->
             val memberLookupProxy = client.start().proxy
-            memberLookupProxy.lookup(
+            memberLookupProxy.lookupV51(
                 holdingIdentity,
                 commonName,
                 organization,

@@ -1,6 +1,5 @@
 package net.corda.ledger.utxo.flow.impl.transaction.serializer.amqp
 
-import net.corda.crypto.core.SecureHashImpl
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.test.UtxoLedgerTest
@@ -58,7 +57,6 @@ class UtxoSignedTransactionSerializerTest : UtxoLedgerTest() {
             .addReferenceState(referenceStateRef)
             .addSignatories(listOf(publicKeyExample))
             .addCommand(UtxoCommandExample())
-            .addAttachment(SecureHashImpl("SHA-256", ByteArray(12)))
             .toSignedTransaction()
 
         val bytes = serializationService.serialize(signedTx)

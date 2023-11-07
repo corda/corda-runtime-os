@@ -1,7 +1,6 @@
 package com.example.ledger.testing.datamodel.utxo
 
 import java.io.Serializable
-import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Embeddable
 import javax.persistence.Entity
@@ -35,10 +34,7 @@ data class UtxoTransactionComponentEntity(
     var data: ByteArray,
 
     @get:Column(name = "hash", nullable = false)
-    var hash: String,
-
-    @get:Column(name = "created", nullable = false)
-    var created: Instant
+    var hash: String
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -51,7 +47,6 @@ data class UtxoTransactionComponentEntity(
         if (leafIndex != other.leafIndex) return false
         if (!data.contentEquals(other.data)) return false
         if (hash != other.hash) return false
-        if (created != other.created) return false
 
         return true
     }
@@ -62,7 +57,6 @@ data class UtxoTransactionComponentEntity(
         result = 31 * result + leafIndex
         result = 31 * result + data.contentHashCode()
         result = 31 * result + hash.hashCode()
-        result = 31 * result + created.hashCode()
         return result
     }
 }

@@ -11,10 +11,12 @@ import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.v5.base.util.EncodingUtils.toHex
 import org.slf4j.LoggerFactory
+import java.lang.IllegalStateException
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
+import javax.persistence.PersistenceException
 import javax.persistence.Tuple
 
 /**
@@ -92,6 +94,55 @@ class HSMRepositoryImpl(
             em.merge(categoryAssociation).toHSMAssociation()
         }.also {
             logger.trace("Stored tenant association $tenantId $category with wrapping key alias ${it.masterKeyAlias}")
+        }
+    }
+
+    override fun createOrLookupCategoryAssociation(
+        tenantId: String,
+        category: String,
+        masterKeyPolicy: MasterKeyPolicy
+    ): HSMAssociationInfo = entityManagerFactory.createEntityManager().use {
+        try {
+            it.transaction { em ->
+                val association =
+                    findHSMAssociationEntity(em, tenantId)
+                        ?: createAndPersistAssociation(em, tenantId, CryptoConsts.SOFT_HSM_ID, masterKeyPolicy)
+
+                val tenantAssociation = findTenantAssociation(tenantId, category)
+                if (tenantAssociation == null) {
+                    val newAssociation = HSMCategoryAssociationEntity(
+                        id = UUID.randomUUID().toString(),
+                        tenantId = tenantId,
+                        category = category,
+                        timestamp = Instant.now(),
+                        hsmAssociation = association,
+                        deprecatedAt = 0
+                    )
+                    em.merge(newAssociation).toHSMAssociation().also {
+                        logger.trace(
+                            "Stored tenant category association $tenantId $category with wrapping key alias " +
+                                    it.masterKeyAlias
+                        )
+                    }
+                } else {
+                    logger.trace(
+                        "Reusing tenant category association $tenantId $category with wrapping key alias " +
+                                tenantAssociation.masterKeyAlias
+                    )
+                    tenantAssociation
+                }
+            }
+        } catch(e: PersistenceException) {
+            val match = e.cause?.message?.contains("ConstraintViolationException") ?: false
+            // NOTE: this is not great, but we must be able to detect a constraint violation in case
+            //  of a race condition, however, the JPA exception type doesn't give us enough info, so we check
+            //  the hibernate generated message.
+            if (match) {
+                findTenantAssociation(tenantId, category)
+                    ?: throw IllegalStateException("unable to find tenant assocation $tenantId:$category after constraint violation")
+            } else {
+                throw e
+            }
         }
     }
 

@@ -1,6 +1,5 @@
 package net.corda.messaging.subscription
 
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.deadletter.StateAndEventDeadLetterRecord
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -14,6 +13,7 @@ import net.corda.messaging.api.chunking.ChunkSerializerService
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.listener.StateAndEventListener
@@ -30,9 +30,8 @@ import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.getDLQTopic
 import net.corda.schema.Schemas.getStateAndEventStateTopic
 import net.corda.utilities.debug
-import org.osgi.service.component.annotations.Reference
+import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
-import java.net.http.HttpClient
 import java.nio.ByteBuffer
 import java.time.Clock
 import java.util.UUID
@@ -46,8 +45,6 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val chunkSerializerService: ChunkSerializerService,
     private val stateAndEventListener: StateAndEventListener<K, S>? = null,
-    @Reference(service = CordaAvroSerializationFactory::class)
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val clock: Clock = Clock.systemUTC(),
 ) : StateAndEventSubscription<K, S, E> {
 
@@ -93,12 +90,6 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
         .build()
 
-    private val httpClient: HttpClient = HttpClient.newBuilder()
-        .connectTimeout(java.time.Duration.ofSeconds(10))
-        .build()
-
-    private val avroSerializer = cordaAvroSerializationFactory.createAvroSerializer<Any> { }
-    private val avroDeserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
 
     /**
      * Is the subscription running.
@@ -197,7 +188,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         var keepProcessing = true
         while (keepProcessing && !threadLooper.loopStopped) {
             try {
-                log.debug { "Polling and processing events" }
+                log.trace { "Polling and processing events" }
                 var rebalanceOccurred = false
                 val records = stateAndEventConsumer.pollEvents()
                 val batches = getEventsByBatch(records).iterator()
@@ -287,7 +278,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         val state = updatedStates[event.partition]?.get(event.key)
         val partitionId = event.partition
         val thisEventUpdates = getUpdatesForEvent(state, event)
-        val updatedState = thisEventUpdates?.updatedState
+        val updatedState = thisEventUpdates?.updatedState?.value
 
 
         when {
@@ -340,7 +331,12 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
 
     private fun getUpdatesForEvent(state: S?, event: CordaConsumerRecord<K, E>): StateAndEventProcessor.Response<S>? {
         val future = stateAndEventConsumer.waitForFunctionToFinish(
-            { processor.onNext(state, event.toRecord()) }, config.processorTimeout.toMillis(),
+            {
+                processor.onNext(
+                    State(state, metadata = null),
+                    event.toRecord()
+                )
+            }, config.processorTimeout.toMillis(),
             "Failed to finish within the time limit for state: $state and event: $event"
         )
         @Suppress("unchecked_cast")

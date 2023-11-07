@@ -5,7 +5,6 @@ import net.corda.application.addon.CordaAddonResolver
 import net.corda.application.banner.StartupBanner
 import net.corda.applications.workers.db.DBWorker
 import net.corda.applications.workers.workercommon.ApplicationBanner
-import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
@@ -13,6 +12,9 @@ import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.libs.platform.PlatformInfoProvider
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.registry.CoordinatorStatus
+import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.db.DBProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_DB
@@ -52,9 +54,8 @@ class ConfigTests {
         val dbWorker = DBWorker(
             dbProcessor,
             mock(),
-            mock(),
             DummyShutdown(),
-            DummyWorkerMonitor(),
+            DummyLifecycleRegistry(),
             DummyWebServer(),
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
@@ -97,9 +98,8 @@ class ConfigTests {
         val dbWorker = DBWorker(
             dbProcessor,
             mock(),
-            mock(),
             DummyShutdown(),
-            DummyWorkerMonitor(),
+            DummyLifecycleRegistry(),
             DummyWebServer(),
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
@@ -108,7 +108,6 @@ class ConfigTests {
         )
 
         val args = defaultArgs + arrayOf(
-            FLAG_DISABLE_MONITOR,
             FLAG_MONITOR_PORT, "9999"
         )
         dbWorker.startup(args.toTypedArray())
@@ -132,9 +131,8 @@ class ConfigTests {
         val dbWorker = DBWorker(
             dbProcessor,
             mock(),
-            mock(),
             DummyShutdown(),
-            DummyWorkerMonitor(),
+            DummyLifecycleRegistry(),
             DummyWebServer(),
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
@@ -165,9 +163,8 @@ class ConfigTests {
         val dbWorker = DBWorker(
             dbProcessor,
             mock(),
-            mock(),
             DummyShutdown(),
-            DummyWorkerMonitor(),
+            DummyLifecycleRegistry(),
             DummyWebServer(),
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
@@ -192,9 +189,8 @@ class ConfigTests {
         val dbWorker = DBWorker(
             dbProcessor,
             mock(),
-            mock(),
             DummyShutdown(),
-            DummyWorkerMonitor(),
+            DummyLifecycleRegistry(),
             DummyWebServer(),
             DummyValidatorFactory(),
             DummyPlatformInfoProvider(),
@@ -228,9 +224,11 @@ class ConfigTests {
         override fun shutdown(bundle: Bundle) = Unit
     }
 
-    /** A no-op [WorkerMonitor]. */
-    private class DummyWorkerMonitor : WorkerMonitor {
-        override fun registerEndpoints(workerType: String) = Unit
+    private class DummyLifecycleRegistry : LifecycleRegistry {
+        override fun componentStatus(): Map<LifecycleCoordinatorName, CoordinatorStatus> {
+            TODO("Not yet implemented")
+        }
+
     }
 
     private class DummyWebServer : WebServer {

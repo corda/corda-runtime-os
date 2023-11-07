@@ -1,13 +1,13 @@
 package net.corda.ledger.utxo.flow.impl.transaction.factory.impl
 
 import net.corda.crypto.core.parseSecureHash
+import net.corda.flow.application.GroupParametersLookupInternal
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
-import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
+import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
-import net.corda.flow.application.GroupParametersLookupInternal
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
@@ -16,7 +16,6 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.utxo.ContractState
-import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -39,7 +38,7 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
     @Suspendable
     override fun create(
         wireTransaction: WireTransaction
-    ): UtxoLedgerTransaction {
+    ): UtxoLedgerTransactionInternal {
         val wrappedUtxoWireTransaction = WrappedUtxoWireTransaction(wireTransaction, serializationService)
         val allStateRefs =
             (wrappedUtxoWireTransaction.inputStateRefs + wrappedUtxoWireTransaction.referenceStateRefs)
@@ -69,8 +68,8 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
 
     override fun create(
         wireTransaction: WireTransaction,
-        inputStateAndRefs: List<UtxoTransactionOutputDto>,
-        referenceStateAndRefs: List<UtxoTransactionOutputDto>
+        inputStateAndRefs: List<UtxoVisibleTransactionOutputDto>,
+        referenceStateAndRefs: List<UtxoVisibleTransactionOutputDto>
     ): UtxoLedgerTransactionInternal {
         return UtxoLedgerTransactionImpl(
             WrappedUtxoWireTransaction(wireTransaction, serializationService),

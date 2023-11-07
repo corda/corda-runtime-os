@@ -154,7 +154,7 @@ class MGMRegistrationService @Activate constructor(
         private val mgmRegistrationGroupPolicyHandler = MGMRegistrationGroupPolicyHandler(
             layeredPropertyMapFactory,
             membershipPersistenceClient,
-            membershipQueryClient
+            membershipQueryClient,
         )
         private val mgmRegistrationOutputPublisher = MGMRegistrationOutputPublisher(memberInfoFactory)
 
@@ -194,13 +194,14 @@ class MGMRegistrationService @Activate constructor(
                         context
                     )
 
-                    // Persist group parameters snapshot
-                    val groupParametersPersistenceResult = membershipPersistenceClient
-                        .persistGroupParametersInitialSnapshot(member).execute()
-                    if (groupParametersPersistenceResult is MembershipPersistenceResult.Failure) {
-                        throw NotReadyMembershipRegistrationException(groupParametersPersistenceResult.errorMsg)
-                    }
-                    mgmRegistrationRequestHandler.persistRegistrationRequest(registrationId, member, mgmInfo)
+                // Persist group parameters snapshot
+                val groupParametersPersistenceResult =
+                    membershipPersistenceClient.persistGroupParametersInitialSnapshot(member)
+                        .execute()
+                if (groupParametersPersistenceResult is MembershipPersistenceResult.Failure) {
+                    throw NotReadyMembershipRegistrationException(groupParametersPersistenceResult.errorMsg)
+                }
+                mgmRegistrationRequestHandler.persistRegistrationRequest(registrationId, member, context)
 
                     // Publish group parameters to Kafka
                     val groupParameters = groupParametersPersistenceResult.getOrThrow()

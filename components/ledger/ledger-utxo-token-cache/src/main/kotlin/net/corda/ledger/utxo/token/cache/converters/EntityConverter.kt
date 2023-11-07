@@ -5,6 +5,7 @@ import net.corda.data.ledger.utxo.token.selection.data.TokenAmount
 import net.corda.data.ledger.utxo.token.selection.data.TokenBalanceQuery
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimQuery
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimRelease
+import net.corda.data.ledger.utxo.token.selection.data.TokenForceClaimRelease
 import net.corda.data.ledger.utxo.token.selection.data.TokenLedgerChange
 import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
 import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
@@ -12,6 +13,7 @@ import net.corda.ledger.utxo.token.cache.entities.BalanceQuery
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.ClaimQuery
 import net.corda.ledger.utxo.token.cache.entities.ClaimRelease
+import net.corda.ledger.utxo.token.cache.entities.ForceClaimRelease
 import net.corda.ledger.utxo.token.cache.entities.LedgerChange
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
@@ -59,6 +61,19 @@ interface EntityConverter {
      * @return An instance of [ClaimRelease]
      */
     fun toClaimRelease(avroPoolKey: TokenPoolCacheKey, tokenClaimRelease: TokenClaimRelease): ClaimRelease
+
+    /**
+     * Creates a [ForceClaimRelease] from an Avro [TokenForceClaimRelease]
+     *
+     * @param avroPoolKey The pool key the claim release is for
+     * @param tokenClaimRelease The Avro representation of a claim release
+     *
+     * @return An instance of [ForceClaimRelease]
+     */
+    fun toForceClaimRelease(
+        avroPoolKey: TokenPoolCacheKey,
+        tokenClaimRelease: TokenForceClaimRelease
+    ): ForceClaimRelease
 
     fun toBalanceQuery(avroPoolKey: TokenPoolCacheKey, tokenBalanceQuery: TokenBalanceQuery): BalanceQuery
 

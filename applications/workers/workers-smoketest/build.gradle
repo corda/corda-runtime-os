@@ -69,7 +69,6 @@ dependencies {
     upgradeTestingCpiV2 project(path: ':testing:cpbs:test-cordapp-for-vnode-upgrade-testing-v2', configuration: 'cordaCPB')
 
     smokeTestImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    smokeTestImplementation "org.eclipse.jetty.websocket:websocket-client:$jettyVersion"
     smokeTestImplementation "org.slf4j:slf4j-api:$slf4jVersion"
 
     smokeTestImplementation project(':components:flow:flow-rest-resource-service')
@@ -84,7 +83,6 @@ dependencies {
     smokeTestImplementation project(":testing:packaging-test-utilities")
     smokeTestImplementation project(':testing:test-utilities')
     smokeTestImplementation project(":testing:uniqueness:uniqueness-utilities")
-
     smokeTestRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
     smokeTestRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 }
@@ -148,8 +146,10 @@ tasks.register('smokeTest', Test) {
     println "DB worker url: $dbWorkerUrl"
     def persistenceWorkerUrl = project.getProperties().getOrDefault("persistenceWorkerUrl", combinedWorker ? combinedWorkerUrl : "http://localhost:7007/")
     systemProperty "persistenceWorkerUrl", persistenceWorkerUrl
-    println "Persistence worker url: $persistenceWorkerUrl"
-    def uniquenessWorkerUrl = project.getProperties().getOrDefault("uniquenessWorkerUrl", combinedWorker ? combinedWorkerUrl : "http://localhost:7008/")
+    def tokenSelectionWorkerUrl = project.getProperties().getOrDefault("tokenSelectionWorkerUrl", combinedWorker ? combinedWorkerUrl : "http://localhost:7008/")
+    systemProperty "tokenSelectionWorkerUrl", tokenSelectionWorkerUrl
+    println "tokenSelection worker url: $tokenSelectionWorkerUrl"
+    def uniquenessWorkerUrl = project.getProperties().getOrDefault("uniquenessWorkerUrl", combinedWorker ? combinedWorkerUrl : "http://localhost:7009/")
     systemProperty "uniquenessWorkerUrl", uniquenessWorkerUrl
 
     jvmArgs '--add-opens', 'java.base/java.lang.reflect=ALL-UNNAMED'

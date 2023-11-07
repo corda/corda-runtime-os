@@ -12,9 +12,13 @@ import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
+import net.corda.flow.state.impl.CheckpointMetadataKeys.STATE_META_SESSION_EXPIRY_KEY
+import net.corda.libs.statemanager.api.Metadata
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
+import net.corda.schema.configuration.FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW
 import net.corda.schema.configuration.FlowConfig.SESSION_FLOW_CLEANUP_TIME
+import net.corda.schema.configuration.FlowConfig.SESSION_TIMEOUT_WINDOW
 import net.corda.session.manager.SessionManager
 import net.corda.utilities.debug
 import net.corda.v5.base.types.MemberX500Name
@@ -22,6 +26,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.time.Duration
 import java.time.Instant
 
 @Component(service = [FlowGlobalPostProcessor::class])
@@ -53,8 +58,12 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
                 postProcessRetries(context)
 
         context.flowMetrics.flowEventCompleted(context.inputEvent.payload::class.java.name)
+        val metadata = getStateMetadata(context)
 
-        return context.copy(outputRecords = context.outputRecords + outputRecords)
+        return context.copy(
+            outputRecords = context.outputRecords + outputRecords,
+            metadata = metadata
+        )
     }
 
     private fun getSessionEvents(context: FlowEventContext<Any>, now: Instant): List<Record<*, FlowMapperEvent>> {
@@ -147,15 +156,15 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
     }
 
     /**
-     * Check to see if any external events needs to be sent or resent due to no response being received within a given time period.
+     * Check to see if any external events needs to be sent or resent.
      */
     private fun getExternalEvent(context: FlowEventContext<Any>, now: Instant): List<Record<*, *>> {
-        val config = context.flowConfig
         val externalEventState = context.checkpoint.externalEventState
         return if (externalEventState == null) {
             listOf()
         } else {
-            externalEventManager.getEventToSend(externalEventState, now, config)
+            val retryWindow = context.flowConfig.getLong(EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW)
+            externalEventManager.getEventToSend(externalEventState, now, Duration.ofMillis(retryWindow))
                 .let { (updatedExternalEventState, record) ->
                     context.checkpoint.externalEventState = updatedExternalEventState
                     if (record != null) {
@@ -193,5 +202,29 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
 
         val status = flowMessageFactory.createFlowStartedStatusMessage(checkpoint)
         return listOf(flowRecordFactory.createFlowStatusRecord(status))
+    }
+
+    private fun getStateMetadata(context: FlowEventContext<Any>): Metadata? {
+        val checkpoint = context.checkpoint
+        // Find the earliest expiry time for any open sessions.
+        val lastReceivedMessageTime = checkpoint.sessions.filter {
+            it.status == SessionStateType.CREATED || it.status == SessionStateType.CONFIRMED
+        }.minByOrNull { it.lastReceivedMessageTime }?.lastReceivedMessageTime
+
+        return if (lastReceivedMessageTime != null) {
+            // Add the metadata key if there are any open sessions.
+            val expiryTime = lastReceivedMessageTime + Duration.ofMillis(
+                context.flowConfig.getLong(SESSION_TIMEOUT_WINDOW)
+            )
+            val newMap = mapOf(STATE_META_SESSION_EXPIRY_KEY to expiryTime.epochSecond)
+            context.metadata?.let {
+                Metadata(it + newMap)
+            } ?: Metadata(newMap)
+        } else {
+            // If there are no open sessions, remove the metadata key.
+            context.metadata?.let {
+                Metadata(it - STATE_META_SESSION_EXPIRY_KEY)
+            }
+        }
     }
 }

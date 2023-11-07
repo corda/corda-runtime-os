@@ -2,7 +2,7 @@ package net.corda.flow.testing.tests
 
 import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.testing.context.ALICE_FLOW_KEY
+import net.corda.flow.testing.context.ALICE_FLOW_KEY_MAPPER
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.startFlow
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -45,7 +45,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
 
         then {
             expectOutputForFlow(FLOW_ID1) {
-                scheduleFlowMapperCleanupEvents(ALICE_FLOW_KEY)
+                scheduleFlowMapperCleanupEvents(ALICE_FLOW_KEY_MAPPER)
             }
         }
     }
@@ -73,7 +73,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
             }
 
             expectOutputForFlow(FLOW_ID1) {
-                scheduleFlowMapperCleanupEvents(ALICE_FLOW_KEY, SESSION_ID_1)
+                scheduleFlowMapperCleanupEvents(ALICE_FLOW_KEY_MAPPER, SESSION_ID_1)
                 sessionCloseEvents()
             }
         }
@@ -96,7 +96,7 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
         then {
             expectOutputForFlow(FLOW_ID1) {
                 sessionDataEvents(Pair(SESSION_ID_1, DATA_MESSAGE_1))
-                scheduleFlowMapperCleanupEvents(ALICE_FLOW_KEY, SESSION_ID_1)
+                scheduleFlowMapperCleanupEvents(ALICE_FLOW_KEY_MAPPER, SESSION_ID_1)
                 sessionCloseEvents()
             }
         }

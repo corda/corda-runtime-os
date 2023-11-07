@@ -1,6 +1,5 @@
 package net.corda.ledger.utxo.flow.impl.flows.backchain.v1
 
-import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackChainResolutionVersion
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.sandbox.CordaSystemFlow
@@ -15,23 +14,20 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 /**
- * The V2 protocol is an extension of the V1 protocol, which can be enabled via a switch (on both sides).
- * In order to avoid huge code duplication, we kept V1 class implementing both protocols and added a switch that makes
- * it behave according to the V2 protocol.
+ * V1 changed slightly between 5.0 and 5.1. (5.1 supports distributing SignedGroupParameters.)
+ * This change is not managed through flow versioning since flow interoperability is not supported between these versions.
  */
 
 @CordaSystemFlow
 class TransactionBackchainSenderFlowV1(
     private val headTransactionIds: Set<SecureHash>,
-    private val session: FlowSession,
-    val version: TransactionBackChainResolutionVersion
+    private val session: FlowSession
 ) : SubFlow<Unit> {
 
     constructor (
         headTransactionId: SecureHash,
-        session: FlowSession,
-        version: TransactionBackChainResolutionVersion
-    ) : this(setOf(headTransactionId), session, version)
+        session: FlowSession
+    ) : this(setOf(headTransactionId), session)
 
     private companion object {
         val log: Logger = LoggerFactory.getLogger(TransactionBackchainSenderFlowV1::class.java)
@@ -78,14 +74,6 @@ class TransactionBackchainSenderFlowV1(
 
     @Suspendable
     private fun handleSignedGroupParametersRequest(request: TransactionBackchainRequestV1.GetSignedGroupParameters) {
-        if (version == TransactionBackChainResolutionVersion.V1) {
-            // V1 fails earlier with deserialization anyway in the case of SignedGroupParameters requests.
-            val message =
-                "Backchain resolution of $headTransactionIds - GetSignedGroupParameters is " +
-                        "not available in TransactionBackchainSenderFlowV1 V1"
-            log.warn(message)
-            throw CordaRuntimeException(message)
-        }
         val signedGroupParameters =
             utxoLedgerGroupParametersPersistenceService.find(request.groupParametersHash)
                 ?: throw CordaRuntimeException(

@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.utxo.impl
 
+import net.corda.crypto.core.parseSecureHash
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.SignedGroupParameters
@@ -10,13 +11,14 @@ import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.persistence.common.mapToComponentGroups
 import net.corda.ledger.persistence.utxo.CustomRepresentation
 import net.corda.ledger.persistence.utxo.UtxoRepository
-import net.corda.ledger.utxo.data.transaction.UtxoTransactionOutputDto
+import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
 import net.corda.sandbox.type.SandboxConstants.CORDA_MARKER_ONLY_SERVICE
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.utilities.debug
 import net.corda.utilities.serialization.deserialize
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.StateRef
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -58,9 +60,9 @@ class UtxoRepositoryImpl @Activate constructor(
         entityManager: EntityManager,
         id: String
     ): SignedTransactionContainer? {
-        val privacySalt = findTransactionPrivacySalt(entityManager, id) ?: return null
+        val (privacySalt, metadataBytes) = findTransactionPrivacySaltAndMetadata(entityManager, id) ?: return null
         val wireTransaction = wireTransactionFactory.create(
-            findTransactionComponentLeafs(entityManager, id),
+            mapOf(0 to listOf(metadataBytes)) + findTransactionComponentLeafs(entityManager, id),
             privacySalt
         )
         return SignedTransactionContainer(
@@ -69,14 +71,30 @@ class UtxoRepositoryImpl @Activate constructor(
         )
     }
 
-    private fun findTransactionPrivacySalt(
+    override fun findTransactionIdsAndStatuses(
+        entityManager: EntityManager,
+        transactionIds: List<String>
+    ): Map<SecureHash, String> {
+        return entityManager.createNativeQuery(
+            """
+                SELECT id, status 
+                FROM {h-schema}utxo_transaction 
+                WHERE id IN (:transactionIds)""",
+            Tuple::class.java
+        )
+            .setParameter("transactionIds", transactionIds)
+            .resultListAsTuples()
+            .associate { r -> parseSecureHash(r.get(0) as String) to r.get(1) as String }
+    }
+
+    private fun findTransactionPrivacySaltAndMetadata(
         entityManager: EntityManager,
         transactionId: String
-    ): PrivacySaltImpl? {
-        return entityManager.createNativeQuery(queryProvider.findTransactionPrivacySalt, Tuple::class.java)
+    ): Pair<PrivacySaltImpl, ByteArray>? {
+        return entityManager.createNativeQuery(queryProvider.findTransactionPrivacySaltAndMetadata, Tuple::class.java)
             .setParameter("transactionId", transactionId)
             .resultListAsTuples()
-            .map { r -> PrivacySaltImpl(r.get(0) as ByteArray) }
+            .map { r -> Pair(PrivacySaltImpl(r.get(0) as ByteArray), r.get(1) as ByteArray) }
             .firstOrNull()
     }
 
@@ -90,39 +108,36 @@ class UtxoRepositoryImpl @Activate constructor(
             .mapToComponentGroups(UtxoComponentGroupMapper(transactionId))
     }
 
+    private fun findUnconsumedVisibleStates(
+        entityManager: EntityManager,
+        query: String,
+        stateClassType: String?
+    ): List<UtxoVisibleTransactionOutputDto> {
+        val queryObj = entityManager.createNativeQuery(query, Tuple::class.java)
+            .setParameter("verified", TransactionStatus.VERIFIED.value)
+
+        if (stateClassType != null) {
+            queryObj.setParameter("type", stateClassType)
+        }
+
+        return queryObj.mapToUtxoVisibleTransactionOutputDto()
+    }
+
     override fun findUnconsumedVisibleStatesByType(
         entityManager: EntityManager
-    ): List<UtxoTransactionOutputDto> {
-        return entityManager.createNativeQuery(queryProvider.findUnconsumedVisibleStatesByType, Tuple::class.java)
-            .setParameter("verified", TransactionStatus.VERIFIED.value)
-            .resultListAsTuples()
-            .map { t ->
-                UtxoTransactionOutputDto(
-                    t[0] as String, // transactionId
-                    t[1] as Int, // leaf ID
-                    t[2] as ByteArray, // outputs info data
-                    t[3] as ByteArray // outputs data
-                )
-            }
+    ): List<UtxoVisibleTransactionOutputDto> {
+        return findUnconsumedVisibleStates(entityManager, queryProvider.findUnconsumedVisibleStatesByType, null)
     }
 
     override fun resolveStateRefs(
         entityManager: EntityManager,
         stateRefs: List<StateRef>
-    ): List<UtxoTransactionOutputDto> {
+    ): List<UtxoVisibleTransactionOutputDto> {
         return entityManager.createNativeQuery(queryProvider.resolveStateRefs, Tuple::class.java)
             .setParameter("transactionIds", stateRefs.map { it.transactionId.toString() })
             .setParameter("stateRefs", stateRefs.map { it.toString() })
             .setParameter("verified", TransactionStatus.VERIFIED.value)
-            .resultListAsTuples()
-            .map { t ->
-                UtxoTransactionOutputDto(
-                    t[0] as String, // transactionId
-                    t[1] as Int, // leaf ID
-                    t[2] as ByteArray, // outputs info data
-                    t[3] as ByteArray // outputs data
-                )
-            }
+            .mapToUtxoVisibleTransactionOutputDto()
     }
 
     override fun findTransactionSignatures(
@@ -160,15 +175,54 @@ class UtxoRepositoryImpl @Activate constructor(
         id: String,
         privacySalt: ByteArray,
         account: String,
-        timestamp: Instant
+        timestamp: Instant,
+        status: TransactionStatus,
+        metadataHash: String
     ) {
         entityManager.createNativeQuery(queryProvider.persistTransaction)
             .setParameter("id", id)
             .setParameter("privacySalt", privacySalt)
             .setParameter("accountId", account)
             .setParameter("createdAt", timestamp)
+            .setParameter("status", status.value)
+            .setParameter("updatedAt", timestamp)
+            .setParameter("metadataHash", metadataHash)
             .executeUpdate()
             .logResult("transaction [$id]")
+    }
+
+    override fun persistTransactionMetadata(
+        entityManager: EntityManager,
+        hash: String,
+        metadataBytes: ByteArray,
+        groupParametersHash: String,
+        cpiFileChecksum: String
+    ){
+        entityManager.createNativeQuery(queryProvider.persistTransactionMetadata)
+            .setParameter("hash", hash)
+            .setParameter("canonicalData", metadataBytes)
+            .setParameter("groupParametersHash", groupParametersHash)
+            .setParameter("cpiFileChecksum", cpiFileChecksum)
+            .executeUpdate()
+            .logResult("transaction metadata [$hash]")
+    }
+
+    override fun persistTransactionSource(
+        entityManager: EntityManager,
+        transactionId: String,
+        groupIndex: Int,
+        leafIndex: Int,
+        sourceStateTransactionId: String,
+        sourceStateIndex: Int
+    ) {
+        entityManager.createNativeQuery(queryProvider.persistTransactionSource)
+            .setParameter("transactionId", transactionId)
+            .setParameter("groupIndex", groupIndex)
+            .setParameter("leafIndex", leafIndex)
+            .setParameter("sourceStateTransactionId", sourceStateTransactionId)
+            .setParameter("sourceStateIndex", sourceStateIndex)
+            .executeUpdate()
+            .logResult("transaction source [$transactionId, $groupIndex, $leafIndex]")
     }
 
     override fun persistTransactionComponentLeaf(
@@ -177,48 +231,40 @@ class UtxoRepositoryImpl @Activate constructor(
         groupIndex: Int,
         leafIndex: Int,
         data: ByteArray,
-        hash: String,
-        timestamp: Instant
+        hash: String
     ) {
+        // Metadata is not stored with the other components. See persistTransactionMetadata().
+        if (groupIndex == 0 && leafIndex == 0) {
+            return
+        }
         entityManager.createNativeQuery(queryProvider.persistTransactionComponentLeaf)
             .setParameter("transactionId", transactionId)
             .setParameter("groupIndex", groupIndex)
             .setParameter("leafIndex", leafIndex)
             .setParameter("data", data)
             .setParameter("hash", hash)
-            .setParameter("createdAt", timestamp)
             .executeUpdate()
             .logResult("transaction component [$transactionId, $groupIndex, $leafIndex]")
     }
 
-    override fun persistTransactionCpk(
-        entityManager: EntityManager,
-        transactionId: String,
-        fileChecksums: Collection<String>
-    ) {
-        entityManager.createNativeQuery(queryProvider.persistTransactionCpk)
-            .setParameter("transactionId", transactionId)
-            .setParameter("fileChecksums", fileChecksums)
-            .executeUpdate()
-            .logResult("transaction CPK [$transactionId, $fileChecksums]")
-    }
-
-    override fun persistTransactionOutput(
+    override fun persistVisibleTransactionOutput(
         entityManager: EntityManager,
         transactionId: String,
         groupIndex: Int,
         leafIndex: Int,
         type: String,
+        timestamp: Instant,
+        consumed: Boolean,
+        customRepresentation: CustomRepresentation,
         tokenType: String?,
         tokenIssuerHash: String?,
         tokenNotaryX500Name: String?,
         tokenSymbol: String?,
         tokenTag: String?,
         tokenOwnerHash: String?,
-        tokenAmount: BigDecimal?,
-        timestamp: Instant
+        tokenAmount: BigDecimal?
     ) {
-        entityManager.createNativeQuery(queryProvider.persistTransactionOutput)
+        entityManager.createNativeQuery(queryProvider.persistVisibleTransactionOutput(consumed))
             .setParameter("transactionId", transactionId)
             .setParameter("groupIndex", groupIndex)
             .setParameter("leafIndex", leafIndex)
@@ -234,28 +280,10 @@ class UtxoRepositoryImpl @Activate constructor(
             .setParameter("tokenAmount", BigDecimal.ZERO)
             .setParameter("tokenAmount", tokenAmount)
             .setParameter("createdAt", timestamp)
-            .executeUpdate()
-            .logResult("transaction output [$transactionId, $groupIndex, $leafIndex]")
-    }
-
-    override fun persistTransactionVisibleStates(
-        entityManager: EntityManager,
-        transactionId: String,
-        groupIndex: Int,
-        leafIndex: Int,
-        consumed: Boolean,
-        customRepresentation: CustomRepresentation,
-        timestamp: Instant,
-    ) {
-        entityManager.createNativeQuery(queryProvider.persistTransactionVisibleStates(consumed))
-            .setParameter("transactionId", transactionId)
-            .setParameter("groupIndex", groupIndex)
-            .setParameter("leafIndex", leafIndex)
-            .setParameter("custom_representation", customRepresentation.json)
-            .setParameter("createdAt", timestamp)
+            .setParameter("customRepresentation", customRepresentation.json)
             .run { if (consumed) setParameter("consumedAt", timestamp) else this }
             .executeUpdate()
-            .logResult("transaction relevancy [$transactionId, $groupIndex, $leafIndex]")
+            .logResult("transaction output [$transactionId, $leafIndex]")
     }
 
     override fun persistTransactionSignature(
@@ -275,41 +303,18 @@ class UtxoRepositoryImpl @Activate constructor(
             .logResult("transaction signature [$transactionId, $index]")
     }
 
-    override fun persistTransactionSource(
-        entityManager: EntityManager,
-        transactionId: String,
-        groupIndex: Int,
-        leafIndex: Int,
-        refTransactionId: String,
-        refLeafIndex: Int,
-        isRefInput: Boolean,
-        timestamp: Instant
-    ) {
-        entityManager.createNativeQuery(queryProvider.persistTransactionSource)
-            .setParameter("transactionId", transactionId)
-            .setParameter("groupIndex", groupIndex)
-            .setParameter("leafIndex", leafIndex)
-            .setParameter("refTransactionId", refTransactionId)
-            .setParameter("refLeafIndex", refLeafIndex)
-            .setParameter("isRefInput", isRefInput)
-            .setParameter("createdAt", timestamp)
-            .executeUpdate()
-            .logResult("transaction source [$transactionId, $groupIndex, $leafIndex]")
-    }
-
-    override fun persistTransactionStatus(
+    override fun updateTransactionStatus(
         entityManager: EntityManager,
         transactionId: String,
         transactionStatus: TransactionStatus,
         timestamp: Instant
     ) {
-        // Insert/update status. Update ignored unless: UNVERIFIED -> * | VERIFIED -> VERIFIED | INVALID -> INVALID
-        val rowsUpdated = entityManager.createNativeQuery(queryProvider.persistTransactionStatus)
+        // Update status. Update ignored unless: UNVERIFIED -> * | VERIFIED -> VERIFIED | INVALID -> INVALID
+        val rowsUpdated = entityManager.createNativeQuery(queryProvider.updateTransactionStatus)
             .setParameter("transactionId", transactionId)
-            .setParameter("status", transactionStatus.value)
+            .setParameter("newStatus", transactionStatus.value)
             .setParameter("updatedAt", timestamp)
             .executeUpdate()
-            .logResult("transaction status [$transactionId, ${transactionStatus.value}]")
 
         check(rowsUpdated == 1 || transactionStatus == TransactionStatus.UNVERIFIED) {
             // VERIFIED -> INVALID or INVALID -> VERIFIED is a system error as verify should always be consistent and deterministic
@@ -362,4 +367,16 @@ class UtxoRepositoryImpl @Activate constructor(
 
     @Suppress("UNCHECKED_CAST")
     private fun Query.resultListAsTuples() = resultList as List<Tuple>
+
+    private fun Query.mapToUtxoVisibleTransactionOutputDto(): List<UtxoVisibleTransactionOutputDto> {
+        return resultListAsTuples()
+            .map { t ->
+                UtxoVisibleTransactionOutputDto(
+                    t[0] as String, // transactionId
+                    t[1] as Int,    // leaf ID
+                    t[2] as ByteArray, // outputs info data
+                    t[3] as ByteArray  // outputs data
+                )
+            }
+    }
 }

@@ -1,123 +1,101 @@
 package net.corda.libs.statemanager.impl.repository.impl
 
-import net.corda.db.schema.DbSchema
-import net.corda.libs.statemanager.api.Operation
-import net.corda.libs.statemanager.impl.model.v1.CREATE_STATE_QUERY_NAME
-import net.corda.libs.statemanager.impl.model.v1.DELETE_STATES_BY_KEY_QUERY_NAME
-import net.corda.libs.statemanager.impl.model.v1.FILTER_STATES_BY_KEY_QUERY_NAME
-import net.corda.libs.statemanager.impl.model.v1.FILTER_STATES_BY_UPDATED_TIMESTAMP_QUERY_NAME
-import net.corda.libs.statemanager.impl.model.v1.FINISH_TIMESTAMP_ID
-import net.corda.libs.statemanager.impl.model.v1.KEY_ID
-import net.corda.libs.statemanager.impl.model.v1.METADATA_ID
-import net.corda.libs.statemanager.impl.model.v1.START_TIMESTAMP_ID
+import net.corda.libs.statemanager.api.IntervalFilter
+import net.corda.libs.statemanager.api.MetadataFilter
 import net.corda.libs.statemanager.impl.model.v1.StateEntity
-import net.corda.libs.statemanager.impl.model.v1.UPDATE_STATE_QUERY_NAME
-import net.corda.libs.statemanager.impl.model.v1.VALUE_ID
-import net.corda.libs.statemanager.impl.model.v1.VERSION_ID
+import net.corda.libs.statemanager.impl.model.v1.resultSetAsStateEntityCollection
 import net.corda.libs.statemanager.impl.repository.StateRepository
-import org.slf4j.LoggerFactory
-import java.time.Instant
-import javax.persistence.EntityManager
+import java.sql.Connection
+import java.sql.Timestamp
 
-class StateRepositoryImpl : StateRepository {
+// TODO-[CORE-18029 / CORE-18030]: batch delete and create.
+class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepository {
 
-    private companion object {
-        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    override fun create(connection: Connection, state: StateEntity) {
+        connection.prepareStatement(queryProvider.createState).use { statement ->
+            statement.setString(1, state.key)
+            statement.setBytes(2, state.value)
+            statement.setInt(3, state.version)
+            statement.setString(4, state.metadata)
+            statement.executeUpdate()
+        }
     }
 
-    override fun create(entityManager: EntityManager, state: StateEntity) {
-        entityManager
-            .createNamedQuery(CREATE_STATE_QUERY_NAME.trimIndent())
-            .setParameter(KEY_ID, state.key)
-            .setParameter(VALUE_ID, state.value)
-            .setParameter(VERSION_ID, state.version)
-            .setParameter(METADATA_ID, state.metadata)
-            .executeUpdate()
-    }
-
-    private fun findByKeys(
-        entityManager: EntityManager,
-        keys: Collection<String>
-    ): List<StateEntity> {
-        return entityManager
-                .createNamedQuery(FILTER_STATES_BY_KEY_QUERY_NAME.trimIndent(), StateEntity::class.java)
-                .setParameter(KEY_ID, keys)
-                .resultList
-    }
-
-    override fun get(entityManager: EntityManager, keys: Collection<String>): List<StateEntity> {
-        return findByKeys(entityManager, keys)
-    }
-
-    override fun update(entityManager: EntityManager, states: Collection<StateEntity>) {
-        try {
-            states.forEach {
-                entityManager
-                    .createNamedQuery(UPDATE_STATE_QUERY_NAME.trimIndent())
-                    .setParameter(KEY_ID, it.key)
-                    .setParameter(VALUE_ID, it.value)
-                    .setParameter(METADATA_ID, it.metadata)
-                    .executeUpdate()
+    override fun get(connection: Connection, keys: Collection<String>) =
+        connection.prepareStatement(queryProvider.findStatesByKey(keys.size)).use {
+            keys.forEachIndexed { index, key ->
+                it.setString(index + 1, key)
             }
-        } catch (e: Exception) {
-            logger.warn("Failed to updated batch of states - ${states.joinToString { it.key }}", e)
-            throw e
-        }
-    }
 
-    override fun delete(entityManager: EntityManager, keys: Collection<String>) {
-        try {
-            entityManager
-                .createNamedQuery(DELETE_STATES_BY_KEY_QUERY_NAME.trimIndent())
-                .setParameter(KEY_ID, keys)
-                .executeUpdate()
-        } catch (e: Exception) {
-            logger.warn("Failed to delete batch of states - ${keys.joinToString()}", e)
-            throw e
-        }
-    }
-
-    override fun findUpdatedBetween(
-        entityManager: EntityManager,
-        start: Instant,
-        finish: Instant
-    ): Collection<StateEntity> {
-        return entityManager
-            .createNamedQuery(FILTER_STATES_BY_UPDATED_TIMESTAMP_QUERY_NAME.trimIndent(), StateEntity::class.java)
-            .setParameter(START_TIMESTAMP_ID, start)
-            .setParameter(FINISH_TIMESTAMP_ID, finish)
-            .resultList
-    }
-
-    override fun filterByMetadata(
-        entityManager: EntityManager,
-        key: String,
-        operation: Operation,
-        value: Any
-    ): Collection<StateEntity> {
-        // Comparison operation to execute
-        val comparison = when (operation) {
-            Operation.Equals -> "="
-            Operation.NotEquals -> "<>"
-            Operation.LesserThan -> "<"
-            Operation.GreaterThan -> ">"
+            it.executeQuery().resultSetAsStateEntityCollection()
         }
 
-        // Only primitive types are supported as part of the state metadata
-        val nativeType = when (value) {
-            is String -> "text"
-            is Number -> "numeric"
-            is Boolean -> "boolean"
-            else -> throw IllegalArgumentException("Unsupported Type: ${value::class.java.simpleName}")
+    override fun update(connection: Connection, states: List<StateEntity>): StateRepository.StateUpdateSummary {
+        fun getParameterIndex(currentRow: Int, index: Int) = (currentRow * 4) + index // 4 columns in the temp table
+
+        if (states.isEmpty()) return StateRepository.StateUpdateSummary(emptyList(), emptyList())
+        val updatedKeys = mutableListOf<String>()
+        connection.prepareStatement(queryProvider.updateStates(states.size)).use { stmt ->
+            repeat(states.size) { stateIterator ->
+                stmt.setString(getParameterIndex(stateIterator, 1), states[stateIterator].key)
+                stmt.setBytes(getParameterIndex(stateIterator, 2), states[stateIterator].value)
+                stmt.setString(getParameterIndex(stateIterator, 3), states[stateIterator].metadata)
+                stmt.setInt(getParameterIndex(stateIterator, 4), states[stateIterator].version)
+            }
+            stmt.execute()
+            val results = stmt.resultSet
+            while (results.next()) {
+                updatedKeys.add(results.getString(1))
+            }
         }
-        val query = entityManager.createNativeQuery(
-            "SELECT s.key, s.value, s.metadata, s.version, s.modified_time " +
-                    "FROM ${DbSchema.STATE_MANAGER_TABLE} s " +
-                    "WHERE (s.metadata->>'$key')::::$nativeType $comparison '$value'",
-            StateEntity::class.java
+        return StateRepository.StateUpdateSummary(
+            updatedKeys,
+            states.map { it.key }.filterNot { updatedKeys.contains(it) }
         )
+    }
 
-        @Suppress("UNCHECKED_CAST")
-        return query.resultList as Collection<StateEntity>
+    override fun delete(connection: Connection, states: Collection<StateEntity>): Collection<String> {
+        val failedKeys = mutableListOf<String>()
+
+        states.forEach { state ->
+            connection.prepareStatement(queryProvider.deleteStatesByKey).use {
+                it.setString(1, state.key)
+                it.setInt(2, state.version)
+                it.executeUpdate().also { count ->
+                    if (count == 0) {
+                        failedKeys.add(state.key)
+                    }
+                }
+            }
+        }
+
+        return failedKeys
+    }
+
+    override fun updatedBetween(connection: Connection, interval: IntervalFilter): Collection<StateEntity> =
+        connection.prepareStatement(queryProvider.findStatesUpdatedBetween).use {
+            it.setTimestamp(1, Timestamp.from(interval.start))
+            it.setTimestamp(2, Timestamp.from(interval.finish))
+            it.executeQuery().resultSetAsStateEntityCollection()
+        }
+
+    override fun filterByAll(connection: Connection, filters: Collection<MetadataFilter>) =
+        connection.prepareStatement(queryProvider.findStatesByMetadataMatchingAll(filters)).use {
+            it.executeQuery().resultSetAsStateEntityCollection()
+        }
+
+    override fun filterByAny(connection: Connection, filters: Collection<MetadataFilter>) =
+        connection.prepareStatement(queryProvider.findStatesByMetadataMatchingAny(filters)).use {
+            it.executeQuery().resultSetAsStateEntityCollection()
+        }
+
+    override fun filterByUpdatedBetweenAndMetadata(
+        connection: Connection,
+        interval: IntervalFilter,
+        filter: MetadataFilter
+    ) = connection.prepareStatement(queryProvider.findStatesUpdatedBetweenAndFilteredByMetadataKey(filter)).use {
+        it.setTimestamp(1, Timestamp.from(interval.start))
+        it.setTimestamp(2, Timestamp.from(interval.finish))
+        it.executeQuery().resultSetAsStateEntityCollection()
     }
 }

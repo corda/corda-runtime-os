@@ -124,6 +124,7 @@ internal class QueueRegistrationHandler(
             platformVersion,
             command.memberRegistrationRequest.registrationId,
             RegistrationStatus.RECEIVED_BY_MGM.name,
+            null
         )
         // if we are unable to create the status message, then we won't send anything
         val statusUpdateRecord = statusUpdateMessage?.let {

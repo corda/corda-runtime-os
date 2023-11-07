@@ -1,8 +1,7 @@
 package net.corda.flow.state.impl
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import java.nio.ByteBuffer
-import java.time.Instant
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
@@ -21,6 +20,8 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
+import java.nio.ByteBuffer
+import java.time.Instant
 
 @Suppress("TooManyFunctions")
 class FlowCheckpointImpl(
@@ -46,7 +47,7 @@ class FlowCheckpointImpl(
     }
 
     private companion object {
-        val objectMapper = ObjectMapper()
+        val objectMapper = ObjectMapper().registerKotlinModule()
     }
 
     private val pipelineStateManager = PipelineStateManager(checkpoint.pipelineState, config, instantProvider)
@@ -153,6 +154,13 @@ class FlowCheckpointImpl(
 
     override val initialPlatformVersion: Int
         get() = checkpoint.initialPlatformVersion
+
+    override val isCompleted: Boolean
+
+        get() = deleted
+    override val suspendCount: Int
+        get() = checkNotNull(flowStateManager)
+        { "Attempt to access context before flow state has been created" }.suspendCount
 
     override fun initFlowState(flowStartContext: FlowStartContext, cpkFileHashes: Set<SecureHash>) {
         if (flowStateManager != null) {

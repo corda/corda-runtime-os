@@ -5,12 +5,11 @@ import javax.persistence.CascadeType
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
-import javax.persistence.JoinColumn
-import javax.persistence.JoinTable
-import javax.persistence.ManyToMany
 import javax.persistence.OneToMany
 import javax.persistence.Table
 import net.corda.v5.base.annotations.CordaSerializable
+import javax.persistence.JoinColumn
+import javax.persistence.ManyToOne
 
 @CordaSerializable
 @Entity
@@ -28,21 +27,22 @@ data class UtxoTransactionEntity(
 
     @get:Column(name = "created", nullable = false)
     var created: Instant,
+
+    @get:Column(name = "status", nullable = false)
+    var status: String,
+
+    @get:Column(name = "updated", nullable = false)
+    var updated: Instant,
+
+    @get:ManyToOne
+    @get:JoinColumn(name = "metadata_hash", nullable = false, updatable = false)
+    var metadata: UtxoTransactionMetadataEntity,
 ) {
     @get:OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
     var components: MutableList<UtxoTransactionComponentEntity> = mutableListOf()
 
     @get:OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
-    var statuses: MutableList<UtxoTransactionStatusEntity> = mutableListOf()
-
-    @get:OneToMany(mappedBy = "transaction", cascade = [CascadeType.ALL], orphanRemoval = true)
     var signatures: MutableList<UtxoTransactionSignatureEntity> = mutableListOf()
-
-    @ManyToMany(cascade = [CascadeType.PERSIST, CascadeType.MERGE])
-    @JoinTable(name = "utxo_transaction_cpk",
-        joinColumns = [JoinColumn(name = "transaction_id")],
-        inverseJoinColumns = [JoinColumn(name = "file_checksum")]
-    )
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

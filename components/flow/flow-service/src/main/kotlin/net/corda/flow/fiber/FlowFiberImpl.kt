@@ -22,7 +22,7 @@ class FlowFiberImpl(
     override val flowId: UUID,
     override val flowLogic: FlowLogicAndArgs,
     scheduler: FiberScheduler
-) : Fiber<Unit>(flowId.toString(), scheduler), FlowFiber, Interruptable {
+) : Fiber<Unit>(flowId.toString(), scheduler), FlowFiber {
 
     companion object {
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
