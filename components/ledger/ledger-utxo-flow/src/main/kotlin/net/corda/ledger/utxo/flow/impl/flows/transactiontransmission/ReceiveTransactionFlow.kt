@@ -48,20 +48,19 @@ class ReceiveTransactionFlow(
     }
 
     @Suspendable
-    private fun persistTransaction(transaction: UtxoSignedTransaction) {
-        val visibleStatesIndexes = (transaction as UtxoSignedTransactionInternal).getVisibleStateIndexes(visibilityChecker)
-        persistenceService.persist(transaction, TransactionStatus.VERIFIED, visibleStatesIndexes)
-        if (log.isDebugEnabled) {
-            log.debug("Recorded transaction = ${transaction.id} since transaction is verified")
-        }
-    }
-
-    @Suspendable
     private fun verifyTransaction(signedTransaction: UtxoSignedTransaction) {
         try {
             transactionVerificationService.verify(signedTransaction.toLedgerTransaction())
-        } catch(e: TransactionVerificationException){
-            throw e
+        } catch(e: TransactionVerificationException) { throw e }
+    }
+
+    @Suspendable
+    private fun persistTransaction(transaction: UtxoSignedTransaction) {
+        val visibleStatesIndexes = (transaction as UtxoSignedTransactionInternal).getVisibleStateIndexes(visibilityChecker)
+        log.info("xxx visibleStatesIndexes = $visibleStatesIndexes")
+        persistenceService.persist(transaction, TransactionStatus.VERIFIED, visibleStatesIndexes)
+        if (log.isDebugEnabled) {
+            log.debug("Recorded transaction = ${transaction.id} since transaction is verified")
         }
     }
 }
