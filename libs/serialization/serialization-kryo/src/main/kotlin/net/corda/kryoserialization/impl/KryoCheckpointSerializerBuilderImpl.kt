@@ -6,6 +6,7 @@ import com.esotericsoftware.kryo.ClassResolver
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.Serializer
 import com.esotericsoftware.kryo.util.Pool
+import java.lang.reflect.Method
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.kryoserialization.CordaKryoException
 import net.corda.kryoserialization.DefaultKryoCustomizer
@@ -29,6 +30,7 @@ import java.security.PrivateKey
 import java.security.PublicKey
 import java.util.function.Function
 import javax.security.auth.x500.X500Principal
+import net.corda.kryoserialization.serializers.MethodSerializer
 
 class KryoCheckpointSerializerBuilderImpl(
     private val keyEncodingService: KeyEncodingService,
@@ -77,7 +79,8 @@ class KryoCheckpointSerializerBuilderImpl(
 
         val otherCustomSerializers = mapOf(
             SingletonSerializeAsToken::class.java to SingletonSerializeAsTokenSerializer(singletonInstances.toMap()),
-            X500Principal::class.java to X500PrincipalSerializer()
+            X500Principal::class.java to X500PrincipalSerializer(),
+            Method::class.java to MethodSerializer()
         )
 
         val pool = object : Pool<Kryo>(true, false, 8) {

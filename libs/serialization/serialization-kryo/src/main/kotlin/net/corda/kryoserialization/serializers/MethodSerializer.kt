@@ -10,23 +10,22 @@ import java.lang.reflect.Method
 class MethodSerializer : Serializer<Method>() {
 
     override fun write(kryo: Kryo, output: Output, method: Method) {
-        val declaringClassName = method.declaringClass.name
+        val declaringClass = method.declaringClass
         val methodName = method.name
         val parameterTypes = method.parameterTypes
 
-        output.writeString(declaringClassName)
+        kryo.writeObject(output, declaringClass)
         output.writeString(methodName)
         kryo.writeObject(output, parameterTypes)
     }
 
     @Suppress("SpreadOperator", "TooGenericExceptionThrown")
     override fun read(kryo: Kryo, input: Input, type: Class<out Method>): Method {
-        val declaringClassName = input.readString()
+        val declaringClass = kryo.readObject(input, Class::class.java)
         val methodName = input.readString()
         val parameterTypes = kryo.readObject(input, arrayOf<Class<*>>()::class.java)
 
         return try {
-            val declaringClass = Class.forName(declaringClassName)
             declaringClass.getMethod(methodName, *parameterTypes)
         } catch (e: ClassNotFoundException) {
             throw RuntimeException("Error reconstructing Method", e)
