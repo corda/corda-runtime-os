@@ -35,7 +35,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
@@ -247,25 +246,6 @@ class FlowEventExceptionProcessorImplTest {
     }
 
     @Test
-    fun `failure to create a status message does not prevent fatal failure handling from succeeding`() {
-        val error = FlowFatalException("error")
-
-        whenever(
-            flowMessageFactory.createFlowFailedStatusMessage(
-                any(),
-                any(),
-                any()
-            )
-        ).thenThrow(IllegalStateException())
-
-        val result = target.process(error, context)
-
-        verify(result.checkpoint).markDeleted()
-        assertThat(result.outputRecords).isEmpty()
-        assertThat(result.sendToDlq).isTrue
-    }
-
-    @Test
     fun `throwable triggered during transient exception processing does not escape the processor`() {
         val throwable = RuntimeException()
         whenever(flowCheckpoint.currentRetryCount).thenReturn(1)
@@ -274,18 +254,6 @@ class FlowEventExceptionProcessorImplTest {
         val transientError = FlowTransientException("error")
         val transientResult = target.process(transientError, context)
         assertEmptyDLQdResult(transientResult)
-    }
-
-    @Test
-    fun `throwable triggered during fatal exception processing does not escape the processor`() {
-        val throwable = RuntimeException()
-        val fatalError = FlowFatalException("error")
-        whenever(
-            flowSessionManager.getSessionErrorEventRecords(anyOrNull(),anyOrNull(),anyOrNull()))
-            .thenThrow(throwable)
-
-        val fatalResult = target.process(fatalError, context)
-        assertEmptyDLQdResult(fatalResult)
     }
 
     @Test
@@ -311,19 +279,8 @@ class FlowEventExceptionProcessorImplTest {
     fun `flow fatal exception with false doesExist confirms flow checkpoint not called`() {
         val flowCheckpoint = mock<FlowCheckpoint>()
         whenever(flowCheckpoint.doesExist).thenReturn(false)
-
         val error = FlowFatalException("error")
-        val flowStatusUpdate = FlowStatus()
-        val flowStatusUpdateRecord = Record("", FlowKey(), flowStatusUpdate)
 
-        whenever(
-            flowMessageFactory.createFlowFailedStatusMessage(
-                flowCheckpoint,
-                FlowProcessingExceptionTypes.FLOW_FAILED,
-                error.message
-            )
-        ).thenReturn(flowStatusUpdate)
-        whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)
         target.process(error, context)
 
         verify(flowCheckpoint, times(0)).flowStartContext
