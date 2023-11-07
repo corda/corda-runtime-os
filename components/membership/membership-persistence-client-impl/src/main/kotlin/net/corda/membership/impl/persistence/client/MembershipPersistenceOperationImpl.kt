@@ -11,6 +11,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.MEMBERSHIP_DB_ASYNC_TOPIC
 import net.corda.utilities.Either
 import net.corda.utilities.concurrent.getOrThrow
+import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.concurrent.TimeoutException
@@ -42,7 +43,7 @@ internal class MembershipPersistenceOperationImpl<T>(
             return Either.Right(MembershipPersistenceResult.Failure(failureReason))
         }
         val requestId = request.context.requestId
-        logger.info("Sending membership persistence RPC request ID: $requestId.")
+        logger.debug { "Sending membership persistence RPC request ID: $requestId." }
         return try {
             val response = sender
                 .sendRequest(request)

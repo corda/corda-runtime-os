@@ -18,6 +18,7 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.PersistenceException
 import javax.persistence.Tuple
+import net.corda.utilities.debug
 
 /**
  * Database operations for HSM.
@@ -53,7 +54,7 @@ class HSMRepositoryImpl(
                 result[0].toHSMAssociation()
             }
         }.also {
-            logger.info("Looked up tenant association for $tenantId $category with wrapping key alias ${it?.masterKeyAlias}")
+            logger.debug { "Looked up tenant association for $tenantId $category with wrapping key alias ${it?.masterKeyAlias}" }
         }
 
     override fun getHSMUsage(): List<HSMUsage> = entityManagerFactory.createEntityManager().use {

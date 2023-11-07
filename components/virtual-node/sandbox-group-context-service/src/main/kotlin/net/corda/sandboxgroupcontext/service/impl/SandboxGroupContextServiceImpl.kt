@@ -376,8 +376,12 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                     }
                 )
 
-                logger.info("Registered Metadata Service [{}] for bundle [{}][{}]",
-                    serviceInterfaces.joinToString(), serviceBundle.symbolicName, serviceBundle.bundleId)
+                if (logger.isDebugEnabled) {
+                    logger.debug(
+                        "Registered Metadata Service [{}] for bundle [{}][{}]",
+                        serviceInterfaces.joinToString(), serviceBundle.symbolicName, serviceBundle.bundleId
+                    )
+                }
 
                 // Add an AutoCloseable that can unregister this service.
                 allCloseables.addFirst(AutoCloseable(registration::unregister))

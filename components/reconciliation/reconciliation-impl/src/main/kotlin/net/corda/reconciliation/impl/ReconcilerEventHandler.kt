@@ -75,7 +75,7 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
     }
 
     private fun reconcileAndScheduleNext(coordinator: LifecycleCoordinator) {
-        logger.info("Initiating reconciliation")
+        logger.debug { "Initiating reconciliation" }
         var reconciliationOutcome = "FAILED"
         val startTime = System.nanoTime()
         var reconciliationEndTime = startTime
