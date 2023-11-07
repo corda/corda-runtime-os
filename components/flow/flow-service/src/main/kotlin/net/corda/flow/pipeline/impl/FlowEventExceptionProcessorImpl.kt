@@ -9,6 +9,7 @@ import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.cache.FlowFiberCache
+import net.corda.flow.maintenance.CheckpointCleanupHandler
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowEventException
@@ -45,6 +46,8 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
     private val flowSessionManager: FlowSessionManager,
     @Reference(service = FlowFiberCache::class)
     private val flowFiberCache: FlowFiberCache,
+    @Reference(service = CheckpointCleanupHandler::class)
+    private val checkpointCleanupHandler: CheckpointCleanupHandler
 ) : FlowEventExceptionProcessor {
 
     private companion object {
@@ -221,7 +224,6 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         context: FlowEventContext<*>
     ): FlowEventContext<*> {
         return withEscalation(context) {
-            val exceptionHandlingStartTime = Instant.now()
             val checkpoint = context.checkpoint
 
             if (!checkpoint.doesExist) {
@@ -237,33 +239,11 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
                 )
             }
 
-            val activeSessionIds = getActiveSessionIds(checkpoint)
-
-            if (activeSessionIds.isNotEmpty()) {
-                checkpoint.putSessionStates(
-                    flowSessionManager.sendErrorMessages(
-                        context.checkpoint, activeSessionIds, exception, exceptionHandlingStartTime
-                    )
-                )
-            }
-            val errorEvents = flowSessionManager.getSessionErrorEventRecords(
-                context.checkpoint,
-                context.flowConfig,
-                exceptionHandlingStartTime
-            )
-            val cleanupEvents = createCleanupEventsForSessions(
-                getScheduledCleanupExpiryTime(context, exceptionHandlingStartTime),
-                checkpoint.sessions.filterNot { it.hasScheduledCleanup }
-            )
-            val statusRecord =
-                createFlowKilledStatusRecord(checkpoint, exception.message ?: "No exception message provided.")
-
             removeCachedFlowFiber(checkpoint)
-
-            checkpoint.markDeleted()
+            val cleanupRecords = checkpointCleanupHandler.cleanupCheckpoint(checkpoint, context.flowConfig, exception)
 
             context.copy(
-                outputRecords = errorEvents + cleanupEvents + statusRecord,
+                outputRecords =  cleanupRecords,
                 sendToDlq = false // killed flows do not go to DLQ
             )
         }
