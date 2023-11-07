@@ -35,10 +35,21 @@ internal class SandboxGroupImpl(
     private val classTagFactory: ClassTagFactory,
     private val bundleUtils: BundleUtils
 ) : SandboxGroupInternal {
+    private val cpkNames = ConcurrentHashMap.newKeySet<String>()
+    init {
+        cpkSandboxes.forEach {
+            val name = it.cpkMetadata.cpkId.name
+            if (cpkNames.contains(name)) {
+                throw SandboxException("CPK $name is declared twice.")
+            } else {
+                cpkNames.add(it.cpkMetadata.cpkId.name)
+            }
+        }
+    }
 
     private companion object {
-        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
+        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private fun Throwable.withSuppressed(exceptions: Iterable<Throwable>): Throwable {
             exceptions.forEach(::addSuppressed)
             return this
@@ -47,7 +58,6 @@ internal class SandboxGroupImpl(
 
     // Marker for a missing class.
     private class NotFound
-
     private val publicBundles = publicSandboxes.flatMap(Sandbox::publicBundles).filterNot { bundle ->
         // The system bundle's classloader is actually the JVM's Application Classloader,
         // which is not constrained by the OSGi framework's resolver hooks. So skip the
