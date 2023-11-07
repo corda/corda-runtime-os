@@ -164,11 +164,9 @@ class FlowEventExceptionProcessorImplTest {
         ).thenReturn(flowStatusUpdate)
         whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)
 
-        val result = target.process(error, context)
+        target.process(error, context)
 
-        verify(result.checkpoint).markDeleted()
-        assertThat(result.outputRecords).containsOnly(flowStatusUpdateRecord)
-        assertThat(result.sendToDlq).isTrue
+        verify(checkpointCleanupHandler).cleanupCheckpoint(eq(flowCheckpoint), any(), any<FlowFatalException>())
     }
 
     @Test
@@ -293,17 +291,7 @@ class FlowEventExceptionProcessorImplTest {
         val context = buildFlowEventContext<Any>(checkpoint = flowCheckpoint, inputEventPayload = inputEvent)
 
         val error = FlowFatalException("error")
-        val flowStatusUpdate = FlowStatus()
-        val flowStatusUpdateRecord = Record("", FlowKey(), flowStatusUpdate)
 
-        whenever(
-            flowMessageFactory.createFlowFailedStatusMessage(
-                flowCheckpoint,
-                FlowProcessingExceptionTypes.FLOW_FAILED,
-                error.message
-            )
-        ).thenReturn(flowStatusUpdate)
-        whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)
         target.process(error, context)
 
         verify(flowCheckpoint, times(1)).flowStartContext
