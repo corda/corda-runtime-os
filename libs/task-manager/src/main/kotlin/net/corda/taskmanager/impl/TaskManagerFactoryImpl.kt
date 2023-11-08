@@ -21,7 +21,7 @@ internal object TaskManagerFactoryImpl : TaskManagerFactory {
             executorService = CordaExecutorServiceWrapper(
                 name,
                 "corda.taskmanager.",
-                Executors.newScheduledThreadPool(
+                Executors.newFixedThreadPool(
                     threads,
                     threadFactory(threadName)
                 ),

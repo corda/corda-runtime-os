@@ -1,11 +1,20 @@
 package net.corda.libs.statemanager.api
 
-import net.corda.lifecycle.Resource
+import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.LifecycleCoordinatorName
 
 /**
  * The [StateManager] provides functions to manage states within the underlying persistent storage.
  */
-interface StateManager : Resource {
+interface StateManager : Lifecycle {
+
+    /**
+     * The State Manager lifecycle coordinator identifier.
+     *
+     * There might be multiple State Manager instances within a single process, the [name] should identify each one
+     * uniquely so the [Lifecycle] library can be used to follow regular component events.
+     */
+    val name: LifecycleCoordinatorName
 
     /**
      * Persist new [states].

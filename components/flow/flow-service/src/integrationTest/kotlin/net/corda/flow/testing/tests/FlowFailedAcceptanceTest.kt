@@ -1,8 +1,8 @@
 package net.corda.flow.testing.tests
 
-import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStates
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.FLOW_FAILED
+import net.corda.flow.testing.context.ALICE_FLOW_KEY_MAPPER
 import net.corda.flow.testing.context.FlowServiceTestBase
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -47,7 +47,7 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
                 flowStatus(FlowStates.FAILED, errorType = FLOW_FAILED, errorMessage = EXCEPTION.message)
-                scheduleFlowMapperCleanupEvents(FlowKey(REQUEST_ID1, ALICE_HOLDING_IDENTITY).toString())
+                scheduleFlowMapperCleanupEvents(ALICE_FLOW_KEY_MAPPER)
                 flowFiberCacheDoesNotContainKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
