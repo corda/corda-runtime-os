@@ -220,7 +220,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                             }
 
                             // Delete state
-                            if (state != null && processorState == null) {
+                            if (state != null && processedState == null) {
                                 deleteStates[it.key.toString()] = state
                             }
                         }
