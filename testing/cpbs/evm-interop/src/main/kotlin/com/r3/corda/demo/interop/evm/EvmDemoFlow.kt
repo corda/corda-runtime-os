@@ -36,10 +36,8 @@ class EvmDemoFlow : ClientStartableFlow {
             // Get any of the relevant details from the request here
             val inputs = requestBody.getRequestBodyAs(jsonMarshallingService, EvmDemoInput::class.java)
 
-            // Step 1.  Do the token transfer on Corda
-            // ...
 
-            // Step 2.  Call to the Evm to do the asset transfer
+
             val dummyGasNumber = BigInteger("a41c5", 16)
             val transactionOptions = TransactionOptions(
                 dummyGasNumber,                 // gasLimit
@@ -47,21 +45,25 @@ class EvmDemoFlow : ClientStartableFlow {
                 20000000000.toBigInteger(),     // maxFeePerGas
                 20000000000.toBigInteger(),     // maxPriorityFeePerGas
                 inputs.rpcUrl!!,                // rpcUrl
-                inputs.buyerAddress!!,          // from
+                inputs.buyerAddress,          // from
             )
 
             val parameters = listOf(
                 Parameter.of("from", Type.ADDRESS, inputs.buyerAddress!!),
                 Parameter.of("to", Type.ADDRESS, inputs.sellerAddress!!),
+                Parameter.of("id", Type.UINT256, 1.toBigInteger()),
                 Parameter.of("amount", Type.UINT256, inputs.fractionPurchased!!.toBigInteger()),
+                Parameter.of("data", Type.BYTES, ""),
             )
 
-            val hash = evmService.transaction(
-                TRANSFER_FUNCTION,
-                inputs.contractAddress!!,
+            val hash = this.evmService.transaction(
+                "safeTransferFrom",
+                inputs.contractAddress,
                 transactionOptions,
                 parameters
             )
+            // Step 2.  Call to the Evm to do the asset transfer
+
 
             val response = EvmDemoOutput(hash)
             return jsonMarshallingService.format(response)
