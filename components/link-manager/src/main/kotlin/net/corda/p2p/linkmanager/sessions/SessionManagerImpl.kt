@@ -330,9 +330,7 @@ internal class SessionManagerImpl(
     }
 
     private fun SessionCounterparties.calculateSessionMultiplicity(): Int {
-        return if (config.get().sessionsPerCounterparties != null) {
-            config.get().sessionsPerCounterparties!!
-        } else if (communicationWithMgm) {
+        return config.get().sessionsPerCounterparties ?: if (communicationWithMgm) {
             config.get().numberOfSessionsPerPeer.forMgm
         } else {
             config.get().numberOfSessionsPerPeer.forMembers
