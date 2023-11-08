@@ -20,7 +20,6 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import net.corda.schema.configuration.FlowConfig
 import net.corda.session.manager.Constants
@@ -36,6 +35,7 @@ import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.interop.InteropProcessorEvent
 import net.corda.interop.identity.registry.InteropIdentityRegistryService
 import net.corda.membership.lib.MemberInfoExtension
+import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_IN
 
 class InteropProcessor(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
@@ -124,7 +124,7 @@ class InteropProcessor(
             ),
             listOf(
                 Record(
-                    FLOW_MAPPER_EVENT_TOPIC,
+                    FLOW_MAPPER_SESSION_IN,
                     sessionEvent.sessionId,
                     FlowMapperEvent(sessionEvent.apply {
                         if (isInitiatingIdentityDestination()) {

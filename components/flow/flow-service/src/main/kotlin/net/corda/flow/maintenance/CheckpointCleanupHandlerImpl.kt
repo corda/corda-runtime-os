@@ -7,6 +7,7 @@ import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.FLOW_FAILED
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
+import net.corda.flow.pipeline.handlers.requests.helper.getRPCMapperKey
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig
@@ -15,7 +16,6 @@ import net.corda.schema.configuration.FlowConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.lang.Exception
 import java.time.Instant
 
 @Component(service = [CheckpointCleanupHandler::class])
@@ -109,7 +109,7 @@ class CheckpointCleanupHandlerImpl @Activate constructor(
             val cleanupWindow = config.getLong(FlowConfig.PROCESSING_FLOW_CLEANUP_TIME)
             val expiryTime = currentTime.plusMillis(cleanupWindow).toEpochMilli()
             listOf(flowRecordFactory.createFlowMapperEventRecord(
-                checkpoint.flowKey.toString(),
+                getRPCMapperKey(checkpoint.flowKey),
                 ScheduleCleanup(expiryTime)
             ))
         } else {

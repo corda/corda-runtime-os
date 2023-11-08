@@ -27,7 +27,6 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.lang.IllegalArgumentException
 import java.nio.ByteBuffer
 import java.time.Instant
 
@@ -99,7 +98,7 @@ internal class RecordFactoryImplTest {
             false
         )
         assertThat(record).isNotNull
-        assertThat(record.topic).isEqualTo(Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC)
+        assertThat(record.topic).isEqualTo(Schemas.Flow.FLOW_MAPPER_SESSION_IN)
         assertThat(record.value!!::class).isEqualTo(FlowMapperEvent::class)
         verify(locallyHostedIdentitiesServiceSameCluster).isHostedLocally(bobId.toCorda())
         val sessionOutput = (record.value as FlowMapperEvent).payload as SessionEvent
@@ -168,7 +167,7 @@ internal class RecordFactoryImplTest {
             FLOW_ID,
             false
         )
-        assertThat(record.topic).isEqualTo(Schemas.Flow.FLOW_EVENT_TOPIC)
+        assertThat(record.topic).isEqualTo(Schemas.Flow.FLOW_SESSION)
         assertThat(record.key).isEqualTo(FLOW_ID)
         assertThat(record.value!!::class.java).isEqualTo(FlowEvent::class.java)
         val sessionOutput = (record.value as FlowEvent).payload as SessionEvent
@@ -198,7 +197,7 @@ internal class RecordFactoryImplTest {
             false
         )
         assertThat(record).isNotNull
-        assertThat(record.topic).isEqualTo(Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC)
+        assertThat(record.topic).isEqualTo(Schemas.Flow.FLOW_MAPPER_SESSION_IN)
         assertThat(record.value!!::class).isEqualTo(FlowMapperEvent::class)
         val sessionOutput = (record.value as FlowMapperEvent).payload as SessionEvent
         assertThat(sessionOutput.sessionId).isEqualTo("$SESSION_ID-INITIATED")
@@ -255,7 +254,7 @@ internal class RecordFactoryImplTest {
             FLOW_ID,
             false
         )
-        assertThat(record.topic).isEqualTo(Schemas.Flow.FLOW_EVENT_TOPIC)
+        assertThat(record.topic).isEqualTo(Schemas.Flow.FLOW_SESSION)
         assertThat(record.key).isEqualTo(FLOW_ID)
         assertThat(record.value!!::class.java).isEqualTo(FlowEvent::class.java)
         val sessionOutput = (record.value as FlowEvent).payload as SessionEvent
@@ -324,7 +323,7 @@ internal class RecordFactoryImplTest {
             flowConfig,
             false
         )
-        assertThat(record.topic).isEqualTo(Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC)
+        assertThat(record.topic).isEqualTo(Schemas.Flow.FLOW_MAPPER_SESSION_IN)
         assertThat(record.key).isEqualTo("$SESSION_ID-INITIATED")
         assertThat(record.value!!::class).isEqualTo(FlowMapperEvent::class)
         val sessionOutput = (record.value as FlowMapperEvent).payload as SessionEvent

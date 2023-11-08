@@ -9,6 +9,8 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
+    compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
+
     implementation 'net.corda:corda-ledger-common'
 
     implementation "com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion"

@@ -1,6 +1,7 @@
 package net.corda.flow.mapper.impl.executor
 
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionCounterpartyInfoRequest
 import net.corda.data.flow.event.session.SessionData
@@ -95,9 +96,16 @@ class SessionEventExecutor(
                 FlowMapperResult(null, listOf())
             }
             FlowMapperStateType.CLOSING, FlowMapperStateType.ERROR -> {
-                log.warn("Attempted to process a message ${sessionEvent.messageDirection} but flow mapper state is " +
-                        "in ${flowMapperState.status}. Session ID: ${sessionEvent.sessionId}. Ignoring Event")
-                FlowMapperResult(flowMapperState, listOf())
+                if (sessionEvent.messageDirection == MessageDirection.OUTBOUND) {
+                    //with the new topic topology changes, the session close/error can arrive to the mapper after the cleanup message
+                    val outputRecord = recordFactory.forwardEvent(
+                        sessionEvent, instant, flowConfig, flowMapperState.flowId, flowMapperState.isInteropSession)
+                    FlowMapperResult(flowMapperState, listOf(outputRecord))
+                } else {
+                    log.info("Attempted to process a message ${sessionEvent.messageDirection} but flow mapper state is " +
+                            "in ${flowMapperState.status}. Session ID: ${sessionEvent.sessionId}. Ignoring Event")
+                    FlowMapperResult(flowMapperState, listOf())
+                }
             }
             FlowMapperStateType.OPEN -> {
                 val outputRecord = recordFactory.forwardEvent(sessionEvent, instant, flowConfig, flowMapperState.flowId, isInteropSession)

@@ -445,7 +445,7 @@ class OutputAssertionsImpl(
         response: StateAndEventProcessor.Response<Checkpoint>,
     ): List<FlowEvent> {
         return response.responseEvents
-            .filter { it.key == flowId || it.topic == Schemas.Flow.FLOW_EVENT_TOPIC || it.value is FlowEvent }
+            .filter { it.key == flowId || it.topic == Schemas.Flow.FLOW_SESSION || it.value is FlowEvent }
             .map { it.value as FlowEvent }
     }
 
@@ -454,7 +454,7 @@ class OutputAssertionsImpl(
     ): List<Record<*, FlowMapperEvent>> {
         @Suppress("unchecked_cast")
         return response.responseEvents
-            .filter { it.topic == Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC && it.value is FlowMapperEvent }
+            .filter { it.topic == Schemas.Flow.FLOW_MAPPER_SESSION_OUT && it.value is FlowMapperEvent }
                 as List<Record<*, FlowMapperEvent>>
     }
 

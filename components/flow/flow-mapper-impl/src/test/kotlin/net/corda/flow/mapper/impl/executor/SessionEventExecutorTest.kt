@@ -23,7 +23,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.lang.IllegalArgumentException
 import java.nio.ByteBuffer
 import java.time.Instant
 import org.mockito.ArgumentMatchers.anyBoolean
@@ -126,7 +125,7 @@ class SessionEventExecutorTest {
     }
 
     @Test
-    fun `Session event received with CLOSING state`() {
+    fun `INBOUND Session event received with CLOSING state`() {
         val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionClose())
 
         val result = SessionEventExecutor(
@@ -144,6 +143,48 @@ class SessionEventExecutorTest {
 
         assertThat(state?.status).isEqualTo(FlowMapperStateType.CLOSING)
         assertThat(outboundEvents.size).isEqualTo(0)
+    }
+
+    @Test
+    fun `OUTBOUND Session event received with CLOSING state`() {
+        val payload = buildSessionEvent(MessageDirection.OUTBOUND, sessionId, 1, SessionClose())
+
+        val result = SessionEventExecutor(
+            sessionId, payload,
+            FlowMapperState(
+                "flowId1", null, FlowMapperStateType.CLOSING, false
+            ),
+            flowConfig,
+            recordFactory,
+            Instant.now(),
+            sessionInitProcessor
+        ).execute()
+        val state = result.flowMapperState
+        val outboundEvents = result.outputEvents
+
+        assertThat(state?.status).isEqualTo(FlowMapperStateType.CLOSING)
+        assertThat(outboundEvents.size).isEqualTo(1)
+    }
+
+    @Test
+    fun `OUTBOUND Session event received with ERROR state`() {
+        val payload = buildSessionEvent(MessageDirection.OUTBOUND, sessionId, 1, SessionClose())
+
+        val result = SessionEventExecutor(
+            sessionId, payload,
+            FlowMapperState(
+                "flowId1", null, FlowMapperStateType.ERROR, false
+            ),
+            flowConfig,
+            recordFactory,
+            Instant.now(),
+            sessionInitProcessor
+        ).execute()
+        val state = result.flowMapperState
+        val outboundEvents = result.outputEvents
+
+        assertThat(state?.status).isEqualTo(FlowMapperStateType.ERROR)
+        assertThat(outboundEvents.size).isEqualTo(1)
     }
 
     @Test

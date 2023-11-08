@@ -50,8 +50,8 @@ class TokenCacheSubscriptionHandlerImpl(
         coordinatorFactory.createCoordinator<TokenCacheSubscriptionHandler> { event, _ -> eventHandler(event) }
     private var subscription: StateAndEventSubscription<TokenPoolCacheKey, TokenPoolCacheState, TokenPoolCacheEvent>? =
         null
-    private var subscriptionRegistrationHandle: RegistrationHandle? = null
     private var stateManager: StateManager? = null
+    private var subscriptionRegistrationHandle: RegistrationHandle? = null
 
     override fun onConfigChange(config: Map<String, SmartConfig>) {
         try {
@@ -59,12 +59,10 @@ class TokenCacheSubscriptionHandlerImpl(
             val messagingConfig = toMessagingConfig(config)
             val newStateManagerConfig = toStateManagerConfig(config)
 
-            stateManager?.close()
-            stateManager = stateManagerFactory.create(newStateManagerConfig)
-
             // close the lifecycle registration first to prevent a down signal to the coordinator
             subscriptionRegistrationHandle?.close()
             subscription?.close()
+            stateManager?.stop()
 
             // Create the State and Event subscription
             val processor = tokenCacheEventProcessorFactory.create()
@@ -75,15 +73,17 @@ class TokenCacheSubscriptionHandlerImpl(
                 messagingConfig
             )
 
+            stateManager = stateManagerFactory.create(newStateManagerConfig)
             val delegatedProcessor = tokenCacheEventProcessorFactory.createDelegatedProcessor(stateManager!!, processor)
 
             // Create the HTTP RPC subscription
             createAndRegisterSyncRPCSubscription(delegatedProcessor)
 
             subscriptionRegistrationHandle = coordinator.followStatusChangesByName(
-                setOf(subscription!!.subscriptionName)
+                setOf(subscription!!.subscriptionName, stateManager!!.name)
             )
 
+            stateManager?.start()
             subscription?.start()
         } catch (ex: Exception) {
             val reason = "Failed to configure the Token Event Handler using '${config}'"
@@ -113,6 +113,7 @@ class TokenCacheSubscriptionHandlerImpl(
                 log.debug { "Token Cache configuration handler is stopping..." }
                 subscriptionRegistrationHandle?.close()
                 subscription?.close()
+                stateManager?.stop()
                 log.debug { "Token Cache configuration handler stopped" }
             }
         }
