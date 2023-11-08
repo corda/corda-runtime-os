@@ -9,11 +9,11 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import java.net.URL
 import java.net.URLDecoder
 import java.nio.charset.Charset
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.util.jar.JarEntry
 import java.util.jar.JarFile
 import picocli.CommandLine
-import java.nio.file.Files
-import java.nio.file.Paths
 
 @CommandLine.Command(
     name = "create",
@@ -115,7 +115,6 @@ class Create(
     private val workersForProcessor = mapOf(
         "crypto" to listOf("crypto", "combined"),
         "db" to listOf("db", "combined"),
-        "evm" to listOf("evm", "combined"),
         "flow" to listOf("flow", "combined"),
         "flowMapper" to listOf("flowMapper", "combined"),
         "verification" to listOf("verification", "combined"),

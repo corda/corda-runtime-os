@@ -247,8 +247,6 @@ class PreInstallPlugin : Plugin() {
         val crypto: KafkaWorker?,
         @JsonProperty("db")
         val db: KafkaWorker?,
-        @JsonProperty("evm")
-        val evm: KafkaWorker?,
         @JsonProperty("flow")
         val flow: KafkaWorker?,
         @JsonProperty("flowMapper")

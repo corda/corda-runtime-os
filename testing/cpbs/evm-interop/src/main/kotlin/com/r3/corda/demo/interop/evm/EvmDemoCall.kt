@@ -4,8 +4,6 @@ import net.corda.v5.application.flows.ClientRequestBody
 import net.corda.v5.application.flows.ClientStartableFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.interop.evm.EvmService
-import net.corda.v5.application.interop.evm.Parameter
-import net.corda.v5.application.interop.evm.Type
 import net.corda.v5.application.interop.evm.options.CallOptions
 import net.corda.v5.application.interop.evm.options.EvmOptions
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -40,15 +38,11 @@ class EvmDemoCall : ClientStartableFlow {
             // Get any of the relevant details from the request here
             val inputs = requestBody.getRequestBodyAs(jsonMarshallingService, EvmDemoCallInput::class.java)
             val options = CallOptions(EvmOptions(inputs.rpcUrl!!, ""))
+            val token = FractionalOwnershipToken(evmService, options)
 
             log.info("Querying Transaction Receipt for ${inputs.address} ...")
-            val receipt = evmService.call(
-                "balanceOf", inputs.contractAddress!!, options, Type.UINT256, listOf(
-                    Parameter.of("from", Type.ADDRESS, inputs.address!!),
-                    Parameter.of("id", Type.UINT256, 1.toBigInteger())
-                )
-            )
-            println(receipt)
+            val receipt = token.balanceOf(inputs.address!!, 1.toBigInteger())
+
             return receipt.toString()
         } catch (e: Exception) {
             log.error("Unexpected error while processing the flow", e)
