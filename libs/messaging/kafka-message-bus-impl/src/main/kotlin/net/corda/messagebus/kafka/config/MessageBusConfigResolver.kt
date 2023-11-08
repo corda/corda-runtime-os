@@ -12,7 +12,6 @@ import net.corda.messaging.api.exception.CordaMessageAPIConfigException
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PROPERTIES
-import net.corda.utilities.debug
 import org.apache.kafka.clients.producer.ProducerConfig.PARTITIONER_CLASS_CONFIG
 import org.osgi.framework.FrameworkUtil
 import org.slf4j.LoggerFactory
@@ -64,13 +63,15 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
             .withFallback(defaults)
             .resolve()
 
-        logger.debug {"Resolved kafka configuration: ${resolvedConfig.toSafeConfig().root().render()}" }
+//        logger.debug {"Resolved kafka configuration: ${resolvedConfig.toSafeConfig().root().render()}" }
+        logger.info("Resolved kafka configuration: ${resolvedConfig.toSafeConfig().root().render()}")
 
         // Trim down to just the Kafka config for the specified role.
         val roleConfig = resolvedConfig.getConfig("roles.$rolePath")
         val properties = roleConfig.toKafkaProperties()
 
-        logger.debug {"Kafka properties for role $rolePath: $properties" }
+//        logger.debug {"Kafka properties for role $rolePath: $properties" }
+        logger.info("Kafka properties for role $rolePath: $properties")
         return properties
     }
 
@@ -103,6 +104,9 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
             consumerConfig.clientId,
             messageBusConfig.getString(BootConfig.TOPIC_PREFIX)
         )
+        logger.info("Resolved message bus config with the prefix: " +
+                messageBusConfig.getString(BootConfig.TOPIC_PREFIX)
+        )
         return Pair(resolvedConfig, kafkaProperties)
     }
 
@@ -124,6 +128,9 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
             producerConfig.transactional,
             messageBusConfig.getString(BootConfig.TOPIC_PREFIX),
             producerConfig.throwOnSerializationError
+        )
+        logger.info("Resolved message bus config with the prefix: " +
+                messageBusConfig.getString(BootConfig.TOPIC_PREFIX)
         )
         return Pair(resolvedConfig, kafkaProperties)
     }
