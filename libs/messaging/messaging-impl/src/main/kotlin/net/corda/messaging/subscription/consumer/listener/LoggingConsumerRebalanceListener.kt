@@ -16,15 +16,15 @@ open class LoggingConsumerRebalanceListener(clientId: String) : CordaConsumerReb
      * When a [partitions] are revoked write to the log.
      */
     override fun onPartitionsRevoked(partitions: Collection<CordaTopicPartition>) {
-        val partitionIds = partitions.map { it.partition }.joinToString(",")
-        log.info("Partitions revoked: $partitionIds.")
+//        val partitionIds = partitions.map { it.partition }.joinToString(",")
+        log.info("Partitions revoked: $partitions.")
     }
 
     /**
      * When a [partitions] are assigned write to the log.
      */
     override fun onPartitionsAssigned(partitions: Collection<CordaTopicPartition>) {
-        val partitionIds = partitions.map { it.partition }.joinToString(",")
-        log.info("Partitions assigned: $partitionIds.")
+//        val partitionIds = partitions.map { it.partition }.joinToString(",")
+        log.info("Partitions assigned: $partitions.")
     }
 }

@@ -454,6 +454,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 "Partitions for topic $topic are null. " +
                         "Kafka may not have completed startup."
             )
+        log.info("Removing prefix: \"${config.topicPrefix}\" from partitions: $listOfPartitions")
 
         return listOfPartitions.map {
             CordaTopicPartition(it.topic().removePrefix(config.topicPrefix), it.partition())
@@ -480,6 +481,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     override fun assign(partitions: Collection<CordaTopicPartition>) {
         try {
+            log.info("Amending prefix: \"${config.topicPrefix}\" to partitions: $partitions")
             consumer.assign(partitions.toTopicPartitions(config.topicPrefix))
         } catch (ex: Exception) {
             when (ex::class.java) {
@@ -501,7 +503,9 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     override fun assignment(): Set<CordaTopicPartition> {
         return try {
-            consumer.assignment().toCordaTopicPartitions(config.topicPrefix).toSet()
+            val partition = consumer.assignment()
+            log.info("Removing prefix: \"${config.topicPrefix}\" from partition: $partition")
+            partition.toCordaTopicPartitions(config.topicPrefix).toSet()
         } catch (ex: Exception) {
             when (ex::class.java) {
                 in fatalExceptions -> {
@@ -522,6 +526,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     override fun position(partition: CordaTopicPartition): Long {
         return try {
+            log.info("Amending prefix: \"${config.topicPrefix}\" to partition: $partition")
             consumer.position(partition.toTopicPartition(config.topicPrefix))
         } catch (ex: Exception) {
             when (ex::class.java) {
@@ -543,6 +548,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     override fun seek(partition: CordaTopicPartition, offset: Long) {
         try {
+            log.info("Amending prefix: \"${config.topicPrefix}\" to partition: $partition")
             consumer.seek(partition.toTopicPartition(config.topicPrefix), offset)
         } catch (ex: Exception) {
             when (ex::class.java) {
@@ -568,6 +574,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     override fun seekToBeginning(partitions: Collection<CordaTopicPartition>) {
         try {
+            log.info("Amending prefix: \"${config.topicPrefix}\" to partitions: $partitions")
             consumer.seekToBeginning(partitions.toTopicPartitions(config.topicPrefix))
         } catch (ex: Exception) {
             when (ex::class.java) {
@@ -594,6 +601,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     override fun seekToEnd(partitions: Collection<CordaTopicPartition>) {
         try {
+            log.info("Amending prefix: \"${config.topicPrefix}\" to partitions: $partitions")
             consumer.seekToEnd(partitions.toTopicPartitions(config.topicPrefix))
         } catch (ex: Exception) {
             when (ex::class.java) {
@@ -622,6 +630,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         partitions: Collection<CordaTopicPartition>,
     ): Map<CordaTopicPartition, Long> {
         return try {
+            log.info("Amending/removing prefix: \"${config.topicPrefix}\" to/from partitions: $partitions")
             val partitionMap = consumer.beginningOffsets(partitions.toTopicPartitions(config.topicPrefix))
             partitionMap.mapKeys { it.key.toCordaTopicPartition(config.topicPrefix) }
         } catch (ex: Exception) {
@@ -649,6 +658,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         partitions: Collection<CordaTopicPartition>,
     ): Map<CordaTopicPartition, Long> {
         return try {
+            log.info("Amending/Removing prefix: \"${config.topicPrefix}\" to/from partitions: $partitions")
             val partitionMap = consumer.endOffsets(partitions.toTopicPartitions(config.topicPrefix))
             partitionMap.mapKeys { it.key.toCordaTopicPartition(config.topicPrefix) }
         } catch (ex: Exception) {
@@ -673,6 +683,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     override fun resume(partitions: Collection<CordaTopicPartition>) {
         try {
+            log.info("Amending prefix: \"${config.topicPrefix}\" to partitions: $partitions")
             consumer.resume(partitions.toTopicPartitions(config.topicPrefix))
         } catch (ex: Exception) {
             when (ex::class.java) {
@@ -689,6 +700,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     override fun pause(partitions: Collection<CordaTopicPartition>) {
         try {
+            log.info("Amending prefix: \"${config.topicPrefix}\" to partitions: $partitions")
             consumer.pause(partitions.toTopicPartitions(config.topicPrefix))
         } catch (ex: Exception) {
             when (ex::class.java) {
@@ -705,7 +717,9 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
     override fun paused(): Set<CordaTopicPartition> {
         return try {
-            consumer.paused().toCordaTopicPartitions(config.topicPrefix).toSet()
+            val partitions = consumer.paused()
+            log.info("Removing prefix: \"${config.topicPrefix}\" from partitions: $partitions")
+            partitions.toCordaTopicPartitions(config.topicPrefix).toSet()
         } catch (ex: Exception) {
             when (ex::class.java) {
                 in fatalExceptions -> {
