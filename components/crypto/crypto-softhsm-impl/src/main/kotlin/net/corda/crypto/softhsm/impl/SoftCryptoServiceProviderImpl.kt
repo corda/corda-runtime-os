@@ -2,15 +2,12 @@ package net.corda.crypto.softhsm.impl
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
-import com.typesafe.config.ConfigList
-import com.typesafe.config.ConfigObject
-import com.typesafe.config.ConfigValue
+import com.typesafe.config.ConfigException
 import java.security.InvalidParameterException
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.Provider
 import java.security.PublicKey
-import java.util.InvalidPropertiesFormatException
 import java.util.concurrent.TimeUnit
 import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.configuration.read.ConfigChangedEvent
@@ -125,21 +122,30 @@ open class SoftCryptoServiceProviderImpl @Activate constructor(
             val expireAfterAccessMins = cachingConfig.getConfig("expireAfterAccessMins").getLong("default")
             val maximumSize = cachingConfig.getConfig("maximumSize").getLong("default")
             val hsmConfig = config.hsm()
-            val keysList: ConfigList = hsmConfig.wrappingKeys
+            val keysList = try {
+                val hsmConfigObject = config.getConfig("hsm")
+                hsmConfigObject.getConfigList("wrappingKeys")
+            } catch (e: ConfigException) {
+                throw InvalidParameterException("invalid wrappingKeys list: $e")
+            }
             val unmanagedWrappingKeys: Map<String, WrappingKey> =
-                keysList.map { it: ConfigValue ->
-                    when (it) {
-                        is ConfigObject -> {
-                            val alias = it["alias"]?.unwrapped()
-                            if (!(alias is String)) throw InvalidParameterException("alias missing or invalid")
-                            val salt = it["salt"]?.unwrapped()
-                            if (!(salt is String)) throw InvalidParameterException("salt missing or invalid")
-                            val passphrase = it["passphrase"]?.unwrapped()
-                            if (!(passphrase is String)) throw InvalidPropertiesFormatException("passphrase missingo rinalid")
-                            alias to WrappingKeyImpl.derive(schemeMetadata, passphrase, salt)
-                        }
-                        else -> throw InvalidParameterException("unexpected item ")
+                keysList.map {
+                    val alias = try {
+                        it.getString("alias")
+                    } catch (e: ConfigException) {
+                        throw InvalidParameterException("alias missing or invalid: $e")
                     }
+                    val salt = try {
+                        it.getString("salt")
+                    } catch (e: ConfigException) {
+                        throw InvalidParameterException("salt missing or invalid: $e")
+                    }
+                    val passphrase = try {
+                        it.getString("passphrase")
+                    } catch (e: ConfigException) {
+                        throw InvalidParameterException("passphrase missing or invalid: $e")
+                    }
+                    alias to WrappingKeyImpl.derive(schemeMetadata, passphrase, salt)
                 }.toMap()
             val defaultUnmanagedWrappingKeyName = hsmConfig.defaultWrappingKey
             require(unmanagedWrappingKeys.containsKey(defaultUnmanagedWrappingKeyName)) {
