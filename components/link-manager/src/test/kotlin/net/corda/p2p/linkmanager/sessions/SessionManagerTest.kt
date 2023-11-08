@@ -113,7 +113,6 @@ class SessionManagerTest {
         const val GROUP_ID = "myGroup"
         const val MAX_MESSAGE_SIZE = 1024 * 1024
         const val SESSION_REFRESH_THRESHOLD_KEY = 432000
-        val SESSIONS_PER_PEER = null
         const val SESSIONS_PER_COUNTERPARTIES_FOR_MEMBERS = 2
         const val SESSIONS_PER_COUNTERPARTIES_FOR_MGM = 1
         val RANDOM_BYTES = ByteBuffer.wrap("some-random-data".toByteArray())
@@ -293,21 +292,15 @@ class SessionManagerTest {
     private val outboundSessionPool = Mockito.mockConstruction(OutboundSessionPool::class.java)
     private val config = SessionManagerImpl.SessionManagerConfig(
         MAX_MESSAGE_SIZE,
-        SESSIONS_PER_PEER,
-        SessionManagerImpl.NumberOfSessionsPerPeer(
-            SESSIONS_PER_COUNTERPARTIES_FOR_MEMBERS,
-            SESSIONS_PER_COUNTERPARTIES_FOR_MGM,
-        ),
+        SESSIONS_PER_COUNTERPARTIES_FOR_MEMBERS,
+        SESSIONS_PER_COUNTERPARTIES_FOR_MGM,
         RevocationCheckMode.OFF,
         SESSION_REFRESH_THRESHOLD_KEY,
     )
     private val configWithOneSessionBetweenMembers = SessionManagerImpl.SessionManagerConfig(
         MAX_MESSAGE_SIZE,
-        SESSIONS_PER_PEER,
-        SessionManagerImpl.NumberOfSessionsPerPeer(
-            1,
-            SESSIONS_PER_COUNTERPARTIES_FOR_MGM,
-        ),
+        1,
+        SESSIONS_PER_COUNTERPARTIES_FOR_MGM,
         RevocationCheckMode.OFF,
         SESSION_REFRESH_THRESHOLD_KEY,
     )
@@ -1939,11 +1932,8 @@ class SessionManagerTest {
             configWithOneSessionBetweenMembers,
             SessionManagerImpl.SessionManagerConfig(
                 2 * MAX_MESSAGE_SIZE,
-                SESSIONS_PER_PEER,
-                SessionManagerImpl.NumberOfSessionsPerPeer(
-                    1,
-                    SESSIONS_PER_COUNTERPARTIES_FOR_MGM,
-                ),
+                1,
+                SESSIONS_PER_COUNTERPARTIES_FOR_MGM,
                 RevocationCheckMode.OFF,
                 SESSION_REFRESH_THRESHOLD_KEY,
             ),

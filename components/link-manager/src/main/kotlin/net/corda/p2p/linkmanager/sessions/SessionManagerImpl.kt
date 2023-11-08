@@ -146,8 +146,8 @@ internal class SessionManagerImpl(
     private val config = AtomicReference(
         SessionManagerConfig(
             1000000,
-            null,
-            NumberOfSessionsPerPeer(2, 1),
+            2,
+            1,
             RevocationCheckMode.OFF,
             432000
         )
@@ -203,16 +203,10 @@ internal class SessionManagerImpl(
     @VisibleForTesting
     internal data class SessionManagerConfig(
         val maxMessageSize: Int,
-        val sessionsPerCounterparties: Int?,
-        val numberOfSessionsPerPeer: NumberOfSessionsPerPeer,
+        val sessionsPerPeerForMembers: Int,
+        val sessionsPerPeerForMgm: Int,
         val revocationConfigMode: RevocationCheckMode,
         val sessionRefreshThreshold: Int,
-    )
-
-    @VisibleForTesting
-    internal data class NumberOfSessionsPerPeer(
-        val forMembers: Int,
-        val forMgm: Int,
     )
 
     internal inner class SessionManagerConfigChangeHandler : ConfigurationChangeHandler<SessionManagerConfig>(
@@ -255,14 +249,11 @@ internal class SessionManagerImpl(
         return SessionManagerConfig(
             config.getInt(LinkManagerConfiguration.MAX_MESSAGE_SIZE_KEY),
             if (config.getIsNull(LinkManagerConfiguration.SESSIONS_PER_PEER_KEY)) {
-                null
+                config.getInt(LinkManagerConfiguration.SESSIONS_PER_PEER_FOR_MEMBER_KEY)
             } else {
                 config.getInt(LinkManagerConfiguration.SESSIONS_PER_PEER_KEY)
             },
-            NumberOfSessionsPerPeer(
-                config.getInt(LinkManagerConfiguration.SESSIONS_PER_PEER_FOR_MEMBER_KEY),
-                config.getInt(LinkManagerConfiguration.SESSIONS_PER_PEER_FOR_MGM_KEY)
-            ),
+            config.getInt(LinkManagerConfiguration.SESSIONS_PER_PEER_FOR_MGM_KEY),
             config.getEnum(RevocationCheckMode::class.java, LinkManagerConfiguration.REVOCATION_CHECK_KEY),
             config.getInt(LinkManagerConfiguration.SESSION_REFRESH_THRESHOLD_KEY),
         )
@@ -330,10 +321,10 @@ internal class SessionManagerImpl(
     }
 
     private fun SessionCounterparties.calculateSessionMultiplicity(): Int {
-        return config.get().sessionsPerCounterparties ?: if (communicationWithMgm) {
-            config.get().numberOfSessionsPerPeer.forMgm
+        return if (communicationWithMgm) {
+            config.get().sessionsPerPeerForMgm
         } else {
-            config.get().numberOfSessionsPerPeer.forMembers
+            config.get().sessionsPerPeerForMembers
         }
     }
 
