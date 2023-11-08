@@ -192,18 +192,18 @@ class MessageBusConfigResolverTest {
     private val smartConfigFactory = SmartConfigFactory.createWithoutSecurityServices()
 
 //    @ParameterizedTest(name = "Config resolution for consumers: {0}")
-//    @MethodSource("consumerConfigSource")
-//    fun `config resolution for consumers`(role: ConsumerRoles, expectedProperties: Properties) {
-//        val messageBusConfig = loadTestConfig(TEST_CONFIG)
-//        val resolver = MessageBusConfigResolver(smartConfigFactory)
-//        val (_, properties) = resolver.resolve(
-//            messageBusConfig,
-//            ConsumerConfig(GROUP_NAME, CLIENT_ID, role)
-//        )
-//        assertConsumerProperties(expectedProperties, properties)
-//    }
+    @MethodSource("consumerConfigSource")
+    fun `config resolution for consumers`(role: ConsumerRoles, expectedProperties: Properties) {
+        val messageBusConfig = loadTestConfig(TEST_CONFIG)
+        val resolver = MessageBusConfigResolver(smartConfigFactory)
+        val (_, properties) = resolver.resolve(
+            messageBusConfig,
+            ConsumerConfig(GROUP_NAME, CLIENT_ID, role)
+        )
+        assertConsumerProperties(expectedProperties, properties)
+    }
 
-    @Test
+//    @Test
     fun `an empty config can be resolved correctly for consumers`() {
         val messageBusConfig = loadTestConfig(EMPTY_CONFIG)
         val resolver = MessageBusConfigResolver(smartConfigFactory)
