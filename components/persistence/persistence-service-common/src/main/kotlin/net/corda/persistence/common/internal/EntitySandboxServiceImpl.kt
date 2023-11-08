@@ -101,20 +101,24 @@ class EntitySandboxServiceImpl @Activate constructor(
         // Instruct all CustomMetadataConsumers to accept their metadata.
         sandboxService.acceptCustomMetadata(ctx)
 
-        logger.info(
-            "Initialising DB Sandbox for {}/{}[{}]",
-            virtualNode.holdingIdentity,
-            virtualNode.cpiIdentifier.name,
-            virtualNode.cpiIdentifier.version
-        )
-
-        return AutoCloseable {
-            logger.info(
-                "Closing DB Sandbox for {}/{}[{}]",
+        if (logger.isDebugEnabled) {
+            logger.debug(
+                "Initialising DB Sandbox for {}/{}[{}]",
                 virtualNode.holdingIdentity,
                 virtualNode.cpiIdentifier.name,
                 virtualNode.cpiIdentifier.version
             )
+        }
+
+        return AutoCloseable {
+            if (logger.isDebugEnabled) {
+                logger.debug(
+                    "Closing DB Sandbox for {}/{}[{}]",
+                    virtualNode.holdingIdentity,
+                    virtualNode.cpiIdentifier.name,
+                    virtualNode.cpiIdentifier.version
+                )
+            }
             jsonSerializers.close()
             jsonDeserializers.close()
             emfCloseable.close()
@@ -151,11 +155,14 @@ class EntitySandboxServiceImpl @Activate constructor(
         // Create the JPA entity set to pass into the EMF
         val entitiesSet = JpaEntitiesSet.create(virtualNode.vaultDmlConnectionId.toString(), entityClasses)
 
-        logger.info("Creating EntityManagerFactory for DB Sandbox ({}) with {}: {}",
-            virtualNode.holdingIdentity,
-            entitiesSet.persistenceUnitName,
-            entitiesSet.classes.joinToString(",") { "${it.canonicalName}[${it.classLoader}]" }
-        )
+        if (logger.isDebugEnabled) {
+            logger.debug(
+                "Creating EntityManagerFactory for DB Sandbox ({}) with {}: {}",
+                virtualNode.holdingIdentity,
+                entitiesSet.persistenceUnitName,
+                entitiesSet.classes.joinToString(",") { "${it.canonicalName}[${it.classLoader}]" }
+            )
+        }
 
         // Create the per-sandbox EMF for all the entities
         // NOTE: this is create and not getOrCreate as the dbConnectionManager does not cache vault EMFs.

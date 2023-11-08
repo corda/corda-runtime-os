@@ -4,6 +4,7 @@ import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.query.QueryRegistrationRequests
 import net.corda.data.membership.db.response.query.RegistrationRequestsQueryResponse
 import net.corda.membership.datamodel.RegistrationRequestEntity
+import net.corda.utilities.debug
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
@@ -18,7 +19,10 @@ internal class QueryRegistrationRequestsHandler(persistenceHandlerServices: Pers
         context: MembershipRequestContext,
         request: QueryRegistrationRequests,
     ): RegistrationRequestsQueryResponse {
-        logger.info("Retrieving registration requests.")
+        logger.debug {
+            "Retrieving registration requests. Request Subject X500 Name=${request.requestSubjectX500Name}, " +
+                    "statuses=${request.statuses}, limit=${request.limit}"
+        }
         val requestSubject = request.requestSubjectX500Name?.let {
             HoldingIdentity(MemberX500Name.parse(it), context.holdingIdentity.groupId).shortHash
         }

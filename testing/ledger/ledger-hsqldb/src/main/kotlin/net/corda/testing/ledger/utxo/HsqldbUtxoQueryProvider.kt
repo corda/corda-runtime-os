@@ -4,6 +4,7 @@ import net.corda.ledger.persistence.utxo.impl.AbstractUtxoQueryProvider
 import net.corda.ledger.persistence.utxo.impl.UtxoQueryProvider
 import net.corda.orm.DatabaseTypeProvider
 import net.corda.orm.DatabaseTypeProvider.Companion.HSQLDB_TYPE_FILTER
+import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -16,7 +17,7 @@ class HsqldbUtxoQueryProvider @Activate constructor(
     databaseTypeProvider: DatabaseTypeProvider
 ): AbstractUtxoQueryProvider() {
     init {
-        LoggerFactory.getLogger(this::class.java).info("Activated for {}", databaseTypeProvider.databaseType)
+        LoggerFactory.getLogger(this::class.java).debug { "Activated for ${databaseTypeProvider.databaseType}" }
     }
 
     override val persistTransaction: String

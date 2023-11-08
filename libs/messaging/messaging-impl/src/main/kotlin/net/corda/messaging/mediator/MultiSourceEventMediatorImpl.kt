@@ -9,10 +9,11 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorConsumer
+import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
-import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
+import net.corda.messaging.api.mediator.RoutingDestination
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.mediator.config.MediatorConsumerConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
@@ -165,6 +166,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
             var groups = allocateGroups(messages.map { it.toRecord() })
             var states = stateManager.get(messages.map { it.key.toString() }.distinct())
             while (groups.isNotEmpty()) {
+                val asynchronousOutputs = mutableListOf<MediatorMessage<Any>>()
                 val newStates = ConcurrentHashMap<String, State?>()
                 val updateStates = ConcurrentHashMap<String, State?>()
                 val deleteStates = ConcurrentHashMap<String, State?>()
@@ -197,26 +199,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                                 val event = queue.removeFirst()
                                 val response = config.messageProcessor.onNext(processorState, event)
                                 processorState = response.updatedState
-                                val output =
-                                    response.responseEvents.map { taskManagerHelper.convertToMessage(it) }
-                                output.forEach { message ->
-                                    val destination = messageRouter.getDestination(message)
-
-                                    @Suppress("UNCHECKED_CAST")
-                                    val reply = with(destination) {
-                                        message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
-                                        client.send(message) as MediatorMessage<E>?
-                                    }
-                                    if (reply != null) {
-                                        queue.addLast(
-                                            Record(
-                                                "",
-                                                event.key,
-                                                reply.payload,
-                                            )
-                                        )
-                                    }
-                                }
+                                processOutputEvents(response, asynchronousOutputs, queue, event)
                             }
 
                             // ---- Manage the state ----
@@ -246,6 +229,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                     it.join()
                 }
 
+                sendAsynchronousEvents(asynchronousOutputs)
                 // Persist states changes
                 val failedToCreateKeys = stateManager.create(newStates.values.mapNotNull { it })
                 val failedToCreate = stateManager.get(failedToCreateKeys.keys)
@@ -265,6 +249,48 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
     }
 
+    private fun sendAsynchronousEvents(busEvents: MutableList<MediatorMessage<Any>>) {
+        busEvents.forEach { message ->
+            with(messageRouter.getDestination(message)) {
+                message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
+                client.send(message)
+            }
+        }
+    }
+
+    /**
+     * Send any synchronous events immediately, add asynchronous events to the busEvents collection to be sent later
+     */
+    private fun processOutputEvents(
+        response: StateAndEventProcessor.Response<S>,
+        busEvents: MutableList<MediatorMessage<Any>>,
+        queue: ArrayDeque<Record<K, E>>,
+        event: Record<K, E>
+    ) {
+        val output = response.responseEvents.map { taskManagerHelper.convertToMessage(it) }
+        output.forEach { message ->
+            val destination = messageRouter.getDestination(message)
+            if (destination.type == RoutingDestination.Type.ASYNCHRONOUS) {
+                busEvents.add(message)
+            } else {
+                @Suppress("UNCHECKED_CAST")
+                val reply = with(destination) {
+                    message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
+                    client.send(message) as MediatorMessage<E>?
+                }
+                if (reply != null) {
+                    queue.addLast(
+                        Record(
+                            "",
+                            event.key,
+                            reply.payload,
+                        )
+                    )
+                }
+            }
+        }
+    }
+
     private fun allocateGroups(events: List<Record<K, E>>): List<Map<K, List<Record<K, E>>>> {
         val groups = mutableListOf<MutableMap<K, List<Record<K, E>>>>()
         val groupCountBasedOnEvents = (events.size / 20).coerceAtLeast(1)
@@ -280,6 +306,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
             val records = buckets[key]!!
             group[key] = records
         }
+
         return groups
     }
 }

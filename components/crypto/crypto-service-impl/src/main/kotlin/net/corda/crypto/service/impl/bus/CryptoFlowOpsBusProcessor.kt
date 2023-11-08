@@ -30,6 +30,7 @@ import net.corda.tracing.traceEventProcessingNullableSingle
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
 import net.corda.utilities.MDC_FLOW_ID
+import net.corda.utilities.debug
 import net.corda.utilities.trace
 import net.corda.utilities.translateFlowContextToMDC
 import net.corda.utilities.withMDC
@@ -81,7 +82,7 @@ class CryptoFlowOpsBusProcessor(
             withMDC(mdc) {
                 val requestPayload = request.request
                 val startTime = System.nanoTime()
-                logger.info("Handling ${requestPayload::class.java.name} for tenant ${request.context.tenantId}")
+                logger.debug { "Handling ${requestPayload::class.java.name} for tenant ${request.context.tenantId}" }
 
                 try {
                     if (Instant.now() >= expireAt) {
