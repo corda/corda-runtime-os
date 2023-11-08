@@ -181,7 +181,7 @@ class MGMRegistrationService @Activate constructor(
                     mgmRegistrationRequestHandler.persistRegistrationRequest(
                         registrationId,
                         member,
-                        mgmInfo,
+                        context,
                         newSerial - 1,
                     )
                     mgmInfo
@@ -236,7 +236,8 @@ class MGMRegistrationService @Activate constructor(
      */
     private fun calculateSerial(serialFromInfo: Long, serialFromRequest: Long): Long {
         val futureSerialBasedOnInfo = serialFromInfo + 1
-        // need to add 2 here since request serial is serial of the prev prev info
+        // Need to add 2 here as the registration request is persisted with the serial number of the previous member
+        // info (or 0 if it was first time registration).
         val futureSerialBasedOnRequest = serialFromRequest + 2
         return if (futureSerialBasedOnInfo >= futureSerialBasedOnRequest) {
             futureSerialBasedOnInfo

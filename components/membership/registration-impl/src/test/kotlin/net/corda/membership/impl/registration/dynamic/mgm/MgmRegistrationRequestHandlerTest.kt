@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -147,7 +148,7 @@ class MgmRegistrationRequestHandlerTest {
             mgmRegistrationRequestHandler.persistRegistrationRequest(
                 registrationId,
                 holdingIdentity,
-                signedMemberInfo,
+                memberContext,
                 serial,
             )
         }
@@ -158,12 +159,17 @@ class MgmRegistrationRequestHandlerTest {
 
     @Test
     fun `retrieving latest registration request is successful`() {
-        val request = mock<RegistrationRequestDetails>()
+        val oldRequest = mock<RegistrationRequestDetails> {
+            on { serial } doReturn 1
+        }
+        val newRequest = mock<RegistrationRequestDetails> {
+            on { serial } doReturn 2
+        }
         whenever(
             membershipQueryClient.queryRegistrationRequests(
-                eq(holdingIdentity), eq(holdingIdentity.x500Name), eq(listOf(RegistrationStatus.APPROVED)), eq(1)
+                eq(holdingIdentity), eq(holdingIdentity.x500Name), eq(listOf(RegistrationStatus.APPROVED)), anyOrNull()
             )
-        ).thenReturn(MembershipQueryResult.Success(listOf(request)))
-        assertThat(mgmRegistrationRequestHandler.getLastRegistrationRequest(holdingIdentity)).isEqualTo(request)
+        ).thenReturn(MembershipQueryResult.Success(listOf(oldRequest, newRequest)))
+        assertThat(mgmRegistrationRequestHandler.getLastRegistrationRequest(holdingIdentity)).isEqualTo(newRequest)
     }
 }

@@ -77,8 +77,7 @@ internal class MGMRegistrationRequestHandler(
             viewOwningIdentity = holdingIdentity,
             requestSubjectX500Name = holdingIdentity.x500Name,
             statuses = listOf(RegistrationStatus.APPROVED),
-            limit = 1,
-       ).getOrThrow().lastOrNull()
+        ).getOrThrow().sortedBy { it.serial }.lastOrNull()
     }
 
     fun throwIfRegistrationAlreadyApproved(holdingIdentity: HoldingIdentity) {

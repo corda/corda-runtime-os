@@ -75,12 +75,11 @@ import java.util.UUID
 
 class MGMRegistrationMemberInfoHandlerTest {
 
-    companion object {
+    private companion object {
         const val EMPTY_STRING = ""
         const val TEST_PLATFORM_VERSION = 5000
         const val TEST_SOFTWARE_VERSION = "5.0.0.0-test"
         const val GROUP_POLICY_PROPERTY_KEY = GROUP_POLICY_PREFIX_WITH_DOT + "test"
-        const val SERIAL_NUMBER = 1L
     }
 
     private val ecdhKeyId = "ABC123456789"
@@ -243,7 +242,6 @@ class MGMRegistrationMemberInfoHandlerTest {
             mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
                 holdingIdentity,
                 validTestContext,
-                SERIAL_NUMBER
             )
         }
 
@@ -256,7 +254,6 @@ class MGMRegistrationMemberInfoHandlerTest {
             mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
                 holdingIdentity,
                 validTestContext,
-                SERIAL_NUMBER
             )
         }
 
@@ -286,7 +283,6 @@ class MGMRegistrationMemberInfoHandlerTest {
             mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
                 holdingIdentity,
                 validTestContext,
-                SERIAL_NUMBER
             )
         }
 
@@ -299,7 +295,6 @@ class MGMRegistrationMemberInfoHandlerTest {
             mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
                 holdingIdentity,
                 validTestContext,
-                SERIAL_NUMBER
             )
         }
 
@@ -325,7 +320,6 @@ class MGMRegistrationMemberInfoHandlerTest {
             mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
                 holdingIdentity,
                 validTestContext,
-                SERIAL_NUMBER
             )
         }
 
@@ -341,7 +335,6 @@ class MGMRegistrationMemberInfoHandlerTest {
             mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
                 holdingIdentity,
                 validTestContext,
-                SERIAL_NUMBER
             )
         }
 
@@ -362,7 +355,6 @@ class MGMRegistrationMemberInfoHandlerTest {
             mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
                 holdingIdentity,
                 validTestContext,
-                SERIAL_NUMBER
             )
         }
         verify(virtualNodeInfoReadService).get(eq(holdingIdentity))
@@ -382,7 +374,6 @@ class MGMRegistrationMemberInfoHandlerTest {
             mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
                 holdingIdentity,
                 validTestContext,
-                SERIAL_NUMBER
             )
         }
         verify(virtualNodeInfoReadService).get(eq(holdingIdentity))
@@ -402,7 +393,6 @@ class MGMRegistrationMemberInfoHandlerTest {
             mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
                 holdingIdentity,
                 validTestContext,
-                SERIAL_NUMBER
             )
         }
         verify(virtualNodeInfoReadService).get(eq(holdingIdentity))
@@ -467,7 +457,6 @@ class MGMRegistrationMemberInfoHandlerTest {
             mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
                 holdingIdentity,
                 validTestContext,
-                SERIAL_NUMBER
             )
         }
     }
@@ -503,7 +492,6 @@ class MGMRegistrationMemberInfoHandlerTest {
             mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
                 holdingIdentity,
                 validTestContext,
-                SERIAL_NUMBER
             )
         }
     }
@@ -539,7 +527,6 @@ class MGMRegistrationMemberInfoHandlerTest {
             mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
                 holdingIdentity,
                 validTestContext,
-                SERIAL_NUMBER
             )
         }
     }
