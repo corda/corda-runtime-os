@@ -545,4 +545,6 @@ gradleEnterprise {
 }
 include 'libs:kotlin-coroutines'
 findProject(':libs:kotlin-coroutines')?.name = 'kotlin-coroutines'
+include 'testing:cpbs:evm-swaps'
+findProject(':testing:cpbs:evm-swaps')?.name = 'evm-swaps'
 
