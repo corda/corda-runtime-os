@@ -9,9 +9,9 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorConsumer
+import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
-import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.mediator.config.MediatorConsumerConfig
@@ -68,7 +68,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     private val running = AtomicBoolean(false)
     // TODO This timeout was set with CORE-17768 (changing configuration value would affect other messaging patterns)
     //  This should be reverted to use configuration value once event mediator polling is refactored (planned for 5.2)
-    private val pollTimeout = Duration.ofMillis(5)
+    private val pollTimeout = Duration.ofMillis(50)
 
     override fun start() {
         log.debug { "Starting multi-source event mediator with config: $config" }
