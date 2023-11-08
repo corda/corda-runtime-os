@@ -1,5 +1,12 @@
 package net.corda.applications.workers.smoketest.services
 
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
+import java.time.Duration
+import java.time.Instant
+import java.util.UUID
 import net.corda.applications.workers.smoketest.utils.PLATFORM_VERSION
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.toAvro
@@ -32,13 +39,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.slf4j.LoggerFactory
-import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
-import java.time.Duration
-import java.time.Instant
-import java.util.UUID
 
 /**
  * Tests for the Crypto RPC service
@@ -225,9 +225,9 @@ class CryptoRPCSmokeTests {
         assertEquals(expected.requestId, actual.requestId)
         assertEquals(expected.requestingComponent, actual.requestingComponent)
         assertEquals(expected.requestTimestamp, actual.requestTimestamp)
-        assertThat(actual.responseTimestamp.epochSecond)
-            .isGreaterThanOrEqualTo(expected.requestTimestamp.epochSecond)
-            .isLessThanOrEqualTo(now.epochSecond)
+        assertThat(actual.responseTimestamp.toEpochMilli())
+            .isGreaterThanOrEqualTo(expected.requestTimestamp.toEpochMilli())
+            .isLessThanOrEqualTo(now.toEpochMilli())
         assertSoftly { softly ->
             softly.assertThat(actual.other.items.size == expected.other.items.size)
             softly.assertThat(actual.other.items.containsAll(expected.other.items))

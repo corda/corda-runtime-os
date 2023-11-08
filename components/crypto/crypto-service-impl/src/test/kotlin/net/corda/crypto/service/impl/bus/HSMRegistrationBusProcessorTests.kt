@@ -1,5 +1,13 @@
 package net.corda.crypto.service.impl.bus
 
+import java.time.Instant
+import java.util.UUID
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutionException
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertSame
+import kotlin.test.assertTrue
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
@@ -32,14 +40,6 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
-import java.time.Instant
-import java.util.UUID
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ExecutionException
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertSame
-import kotlin.test.assertTrue
 
 class HSMRegistrationBusProcessorTests {
     companion object {
@@ -72,9 +72,9 @@ class HSMRegistrationBusProcessorTests {
             assertEquals(expected.requestId, actual.requestId)
             assertEquals(expected.requestingComponent, actual.requestingComponent)
             assertEquals(expected.requestTimestamp, actual.requestTimestamp)
-            assertThat(actual.responseTimestamp.epochSecond)
-                .isGreaterThanOrEqualTo(expected.requestTimestamp.epochSecond)
-                .isLessThanOrEqualTo(now.epochSecond)
+            assertThat(actual.responseTimestamp.toEpochMilli())
+                .isGreaterThanOrEqualTo(expected.requestTimestamp.toEpochMilli())
+                .isLessThanOrEqualTo(now.toEpochMilli())
             assertTrue(
                 actual.other.items.size == expected.other.items.size &&
                         actual.other.items.containsAll(expected.other.items) &&
