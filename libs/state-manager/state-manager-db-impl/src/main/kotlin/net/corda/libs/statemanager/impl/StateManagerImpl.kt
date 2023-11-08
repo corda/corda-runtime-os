@@ -44,6 +44,7 @@ class StateManagerImpl(
         states.map {
             it.toPersistentEntity()
         }.forEach { state ->
+            logger.info("Creating state for key [${state.key}]")
             try {
                 dataSource.connection.transaction {
                     stateRepository.create(it, state)
@@ -93,6 +94,10 @@ class StateManagerImpl(
 
     override fun delete(states: Collection<State>): Map<String, State> {
         if (states.isEmpty()) return emptyMap()
+
+        states.forEach {
+            logger.info("Deleting state for key [${it.key}]")
+        }
 
         try {
             val failedDeletes = dataSource.connection.transaction { connection ->

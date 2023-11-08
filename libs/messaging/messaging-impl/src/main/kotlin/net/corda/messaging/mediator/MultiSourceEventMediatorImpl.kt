@@ -197,6 +197,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                             val queue = ArrayDeque(it.value)
                             while (queue.isNotEmpty()) {
                                 val event = queue.removeFirst()
+                                log.info("Processing event [${eventType(event)}] [${event.key}]")
                                 val response = config.messageProcessor.onNext(processorState, event)
                                 processorState = response.updatedState
                                 processOutputEvents(response, asynchronousOutputs, queue, event)

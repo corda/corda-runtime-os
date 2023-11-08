@@ -19,6 +19,9 @@ class MessageBusClient(
     }
 
     override fun send(message: MediatorMessage<*>): MediatorMessage<*>? {
+        val key = message.getProperty(MSG_PROP_KEY)
+        val topic = message.getProperty<String>(MSG_PROP_ENDPOINT)
+        log.info("Sending ${eventType(message)} [$key] to [$topic]")
         producer.send(message.toCordaProducerRecord(), null)
         return null
     }

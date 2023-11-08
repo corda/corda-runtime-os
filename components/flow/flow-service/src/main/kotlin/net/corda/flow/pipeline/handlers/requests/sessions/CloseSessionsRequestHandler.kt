@@ -11,12 +11,17 @@ import net.corda.flow.pipeline.handlers.requests.sessions.service.CloseSessionSe
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 @Component(service = [FlowRequestHandler::class])
 class CloseSessionsRequestHandler @Activate constructor(
     @Reference(service = CloseSessionService::class)
     private val closeSessionService: CloseSessionService
 ) : FlowRequestHandler<FlowIORequest.CloseSessions> {
+    private companion object {
+        private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
     override val type = FlowIORequest.CloseSessions::class.java
 
@@ -46,6 +51,8 @@ class CloseSessionsRequestHandler @Activate constructor(
         context: FlowEventContext<Any>,
         request: FlowIORequest.CloseSessions
     ): FlowEventContext<Any> {
+        val sessions = getSessionsToClose(request)
+        log.info("Closing sessions [$sessions]")
         val checkpoint = context.checkpoint
         try {
             closeSessionService.handleCloseForSessions(checkpoint, getSessionsToClose(request))

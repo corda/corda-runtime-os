@@ -12,7 +12,6 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.state.FlowContext
 import net.corda.flow.utils.KeyValueStore
 import net.corda.session.manager.Constants
-import net.corda.utilities.trace
 import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.messaging.FlowInfo
 import net.corda.v5.application.messaging.FlowSession
@@ -118,7 +117,7 @@ class FlowSessionImpl(
     override fun close() {
         if (canCloseSession()) {
             fiber.suspend(FlowIORequest.CloseSessions(setOf(sourceSessionId)))
-            log.trace { "Closing session: $sourceSessionId" }
+            log.info("Closing session: $sourceSessionId")
         }
     }
 
