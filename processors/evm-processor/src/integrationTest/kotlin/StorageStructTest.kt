@@ -1,16 +1,16 @@
-import net.corda.data.interop.evm.request.*
-import net.corda.libs.configuration.SmartConfig
+
 import net.corda.interop.evm.dispatcher.factory.GenericDispatcherFactory
+import net.corda.libs.configuration.SmartConfig
 import net.corda.processor.evm.internal.EVMOpsProcessor
 import okhttp3.OkHttpClient
-import org.junit.jupiter.api.TestInstance
-import org.web3j.EVMTest
-import org.web3j.NodeType
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.TestInstance
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.whenever
-import org.web3j.protocol.Web3j
+import org.web3j.EVMTest
+import org.web3j.NodeType
 import org.web3j.crypto.Credentials
+import org.web3j.protocol.Web3j
 import org.web3j.protocol.http.HttpService
 import org.web3j.tx.gas.DefaultGasProvider
 
@@ -34,7 +34,7 @@ class StorageStructTest {
         whenever(mockedSmartConfig.getInt("maxRetryAttempts")).thenReturn(3)
         whenever(mockedSmartConfig.getLong("maxRetryDelay")).thenReturn(3000.toLong())
         whenever(mockedSmartConfig.getInt("threadPoolSize")).thenReturn(5)
-        processor = EVMOpsProcessor(dispatcherFactory, OkHttpClient(), mockedSmartConfig)
+        processor = EVMOpsProcessor(dispatcherFactory, OkHttpClient(), mockedSmartConfig, mock())
 
         val web3j = Web3j.build(HttpService(evmRpcUrl))
         val credentials = Credentials.create(privateKey)

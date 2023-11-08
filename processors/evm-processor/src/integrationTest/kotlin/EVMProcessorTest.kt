@@ -1,29 +1,39 @@
+
+import java.math.BigInteger
+import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.interop.evm.EvmRequest
 import net.corda.data.interop.evm.EvmResponse
-import net.corda.data.interop.evm.request.*
-import net.corda.libs.configuration.SmartConfig
+import net.corda.data.interop.evm.request.Call
+import net.corda.data.interop.evm.request.CallOptions
+import net.corda.data.interop.evm.request.GetTransactionReceipt
+import net.corda.data.interop.evm.request.Parameter
+import net.corda.data.interop.evm.request.Transaction
+import net.corda.data.interop.evm.request.TransactionOptions
+import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.interop.evm.dispatcher.factory.GenericDispatcherFactory
+import net.corda.libs.configuration.SmartConfig
+import net.corda.messaging.api.records.Record
 import net.corda.processor.evm.internal.EVMOpsProcessor
 import okhttp3.OkHttpClient
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.MethodOrderer
+import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import java.util.concurrent.CompletableFuture
+import org.junit.jupiter.api.TestMethodOrder
+import org.mockito.Mockito.mock
+import org.mockito.kotlin.any
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import org.web3j.EVMTest
 import org.web3j.NodeType
-import org.mockito.Mockito.mock
-import org.mockito.kotlin.whenever
-import org.web3j.protocol.Web3j
 import org.web3j.crypto.Credentials
+import org.web3j.protocol.Web3j
 import org.web3j.protocol.http.HttpService
 import org.web3j.tx.gas.DefaultGasProvider
-import org.junit.jupiter.api.MethodOrderer
-import org.junit.jupiter.api.TestMethodOrder
-import org.junit.jupiter.api.Order
 import org.web3j.utils.Numeric
-import java.math.BigInteger
 
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -39,6 +49,8 @@ class EvmProcessorTest {
 
     // The Ethereum Operations Processor
     private lateinit var processor: EVMOpsProcessor
+
+    private lateinit var externalEventResponseFactory: ExternalEventResponseFactory
 
     // The main address of the wallet who does all these signing in ets
     private val mainAddress = "0xfe3b557e8fb62b89f4916b721be55ceb828dbd73"
@@ -76,18 +88,16 @@ class EvmProcessorTest {
         var hasResult = false
         var receipt = "null"
         while (!hasResult) {
-
             val transactionHashRequest = EvmRequest(
                 mainAddress,
                 contractAddress,
                 evmRpcUrl,
                 "",
                 GetTransactionReceipt(transactionHash),
+                mock()
             )
-            val transactionHashReceipt = CompletableFuture<EvmResponse>()
-            processor.onNext(transactionHashRequest, transactionHashReceipt)
-            val transactionReceipt = transactionHashReceipt.get()
-            val transactionReceiptResponse = transactionReceipt.payload
+            val transactionReceipt = processor.onNext(listOf(Record("", "", transactionHashRequest))).single().value!! as EvmResponse
+            val transactionReceiptResponse = transactionReceipt.payload as String
             if (transactionReceipt.payload == "null") {
                 Thread.sleep(1000)
             } else {
@@ -101,11 +111,12 @@ class EvmProcessorTest {
     @BeforeAll
     fun setUp(
     ) {
+        externalEventResponseFactory = mock()
         val mockedSmartConfig = mock(SmartConfig::class.java)
         whenever(mockedSmartConfig.getInt("maxRetryAttempts")).thenReturn(3)
         whenever(mockedSmartConfig.getLong("maxRetryDelay")).thenReturn(3000.toLong())
         whenever(mockedSmartConfig.getInt("threadPoolSize")).thenReturn(5)
-        processor = EVMOpsProcessor(dispatcherFactory, OkHttpClient(), mockedSmartConfig)
+        processor = EVMOpsProcessor(dispatcherFactory, OkHttpClient(), mockedSmartConfig, externalEventResponseFactory)
 
         val web3j = Web3j.build(HttpService(evmRpcUrl))
         val credentials = Credentials.create(privateKey)
@@ -113,7 +124,6 @@ class EvmProcessorTest {
         val contract = ERC20_sol_ERC20.deploy(web3j, credentials, contractGasProvider).send()
         contractAddress = contract.contractAddress
     }
-
 
     @Order(1)
     @Test
@@ -144,17 +154,14 @@ class EvmProcessorTest {
                         "10"
                     ),
                 )
-            )
-
+            ),
+            mock()
         )
 
-        val evmResponse = CompletableFuture<EvmResponse>()
-        processor.onNext(evmRequest, evmResponse)
-        val transactionReceipt = evmResponse.get().payload
-        val receipt = waitForTransactionFinality(transactionReceipt)
+        val transactionReceipt = processor.onNext(listOf(Record("", "", evmRequest))).single().value!! as EvmResponse
+        val receipt = waitForTransactionFinality(transactionReceipt.payload as String)
         assertNotNull(receipt)
     }
-
 
     @Order(2)
     @Test
@@ -174,12 +181,11 @@ class EvmProcessorTest {
                         mainAddress
                     )
                 )
-
-            )
+            ),
+            mock()
         )
-        val evmResponse = CompletableFuture<EvmResponse>()
-        processor.onNext(evmRequest, evmResponse)
-        assertThat(evmResponse.get().payload).isEqualTo(ownerInitialBalance)
+        val response = processor.onNext(listOf(Record("", "", evmRequest))).single().value!! as EvmResponse
+        assertThat(response.payload).isEqualTo(ownerInitialBalance)
     }
 
     @Order(3)
@@ -210,18 +216,15 @@ class EvmProcessorTest {
                         "100"
                     ),
                 )
-            )
+            ),
+            mock()
 
         )
 
-        val evmResponse = CompletableFuture<EvmResponse>()
-        processor.onNext(evmRequest, evmResponse)
-
-        val transactionReceipt = evmResponse.get().payload
-        val receipt = waitForTransactionFinality(transactionReceipt)
+        val transactionReceipt = processor.onNext(listOf(Record("", "", evmRequest))).single().value!! as EvmResponse
+        val receipt = waitForTransactionFinality(transactionReceipt.payload as String)
         assertNotNull(receipt)
     }
-
 
     @Order(4)
     @Test
@@ -246,14 +249,12 @@ class EvmProcessorTest {
                         otherAddress
                     )
                 )
-
-            )
+            ),
+            mock()
         )
-        val evmResponse = CompletableFuture<EvmResponse>()
-        processor.onNext(evmRequest, evmResponse)
-        assertThat(evmResponse.get().payload).isEqualTo(allowedBalance)
+        val response = processor.onNext(listOf(Record("", "", evmRequest))).single().value!! as EvmResponse
+        assertThat(response.payload).isEqualTo(allowedBalance)
     }
-
 
     @Order(5)
     @Test
@@ -267,12 +268,11 @@ class EvmProcessorTest {
                 "decimals",
                 CallOptions("latest"),
                 listOf()
-
-            )
+            ),
+            mock()
         )
-        val evmResponse = CompletableFuture<EvmResponse>()
-        processor.onNext(evmRequest, evmResponse)
-        assertThat(evmResponse.get().payload).isEqualTo(decimals)
+        val response = processor.onNext(listOf(Record("", "", evmRequest))).single().value!! as EvmResponse
+        assertThat(response.payload).isEqualTo(decimals)
     }
 
     @Order(6)
@@ -287,14 +287,12 @@ class EvmProcessorTest {
                 "name",
                 CallOptions("latest"),
                 listOf()
-
-            )
+            ),
+            mock()
         )
-        val evmResponse = CompletableFuture<EvmResponse>()
-        processor.onNext(evmRequest, evmResponse)
-        assertThat(evmResponse.get().payload).isEqualTo(tokenName)
+        val response = processor.onNext(listOf(Record("", "", evmRequest))).single().value!! as EvmResponse
+        assertThat(response.payload).isEqualTo(tokenName)
     }
-
 
     @Order(7)
     @Test
@@ -308,14 +306,12 @@ class EvmProcessorTest {
                 "symbol",
                 CallOptions("latest"),
                 listOf()
-
-            )
+            ),
+            mock()
         )
-        val evmResponse = CompletableFuture<EvmResponse>()
-        processor.onNext(evmRequest, evmResponse)
-        assertThat(evmResponse.get().payload).isEqualTo(tokenSymbol)
+        val response = processor.onNext(listOf(Record("", "", evmRequest))).single().value!! as EvmResponse
+        assertThat(response.payload).isEqualTo(tokenSymbol)
     }
-
 
     @Order(8)
     @Test
@@ -329,14 +325,12 @@ class EvmProcessorTest {
                 "totalSupply",
                 CallOptions("latest"),
                 listOf()
-
-            )
+            ),
+            mock()
         )
-        val evmResponse = CompletableFuture<EvmResponse>()
-        processor.onNext(evmRequest, evmResponse)
-        assertThat(evmResponse.get().payload).isEqualTo(totalSupply)
+        val response = processor.onNext(listOf(Record("", "", evmRequest))).single().value!! as EvmResponse
+        assertThat(response.payload).isEqualTo(totalSupply)
     }
-
 
     @Order(9)
     @Test
@@ -356,15 +350,12 @@ class EvmProcessorTest {
                         "100"
                     )
                 )
-
-            )
+            ),
+            mock()
         )
-        val evmResponse = CompletableFuture<EvmResponse>()
-
-        processor.onNext(evmRequest, evmResponse)
-        assertThat(evmResponse.isCompletedExceptionally)
+        assertThat(processor.onNext(listOf(Record("", "", evmRequest)))).isEmpty()
+        verify(externalEventResponseFactory).platformError(any<ExternalEventContext>(), any<Throwable>())
     }
-
 
     @Order(10)
     @Test
@@ -394,13 +385,12 @@ class EvmProcessorTest {
                         "10"
                     ),
                 )
-            )
+            ),
+            mock()
         )
-        val evmResponse = CompletableFuture<EvmResponse>()
-        processor.onNext(evmRequest, evmResponse)
-        assertThat(evmResponse.isCompletedExceptionally)
+        assertThat(processor.onNext(listOf(Record("", "", evmRequest)))).isEmpty()
+        verify(externalEventResponseFactory).platformError(any<ExternalEventContext>(), any<Throwable>())
     }
-
 
     @Order(11)
     @Test
@@ -430,13 +420,12 @@ class EvmProcessorTest {
                         "10"
                     ),
                 )
-            )
+            ),
+            mock()
         )
-        val evmResponse = CompletableFuture<EvmResponse>()
-        processor.onNext(evmRequest, evmResponse)
-        assertThat(evmResponse.isCompletedExceptionally)
+        assertThat(processor.onNext(listOf(Record("", "", evmRequest)))).isEmpty()
+        verify(externalEventResponseFactory).platformError(any<ExternalEventContext>(), any<Throwable>())
     }
-
 
     @Order(12)
     @Test
@@ -466,13 +455,12 @@ class EvmProcessorTest {
                         "10"
                     ),
                 )
-            )
+            ),
+            mock()
         )
-        val evmResponse = CompletableFuture<EvmResponse>()
-        processor.onNext(evmRequest, evmResponse)
-        assertThat(evmResponse.isCompletedExceptionally)
+        assertThat(processor.onNext(listOf(Record("", "", evmRequest)))).isEmpty()
+        verify(externalEventResponseFactory).platformError(any<ExternalEventContext>(), any<Throwable>())
     }
-
 
     @Order(13)
     @Test
@@ -502,12 +490,10 @@ class EvmProcessorTest {
                         "10"
                     ),
                 )
-            )
+            ),
+            mock()
         )
-        val evmResponse = CompletableFuture<EvmResponse>()
-        processor.onNext(evmRequest, evmResponse)
-        assertThat(evmResponse.isCompletedExceptionally)
+        assertThat(processor.onNext(listOf(Record("", "", evmRequest)))).isEmpty()
+        verify(externalEventResponseFactory).platformError(any<ExternalEventContext>(), any<Throwable>())
     }
-
-
 }
