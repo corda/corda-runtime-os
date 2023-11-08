@@ -1,12 +1,5 @@
 package net.corda.applications.workers.smoketest.services
 
-import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
-import java.time.Duration
-import java.time.Instant
-import java.util.UUID
 import net.corda.applications.workers.smoketest.utils.PLATFORM_VERSION
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.toAvro
@@ -39,6 +32,13 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.slf4j.LoggerFactory
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
+import java.time.Duration
+import java.time.Instant
+import java.util.UUID
 
 /**
  * Tests for the Crypto RPC service

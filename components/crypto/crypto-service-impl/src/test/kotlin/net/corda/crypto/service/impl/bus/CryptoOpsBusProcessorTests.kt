@@ -1,11 +1,5 @@
 package net.corda.crypto.service.impl.bus
 
-import java.time.Instant
-import java.util.UUID
-import java.util.concurrent.CompletableFuture
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.config.impl.retrying
@@ -29,6 +23,12 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import java.time.Instant
+import java.util.*
+import java.util.concurrent.CompletableFuture
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 //
 //import net.corda.configuration.read.ConfigChangedEvent

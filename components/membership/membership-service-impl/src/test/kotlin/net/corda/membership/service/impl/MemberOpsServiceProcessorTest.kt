@@ -1,11 +1,5 @@
 package net.corda.membership.service.impl
 
-import java.time.Instant
-import java.util.UUID
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ExecutionException
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
@@ -57,6 +51,12 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.time.Instant
+import java.util.*
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutionException
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 class MemberOpsServiceProcessorTest {
 
