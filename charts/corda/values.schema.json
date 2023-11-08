@@ -1297,6 +1297,13 @@
                                         "$ref": "#/$defs/basicAuthConfig"
                                     }
                                 ]
+                            },
+                            "rest": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/basicAuthConfig"
+                                    }
+                                ]
                             }
                         },
                         "clientImage": {
@@ -2045,7 +2052,8 @@
                         },
                         {
                             "required": [
-                                "service"
+                                "service",
+                                "stateManager"
                             ],
                             "additionalProperties": false,
                             "properties": {
@@ -2058,6 +2066,9 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
+                                "stateManager" : {
+                                    "$ref": "#/$defs/stateManager"
+                                },
                                 "service": {
                                     "type": "object",
                                     "default": {},

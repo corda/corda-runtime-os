@@ -1,29 +1,36 @@
 package net.corda.crypto.rest.impl
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.rest.KeyRotationRestResource
 import net.corda.crypto.rest.response.KeyRotationResponse
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
+import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationStatus
 import net.corda.data.crypto.wire.ops.key.rotation.KeyType
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.platform.PlatformInfoProvider
+import net.corda.libs.statemanager.api.Metadata
+import net.corda.libs.statemanager.api.State
+import net.corda.libs.statemanager.api.StateManager
+import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.rest.PluggableRestResource
-import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.rest.response.ResponseEntity
 import net.corda.schema.Schemas.Crypto.REKEY_MESSAGE_TOPIC
 import net.corda.schema.configuration.ConfigKeys
@@ -33,8 +40,12 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.time.Instant
 import java.util.UUID
 
+private const val UPLOAD_TOPIC = REKEY_MESSAGE_TOPIC
+
+@Suppress("LongParameterList")
 @Component(service = [PluggableRestResource::class])
 class KeyRotationRestResourceImpl @Activate constructor(
     @Reference(service = PlatformInfoProvider::class)
@@ -45,78 +56,62 @@ class KeyRotationRestResourceImpl @Activate constructor(
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
+    @Reference(service = StateManagerFactory::class)
+    private val stateManagerFactory: StateManagerFactory,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory
 ) : KeyRotationRestResource, PluggableRestResource<KeyRotationRestResource>, Lifecycle {
+
+
     private companion object {
-        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    private val uploadTopic = REKEY_MESSAGE_TOPIC
-    private var publisher: Publisher? = null
+    private val configKeys = setOf(
+        ConfigKeys.MESSAGING_CONFIG,
+        ConfigKeys.CRYPTO_CONFIG,
+        ConfigKeys.STATE_MANAGER_CONFIG,
+    )
+
+    private var publishToKafka: Publisher? = null
+    private var stateManager: StateManager? = null
+    private val serializer = cordaAvroSerializationFactory.createAvroSerializer<KeyRotationStatus>()
+    private val deserializer = cordaAvroSerializationFactory.createAvroDeserializer({}, KeyRotationStatus::class.java)
 
     override val targetInterface: Class<KeyRotationRestResource> = KeyRotationRestResource::class.java
     override val protocolVersion: Int = platformInfoProvider.localWorkerPlatformVersion
 
-    @VisibleForTesting
-    fun initialise(config: Map<String, SmartConfig>) {
-        val messagingConfig = config.getConfig(ConfigKeys.MESSAGING_CONFIG)
-
-        // Initialise publisher with messaging config
-        publisher?.close()
-        val newPublisher = publisherFactory.createPublisher(PublisherConfig("KeyRotationRestResource", false), messagingConfig)
-        newPublisher.start()
-        publisher = newPublisher
-    }
-
-
-    override fun getKeyRotationStatus(): List<Pair<String, List<String>>> {
-        TODO("Not yet implemented")
-    }
-
-    override fun startKeyRotation(oldKeyAlias: String, newKeyAlias: String): ResponseEntity<KeyRotationResponse> {
-        // We cannot validate oldKeyAlias or newKeyAlias early here on the client side of the RPC since
-        // those values are considered sensitive.
-
-        // We need to create a Record that tells Crypto processor to do key rotation
-        // Do we need to start the publisher? FlowRestResource is not starting its publisher for some reason
-        val requestId = UUID.randomUUID().toString()
-
-        val keyRotationRequest = KeyRotationRequest(
-            requestId,
-            KeyType.UNMANAGED,
-            oldKeyAlias,
-            newKeyAlias,
-            null,
-            null
-        )
-
-        publisher?.publish(listOf(Record(uploadTopic, requestId, keyRotationRequest)))
-            ?: throw ServiceUnavailableException("Key rotation resource has not been initialised.")
-
-        return ResponseEntity.accepted(KeyRotationResponse(requestId, oldKeyAlias, newKeyAlias))
-    }
-
-    private var isUp = false
-    override val isRunning get() = publisher != null && isUp
     private val lifecycleCoordinator =
         lifecycleCoordinatorFactory.createCoordinator<KeyRotationRestResource>(::eventHandler)
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
     )
 
+    override val isRunning: Boolean
+        get() = lifecycleCoordinator.isRunning
+
+    private var subscriptionRegistrationHandle: RegistrationHandle? = null
+
+    override fun start() {
+        logger.info("KeyRotationRestResource starting.")
+        lifecycleCoordinator.start()
+    }
+
+    override fun stop() {
+        logger.info("KeyRotationRestResource stopping.")
+        lifecycleCoordinator.stop()
+    }
+
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
+        logger.info("Handling KeyRotationRestResource event, $event.")
+
         when (event) {
             is StartEvent -> {
                 dependentComponents.registerAndStartAll(coordinator)
-                if (!isUp) {
-                    isUp = true
-                    signalUpStatus()
-                }
+                coordinator.updateStatus(LifecycleStatus.UP)
             }
             is RegistrationStatusChangeEvent -> {
-                configurationReadService.registerComponentForUpdates(
-                    lifecycleCoordinator,
-                    setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG)
-                )
+                configurationReadService.registerComponentForUpdates(lifecycleCoordinator, configKeys)
                 if (event.status == LifecycleStatus.UP) {
                     lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
                 } else {
@@ -125,25 +120,118 @@ class KeyRotationRestResourceImpl @Activate constructor(
             }
             is ConfigChangedEvent -> {
                 initialise(event.config)
+
+                val stateManagerConfig = event.config.getConfig(ConfigKeys.STATE_MANAGER_CONFIG)
+
+                logger.info("State manager config is $stateManagerConfig")
+                stateManager?.stop()
+                stateManager = stateManagerFactory.create(stateManagerConfig).also { it.start() }
+                logger.info("State manager created and started $stateManager")
+
+                // close the lifecycle registration first to prevent down being signaled
+                //subscriptionRegistrationHandle?.close()
+                //subscriptionRegistrationHandle = lifecycleCoordinator.followStatusChangesByName(setOf(stateManager!!.name,
+                //    LifecycleCoordinatorName.forComponent<ConfigurationReadService>()))
+            }
+            is StopEvent -> {
+                subscriptionRegistrationHandle?.close()
+                stateManager?.stop()
+                publishToKafka?.close()
             }
             else -> {
-                log.error("Unexpected event $event!")
+                logger.error("Unexpected event $event!")
             }
         }
     }
 
-    private fun signalUpStatus() {
-        if (isRunning) {
-            lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+    @VisibleForTesting
+    fun initialise(config: Map<String, SmartConfig>) {
+        val messagingConfig = config.getConfig(ConfigKeys.MESSAGING_CONFIG)
+
+        // Initialise publisher with messaging config
+        publishToKafka?.close()
+        val newPublisher =
+            publisherFactory.createPublisher(PublisherConfig("KeyRotationRestResource", false), messagingConfig)
+        newPublisher.start()
+        publishToKafka = newPublisher
+    }
+
+    override fun getKeyRotationStatus(requestId: String): List<Pair<String, String>> {
+        val entries = stateManager!!.get(listOf(requestId))
+        val result = mutableListOf<Pair<String, String>>()
+        entries.forEach { entry ->
+            val keyRotationStatus = deserializer.deserialize(entry.value.value)!!
+
+            result.add(keyRotationStatus.oldParentKeyAlias to keyRotationStatus.requestId.toString())
         }
+        return result
     }
 
-    override fun start() {
-        lifecycleCoordinator.start()
+    override fun startKeyRotation(oldKeyAlias: String, newKeyAlias: String): ResponseEntity<KeyRotationResponse> {
+        val pTK = checkNotNull(publishToKafka)
+        val sM = checkNotNull(stateManager)
+        return doKeyRotation(
+            oldKeyAlias,
+            newKeyAlias,
+            serializeStatus = { serializer.serialize(it) },
+            publishStates = { sM.create(it) },
+            publishRequests = { pTK.publish(it) }
+        )
     }
+}
 
-    override fun stop() {
-        publisher?.close()
-        lifecycleCoordinator.stop()
-    }
+/*
+ * do the start key rotation operation
+ *
+ * @param oldKeyAlias alias to replace
+ * @param newKeyALias alias to use
+ * @param serializeStatus callback to turn a status message into a byte array, if possible, or null
+ * @param publishStates callback to publish a list of states (to state manager, in production)
+ * @param publishKafka callback to publish a list of kafka messages
+ *
+ * This is a top level function to make it easy to test without bothering with lifecycle and OSGi.
+ */
+fun doKeyRotation(
+    oldKeyAlias: String,
+    newKeyAlias: String,
+    serializeStatus: (KeyRotationStatus) ->ByteArray?,
+    publishStates: ( (List<State>) -> Unit),
+    publishRequests: ((List<Record<String, KeyRotationRequest>>) -> Unit)
+): ResponseEntity<KeyRotationResponse> {
+    // We cannot validate oldKeyAlias or newKeyAlias early here on the client side of the RPC since
+    // those values are considered sensitive.
+
+    // We need to create a Record that tells Crypto processor to do key rotation
+    // Do we need to start the publisher? FlowRestResource is not starting its publisher for some reason
+
+    val requestId = UUID.randomUUID().toString()
+    val keyRotationRequest = KeyRotationRequest(
+        requestId,
+        KeyType.UNMANAGED,
+        oldKeyAlias,
+        newKeyAlias,
+        null,
+        null
+    )
+
+    val status = KeyRotationStatus(
+        requestId,
+        KeyType.UNMANAGED,
+        oldKeyAlias,
+        newKeyAlias,
+        null,
+        null,
+        0,
+        0,
+        0,
+        Instant.now(),
+        Instant.now()
+    )
+
+    publishRequests(listOf(Record(UPLOAD_TOPIC, requestId, keyRotationRequest)))
+
+    val serialized = serializeStatus(status)
+    checkNotNull(serialized)
+    publishStates(listOf(State(requestId, serialized, 1, Metadata(), Instant.now())))
+    return ResponseEntity.accepted(KeyRotationResponse(requestId, oldKeyAlias, newKeyAlias))
 }

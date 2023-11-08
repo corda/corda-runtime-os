@@ -14,6 +14,9 @@ dependencies {
     implementation project(':components:configuration:configuration-read-service')
     implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:crypto:crypto-config-impl')
+    implementation project(":libs:state-manager:state-manager-api")
+    implementation project(':libs:serialization:serialization-avro')
+    runtimeOnly project(':libs:state-manager:state-manager-db-impl')
 
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "org.osgi:osgi.annotation"

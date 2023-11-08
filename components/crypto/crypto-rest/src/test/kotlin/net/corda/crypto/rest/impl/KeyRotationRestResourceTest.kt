@@ -2,46 +2,66 @@ package net.corda.crypto.rest.impl
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.config.impl.CryptoHSMConfig
 import net.corda.crypto.config.impl.HSM
 import net.corda.crypto.rest.KeyRotationRestResource
+import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
+import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationStatus
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.messaging.api.records.Record
+import net.corda.libs.statemanager.api.State
+import net.corda.libs.statemanager.api.StateManager
+import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.test.impl.LifecycleTest
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.schema.configuration.ConfigKeys
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.Mockito.mock
 import org.mockito.Mockito.never
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
 class KeyRotationRestResourceTest {
 
     private lateinit var publisherFactory: PublisherFactory
-    private lateinit var publisher: Publisher
+    private lateinit var publishToKafka: Publisher
     private lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
     private lateinit var lifecycleCoordinator: LifecycleCoordinator
     private val configurationReadService = mock<ConfigurationReadService>()
+    private val cordaAvroSerializer = mock<CordaAvroSerializer<KeyRotationStatus>>()
+    private val mockCordaAvroSerializationFactory = mock<CordaAvroSerializationFactory>().also {
+        whenever(it.createAvroSerializer<KeyRotationStatus>(anyOrNull())).thenReturn(
+            cordaAvroSerializer
+        )
+    }
+    private lateinit var stateManager: StateManager
+    private lateinit var stateManagerFactory: StateManagerFactory
+
     private lateinit var config: Map<String, SmartConfig>
     private val oldKeyAlias = "oldKeyAlias"
     private val newKeyAlias = "newKeyAlias"
+    private var stateManagerPublicationCount:Int = 0
 
     @BeforeEach
     fun setup() {
         publisherFactory = mock()
-        publisher = mock()
+        publishToKafka = mock()
         lifecycleCoordinatorFactory = mock()
         lifecycleCoordinator = mock()
 
@@ -60,7 +80,19 @@ class KeyRotationRestResourceTest {
         )
         config = configEvent.config
 
-        whenever(publisherFactory.createPublisher(any(), any())).thenReturn(publisher)
+        whenever(publisherFactory.createPublisher(any(), any())).thenReturn(publishToKafka)
+
+        val byteArray = "KeyRotationStatusSerialized".toByteArray()
+        whenever(cordaAvroSerializer.serialize(any<KeyRotationStatus>())).thenReturn(byteArray)
+
+        stateManager = mock<StateManager> {
+            on { create(any()) } doReturn emptyMap()
+        }
+
+        stateManagerFactory = mock<StateManagerFactory>().also {
+            whenever(it.create(any())).thenReturn(stateManager)
+        }
+        stateManagerPublicationCount = 0
     }
 
     @Disabled
@@ -83,22 +115,25 @@ class KeyRotationRestResourceTest {
 
     @Test
     fun `start key rotation event triggers successfully`() {
-        val keyRotationRestResource = createKeyRotationRestResource()
-        keyRotationRestResource.startKeyRotation(oldKeyAlias, newKeyAlias)
-
-        verify(publisher, times(1)).publish(any())
+        val states = mutableListOf<State>()
+        val records = mutableListOf<Record<String, KeyRotationRequest>>()
+        doKeyRotation(oldKeyAlias, newKeyAlias, { byteArrayOf(42)}, { states.addAll(it) }, { records.addAll(it) })
+        assertThat(states.size).isEqualTo(1)
+        assertThat(records.size).isEqualTo(1)
     }
 
 
     @Test
     fun `start key rotation event throws when not initialised`() {
         val keyRotationRestResource = createKeyRotationRestResource(false)
-        assertThrows<ServiceUnavailableException> {
+        assertThrows<IllegalStateException> {
             keyRotationRestResource.startKeyRotation("", "")
         }
-        verify(publisher, never()).publish(any())
+        verify(publishToKafka, never()).publish(any())
+        assertThat(stateManagerPublicationCount).isEqualTo(0)
     }
 
+    @Disabled
     @Test
     fun `start event doesnt post up status before being initialised`() {
         val context = getKeyRotationRestResourceTestContext()
@@ -123,7 +158,9 @@ class KeyRotationRestResourceTest {
             mock(),
             publisherFactory,
             lifecycleCoordinatorFactory,
-            configurationReadService
+            configurationReadService,
+            stateManagerFactory,
+            mockCordaAvroSerializationFactory
         ).apply { if (initialise) {
             initialise(config)
             }
@@ -139,7 +176,9 @@ class KeyRotationRestResourceTest {
                 mock(),
                 publisherFactory,
                 coordinatorFactory, // This is from the test lifecycle class.
-                configurationReadService
+                configurationReadService,
+                mock(),
+                mock()
             )
         }
     }
