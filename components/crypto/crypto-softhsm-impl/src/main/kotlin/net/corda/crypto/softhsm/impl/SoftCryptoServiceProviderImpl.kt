@@ -2,17 +2,12 @@ package net.corda.crypto.softhsm.impl
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigException
-import com.typesafe.config.ConfigList
-import com.typesafe.config.ConfigObject
-import com.typesafe.config.ConfigValue
 import java.security.InvalidParameterException
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.Provider
 import java.security.PublicKey
-import java.util.InvalidPropertiesFormatException
 import java.util.concurrent.TimeUnit
 import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.configuration.read.ConfigChangedEvent
