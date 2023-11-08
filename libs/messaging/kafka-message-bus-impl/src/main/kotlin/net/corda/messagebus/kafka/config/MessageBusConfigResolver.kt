@@ -1,7 +1,6 @@
 package net.corda.messagebus.kafka.config
 
 import com.typesafe.config.ConfigFactory
-import java.util.Properties
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messagebus.api.configuration.AdminConfig
@@ -12,9 +11,12 @@ import net.corda.messaging.api.exception.CordaMessageAPIConfigException
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PROPERTIES
+import net.corda.utilities.debug
 import org.apache.kafka.clients.producer.ProducerConfig.PARTITIONER_CLASS_CONFIG
 import org.osgi.framework.FrameworkUtil
 import org.slf4j.LoggerFactory
+import java.util.Properties
+import java.util.UUID
 
 /**
  * Resolve a Kafka bus configuration against the enforced and default configurations provided by the library.
@@ -32,6 +34,8 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
         private const val GROUP_PATH = "group"
         private const val CLIENT_ID_PATH = "clientId"
         private const val TRANSACTIONAL_ID_PATH = "transactionalId"
+
+        private val GROUP_PREFIX: String = UUID.randomUUID().toString()
     }
 
     private val defaults = getResourceConfig(DEFAULT_CONFIG_FILE)
@@ -63,15 +67,14 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
             .withFallback(defaults)
             .resolve()
 
-//        logger.debug {"Resolved kafka configuration: ${resolvedConfig.toSafeConfig().root().render()}" }
-        logger.info("Resolved kafka configuration: ${resolvedConfig.toSafeConfig().root().render()}")
+        logger.debug {"Resolved kafka configuration: ${resolvedConfig.toSafeConfig().root().render()}" }
 
         // Trim down to just the Kafka config for the specified role.
         val roleConfig = resolvedConfig.getConfig("roles.$rolePath")
         val properties = roleConfig.toKafkaProperties()
 
-//        logger.debug {"Kafka properties for role $rolePath: $properties" }
-        logger.info("Kafka properties for role $rolePath: $properties")
+        logger.debug {"Kafka properties for role $rolePath: $properties" }
+
         return properties
     }
 
@@ -100,13 +103,11 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
     fun resolve(messageBusConfig: SmartConfig, consumerConfig: ConsumerConfig): Pair<ResolvedConsumerConfig, Properties> {
         val kafkaProperties = resolve(messageBusConfig, consumerConfig.role.configPath, consumerConfig.toSmartConfig())
         val resolvedConfig = ResolvedConsumerConfig(
-            consumerConfig.group,
+            GROUP_PREFIX + consumerConfig.group,
             consumerConfig.clientId,
             messageBusConfig.getString(BootConfig.TOPIC_PREFIX)
         )
-        logger.info("Resolved message bus config with the prefix: " +
-                messageBusConfig.getString(BootConfig.TOPIC_PREFIX)
-        )
+
         return Pair(resolvedConfig, kafkaProperties)
     }
 
@@ -129,9 +130,7 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
             messageBusConfig.getString(BootConfig.TOPIC_PREFIX),
             producerConfig.throwOnSerializationError
         )
-        logger.info("Resolved message bus config with the prefix: " +
-                messageBusConfig.getString(BootConfig.TOPIC_PREFIX)
-        )
+
         return Pair(resolvedConfig, kafkaProperties)
     }
 
@@ -165,7 +164,7 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
         return smartConfigFactory.create(
             ConfigFactory.parseMap(
                 mapOf(
-                    GROUP_PATH to group,
+                    GROUP_PATH to GROUP_PREFIX + group,
                     CLIENT_ID_PATH to clientId,
                     TRANSACTIONAL_ID_PATH to "<undefined>"
                 )
