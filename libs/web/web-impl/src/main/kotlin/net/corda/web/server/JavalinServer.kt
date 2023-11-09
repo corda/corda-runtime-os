@@ -1,25 +1,23 @@
 package net.corda.web.server
 
 import io.javalin.Javalin
+import io.javalin.http.NotFoundResponse
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.createCoordinator
 import net.corda.tracing.configureJavalinForTracing
-import net.corda.utilities.classload.executeWithThreadContextClassLoader
-import net.corda.utilities.executeWithStdErrSuppressed
 import net.corda.web.api.Endpoint
 import net.corda.web.api.HTTPMethod
 import net.corda.web.api.WebServer
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory
-import org.osgi.framework.FrameworkUtil
-import org.osgi.framework.wiring.BundleWiring
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 @Component(service = [WebServer::class])
 class JavalinServer(
@@ -35,64 +33,65 @@ class JavalinServer(
         platformInfoProvider: PlatformInfoProvider,
     ) : this(
         coordinatorFactory,
-        {
+        ::createJavalin,
+        platformInfoProvider)
+
+    companion object {
+        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+
+        fun createJavalin(maxRequestSize: Long = 100_000_000L) =
             Javalin.create { config ->
                 // hardcode to 100Mb for now
                 // TODO CORE-17986: make configurable
-                config.maxRequestSize = 100_000_000L
+                config.maxRequestSize = maxRequestSize
 
                 if (log.isDebugEnabled) {
                     config.enableDevLogging()
                 }
                 configureJavalinForTracing(config)
             }
-        },
-        platformInfoProvider)
-
-    private companion object {
-        val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val apiPathPrefix: String = "/api/${platformInfoProvider.localWorkerSoftwareShortVersion}"
     private var server: Javalin? = null
     private val coordinator = coordinatorFactory.createCoordinator<WebServer> { _, _ -> }
+    private val serverStartLock = ReentrantLock()
 
-    override val endpoints: MutableSet<Endpoint> = mutableSetOf<Endpoint>()
+    override val endpoints: MutableSet<Endpoint> = ConcurrentHashMap.newKeySet()
 
     override fun start(port: Int) {
-        check(null == server) { "The Javalin webserver is already initialized" }
-        coordinator.start()
-        startServer(port)
+        serverStartLock.withLock {
+            check(null == server) { "The Javalin webserver is already initialized" }
+            coordinator.start()
+            startServer(port)
+        }
     }
 
     private fun startServer(port: Int) {
-        log.info("Starting Worker Web Server on port: $port")
-        server = javalinFactory()
-        endpoints.forEach {
-            registerEndpointInternal(it)
-        }
+        // Ensure the server can only be started once at a time.
+            log.info("Starting Worker Web Server on port: $port")
+            server = javalinFactory()
+            endpoints.forEach {
+                registerEndpointInternal(it)
+            }
 
-        val bundle = FrameworkUtil.getBundle(WebSocketServletFactory::class.java)
+            JavalinStarter.startServer(
+                "RPC Server",
+                server!!,
+                port,
+            )
 
-        if (bundle == null) {
-            server?.start(port)
-        } else {
-            // We temporarily switch the context class loader to allow Javalin to find `WebSocketServletFactory`.
-            executeWithThreadContextClassLoader(bundle.adapt(BundleWiring::class.java).classLoader) {
-                // Required because Javalin prints an error directly to stderr if it cannot find a logging
-                // implementation via standard class loading mechanism. This mechanism is not appropriate for OSGi.
-                // The logging implementation is found correctly in practice.
-                executeWithStdErrSuppressed {
-                    server?.start(port)
+            server?.events {
+                it.handlerAdded { meta ->
+                    log.info("Handler added to webserver: $meta")
                 }
             }
-        }
-        server?.events {
-            it.handlerAdded { meta ->
-                log.info("Handler added to webserver: $meta")
+            server?.exception(NotFoundResponse::class.java) { _, ctx ->
+                log.warn("Received request on non-existing endpoint: ${ctx.req.requestURI}")
+                ctx.result("404 Not Found")
+                ctx.status(404)
             }
-        }
-        coordinator.updateStatus(LifecycleStatus.UP)
+            coordinator.updateStatus(LifecycleStatus.UP)
     }
 
     private fun stopServer() {
@@ -101,18 +100,22 @@ class JavalinServer(
     }
 
     private fun restartServer() {
-        // restart server without marking the component down.
-        checkNotNull(server) { "Cannot restart a non-existing server" }
-        val port = server?.port()
-        stopServer()
-        checkNotNull(port) { "Required port is null" }
-        startServer(port)
+        serverStartLock.withLock {
+            // restart server without marking the component down.
+            checkNotNull(server) { "Cannot restart a non-existing server" }
+            val port = server?.port()
+            stopServer()
+            checkNotNull(port) { "Required port is null" }
+            startServer(port)
+        }
     }
 
     override fun stop() {
-        coordinator.updateStatus(LifecycleStatus.DOWN)
-        stopServer()
-        coordinator.stop()
+        serverStartLock.withLock {
+            coordinator.updateStatus(LifecycleStatus.DOWN)
+            stopServer()
+            coordinator.stop()
+        }
     }
 
     override fun registerEndpoint(endpoint: Endpoint) {

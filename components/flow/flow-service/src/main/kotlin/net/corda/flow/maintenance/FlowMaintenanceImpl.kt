@@ -3,11 +3,13 @@ package net.corda.flow.maintenance
 import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
+import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
@@ -40,6 +42,8 @@ class FlowMaintenanceImpl @Activate constructor(
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<FlowMaintenance>(::eventHandler)
+    private var stateManager: StateManager? = null
+    private var subscriptionRegistrationHandle: RegistrationHandle? = null
 
     override fun onConfigChange(config: Map<String, SmartConfig>) {
         // Top level component is using ConfigurationReadService#registerComponentForUpdates, so all the below keys
@@ -50,17 +54,18 @@ class FlowMaintenanceImpl @Activate constructor(
             val newStateManagerConfig = config.getConfig(ConfigKeys.STATE_MANAGER_CONFIG)
             val flowConfig = getFlowConfig(config, messagingConfig)
 
-            val stateManager = coordinator.createManagedResource("STATE_MANAGER") {
-                stateManagerFactory.create(newStateManagerConfig)
-            }
+            // close the lifecycle registration first to prevent down being signaled
+            subscriptionRegistrationHandle?.close()
+            stateManager?.stop()
 
+            stateManager = stateManagerFactory.create(newStateManagerConfig).also { it.start() }
             coordinator.createManagedResource("FLOW_MAINTENANCE_SUBSCRIPTION") {
                 subscriptionFactory.createDurableSubscription(
                     SubscriptionConfig(
                         "flow.maintenance.tasks",
                         Schemas.ScheduledTask.SCHEDULED_TASK_TOPIC_FLOW_PROCESSOR
                     ),
-                    flowMaintenanceHandlersFactory.createScheduledTaskHandler(stateManager),
+                    flowMaintenanceHandlersFactory.createScheduledTaskHandler(stateManager!!),
                     messagingConfig,
                     null
                 )
@@ -72,11 +77,13 @@ class FlowMaintenanceImpl @Activate constructor(
                         "flow.timeout.task",
                         Schemas.Flow.FLOW_TIMEOUT_TOPIC
                     ),
-                    flowMaintenanceHandlersFactory.createTimeoutEventHandler(stateManager, flowConfig),
+                    flowMaintenanceHandlersFactory.createTimeoutEventHandler(stateManager!!, flowConfig),
                     messagingConfig,
                     null
                 )
             }.start()
+
+            subscriptionRegistrationHandle = coordinator.followStatusChangesByName(setOf(stateManager!!.name))
         }
     }
 
@@ -107,11 +114,12 @@ class FlowMaintenanceImpl @Activate constructor(
         when (event) {
             is StartEvent -> {
                 coordinator.updateStatus(LifecycleStatus.UP)
-                // TODO - this should register to follow the State Manager's lifecycle
             }
 
             is StopEvent -> {
                 logger.trace { "Flow maintenance is stopping..." }
+                subscriptionRegistrationHandle?.close()
+                stateManager?.stop()
             }
         }
     }

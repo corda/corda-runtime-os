@@ -1,17 +1,12 @@
 package net.corda.utilities
 
 import net.corda.v5.application.flows.FlowContextProperties.CORDA_RESERVED_PREFIX
+import org.slf4j.Logger
+import org.slf4j.MDC
 import java.io.OutputStream
 import java.io.PrintStream
 import java.time.Duration
 import java.util.Collections
-import org.slf4j.Logger
-import org.slf4j.MDC
-
-/**
- * Common logging Marker Names
- */
-const val FLOW_TRACING_MARKER = "FLOW_TRACING"
 
 /**
  * Common MDC properties used across corda.

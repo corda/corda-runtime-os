@@ -69,7 +69,7 @@ class NetworkInfoDBWriterImpl(
     )
 
     private companion object {
-        private val logger = LoggerFactory.getLogger(this::class.java)
+        private val logger = LoggerFactory.getLogger(NetworkInfoDBWriterImpl::class.java)
     }
 
     private val serializer = cordaAvroSerializationFactory.createAvroSerializer<KeyValuePairList> {

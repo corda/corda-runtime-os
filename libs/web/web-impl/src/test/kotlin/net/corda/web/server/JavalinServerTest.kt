@@ -9,6 +9,8 @@ import net.corda.web.api.HTTPMethod
 import net.corda.web.api.WebHandler
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -131,8 +133,8 @@ class JavalinServerTest {
         javalinServer.registerEndpoint(postEndpoint)
 
         assertEquals(2, javalinServer.endpoints.size)
-        assertEquals(getEndpoint, javalinServer.endpoints.elementAt(0))
-        assertEquals(postEndpoint, javalinServer.endpoints.elementAt(1))
+        assertTrue(javalinServer.endpoints.contains(getEndpoint))
+        assertTrue(javalinServer.endpoints.contains(postEndpoint))
     }
 
     @Test
@@ -152,7 +154,8 @@ class JavalinServerTest {
 
         val endpoints = javalinServer.endpoints
         assertEquals(1, endpoints.size)
-        assertEquals(postEndpoint, endpoints.elementAt(0))
+        assertFalse(endpoints.contains(getEndpoint))
+        assertTrue(endpoints.contains(postEndpoint))
     }
 
     @Test
@@ -170,7 +173,8 @@ class JavalinServerTest {
 
         val endpoints = javalinServer.endpoints
         assertEquals(1, endpoints.size)
-        assertEquals(postEndpoint, endpoints.elementAt(0))
+        assertFalse(endpoints.contains(getEndpoint))
+        assertTrue(endpoints.contains(postEndpoint))
     }
 
     @Test
@@ -184,6 +188,7 @@ class JavalinServerTest {
 
         val endpoints = javalinServer.endpoints
         assertEquals(1, endpoints.size)
-        assertEquals(postEndpoint, endpoints.elementAt(0))
+        assertFalse(endpoints.contains(getEndpoint))
+        assertTrue(endpoints.contains(postEndpoint))
     }
 }
