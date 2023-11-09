@@ -34,6 +34,7 @@ import net.corda.messaging.utils.FutureTracker
 import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.getRPCResponseTopic
 import net.corda.utilities.debug
+import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Instant
@@ -177,7 +178,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                             ResponseStatus.OK -> {
                                 val responseBytes = rpcResponse.payload
                                 val response = deserializer.deserialize(responseBytes.array())
-                                log.info("Response for request $correlationKey was received at ${rpcResponse.sendTime}")
+                                log.trace { "Response for request $correlationKey was received at ${rpcResponse.sendTime}" }
 
                                 future.complete(response)
                             }
