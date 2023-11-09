@@ -16,7 +16,6 @@ import org.apache.kafka.clients.producer.ProducerConfig.PARTITIONER_CLASS_CONFIG
 import org.osgi.framework.FrameworkUtil
 import org.slf4j.LoggerFactory
 import java.util.Properties
-import java.util.UUID
 
 /**
  * Resolve a Kafka bus configuration against the enforced and default configurations provided by the library.
@@ -35,7 +34,7 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
         private const val CLIENT_ID_PATH = "clientId"
         private const val TRANSACTIONAL_ID_PATH = "transactionalId"
 
-        private val GROUP_PREFIX: String = UUID.randomUUID().toString()
+//        private val GROUP_PREFIX: String = UUID.randomUUID().toString()
     }
 
     private val defaults = getResourceConfig(DEFAULT_CONFIG_FILE)
@@ -103,7 +102,7 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
     fun resolve(messageBusConfig: SmartConfig, consumerConfig: ConsumerConfig): Pair<ResolvedConsumerConfig, Properties> {
         val kafkaProperties = resolve(messageBusConfig, consumerConfig.role.configPath, consumerConfig.toSmartConfig())
         val resolvedConfig = ResolvedConsumerConfig(
-            GROUP_PREFIX + consumerConfig.group,
+            consumerConfig.group,
             consumerConfig.clientId,
             messageBusConfig.getString(BootConfig.TOPIC_PREFIX)
         )
@@ -164,7 +163,7 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
         return smartConfigFactory.create(
             ConfigFactory.parseMap(
                 mapOf(
-                    GROUP_PATH to GROUP_PREFIX + group,
+                    GROUP_PATH to group,
                     CLIENT_ID_PATH to clientId,
                     TRANSACTIONAL_ID_PATH to "<undefined>"
                 )

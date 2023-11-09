@@ -742,13 +742,19 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
 
 fun CordaConsumerRebalanceListener.toKafkaListener(topicPrefix: String): ConsumerRebalanceListener {
     return object : ConsumerRebalanceListener {
+        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+
         override fun onPartitionsRevoked(partitions: Collection<TopicPartition>) {
+            log.info("Consumer from deployment with topic prefix \"$topicPrefix\" has been assigned partitions: " +
+                    partitions.joinToString("\n"))
             this@toKafkaListener.onPartitionsRevoked(
                 partitions.toCordaTopicPartitions(topicPrefix)
             )
         }
 
         override fun onPartitionsAssigned(partitions: Collection<TopicPartition>) {
+            log.info("Consumer from deployment with topic prefix \"$topicPrefix\" has been revoked partitions: " +
+                    partitions.joinToString("\n"))
             this@toKafkaListener.onPartitionsAssigned(
                 partitions.toCordaTopicPartitions(topicPrefix)
             )
