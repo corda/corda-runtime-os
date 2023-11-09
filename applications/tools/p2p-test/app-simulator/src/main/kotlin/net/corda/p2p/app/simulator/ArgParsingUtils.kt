@@ -16,13 +16,12 @@ class ArgParsingUtils {
          * Get a database parameter from the command line or the config file. Command line options override options in
          * the config file.
          */
-        fun getDbParameter(path: String, configFromFile: Config, parameters: CliParameters): String {
+        fun getDbParameter(path: String, configFromFile: Config, parameters: CliParameters): String? {
             return getParameter(
                 path,
                 configFromFile.getConfigOrEmpty(AppSimulator.DB_PARAMS_PREFIX),
                 parameters.databaseParams
-            ) ?: throw InvalidArgumentException("Database parameter $path must be specified on the command line, using -d$path, or in a " +
-                    "config file.")
+            )
         }
 
         /***
