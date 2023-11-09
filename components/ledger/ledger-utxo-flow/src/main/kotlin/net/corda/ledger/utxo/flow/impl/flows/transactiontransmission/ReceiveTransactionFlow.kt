@@ -1,13 +1,14 @@
 package net.corda.ledger.utxo.flow.impl.flows.transactiontransmission
 
-import net.corda.ledger.common.data.transaction.TransactionStatus
-import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
-import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
+import net.corda.ledger.common.flow.flows.Payload
+import net.corda.ledger.utxo.flow.impl.flows.backchain.InvalidBackchainException
+import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
+import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
-import net.corda.ledger.utxo.flow.impl.transaction.verifier.TransactionVerificationException
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
-import net.corda.v5.ledger.utxo.VisibilityChecker
 import net.corda.sandbox.CordaSystemFlow
+import net.corda.utilities.trace
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
@@ -30,37 +31,41 @@ class ReceiveTransactionFlow(
     lateinit var transactionVerificationService: UtxoLedgerTransactionVerificationService
 
     @CordaInject
-    lateinit var visibilityChecker: VisibilityChecker
-
-    @CordaInject
-    lateinit var persistenceService: UtxoLedgerPersistenceService
-
-    @CordaInject
     lateinit var flowEngine: FlowEngine
 
     @Suspendable
     override fun call(): UtxoSignedTransaction {
-        val transaction = session.receive(UtxoSignedTransaction::class.java)
-        verifyTransaction(transaction)
-        persistTransaction(transaction)
+        val transaction = session.receive(UtxoSignedTransactionInternal::class.java)
+        try {
+            transaction.verifySignatorySignatures()
+            transaction.verifyAttachedNotarySignature()
+            transactionVerificationService.verify(transaction.toLedgerTransaction())
+        } catch (e: Exception) {
+            val message = "Failed to verify transaction and signatures of transaction: ${transaction.id}"
+            log.warn(message, e)
+            session.send(Payload.Failure<List<DigitalSignatureAndMetadata>>(message))
+            throw e
+        }
+
+        val transactionDependencies = transaction.dependencies
+        if (transactionDependencies.isNotEmpty()) {
+            try {
+                flowEngine.subFlow(TransactionBackchainResolutionFlow(transactionDependencies, session))
+            } catch (e: InvalidBackchainException) {
+                val message = "Invalid transaction found during back-chain resolution, marking transaction with ID " +
+                        "${transaction.id} as invalid."
+                log.warn(message, e)
+                session.send(Payload.Failure<List<DigitalSignatureAndMetadata>>(message))
+                throw e
+            }
+        } else {
+            log.trace {
+                "Transaction with id ${transaction.id} has no dependencies so backchain resolution will not be performed."
+            }
+        }
+
+        session.send(Payload.Success("Successfully received transaction."))
 
         return transaction
-    }
-
-    @Suspendable
-    private fun verifyTransaction(signedTransaction: UtxoSignedTransaction) {
-        try {
-            transactionVerificationService.verify(signedTransaction.toLedgerTransaction())
-        } catch(e: TransactionVerificationException) { throw e }
-    }
-
-    @Suspendable
-    private fun persistTransaction(transaction: UtxoSignedTransaction) {
-        val visibleStatesIndexes = (transaction as UtxoSignedTransactionInternal).getVisibleStateIndexes(visibilityChecker)
-        log.info("xxx visibleStatesIndexes = $visibleStatesIndexes")
-        persistenceService.persist(transaction, TransactionStatus.VERIFIED, visibleStatesIndexes)
-        if (log.isDebugEnabled) {
-            log.debug("Recorded transaction = ${transaction.id} since transaction is verified")
-        }
     }
 }
