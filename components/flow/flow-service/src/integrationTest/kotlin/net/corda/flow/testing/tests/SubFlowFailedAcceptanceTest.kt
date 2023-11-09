@@ -119,7 +119,7 @@ fun `Given a subFlow contains an initiated and closed session when the subFlow f
     }
 
     @Test
-    fun `Given a subFlow contains only errored sessions when the subFlow fails a wakeup event is scheduled and no session error events are sent`() {
+    fun `Given a subFlow contains only errored sessions when the subFlow fails no session error events are sent`() {
         given {
             startFlow(this)
                 .suspendsWith(FlowIORequest.Receive(setOf(
@@ -217,7 +217,7 @@ fun `Given a subFlow contains an initiated and closed session when the subFlow f
     }
 
     @Test
-    fun `Given an initiated top level flow with an errored session when it finishes and calls SubFlowFailed a wakeup event is scheduled and no session error event is sent`() {
+    fun `Given an initiated top level flow with an errored session when it finishes and calls SubFlowFailed, schedules cleanup and does not send a session error event`() {
         given {
             membershipGroupFor(BOB_HOLDING_IDENTITY)
             initiatingToInitiatedFlow(PROTOCOL_2, FLOW_NAME, FLOW_NAME_2)
