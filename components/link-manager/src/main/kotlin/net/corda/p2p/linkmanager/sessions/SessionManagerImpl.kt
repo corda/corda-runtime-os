@@ -716,7 +716,7 @@ internal class SessionManagerImpl(
         val authenticatedSession = session.getSession()
         sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(message.header.sessionId), sessionCounterparties)
         heartbeatManager.messageAcknowledged(message.header.sessionId)
-        heartbeatManager.startSendingHeartbeats(authenticatedSession)
+        //heartbeatManager.startSendingHeartbeats(authenticatedSession)
         sessionNegotiationLock.write {
             outboundSessionPool.updateAfterSessionEstablished(authenticatedSession)
             pendingOutboundSessionMessageQueues.sessionNegotiatedCallback(
