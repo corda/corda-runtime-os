@@ -106,6 +106,7 @@ import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
@@ -357,7 +358,7 @@ class MGMRegistrationServiceTest {
         on {
             queryMemberInfo(eq(mgm), eq(setOf(mgm)), eq(listOf(MEMBER_STATUS_ACTIVE)))
         } doReturn MembershipQueryResult.Success(listOf(signedMemberInfo))
-        on { queryRegistrationRequests(any(), anyOrNull(), any(), anyOrNull()) } doReturn MembershipQueryResult.Success(emptyList())
+        on { queryRegistrationRequests(any(), anyOrNull(), any(), isNull()) } doReturn MembershipQueryResult.Success(emptyList())
     }
 
     private val registrationService = MGMRegistrationService(
@@ -484,7 +485,7 @@ class MGMRegistrationServiceTest {
             verify(expirationProcessor).scheduleProcessingOfExpiredRequests(mgm)
             whenever(
                 membershipQueryClient.queryRegistrationRequests(
-                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), anyOrNull()
+                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), isNull()
                 )
             ).thenReturn(MembershipQueryResult.Success(listOf(mock())))
             whenever(membershipQueryClient.queryGroupPolicy(mgm))
@@ -727,7 +728,7 @@ class MGMRegistrationServiceTest {
             val errorMsg = "Persistence failure"
             whenever(
                 membershipQueryClient.queryRegistrationRequests(
-                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), anyOrNull()
+                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), isNull()
                 )
             ).thenReturn(MembershipQueryResult.Failure(errorMsg))
 
@@ -751,7 +752,7 @@ class MGMRegistrationServiceTest {
             val errorMsg = "Persistence failure"
             whenever(
                 membershipQueryClient.queryRegistrationRequests(
-                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), anyOrNull()
+                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), isNull()
                 )
             ).thenReturn(MembershipQueryResult.Success(listOf(mock())))
             whenever(
@@ -777,7 +778,7 @@ class MGMRegistrationServiceTest {
 
             whenever(
                 membershipQueryClient.queryRegistrationRequests(
-                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), anyOrNull()
+                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), isNull()
                 )
             ).thenReturn(MembershipQueryResult.Success(listOf(mock())))
             val oldMemberContext = mock<MemberContext> {
@@ -873,7 +874,7 @@ class MGMRegistrationServiceTest {
 
             whenever(
                 membershipQueryClient.queryRegistrationRequests(
-                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), anyOrNull()
+                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), isNull()
                 )
             ).thenReturn(MembershipQueryResult.Success(listOf(mock())))
             whenever(membershipQueryClient.queryGroupPolicy(mgm))
@@ -918,7 +919,7 @@ class MGMRegistrationServiceTest {
 
             whenever(
                 membershipQueryClient.queryRegistrationRequests(
-                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), anyOrNull()
+                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), isNull()
                 )
             ).thenReturn(MembershipQueryResult.Success(listOf(mock())))
             whenever(membershipQueryClient.queryGroupPolicy(mgm))
@@ -957,7 +958,7 @@ class MGMRegistrationServiceTest {
 
             whenever(
                 membershipQueryClient.queryRegistrationRequests(
-                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), anyOrNull()
+                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), isNull()
                 )
             ).thenReturn(MembershipQueryResult.Success(listOf(mock())))
             whenever(membershipQueryClient.queryGroupPolicy(mgm))

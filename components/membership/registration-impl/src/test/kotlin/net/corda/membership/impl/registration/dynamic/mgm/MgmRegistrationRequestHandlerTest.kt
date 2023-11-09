@@ -22,10 +22,10 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -167,7 +167,7 @@ class MgmRegistrationRequestHandlerTest {
         }
         whenever(
             membershipQueryClient.queryRegistrationRequests(
-                eq(holdingIdentity), eq(holdingIdentity.x500Name), eq(listOf(RegistrationStatus.APPROVED)), anyOrNull()
+                eq(holdingIdentity), eq(holdingIdentity.x500Name), eq(listOf(RegistrationStatus.APPROVED)), isNull()
             )
         ).thenReturn(MembershipQueryResult.Success(listOf(oldRequest, newRequest)))
         assertThat(mgmRegistrationRequestHandler.getLastRegistrationRequest(holdingIdentity)).isEqualTo(newRequest)
