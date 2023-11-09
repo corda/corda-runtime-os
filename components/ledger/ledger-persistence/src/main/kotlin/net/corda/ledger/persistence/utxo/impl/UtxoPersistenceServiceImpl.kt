@@ -89,7 +89,9 @@ class UtxoPersistenceServiceImpl(
 
                 val allStateRefs = (transaction.inputStateRefs + transaction.referenceStateRefs).distinct()
 
-                val stateRefsToStateAndRefs = resolveStateRefs(allStateRefs)
+                // Note: calling the `resolveStateRefs` function would result in a new connection being established,
+                // so we call the repository directly instead
+                val stateRefsToStateAndRefs = repository.resolveStateRefs(em, allStateRefs)
                     .associateBy { StateRef(parseSecureHash(it.transactionId), it.leafIndex) }
 
                 val inputStateAndRefs = transaction.inputStateRefs.map {
