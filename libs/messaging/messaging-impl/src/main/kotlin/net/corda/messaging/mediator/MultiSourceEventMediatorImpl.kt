@@ -218,7 +218,6 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                     it.join()
                 }
 
-                sendAsynchronousEvents(asynchronousOutputs)
                 // Persist states changes
                 val failedToCreateKeys = stateManager.create(statesToCreate.values.mapNotNull { it })
                 val failedToCreate = stateManager.get(failedToCreateKeys.keys)
@@ -230,6 +229,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                 } else {
                     listOf()
                 }
+                sendAsynchronousEvents(asynchronousOutputs)
             }
             metrics.commitTimer.recordCallable {
                 consumer.syncCommitOffsets()
