@@ -24,6 +24,7 @@ import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
@@ -36,6 +37,9 @@ class RecordFactoryImpl @Activate constructor(
     @Reference(service = LocallyHostedIdentitiesService::class)
     private val locallyHostedIdentitiesService: LocallyHostedIdentitiesService
 ): RecordFactory {
+    private companion object {
+        val logger = LoggerFactory.getLogger("QQQ")
+    }
     private val sessionEventSerializer = cordaAvroSerializationFactory.createAvroSerializer<SessionEvent> { }
 
     override fun forwardError(
@@ -207,6 +211,7 @@ class RecordFactoryImpl @Activate constructor(
         val random = Random.nextInt(10)
         val key = "${sourceIdentity.x500Name}->${destinationIdentity.x500Name}-$random"
         val appMessage = AppMessage(AuthenticatedMessage(header, ByteBuffer.wrap(sessionEventSerializer.serialize(sessionEvent))))
+        logger.info("QQQ Sending P2P message key: $key, sessionId: ${sessionEvent.sessionId}")
         return Record(Schemas.P2P.P2P_OUT_TOPIC, key, appMessage)
     }
 
