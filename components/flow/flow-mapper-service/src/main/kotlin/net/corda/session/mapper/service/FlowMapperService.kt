@@ -14,6 +14,7 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.locally.hosted.identities.LocallyHostedIdentitiesService
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -58,12 +59,12 @@ class FlowMapperService @Activate constructor(
         private const val EVENT_MEDIATOR = "EVENT_MEDIATOR"
         private const val REGISTRATION = "REGISTRATION"
         private const val CONFIG_HANDLE = "CONFIG_HANDLE"
-        private const val SCHEDULED_TASK_PROCESSOR = "flow.mapper.scheduled.task.processor"
         private const val CLEANUP_TASK_PROCESSOR = "flow.mapper.cleanup.processor"
-        private const val STATE_MANAGER = "flow.mapper.state.manager"
+        private const val SCHEDULED_TASK_PROCESSOR = "flow.mapper.scheduled.task.processor"
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<FlowMapperService>(::eventHandler)
+    private var stateManager: StateManager? = null
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
@@ -96,6 +97,10 @@ class FlowMapperService @Activate constructor(
             is ConfigChangedEvent -> {
                 restartFlowMapperService(event)
             }
+
+            is StopEvent -> {
+                stateManager?.stop()
+            }
         }
     }
 
@@ -108,20 +113,19 @@ class FlowMapperService @Activate constructor(
             val flowConfig = event.config.getConfig(FLOW_CONFIG)
             val stateManagerConfig = event.config.getConfig(STATE_MANAGER_CONFIG)
 
-            val stateManager = coordinator.createManagedResource(STATE_MANAGER) {
-                stateManagerFactory.create(stateManagerConfig)
-            }
-
+            stateManager?.stop()
+            stateManager = stateManagerFactory.create(stateManagerConfig).also { it.start() }
             coordinator.createManagedResource(EVENT_MEDIATOR) {
                 flowMapperEventMediatorFactory.create(
                     flowConfig,
                     messagingConfig,
-                    stateManager,
+                    stateManager!!,
                 )
             }.also {
                 it.start()
             }
-            setupCleanupTasks(messagingConfig, flowConfig, stateManager)
+
+            setupCleanupTasks(messagingConfig, flowConfig, stateManager!!)
             coordinator.updateStatus(LifecycleStatus.UP)
         } catch (e: CordaRuntimeException) {
             val errorMsg = "Error restarting flow mapper from config change"

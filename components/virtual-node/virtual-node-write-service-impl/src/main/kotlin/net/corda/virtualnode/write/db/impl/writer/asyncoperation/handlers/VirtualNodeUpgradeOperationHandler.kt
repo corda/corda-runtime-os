@@ -270,8 +270,10 @@ internal class VirtualNodeUpgradeOperationHandler(
                             return
                         }
 
-                        val updatedSerial = registrationRequestDetails.serial + 1
-                        registrationContext[MemberInfoExtension.SERIAL] = updatedSerial.toString()
+                        if (registrationRequestDetails.serial != null) {
+                            val updatedSerial = registrationRequestDetails.serial + 1
+                            registrationContext[MemberInfoExtension.SERIAL] = updatedSerial.toString()
+                        }
 
                         logger.info("Starting MGM re-registration for holdingIdentity=$holdingIdentity, " +
                                 "shortHash=${holdingIdentity.shortHash}, registrationContext=$registrationContext")

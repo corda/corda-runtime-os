@@ -141,8 +141,8 @@ class MemberOpsServiceProcessorTest {
     private fun assertResponseContext(expected: MembershipRpcRequestContext, actual: MembershipRpcResponseContext) {
         assertEquals(expected.requestId, actual.requestId)
         assertEquals(expected.requestTimestamp, actual.requestTimestamp)
-        assertThat(actual.responseTimestamp.epochSecond).isGreaterThanOrEqualTo(expected.requestTimestamp.epochSecond)
-        assertThat(actual.responseTimestamp.epochSecond).isLessThanOrEqualTo(now.epochSecond)
+        assertThat(actual.responseTimestamp.toEpochMilli()).isGreaterThanOrEqualTo(expected.requestTimestamp.toEpochMilli())
+        assertThat(actual.responseTimestamp.toEpochMilli()).isLessThanOrEqualTo(now.toEpochMilli())
     }
 
 

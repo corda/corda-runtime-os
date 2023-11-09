@@ -34,6 +34,7 @@ import org.apache.kafka.common.errors.AuthorizationException
 import org.apache.kafka.common.errors.FencedInstanceIdException
 import org.apache.kafka.common.errors.InconsistentGroupProtocolException
 import org.apache.kafka.common.errors.InterruptException
+import org.apache.kafka.common.errors.RebalanceInProgressException
 import org.apache.kafka.common.errors.TimeoutException
 import org.apache.kafka.common.errors.WakeupException
 import org.slf4j.LoggerFactory
@@ -77,7 +78,8 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
             WakeupException::class.java,
             InterruptException::class.java,
             KafkaException::class.java,
-            ConcurrentModificationException::class.java
+            ConcurrentModificationException::class.java,
+            RebalanceInProgressException::class.java
         )
     }
 

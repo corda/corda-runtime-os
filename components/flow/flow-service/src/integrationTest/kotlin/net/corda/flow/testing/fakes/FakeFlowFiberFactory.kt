@@ -1,6 +1,7 @@
 package net.corda.flow.testing.fakes
 
 import co.paralleluniverse.fibers.FiberScheduler
+import net.corda.flow.fiber.ClientStartedFlow
 import net.corda.flow.fiber.FiberFuture
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowFiber
@@ -8,7 +9,6 @@ import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.fiber.FlowLogicAndArgs
 import net.corda.flow.fiber.Interruptable
-import net.corda.flow.fiber.ClientStartedFlow
 import net.corda.flow.fiber.factory.FlowFiberFactory
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.propertytypes.ServiceRanking
@@ -91,6 +91,10 @@ class FakeFlowFiberFactory : FlowFiberFactory {
         }
 
         override fun <SUSPENDRETURN> suspend(request: FlowIORequest<SUSPENDRETURN>): SUSPENDRETURN {
+            TODO("Not yet implemented")
+        }
+
+        override fun attemptInterrupt() {
             TODO("Not yet implemented")
         }
 

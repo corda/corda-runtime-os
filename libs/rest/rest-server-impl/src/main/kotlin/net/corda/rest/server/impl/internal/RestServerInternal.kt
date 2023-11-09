@@ -16,21 +16,20 @@ import net.corda.rest.server.impl.apigen.processing.RouteInfo
 import net.corda.rest.server.impl.apigen.processing.RouteProvider
 import net.corda.rest.server.impl.apigen.processing.openapi.OpenApiInfoProvider
 import net.corda.rest.server.impl.context.ClientHttpRequestContext
-import net.corda.rest.server.impl.security.RestAuthenticationProvider
-import net.corda.rest.server.impl.security.provider.credentials.DefaultCredentialResolver
 import net.corda.rest.server.impl.context.ContextUtils.authenticate
 import net.corda.rest.server.impl.context.ContextUtils.authorize
 import net.corda.rest.server.impl.context.ContextUtils.contentTypeApplicationJson
 import net.corda.rest.server.impl.context.ContextUtils.invokeHttpMethod
+import net.corda.rest.server.impl.security.RestAuthenticationProvider
+import net.corda.rest.server.impl.security.provider.credentials.DefaultCredentialResolver
 import net.corda.rest.server.impl.websocket.WebSocketCloserService
 import net.corda.rest.server.impl.websocket.mapToWsStatusCode
 import net.corda.tracing.configureJavalinForTracing
-import net.corda.utilities.classload.executeWithThreadContextClassLoader
-import net.corda.utilities.classload.OsgiClassLoader
-import net.corda.utilities.executeWithStdErrSuppressed
 import net.corda.utilities.VisibleForTesting
+import net.corda.utilities.classload.executeWithThreadContextClassLoader
 import net.corda.utilities.debug
 import net.corda.utilities.trace
+import net.corda.web.server.JavalinStarter
 import org.eclipse.jetty.http2.HTTP2Cipher
 import org.eclipse.jetty.server.HttpConfiguration
 import org.eclipse.jetty.server.HttpConnectionFactory
@@ -39,14 +38,13 @@ import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.ServerConnector
 import org.eclipse.jetty.server.SslConnectionFactory
 import org.eclipse.jetty.util.ssl.SslContextFactory
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory
 import org.osgi.framework.Bundle
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.wiring.BundleWiring
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
-import javax.servlet.MultipartConfigElement
 import java.util.LinkedList
+import javax.servlet.MultipartConfigElement
 
 @Suppress("TooManyFunctions", "TooGenericExceptionThrown", "LongParameterList")
 internal class RestServerInternal(
@@ -210,13 +208,10 @@ internal class RestServerInternal(
 
     private fun Javalin.registerHandlerForRoute(routeInfo: RouteInfo, handlerType: HandlerType) {
         try {
-            log.info("Add \"$handlerType\" handler for \"${routeInfo.fullPath}\".")
-
             addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeHttpMethod())
-
-            log.debug { "Add \"$handlerType\" handler for \"${routeInfo.fullPath}\" completed." }
+            log.debug { "Added \"$handlerType\" handler for \"${routeInfo.fullPath}\"." }
         } catch (e: Exception) {
-            "Error during adding routes".let {
+            "Error during adding route. Handler type=$handlerType, Path=\"${routeInfo.fullPath}\"".let {
                 log.error("$it: ${e.message}")
                 throw Exception(it, e)
             }
@@ -265,41 +260,14 @@ internal class RestServerInternal(
     }
 
     fun start() {
-        val existingSystemErrStream = System.err
-        try {
-            log.trace { "Starting the Javalin server." }
-
-            val bundle = FrameworkUtil.getBundle(WebSocketServletFactory::class.java)
-            if (bundle != null) {
-                val bundleList = listOfNotNull(bundle, getSwaggerUiBundle())
-                val osgiClassLoader = OsgiClassLoader(bundleList)
-                // We need to set thread context classloader at start time as
-                // `org.eclipse.jetty.websocket.servlet.WebSocketServletFactory.Loader.load` relies on it to perform
-                // classloading during `start` method invocation.
-                executeWithThreadContextClassLoader(osgiClassLoader) {
-                    // Required because Javalin prints an error directly to stderr if it cannot find a logging
-                    // implementation via standard class loading mechanism. This mechanism is not appropriate for OSGi.
-                    // The logging implementation is found correctly in practice.
-                    executeWithStdErrSuppressed {
-                        server.start(
-                            configurationsProvider.getHostAndPort().host,
-                            configurationsProvider.getHostAndPort().port
-                        )
-                    }
-                }
-            } else {
-                server.start(configurationsProvider.getHostAndPort().host, configurationsProvider.getHostAndPort().port)
-            }
-            addExceptionHandlers(server)
-            log.trace { "Starting the Javalin server completed." }
-        } catch (e: Exception) {
-            "Error when starting the Javalin server".let {
-                log.error("$it: ${e.message}")
-                throw Exception(it, e)
-            }
-        } finally {
-            System.setErr(existingSystemErrStream)
-        }
+        JavalinStarter.startServer(
+            "REST API",
+            server,
+            configurationsProvider.getHostAndPort().port,
+            configurationsProvider.getHostAndPort().host,
+            getSwaggerUiBundle()?.let { listOf(it) }?: emptyList()
+        )
+        addExceptionHandlers(server)
     }
 
     fun stop() {
@@ -408,8 +376,6 @@ internal class RestServerInternal(
 
     private fun Javalin.registerWsHandlerForRoute(routeInfo: RouteInfo) {
         try {
-            log.info("Add WS handler for \"${routeInfo.fullPath}\".")
-
             ws(
                 routeInfo.fullPath,
                 routeInfo.setupWsCall(
@@ -421,9 +387,9 @@ internal class RestServerInternal(
                 )
             )
 
-            log.debug { "Add WS handler for \"${routeInfo.fullPath}\" completed." }
+            log.debug { "Added WS handler for \"${routeInfo.fullPath}\"." }
         } catch (e: Exception) {
-            "Error during adding WS routes".let {
+            "Error during adding WS route. Path=\"${routeInfo.fullPath}\"".let {
                 log.error("$it: ${e.message}")
                 throw Exception(it, e)
             }

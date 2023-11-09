@@ -29,6 +29,8 @@ import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 import net.corda.data.identity.HoldingIdentity as HoldingIdentityAvro
 import net.corda.data.virtualnode.VirtualNodeInfo as VirtualNodeInfoAvro
 
@@ -53,6 +55,7 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
     override val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<VirtualNodeInfoWriteService>()
     private val coordinator = coordinatorFactory.createCoordinator(lifecycleCoordinatorName, ::processEvent)
 
+    private val lock = ReentrantLock()
     private var publisher: Publisher? = null
     private var registration: RegistrationHandle? = null
     private var configSubscription: AutoCloseable? = null
@@ -74,16 +77,17 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
     /** Synchronous publish */
     @Suppress("ForbiddenComment")
     private fun publish(records: List<Record<HoldingIdentityAvro, VirtualNodeInfoAvro>>) {
-        if (publisher == null) {
-            log.error("Publisher is null, not publishing")
-            return
+        lock.withLock {
+            if (publisher == null) {
+                log.error("Publisher is null, not publishing")
+                return
+            }
+            //TODO:  according the publish kdoc, we need to handle failure, retries, and possibly transactions.  Next PR.
+            val futures = publisher!!.publish(records)
+
+            // Wait for the future (there should only be one) to complete.
+            futures.forEach { it.get() }
         }
-
-        //TODO:  according the publish kdoc, we need to handle failure, retries, and possibly transactions.  Next PR.
-        val futures = publisher!!.publish(records)
-
-        // Wait for the future (there should only be one) to complete.
-        futures.forEach { it.get() }
     }
 
     override val isRunning: Boolean
@@ -113,8 +117,16 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
     }
 
     private fun onStopEvent() {
-        registration?.close()
-        registration = null
+        lock.withLock {
+            registration?.close()
+            registration = null
+
+            configSubscription?.close()
+            configSubscription = null
+
+            publisher?.close()
+            publisher = null
+        }
     }
 
     private fun onStartEvent(coordinator: LifecycleCoordinator) {
@@ -145,16 +157,14 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
     private fun onConfigChangedEventReceived(coordinator: LifecycleCoordinator, event: ConfigChangedEvent) {
         log.debug { "Creating resources" }
         coordinator.updateStatus(LifecycleStatus.DOWN)
-        createPublisher(event)
+        lock.withLock {
+            publisher?.close()
+            publisher = publisherFactory.createPublisher(
+                PublisherConfig(CLIENT_ID),
+                event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
+            )
+        }
         coordinator.updateStatus(LifecycleStatus.UP)
-    }
-
-    private fun createPublisher(event: ConfigChangedEvent) {
-        publisher?.close()
-        publisher = publisherFactory.createPublisher(
-            PublisherConfig(CLIENT_ID),
-            event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
-        )
     }
 
     @Deactivate

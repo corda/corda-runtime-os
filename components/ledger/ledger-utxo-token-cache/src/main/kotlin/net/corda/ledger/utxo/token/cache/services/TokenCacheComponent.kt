@@ -25,7 +25,12 @@ class TokenCacheComponent(
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private val configSections = setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG, ConfigKeys.UTXO_LEDGER_CONFIG)
+        private val configSections = setOf(
+            ConfigKeys.BOOT_CONFIG,
+            ConfigKeys.MESSAGING_CONFIG,
+            ConfigKeys.UTXO_LEDGER_CONFIG,
+            ConfigKeys.STATE_MANAGER_CONFIG
+        )
     }
 
     private var registration: RegistrationHandle? = null
@@ -55,7 +60,7 @@ class TokenCacheComponent(
                         coordinator,
                         configSections
                     )
-                }else {
+                } else {
                     coordinator.updateStatus(event.status)
                 }
             }

@@ -89,7 +89,6 @@ import net.corda.membership.lib.SignedGroupParameters
 import net.corda.membership.lib.approval.ApprovalRuleParams
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.toMap
-import net.corda.membership.lib.toSortedMap
 import net.corda.membership.mtls.allowed.list.service.AllowedCertificatesReaderWriterService
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -603,6 +602,136 @@ class MembershipPersistenceTest {
             assertThat(size).isEqualTo(1)
             assertThat(first().key).isEqualTo(REGISTRATION_CONTEXT_KEY)
             assertThat(first().value).isEqualTo(REGISTRATION_CONTEXT_VALUE)
+        }
+    }
+
+    @Test
+    fun `serial information can be persisted when requests are processed in unordered manner`() {
+        val registrationId = randomUUID().toString()
+        val status = RegistrationStatus.PENDING_MEMBER_VERIFICATION
+
+        val statusPersistence = membershipPersistenceClientWrapper.persistRegistrationRequest(
+            viewOwningHoldingIdentity,
+            RegistrationRequest(
+                RegistrationStatus.PENDING_MEMBER_VERIFICATION,
+                registrationId,
+                registeringHoldingIdentity,
+                SignedData(
+                    ByteBuffer.wrap(
+                        cordaAvroSerializer.serialize(
+                            KeyValuePairList(
+                                listOf(
+                                    KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)
+                                )
+                            )
+                        )
+                    ),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap(byteArrayOf()),
+                        ByteBuffer.wrap(byteArrayOf())
+                    ),
+                    CryptoSignatureSpec("", null, null)
+                ),
+                SignedData(
+                    ByteBuffer.wrap(
+                        cordaAvroSerializer.serialize(
+                            KeyValuePairList(
+                                listOf(
+                                    KeyValuePair(REGISTRATION_CONTEXT_KEY, REGISTRATION_CONTEXT_VALUE)
+                                )
+                            )
+                        )
+                    ),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap(byteArrayOf()),
+                        ByteBuffer.wrap(byteArrayOf())
+                    ),
+                    CryptoSignatureSpec("", null, null)
+                ),
+                null,
+            )
+        ).execute()
+
+        assertThat(statusPersistence).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+
+        val persistedEntity = vnodeEmf.createEntityManager().use {
+            it.find(RegistrationRequestEntity::class.java, registrationId)
+        }
+        assertThat(persistedEntity).isNotNull
+        assertThat(persistedEntity.registrationId).isEqualTo(registrationId)
+        assertThat(persistedEntity.holdingIdentityShortHash).isEqualTo(registeringHoldingIdentity.shortHash.value)
+        assertThat(persistedEntity.status).isEqualTo(status.toString())
+        assertThat(persistedEntity.serial).isNull()
+
+        val persistedMemberContext = persistedEntity.memberContext.deserializeContextAsMap()
+        with(persistedMemberContext.entries) {
+            assertThat(size).isEqualTo(1)
+            assertThat(first().key).isEqualTo(MEMBER_CONTEXT_KEY)
+            assertThat(first().value).isEqualTo(MEMBER_CONTEXT_VALUE)
+        }
+
+        val persistedRegistrationContext = persistedEntity.registrationContext.deserializeContextAsMap()
+        with(persistedRegistrationContext.entries) {
+            assertThat(size).isEqualTo(1)
+            assertThat(first().key).isEqualTo(REGISTRATION_CONTEXT_KEY)
+            assertThat(first().value).isEqualTo(REGISTRATION_CONTEXT_VALUE)
+        }
+
+        val serialAndStatusPersistence = membershipPersistenceClientWrapper.persistRegistrationRequest(
+            viewOwningHoldingIdentity,
+            RegistrationRequest(
+                RegistrationStatus.SENT_TO_MGM,
+                registrationId,
+                registeringHoldingIdentity,
+                SignedData(
+                    ByteBuffer.wrap(
+                        cordaAvroSerializer.serialize(
+                            KeyValuePairList(
+                                listOf(
+                                    KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE),
+                                    KeyValuePair("test", "value"),
+                                )
+                            )
+                        )
+                    ),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap(byteArrayOf()),
+                        ByteBuffer.wrap(byteArrayOf())
+                    ),
+                    CryptoSignatureSpec("", null, null)
+                ),
+                SignedData(
+                    ByteBuffer.wrap(
+                        cordaAvroSerializer.serialize(
+                            KeyValuePairList(
+                                listOf(
+                                    KeyValuePair(REGISTRATION_CONTEXT_KEY, REGISTRATION_CONTEXT_VALUE)
+                                )
+                            )
+                        )
+                    ),
+                    CryptoSignatureWithKey(
+                        ByteBuffer.wrap(byteArrayOf()),
+                        ByteBuffer.wrap(byteArrayOf())
+                    ),
+                    CryptoSignatureSpec("", null, null)
+                ),
+                2L,
+            )
+        ).execute()
+
+        assertThat(serialAndStatusPersistence).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+        val persistedEntity2 = vnodeEmf.createEntityManager().use {
+            it.find(RegistrationRequestEntity::class.java, registrationId)
+        }
+        assertThat(persistedEntity2.serial).isEqualTo(2L)
+        assertThat(persistedEntity2.status).isEqualTo(RegistrationStatus.PENDING_MEMBER_VERIFICATION.toString())
+
+        val persistedMemberContext2 = persistedEntity2.memberContext.deserializeContextAsMap()
+        with(persistedMemberContext2.entries) {
+            assertThat(size).isEqualTo(1)
+            assertThat(first().key).isEqualTo(MEMBER_CONTEXT_KEY)
+            assertThat(first().value).isEqualTo(MEMBER_CONTEXT_VALUE)
         }
     }
 

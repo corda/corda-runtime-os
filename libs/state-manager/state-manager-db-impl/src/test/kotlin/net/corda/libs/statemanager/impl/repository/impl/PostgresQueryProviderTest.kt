@@ -44,7 +44,7 @@ class PostgresQueryProviderTest {
         val sqlQuery = queryProvider.metadataKeyFilter(MetadataFilter(key, operation.first, value))
 
         assertThat(sqlQuery)
-            .isEqualToNormalizingWhitespace("(s.metadata->>'$key')::::text ${operation.second} '$value'")
+            .isEqualToNormalizingWhitespace("(s.metadata->>'$key')::text ${operation.second} '$value'")
     }
 
     @ParameterizedTest
@@ -54,7 +54,7 @@ class PostgresQueryProviderTest {
         val sqlQuery = queryProvider.metadataKeyFilter(MetadataFilter(key, Operation.Equals, type.first))
 
         assertThat(sqlQuery)
-            .isEqualToNormalizingWhitespace("(s.metadata->>'$key')::::${type.second} = '${type.first}'")
+            .isEqualToNormalizingWhitespace("(s.metadata->>'$key')::${type.second} = '${type.first}'")
     }
 
     @Test
@@ -68,9 +68,9 @@ class PostgresQueryProviderTest {
         )
 
         assertThat(sqlQuery).containsExactly(
-            "((s.metadata->>'key1')::::text = 'text')",
-            "((s.metadata->>'key2')::::numeric > '10')",
-            "((s.metadata->>'key3')::::boolean <> 'true')",
+            "((s.metadata->>'key1')::text = 'text')",
+            "((s.metadata->>'key2')::numeric > '10')",
+            "((s.metadata->>'key3')::boolean <> 'true')",
         )
     }
 }

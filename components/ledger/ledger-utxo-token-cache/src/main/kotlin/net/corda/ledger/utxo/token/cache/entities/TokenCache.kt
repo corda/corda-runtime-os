@@ -24,4 +24,9 @@ interface TokenCache : Iterable<CachedToken> {
      * @param stateRefs The list of tokens to be removed
      */
     fun removeAll(stateRefs: Set<String>)
+
+    /**
+     * Empties the cache
+     */
+    fun removeAll()
 }
