@@ -35,15 +35,9 @@ internal class SandboxGroupImpl(
     private val classTagFactory: ClassTagFactory,
     private val bundleUtils: BundleUtils
 ) : SandboxGroupInternal {
-    private val cpkNames = ConcurrentHashMap.newKeySet<String>()
     init {
-        cpkSandboxes.forEach {
-            val name = it.cpkMetadata.cpkId.name
-            if (cpkNames.contains(name)) {
-                throw SandboxException("CPK $name is declared twice.")
-            } else {
-                cpkNames.add(it.cpkMetadata.cpkId.name)
-            }
+        cpkSandboxes.groupBy { it.cpkMetadata.cpkId.name }.filter { (it.value.size > 1) }.map {
+            throw SandboxException("CPK ${it.key} is declared more than once.")
         }
     }
 

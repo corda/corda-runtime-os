@@ -268,7 +268,7 @@ class SandboxGroupImplTests {
                 mockBundleUtils
             )
         }
-        assert(e.message!!.contains("declared twice."))
+        assert(e.message!!.contains("declared more than once.")) {e.message!!}
     }
 }
 
