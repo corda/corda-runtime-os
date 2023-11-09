@@ -484,7 +484,7 @@ class MGMRegistrationServiceTest {
             verify(expirationProcessor).scheduleProcessingOfExpiredRequests(mgm)
             whenever(
                 membershipQueryClient.queryRegistrationRequests(
-                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), eq(1)
+                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), anyOrNull()
                 )
             ).thenReturn(MembershipQueryResult.Success(listOf(mock())))
             whenever(membershipQueryClient.queryGroupPolicy(mgm))
@@ -727,7 +727,7 @@ class MGMRegistrationServiceTest {
             val errorMsg = "Persistence failure"
             whenever(
                 membershipQueryClient.queryRegistrationRequests(
-                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), eq(1)
+                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), anyOrNull()
                 )
             ).thenReturn(MembershipQueryResult.Failure(errorMsg))
 
@@ -751,7 +751,7 @@ class MGMRegistrationServiceTest {
             val errorMsg = "Persistence failure"
             whenever(
                 membershipQueryClient.queryRegistrationRequests(
-                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), eq(1)
+                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), anyOrNull()
                 )
             ).thenReturn(MembershipQueryResult.Success(listOf(mock())))
             whenever(
@@ -777,7 +777,7 @@ class MGMRegistrationServiceTest {
 
             whenever(
                 membershipQueryClient.queryRegistrationRequests(
-                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), eq(1)
+                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), anyOrNull()
                 )
             ).thenReturn(MembershipQueryResult.Success(listOf(mock())))
             val oldMemberContext = mock<MemberContext> {
@@ -873,7 +873,7 @@ class MGMRegistrationServiceTest {
 
             whenever(
                 membershipQueryClient.queryRegistrationRequests(
-                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), eq(1)
+                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), anyOrNull()
                 )
             ).thenReturn(MembershipQueryResult.Success(listOf(mock())))
             whenever(membershipQueryClient.queryGroupPolicy(mgm))
@@ -918,7 +918,7 @@ class MGMRegistrationServiceTest {
 
             whenever(
                 membershipQueryClient.queryRegistrationRequests(
-                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), eq(1)
+                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), anyOrNull()
                 )
             ).thenReturn(MembershipQueryResult.Success(listOf(mock())))
             whenever(membershipQueryClient.queryGroupPolicy(mgm))
@@ -957,7 +957,7 @@ class MGMRegistrationServiceTest {
 
             whenever(
                 membershipQueryClient.queryRegistrationRequests(
-                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), eq(1)
+                    eq(mgm), eq(mgm.x500Name), eq(listOf(RegistrationStatus.APPROVED)), anyOrNull()
                 )
             ).thenReturn(MembershipQueryResult.Success(listOf(mock())))
             whenever(membershipQueryClient.queryGroupPolicy(mgm))
