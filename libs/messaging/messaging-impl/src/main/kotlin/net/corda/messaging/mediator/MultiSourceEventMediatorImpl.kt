@@ -28,6 +28,7 @@ import java.lang.Thread.sleep
 import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -167,7 +168,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
             var states = stateManager.get(messages.map { it.key.toString() }.distinct())
 
             while (groups.isNotEmpty()) {
-                val asynchronousOutputs = mutableListOf<MediatorMessage<Any>>()
+                val asynchronousOutputs = ConcurrentLinkedDeque<MediatorMessage<Any>>()
                 val statesToCreate = ConcurrentHashMap<String, State?>()
                 val statesToUpdate = ConcurrentHashMap<String, State?>()
                 val statesToDelete = ConcurrentHashMap<String, State?>()
@@ -266,7 +267,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    private fun sendAsynchronousEvents(busEvents: MutableList<MediatorMessage<Any>>) {
+    private fun sendAsynchronousEvents(busEvents: Collection<MediatorMessage<Any>>) {
         busEvents.forEach { message ->
             with(messageRouter.getDestination(message)) {
                 message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
@@ -280,7 +281,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
      */
     private fun processOutputEvents(
         response: StateAndEventProcessor.Response<S>,
-        busEvents: MutableList<MediatorMessage<Any>>,
+        busEvents: MutableCollection<MediatorMessage<Any>>,
         queue: ArrayDeque<Record<K, E>>,
         event: Record<K, E>
     ) {

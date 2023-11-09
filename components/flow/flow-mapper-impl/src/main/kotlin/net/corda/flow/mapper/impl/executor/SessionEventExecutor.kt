@@ -3,6 +3,7 @@ package net.corda.flow.mapper.impl.executor
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
+import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.session.SessionCounterpartyInfoRequest
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
@@ -12,6 +13,8 @@ import net.corda.flow.mapper.FlowMapperResult
 import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.flow.mapper.factory.RecordFactory
 import net.corda.libs.configuration.SmartConfig
+import net.corda.messaging.api.records.Record
+import net.corda.schema.Schemas
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
@@ -52,6 +55,7 @@ class SessionEventExecutor(
                 "Flow mapper received session event for session which does not exist. Session may have expired. Returning error to " +
                         "counterparty. Key: $eventKey, Event: class ${sessionEvent.payload::class.java}, $sessionEvent"
             )
+
             // In this case, the error message should not be forwarded through the mapper, and instead should be sent
             // back from where it came. Note that at present if the flow engine sends a data message without first
             // sending an init message this will result in failure, as the mapper has no knowledge of the flow ID to
@@ -70,7 +74,16 @@ class SessionEventExecutor(
             } catch (e: IllegalArgumentException) {
                 log.warn("Flow mapper received an outbound session message for session ${sessionEvent.sessionId} where " +
                         "the session does not exist. Discarding the message.")
-                listOf()
+                log.info("QQQ retrying...")
+                listOf(
+                    Record(
+                        Schemas.Flow.FLOW_MAPPER_SESSION_IN,
+                        eventKey,
+                        FlowMapperEvent(
+                            sessionEvent,
+                        ),
+                    ),
+                )
             }
             FlowMapperResult(null, outputRecords)
         } else {
