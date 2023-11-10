@@ -139,8 +139,8 @@ class ConfigPublishServiceImpl @Activate constructor(
             }
 
 
-        val configsAreEqual = dbConfigValueDefaulted == kafkaConfigValue
-        if (!configsAreEqual) {
+        val configsAreNotEqual = dbConfigValueDefaulted != kafkaConfigValue
+        if (configsAreNotEqual) {
             logger.info(
                 "Configuration for key $recordKey is misaligned on Kafka after applying defaults (Kafka will be updated).\n" +
                         "DB config value: ${
@@ -154,7 +154,7 @@ class ConfigPublishServiceImpl @Activate constructor(
             )
         }
 
-        return configsAreEqual
+        return configsAreNotEqual
     }
 
     override val isRunning get() = coordinator.isRunning
