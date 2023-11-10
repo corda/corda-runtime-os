@@ -1,12 +1,8 @@
 package net.corda.ledger.utxo.token.cache.services.internal
 
-import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
-import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
-import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
 import net.corda.ledger.utxo.token.cache.factories.TokenCacheEventProcessorFactory
 import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
 import net.corda.ledger.utxo.token.cache.services.TokenCacheSubscriptionHandler
-import net.corda.ledger.utxo.token.cache.services.TokenSelectionDelegatedProcessor
 import net.corda.ledger.utxo.token.cache.services.TokenSelectionSyncRPCProcessor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.statemanager.api.StateManager
@@ -19,11 +15,8 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.constants.WorkerRPCPaths
-import net.corda.messaging.api.subscription.StateAndEventSubscription
-import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.config.SyncRPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 
@@ -41,50 +34,32 @@ class TokenCacheSubscriptionHandlerImpl(
 
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        private const val CONSUMER_GROUP = "TokenEventConsumer"
         private const val RPC_SUBSCRIPTION = "TOKEN_RPC_SUBSCRIPTION"
         private val rpcConfig = SyncRPCConfig("Token Selection Processor", WorkerRPCPaths.TOKEN_SELECTION_PATH)
     }
 
     private val coordinator =
         coordinatorFactory.createCoordinator<TokenCacheSubscriptionHandler> { event, _ -> eventHandler(event) }
-    private var subscription: StateAndEventSubscription<TokenPoolCacheKey, TokenPoolCacheState, TokenPoolCacheEvent>? =
-        null
     private var stateManager: StateManager? = null
     private var subscriptionRegistrationHandle: RegistrationHandle? = null
 
     override fun onConfigChange(config: Map<String, SmartConfig>) {
         try {
             serviceConfiguration.init(toTokenConfig(config))
-            val messagingConfig = toMessagingConfig(config)
-            val newStateManagerConfig = toStateManagerConfig(config)
+            val messagingConfig = toStateManagerConfig(config)
 
             // close the lifecycle registration first to prevent a down signal to the coordinator
             subscriptionRegistrationHandle?.close()
-            subscription?.close()
             stateManager?.stop()
 
             // Create the State and Event subscription
-            val processor = tokenCacheEventProcessorFactory.create()
-
-            subscription = subscriptionFactory.createStateAndEventSubscription(
-                SubscriptionConfig(CONSUMER_GROUP, Schemas.Services.TOKEN_CACHE_EVENT),
-                processor,
-                messagingConfig
-            )
-
-            stateManager = stateManagerFactory.create(newStateManagerConfig)
-            val delegatedProcessor = tokenCacheEventProcessorFactory.createDelegatedProcessor(stateManager!!, processor)
+            stateManager = stateManagerFactory.create(messagingConfig)
+            val processor= tokenCacheEventProcessorFactory.createTokenSelectionSyncRPCProcessor(stateManager!!)
 
             // Create the HTTP RPC subscription
-            createAndRegisterSyncRPCSubscription(delegatedProcessor)
-
-            subscriptionRegistrationHandle = coordinator.followStatusChangesByName(
-                setOf(subscription!!.subscriptionName, stateManager!!.name)
-            )
+            createAndRegisterSyncRPCSubscription(processor)
 
             stateManager?.start()
-            subscription?.start()
         } catch (ex: Exception) {
             val reason = "Failed to configure the Token Event Handler using '${config}'"
             log.error(reason, ex)
@@ -112,15 +87,13 @@ class TokenCacheSubscriptionHandlerImpl(
             is StopEvent -> {
                 log.debug { "Token Cache configuration handler is stopping..." }
                 subscriptionRegistrationHandle?.close()
-                subscription?.close()
                 stateManager?.stop()
                 log.debug { "Token Cache configuration handler stopped" }
             }
         }
     }
 
-    private fun createAndRegisterSyncRPCSubscription(delegatedProcessor: TokenSelectionDelegatedProcessor) {
-        val processor = TokenSelectionSyncRPCProcessor(delegatedProcessor)
+    private fun createAndRegisterSyncRPCSubscription(processor: TokenSelectionSyncRPCProcessor) {
         coordinator.createManagedResource(RPC_SUBSCRIPTION) {
             subscriptionFactory.createHttpRPCSubscription(
                 rpcConfig,

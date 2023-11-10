@@ -19,7 +19,6 @@ import net.corda.ledger.utxo.token.cache.impl.TOKEN_POOL_CACHE_STATE_2
 import net.corda.ledger.utxo.token.cache.services.ClaimStateStore
 import net.corda.ledger.utxo.token.cache.services.ClaimStateStoreCache
 import net.corda.ledger.utxo.token.cache.services.StoredPoolClaimState
-import net.corda.ledger.utxo.token.cache.services.TokenSelectionDelegatedProcessorImpl
 import net.corda.ledger.utxo.token.cache.services.TokenSelectionMetricsImpl
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record

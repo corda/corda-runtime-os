@@ -15,7 +15,6 @@ import net.corda.ledger.utxo.token.cache.entities.internal.TokenPoolCacheImpl
 import net.corda.ledger.utxo.token.cache.handlers.TokenEventHandler
 import net.corda.ledger.utxo.token.cache.impl.POOL_CACHE_KEY
 import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
-import net.corda.ledger.utxo.token.cache.services.TokenCacheEventProcessor
 import net.corda.messaging.api.processor.StateAndEventProcessor.State
 import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions.assertThat

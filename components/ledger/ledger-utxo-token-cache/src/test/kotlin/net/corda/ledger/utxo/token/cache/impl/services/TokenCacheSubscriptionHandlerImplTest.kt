@@ -8,7 +8,6 @@ import net.corda.ledger.utxo.token.cache.factories.TokenCacheEventProcessorFacto
 import net.corda.ledger.utxo.token.cache.impl.MINIMUM_SMART_CONFIG
 import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
 import net.corda.ledger.utxo.token.cache.services.TokenCacheSubscriptionHandler
-import net.corda.ledger.utxo.token.cache.services.TokenSelectionDelegatedProcessor
 import net.corda.ledger.utxo.token.cache.services.internal.TokenCacheSubscriptionHandlerImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.statemanager.api.StateManager
@@ -49,7 +48,7 @@ class TokenCacheSubscriptionHandlerImplTest {
     private val tokenCacheEventProcessorFactory = mock<TokenCacheEventProcessorFactory>().apply {
         whenever(create()).thenReturn(stateAndEventProcessor)
         whenever(
-            createDelegatedProcessor(
+            createTokenSelectionSyncRPCProcessor(
                 any(),
                 eq(stateAndEventProcessor)
             )
