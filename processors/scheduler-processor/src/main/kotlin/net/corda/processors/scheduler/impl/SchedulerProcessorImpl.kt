@@ -65,7 +65,7 @@ class SchedulerProcessorImpl @Activate constructor(
     // now just hardcoding schedulers here until CORE-16331 is picked up, when we should take this from config
     private val schedules = listOf(
         Schedule(ScheduledTask.SCHEDULED_TASK_NAME_DB_PROCESSOR,
-            120, ScheduledTask.SCHEDULED_TASK_TOPIC_DB_PROCESSOR
+            600, ScheduledTask.SCHEDULED_TASK_TOPIC_DB_PROCESSOR
         ),
         Schedule(
             ScheduledTask.SCHEDULED_TASK_NAME_SESSION_TIMEOUT,
