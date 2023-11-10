@@ -37,17 +37,19 @@ fun <K: Any, E: Any> eventType(event: CordaConsumerRecord<K, E>): String {
 }
 
 private fun eventType(event: FlowEvent): String {
-    val type = event.payload::class.java.simpleName
-    val subType = if (event.payload is SessionEvent) {
-        ":" + (event.payload as SessionEvent).payload::class.java.simpleName
+    val payload = event.payload
+    val type = payload::class.java.simpleName
+    val subType = if (payload is SessionEvent) {
+        ":" + payload.payload::class.java.simpleName + "[${payload.sessionId}]"
     } else ""
     return type + subType
 }
 
 private fun eventType(event: FlowMapperEvent): String {
-    val type = event.payload::class.java.simpleName
-    val subType = if (event.payload is SessionEvent) {
-        ":" + (event.payload as SessionEvent).payload::class.java.simpleName
+    val payload = event.payload
+    val type = payload::class.java.simpleName
+    val subType = if (payload is SessionEvent) {
+        ":" + payload.payload::class.java.simpleName + "[${payload.sessionId}]"
     } else ""
     return type + subType
 }
