@@ -55,12 +55,12 @@ class JavalinServer(
     private val apiPathPrefix: String = "/api/${platformInfoProvider.localWorkerSoftwareShortVersion}"
     private var server: Javalin? = null
     private val coordinator = coordinatorFactory.createCoordinator<WebServer> { _, _ -> }
-    private val serverStartLock = ReentrantLock()
+    private val serverLock = ReentrantLock()
 
     override val endpoints: MutableSet<Endpoint> = ConcurrentHashMap.newKeySet()
 
     override fun start(port: Int) {
-        serverStartLock.withLock {
+        serverLock.withLock {
             check(null == server) { "The Javalin webserver is already initialized" }
             coordinator.start()
             startServer(port)
@@ -100,7 +100,7 @@ class JavalinServer(
     }
 
     private fun restartServer() {
-        serverStartLock.withLock {
+        serverLock.withLock {
             // restart server without marking the component down.
             checkNotNull(server) { "Cannot restart a non-existing server" }
             val port = server?.port()
@@ -111,7 +111,7 @@ class JavalinServer(
     }
 
     override fun stop() {
-        serverStartLock.withLock {
+        serverLock.withLock {
             coordinator.updateStatus(LifecycleStatus.DOWN)
             stopServer()
             coordinator.stop()
@@ -119,23 +119,27 @@ class JavalinServer(
     }
 
     override fun registerEndpoint(endpoint: Endpoint) {
-        if(endpoints.any { it.path == endpoint.path && it.methodType == endpoint.methodType })
-            throw IllegalArgumentException("Endpoint with path ${endpoint.path} and method ${endpoint.methodType} already exists.")
-        // register immediately when the server has been started
-        if(null != server) registerEndpointInternal(endpoint)
-        // record the path in case we need to register when it's already started
-        endpoints.add(endpoint)
+        serverLock.withLock {
+            if (endpoints.any { it.path == endpoint.path && it.methodType == endpoint.methodType })
+                throw IllegalArgumentException("Endpoint with path ${endpoint.path} and method ${endpoint.methodType} already exists.")
+            // register immediately when the server has been started
+            if (null != server) registerEndpointInternal(endpoint)
+            // record the path in case we need to register when it's already started
+            endpoints.add(endpoint)
+        }
     }
 
     override fun removeEndpoint(endpoint: Endpoint) {
-        endpoints.remove(endpoint)
-        // NOTE:
-        //  The server needs to be restarted to un-register the path. However, this means everything dependent on
-        //  this is impacted by a restart, which doesn't feel quite right.
-        //  This also means we can't really DOWN/UP the lifecycle status of this because this would end up in a
-        //  relentless yoyo-ing of this component as dependent components keep calling this function.
-        // TODO - review if it is really needed to de-register a path when a Subscription goes down, for example.
-        if(null != server) restartServer()
+        serverLock.withLock {
+            endpoints.remove(endpoint)
+            // NOTE:
+            //  The server needs to be restarted to un-register the path. However, this means everything dependent on
+            //  this is impacted by a restart, which doesn't feel quite right.
+            //  This also means we can't really DOWN/UP the lifecycle status of this because this would end up in a
+            //  relentless yoyo-ing of this component as dependent components keep calling this function.
+            // TODO - review if it is really needed to de-register a path when a Subscription goes down, for example.
+            if (null != server) restartServer()
+        }
     }
 
     private fun registerEndpointInternal(endpoint: Endpoint) {
