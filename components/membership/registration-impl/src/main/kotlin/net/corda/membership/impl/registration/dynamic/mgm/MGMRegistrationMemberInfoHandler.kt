@@ -80,8 +80,14 @@ internal class MGMRegistrationMemberInfoHandler(
 
     @Throws(MGMRegistrationMemberInfoHandlingException::class)
     fun persistMgmMemberInfo(holdingIdentity: HoldingIdentity, selfSignedMemberInfo: SelfSignedMemberInfo) {
-        logger.info("Started building mgm member info.")
-        return persistMemberInfo(holdingIdentity, selfSignedMemberInfo)
+        logger.info("Started persisting mgm member info.")
+        val persistenceResult = membershipPersistenceClient.persistMemberInfo(holdingIdentity, listOf(selfSignedMemberInfo))
+            .execute()
+        if (persistenceResult is MembershipPersistenceResult.Failure) {
+            throw MGMRegistrationMemberInfoHandlingException(
+                "Registration failed, persistence error. Reason: ${persistenceResult.errorMsg}"
+            )
+        }
     }
 
     fun queryForMGMMemberInfo(holdingIdentity: HoldingIdentity): SelfSignedMemberInfo {
@@ -139,16 +145,6 @@ internal class MGMRegistrationMemberInfoHandler(
     }
 
     private fun PublicKey.toPem(): String = keyEncodingService.encodeAsString(this)
-
-    private fun persistMemberInfo(holdingIdentity: HoldingIdentity, mgmInfo: SelfSignedMemberInfo) {
-        val persistenceResult = membershipPersistenceClient.persistMemberInfo(holdingIdentity, listOf(mgmInfo))
-            .execute()
-        if (persistenceResult is MembershipPersistenceResult.Failure) {
-            throw MGMRegistrationMemberInfoHandlingException(
-                "Registration failed, persistence error. Reason: ${persistenceResult.errorMsg}"
-            )
-        }
-    }
 
     fun buildMgmMemberInfo(
         holdingIdentity: HoldingIdentity,
