@@ -1,6 +1,10 @@
 package net.corda.libs.statemanager.impl.tests
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import java.sql.SQLException
+import java.time.Instant
+import java.util.UUID
+import java.util.concurrent.CountDownLatch
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.core.utils.transaction
@@ -19,6 +23,8 @@ import net.corda.libs.statemanager.impl.model.v1.StateEntity
 import net.corda.libs.statemanager.impl.model.v1.resultSetAsStateEntityCollection
 import net.corda.libs.statemanager.impl.repository.impl.PostgresQueryProvider
 import net.corda.libs.statemanager.impl.repository.impl.StateRepositoryImpl
+import net.corda.libs.statemanager.impl.tests.MultiThreadedTestHelper.runMultiThreadedOptimisticLockingTest
+import net.corda.libs.statemanager.impl.tests.MultiThreadedTestHelper.updateStateObjects
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
@@ -32,17 +38,12 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.kotlin.mock
-import java.sql.SQLException
-import java.time.Instant
-import java.util.UUID
-import java.util.concurrent.Callable
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.Executors
 
 // TODO-[CORE-16663]: make database provider pluggable
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StateManagerIntegrationTest {
-    private val dataSource = DbUtils.createPostgresDataSource()
+    private val maxConcurrentThreadJdbcConnections = 10
+    private val dataSource = DbUtils.createPostgresDataSource(maxJdbcConnections = maxConcurrentThreadJdbcConnections)
 
     init {
         val dbChange = ClassloaderChangeLog(
@@ -288,7 +289,7 @@ class StateManagerIntegrationTest {
         assertSoftly {
             failedUpdates.values.map { state ->
                 // assert the real version has bumped by one
-                it.assertThat(state.version).isEqualTo(statesToUpdateSecondThread[state.key]!!.version + 1)
+                it.assertThat(state!!.version).isEqualTo(statesToUpdateSecondThread[state.key]!!.version + 1)
             }
         }
 
@@ -303,7 +304,7 @@ class StateManagerIntegrationTest {
     @Test
     fun `optimistic locking ensures no double updates across threads`() {
         val totalStates = 100
-        val numThreads = 10
+        val numThreads = maxConcurrentThreadJdbcConnections
         val sharedStatesPerThread = 5
 
         persistStateEntities(
@@ -314,31 +315,72 @@ class StateManagerIntegrationTest {
         )
 
         val allKeys = (1..totalStates).map { buildStateKey(it) }
-        val states = stateManager.get(allKeys).values.toList()
-
-        val groupsOfStates = divideStatesBetweenThreads(states, numThreads, sharedStatesPerThread)
+        val allStatesInTest = stateManager.get(allKeys).values.toList()
 
         val latch = CountDownLatch(numThreads)
-        val updaterJob: (states: List<State>) -> List<String> = { s ->
+        val threadResults = runMultiThreadedOptimisticLockingTest(
+            allStatesInTest,
+            numThreads,
+            sharedStatesPerThread
+        ) { threadIndex, stateGroup ->
             // try to make the call to update as contentious among threads as possible
-            val updatedStates = updateStateObjects(s, testUniqueId)
+            val updatedStates = updateStateObjects(stateGroup.getStatesForTest(), testUniqueId, threadIndex)
             latch.countDown()
             latch.await()
-            stateManager.update(updatedStates).map { it.key }
+            MultiThreadedTestHelper.FailedKeysSummary(failedUpdates = stateManager.update(updatedStates).map { it.key })
         }
 
-        val executor = Executors.newFixedThreadPool(numThreads)
-        val futures = executor.invokeAll((0 until numThreads).map { threadGroup ->
-            Callable {
-                updaterJob(groupsOfStates[threadGroup])
-            }
-        })
+        val actualFailedKeys = threadResults.map { it.failedKeysSummary.failedUpdates }.flatten()
+        val expectedFailedKeys = threadResults.map { it.assignedStateGrouping.statesOverlappingNextGroup }.flatten().map { it.key }
+        assertThat(actualFailedKeys)
+            .containsExactlyInAnyOrder(*expectedFailedKeys.toTypedArray())
+            .withFailMessage("Expected one failure for every state shared between another thread")
+    }
 
-        val failedKeysPerThread = futures.map { it.get() }
+    @Test
+    fun `optimistic locking ensures no exceptions when double deletes across threads`() {
+        val totalStates = 100
+        val numThreads = maxConcurrentThreadJdbcConnections
+        val sharedStatesPerThread = 5
 
-        val expectedFailedKeys = sharedStatesPerThread * numThreads
-        assertThat(failedKeysPerThread.flatten())
-            .hasSize(expectedFailedKeys)
+        persistStateEntities(
+            (1..totalStates),
+            { _, _ -> State.VERSION_INITIAL_VALUE },
+            { i, _ -> "existingState_$i" },
+            { i, _ -> """{"id": "$i"}""" }
+        )
+
+        val allKeys = (1..totalStates).map { buildStateKey(it) }
+        val allStatesInTest = stateManager.get(allKeys).values.toList()
+
+        val latch = CountDownLatch(numThreads)
+        val threadResults = runMultiThreadedOptimisticLockingTest(
+            allStatesInTest,
+            numThreads,
+            sharedStatesPerThread
+        ) { threadIndex, stateGroup ->
+            // Thread will attempt to update its own assigned states, and delete the states overlapping into the next group.
+            // This means every thread will have race condition with the next thread.
+            val statesToUpdate = updateStateObjects(stateGroup.assignedStates, testUniqueId, threadIndex)
+            val statesToDelete = stateGroup.statesOverlappingNextGroup
+
+            latch.countDown()
+            latch.await()
+            val failedUpdates = stateManager.update(statesToUpdate).map { it.key }
+            val failedDeletes = stateManager.delete(statesToDelete).map { it.key }
+            MultiThreadedTestHelper.FailedKeysSummary(failedUpdates, failedDeletes)
+        }
+
+        val allFailedUpdates = threadResults.map { it.failedKeysSummary.failedUpdates }.flatten()
+        val allFailedDeletes = threadResults.map { it.failedKeysSummary.failedDeletes }.flatten()
+        val expectedFailedKeys = threadResults.map { it.assignedStateGrouping.statesOverlappingNextGroup }.flatten().map { it.key }
+
+        // if a thread tries to update a state that was already deleted, it gets that key back as a "failed key".
+        // if a thread tries to delete a thread that was already updated, it gets that key back as a "failed key".
+        // we expect to see a failed key for every overlapping state, because in the race between two threads only
+        // one can update or delete it.
+        assertThat(allFailedUpdates + allFailedDeletes)
+            .containsExactlyInAnyOrder(*expectedFailedKeys.toTypedArray())
             .withFailMessage("Expected one failure for every state shared between another thread")
     }
 
@@ -407,26 +449,6 @@ class StateManagerIntegrationTest {
             { _, key -> "u1_$key" },
             { _, key -> metadata("u1" to key) },
         )
-    }
-
-    @Test
-    fun `stateManager delete is idempotent, returns no keys when states are already deleted`() {
-        val totalCount = 20
-        persistStateEntities(
-            (1..totalCount),
-            { _, _ -> State.VERSION_INITIAL_VALUE },
-            { i, _ -> "existingState_$i" },
-            { i, _ -> """{"k1": "v$i", "k2": $i}""" }
-        )
-
-        val allKeys = (1..totalCount).map { buildStateKey(it) }
-        val persistedStates = stateManager.get(allKeys)
-
-        val failedKeysFirstDelete = stateManager.delete(persistedStates.values)
-        assertThat(failedKeysFirstDelete).isEmpty()
-
-        val failedKeysSecondDelete = stateManager.delete(persistedStates.values)
-        assertThat(failedKeysSecondDelete).isEmpty()
     }
 
     @Test

@@ -78,7 +78,8 @@ object DbUtils {
         dbPassword: String? = null,
         schemaName: String? = null,
         createSchema: Boolean = false,
-        rewriteBatchedInserts: Boolean = false
+        rewriteBatchedInserts: Boolean = false,
+        maxJdbcConnections: Int = 5
     ): CloseableDataSource {
         val port = System.getProperty(POSTGRES_PORT_PROPERTY)
         val postgresDb = getPostgresDatabase()
@@ -102,7 +103,7 @@ object DbUtils {
         }
         logger.info("Using Postgres URL $jdbcUrl".emphasise())
         // reduce poolsize when testing
-        return factory.create(jdbcUrl, user, password)
+        return factory.create(jdbcUrl, user, password, maxJdbcConnections)
     }
 
     fun createConfig(

@@ -71,7 +71,7 @@ class StateManagerImpl(
         }
     }
 
-    override fun update(states: Collection<State>): Map<String, State> {
+    override fun update(states: Collection<State>): Map<String, State?> {
         if (states.isEmpty()) return emptyMap()
 
         try {
@@ -79,16 +79,26 @@ class StateManagerImpl(
                 stateRepository.update(conn, states.map { it.toPersistentEntity() })
             }
 
-            return if (failedUpdates.isEmpty()) {
-                emptyMap()
-            } else {
-                logger.warn("Optimistic locking check failed while updating States ${failedUpdates.joinToString()}")
-                get(failedUpdates)
-            }
+            if (failedUpdates.isEmpty()) return emptyMap()
+
+            return getFailedUpdates(failedUpdates)
         } catch (e: Exception) {
             logger.warn("Failed to updated batch of states - ${states.joinToString { it.key }}", e)
             throw e
         }
+    }
+
+    private fun getFailedUpdates(failedUpdates: List<String>): Map<String, State?> {
+        val optimisticLockingFailedUpdates = get(failedUpdates)
+        val deletedStateKeys = (failedUpdates - optimisticLockingFailedUpdates.keys)
+
+        logger.warn(
+            "Optimistic locking check failed while updating States ${optimisticLockingFailedUpdates.keys.joinToString()}" +
+                    if (deletedStateKeys.isNotEmpty()) " Failed to update the following States because they were already deleted: ${deletedStateKeys.joinToString()}"
+                    else ""
+        )
+
+        return optimisticLockingFailedUpdates + deletedStateKeys.associateWith { null }
     }
 
     override fun delete(states: Collection<State>): Map<String, State> {
