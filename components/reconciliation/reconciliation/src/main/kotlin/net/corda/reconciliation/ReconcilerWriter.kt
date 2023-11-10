@@ -18,4 +18,10 @@ interface ReconcilerWriter<K : Any, V : Any> {
     fun remove(recordKey: K)
 
     val lifecycleCoordinatorName: LifecycleCoordinatorName
+
+    fun recordValueMisalignmentAfterDefaulted(
+        recordKey: K,
+        dbRecordValue: V,
+        kafkaRecordValue: V
+    ): Boolean = false
 }
