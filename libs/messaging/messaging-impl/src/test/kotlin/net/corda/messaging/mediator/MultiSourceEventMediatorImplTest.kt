@@ -3,6 +3,7 @@ package net.corda.messaging.mediator
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messagebus.api.consumer.CordaConsumerRecord
@@ -10,7 +11,6 @@ import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorConsumer
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
-import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.messaging.api.mediator.RoutingDestination
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.mediator.config.EventMediatorConfigBuilder
@@ -25,7 +25,9 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.taskmanager.TaskManager
 import net.corda.test.util.waitWhile
+import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.atLeast
@@ -36,6 +38,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
 class MultiSourceEventMediatorImplTest {
@@ -48,7 +51,7 @@ class MultiSourceEventMediatorImplTest {
 
     private val messagingConfig = mock<SmartConfig>()
     private lateinit var config: EventMediatorConfig<Any, Any, Any>
-    private lateinit var mediator: MultiSourceEventMediator<Any, Any, Any>
+    private lateinit var mediator: MultiSourceEventMediatorImpl<Any, Any, Any>
     private val mediatorConsumerFactory = mock<MediatorConsumerFactory>()
     private val consumer = mock<MediatorConsumer<Any, Any>>()
     private val messagingClientFactory = mock<MessagingClientFactory>()
@@ -205,6 +208,48 @@ class MultiSourceEventMediatorImplTest {
         verify(messageProcessor, times(expectedProcessingCount)).onNext(anyOrNull(), any())
         verify(consumer, atLeast(expectedProcessingCount)).poll(any())
         verify(messagingClient, times(expectedProcessingCount)).send(any())
+    }
+
+    @Test
+    fun qualifyStateMarksStateAsNewWhenOriginalIsNullAndProcessedIsNot() {
+        val toCreate = ConcurrentHashMap<String, State?>()
+        val toUpdate = ConcurrentHashMap<String, State?>()
+        val toDelete = ConcurrentHashMap<String, State?>()
+        val originalState = null
+        val processedState = State("key1", "".toByteArray())
+        mediator.qualifyState("groupKey", originalState, processedState, toCreate, toUpdate, toDelete)
+
+        Assertions.assertThat(toCreate).containsExactly(Assertions.entry("groupKey", processedState))
+        Assertions.assertThat(toUpdate).isEmpty()
+        Assertions.assertThat(toDelete).isEmpty()
+    }
+
+    @Test
+    fun qualifyStateMarksStateAsUpdatableWhenOriginalAndProcessedAreNotNull() {
+        val toCreate = ConcurrentHashMap<String, State?>()
+        val toUpdate = ConcurrentHashMap<String, State?>()
+        val toDelete = ConcurrentHashMap<String, State?>()
+        val originalState = State("key1", "".toByteArray())
+        val processedState = State("key1", "nonEmpty".toByteArray())
+        mediator.qualifyState("groupKey", originalState, processedState, toCreate, toUpdate, toDelete)
+
+        Assertions.assertThat(toCreate).isEmpty()
+        Assertions.assertThat(toUpdate).containsExactly(Assertions.entry("groupKey", processedState))
+        Assertions.assertThat(toDelete).isEmpty()
+    }
+
+    @Test
+    fun qualifyStateMarksStateAsDeletableWhenProcessedIsNullAndOriginalIsNot() {
+        val toCreate = ConcurrentHashMap<String, State?>()
+        val toUpdate = ConcurrentHashMap<String, State?>()
+        val toDelete = ConcurrentHashMap<String, State?>()
+        val originalState = State("key1", "".toByteArray())
+        val processedState = null
+        mediator.qualifyState("groupKey", originalState, processedState, toCreate, toUpdate, toDelete)
+
+        Assertions.assertThat(toCreate).isEmpty()
+        Assertions.assertThat(toUpdate).isEmpty()
+        Assertions.assertThat(toDelete).containsExactly(Assertions.entry("groupKey", originalState))
     }
 
     private fun cordaConsumerRecords(key: String, event: String) =

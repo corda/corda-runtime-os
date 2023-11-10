@@ -75,7 +75,7 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
     }
 
     private fun reconcileAndScheduleNext(coordinator: LifecycleCoordinator) {
-        logger.info("Initiating reconciliation")
+        logger.debug { "Initiating reconciliation" }
         var reconciliationOutcome = "FAILED"
         val startTime = System.nanoTime()
         var reconciliationEndTime = startTime
@@ -90,6 +90,7 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
             // on subsequent `RegistrationStatusChangeEvent` to see if it is going to be a `DOWN` or an `ERROR`.
             reconciliationEndTime = System.nanoTime()
             logger.warn("Reconciliation failed. Terminating reconciliations", e)
+            coordinator.cancelTimer(timerKey)
             coordinator.updateStatus(LifecycleStatus.DOWN)
         } finally {
             val reconciliationTime = Duration.ofNanos(reconciliationEndTime - startTime)

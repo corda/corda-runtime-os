@@ -9,6 +9,7 @@ import net.corda.data.membership.db.response.query.ErrorKind
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.membership.lib.exceptions.InvalidEntityUpdateException
 import net.corda.messaging.api.processor.RPCResponderProcessor
+import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 
@@ -24,10 +25,7 @@ internal class MembershipPersistenceRPCProcessor(
         request: MembershipPersistenceRequest,
         respFuture: CompletableFuture<MembershipPersistenceResponse>
     ) {
-        logger.info(
-            "Received membership persistence request: ${request.request::class.java} " +
-                "ID: ${request.context.requestId}"
-        )
+        logger.trace { "Received membership persistence request: ${request.request::class.java} ID: ${request.context.requestId}" }
         val result = try {
             val result = handlerFactories.handle(
                 request,
