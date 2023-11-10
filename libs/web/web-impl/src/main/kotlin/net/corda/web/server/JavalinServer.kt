@@ -15,7 +15,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -57,7 +56,7 @@ class JavalinServer(
     private val coordinator = coordinatorFactory.createCoordinator<WebServer> { _, _ -> }
     private val serverLock = ReentrantLock()
 
-    override val endpoints: MutableSet<Endpoint> = ConcurrentHashMap.newKeySet()
+    override val endpoints: MutableSet<Endpoint> = mutableSetOf()
 
     override fun start(port: Int) {
         serverLock.withLock {
