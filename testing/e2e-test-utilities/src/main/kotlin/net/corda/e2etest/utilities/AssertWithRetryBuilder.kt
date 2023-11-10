@@ -1,7 +1,9 @@
 package net.corda.e2etest.utilities
 
+import net.corda.rest.ResponseCode
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.fail
+import java.lang.IllegalArgumentException
 import java.time.Duration
 
 /** "Private args" that are only exposed in here */
@@ -9,9 +11,13 @@ class AssertWithRetryArgs {
     var timeout: Duration = Duration.ofSeconds(10)
     var interval: Duration = Duration.ofMillis(500)
     var command: (() -> SimpleResponse)? = null
-    var condition: ((SimpleResponse) -> Boolean)? = null
+    var condition: ((SimpleResponse) -> Boolean) = { it.code in 200..299 }
     var immediateFailCondition: ((SimpleResponse) -> Boolean)? = null
     var failMessage: String = ""
+
+    fun validate() {
+        if (command == null) throw IllegalArgumentException("command not specified in AssertWithRetryArgs")
+    }
 }
 
 /** The [assertWithRetry] builder class that helps implement the "DSL" */
@@ -57,8 +63,9 @@ class AssertWithRetryBuilder(private val args: AssertWithRetryArgs) {
  */
 fun assertWithRetry(initialize: AssertWithRetryBuilder.() -> Unit): SimpleResponse {
     val args = AssertWithRetryArgs()
-
-    AssertWithRetryBuilder(args).apply(initialize).run {
+    AssertWithRetryBuilder(args).apply(initialize).also {
+        args.validate()
+    }.run {
         var response: SimpleResponse?
 
         var retry = 0
@@ -69,13 +76,13 @@ fun assertWithRetry(initialize: AssertWithRetryBuilder.() -> Unit): SimpleRespon
             if(null != args.immediateFailCondition && args.immediateFailCondition!!.invoke(response)) {
                 fail("Failed without retry with status code = ${response.code} and body =\n${response.body}")
             }
-            if (args.condition!!.invoke(response)) break
+            if (args.condition.invoke(response)) break
             retry++
             timeTried = args.interval.toMillis() * retry
             println("Failed after $retry retry ($timeTried ms): $response")
         } while (timeTried < args.timeout.toMillis())
 
-        assertThat(args.condition!!.invoke(response!!))
+        assertThat(args.condition.invoke(response!!))
             .withFailMessage(
                 "${args.failMessage}Retried ${response.url} and " +
                         "failed with status code = ${response.code} and body =\n${response.body}"
@@ -104,11 +111,13 @@ fun assertWithRetry(initialize: AssertWithRetryBuilder.() -> Unit): SimpleRespon
 @Suppress("ComplexMethod", "NestedBlockDepth")
 fun assertWithRetryIgnoringExceptions(initialize: AssertWithRetryBuilder.() -> Unit): SimpleResponse {
     val args = AssertWithRetryArgs()
-
-    AssertWithRetryBuilder(args).apply(initialize).run {
+    AssertWithRetryBuilder(args).apply(initialize).also {
+        args.validate()
+    }.run {
         var retry = 0
         var result: Any?
         var timeTried: Long
+
 
         do {
             Thread.sleep(args.interval.toMillis())
@@ -124,7 +133,7 @@ fun assertWithRetryIgnoringExceptions(initialize: AssertWithRetryBuilder.() -> U
                     fail("Failed without retry with status code = ${result.code} and body =\n${result.body}")
                 }
 
-                if (args.condition!!.invoke(result)) break
+                if (args.condition.invoke(result)) break
             }
 
             retry++
@@ -134,7 +143,7 @@ fun assertWithRetryIgnoringExceptions(initialize: AssertWithRetryBuilder.() -> U
 
         when (result) {
             is SimpleResponse -> {
-                assertThat(args.condition!!.invoke(result))
+                assertThat(args.condition.invoke(result))
                     .withFailMessage(
                         "${args.failMessage}Retried ${result.url} and " +
                                 "failed with status code = ${result.code} and body =\n${result.body}"
