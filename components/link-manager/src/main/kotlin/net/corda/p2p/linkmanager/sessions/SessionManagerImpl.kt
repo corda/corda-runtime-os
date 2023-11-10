@@ -339,7 +339,7 @@ internal class SessionManagerImpl(
         }
     }
 
-    override fun sessionMessageReceived(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity?) {
+    fun sessionMessageReceived(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity?) {
         dominoTile.withLifecycleLock {
             heartbeatManager.sessionMessageReceived(sessionId, source, destination)
         }
