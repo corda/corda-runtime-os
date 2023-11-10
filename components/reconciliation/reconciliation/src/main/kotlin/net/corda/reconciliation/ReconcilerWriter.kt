@@ -19,7 +19,7 @@ interface ReconcilerWriter<K : Any, V : Any> {
 
     val lifecycleCoordinatorName: LifecycleCoordinatorName
 
-    fun recordValueMisalignedAfterDefaulted(
+    fun recordValueMisalignedAfterDefaults(
         recordKey: K,
         dbRecordValue: V,
         kafkaRecordValue: V

@@ -107,7 +107,7 @@ class ConfigPublishServiceImpl @Activate constructor(
         TODO("Not yet implemented")
     }
 
-    override fun recordValueMisalignedAfterDefaulted(
+    override fun recordValueMisalignedAfterDefaults(
         recordKey: String,
         dbRecordValue: Configuration,
         kafkaRecordValue: Configuration
@@ -118,7 +118,7 @@ class ConfigPublishServiceImpl @Activate constructor(
         require(dbRecordValue.schemaVersion.minorVersion == kafkaRecordValue.schemaVersion.minorVersion)
         val schemaMinorVersion = dbRecordValue.schemaVersion.minorVersion
 
-        val dbConfigValueDefaulted =
+        val dbConfigValueWithDefaults =
             smartConfigFactory.create(ConfigFactory.parseString(dbRecordValue.value)).run {
                 validator.validate(
                     recordKey,
@@ -139,12 +139,12 @@ class ConfigPublishServiceImpl @Activate constructor(
             }
 
 
-        val configsAreNotEqual = dbConfigValueDefaulted != kafkaConfigValue
+        val configsAreNotEqual = dbConfigValueWithDefaults != kafkaConfigValue
         if (configsAreNotEqual) {
             logger.info(
                 "Configuration for key $recordKey is misaligned on Kafka after applying defaults (Kafka will be updated).\n" +
                         "DB config value: ${
-                            dbConfigValueDefaulted.toSafeConfig().root()
+                            dbConfigValueWithDefaults.toSafeConfig().root()
                                 .render(ConfigRenderOptions.concise().setFormatted(true))
                         }\n" +
                         "Kafka config value: ${

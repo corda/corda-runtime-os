@@ -140,7 +140,7 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
                         dbRecord.version > matchedKafkaRecord.version
                                 // reconcile all db records again (forced reconciliation)
                                 || (dbRecord.version == matchedKafkaRecord.version
-                                        && writer.recordValueMisalignedAfterDefaulted(
+                                        && writer.recordValueMisalignedAfterDefaults(
                                                     dbRecord.key,
                                                     dbRecord.value,
                                                     matchedKafkaRecord.value
