@@ -12,6 +12,7 @@ import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.utilities.debug
+import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.util.UUID
 import javax.persistence.EntityManager
@@ -70,7 +71,7 @@ class DbConnectionOpsImpl(
         privilege: DbPrivilege,
         entitiesSet: JpaEntitiesSet
     ): EntityManagerFactory {
-        logger.info("Loading DB connection details for ${entitiesSet.persistenceUnitName}/$privilege")
+        logger.trace { "Loading DB connection details for ${entitiesSet.persistenceUnitName}/$privilege" }
         val dataSource = dbConnectionsRepository.create(name, privilege) ?:
         throw DBConfigurationException("Details for $name/$privilege cannot be found")
         return entityManagerFactoryFactory.create(
@@ -82,7 +83,7 @@ class DbConnectionOpsImpl(
 
     override fun createEntityManagerFactory(connectionId: UUID, entitiesSet: JpaEntitiesSet):
             EntityManagerFactory {
-        logger.info("Loading DB connection details for $connectionId")
+        logger.trace { "Loading DB connection details for $connectionId" }
         val dataSource = dbConnectionsRepository.create(connectionId) ?:
         throw DBConfigurationException("Details for $connectionId cannot be found")
         return entityManagerFactoryFactory.create(

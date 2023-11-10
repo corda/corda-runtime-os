@@ -38,6 +38,7 @@ import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Membership.MEMBERSHIP_DB_ASYNC_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.utilities.debug
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -116,7 +117,6 @@ class MembershipPersistenceServiceImpl @Activate constructor(
     }
 
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.info("Received event $event.")
         when (event) {
             is StartEvent -> handleStartEvent(coordinator)
             is StopEvent -> handleStopEvent(coordinator)
@@ -126,7 +126,7 @@ class MembershipPersistenceServiceImpl @Activate constructor(
     }
 
     private fun handleStartEvent(coordinator: LifecycleCoordinator) {
-        logger.info("Handling start event.")
+        logger.debug { "Handling start event." }
         dependencyServiceHandle?.close()
         dependencyServiceHandle = coordinator.followStatusChangesByName(
             setOf(
@@ -139,7 +139,7 @@ class MembershipPersistenceServiceImpl @Activate constructor(
     }
 
     private fun handleStopEvent(coordinator: LifecycleCoordinator) {
-        logger.info("Handling stop event.")
+        logger.debug { "Handling stop event." }
         coordinator.updateStatus(
             LifecycleStatus.DOWN,
             "Component received stop event."
@@ -156,7 +156,7 @@ class MembershipPersistenceServiceImpl @Activate constructor(
     }
 
     private fun handleRegistrationStatusChangedEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
-        logger.info("Handling registration changed event.")
+        logger.debug { "Handling registration changed event. Registration event status=${event.status}" }
         when (event.status) {
             LifecycleStatus.UP -> {
                     configHandle?.close()

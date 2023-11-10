@@ -238,13 +238,14 @@ internal class SandboxGroupContextCacheImpl private constructor(
         }
 
         return sandboxCache.get(virtualNodeContext) {
-            logger.info(
-                "Caching {} sandbox for {} (cache size: {})",
-                virtualNodeContext.sandboxGroupType,
-                virtualNodeContext.holdingIdentity.x500Name,
-                sandboxCache.estimatedSize()
-            )
-
+            if (logger.isDebugEnabled) {
+                logger.debug(
+                    "Caching {} sandbox for {} (cache size: {})",
+                    virtualNodeContext.sandboxGroupType,
+                    virtualNodeContext.holdingIdentity.x500Name,
+                    sandboxCache.estimatedSize()
+                )
+            }
             SandboxGroupContextWrapper(createFunction(virtualNodeContext))
         }
     }

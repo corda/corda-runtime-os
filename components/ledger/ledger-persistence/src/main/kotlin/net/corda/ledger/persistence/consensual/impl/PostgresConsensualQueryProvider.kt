@@ -2,6 +2,7 @@ package net.corda.ledger.persistence.consensual.impl
 
 import net.corda.orm.DatabaseTypeProvider
 import net.corda.orm.DatabaseTypeProvider.Companion.POSTGRES_TYPE_FILTER
+import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -14,7 +15,7 @@ class PostgresConsensualQueryProvider @Activate constructor(
     databaseTypeProvider: DatabaseTypeProvider
 ): AbstractConsensualQueryProvider() {
     init {
-        LoggerFactory.getLogger(this::class.java).info("Activated for {}", databaseTypeProvider.databaseType)
+        LoggerFactory.getLogger(this::class.java).debug { "Activated for ${databaseTypeProvider.databaseType}" }
     }
 
     override val persistTransaction: String

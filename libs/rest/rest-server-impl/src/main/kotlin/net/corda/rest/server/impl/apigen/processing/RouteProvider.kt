@@ -2,20 +2,20 @@ package net.corda.rest.server.impl.apigen.processing
 
 import io.javalin.websocket.WsConfig
 import net.corda.rest.annotations.RestApiVersion
+import net.corda.rest.durablestream.api.isFiniteDurableStreamsMethod
+import net.corda.rest.durablestream.api.returnsDurableCursorBuilder
 import net.corda.rest.server.impl.apigen.models.Endpoint
 import net.corda.rest.server.impl.apigen.models.EndpointMethod
 import net.corda.rest.server.impl.apigen.models.EndpointParameter
 import net.corda.rest.server.impl.apigen.models.Resource
-import net.corda.rest.server.impl.websocket.WebSocketRouteAdaptor
 import net.corda.rest.server.impl.internal.HttpExceptionMapper
 import net.corda.rest.server.impl.security.RestAuthenticationProvider
 import net.corda.rest.server.impl.security.provider.credentials.DefaultCredentialResolver
+import net.corda.rest.server.impl.websocket.WebSocketCloserService
+import net.corda.rest.server.impl.websocket.WebSocketRouteAdaptor
 import net.corda.rest.tools.HttpPathUtils.joinResourceAndEndpointPaths
 import net.corda.rest.tools.isDuplexChannel
 import net.corda.rest.tools.isStaticallyExposedGet
-import net.corda.rest.durablestream.api.isFiniteDurableStreamsMethod
-import net.corda.rest.durablestream.api.returnsDurableCursorBuilder
-import net.corda.rest.server.impl.websocket.WebSocketCloserService
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
@@ -175,7 +175,6 @@ internal class RouteInfo(
         webSocketIdleTimeoutMs: Long
     ): (WsConfig) -> Unit {
         return { wsConfig ->
-            log.info("Setting-up WS call for '$fullPath'")
             try {
                 val adaptor = WebSocketRouteAdaptor(
                     this, restAuthProvider, credentialResolver, webSocketCloserService, webSocketIdleTimeoutMs
@@ -186,9 +185,9 @@ internal class RouteInfo(
                 wsConfig.onError(adaptor)
 
                 adaptors.add(adaptor)
-                log.debug { "Setting-up WS call for '$fullPath' completed." }
+                log.debug { "Setup for WS call for \"$fullPath\" completed." }
             } catch (e: Exception) {
-                log.warn("Error Setting-up WS call for '$fullPath'", e)
+                log.warn("Error setting-up WS call for \"$fullPath\"", e)
                 throw HttpExceptionMapper.mapToResponse(e)
             }
         }
