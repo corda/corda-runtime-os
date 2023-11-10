@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory
 import java.lang.Thread.sleep
 import java.time.Duration
 import java.util.*
+
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.TimeUnit
@@ -167,12 +168,14 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         if (messages.isNotEmpty()) {
             var groups = allocateGroups(messages.map { it.toRecord() })
             var states = stateManager.get(messages.map { it.key.toString() }.distinct())
+
             while (groups.isNotEmpty()) {
                 val asynchronousOutputs = ConcurrentLinkedDeque<MediatorMessage<Any>>()
-                val newStates = ConcurrentHashMap<String, State?>()
-                val updateStates = ConcurrentHashMap<String, State?>()
-                val deleteStates = ConcurrentHashMap<String, State?>()
+                val statesToCreate = ConcurrentHashMap<String, State?>()
+                val statesToUpdate = ConcurrentHashMap<String, State?>()
+                val statesToDelete = ConcurrentHashMap<String, State?>()
                 val flowEvents = ConcurrentHashMap<String, MutableList<Record<K, E>>>()
+
                 // Process each group on a thread
                 groups.filter {
                     it.isNotEmpty()
@@ -212,20 +215,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                                 processorState,
                             )
 
-                            // New state
-                            if (state == null && processedState != null) {
-                                newStates[it.key.toString()] = processedState
-                            }
-
-                            // Update state
-                            if (state != null && processedState != null) {
-                                updateStates[it.key.toString()] = processedState
-                            }
-
-                            // Delete state
-                            if (state != null && processorState == null) {
-                                deleteStates[it.key.toString()] = state
-                            }
+                            qualifyState(it.key.toString(), state, processedState, statesToCreate, statesToUpdate, statesToDelete)
                         }
                     }
                 }.map {
@@ -233,10 +223,10 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                 }
 
                 // Persist states changes
-                val failedToCreateKeys = stateManager.create(newStates.values.mapNotNull { it })
+                val failedToCreateKeys = stateManager.create(statesToCreate.values.mapNotNull { it })
                 val failedToCreate = stateManager.get(failedToCreateKeys.keys)
-                val failedToDelete = stateManager.delete(deleteStates.values.mapNotNull { it })
-                val failedToUpdate = stateManager.update(updateStates.values.mapNotNull { it })
+                val failedToDelete = stateManager.delete(statesToDelete.values.mapNotNull { it })
+                val failedToUpdate = stateManager.update(statesToUpdate.values.mapNotNull { it })
                 states = failedToCreate + failedToDelete + failedToUpdate
                 sendAsynchronousEvents(asynchronousOutputs)
                 groups = if (states.isNotEmpty()) {
@@ -250,6 +240,34 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
             }
         }
         metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
+    }
+
+    /**
+     * Decide, based on the original and processed state values, whether the state must be deleted, updated or
+     * deleted; and add the relevant state value to the specific Map.
+     */
+    fun qualifyState(
+        groupId: String,
+        original: State?,
+        processed: State?,
+        toCreate : MutableMap<String, State?>,
+        toUpdate : MutableMap<String, State?>,
+        toDelete : MutableMap<String, State?>
+    ) {
+        // New state
+        if (original == null && processed != null) {
+            toCreate[groupId] = processed
+        }
+
+        // Update state
+        if (original != null && processed != null) {
+            toUpdate[groupId] = processed
+        }
+
+        // Delete state
+        if (original != null && processed == null) {
+            toDelete[groupId] = original
+        }
     }
 
     private fun sendAsynchronousEvents(busEvents: Queue<MediatorMessage<Any>>) {
