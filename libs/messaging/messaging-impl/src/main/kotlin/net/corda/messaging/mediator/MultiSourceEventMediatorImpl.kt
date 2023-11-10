@@ -26,10 +26,12 @@ import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.lang.Thread.sleep
 import java.time.Duration
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.collections.ArrayDeque
 
 @Suppress("LongParameterList")
 class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
@@ -166,7 +168,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
             var groups = allocateGroups(messages.map { it.toRecord() })
             var states = stateManager.get(messages.map { it.key.toString() }.distinct())
             while (groups.isNotEmpty()) {
-                val asynchronousOutputs = mutableListOf<MediatorMessage<Any>>()
+                val asynchronousOutputs = ConcurrentLinkedDeque<MediatorMessage<Any>>()
                 val newStates = ConcurrentHashMap<String, State?>()
                 val updateStates = ConcurrentHashMap<String, State?>()
                 val deleteStates = ConcurrentHashMap<String, State?>()
@@ -230,13 +232,13 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                     it.join()
                 }
 
-                sendAsynchronousEvents(asynchronousOutputs)
                 // Persist states changes
                 val failedToCreateKeys = stateManager.create(newStates.values.mapNotNull { it })
                 val failedToCreate = stateManager.get(failedToCreateKeys.keys)
                 val failedToDelete = stateManager.delete(deleteStates.values.mapNotNull { it })
                 val failedToUpdate = stateManager.update(updateStates.values.mapNotNull { it })
                 states = failedToCreate + failedToDelete + failedToUpdate
+                sendAsynchronousEvents(asynchronousOutputs)
                 groups = if (states.isNotEmpty()) {
                     allocateGroups(flowEvents.filterKeys { states.containsKey(it) }.values.flatten())
                 } else {
@@ -250,7 +252,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
     }
 
-    private fun sendAsynchronousEvents(busEvents: MutableList<MediatorMessage<Any>>) {
+    private fun sendAsynchronousEvents(busEvents: Queue<MediatorMessage<Any>>) {
         busEvents.forEach { message ->
             with(messageRouter.getDestination(message)) {
                 message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
@@ -264,7 +266,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
      */
     private fun processOutputEvents(
         response: StateAndEventProcessor.Response<S>,
-        busEvents: MutableList<MediatorMessage<Any>>,
+        busEvents: Queue<MediatorMessage<Any>>,
         queue: ArrayDeque<Record<K, E>>,
         event: Record<K, E>
     ) {
