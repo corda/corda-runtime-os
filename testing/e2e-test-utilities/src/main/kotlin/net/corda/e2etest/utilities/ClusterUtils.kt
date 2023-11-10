@@ -196,3 +196,15 @@ fun ClusterInfo.keyExists(
 
     result.code == ResponseCode.OK.statusCode && result.toJson().fieldNames().hasNext()
 }
+
+fun ClusterInfo.rotateCryptoUnmanagedWrappingKeys(
+    oldKeyAlias: String,
+    newKeyAlias: String,
+    limit: Int = 0,
+    timeToLive: Int = 0
+) = cluster {
+    assertWithRetry {
+        command { doRotateCryptoUnmanagedWrappingKeys(oldKeyAlias, newKeyAlias, limit, timeToLive) }
+        condition { it.code == ResponseCode.ACCEPTED.statusCode }
+    }
+}
