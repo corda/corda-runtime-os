@@ -1,6 +1,5 @@
 package net.corda.cpiinfo.write.impl
 
-import java.util.concurrent.atomic.AtomicReference
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.write.CpiInfoWriteService
@@ -27,6 +26,8 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 import net.corda.data.packaging.CpiIdentifier as CpiIdentifierAvro
 import net.corda.data.packaging.CpiMetadata as CpiMetadataAvro
 
@@ -52,7 +53,8 @@ class CpiInfoWriterComponentImpl @Activate constructor(
     override val lifecycleCoordinatorName = LifecycleCoordinatorName.forComponent<CpiInfoWriteService>()
 
     private val coordinator = coordinatorFactory.createCoordinator(lifecycleCoordinatorName, this)
-    private val publisher: AtomicReference<Publisher?> = AtomicReference()
+    private val lock = ReentrantLock()
+    private var publisher: Publisher? = null
     private var registration: RegistrationHandle? = null
     private var configSubscription: AutoCloseable? = null
 
@@ -64,15 +66,16 @@ class CpiInfoWriterComponentImpl @Activate constructor(
 
     /** Synchronous publish */
     private fun publish(records: List<Record<CpiIdentifierAvro, CpiMetadataAvro>>) {
-        if (publisher.get() == null) {
-            log.error("Cpi Info Writer publisher is null, not publishing, this error will addressed in a later PR")
-            return
+        lock.withLock {
+            if (publisher == null) {
+                log.error("Cpi Info Writer publisher is null, not publishing, this error will addressed in a later PR")
+                return
+            }
+            val futures = publisher!!.publish(records)
+
+            // Wait for the future (there should only be one) to complete.
+            futures.forEach { it.get() }
         }
-
-        val futures = publisher.get()!!.publish(records)
-
-        // Wait for the future (there should only be one) to complete.
-        futures.forEach { it.get() }
     }
 
     override val isRunning: Boolean
@@ -105,17 +108,17 @@ class CpiInfoWriterComponentImpl @Activate constructor(
         configSubscription?.close()
         configSubscription = null
 
-        publisher.get()?.close()
-        publisher.set(null)
+        closePublisher()
     }
 
     private fun onConfigChangedEvent(coordinator: LifecycleCoordinator, event: ConfigChangedEvent) {
         val config = event.config[ConfigKeys.MESSAGING_CONFIG] ?: return
         coordinator.updateStatus(LifecycleStatus.DOWN)
-
-        publisher.get()?.close()
-        publisher.set(publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), config))
-        coordinator.updateStatus(LifecycleStatus.UP)
+        lock.withLock {
+            publisher?.close()
+            publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), config)
+            coordinator.updateStatus(LifecycleStatus.UP)
+        }
     }
 
     private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent) {
@@ -127,8 +130,12 @@ class CpiInfoWriterComponentImpl @Activate constructor(
             coordinator.updateStatus(event.status)
             configSubscription?.close()
             configSubscription = null
-            publisher.get()?.close()
-            publisher.set(null)
+            closePublisher()
         }
+    }
+
+    private fun closePublisher() = lock.withLock {
+        publisher?.close()
+        publisher = null
     }
 }

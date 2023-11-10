@@ -6,6 +6,7 @@ import net.corda.data.membership.db.request.query.QueryStaticNetworkInfo
 import net.corda.data.membership.db.response.query.StaticNetworkInfoQueryResponse
 import net.corda.membership.datamodel.StaticNetworkInfoEntity
 import net.corda.membership.network.writer.staticnetwork.StaticNetworkInfoMappingUtils.toAvro
+import net.corda.utilities.trace
 
 internal class QueryStaticNetworkInfoHandler(
     persistenceHandlerServices: PersistenceHandlerServices
@@ -21,7 +22,7 @@ internal class QueryStaticNetworkInfoHandler(
     ): StaticNetworkInfoQueryResponse {
         val groupId = request.groupId
 
-        logger.info("Retrieving current static network information for network $groupId.")
+        logger.trace { "Retrieving current static network information for network $groupId." }
 
         return transaction { em ->
             StaticNetworkInfoQueryResponse(

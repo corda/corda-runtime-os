@@ -21,6 +21,7 @@ import net.corda.sandboxgroupcontext.service.registerCustomJsonDeserializers
 import net.corda.sandboxgroupcontext.service.registerCustomJsonSerializers
 import net.corda.sandboxgroupcontext.service.SANDBOX_DEPENDENCY_INJECTOR_KEY
 import net.corda.sandboxgroupcontext.service.factory.SandboxDependencyInjectorFactory
+import net.corda.utilities.debug
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.utxo.Contract
@@ -86,10 +87,10 @@ class VerificationSandboxServiceImpl @Activate constructor(
         // Instruct all CustomMetadataConsumers to accept their metadata.
         sandboxService.acceptCustomMetadata(ctx)
 
-        logger.info("Initialising Verification Sandbox for $holdingIdentity")
+        logger.debug { "Initialising Verification Sandbox for $holdingIdentity" }
 
         return AutoCloseable {
-            logger.info("Closing Verification Sandbox for $holdingIdentity")
+            logger.debug { "Closing Verification Sandbox for $holdingIdentity" }
             jsonSerializers.close()
             jsonDeserializers.close()
             customSerializers.close()
