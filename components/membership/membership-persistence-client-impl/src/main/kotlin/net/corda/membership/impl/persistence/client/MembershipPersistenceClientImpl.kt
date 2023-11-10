@@ -29,9 +29,9 @@ import net.corda.data.membership.db.request.command.SuspendMember
 import net.corda.data.membership.db.request.command.UpdateGroupParameters
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToApproved
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
-import net.corda.data.membership.db.response.command.DeleteApprovalRuleResponse
 import net.corda.data.membership.db.request.command.UpdateStaticNetworkInfo
 import net.corda.data.membership.db.response.command.ActivateMemberResponse
+import net.corda.data.membership.db.response.command.DeleteApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistApprovalRuleResponse
 import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
 import net.corda.data.membership.db.response.command.RevokePreAuthTokenResponse
@@ -153,7 +153,7 @@ class MembershipPersistenceClientImpl(
         groupPolicy: LayeredPropertyMap,
         version: Long,
     ): MembershipPersistenceOperation<Unit> {
-        logger.info("Persisting group policy.")
+        logger.info("Persisting group policy for member $viewOwningIdentity. Version=$version")
         val avroViewOwningIdentity = viewOwningIdentity.toAvro()
         val request = MembershipPersistenceRequest(
             buildMembershipRequestContext(avroViewOwningIdentity),
@@ -167,7 +167,7 @@ class MembershipPersistenceClientImpl(
         viewOwningIdentity: HoldingIdentity,
         groupParameters: InternalGroupParameters,
     ): MembershipPersistenceOperation<InternalGroupParameters> {
-        logger.info("Persisting group parameters.")
+        logger.info("Persisting group parameters for member $viewOwningIdentity. Hash=${groupParameters.hash}")
         val request = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             PersistGroupParameters(

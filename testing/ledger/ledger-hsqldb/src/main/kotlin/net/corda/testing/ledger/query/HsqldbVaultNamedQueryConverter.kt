@@ -1,6 +1,5 @@
 package net.corda.testing.ledger.query
 
-import java.util.LinkedList
 import net.corda.db.hsqldb.json.HsqldbJsonExtension.JSON_SQL_TYPE
 import net.corda.ledger.persistence.query.parsing.As
 import net.corda.ledger.persistence.query.parsing.BinaryKeyword
@@ -19,10 +18,12 @@ import net.corda.ledger.persistence.query.parsing.converters.AbstractVaultNamedQ
 import net.corda.ledger.persistence.query.parsing.converters.VaultNamedQueryConverter
 import net.corda.orm.DatabaseTypeProvider
 import net.corda.orm.DatabaseTypeProvider.Companion.HSQLDB_TYPE_FILTER
+import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.LoggerFactory
+import java.util.LinkedList
 
 @Component(service = [ VaultNamedQueryConverter::class ])
 class HsqldbVaultNamedQueryConverter @Activate constructor(
@@ -45,7 +46,7 @@ class HsqldbVaultNamedQueryConverter @Activate constructor(
     }
 
     init {
-        LoggerFactory.getLogger(this::class.java).info("Activated for {}", databaseTypeProvider.databaseType)
+        LoggerFactory.getLogger(this::class.java).debug { "Activated for ${databaseTypeProvider.databaseType}" }
     }
 
     private fun writeWithCast(output: StringBuilder, tokens: List<Token>) {
