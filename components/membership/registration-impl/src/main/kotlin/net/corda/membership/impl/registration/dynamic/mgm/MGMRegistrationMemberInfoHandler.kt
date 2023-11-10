@@ -47,6 +47,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.security.PublicKey
+import net.corda.membership.persistence.client.MembershipQueryClient
 
 @Suppress("LongParameterList")
 internal class MGMRegistrationMemberInfoHandler(
@@ -55,13 +56,13 @@ internal class MGMRegistrationMemberInfoHandler(
     private val keyEncodingService: KeyEncodingService,
     private val memberInfoFactory: MemberInfoFactory,
     private val membershipPersistenceClient: MembershipPersistenceClient,
+    private val membershipQueryClient: MembershipQueryClient,
     private val platformInfoProvider: PlatformInfoProvider,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ) {
 
     private companion object {
-        const val SERIAL_CONST = "1"
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         val keyIdList = listOf(SESSION_KEYS, ECDH_KEY_ID)
     }
@@ -78,14 +79,23 @@ internal class MGMRegistrationMemberInfoHandler(
     }
 
     @Throws(MGMRegistrationMemberInfoHandlingException::class)
-    fun buildAndPersistMgmMemberInfo(
-        holdingIdentity: HoldingIdentity,
-        context: Map<String, String>
-    ): SelfSignedMemberInfo {
-        logger.info("Started building mgm member info.")
-        return buildMgmInfo(holdingIdentity, context).also {
-            persistMemberInfo(holdingIdentity, it)
+    fun persistMgmMemberInfo(holdingIdentity: HoldingIdentity, selfSignedMemberInfo: SelfSignedMemberInfo) {
+        logger.info("Started persisting mgm member info.")
+        val persistenceResult = membershipPersistenceClient.persistMemberInfo(holdingIdentity, listOf(selfSignedMemberInfo))
+            .execute()
+        if (persistenceResult is MembershipPersistenceResult.Failure) {
+            throw MGMRegistrationMemberInfoHandlingException(
+                "Registration failed, persistence error. Reason: ${persistenceResult.errorMsg}"
+            )
         }
+    }
+
+    fun queryForMGMMemberInfo(holdingIdentity: HoldingIdentity): SelfSignedMemberInfo {
+        return membershipQueryClient.queryMemberInfo(
+            holdingIdentity,
+            setOf(holdingIdentity),
+            listOf(MEMBER_STATUS_ACTIVE)
+        ).getOrThrow().single()
     }
 
     @Suppress("ThrowsCount")
@@ -136,19 +146,11 @@ internal class MGMRegistrationMemberInfoHandler(
 
     private fun PublicKey.toPem(): String = keyEncodingService.encodeAsString(this)
 
-    private fun persistMemberInfo(holdingIdentity: HoldingIdentity, mgmInfo: SelfSignedMemberInfo) {
-        val persistenceResult = membershipPersistenceClient.persistMemberInfo(holdingIdentity, listOf(mgmInfo))
-            .execute()
-        if (persistenceResult is MembershipPersistenceResult.Failure) {
-            throw MGMRegistrationMemberInfoHandlingException(
-                "Registration failed, persistence error. Reason: ${persistenceResult.errorMsg}"
-            )
-        }
-    }
-
-    private fun buildMgmInfo(
+    fun buildMgmMemberInfo(
         holdingIdentity: HoldingIdentity,
-        context: Map<String, String>
+        context: Map<String, String>,
+        serialNumber: Long = 1,
+        creationTime: String? = null,
     ): SelfSignedMemberInfo {
         val cpi = virtualNodeInfoReadService.get(holdingIdentity)?.cpiIdentifier
             ?: throw MGMRegistrationMemberInfoHandlingException(
@@ -191,11 +193,11 @@ internal class MGMRegistrationMemberInfoHandler(
             serialize(memberContext.toSortedMap().toWire()),
             serialize(
                 sortedMapOf(
-                    CREATION_TIME to now,
+                    CREATION_TIME to (creationTime ?: now),
                     MODIFIED_TIME to now,
                     STATUS to MEMBER_STATUS_ACTIVE,
                     IS_MGM to "true",
-                    SERIAL to SERIAL_CONST,
+                    SERIAL to serialNumber.toString(),
                 ).toWire()
             ),
             CryptoSignatureWithKey(
