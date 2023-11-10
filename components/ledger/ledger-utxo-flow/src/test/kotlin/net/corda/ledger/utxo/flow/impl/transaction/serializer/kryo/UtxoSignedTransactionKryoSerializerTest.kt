@@ -9,6 +9,7 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.ledger.utxo.StateRef
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -42,5 +43,10 @@ class UtxoSignedTransactionKryoSerializerTest: UtxoLedgerTest() {
             deserialized.id
         }
         assertEquals(utxoSignedTransactionExample.id, deserialized.id)
+    }
+
+    @Test
+    fun `create state ref`() {
+        println(StateRef.parse("SHA-256D:2D4CCFB5E694E92C5FD5EE4E7BE269F954F0E3EDDEAD05AC9D4992DCF96A5ACD:1,000", digestService))
     }
 }

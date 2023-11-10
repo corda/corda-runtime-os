@@ -74,6 +74,16 @@ interface UtxoRepository {
         metadataHash: String
     )
 
+    /** Persists filtered transaction (operation is idempotent) */
+    fun persistFilteredTransaction(
+        entityManager: EntityManager,
+        id: String,
+        merkleProofBytes: ByteArray,
+        timestamp: Instant,
+        status: TransactionStatus,
+        metadataHash: String
+    )
+
     /** Persists transaction metadata (operation is idempotent) */
     fun persistTransactionMetadata(
         entityManager: EntityManager,

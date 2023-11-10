@@ -3,6 +3,8 @@ package net.corda.ledger.utxo.flow.impl.persistence
 import io.micrometer.core.instrument.Timer
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.fiber.metrics.recordSuspendable
+import net.corda.ledger.common.data.transaction.FilteredTransactionContainer
+import net.corda.ledger.common.data.transaction.FilteredWireTransaction
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.TransactionStatus.Companion.toTransactionStatus
@@ -20,6 +22,8 @@ import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransacti
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionIdsAndStatusesExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionIdsAndStatusesParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.FindTransactionParameters
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistFilteredTransactionExternalEventFactory
+import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistFilteredTransactionParameters
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionIfDoesNotExistExternalEventFactory
 import net.corda.ledger.utxo.flow.impl.persistence.external.events.PersistTransactionIfDoesNotExistParameters
@@ -31,16 +35,19 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedLedgerTransactionIm
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
+import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionInternal
 import net.corda.metrics.CordaMetrics
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.utilities.serialization.deserialize
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -165,6 +172,35 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
         }
     }
 
+    // states that were included as inputs to the signed transaction should be stored as consumed when storing the
+    // filtered transaction
+    // reference states should be left as unconsumed
+    // this means that we'd need to pass the input state refs into this persist method
+    // the [FilteredWireTransaction] feels like it is getting less and less useful?
+    // visible states should be handled as well (this is basically the input and reference states mentioned above)
+    // i don't think we want to do the token code though since inputs get consumed and references shouldn't be used for creating tokens
+    // there a token fields in the visible state table now, so i need to fill those in
+    @Suspendable
+    override fun persistFilteredTransaction(
+        transaction: UtxoFilteredTransaction,
+        transactionStatus: TransactionStatus,
+        visibleStatesIndexes: List<Int>,
+        signatures: List<DigitalSignatureAndMetadata>
+    ): List<CordaPackageSummary> {
+        return recordSuspendable({ ledgerPersistenceFlowTimer(PersistTransaction) }) @Suspendable {
+            wrapWithPersistenceException {
+                externalEventExecutor.execute(
+                    PersistFilteredTransactionExternalEventFactory::class.java,
+                    PersistFilteredTransactionParameters(
+                        serialize(transaction.toContainer(signatures)),
+                        transactionStatus,
+                        visibleStatesIndexes
+                    )
+                )
+            }.map { serializationService.deserialize(it.array()) }
+        }
+    }
+
     @Suspendable
     override fun updateStatus(id: SecureHash, transactionStatus: TransactionStatus) {
         recordSuspendable({ ledgerPersistenceFlowTimer(UpdateTransactionStatus)}) @Suspendable {
@@ -207,6 +243,22 @@ class UtxoLedgerPersistenceServiceImpl @Activate constructor(
     private fun UtxoSignedTransaction.toContainer(): SignedTransactionContainer {
         return (this as UtxoSignedTransactionInternal).run {
             SignedTransactionContainer(wireTransaction, signatures)
+        }
+    }
+
+    private fun UtxoFilteredTransaction.toContainer(signatures: List<DigitalSignatureAndMetadata>): FilteredTransactionContainer {
+        return (this as UtxoFilteredTransactionInternal).run {
+            FilteredTransactionContainer(
+                FilteredWireTransaction(
+                    filteredTransaction.id,
+                    filteredTransaction.topLevelMerkleProof,
+                    filteredTransaction.filteredComponentGroups.mapValues { (_, group) ->
+                        group.merkleProof.leaves.associate { leaf -> leaf.index to leaf.leafData }
+                    },
+                    filteredTransaction.metadata
+                ),
+                signatures
+            )
         }
     }
 

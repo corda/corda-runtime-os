@@ -65,7 +65,7 @@ class FlowFiberCacheImpl @Activate constructor(
     }
 
     override fun put(key: FlowKey, fiber: FlowFiberImpl) {
-        cache.put(key, fiber)
+//        cache.put(key, fiber)
     }
 
     override fun get(key: FlowKey): FlowFiberImpl? {

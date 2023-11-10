@@ -1,14 +1,17 @@
 package net.corda.ledger.persistence.utxo
 
 import net.corda.data.membership.SignedGroupParameters
+import net.corda.ledger.common.data.transaction.FilteredTransactionContainer
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.common.InconsistentLedgerStateException
 import net.corda.ledger.utxo.data.transaction.SignedLedgerTransactionContainer
 import net.corda.v5.crypto.SecureHash
 import net.corda.ledger.utxo.data.transaction.UtxoVisibleTransactionOutputDto
+import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.observer.UtxoToken
 
@@ -56,6 +59,12 @@ interface UtxoPersistenceService {
 
     fun persistTransaction(
         transaction: UtxoTransactionReader,
+        utxoTokenMap: Map<StateRef, UtxoToken> = emptyMap()
+    ): List<CordaPackageSummary>
+
+    fun persistFilteredTransaction(
+        filteredTransactionContainer: FilteredTransactionContainer,
+        visibleStates: Map<Int, StateAndRef<ContractState>>,
         utxoTokenMap: Map<StateRef, UtxoToken> = emptyMap()
     ): List<CordaPackageSummary>
 

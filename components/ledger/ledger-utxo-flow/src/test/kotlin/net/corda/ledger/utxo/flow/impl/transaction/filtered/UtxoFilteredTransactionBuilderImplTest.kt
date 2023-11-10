@@ -37,7 +37,11 @@ class UtxoFilteredTransactionBuilderImplTest {
         val componentGroupFilterParameters = utxoFilteredTransactionBuilder.withSignatories().signatories
         assertThat(componentGroupFilterParameters).isInstanceOf(ComponentGroupFilterParameters.AuditProof::class.java)
         assertThat((componentGroupFilterParameters!!).componentGroupIndex).isEqualTo(UtxoComponentGroup.SIGNATORIES.ordinal)
-        assertThat((componentGroupFilterParameters as ComponentGroupFilterParameters.AuditProof<PublicKey>).predicate.test(mock()))
+        assertThat(
+            ((componentGroupFilterParameters as ComponentGroupFilterParameters.AuditProof<PublicKey>).predicate as ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content).test(
+                mock()
+            )
+        )
             .isEqualTo(true)
     }
 
@@ -46,7 +50,11 @@ class UtxoFilteredTransactionBuilderImplTest {
         val componentGroupFilterParameters = utxoFilteredTransactionBuilder.withSignatories { false }.signatories
         assertThat(componentGroupFilterParameters).isInstanceOf(ComponentGroupFilterParameters.AuditProof::class.java)
         assertThat((componentGroupFilterParameters!!).componentGroupIndex).isEqualTo(UtxoComponentGroup.SIGNATORIES.ordinal)
-        assertThat((componentGroupFilterParameters as ComponentGroupFilterParameters.AuditProof<PublicKey>).predicate.test(mock()))
+        assertThat(
+            ((componentGroupFilterParameters as ComponentGroupFilterParameters.AuditProof<PublicKey>).predicate as ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content).test(
+                mock()
+            )
+        )
             .isEqualTo(false)
     }
 
@@ -62,7 +70,11 @@ class UtxoFilteredTransactionBuilderImplTest {
         val componentGroupFilterParameters = utxoFilteredTransactionBuilder.withInputStates().inputStates
         assertThat(componentGroupFilterParameters).isInstanceOf(ComponentGroupFilterParameters.AuditProof::class.java)
         assertThat((componentGroupFilterParameters!!).componentGroupIndex).isEqualTo(UtxoComponentGroup.INPUTS.ordinal)
-        assertThat((componentGroupFilterParameters as ComponentGroupFilterParameters.AuditProof<StateRef>).predicate.test(mock()))
+        assertThat(
+            ((componentGroupFilterParameters as ComponentGroupFilterParameters.AuditProof<StateRef>).predicate as ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content).test(
+                mock()
+            )
+        )
             .isEqualTo(true)
     }
 
@@ -71,7 +83,11 @@ class UtxoFilteredTransactionBuilderImplTest {
         val componentGroupFilterParameters = utxoFilteredTransactionBuilder.withInputStates { false }.inputStates
         assertThat(componentGroupFilterParameters).isInstanceOf(ComponentGroupFilterParameters.AuditProof::class.java)
         assertThat((componentGroupFilterParameters!!).componentGroupIndex).isEqualTo(UtxoComponentGroup.INPUTS.ordinal)
-        assertThat((componentGroupFilterParameters as ComponentGroupFilterParameters.AuditProof<StateRef>).predicate.test(mock()))
+        assertThat(
+            ((componentGroupFilterParameters as ComponentGroupFilterParameters.AuditProof<StateRef>).predicate as ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content).test(
+                mock()
+            )
+        )
             .isEqualTo(false)
     }
 
@@ -87,7 +103,11 @@ class UtxoFilteredTransactionBuilderImplTest {
         val componentGroupFilterParameters = utxoFilteredTransactionBuilder.withReferenceStates().referenceStates
         assertThat(componentGroupFilterParameters).isInstanceOf(ComponentGroupFilterParameters.AuditProof::class.java)
         assertThat((componentGroupFilterParameters!!).componentGroupIndex).isEqualTo(UtxoComponentGroup.REFERENCES.ordinal)
-        assertThat((componentGroupFilterParameters as ComponentGroupFilterParameters.AuditProof<StateRef>).predicate.test(mock()))
+        assertThat(
+            ((componentGroupFilterParameters as ComponentGroupFilterParameters.AuditProof<StateRef>).predicate as ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content).test(
+                mock()
+            )
+        )
             .isEqualTo(true)
     }
 
@@ -96,7 +116,11 @@ class UtxoFilteredTransactionBuilderImplTest {
         val componentGroupFilterParameters = utxoFilteredTransactionBuilder.withReferenceStates { false }.referenceStates
         assertThat(componentGroupFilterParameters).isInstanceOf(ComponentGroupFilterParameters.AuditProof::class.java)
         assertThat((componentGroupFilterParameters!!).componentGroupIndex).isEqualTo(UtxoComponentGroup.REFERENCES.ordinal)
-        assertThat((componentGroupFilterParameters as ComponentGroupFilterParameters.AuditProof<StateRef>).predicate.test(mock()))
+        assertThat(
+            ((componentGroupFilterParameters as ComponentGroupFilterParameters.AuditProof<StateRef>).predicate as ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content).test(
+                mock()
+            )
+        )
             .isEqualTo(false)
     }
 
@@ -112,7 +136,11 @@ class UtxoFilteredTransactionBuilderImplTest {
         val componentGroupFilterParameters = utxoFilteredTransactionBuilder.withOutputStates().outputStates
         assertThat(componentGroupFilterParameters).isInstanceOf(ComponentGroupFilterParameters.AuditProof::class.java)
         assertThat((componentGroupFilterParameters!!).componentGroupIndex).isEqualTo(UtxoComponentGroup.OUTPUTS.ordinal)
-        assertThat((componentGroupFilterParameters as ComponentGroupFilterParameters.AuditProof<ContractState>).predicate.test(mock()))
+        assertThat(
+            ((componentGroupFilterParameters as ComponentGroupFilterParameters.AuditProof<ContractState>).predicate as ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content).test(
+                mock()
+            )
+        )
             .isEqualTo(true)
     }
 
@@ -121,7 +149,11 @@ class UtxoFilteredTransactionBuilderImplTest {
         val componentGroupFilterParameters = utxoFilteredTransactionBuilder.withOutputStates { false }.outputStates
         assertThat(componentGroupFilterParameters).isInstanceOf(ComponentGroupFilterParameters.AuditProof::class.java)
         assertThat((componentGroupFilterParameters!!).componentGroupIndex).isEqualTo(UtxoComponentGroup.OUTPUTS.ordinal)
-        assertThat((componentGroupFilterParameters as ComponentGroupFilterParameters.AuditProof<ContractState>).predicate.test(mock()))
+        assertThat(
+            ((componentGroupFilterParameters as ComponentGroupFilterParameters.AuditProof<ContractState>).predicate as ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content).test(
+                mock()
+            )
+        )
             .isEqualTo(false)
     }
 
@@ -137,7 +169,7 @@ class UtxoFilteredTransactionBuilderImplTest {
         val componentGroupFilterParameters = utxoFilteredTransactionBuilder.withCommands().commands
         assertThat(componentGroupFilterParameters).isInstanceOf(ComponentGroupFilterParameters.AuditProof::class.java)
         assertThat((componentGroupFilterParameters!!).componentGroupIndex).isEqualTo(UtxoComponentGroup.COMMANDS.ordinal)
-        assertThat((componentGroupFilterParameters as ComponentGroupFilterParameters.AuditProof<Command>).predicate.test(mock()))
+        assertThat(((componentGroupFilterParameters as ComponentGroupFilterParameters.AuditProof<Command>).predicate as ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content).test(mock()))
             .isEqualTo(true)
     }
 
@@ -146,7 +178,7 @@ class UtxoFilteredTransactionBuilderImplTest {
         val componentGroupFilterParameters = utxoFilteredTransactionBuilder.withCommands { false }.commands
         assertThat(componentGroupFilterParameters).isInstanceOf(ComponentGroupFilterParameters.AuditProof::class.java)
         assertThat((componentGroupFilterParameters!!).componentGroupIndex).isEqualTo(UtxoComponentGroup.COMMANDS.ordinal)
-        assertThat((componentGroupFilterParameters as ComponentGroupFilterParameters.AuditProof<Command>).predicate.test(mock()))
+        assertThat(((componentGroupFilterParameters as ComponentGroupFilterParameters.AuditProof<Command>).predicate as ComponentGroupFilterParameters.AuditProof.AuditProofPredicate.Content).test(mock()))
             .isEqualTo(false)
     }
 

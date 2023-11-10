@@ -191,6 +191,25 @@ class UtxoRepositoryImpl @Activate constructor(
             .logResult("transaction [$id]")
     }
 
+    // can probably remove the status since it should always be verified?
+    override fun persistFilteredTransaction(
+        entityManager: EntityManager,
+        id: String,
+        merkleProofBytes: ByteArray,
+        timestamp: Instant,
+        status: TransactionStatus,
+        metadataHash: String
+    ) {
+        entityManager.createNativeQuery(queryProvider.persistFilteredTransaction)
+            .setParameter("id", id)
+            .setParameter("merkleProof", merkleProofBytes)
+            .setParameter("createdAt", timestamp)
+//            .setParameter("status", status.value)
+            .setParameter("metadataHash", metadataHash)
+            .executeUpdate()
+            .logResult("filtered transaction [$id]")
+    }
+
     override fun persistTransactionMetadata(
         entityManager: EntityManager,
         hash: String,

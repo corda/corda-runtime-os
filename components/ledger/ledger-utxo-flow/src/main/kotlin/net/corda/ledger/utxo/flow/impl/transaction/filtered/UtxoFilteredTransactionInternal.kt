@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.transaction.filtered
 
+import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.ledger.utxo.ContractState
@@ -8,6 +9,8 @@ import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 
 @CordaSerializable
 interface UtxoFilteredTransactionInternal : UtxoFilteredTransaction {
+
+    val filteredTransaction: FilteredTransaction
 
     fun getOutputStates(): UtxoFilteredData<ContractState>
 

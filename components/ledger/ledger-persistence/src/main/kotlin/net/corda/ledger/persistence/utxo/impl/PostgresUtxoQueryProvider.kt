@@ -26,6 +26,20 @@ class PostgresUtxoQueryProvider @Activate constructor(
             WHERE utxo_transaction.status = EXCLUDED.status OR utxo_transaction.status = '$UNVERIFIED'"""
             .trimIndent()
 
+    // do we want to have an updated column? If you receive different outputs then the data changes
+    // is the merkle proof consistent regardless of what components are contained and what is filtered out?
+    override val persistFilteredTransaction: String
+//        get() = """
+//            INSERT INTO {h-schema}utxo_filtered_transaction(id, merkle_proof, created, status, metadata_hash)
+//                VALUES (:id, :merkleProof, :createdAt, :status, :metadataHash)
+//            ON CONFLICT(id) DO NOTHING"""
+//            .trimIndent()
+        get() = """
+                    INSERT INTO {h-schema}utxo_filtered_transaction(id, merkle_proof, created, metadata_hash)
+                        VALUES (:id, :merkleProof, :createdAt, :metadataHash)
+                    ON CONFLICT(id) DO NOTHING"""
+            .trimIndent()
+
     override val persistTransactionMetadata: String
         get() = """
             INSERT INTO {h-schema}utxo_transaction_metadata(hash, canonical_data, group_parameters_hash, cpi_file_checksum)

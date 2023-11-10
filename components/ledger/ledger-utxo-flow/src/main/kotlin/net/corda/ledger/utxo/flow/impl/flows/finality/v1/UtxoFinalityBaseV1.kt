@@ -16,9 +16,7 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.utxo.VisibilityChecker
-import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
-import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredTransaction
 import org.slf4j.Logger
 import java.security.InvalidParameterException
 

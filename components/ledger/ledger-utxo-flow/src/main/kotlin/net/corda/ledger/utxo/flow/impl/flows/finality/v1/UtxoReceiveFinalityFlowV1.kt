@@ -1,19 +1,19 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality.v1
 
+import net.corda.flow.application.GroupParametersLookupInternal
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.flow.flows.Payload
+import net.corda.ledger.utxo.flow.impl.flows.backchain.InvalidBackchainException
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.flows.finality.FinalityPayload
 import net.corda.ledger.utxo.flow.impl.flows.finality.addTransactionIdToFlowContext
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
 import net.corda.ledger.utxo.flow.impl.flows.finality.v1.FinalityNotarizationFailureType.Companion.toFinalityNotarizationFailureType
-import net.corda.flow.application.GroupParametersLookupInternal
-import net.corda.ledger.utxo.flow.impl.flows.backchain.InvalidBackchainException
+import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
-import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionInternal
 import net.corda.membership.lib.SignedGroupParameters
@@ -27,6 +27,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.common.transaction.TransactionSignatureVerificationService
 import net.corda.v5.ledger.utxo.StateAndRef
+import net.corda.v5.ledger.utxo.VisibilityChecker
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData.Audit
@@ -76,9 +77,7 @@ class UtxoReceiveFinalityFlowV1(
         val transactionId = initialTransaction.id
         addTransactionIdToFlowContext(flowEngine, transactionId)
         verifyExistingSignatures(initialTransaction, session)
-        log.info("VERIFYING TRANSACTION!!")
         verifyTransaction(initialTransaction, initialTransactionPayload.inputStateAndRefs, initialTransactionPayload.referenceStateAndRefs)
-        log.info("VERIFIED TRANSACTION!!")
         var transaction = if (
             validateTransaction(
                 initialTransaction,
@@ -89,16 +88,12 @@ class UtxoReceiveFinalityFlowV1(
             if (log.isTraceEnabled) {
                 log.trace( "Successfully validated transaction: $transactionId")
             }
-            log.info("SIGNING TRANSACTION!!")
             val (transaction, payload) = signTransaction(initialTransaction)
-            log.info("SIGNED TRANSACTION!!")
             persistenceService.persist(transaction, TransactionStatus.UNVERIFIED)
-            log.info("PERSISTED TRANSACTION!!")
             if (log.isDebugEnabled) {
                 log.debug( "Recorded transaction with the initial and our signatures: $transactionId")
             }
             session.send(payload)
-            log.info("SENT SIGNATURES!!")
             transaction
         } else {
             log.warn("Failed to validate transaction: ${initialTransaction.id}")
@@ -111,9 +106,7 @@ class UtxoReceiveFinalityFlowV1(
         }
 
         transaction = receiveAndPersistSignaturesOrSkip(transaction, initialTransactionPayload.transferAdditionalSignatures)
-        log.info("RECEIVED SIGNATURES BACK!!")
         transaction = receiveNotarySignaturesAndAddToTransaction(transaction)
-        log.info("RECEIVED NOTARY SIGNATURES!!")
         persistNotarizedTransaction(transaction)
         return transaction
     }
@@ -180,6 +173,9 @@ class UtxoReceiveFinalityFlowV1(
                     transactionSignatureVerificationService.verifySignature(filteredTransaction, signature, filteredTransaction.notaryKey)
                     log.info("SUCCESSFULLY VERIFIED $filteredTransaction | $signatures")
                 }
+                log.info("PERSISTING FILTERED TRANSACTION $filteredTransaction")
+                persistenceService.persistFilteredTransaction(filteredTransaction, TransactionStatus.VERIFIED, filteredTransaction.getVisibleStateIndexes(visibilityChecker), signatures)
+                log.info("PERSISTED FILTERED TRANSACTION $filteredTransaction")
                 (filteredTransaction.outputStateAndRefs as Audit<StateAndRef<*>>).values.values
             }.associateBy { it.ref }
             // i then need to regroup the state refs back to inputs and references so i can create the ledger transaction correctly
@@ -228,7 +224,11 @@ class UtxoReceiveFinalityFlowV1(
         referenceStateAndRefs: List<StateAndRef<*>>
     ) {
         val ledgerTransaction = if (inputStateAndRefs.isNotEmpty() || referenceStateAndRefs.isNotEmpty()) {
-            utxoLedgerTransactionFactory.createWithStateAndRefs(initialTransaction.wireTransaction, inputStateAndRefs, referenceStateAndRefs)
+            utxoLedgerTransactionFactory.createWithStateAndRefs(
+                initialTransaction.wireTransaction,
+                inputStateAndRefs,
+                referenceStateAndRefs
+            )
         } else {
             initialTransaction.toLedgerTransaction()
         }
@@ -247,7 +247,11 @@ class UtxoReceiveFinalityFlowV1(
         referenceStateAndRefs: List<StateAndRef<*>>
     ): Boolean {
         val ledgerTransaction = if (inputStateAndRefs.isNotEmpty() || referenceStateAndRefs.isNotEmpty()) {
-            utxoLedgerTransactionFactory.createWithStateAndRefs(initialTransaction.wireTransaction, inputStateAndRefs, referenceStateAndRefs)
+            utxoLedgerTransactionFactory.createWithStateAndRefs(
+                initialTransaction.wireTransaction,
+                inputStateAndRefs,
+                referenceStateAndRefs
+            )
         } else {
             initialTransaction.toLedgerTransaction()
         }
@@ -361,5 +365,21 @@ class UtxoReceiveFinalityFlowV1(
         if (log.isDebugEnabled) {
             log.debug("Recorded transaction with all parties' and the notary's signature ${notarizedTransaction.id}")
         }
+    }
+
+    @Suspendable
+    fun UtxoFilteredTransactionInternal.getVisibleStateIndexes(checker: VisibilityChecker): List<Int> {
+        val result = mutableListOf<Int>()
+        when (val outputStateAndRefs = this.outputStateAndRefs) {
+            is Audit<StateAndRef<*>> -> {
+                for ((index, stateAndRef) in outputStateAndRefs.values) {
+                    val contract = stateAndRef.state.contractType.getConstructor().newInstance()
+                    if (contract.isVisible(stateAndRef.state.contractState, checker)) {
+                        result.add(index)
+                    }
+                }
+            }
+        }
+        return result
     }
 }

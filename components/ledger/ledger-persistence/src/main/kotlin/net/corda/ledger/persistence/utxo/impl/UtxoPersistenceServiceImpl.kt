@@ -3,7 +3,9 @@ package net.corda.ledger.persistence.utxo.impl
 import com.fasterxml.jackson.core.JsonProcessingException
 import net.corda.crypto.core.parseSecureHash
 import net.corda.data.membership.SignedGroupParameters
+import net.corda.ledger.common.data.transaction.FilteredTransactionContainer
 import net.corda.ledger.common.data.transaction.SignedTransactionContainer
+import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.persistence.common.InconsistentLedgerStateException
 import net.corda.ledger.persistence.json.ContractStateVaultJsonFactoryRegistry
@@ -199,7 +201,7 @@ class UtxoPersistenceServiceImpl(
         }
 
         // Insert outputs data
-        transaction.getVisibleStates().entries.forEach { (stateIndex, stateAndRef) ->
+        transaction.getVisibleStates().forEach { (stateIndex, stateAndRef) ->
             val utxoToken = utxoTokenMap[stateAndRef.ref]
             repository.persistVisibleTransactionOutput(
                 em,
@@ -234,6 +236,149 @@ class UtxoPersistenceServiceImpl(
 
         // Insert the Transactions signatures
         transaction.signatures.forEachIndexed { index, digitalSignatureAndMetadata ->
+            repository.persistTransactionSignature(
+                em,
+                transactionIdString,
+                index,
+                digitalSignatureAndMetadata,
+                nowUtc
+            )
+        }
+        return emptyList()
+    }
+
+    override fun persistFilteredTransaction(
+        filteredTransactionContainer: FilteredTransactionContainer,
+        visibleStates: Map<Int, StateAndRef<ContractState>>,
+        utxoTokenMap: Map<StateRef, UtxoToken>
+    ): List<CordaPackageSummary> {
+        entityManagerFactory.transaction { em ->
+            return persistFilteredTransaction(em, filteredTransactionContainer, visibleStates, utxoTokenMap)
+        }
+    }
+
+    private fun persistFilteredTransaction(
+        em: EntityManager,
+        filteredTransactionContainer: FilteredTransactionContainer,
+        visibleStates: Map<Int, StateAndRef<ContractState>>,
+        utxoTokenMap: Map<StateRef, UtxoToken> = emptyMap()
+    ): List<CordaPackageSummary> {
+        val nowUtc = utcClock.instant()
+        val transactionIdString = filteredTransactionContainer.id.toString()
+
+        val metadataBytes = requireNotNull(filteredTransactionContainer.wireTransaction.componentGroups[0]?.let { group -> group[0] }) {
+            "Transaction metadata was missing from the filtered transaction"
+        }
+        val metadataHash = sandboxDigestService.hash(metadataBytes, DigestAlgorithmName.SHA2_256).toString()
+
+        val metadata = filteredTransactionContainer.wireTransaction.metadata as TransactionMetadataInternal
+        repository.persistTransactionMetadata(
+            em,
+            metadataHash,
+            metadataBytes,
+            requireNotNull(metadata.getMembershipGroupParametersHash()) { "Metadata without membership group parameters hash" },
+            requireNotNull(metadata.getCpiMetadata()) { "Metadata without CPI metadata" }.fileChecksum
+        )
+
+        val merkleProofHash = sandboxDigestService.hash(
+            serializationService.serialize(filteredTransactionContainer.wireTransaction.merkleProof).bytes,
+            DigestAlgorithmName.SHA2_256
+        )
+
+        log.info("Merkle proof hash $merkleProofHash")
+
+        // Insert the Transaction
+        repository.persistFilteredTransaction(
+            em,
+            transactionIdString,
+            serializationService.serialize(filteredTransactionContainer.wireTransaction.merkleProof).bytes,
+            nowUtc,
+            TransactionStatus.VERIFIED,
+            metadataHash
+        )
+
+        // Insert the Transactions components
+        filteredTransactionContainer.wireTransaction.componentGroups.map { (groupIndex, leaves) ->
+            leaves.forEach { (leafIndex, data) ->
+                repository.persistTransactionComponentLeaf(
+                    em,
+                    transactionIdString,
+                    groupIndex,
+                    leafIndex,
+                    data,
+                    sandboxDigestService.hash(data, DigestAlgorithmName.SHA2_256).toString()
+                )
+            }
+        }
+
+//        // Insert inputs data
+//        transaction.getConsumedStateRefs().forEachIndexed { index, input ->
+//            repository.persistTransactionSource(
+//                em,
+//                transactionIdString,
+//                UtxoComponentGroup.INPUTS.ordinal,
+//                index,
+//                input.transactionId.toString(),
+//                input.index
+//            )
+//        }
+//
+//        // Insert reference data
+//        transaction.getReferenceStateRefs().forEachIndexed { index, reference ->
+//            repository.persistTransactionSource(
+//                em,
+//                transactionIdString,
+//                UtxoComponentGroup.REFERENCES.ordinal,
+//                index,
+//                reference.transactionId.toString(),
+//                reference.index
+//            )
+//        }
+
+        // Insert outputs data
+        visibleStates.forEach { (stateIndex, stateAndRef) ->
+            val utxoToken = utxoTokenMap[stateAndRef.ref]
+            repository.persistVisibleTransactionOutput(
+                em,
+                transactionIdString,
+                UtxoComponentGroup.OUTPUTS.ordinal,
+                stateIndex,
+                stateAndRef.state.contractState::class.java.canonicalName,
+                nowUtc,
+                consumed = false, // need to set this flag depending on which states are input states
+                CustomRepresentation(extractJsonDataFromState(stateAndRef)),
+                utxoToken?.poolKey?.tokenType,
+                utxoToken?.poolKey?.issuerHash?.toString(),
+                stateAndRef.state.notaryName.toString(),
+                utxoToken?.poolKey?.symbol,
+                utxoToken?.filterFields?.tag,
+                utxoToken?.filterFields?.ownerHash?.toString(),
+                utxoToken?.amount
+            )
+        }
+
+        // I don't need to mark the filtered transaction outputs as consumed because when the new transaction, that caused them to be received
+        // will consume them. In fact, at the point of storing the filtered transaction, we cannot guarantee that the new transaction is going
+        // to pass verification, notarisation and be stored as verified.
+
+//        // Mark inputs as consumed
+//        if (transaction.status == TransactionStatus.VERIFIED) {
+//            val inputStateRefs = transaction.getConsumedStateRefs()
+//            if (inputStateRefs.isNotEmpty()) {
+//                repository.markTransactionVisibleStatesConsumed(
+//                    em,
+//                    inputStateRefs,
+//                    nowUtc
+//                )
+//            }
+//        }
+
+        // Do I need the index for signatures in a filtered transaction?? It seems to be part of the key, I don't think it really affects
+        // the validity of the filtered transaction but it prevents it from following the same structure as a signed transaction that was received.
+        // If we receive a signed transaction that needs to replace the filtered transaction then not having the correct indexes could lead to a
+        // loss of signatures due to signatures being overwritten with incorrect indexes.
+        // Insert the Transactions signatures
+        filteredTransactionContainer.signatures.forEachIndexed { index, digitalSignatureAndMetadata ->
             repository.persistTransactionSignature(
                 em,
                 transactionIdString,
