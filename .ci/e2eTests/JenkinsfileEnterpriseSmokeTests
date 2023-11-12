@@ -5,8 +5,8 @@
 @Library('corda-shared-build-pipeline-steps@5.2') _
 
 endToEndPipeline(
-    helmVersion: '^5.1.0-beta',
-    helmRepoSuffix: 'release/ent/5.1',
+    helmVersion: '^5.2.0-beta',
+    helmRepoSuffix: 'release/ent/5.2',
     helmRepo: 'corda-ent-docker',
     dailyBuildCron: '',
     enableNotifications: false, 
