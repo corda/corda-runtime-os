@@ -41,7 +41,7 @@ import kotlin.concurrent.thread
 // TODO-[CORE-16663]: make database provider pluggable
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StateManagerIntegrationTest {
-    private val dataSource = DbUtils.createPostgresDataSource()
+    private val dataSource = DbUtils.createDataSource()
 
     init {
         val dbChange = ClassloaderChangeLog(
