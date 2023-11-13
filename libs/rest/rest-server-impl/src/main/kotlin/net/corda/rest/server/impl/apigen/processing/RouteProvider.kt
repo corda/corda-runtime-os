@@ -185,7 +185,7 @@ internal class RouteInfo(
                 wsConfig.onError(adaptor)
 
                 adaptors.add(adaptor)
-                log.debug { "Setup for WS call for \"$fullPath\" completed." }
+                log.info("Setup for WS call for \"$fullPath\" completed.")
             } catch (e: Exception) {
                 log.warn("Error setting-up WS call for \"$fullPath\"", e)
                 throw HttpExceptionMapper.mapToResponse(e)
