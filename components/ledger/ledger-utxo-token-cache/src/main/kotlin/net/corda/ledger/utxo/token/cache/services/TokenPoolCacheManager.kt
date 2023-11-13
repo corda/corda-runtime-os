@@ -13,11 +13,6 @@ class TokenPoolCacheManager(
     private val tokenPoolCache: TokenPoolCache,
     private val eventHandlerMap: Map<Class<*>, TokenEventHandler<in TokenEvent>>,
 ) {
-
-    private companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
-
     fun processEvent(
         poolCacheState: PoolCacheState,
         poolKey: TokenPoolKey,
