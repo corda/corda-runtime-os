@@ -102,7 +102,7 @@ class PerformanceClaimStateStoreImpl(
 
                 // When fail to save the state we have to assume the available token cache could be invalid
                 // and therefore clear it to force a refresh from the DB on the next request.
-                tokenPoolCacheManager.removeAllCachedTokens(tokenPoolKey)
+                tokenPoolCacheManager.removeAllTokensFromCache(tokenPoolKey)
 
                 unexceptionalRequests.abort()
             } else {

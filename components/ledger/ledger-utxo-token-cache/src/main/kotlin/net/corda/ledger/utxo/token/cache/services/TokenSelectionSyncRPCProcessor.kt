@@ -44,8 +44,9 @@ class TokenSelectionSyncRPCProcessor(
 
                     claimStateStore.enqueueRequest { poolState ->
 
+                        val poolCacheState = entityConverter.toPoolCacheState(poolState)
                         val result = tokenPoolCacheManager.processEvent(
-                            poolState,
+                            poolCacheState,
                             poolKey,
                             tokenEvent
                         )
