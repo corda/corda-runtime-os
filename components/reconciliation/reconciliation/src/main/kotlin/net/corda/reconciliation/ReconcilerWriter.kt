@@ -20,8 +20,8 @@ interface ReconcilerWriter<K : Any, V : Any> {
     val lifecycleCoordinatorName: LifecycleCoordinatorName
 
     /**
-     * Some writers allow the checking of records to see if the value content has changed
-     * between the db and Kafka before pushing out a new value.
+     * Compare DB record value to its Kafka respective one to see if after applying defaults
+     * to the DB record, the DB record is different to the Kafka one.
      */
     fun valuesMisalignedAfterDefaults(
         recordKey: K,
