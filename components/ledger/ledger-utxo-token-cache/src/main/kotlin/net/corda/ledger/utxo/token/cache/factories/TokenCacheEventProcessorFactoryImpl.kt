@@ -35,17 +35,29 @@ class TokenCacheEventProcessorFactoryImpl constructor(
     private val clock: Clock
 ) : TokenCacheEventProcessorFactory {
 
-    private val tokenPoolCache = TokenPoolCacheImpl()
-
     override fun createTokenSelectionSyncRPCProcessor(
         stateManager: StateManager
     ): TokenSelectionSyncRPCProcessor {
-        val claimStateStoreFactory = ClaimStateStoreFactoryImpl(stateManager, serialization, tokenPoolCache, clock)
         val tokenSelectionMetrics = TokenSelectionMetricsImpl(UTCClock())
+        val tokenPoolCacheManager = TokenPoolCacheManager(TokenPoolCacheImpl(), createEventHandlerMap(tokenSelectionMetrics), entityConverter)
+        val claimStateStoreFactory = ClaimStateStoreFactoryImpl(stateManager, serialization, tokenPoolCacheManager, clock)
+
+
+        return TokenSelectionSyncRPCProcessor(
+            eventConverter,
+            entityConverter,
+            tokenPoolCacheManager,
+            ClaimStateStoreCacheImpl(stateManager, serialization, claimStateStoreFactory, clock),
+            externalEventResponseFactory,
+            tokenSelectionMetrics
+        )
+    }
+
+    private fun createEventHandlerMap(tokenSelectionMetrics: TokenSelectionMetrics): Map<Class<*>, TokenEventHandler<in TokenEvent>> {
         val recordFactory = RecordFactoryImpl(externalEventResponseFactory)
         val tokenFilterStrategy = SimpleTokenFilterStrategy()
-        val sqlQueryProvider = SqlQueryProviderTokens()
-        val utxoTokenRepository = UtxoTokenRepositoryImpl(sqlQueryProvider)
+        val utxoTokenRepository = UtxoTokenRepositoryImpl(SqlQueryProviderTokens())
+
         val availableTokenService = AvailableTokenServiceImpl(
             virtualNodeInfoService,
             dbConnectionManager,
@@ -54,7 +66,7 @@ class TokenCacheEventProcessorFactoryImpl constructor(
             tokenSelectionMetrics
         )
 
-        val eventHandlerMap = mapOf<Class<*>, TokenEventHandler<in TokenEvent>>(
+        return mapOf(
             createHandler(
                 TokenClaimQueryEventHandler(
                     tokenFilterStrategy,
@@ -67,15 +79,6 @@ class TokenCacheEventProcessorFactoryImpl constructor(
             createHandler(TokenForceClaimReleaseEventHandler()),
             createHandler(TokenLedgerChangeEventHandler()),
             createHandler(TokenBalanceQueryEventHandler(recordFactory, availableTokenService)),
-        )
-        return TokenSelectionSyncRPCProcessor(
-            eventConverter,
-            entityConverter,
-            eventHandlerMap,
-            tokenPoolCache,
-            ClaimStateStoreCacheImpl(stateManager, serialization, claimStateStoreFactory, clock),
-            externalEventResponseFactory,
-            tokenSelectionMetrics
         )
     }
 

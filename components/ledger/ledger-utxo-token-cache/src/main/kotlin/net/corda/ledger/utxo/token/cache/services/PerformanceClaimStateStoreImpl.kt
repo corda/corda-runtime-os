@@ -1,7 +1,6 @@
 package net.corda.ledger.utxo.token.cache.services
 
 import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
-import net.corda.ledger.utxo.token.cache.entities.TokenPoolCache
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
@@ -15,11 +14,11 @@ import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
 class PerformanceClaimStateStoreImpl(
-    private val key: TokenPoolKey,
+    private val tokenPoolKey: TokenPoolKey,
     storedPoolClaimState: StoredPoolClaimState,
     private val serialization: TokenPoolCacheStateSerialization,
     private val stateManager: StateManager,
-    tokenPoolCache: TokenPoolCache,
+    private val tokenPoolCacheManager: TokenPoolCacheManager,
     private val clock: Clock
 ) : ClaimStateStore {
 
@@ -36,7 +35,6 @@ class PerformanceClaimStateStoreImpl(
         ThreadPoolExecutor.DiscardPolicy()
     )
     private val requestQueue = LinkedBlockingQueue<QueuedRequestItem>()
-    private val tokenCache = tokenPoolCache.get(key)
     private var currentState = storedPoolClaimState
 
     private data class QueuedRequestItem(
@@ -69,7 +67,7 @@ class PerformanceClaimStateStoreImpl(
 
             // Try and update the state
             val stateManagerState = State(
-                key.toString(),
+                tokenPoolKey.toString(),
                 serialization.serialize(currentPoolState),
                 currentState.dbVersion,
                 modifiedTime = clock.instant()
@@ -86,7 +84,7 @@ class PerformanceClaimStateStoreImpl(
                 // The current batch of requests aborted and the state set to version -1.
                 // This will force a refresh of the state when the DB is available.
                 State(
-                    key.toString(),
+                    tokenPoolKey.toString(),
                     stateManagerState.value,
                     -1,
                     modifiedTime = stateManagerState.modifiedTime
@@ -98,13 +96,13 @@ class PerformanceClaimStateStoreImpl(
             if (mismatchedState != null) {
                 currentState = StoredPoolClaimState(
                     dbVersion = mismatchedState.version,
-                    key,
+                    tokenPoolKey,
                     serialization.deserialize(mismatchedState.value)
                 )
 
                 // When fail to save the state we have to assume the available token cache could be invalid
                 // and therefore clear it to force a refresh from the DB on the next request.
-                tokenCache.removeAll()
+                tokenPoolCacheManager.removeAllCachedTokens(tokenPoolKey)
 
                 unexceptionalRequests.abort()
             } else {

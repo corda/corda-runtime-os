@@ -8,7 +8,7 @@ import net.corda.utilities.time.Clock
 class ClaimStateStoreFactoryImpl(
     private val stateManager: StateManager,
     private val serialization: TokenPoolCacheStateSerialization,
-    private val tokenPoolCache: TokenPoolCache,
+    private val tokenPoolCacheManager: TokenPoolCacheManager,
     private val clock: Clock
 ) : ClaimStateStoreFactory {
 
@@ -18,7 +18,7 @@ class ClaimStateStoreFactoryImpl(
             storedPoolClaimState,
             serialization,
             stateManager,
-            tokenPoolCache,
+            tokenPoolCacheManager,
             clock
         )
     }
