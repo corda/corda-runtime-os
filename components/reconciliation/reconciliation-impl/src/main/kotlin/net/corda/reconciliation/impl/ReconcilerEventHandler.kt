@@ -137,7 +137,15 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
                     // therefore through the defaulting config process which will add the property(ies) and subsequently
                     // will publish them to Kafka. We only need to force the first reconciliation.
                     if (forceInitialReconciliation && firstRun) {
-                        dbRecord.version >= matchedKafkaRecord.version // reconcile all db records again (forced reconciliation)
+                        dbRecord.version > matchedKafkaRecord.version
+                                // reconcile all db records again (forced reconciliation)
+                                || (dbRecord.version == matchedKafkaRecord.version
+                                        && writer.valuesMisalignedAfterDefaults(
+                                                    dbRecord.key,
+                                                    dbRecord.value,
+                                                    matchedKafkaRecord.value
+                                            )
+                                    )
                     } else {
                         dbRecord.version > matchedKafkaRecord.version // reconcile db updated records
                     } || dbRecord.isDeleted // reconcile db soft deleted records
