@@ -1,8 +1,6 @@
 package net.corda.messagebus.kafka.config
 
 import com.typesafe.config.ConfigFactory
-import java.util.Properties
-import java.util.stream.Stream
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messagebus.api.configuration.AdminConfig
@@ -17,6 +15,8 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import java.util.Properties
+import java.util.stream.Stream
 
 class MessageBusConfigResolverTest {
 
@@ -74,7 +74,7 @@ class MessageBusConfigResolverTest {
                         BOOTSTRAP_SERVERS_PROP to "kafka:1001",
                         SSL_KEYSTORE_PROP to "foo/bar",
                         CLIENT_ID_PROP to "eventConsumer--$CLIENT_ID",
-                        GROUP_ID_PROP to "group-cooperative"
+                        GROUP_ID_PROP to "testgroup-cooperative"
                     )
                 ),
                 ConsumerRoles.EVENT_LOG to getExpectedConsumerProperties(
@@ -85,7 +85,7 @@ class MessageBusConfigResolverTest {
                 ),
                 ConsumerRoles.RPC_SENDER to getExpectedConsumerProperties(
                     mapOf(
-                        GROUP_ID_PROP to "$GROUP_NAME-sender",
+                        GROUP_ID_PROP to "test$GROUP_NAME-sender",
                         BOOTSTRAP_SERVERS_PROP to "kafka:1001",
                         SSL_KEYSTORE_PROP to "foo/bar",
                         AUTO_OFFSET_RESET_PROP to "latest"
@@ -93,7 +93,7 @@ class MessageBusConfigResolverTest {
                 ),
                 ConsumerRoles.RPC_RESPONDER to getExpectedConsumerProperties(
                     mapOf(
-                        GROUP_ID_PROP to "$GROUP_NAME-responder",
+                        GROUP_ID_PROP to "test$GROUP_NAME-responder",
                         BOOTSTRAP_SERVERS_PROP to "kafka:1001",
                         SSL_KEYSTORE_PROP to "foo/bar",
                         AUTO_OFFSET_RESET_PROP to "latest"
@@ -149,7 +149,7 @@ class MessageBusConfigResolverTest {
 
         private fun getExpectedConsumerProperties(overrides: Map<String, String?>): Properties {
             val defaults = mapOf(
-                GROUP_ID_PROP to GROUP_NAME,
+                GROUP_ID_PROP to "test$GROUP_NAME",
                 CLIENT_ID_PROP to "consumer--$CLIENT_ID",
                 ISOLATION_LEVEL_PROP to "read_committed",
                 BOOTSTRAP_SERVERS_PROP to "localhost:9092",
