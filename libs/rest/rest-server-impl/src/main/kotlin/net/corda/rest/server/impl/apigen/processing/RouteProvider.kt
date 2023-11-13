@@ -16,7 +16,6 @@ import net.corda.rest.server.impl.websocket.WebSocketRouteAdaptor
 import net.corda.rest.tools.HttpPathUtils.joinResourceAndEndpointPaths
 import net.corda.rest.tools.isDuplexChannel
 import net.corda.rest.tools.isStaticallyExposedGet
-import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.lang.reflect.InvocationTargetException
