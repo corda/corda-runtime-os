@@ -28,7 +28,7 @@ class TokenPoolCacheManager(
             "Received an event with and unrecognized payload '${tokenEvent.javaClass}'"
         }
 
-        // Ask the respective handler to process the event given the provided available tokens
+        // Ask the respective handler to process the event
         val tokenCache = tokenPoolCache.get(poolKey)
         val result = handler.handle(tokenCache, poolCacheState, tokenEvent)
 
