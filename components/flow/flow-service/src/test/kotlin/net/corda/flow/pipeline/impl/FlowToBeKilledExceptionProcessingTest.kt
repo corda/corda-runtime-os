@@ -15,6 +15,7 @@ import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.fiber.cache.FlowFiberCache
+import net.corda.flow.maintenance.CheckpointCleanupHandler
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
 import net.corda.flow.pipeline.exceptions.FlowMarkedForKillException
 import net.corda.flow.pipeline.factory.FlowMessageFactory
@@ -97,12 +98,15 @@ class FlowToBeKilledExceptionProcessingTest {
     private val flowKilledStatusRecord = Record("s", flowKey, flowKilledStatus)
     private val mockResponse = mock<StateAndEventProcessor.Response<Checkpoint>>()
     private val flowFiberCache = mock<FlowFiberCache>()
+    private val checkpointCleanupHandler = mock<CheckpointCleanupHandler>()
+
 
     private val target = FlowEventExceptionProcessorImpl(
         flowMessageFactory,
         flowRecordFactory,
         flowSessionManager,
-        flowFiberCache
+        flowFiberCache,
+        checkpointCleanupHandler
     )
 
     @BeforeEach

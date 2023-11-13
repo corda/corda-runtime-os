@@ -3,6 +3,7 @@ package net.corda.flow.pipeline.impl
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.FlowKey
+import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.mapper.FlowMapperEvent
@@ -12,6 +13,7 @@ import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.cache.FlowFiberCache
+import net.corda.flow.maintenance.CheckpointCleanupHandler
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowEventException
@@ -33,7 +35,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -60,6 +62,8 @@ class FlowEventExceptionProcessorImplTest {
     private val flowFiberCache = mock<FlowFiberCache>()
     private val serializedFiber = ByteBuffer.wrap("mock fiber".toByteArray())
 
+    private val checkpointCleanupHandler = mock<CheckpointCleanupHandler>()
+
     private val sessionIdOpen = "sesh-id"
     private val sessionIdClosed = "sesh-id-closed"
     private val flowActiveSessionState = SessionState().apply {
@@ -74,7 +78,8 @@ class FlowEventExceptionProcessorImplTest {
         flowMessageFactory,
         flowRecordFactory,
         flowSessionManager,
-        flowFiberCache
+        flowFiberCache,
+        checkpointCleanupHandler
     )
 
     @BeforeEach
@@ -159,40 +164,30 @@ class FlowEventExceptionProcessorImplTest {
         ).thenReturn(flowStatusUpdate)
         whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)
 
-        val result = target.process(error, context)
+        target.process(error, context)
 
-        verify(result.checkpoint).markDeleted()
-        assertThat(result.outputRecords).containsOnly(flowStatusUpdateRecord)
-        assertThat(result.sendToDlq).isTrue
+        verify(checkpointCleanupHandler).cleanupCheckpoint(eq(flowCheckpoint), any(), any<FlowFatalException>())
     }
 
     @Test
     fun `flow fatal exception marks flow for dlq and publishes status update`() {
+        val flowId = "f1"
         val error = FlowFatalException("error")
-        val flowStatusUpdate = FlowStatus()
         val key = FlowKey()
-        val flowStatusUpdateRecord = Record("", key, flowStatusUpdate)
         val flowMapperEvent = mock<FlowMapperEvent>()
         val flowMapperRecord = Record(Schemas.Flow.FLOW_MAPPER_SESSION_OUT, "key", flowMapperEvent)
-
-        whenever(
-            flowMessageFactory.createFlowFailedStatusMessage(
-                flowCheckpoint,
-                FlowProcessingExceptionTypes.FLOW_FAILED,
-                error.message
-            )
-        ).thenReturn(flowStatusUpdate)
-        whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)
         whenever(flowCheckpoint.doesExist).thenReturn(true)
+        whenever(flowCheckpoint.flowId).thenReturn(flowId)
+        val startContext = mock<FlowStartContext>()
+        whenever(flowCheckpoint.flowStartContext).thenReturn(startContext)
         whenever(flowCheckpoint.flowKey).thenReturn(key)
-        whenever(flowCheckpoint.sessions).thenReturn(listOf(flowActiveSessionState, flowInactiveSessionState))
-        whenever(flowCheckpoint.suspendCount).thenReturn(123)
-        whenever(flowRecordFactory.createFlowMapperEventRecord(any(), any())).thenReturn(flowMapperRecord)
+        val cleanupRecords = listOf (flowMapperRecord)
+        whenever(checkpointCleanupHandler.cleanupCheckpoint(any(), any(), any())).thenReturn(cleanupRecords)
 
         val result = target.process(error, context)
 
-        verify(result.checkpoint).markDeleted()
-        assertThat(result.outputRecords).contains(flowStatusUpdateRecord, flowMapperRecord)
+        verify(checkpointCleanupHandler).cleanupCheckpoint(eq(flowCheckpoint), any(), eq(error))
+        assertThat(result.outputRecords).containsOnly(flowMapperRecord)
         assertThat(result.sendToDlq).isTrue
         verify(flowFiberCache).remove(key)
     }
@@ -249,25 +244,6 @@ class FlowEventExceptionProcessorImplTest {
     }
 
     @Test
-    fun `failure to create a status message does not prevent fatal failure handling from succeeding`() {
-        val error = FlowFatalException("error")
-
-        whenever(
-            flowMessageFactory.createFlowFailedStatusMessage(
-                any(),
-                any(),
-                any()
-            )
-        ).thenThrow(IllegalStateException())
-
-        val result = target.process(error, context)
-
-        verify(result.checkpoint).markDeleted()
-        assertThat(result.outputRecords).isEmpty()
-        assertThat(result.sendToDlq).isTrue
-    }
-
-    @Test
     fun `throwable triggered during transient exception processing does not escape the processor`() {
         val throwable = RuntimeException()
         whenever(flowCheckpoint.currentRetryCount).thenReturn(1)
@@ -276,18 +252,6 @@ class FlowEventExceptionProcessorImplTest {
         val transientError = FlowTransientException("error")
         val transientResult = target.process(transientError, context)
         assertEmptyDLQdResult(transientResult)
-    }
-
-    @Test
-    fun `throwable triggered during fatal exception processing does not escape the processor`() {
-        val throwable = RuntimeException()
-        val fatalError = FlowFatalException("error")
-        whenever(
-            flowSessionManager.getSessionErrorEventRecords(anyOrNull(),anyOrNull(),anyOrNull()))
-            .thenThrow(throwable)
-
-        val fatalResult = target.process(fatalError, context)
-        assertEmptyDLQdResult(fatalResult)
     }
 
     @Test
@@ -313,19 +277,8 @@ class FlowEventExceptionProcessorImplTest {
     fun `flow fatal exception with false doesExist confirms flow checkpoint not called`() {
         val flowCheckpoint = mock<FlowCheckpoint>()
         whenever(flowCheckpoint.doesExist).thenReturn(false)
-
         val error = FlowFatalException("error")
-        val flowStatusUpdate = FlowStatus()
-        val flowStatusUpdateRecord = Record("", FlowKey(), flowStatusUpdate)
 
-        whenever(
-            flowMessageFactory.createFlowFailedStatusMessage(
-                flowCheckpoint,
-                FlowProcessingExceptionTypes.FLOW_FAILED,
-                error.message
-            )
-        ).thenReturn(flowStatusUpdate)
-        whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)
         target.process(error, context)
 
         verify(flowCheckpoint, times(0)).flowStartContext
@@ -338,17 +291,7 @@ class FlowEventExceptionProcessorImplTest {
         val context = buildFlowEventContext<Any>(checkpoint = flowCheckpoint, inputEventPayload = inputEvent)
 
         val error = FlowFatalException("error")
-        val flowStatusUpdate = FlowStatus()
-        val flowStatusUpdateRecord = Record("", FlowKey(), flowStatusUpdate)
 
-        whenever(
-            flowMessageFactory.createFlowFailedStatusMessage(
-                flowCheckpoint,
-                FlowProcessingExceptionTypes.FLOW_FAILED,
-                error.message
-            )
-        ).thenReturn(flowStatusUpdate)
-        whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)
         target.process(error, context)
 
         verify(flowCheckpoint, times(1)).flowStartContext
