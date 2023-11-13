@@ -31,7 +31,7 @@ class TokenPoolCacheManager(
         val tokenCache = tokenPoolCache.get(poolKey)
         val result = handler.handle(tokenCache, state, tokenEvent)
 
-        return ResponseAndState(result?.value, state.toAvro())
+        return ResponseAndState(result?.value, state)
     }
 
     fun removeAllTokensFromCache(poolKey: TokenPoolKey) {
@@ -39,5 +39,5 @@ class TokenPoolCacheManager(
         tokenCache.removeAll()
     }
 
-    data class ResponseAndState(val response: FlowEvent?, val state: TokenPoolCacheState)
+    data class ResponseAndState(val response: FlowEvent?, val state: PoolCacheState)
 }

@@ -56,7 +56,7 @@ class TokenSelectionSyncRPCProcessor(
 
                         responseEvent = result.response
 
-                        result.state
+                        result.state.toAvro()
                     }
                 }
 
