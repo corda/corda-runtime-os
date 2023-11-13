@@ -11,11 +11,10 @@ import net.corda.ledger.utxo.token.cache.converters.EntityConverter
 import net.corda.ledger.utxo.token.cache.converters.EventConverter
 import net.corda.ledger.utxo.token.cache.entities.TokenEvent
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolCache
+import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 import net.corda.ledger.utxo.token.cache.handlers.TokenEventHandler
-import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.tracing.traceStateAndEventExecution
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.util.concurrent.locks.ReentrantLock
@@ -39,6 +38,9 @@ class TokenSelectionSyncRPCProcessor(
 
     override fun process(request: TokenPoolCacheEvent): FlowEvent? {
         val tokenEvent = eventConverter.convert(request)
+
+        logger.debug { "Token event received: $tokenEvent" }
+
         return tokenSelectionMetrics.recordProcessingTime(tokenEvent) {
             try {
                 val poolKey = entityConverter.toTokenPoolKey(request.poolKey)
@@ -50,18 +52,15 @@ class TokenSelectionSyncRPCProcessor(
 
                     claimStateStore.enqueueRequest { poolState ->
 
-                        val eventProcessingResult = processEvent(
-                            StateAndEventProcessor.State(poolState, null),
-                            Record("", request.poolKey, request)
+                        val result = processEvent(
+                            poolState,
+                            poolKey,
+                            tokenEvent
                         )
 
-                        val updatedState = checkNotNull(eventProcessingResult.updatedState?.value) {
-                            "Unexpected null state returned from event processor."
-                        }
+                        responseEvent = result.response
 
-                        responseEvent = eventProcessingResult.responseEvents.firstOrNull()?.value as FlowEvent?
-
-                        updatedState
+                        result.state
                     }
                 }
 
@@ -95,79 +94,38 @@ class TokenSelectionSyncRPCProcessor(
     override val responseClass: Class<FlowEvent> = FlowEvent::class.java
 
     private fun processEvent(
-        state: StateAndEventProcessor.State<TokenPoolCacheState>?,
-        event: Record<TokenPoolCacheKey, TokenPoolCacheEvent>,
-    ): StateAndEventProcessor.Response<TokenPoolCacheState> {
+        state: TokenPoolCacheState,
+        poolKey: TokenPoolKey,
+        tokenEvent: TokenEvent
+    ): ResponseAndState {
 
-        val tokenEvent = try {
-            eventConverter.convert(event.value)
-        } catch (e: Exception) {
-            logger.error("Unexpected error while processing event '${event}'. The event will be sent to the DLQ.", e)
-            return StateAndEventProcessor.Response(
-                state,
-                listOf(),
-                markForDLQ = true
-            )
+        // Temporary logic that covers the upgrade from release/5.0 to release/5.1
+        // The field claimedTokens has been added to the TokenCaim avro object, and it will replace claimedTokenStateRefs.
+        // In order to avoid breaking compatibility, the claimedTokenStateRefs has been deprecated, and it will eventually
+        // be removed. Any claim that contains a non-empty claimedTokenStateRefs field are considered invalid because
+        // this means the avro object is an old one, and it should be replaced by the new format.
+        val invalidClaims =
+            state.tokenClaims.filterNot { it.claimedTokenStateRefs.isNullOrEmpty() }
+        if (invalidClaims.isNotEmpty()) {
+            val invalidClaimsId = invalidClaims.map { it.claimId }
+            logger.warn("Invalid claims were found and have been discarded. Invalid claims: ${invalidClaimsId}")
         }
 
-        logger.debug { "Token event received: $tokenEvent" }
+        val poolCacheState = entityConverter.toPoolCacheState(state)
+        val tokenCache = tokenPoolCache.get(poolKey)
 
-        return traceStateAndEventExecution(event, "Token Event - ${tokenEvent.javaClass.simpleName}") {
-            try {
-                val nonNullableState = state?.value ?: TokenPoolCacheState().apply {
-                    this.poolKey = event.key
-                    this.availableTokens = listOf()
-                    this.tokenClaims = listOf()
-                }
+        poolCacheState.removeExpiredClaims()
 
-                // Temporary logic that covers the upgrade from release/5.0 to release/5.1
-                // The field claimedTokens has been added to the TokenCaim avro object, and it will replace claimedTokenStateRefs.
-                // In order to avoid breaking compatibility, the claimedTokenStateRefs has been deprecated, and it will eventually
-                // be removed. Any claim that contains a non-empty claimedTokenStateRefs field are considered invalid because
-                // this means the avro object is an old one, and it should be replaced by the new format.
-                val invalidClaims =
-                    nonNullableState.tokenClaims.filterNot { it.claimedTokenStateRefs.isNullOrEmpty() }
-                if (invalidClaims.isNotEmpty()) {
-                    val invalidClaimsId = invalidClaims.map { it.claimId }
-                    logger.warn("Invalid claims were found and have been discarded. Invalid claims: ${invalidClaimsId}")
-                }
-
-                val poolKey = entityConverter.toTokenPoolKey(event.key)
-                val poolCacheState = entityConverter.toPoolCacheState(nonNullableState)
-                val tokenCache = tokenPoolCache.get(poolKey)
-
-                poolCacheState.removeExpiredClaims()
-
-                val handler = checkNotNull(eventHandlerMap[tokenEvent.javaClass]) {
-                    "Received an event with and unrecognized payload '${tokenEvent.javaClass}'"
-                }
-
-                val result = handler.handle(tokenCache, poolCacheState, tokenEvent)
-
-                logger.debug { "sending token response: $result" }
-
-                if (result == null) {
-                    StateAndEventProcessor.Response(
-                        StateAndEventProcessor.State(poolCacheState.toAvro(), metadata = state?.metadata),
-                        listOf()
-                    )
-                } else {
-                    StateAndEventProcessor.Response(
-                        StateAndEventProcessor.State(poolCacheState.toAvro(), metadata = state?.metadata),
-                        listOf(result)
-                    )
-                }
-            } catch (e: Exception) {
-                val responseMessage = externalEventResponseFactory.platformError(
-                    ExternalEventContext(
-                        tokenEvent.externalEventRequestId,
-                        tokenEvent.flowId,
-                        KeyValuePairList(listOf())
-                    ),
-                    e
-                )
-                StateAndEventProcessor.Response(state, listOf(responseMessage), markForDLQ = false)
-            }
+        val handler = checkNotNull(eventHandlerMap[tokenEvent.javaClass]) {
+            "Received an event with and unrecognized payload '${tokenEvent.javaClass}'"
         }
+
+        val result = handler.handle(tokenCache, poolCacheState, tokenEvent)
+
+        logger.debug { "token response: $result" }
+
+        return ResponseAndState(result?.value, poolCacheState.toAvro())
     }
+
+    private data class ResponseAndState(val response: FlowEvent?, val state: TokenPoolCacheState)
 }
