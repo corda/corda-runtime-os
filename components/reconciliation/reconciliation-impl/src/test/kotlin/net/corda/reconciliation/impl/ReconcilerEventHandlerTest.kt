@@ -94,7 +94,7 @@ internal class ReconcilerEventHandlerTest {
         }
 
         val writer = mock<ReconcilerWriter<String, Int>>().also {
-            whenever(it.recordValueMisalignedAfterDefaults(any(), any(), any())).thenReturn(true)
+            whenever(it.valuesMisalignedAfterDefaults(any(), any(), any())).thenReturn(true)
         }
 
         reconcilerEventHandler =

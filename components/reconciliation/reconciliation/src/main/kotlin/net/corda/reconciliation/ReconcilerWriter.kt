@@ -19,12 +19,11 @@ interface ReconcilerWriter<K : Any, V : Any> {
 
     val lifecycleCoordinatorName: LifecycleCoordinatorName
 
-    // The below API currently only applies to Config reconciliation in an attempt to address CORE-18268.
-    // It currently seems quite specific to Config reconciliation and therefore, ideally, should be removed.
-    // In which case Config reconciliation should be aligned with the rest of the reconciliations, i.e.
-    // the defaulting process should be done prior to reading the db records (in that case forced reconciliation concept
-    // will also, no longer be needed).
-    fun recordValueMisalignedAfterDefaults(
+    /**
+     * Some writers allow the checking of records to see if the value content has changed
+     * between the db and Kafka before pushing out a new value.
+     */
+    fun valuesMisalignedAfterDefaults(
         recordKey: K,
         dbRecordValue: V,
         kafkaRecordValue: V

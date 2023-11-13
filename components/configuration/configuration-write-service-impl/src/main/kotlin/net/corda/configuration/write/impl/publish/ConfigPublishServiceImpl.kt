@@ -107,7 +107,7 @@ class ConfigPublishServiceImpl @Activate constructor(
         TODO("Not yet implemented")
     }
 
-    override fun recordValueMisalignedAfterDefaults(
+    override fun valuesMisalignedAfterDefaults(
         recordKey: String,
         dbRecordValue: Configuration,
         kafkaRecordValue: Configuration
