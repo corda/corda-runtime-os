@@ -7,21 +7,20 @@ import net.corda.ledger.utxo.token.cache.entities.TokenEvent
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolCache
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 import net.corda.ledger.utxo.token.cache.handlers.TokenEventHandler
-import org.slf4j.LoggerFactory
 
 class TokenPoolCacheManager(
     private val tokenPoolCache: TokenPoolCache,
     private val eventHandlerMap: Map<Class<*>, TokenEventHandler<in TokenEvent>>,
 ) {
     fun processEvent(
-        poolCacheState: PoolCacheState,
+        state: PoolCacheState,
         poolKey: TokenPoolKey,
         tokenEvent: TokenEvent
     ): ResponseAndState {
 
         // Cleanup
-        poolCacheState.removeInvalidClaims()
-        poolCacheState.removeExpiredClaims()
+        state.removeInvalidClaims()
+        state.removeExpiredClaims()
 
         // Get the handler that knows how to process the event
         val handler = checkNotNull(eventHandlerMap[tokenEvent.javaClass]) {
@@ -30,9 +29,9 @@ class TokenPoolCacheManager(
 
         // Ask the respective handler to process the event
         val tokenCache = tokenPoolCache.get(poolKey)
-        val result = handler.handle(tokenCache, poolCacheState, tokenEvent)
+        val result = handler.handle(tokenCache, state, tokenEvent)
 
-        return ResponseAndState(result?.value, poolCacheState.toAvro())
+        return ResponseAndState(result?.value, state.toAvro())
     }
 
     fun removeAllTokensFromCache(poolKey: TokenPoolKey) {

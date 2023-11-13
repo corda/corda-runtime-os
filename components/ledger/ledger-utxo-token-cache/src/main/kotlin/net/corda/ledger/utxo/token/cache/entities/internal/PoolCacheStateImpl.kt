@@ -6,7 +6,6 @@ import net.corda.ledger.utxo.token.cache.converters.EntityConverter
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
-import net.corda.ledger.utxo.token.cache.services.TokenPoolCacheManager
 import net.corda.utilities.time.Clock
 import org.slf4j.LoggerFactory
 import java.time.Duration

@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
+@Suppress("LongParameterList")
 class TokenSelectionSyncRPCProcessor(
     private val eventConverter: EventConverter,
     private val entityConverter: EntityConverter,
@@ -44,9 +45,9 @@ class TokenSelectionSyncRPCProcessor(
 
                     claimStateStore.enqueueRequest { poolState ->
 
-                        val poolCacheState = entityConverter.toPoolCacheState(poolState)
+                        val state = entityConverter.toPoolCacheState(poolState)
                         val result = tokenPoolCacheManager.processEvent(
-                            poolCacheState,
+                            state,
                             poolKey,
                             tokenEvent
                         )

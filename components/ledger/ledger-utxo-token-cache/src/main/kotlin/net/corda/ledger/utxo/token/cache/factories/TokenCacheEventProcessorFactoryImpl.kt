@@ -14,7 +14,15 @@ import net.corda.ledger.utxo.token.cache.handlers.TokenForceClaimReleaseEventHan
 import net.corda.ledger.utxo.token.cache.handlers.TokenLedgerChangeEventHandler
 import net.corda.ledger.utxo.token.cache.queries.impl.SqlQueryProviderTokens
 import net.corda.ledger.utxo.token.cache.repositories.impl.UtxoTokenRepositoryImpl
-import net.corda.ledger.utxo.token.cache.services.*
+import net.corda.ledger.utxo.token.cache.services.ClaimStateStoreCacheImpl
+import net.corda.ledger.utxo.token.cache.services.ClaimStateStoreFactoryImpl
+import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
+import net.corda.ledger.utxo.token.cache.services.SimpleTokenFilterStrategy
+import net.corda.ledger.utxo.token.cache.services.TokenPoolCacheManager
+import net.corda.ledger.utxo.token.cache.services.TokenPoolCacheStateSerialization
+import net.corda.ledger.utxo.token.cache.services.TokenSelectionMetrics
+import net.corda.ledger.utxo.token.cache.services.TokenSelectionMetricsImpl
+import net.corda.ledger.utxo.token.cache.services.TokenSelectionSyncRPCProcessor
 import net.corda.ledger.utxo.token.cache.services.internal.AvailableTokenServiceImpl
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.orm.JpaEntitiesRegistry
@@ -39,7 +47,7 @@ class TokenCacheEventProcessorFactoryImpl constructor(
         stateManager: StateManager
     ): TokenSelectionSyncRPCProcessor {
         val tokenSelectionMetrics = TokenSelectionMetricsImpl(UTCClock())
-        val tokenPoolCacheManager = TokenPoolCacheManager(TokenPoolCacheImpl(), createEventHandlerMap(tokenSelectionMetrics), entityConverter)
+        val tokenPoolCacheManager = TokenPoolCacheManager(TokenPoolCacheImpl(), createEventHandlerMap(tokenSelectionMetrics))
         val claimStateStoreFactory = ClaimStateStoreFactoryImpl(stateManager, serialization, tokenPoolCacheManager, clock)
 
 
