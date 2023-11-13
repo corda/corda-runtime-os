@@ -69,7 +69,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     private val running = AtomicBoolean(false)
     // TODO This timeout was set with CORE-17768 (changing configuration value would affect other messaging patterns)
     //  This should be reverted to use configuration value once event mediator polling is refactored (planned for 5.2)
-    private val pollTimeout = Duration.ofMillis(5)
+    private val pollTimeout = Duration.ofMillis(50)
 
     override fun start() {
         log.debug { "Starting multi-source event mediator with config: $config" }
@@ -165,19 +165,21 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         if (messages.isNotEmpty()) {
             var groups = allocateGroups(messages.map { it.toRecord() })
             var states = stateManager.get(messages.map { it.key.toString() }.distinct())
+
             while (groups.isNotEmpty()) {
-                val asynchronousOutputs = mutableListOf<MediatorMessage<Any>>()
-                val newStates = ConcurrentHashMap<String, State?>()
-                val updateStates = ConcurrentHashMap<String, State?>()
-                val deleteStates = ConcurrentHashMap<String, State?>()
+                val asynchronousOutputs = ConcurrentHashMap<String, MutableList<MediatorMessage<Any>>>()
+                val statesToCreate = ConcurrentHashMap<String, State?>()
+                val statesToUpdate = ConcurrentHashMap<String, State?>()
+                val statesToDelete = ConcurrentHashMap<String, State?>()
                 val flowEvents = ConcurrentHashMap<String, MutableList<Record<K, E>>>()
+
                 // Process each group on a thread
                 groups.filter {
                     it.isNotEmpty()
                 }.map { group ->
                     taskManager.executeShortRunningTask {
                         // Process all same flow events in one go
-                        group.map { it ->
+                        group.map {
                             // Keep track of all records belonging to one flow
                             flowEvents.compute(it.key.toString()) { _, v ->
                                 if (v == null) {
@@ -199,7 +201,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                                 val event = queue.removeFirst()
                                 val response = config.messageProcessor.onNext(processorState, event)
                                 processorState = response.updatedState
-                                processOutputEvents(response, asynchronousOutputs, queue, event)
+                                processOutputEvents(it.key.toString(), response, asynchronousOutputs, queue, event)
                             }
 
                             // ---- Manage the state ----
@@ -209,38 +211,26 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                                 processorState,
                             )
 
-                            // New state
-                            if (state == null && processedState != null) {
-                                newStates[it.key.toString()] = processedState
-                            }
-
-                            // Update state
-                            if (state != null && processedState != null) {
-                                updateStates[it.key.toString()] = processedState
-                            }
-
-                            // Delete state
-                            if (state != null && processorState == null) {
-                                deleteStates[it.key.toString()] = state
-                            }
+                            qualifyState(it.key.toString(), state, processedState, statesToCreate, statesToUpdate, statesToDelete)
                         }
                     }
                 }.map {
                     it.join()
                 }
 
-                sendAsynchronousEvents(asynchronousOutputs)
                 // Persist states changes
-                val failedToCreateKeys = stateManager.create(newStates.values.mapNotNull { it })
+                val failedToCreateKeys = stateManager.create(statesToCreate.values.mapNotNull { it })
                 val failedToCreate = stateManager.get(failedToCreateKeys.keys)
-                val failedToDelete = stateManager.delete(deleteStates.values.mapNotNull { it })
-                val failedToUpdate = stateManager.update(updateStates.values.mapNotNull { it })
+                val failedToDelete = stateManager.delete(statesToDelete.values.mapNotNull { it })
+                val failedToUpdate = stateManager.update(statesToUpdate.values.mapNotNull { it })
                 states = failedToCreate + failedToDelete + failedToUpdate
                 groups = if (states.isNotEmpty()) {
                     allocateGroups(flowEvents.filterKeys { states.containsKey(it) }.values.flatten())
                 } else {
                     listOf()
                 }
+                states.keys.forEach { asynchronousOutputs.remove(it) }
+                sendAsynchronousEvents(asynchronousOutputs.values.flatten())
             }
             metrics.commitTimer.recordCallable {
                 consumer.syncCommitOffsets()
@@ -249,7 +239,35 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
     }
 
-    private fun sendAsynchronousEvents(busEvents: MutableList<MediatorMessage<Any>>) {
+    /**
+     * Decide, based on the original and processed state values, whether the state must be deleted, updated or
+     * deleted; and add the relevant state value to the specific Map.
+     */
+    fun qualifyState(
+        groupId: String,
+        original: State?,
+        processed: State?,
+        toCreate : MutableMap<String, State?>,
+        toUpdate : MutableMap<String, State?>,
+        toDelete : MutableMap<String, State?>
+    ) {
+        // New state
+        if (original == null && processed != null) {
+            toCreate[groupId] = processed
+        }
+
+        // Update state
+        if (original != null && processed != null) {
+            toUpdate[groupId] = processed
+        }
+
+        // Delete state
+        if (original != null && processed == null) {
+            toDelete[groupId] = original
+        }
+    }
+
+    private fun sendAsynchronousEvents(busEvents: Collection<MediatorMessage<Any>>) {
         busEvents.forEach { message ->
             with(messageRouter.getDestination(message)) {
                 message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
@@ -262,8 +280,9 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
      * Send any synchronous events immediately, add asynchronous events to the busEvents collection to be sent later
      */
     private fun processOutputEvents(
+        key: String,
         response: StateAndEventProcessor.Response<S>,
-        busEvents: MutableList<MediatorMessage<Any>>,
+        busEvents: MutableMap<String, MutableList<MediatorMessage<Any>>>,
         queue: ArrayDeque<Record<K, E>>,
         event: Record<K, E>
     ) {
@@ -271,7 +290,11 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         output.forEach { message ->
             val destination = messageRouter.getDestination(message)
             if (destination.type == RoutingDestination.Type.ASYNCHRONOUS) {
-                busEvents.add(message)
+                busEvents.compute(key) { _, value ->
+                    val list = value ?: mutableListOf()
+                    list.add(message)
+                    list
+                }
             } else {
                 @Suppress("UNCHECKED_CAST")
                 val reply = with(destination) {
