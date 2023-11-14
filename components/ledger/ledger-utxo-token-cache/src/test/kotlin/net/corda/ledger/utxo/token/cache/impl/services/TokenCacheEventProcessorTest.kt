@@ -2,7 +2,6 @@ package net.corda.ledger.utxo.token.cache.impl.services
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
-import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenEvent
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
@@ -16,7 +15,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock

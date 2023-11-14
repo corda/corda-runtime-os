@@ -1,7 +1,6 @@
 package net.corda.ledger.utxo.token.cache.services
 
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenEvent
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolCache
