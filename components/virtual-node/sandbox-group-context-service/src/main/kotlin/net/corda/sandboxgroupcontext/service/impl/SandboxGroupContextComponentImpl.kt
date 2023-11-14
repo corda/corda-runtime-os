@@ -115,7 +115,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
     }
 
     private fun onConfigChangeEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        val config = event.config.getConfig(ConfigKeys.SANDBOX_CONFIG)
+//        val config = event.config.getConfig(ConfigKeys.SANDBOX_CONFIG)
 
         SandboxGroupType.values().forEach {
 //            val cacheSize = try {
