@@ -30,9 +30,6 @@ class TokenCacheEventProcessorTest {
     private val event = FakeTokenEvent()
     private val tokenPoolCache = TokenPoolCacheImpl()
     private val cachePoolState = mock<PoolCacheState>()
-    private val externalEventResponseFactory = mock<ExternalEventResponseFactory> {
-        on { platformError(any(), any<Throwable>()) } doReturn mock<Record<String, FlowEvent>>()
-    }
 
     private val tokenPoolCacheEvent = TokenPoolCacheEvent(POOL_CACHE_KEY, null)
 
