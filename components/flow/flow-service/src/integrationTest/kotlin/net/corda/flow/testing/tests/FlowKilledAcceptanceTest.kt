@@ -3,6 +3,7 @@ package net.corda.flow.testing.tests
 import net.corda.data.flow.output.FlowStates
 import net.corda.flow.application.sessions.SessionInfo
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.testing.context.ALICE_FLOW_KEY_MAPPER
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.virtualnode.OperationalStatus
 import org.junit.jupiter.api.BeforeEach
@@ -96,6 +97,7 @@ class FlowKilledAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 nullStateRecord()
                 flowKilledStatus(flowTerminatedReason = "Flow operational status is INACTIVE")
+                scheduleFlowMapperCleanupEvents(SESSION_ID_1, ALICE_FLOW_KEY_MAPPER)
                 flowFiberCacheDoesNotContainKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
             }
         }
