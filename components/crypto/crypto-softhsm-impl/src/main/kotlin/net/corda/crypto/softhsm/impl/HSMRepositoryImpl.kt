@@ -17,7 +17,6 @@ import java.lang.IllegalStateException
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
-import javax.persistence.EntityManagerFactory
 import javax.persistence.PersistenceException
 import javax.persistence.Tuple
 import net.corda.utilities.debug
@@ -28,7 +27,7 @@ import net.corda.utilities.debug
  * @param entityManagerFactory An entity manager factory connected to the right database, matching tenantId
  */
 
-class HSMRepositoryImpl(val emf: ()->EntityManager = { makeEntityManager(name=CordaDb.Crypto) }): HSMRepository {
+class HSMRepositoryImpl(val makeEntityManagerCallback: ()->EntityManager = { makeEntityManager(name=CordaDb.Crypto) }): HSMRepository {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -37,7 +36,7 @@ class HSMRepositoryImpl(val emf: ()->EntityManager = { makeEntityManager(name=Co
     }
 
     override fun findTenantAssociation(tenantId: String, category: String): HSMAssociationInfo? =
-        emf().use {
+        makeEntityManagerCallback().use {
             val result = it.createQuery(
                 """
             SELECT ca FROM HSMCategoryAssociationEntity ca
@@ -58,7 +57,7 @@ class HSMRepositoryImpl(val emf: ()->EntityManager = { makeEntityManager(name=Co
             logger.debug { "Looked up tenant association for $tenantId $category with wrapping key alias ${it?.masterKeyAlias}" }
         }
 
-    override fun getHSMUsage(): List<HSMUsage> =emf().use {
+    override fun getHSMUsage(): List<HSMUsage> =makeEntityManagerCallback().use {
         it.createQuery(
             """
             SELECT ha.hsmId as hsmId, COUNT(*) as usages 
@@ -78,7 +77,7 @@ class HSMRepositoryImpl(val emf: ()->EntityManager = { makeEntityManager(name=Co
         tenantId: String,
         category: String,
         masterKeyPolicy: MasterKeyPolicy,
-    ): HSMAssociationInfo = emf().use {
+    ): HSMAssociationInfo = makeEntityManagerCallback().use {
         it.transaction { em ->
             val association =
                 findHSMAssociationEntity(em, tenantId)
@@ -103,7 +102,7 @@ class HSMRepositoryImpl(val emf: ()->EntityManager = { makeEntityManager(name=Co
         tenantId: String,
         category: String,
         masterKeyPolicy: MasterKeyPolicy
-    ): HSMAssociationInfo = emf().use {
+    ): HSMAssociationInfo = makeEntityManagerCallback().use {
         try {
             it.transaction { em ->
                 val association =

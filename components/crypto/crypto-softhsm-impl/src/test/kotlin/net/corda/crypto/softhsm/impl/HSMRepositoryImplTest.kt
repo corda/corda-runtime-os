@@ -40,7 +40,7 @@ class HSMRepositoryImplTest {
                 }
             }
         }
-        HSMRepositoryImpl( emf = { em } ).use { hsmRepository ->
+        HSMRepositoryImpl( makeEntityManagerCallback = { em } ).use { hsmRepository ->
             val test = hsmRepository.findTenantAssociation("tenant", "category")
             assertThat(test).isNull()
             assertThat(tenantCap.allValues.single()).isEqualTo("tenant")
@@ -65,7 +65,7 @@ class HSMRepositoryImplTest {
                 }
             }
         }
-        HSMRepositoryImpl(emf = { em }).use { hsmStore ->
+        HSMRepositoryImpl(makeEntityManagerCallback = { em }).use { hsmStore ->
             val expected = HSMAssociationInfo("1", "tenant", "hsm", "category", "master_key", 0)
             val test = hsmStore.findTenantAssociation("tenant", "category")
             assertThat(test).usingRecursiveComparison().isEqualTo(expected)
