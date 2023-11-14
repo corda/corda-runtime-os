@@ -54,11 +54,11 @@ fun makeEntityManager(
     connectionId: UUID?=null,
     persistenceUnitName: String? = null): EntityManager {
     while (instance == null) {
-        DbConnectionManagerImpl.logger.info("Wating for DBConnectionManager to appear connecting to $name at privilege $privilege")
+        DbConnectionManagerImpl.logger.info("Waiting for DBConnectionManager to appear connecting to $name at privilege $privilege")
         Thread.sleep(1000)
     }
     while (!instance!!.isRunning) {
-        DbConnectionManagerImpl.logger.info("Wating for DBConnectionManager to become ready connecting to $name at privilege $privilege")
+        DbConnectionManagerImpl.logger.info("Waiting for DBConnectionManager to become ready connecting to $name at privilege $privilege")
         Thread.sleep(1000)
     }
     val emf: EntityManagerFactory = if (name == CordaDb.CordaCluster) {
