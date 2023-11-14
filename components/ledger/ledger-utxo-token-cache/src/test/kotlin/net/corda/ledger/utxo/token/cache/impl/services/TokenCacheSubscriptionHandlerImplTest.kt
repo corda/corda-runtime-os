@@ -16,7 +16,6 @@ import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.test.impl.LifecycleTest
-import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import org.junit.jupiter.api.Test
