@@ -27,7 +27,6 @@ class TokenCacheSubscriptionHandlerImpl(
     private val tokenCacheEventProcessorFactory: TokenCacheEventProcessorFactory,
     private val serviceConfiguration: ServiceConfiguration,
     private val stateManagerFactory: StateManagerFactory,
-    private val toMessagingConfig: (Map<String, SmartConfig>) -> SmartConfig,
     private val toTokenConfig: (Map<String, SmartConfig>) -> SmartConfig,
     private val toStateManagerConfig: (Map<String, SmartConfig>) -> SmartConfig,
 ) : TokenCacheSubscriptionHandler {
@@ -41,7 +40,6 @@ class TokenCacheSubscriptionHandlerImpl(
     private val coordinator =
         coordinatorFactory.createCoordinator<TokenCacheSubscriptionHandler> { event, _ -> eventHandler(event) }
     private var stateManager: StateManager? = null
-    private var subscriptionRegistrationHandle: RegistrationHandle? = null
 
     override fun onConfigChange(config: Map<String, SmartConfig>) {
         try {
@@ -49,7 +47,6 @@ class TokenCacheSubscriptionHandlerImpl(
             val messagingConfig = toStateManagerConfig(config)
 
             // close the lifecycle registration first to prevent a down signal to the coordinator
-            subscriptionRegistrationHandle?.close()
             stateManager?.stop()
 
             // Create the State and Event subscription
@@ -86,7 +83,6 @@ class TokenCacheSubscriptionHandlerImpl(
 
             is StopEvent -> {
                 log.debug { "Token Cache configuration handler is stopping..." }
-                subscriptionRegistrationHandle?.close()
                 stateManager?.stop()
                 log.debug { "Token Cache configuration handler stopped" }
             }
