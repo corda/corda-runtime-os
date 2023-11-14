@@ -127,6 +127,24 @@ class StateManagerIntegrationTest {
         }
     }
 
+    private fun getIntervalBetweenEntities(startEntityKey: String, finishEntityKey: String): Pair<Instant, Instant> {
+        return dataSource.connection.transaction { connection ->
+            val loadedEntities = connection.prepareStatement(queryProvider.findStatesByKey(2))
+                .use {
+                    it.setString(1, startEntityKey)
+                    it.setString(2, finishEntityKey)
+                    it.executeQuery().resultSetAsStateEntityCollection()
+                }.sortedBy {
+                    it.modifiedTime
+                }
+
+            Pair(
+                loadedEntities.elementAt(0).modifiedTime,
+                loadedEntities.elementAt(1).modifiedTime
+            )
+        }
+    }
+
     @ValueSource(ints = [1, 10])
     @ParameterizedTest(name = "can create basic states (batch size: {0})")
     fun canCreateBasicStates(stateCount: Int) {
@@ -454,22 +472,6 @@ class StateManagerIntegrationTest {
                 it.assertThat(loadedState.version).isEqualTo(State.VERSION_INITIAL_VALUE + 1)
                 it.assertThat(loadedState.metadata).containsExactlyInAnyOrderEntriesOf(mutableMapOf("k1" to "v$i"))
             }
-        }
-    }
-
-    private fun getIntervalBetweenEntities(startEntityKey: String, finishEntityKey: String): Pair<Instant, Instant> {
-        return dataSource.connection.transaction { connection ->
-            val loadedEntities = connection.prepareStatement(queryProvider.findStatesByKey(2))
-                .use {
-                    it.setString(1, startEntityKey)
-                    it.setString(2, finishEntityKey)
-                    it.executeQuery().resultSetAsStateEntityCollection()
-                }
-
-            Pair(
-                loadedEntities.elementAt(0).modifiedTime,
-                loadedEntities.elementAt(1).modifiedTime
-            )
         }
     }
 

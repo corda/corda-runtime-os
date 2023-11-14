@@ -37,7 +37,7 @@ class CheckpointCleanupHandlerImpl @Activate constructor(
         val records = errorActiveSessions(checkpoint, config, exception, time) +
                 cleanupSessions(checkpoint, config, time) +
                 generateStatus(checkpoint, exception) +
-                cleanupInitiatingFlow(checkpoint, config, time)
+                cleanupRpcFlowMapperState(checkpoint, config, time)
         checkpoint.markDeleted()
         return records
     }
@@ -100,7 +100,7 @@ class CheckpointCleanupHandlerImpl @Activate constructor(
         }
     }
 
-    private fun cleanupInitiatingFlow(
+    private fun cleanupRpcFlowMapperState(
         checkpoint: FlowCheckpoint,
         config: SmartConfig,
         currentTime: Instant

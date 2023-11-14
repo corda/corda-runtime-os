@@ -7,6 +7,7 @@ import net.corda.cli.plugins.network.utils.InvariantUtils.checkInvariant
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.membership.rest.v1.MGMRestResource
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.ByteArrayOutputStream
@@ -141,7 +142,10 @@ class OnboardMgm : Runnable, BaseOnboard() {
         creator.cpiUpgrade = false
         creator.outputFileName = cpiFile.absolutePath
         creator.signingOptions = createDefaultSingingOptions()
-        creator.run()
+        val exitCode = creator.call()
+        if (exitCode != 0) {
+            throw CordaRuntimeException("Create CPI returned non-zero exit code")
+        }
         uploadSigningCertificates()
         cpiFile
     }
