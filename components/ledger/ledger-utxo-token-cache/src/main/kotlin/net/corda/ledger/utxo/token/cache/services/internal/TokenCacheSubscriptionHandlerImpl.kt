@@ -40,6 +40,7 @@ class TokenCacheSubscriptionHandlerImpl(
     private val coordinator =
         coordinatorFactory.createCoordinator<TokenCacheSubscriptionHandler> { event, _ -> eventHandler(event) }
     private var stateManager: StateManager? = null
+    private var subscriptionRegistrationHandle: RegistrationHandle? = null
 
     override fun onConfigChange(config: Map<String, SmartConfig>) {
         try {
@@ -47,14 +48,18 @@ class TokenCacheSubscriptionHandlerImpl(
             val messagingConfig = toStateManagerConfig(config)
 
             // close the lifecycle registration first to prevent a down signal to the coordinator
+            subscriptionRegistrationHandle?.close()
             stateManager?.stop()
 
-            // Create the State and Event subscription
             stateManager = stateManagerFactory.create(messagingConfig)
             val processor= tokenCacheEventProcessorFactory.createTokenSelectionSyncRPCProcessor(stateManager!!)
 
             // Create the HTTP RPC subscription
             createAndRegisterSyncRPCSubscription(processor)
+
+            subscriptionRegistrationHandle = coordinator.followStatusChangesByName(
+                setOf(stateManager!!.name)
+            )
 
             stateManager?.start()
         } catch (ex: Exception) {
@@ -83,6 +88,7 @@ class TokenCacheSubscriptionHandlerImpl(
 
             is StopEvent -> {
                 log.debug { "Token Cache configuration handler is stopping..." }
+                subscriptionRegistrationHandle?.close()
                 stateManager?.stop()
                 log.debug { "Token Cache configuration handler stopped" }
             }
