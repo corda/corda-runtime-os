@@ -32,7 +32,6 @@ class TokenCacheSubscriptionHandlerImplTest {
                 rpcSubscription)
     }
     private val serviceConfiguration = mock<ServiceConfiguration>()
-    private val toServiceConfig: (Map<String, SmartConfig>) -> SmartConfig = { _ -> MINIMUM_SMART_CONFIG }
     private val toTokenConfig: (Map<String, SmartConfig>) -> SmartConfig = { _ -> MINIMUM_SMART_CONFIG }
     private val toStateManagerConfig: (Map<String, SmartConfig>) -> SmartConfig = { _ -> MINIMUM_SMART_CONFIG }
     private val stateManager = mock<StateManager>()
@@ -40,8 +39,6 @@ class TokenCacheSubscriptionHandlerImplTest {
         whenever(create(any())).thenReturn(stateManager)
     }
     private val tokenSelectionSyncRPCProcessor = mock<TokenSelectionSyncRPCProcessor>()
-    private val stateAndEventProcessor =
-        mock<StateAndEventProcessor<TokenPoolCacheKey, TokenPoolCacheState, TokenPoolCacheEvent>>()
     private val tokenCacheEventProcessorFactory = mock<TokenCacheEventProcessorFactory>().apply {
         whenever(
             createTokenSelectionSyncRPCProcessor(
