@@ -69,7 +69,6 @@ class TokenCacheComponentFactory @Activate constructor(
             tokenCacheEventProcessorFactory,
             serviceConfiguration,
             stateManagerFactory,
-            { cfg -> cfg.getConfig(ConfigKeys.MESSAGING_CONFIG) },
             { cfg -> cfg.getConfig(ConfigKeys.UTXO_LEDGER_CONFIG) },
             { cfg -> cfg.getConfig(ConfigKeys.STATE_MANAGER_CONFIG) }
         )
