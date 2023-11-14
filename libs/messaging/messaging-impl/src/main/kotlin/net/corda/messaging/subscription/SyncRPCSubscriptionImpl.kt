@@ -86,6 +86,7 @@ internal class SyncRPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                     return@trace context
                 }
 
+
                 val response = try {
                     processor.process(payload)
                 } catch (ex: Exception) {
