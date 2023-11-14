@@ -1,9 +1,7 @@
 package net.corda.e2etest.utilities
 
-import net.corda.rest.ResponseCode
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.fail
-import java.lang.IllegalArgumentException
 import java.time.Duration
 
 /** "Private args" that are only exposed in here */
@@ -117,7 +115,6 @@ fun assertWithRetryIgnoringExceptions(initialize: AssertWithRetryBuilder.() -> U
         var retry = 0
         var result: Any?
         var timeTried: Long
-
 
         do {
             Thread.sleep(args.interval.toMillis())
