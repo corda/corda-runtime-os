@@ -12,6 +12,7 @@ import org.osgi.service.component.annotations.Component
 import org.slf4j.LoggerFactory
 import javax.persistence.EntityManagerFactory
 import javax.persistence.spi.PersistenceUnitInfo
+import net.corda.utilities.debug
 
 /**
  * Hibernate implementation of [EntityManagerFactoryFactory]
@@ -71,7 +72,7 @@ class EntityManagerFactoryFactoryImpl(
         classLoaders: List<ClassLoader>,
         configuration: EntityManagerConfiguration
     ): EntityManagerFactory {
-        log.info("Creating for {}", persistenceUnitName)
+        log.debug { "Creating for $persistenceUnitName" }
 
         val props = mapOf(
             "hibernate.show_sql" to configuration.showSql.toString(),
