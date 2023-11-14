@@ -78,7 +78,7 @@ class HSMRepositoryImpl(val emf: ()->EntityManager = { makeEntityManager(name=Co
         tenantId: String,
         category: String,
         masterKeyPolicy: MasterKeyPolicy,
-    ): HSMAssociationInfo = makeEntityManager(name= CordaDb.Crypto).use {
+    ): HSMAssociationInfo = emf().use {
         it.transaction { em ->
             val association =
                 findHSMAssociationEntity(em, tenantId)

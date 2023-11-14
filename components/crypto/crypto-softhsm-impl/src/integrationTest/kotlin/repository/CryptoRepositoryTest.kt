@@ -61,7 +61,6 @@ abstract class CryptoRepositoryTest {
     fun cleanup() {
         dbs.forEach {
             it.first.close()
-            it.second.close()
         }
     }
 

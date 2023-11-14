@@ -4,6 +4,7 @@ import net.corda.crypto.config.impl.MasterKeyPolicy
 import net.corda.crypto.persistence.db.model.HSMCategoryAssociationEntity
 import net.corda.crypto.softhsm.impl.HSMRepositoryImpl
 import net.corda.crypto.softhsm.impl.toHSMAssociation
+import net.corda.db.schema.CordaDb
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import org.assertj.core.api.Assertions.assertThat
@@ -24,7 +25,7 @@ class HSMRepositoryTest : CryptoRepositoryTest() {
     @MethodSource("emfs")
     fun associate(emf: EntityManagerFactory) {
         val tenantId = UUID.randomUUID().toString().take(6)
-        val repo = HSMRepositoryImpl(emf)
+        val repo = HSMRepositoryImpl( { emf.createEntityManager() } )
 
         val ai = repo.associate(
             tenantId,
@@ -52,7 +53,7 @@ class HSMRepositoryTest : CryptoRepositoryTest() {
     @MethodSource("emfs")
     fun `when associate unique generate alias`(emf: EntityManagerFactory) {
         val tenantId = "caesar${UUID.randomUUID().toString().take(6)}"
-        val repo = HSMRepositoryImpl(emf)
+        val repo = HSMRepositoryImpl( { emf.createEntityManager() } )
 
         val ai = repo.associate(
             tenantId,
@@ -67,7 +68,7 @@ class HSMRepositoryTest : CryptoRepositoryTest() {
     @MethodSource("emfs")
     fun `when associate twice should throw`(emf: EntityManagerFactory) {
         val tenantId = "caesar${UUID.randomUUID().toString().take(6)}"
-        val repo = HSMRepositoryImpl(emf)
+        val repo = HSMRepositoryImpl { emf.createEntityManager() }
 
         repo.associate(
             tenantId,
@@ -88,7 +89,7 @@ class HSMRepositoryTest : CryptoRepositoryTest() {
     @MethodSource("emfs")
     fun findTenantAssociation(emf: EntityManagerFactory) {
         val tenantId = "caesar${UUID.randomUUID().toString().take(6)}"
-        val repo = HSMRepositoryImpl(emf)
+        val repo = HSMRepositoryImpl { emf.createEntityManager() }
 
         repo.associate(
             tenantId,
@@ -111,7 +112,7 @@ class HSMRepositoryTest : CryptoRepositoryTest() {
     @MethodSource("emfs")
     fun `findTenantAssociation returns null when none found`(emf: EntityManagerFactory) {
         val tenantId = "caesar${UUID.randomUUID().toString().take(6)}"
-        val repo = HSMRepositoryImpl(emf)
+        val repo = HSMRepositoryImpl { emf.createEntityManager() }
 
         val loaded = repo.findTenantAssociation(tenantId, category)
 
@@ -129,7 +130,7 @@ class HSMRepositoryTest : CryptoRepositoryTest() {
     @MethodSource("emfs")
     fun `can save HSMCategoryAssociationEntity with duplicate category and hsm association`(emf: EntityManagerFactory) {
         val tenantId = "caesar${UUID.randomUUID().toString().take(6)}"
-        val repo = HSMRepositoryImpl(emf)
+        val repo = HSMRepositoryImpl { emf.createEntityManager() }
 
         // save one
         repo.associate(
