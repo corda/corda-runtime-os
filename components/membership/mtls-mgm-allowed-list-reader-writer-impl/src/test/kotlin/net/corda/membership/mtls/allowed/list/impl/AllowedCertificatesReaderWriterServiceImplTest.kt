@@ -252,7 +252,7 @@ class AllowedCertificatesReaderWriterServiceImplTest {
                 emptyMap()
             )
 
-            val records = impl.getAllVersionedRecords()?.toList()
+            val records = impl.getAllVersionedRecords().toList()
 
             assertThat(records).isEmpty()
         }
