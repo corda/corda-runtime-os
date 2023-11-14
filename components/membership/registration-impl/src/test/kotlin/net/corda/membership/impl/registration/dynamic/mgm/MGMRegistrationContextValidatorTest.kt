@@ -4,12 +4,15 @@ import net.corda.configuration.read.ConfigurationGetService
 import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
+import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
 import net.corda.schema.membership.MembershipSchema
 import net.corda.test.util.time.TestClock
+import net.corda.v5.base.types.LayeredPropertyMap
+import net.corda.v5.membership.MemberContext
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -250,6 +253,90 @@ class MGMRegistrationContextValidatorTest {
 
         assertThrows<MGMRegistrationContextValidationException> {
             mgmRegistrationContextValidator.validate(validTestContext)
+        }
+    }
+
+    @Test
+    fun `context validation passes when only endpoint changes were made`() {
+        val newMemberContext = mock<MemberContext> {
+            on { entries } doReturn mapOf(
+                "corda.endpoints.0.connectionURL" to "https://localhost:1080",
+                "corda.endpoints.0.protocolVersion" to "1",
+            ).entries
+        }
+        val oldMemberContext = mock<MemberContext> {
+            on { entries } doReturn mapOf(
+                "corda.endpoints.0.connectionURL" to "https://localhost:8888",
+                "corda.endpoints.0.protocolVersion" to "1",
+            ).entries
+        }
+        val newContext = mock<SelfSignedMemberInfo> {
+            on { memberProvidedContext } doReturn newMemberContext
+        }
+        val oldContext = mock<SelfSignedMemberInfo> {
+            on { memberProvidedContext } doReturn oldMemberContext
+        }
+
+        assertDoesNotThrow {
+            mgmRegistrationContextValidator.validateMemberContext(newContext, oldContext)
+        }
+    }
+
+    @Test
+    fun `context validation fails when non-endpoint changes were made`() {
+        val newMemberContext = mock<MemberContext> {
+            on { entries } doReturn mapOf(
+                "corda.session.keys.0.id" to "ABC123456789",
+            ).entries
+        }
+        val oldMemberContext = mock<MemberContext> {
+            on { entries } doReturn mapOf(
+                "corda.session.keys.0.id" to "XYZ123456789",
+            ).entries
+        }
+        val newContext = mock<SelfSignedMemberInfo> {
+            on { memberProvidedContext } doReturn newMemberContext
+        }
+        val oldContext = mock<SelfSignedMemberInfo> {
+            on { memberProvidedContext } doReturn oldMemberContext
+        }
+
+        assertThrows<MGMRegistrationContextValidationException> {
+            mgmRegistrationContextValidator.validateMemberContext(newContext, oldContext)
+        }
+    }
+
+    @Test
+    fun `group policy validation passes when no changes were made`() {
+        val registrationContext = mapOf(
+            "corda.session.keys.0.id" to "XYZ123456789",
+            "corda.group.protocol.registration" to "Dynamic",
+        )
+        val groupPolicy = mock<LayeredPropertyMap> {
+            on { entries } doReturn mapOf(
+                "protocol.registration" to "Dynamic",
+            ).entries
+        }
+
+        assertDoesNotThrow {
+            mgmRegistrationContextValidator.validateGroupPolicy(registrationContext, groupPolicy)
+        }
+    }
+
+    @Test
+    fun `group policy validation fails when group policy related changes were made`() {
+        val registrationContext = mapOf(
+            "corda.session.keys.0.id" to "XYZ123456789",
+            "corda.group.protocol.registration" to "Static",
+        )
+        val groupPolicy = mock<LayeredPropertyMap> {
+            on { entries } doReturn mapOf(
+                "protocol.registration" to "Dynamic",
+            ).entries
+        }
+
+        assertThrows<MGMRegistrationContextValidationException> {
+            mgmRegistrationContextValidator.validateGroupPolicy(registrationContext, groupPolicy)
         }
     }
 }
