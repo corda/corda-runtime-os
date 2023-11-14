@@ -1,12 +1,8 @@
 package net.corda.flow.pipeline.impl
 
 import net.corda.data.flow.event.StartFlow
-import net.corda.data.flow.event.mapper.FlowMapperEvent
-import net.corda.data.flow.event.mapper.ScheduleCleanup
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
-import net.corda.data.flow.state.session.SessionState
-import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.cache.FlowFiberCache
 import net.corda.flow.maintenance.CheckpointCleanupHandler
@@ -25,7 +21,6 @@ import net.corda.flow.state.FlowCheckpoint
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.getLongOrDefault
 import net.corda.messaging.api.records.Record
-import net.corda.schema.configuration.FlowConfig
 import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_WINDOW_DURATION
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -221,10 +216,6 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         }
     }
 
-    private fun getActiveSessionIds(checkpoint: FlowCheckpoint) = checkpoint.sessions.filterNot { sessionState ->
-        sessionState.status == SessionStateType.CLOSED || sessionState.status == SessionStateType.ERROR
-    }.map { it.sessionId }
-
     private fun withEscalation(context: FlowEventContext<*>, handler: () -> FlowEventContext<*>): FlowEventContext<*> {
         return try {
             handler()
@@ -232,20 +223,6 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             // The exception handler failed. Rather than take the whole pipeline down, forcibly DLQ the offending event.
             process(t, context)
         }
-    }
-
-    private fun createCleanupEventsForSessions(
-        expiryTime: Long,
-        sessionsToCleanup: List<SessionState>
-    ): List<Record<*, FlowMapperEvent>> {
-        return sessionsToCleanup
-            .onEach { it.hasScheduledCleanup = true }
-            .map {
-                flowRecordFactory.createFlowMapperEventRecord(
-                    it.sessionId,
-                    ScheduleCleanup(expiryTime)
-                )
-            }
     }
 
     private fun createFlowKilledStatusRecord(checkpoint: FlowCheckpoint, message: String?): List<Record<*, *>> {
@@ -276,11 +253,6 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
                 context.checkpoint, message ?: "No exception message provided."
             )
         }
-    }
-
-    private fun getScheduledCleanupExpiryTime(context: FlowEventContext<*>, now: Instant): Long {
-        val flowCleanupTime = context.flowConfig.getLong(FlowConfig.SESSION_FLOW_CLEANUP_TIME)
-        return now.plusMillis(flowCleanupTime).toEpochMilli()
     }
 
     /**
