@@ -1172,20 +1172,28 @@ internal class SessionManagerImpl(
         private fun outboundSessionTimeout(counterparties: SessionCounterparties, sessionId: String) {
             val sessionInfo = trackedOutboundSessions[sessionId] ?: return
             val timeSinceLastAck = timeStamp() - sessionInfo.lastAckTimestamp
-            val sessionTimeoutMs = config.get().sessionTimeout.toMillis()
-            if (timeSinceLastAck >= sessionTimeoutMs) {
+            val timeSinceLastSent = timeStamp() - sessionInfo.lastSendTimestamp
+            val maxWaitForAck = config.get().sessionTimeout.toMillis() // use session timeout for POC simplicity
+            val waitingForAck = timeSinceLastAck > timeSinceLastSent
+
+            if (waitingForAck && timeSinceLastSent >= maxWaitForAck) {
                 logger.info(
                     "Outbound session $sessionId (local=${counterparties.ourId}, remote=" +
-                            "${counterparties.counterpartyId}) has not received any messages for the configured " +
-                            "timeout threshold ($sessionTimeoutMs ms) so it will be cleaned up."
+                            "${counterparties.counterpartyId}) has not received any acknowledgement to the last sent message within the " +
+                            "configured timeout threshold ($maxWaitForAck ms) so it will be cleaned up."
                 )
                 destroyOutboundSession(counterparties, sessionId)
                 trackedOutboundSessions.remove(sessionId)
                 recordSessionTimeoutMetric(counterparties.ourId, counterparties.counterpartyId)
             } else {
+                val delay = if (waitingForAck) {
+                    maxWaitForAck - timeSinceLastSent
+                } else {
+                    maxWaitForAck
+                }
                 executorService.schedule(
                     { outboundSessionTimeout(counterparties, sessionId) },
-                    sessionTimeoutMs - timeSinceLastAck,
+                    delay,
                     TimeUnit.MILLISECONDS
                 )
             }
