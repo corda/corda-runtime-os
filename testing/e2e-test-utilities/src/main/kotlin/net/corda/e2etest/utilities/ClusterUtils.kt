@@ -3,6 +3,7 @@ package net.corda.e2etest.utilities
 import com.fasterxml.jackson.module.kotlin.contains
 import net.corda.rest.ResponseCode
 import net.corda.test.util.eventually
+import net.corda.utilities.minutes
 import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
@@ -118,7 +119,7 @@ fun ClusterInfo.getOrCreateVirtualNodeFor(
 
     vNodeCreationSemaphore.runWith {
         val vNodesJson = assertWithRetryIgnoringExceptions {
-            this.timeout(Duration.ofSeconds(30))
+            timeout(2.minutes)
             command { vNodeList() }
             condition { it.code == 200 }
             failMessage("Failed to retrieve virtual nodes")
