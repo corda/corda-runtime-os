@@ -50,7 +50,6 @@ class TokenCacheEventProcessorFactoryImpl constructor(
         val tokenPoolCacheManager = TokenPoolCacheManager(TokenPoolCacheImpl(), createEventHandlerMap(tokenSelectionMetrics))
         val claimStateStoreFactory = ClaimStateStoreFactoryImpl(stateManager, serialization, tokenPoolCacheManager, clock)
 
-
         return TokenSelectionSyncRPCProcessor(
             eventConverter,
             entityConverter,
