@@ -118,6 +118,7 @@ fun ClusterInfo.getOrCreateVirtualNodeFor(
 
     vNodeCreationSemaphore.runWith {
         val vNodesJson = assertWithRetryIgnoringExceptions {
+            this.timeout(Duration.ofSeconds(30))
             command { vNodeList() }
             condition { it.code == 200 }
             failMessage("Failed to retrieve virtual nodes")
