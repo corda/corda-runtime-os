@@ -218,6 +218,35 @@ class PoolCacheStateImplTest {
         assertThat(target.claimExists("1")).isTrue
         assertThat(target.claimExists("2")).isFalse
     }
+ @Test
+    fun `remove invalid claims`() {
+        val claim1 = TokenClaim.newBuilder()
+            .setClaimId("1")
+            .setClaimTimestamp(null)
+            .setClaimedTokens(listOf())
+            .build()
+        val claim2 = TokenClaim.newBuilder()
+            .setClaimId("2")
+            .setClaimTimestamp(1)
+            .setClaimedTokens(listOf())
+            .setClaimedTokenStateRefs(listOf("ref1"))
+            .build()
+
+        val poolState = TokenPoolCacheState.newBuilder()
+            .setPoolKey(poolKey)
+            .setTokenClaims(mutableListOf(claim1,claim2))
+            .setAvailableTokens(mutableListOf())
+            .build()
+
+        whenever(serviceConfiguration.claimTimeoutSeconds).thenReturn(1)
+        whenever(clock.instant()).thenReturn(Instant.ofEpochMilli(999))
+
+        val target = createPoolCacheStateImpl(poolState)
+        // Should not do anything yet
+        target.removeInvalidClaims()
+        assertThat(target.claimExists("1")).isTrue
+        assertThat(target.claimExists("2")).isFalse
+    }
 
     private fun createPoolCacheStateImpl(cacheState: TokenPoolCacheState): PoolCacheStateImpl {
         return PoolCacheStateImpl(cacheState, serviceConfiguration, entityConverter, clock)
