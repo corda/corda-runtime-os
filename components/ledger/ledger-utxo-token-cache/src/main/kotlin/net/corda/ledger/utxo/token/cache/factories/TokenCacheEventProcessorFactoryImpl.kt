@@ -31,7 +31,7 @@ import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 
 @Suppress("LongParameterList")
-class TokenCacheEventProcessorFactoryImpl constructor(
+class TokenCacheEventProcessorFactoryImpl(
     private val serviceConfiguration: ServiceConfiguration,
     private val externalEventResponseFactory: ExternalEventResponseFactory,
     private val virtualNodeInfoService: VirtualNodeInfoReadService,
