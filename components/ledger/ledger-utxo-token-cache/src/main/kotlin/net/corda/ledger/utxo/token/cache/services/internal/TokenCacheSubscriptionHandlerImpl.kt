@@ -52,7 +52,7 @@ class TokenCacheSubscriptionHandlerImpl(
             stateManager?.stop()
 
             stateManager = stateManagerFactory.create(messagingConfig)
-            val processor= tokenCacheEventProcessorFactory.createTokenSelectionSyncRPCProcessor(stateManager!!)
+            val processor = tokenCacheEventProcessorFactory.createTokenSelectionSyncRPCProcessor(stateManager!!)
 
             // Create the HTTP RPC subscription
             createAndRegisterSyncRPCSubscription(processor)
