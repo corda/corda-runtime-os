@@ -97,7 +97,7 @@ class PoolCacheStateImpl(
 
     override fun removeInvalidClaims() {
         // Temporary logic that covers the upgrade from release/5.0 to release/5.1
-        // The field claimedTokens has been added to the TokenCaim avro object, and it will replace claimedTokenStateRefs.
+        // The field claimedTokens has been added to the TokenClaim avro object, and it will replace claimedTokenStateRefs.
         // In order to avoid breaking compatibility, the claimedTokenStateRefs has been deprecated, and it will eventually
         // be removed. Any claim that contains a non-empty claimedTokenStateRefs field are considered invalid because
         // this means the avro object is an old one, and it should be replaced by the new format.
