@@ -45,12 +45,13 @@ class TokenCacheSubscriptionHandlerImpl(
     override fun onConfigChange(config: Map<String, SmartConfig>) {
         try {
             serviceConfiguration.init(toTokenConfig(config))
-            val messagingConfig = toStateManagerConfig(config)
 
             // close the lifecycle registration first to prevent a down signal to the coordinator
             subscriptionRegistrationHandle?.close()
             stateManager?.stop()
 
+            // Create a new state manager and the token selection rpc processor
+            val messagingConfig = toStateManagerConfig(config)
             stateManager = stateManagerFactory.create(messagingConfig)
             val processor = tokenCacheEventProcessorFactory.createTokenSelectionSyncRPCProcessor(stateManager!!)
 
