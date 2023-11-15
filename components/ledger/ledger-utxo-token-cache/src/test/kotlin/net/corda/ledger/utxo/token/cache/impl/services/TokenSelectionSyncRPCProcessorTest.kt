@@ -33,7 +33,7 @@ import org.mockito.kotlin.whenever
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
 
-class TokenSelectionDelegatedProcessorImplTest {
+class TokenSelectionSyncRPCProcessorTest {
     private val testFlowId = "f1"
     private val testExternalEventRequestId = "e1"
 
@@ -70,6 +70,7 @@ class TokenSelectionDelegatedProcessorImplTest {
 
     @Test
     fun `process successfully returns flow event`() {
+        // Test setup
         val returnedEvent = FlowEvent(testFlowId, WakeUpWithException())
         val processorResponse = TokenPoolCacheManager.ResponseAndState(
             returnedEvent,
@@ -80,12 +81,15 @@ class TokenSelectionDelegatedProcessorImplTest {
         claimStateStore.inputPoolState = TOKEN_POOL_CACHE_STATE_2
         whenever(tokenPoolCacheManager.processEvent(any(), any(), any())).thenReturn(processorResponse)
 
+        // Process the event
         val result = tokenSelectionSyncRPCProcessor.process(tokenPoolCacheEvent)
 
+        // Ensure the that the expected result is resulted after processing the event
         assertThat(result).isEqualTo(returnedEvent)
 
-        val expectedLegacyState = POOL_CACHE_STATE_2
-        verify(tokenPoolCacheManager).processEvent(eq(expectedLegacyState), eq(POOL_KEY),eq(tokenEvent))
+        // Ensure the correct arguments are passed to the tokenPoolCacheManager
+        val expectedState = POOL_CACHE_STATE_2
+        verify(tokenPoolCacheManager).processEvent(eq(expectedState), eq(POOL_KEY),eq(tokenEvent))
     }
 
     @Test
