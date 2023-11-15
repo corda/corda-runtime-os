@@ -7,6 +7,7 @@ import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.utxo.token.cache.converters.EntityConverter
 import net.corda.ledger.utxo.token.cache.converters.EventConverter
+import net.corda.ledger.utxo.token.cache.entities.TokenEvent
 import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
@@ -63,27 +64,31 @@ class TokenSelectionSyncRPCProcessor(
                 val stateWriteSuccess = eventCompletion.get()
 
                 if (!stateWriteSuccess) {
-                    externalEventResponseFactory.transientError(
-                        ExternalEventContext(
-                            tokenEvent.externalEventRequestId,
-                            tokenEvent.flowId,
-                            KeyValuePairList(listOf())
-                        ), IllegalStateException("Failed to save state, version out of sync, please retry.")
-                    ).value
-                } else {
-                    responseEvent
+                    return@recordProcessingTime externalEventResponseFactory.transientError(
+                        tokenEvent,
+                        IllegalStateException("Failed to save state, version out of sync, please retry.")
+                    )
                 }
-            } catch (ex: Exception) {
-                externalEventResponseFactory.platformError(
-                    ExternalEventContext(
-                        tokenEvent.externalEventRequestId,
-                        tokenEvent.flowId,
-                        KeyValuePairList(listOf())
-                    ), ex
-                ).value
+
+                return@recordProcessingTime responseEvent
+            } catch (exception: Exception) {
+                externalEventResponseFactory.platformError(tokenEvent, exception)
             }
         }
     }
+
+    private fun ExternalEventResponseFactory.transientError(tokenEvent: TokenEvent, exception: Exception) =
+        transientError(createExternalEventContext(tokenEvent), exception).value
+
+    private fun ExternalEventResponseFactory.platformError(tokenEvent: TokenEvent, exception: Exception) =
+        platformError(createExternalEventContext(tokenEvent), exception).value
+
+    private fun createExternalEventContext(tokenEvent: TokenEvent) =
+        ExternalEventContext(
+            tokenEvent.externalEventRequestId,
+            tokenEvent.flowId,
+            KeyValuePairList(listOf())
+        )
 
     override val requestClass = TokenPoolCacheEvent::class.java
 
