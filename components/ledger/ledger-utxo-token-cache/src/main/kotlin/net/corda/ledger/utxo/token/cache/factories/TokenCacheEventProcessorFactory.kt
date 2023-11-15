@@ -9,7 +9,7 @@ import net.corda.libs.statemanager.api.StateManager
 interface TokenCacheEventProcessorFactory {
 
     /**
-     * Creates instances of the [TokenSelectionSyncRPCProcessor]
+     * Creates an instance of the [TokenSelectionSyncRPCProcessor]
      */
     fun createTokenSelectionSyncRPCProcessor(
         stateManager: StateManager,
