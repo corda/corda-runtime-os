@@ -49,6 +49,7 @@ internal class RegistrationRequestHandler(
                 MemberX500Name.parse(memberName),
                 mgm.groupId,
             )
+            logger.info("Registration request was from $memberName.")
             return Record(
                 REGISTRATION_COMMAND_TOPIC,
                 "${member.x500Name}-${member.groupId}",

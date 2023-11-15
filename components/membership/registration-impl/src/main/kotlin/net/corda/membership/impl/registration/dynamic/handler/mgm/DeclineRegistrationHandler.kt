@@ -47,6 +47,7 @@ internal class DeclineRegistrationHandler(
         key: String,
         command: DeclineRegistration
     ): RegistrationHandlerResult {
+        logger.info("Declining registration for key $key")
         if (state == null) throw MissingRegistrationStateException
         // Update the state of the request and member
         val declinedBy = state.mgm

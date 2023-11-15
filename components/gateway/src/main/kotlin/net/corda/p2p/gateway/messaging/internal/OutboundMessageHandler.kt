@@ -198,10 +198,12 @@ internal class OutboundMessageHandler(
     private fun handleResponse(pendingRequest: PendingRequest, response: HttpResponse?, error: Throwable?, remainingAttempts: Int) {
         if (error != null) {
             if (remainingAttempts > 0) {
-                logger.warn("Request (${pendingRequest.gatewayMessage.id}) failed, it will be retried later.", error)
+                logger.warn("Request to ${pendingRequest.destinationInfo.legalName} " +
+                        "(${pendingRequest.gatewayMessage.id}) failed, it will be retried later.", error)
                 scheduleMessageReplay(pendingRequest.destinationInfo, pendingRequest.gatewayMessage, remainingAttempts)
             } else {
-                logger.warn("Request (${pendingRequest.gatewayMessage.id}) failed.", error)
+                logger.warn("Request to ${pendingRequest.destinationInfo.legalName} " +
+                        "(${pendingRequest.gatewayMessage.id}) failed.", error)
             }
         } else if (response != null) {
             if (response.statusCode != HttpResponseStatus.OK) {

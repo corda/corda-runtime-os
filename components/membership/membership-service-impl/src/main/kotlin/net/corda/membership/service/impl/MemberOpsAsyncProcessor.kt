@@ -218,6 +218,7 @@ internal class MemberOpsAsyncProcessor(
         state: MembershipAsyncRequestState?,
     ): Collection<Record<*, *>>? {
         val cause = state?.cause
+        logger.info("Looking for ${holdingIdentity.x500Name}'s request.")
         val requestStatus = membershipQueryClient.queryRegistrationRequest(
             holdingIdentity,
             registrationId.toString(),
