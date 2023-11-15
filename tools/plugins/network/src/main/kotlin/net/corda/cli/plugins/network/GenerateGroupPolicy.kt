@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.exc.MismatchedInputException
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import net.corda.cli.plugins.network.output.ConsoleOutput
+import net.corda.cli.plugins.network.output.Output
 import net.corda.cli.plugins.network.utils.PrintUtils.printJsonOutput
 import net.corda.cli.plugins.network.utils.PrintUtils.verifyAndPrintError
 import org.yaml.snakeyaml.Yaml
@@ -20,7 +21,7 @@ import java.util.UUID
     description = ["Generates GroupPolicy.json file."],
     mixinStandardHelpOptions = true
 )
-class GenerateGroupPolicy(private val output: ConsoleOutput = ConsoleOutput()) : Runnable {
+class GenerateGroupPolicy(private val output: Output = ConsoleOutput()) : Runnable {
 
     @CommandLine.Option(
         names = ["--endpoint"],

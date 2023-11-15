@@ -63,11 +63,6 @@ interface FlowIORequest<out R> {
     data class Sleep(val wakeUpAfter: Instant) : FlowIORequest<Unit>
 
     /**
-     * Suspend the flow until all Initiating sessions are confirmed.
-     */
-    object WaitForSessionConfirmations : FlowIORequest<Unit>
-
-    /**
      * Indicates that no actual IO request occurred, and the flow should be resumed immediately.
      * This is used for performing explicit checkpointing anywhere in a flow.
      */

@@ -75,7 +75,7 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
     }
 
     private fun reconcileAndScheduleNext(coordinator: LifecycleCoordinator) {
-        logger.info("Initiating reconciliation")
+        logger.debug { "Initiating reconciliation" }
         var reconciliationOutcome = "FAILED"
         val startTime = System.nanoTime()
         var reconciliationEndTime = startTime
@@ -90,6 +90,7 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
             // on subsequent `RegistrationStatusChangeEvent` to see if it is going to be a `DOWN` or an `ERROR`.
             reconciliationEndTime = System.nanoTime()
             logger.warn("Reconciliation failed. Terminating reconciliations", e)
+            coordinator.cancelTimer(timerKey)
             coordinator.updateStatus(LifecycleStatus.DOWN)
         } finally {
             val reconciliationTime = Duration.ofNanos(reconciliationEndTime - startTime)
@@ -136,7 +137,15 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
                     // therefore through the defaulting config process which will add the property(ies) and subsequently
                     // will publish them to Kafka. We only need to force the first reconciliation.
                     if (forceInitialReconciliation && firstRun) {
-                        dbRecord.version >= matchedKafkaRecord.version // reconcile all db records again (forced reconciliation)
+                        dbRecord.version > matchedKafkaRecord.version
+                                // reconcile all db records again (forced reconciliation)
+                                || (dbRecord.version == matchedKafkaRecord.version
+                                        && writer.valuesMisalignedAfterDefaults(
+                                                    dbRecord.key,
+                                                    dbRecord.value,
+                                                    matchedKafkaRecord.value
+                                            )
+                                    )
                     } else {
                         dbRecord.version > matchedKafkaRecord.version // reconcile db updated records
                     } || dbRecord.isDeleted // reconcile db soft deleted records

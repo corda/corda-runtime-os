@@ -208,13 +208,10 @@ internal class RestServerInternal(
 
     private fun Javalin.registerHandlerForRoute(routeInfo: RouteInfo, handlerType: HandlerType) {
         try {
-            log.info("Add \"$handlerType\" handler for \"${routeInfo.fullPath}\".")
-
             addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeHttpMethod())
-
-            log.debug { "Add \"$handlerType\" handler for \"${routeInfo.fullPath}\" completed." }
+            log.info("Added \"$handlerType\" handler for \"${routeInfo.fullPath}\".")
         } catch (e: Exception) {
-            "Error during adding routes".let {
+            "Error during adding route. Handler type=$handlerType, Path=\"${routeInfo.fullPath}\"".let {
                 log.error("$it: ${e.message}")
                 throw Exception(it, e)
             }
@@ -379,8 +376,6 @@ internal class RestServerInternal(
 
     private fun Javalin.registerWsHandlerForRoute(routeInfo: RouteInfo) {
         try {
-            log.info("Add WS handler for \"${routeInfo.fullPath}\".")
-
             ws(
                 routeInfo.fullPath,
                 routeInfo.setupWsCall(
@@ -392,9 +387,9 @@ internal class RestServerInternal(
                 )
             )
 
-            log.debug { "Add WS handler for \"${routeInfo.fullPath}\" completed." }
+            log.debug { "Added WS handler for \"${routeInfo.fullPath}\"." }
         } catch (e: Exception) {
-            "Error during adding WS routes".let {
+            "Error during adding WS route. Path=\"${routeInfo.fullPath}\"".let {
                 log.error("$it: ${e.message}")
                 throw Exception(it, e)
             }

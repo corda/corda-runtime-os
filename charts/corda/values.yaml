@@ -80,6 +80,9 @@ metrics:
     labels: {}
     # -- A list of regular expressions for the names of metrics that Prometheus should keep; if empty, all metrics are kept
     keepNames:
+      - "corda_rpc_http_response_time_seconds_(count|sum|max)"
+      - "corda_token_selection_execution_time_seconds_(count|sum|max)"
+      - "corda_token_selection_db_execution_time_seconds_(count|sum|max)"
       - "corda_flow_execution_time_seconds_(count|sum|max)"
       - "corda_http_server_request_time_seconds_(count|sum|max)"
       - "corda_p2p_gateway_inbound_request_time_seconds_(count|sum|max)"
