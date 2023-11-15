@@ -242,7 +242,6 @@ class PoolCacheStateImplTest {
         whenever(clock.instant()).thenReturn(Instant.ofEpochMilli(999))
 
         val target = createPoolCacheStateImpl(poolState)
-        // Should not do anything yet
         target.removeInvalidClaims()
         assertThat(target.claimExists("1")).isTrue
         assertThat(target.claimExists("2")).isFalse
