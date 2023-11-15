@@ -22,6 +22,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope
+import org.slf4j.LoggerFactory
 
 @Component(service = [UtxoLedgerTransactionFactory::class, UsedByFlow::class], scope = ServiceScope.PROTOTYPE)
 class UtxoLedgerTransactionFactoryImpl @Activate constructor(
@@ -39,6 +40,7 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
     override fun create(
         wireTransaction: WireTransaction
     ): UtxoLedgerTransactionInternal {
+        val log = LoggerFactory.getLogger(this::class.java)
         val wrappedUtxoWireTransaction = WrappedUtxoWireTransaction(wireTransaction, serializationService)
         val allStateRefs =
             (wrappedUtxoWireTransaction.inputStateRefs + wrappedUtxoWireTransaction.referenceStateRefs)
@@ -46,6 +48,7 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
 
         val stateRefsToStateAndRefs =
             utxoLedgerStateQueryService.resolveStateRefs(allStateRefs).associateBy { it.ref }
+        log.info("XXX stateRefsToStateAndRefs - $stateRefsToStateAndRefs")
         val inputStateAndRefs =
             wrappedUtxoWireTransaction.inputStateRefs.map {
                 stateRefsToStateAndRefs[it]

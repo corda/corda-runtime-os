@@ -13,6 +13,7 @@ import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.LoggerFactory
 
@@ -45,14 +46,12 @@ class SendTransactionFlow(
                     "Transaction with id ${transaction.id} has no dependencies so backchain resolution will not be performed."
                 }
             }
-        }
 
-        sessions.forEach {
             val sendingTransactionResult = it.receive(Payload::class.java)
             when (sendingTransactionResult) {
                 is Payload.Success -> return
                 is Payload.Failure ->
-                    throw UnverifiedTransactionSentException(
+                    throw CordaRuntimeException(
                         "Failed to send transaction: ${transaction.id} due to unverified transaction sent."
                     )
             }
