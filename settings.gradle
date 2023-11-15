@@ -470,8 +470,6 @@ include 'tools:plugins:preinstall'
 include 'tools:plugins:secret-config'
 include 'tools:plugins:topic-config'
 include 'tools:plugins:virtual-node'
-include 'testing:cpbs:atomic-swap-contracts'
-include 'testing:cpbs:atomic-swap-workflows'
 
 // The following logic dictates if we use the composite build gradle functionality,
 // If this evaluates to true local source code will be used in place of binary dependencies.
