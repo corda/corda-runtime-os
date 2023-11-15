@@ -73,6 +73,8 @@ object DbUtils {
      * @param dbPassword DB password. If value is not provided, value of the system property "postgresPassword" is used.
      *                   If system property is not set then value "password" is used
      */
+    @JvmOverloads
+    @Suppress("LongParameterList")
     fun createPostgresDataSource(
         dbUser: String? = null,
         dbPassword: String? = null,

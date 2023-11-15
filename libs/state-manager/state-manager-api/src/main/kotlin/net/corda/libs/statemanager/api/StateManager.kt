@@ -58,10 +58,9 @@ interface StateManager : Lifecycle {
      *
      * @param states Collection of states to be updated.
      * @return Map with the most up-to-date version of the states, associated by key for easier access, that failed
-     *      the optimistic locking check. If this state failed to be updated because the key was deleted the key is
-     *      associated with null.
+     *      the optimistic locking check.
      */
-    fun update(states: Collection<State>): Map<String, State?>
+    fun update(states: Collection<State>): Map<String, State>
 
     /**
      * Delete existing [states].

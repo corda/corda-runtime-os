@@ -268,36 +268,38 @@ class StateManagerIntegrationTest {
         val conflictingKeys = (1..totalCount).filter { it % 2 == 0 }.map { buildStateKey(it) }
         val persistedStates = stateManager.get(allKeys)
 
-        val statesToUpdateFirstThread = mutableListOf<State>()
-        conflictingKeys.forEach {
-            val state = persistedStates[it]!!
-            statesToUpdateFirstThread.add(
-                State(state.key, "u1_$it".toByteArray(), state.version, metadata("u1" to it))
+        val statesToUpdateA = mutableListOf<State>()
+        conflictingKeys.forEach { key ->
+            val state = persistedStates[key]!!
+            statesToUpdateA.add(
+                State(state.key, "a_$key".toByteArray(), state.version, metadata("a" to key))
             )
         }
 
-        assertThat(stateManager.update(statesToUpdateFirstThread)).isEmpty()
+        assertThat(stateManager.update(statesToUpdateA)).isEmpty()
 
-        val statesToUpdateSecondThread = mutableMapOf<String, State>()
+        val statesToUpdateB = mutableMapOf<String, State>()
         allKeys.forEach {
             val state = persistedStates[it]!!
-            statesToUpdateSecondThread[state.key] = State(state.key, "u2_$it".toByteArray(), state.version, metadata("u2" to it))
+            statesToUpdateB[state.key] = State(state.key, "b_$it".toByteArray(), state.version, metadata("b" to it))
         }
 
-        val failedUpdates = stateManager.update(statesToUpdateSecondThread.values)
+        val failedUpdates = stateManager.update(statesToUpdateB.values)
         assertThat(failedUpdates).containsOnlyKeys(conflictingKeys)
         assertSoftly {
             failedUpdates.values.map { state ->
-                // assert the real version has bumped by one
-                it.assertThat(state!!.version).isEqualTo(statesToUpdateSecondThread[state.key]!!.version + 1)
+                // update A has already bumped the version by 1, causing B's state update to fail
+                it.assertThat(state.version).isEqualTo(statesToUpdateB[state.key]!!.version + 1)
+                it.assertThat(state.value).isEqualTo("a_${state.key}".toByteArray())
+                it.assertThat(state.metadata).isEqualTo(metadata("a" to state.key))
             }
         }
 
         softlyAssertPersistedStateEntities(
             (1..totalCount),
             { _, _ -> 1 },
-            { _, key -> if (conflictingKeys.contains(key)) "u1_$key" else "u2_$key" },
-            { _, key -> if (conflictingKeys.contains(key)) metadata("u1" to key) else metadata("u2" to key) },
+            { _, key -> if (conflictingKeys.contains(key)) "a_$key" else "b_$key" },
+            { _, key -> if (conflictingKeys.contains(key)) metadata("a" to key) else metadata("b" to key) },
         )
     }
 
@@ -333,53 +335,6 @@ class StateManagerIntegrationTest {
         val actualFailedKeys = threadResults.map { it.failedKeysSummary.failedUpdates }.flatten()
         val expectedFailedKeys = threadResults.map { it.assignedStateGrouping.statesOverlappingNextGroup }.flatten().map { it.key }
         assertThat(actualFailedKeys)
-            .containsExactlyInAnyOrder(*expectedFailedKeys.toTypedArray())
-            .withFailMessage("Expected one failure for every state shared between another thread")
-    }
-
-    @Test
-    fun `optimistic locking ensures no exceptions when double deletes across threads`() {
-        val totalStates = 100
-        val numThreads = maxConcurrentThreadJdbcConnections
-        val sharedStatesPerThread = 5
-
-        persistStateEntities(
-            (1..totalStates),
-            { _, _ -> State.VERSION_INITIAL_VALUE },
-            { i, _ -> "existingState_$i" },
-            { i, _ -> """{"id": "$i"}""" }
-        )
-
-        val allKeys = (1..totalStates).map { buildStateKey(it) }
-        val allStatesInTest = stateManager.get(allKeys).values.toList()
-
-        val latch = CountDownLatch(numThreads)
-        val threadResults = runMultiThreadedOptimisticLockingTest(
-            allStatesInTest,
-            numThreads,
-            sharedStatesPerThread
-        ) { threadIndex, stateGroup ->
-            // Thread will attempt to update its own assigned states, and delete the states overlapping into the next group.
-            // This means every thread will have race condition with the next thread.
-            val statesToUpdate = updateStateObjects(stateGroup.assignedStates, testUniqueId, threadIndex)
-            val statesToDelete = stateGroup.statesOverlappingNextGroup
-
-            latch.countDown()
-            latch.await()
-            val failedUpdates = stateManager.update(statesToUpdate).map { it.key }
-            val failedDeletes = stateManager.delete(statesToDelete).map { it.key }
-            MultiThreadedTestHelper.FailedKeysSummary(failedUpdates, failedDeletes)
-        }
-
-        val allFailedUpdates = threadResults.map { it.failedKeysSummary.failedUpdates }.flatten()
-        val allFailedDeletes = threadResults.map { it.failedKeysSummary.failedDeletes }.flatten()
-        val expectedFailedKeys = threadResults.map { it.assignedStateGrouping.statesOverlappingNextGroup }.flatten().map { it.key }
-
-        // if a thread tries to update a state that was already deleted, it gets that key back as a "failed key".
-        // if a thread tries to delete a thread that was already updated, it gets that key back as a "failed key".
-        // we expect to see a failed key for every overlapping state, because in the race between two threads only
-        // one can update or delete it.
-        assertThat(allFailedUpdates + allFailedDeletes)
             .containsExactlyInAnyOrder(*expectedFailedKeys.toTypedArray())
             .withFailMessage("Expected one failure for every state shared between another thread")
     }

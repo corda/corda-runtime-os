@@ -223,18 +223,13 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                 val failedToCreate = stateManager.get(failedToCreateKeys.keys)
                 val failedToDelete = stateManager.delete(statesToDelete.values.mapNotNull { it })
                 val failedToUpdate = stateManager.update(statesToUpdate.values.mapNotNull { it })
-                val failedToUpdateOptimisticLockFailure = failedToUpdate.mapNotNull { (key, value) -> value?.let { key to it } }.toMap()
-                val failedToUpdateStateDoesNotExist = (failedToUpdate - failedToUpdateOptimisticLockFailure).map { it.key }
-
-                states = failedToCreate + failedToDelete + failedToUpdateOptimisticLockFailure
+                states = failedToCreate + failedToDelete + failedToUpdate
                 groups = if (states.isNotEmpty()) {
                     allocateGroups(flowEvents.filterKeys { states.containsKey(it) }.values.flatten())
                 } else {
                     listOf()
                 }
                 states.keys.forEach { asynchronousOutputs.remove(it) }
-                failedToUpdateStateDoesNotExist.forEach { asynchronousOutputs.remove(it) }
-
                 sendAsynchronousEvents(asynchronousOutputs.values.flatten())
             }
             metrics.commitTimer.recordCallable {
