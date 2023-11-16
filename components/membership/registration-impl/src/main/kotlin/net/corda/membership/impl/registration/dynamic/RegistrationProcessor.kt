@@ -169,7 +169,7 @@ class RegistrationProcessor(
 
                 is DeclineRegistration -> {
                     logger.info("Received decline registration command.")
-                    logger.warn("Declining registration because: ${command.reason}")
+                    logger.warn("Declining registration for ${event.key} because: ${command.reason}")
                     handlers[DeclineRegistration::class.java]?.invoke(stateValue, event)
                 }
 
