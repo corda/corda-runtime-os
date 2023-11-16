@@ -222,12 +222,12 @@ class FlowRestResourceImpl @Activate constructor(
             // Should they wish to check the actual execution progress, they can always check the status using
             // client request id provided.
             batchFuture.exceptionally { 
-                log.error("Failed to publish start flow batch for flowClass: $flowClassName, " +
+                log.warn("Failed to publish start flow batch for flowClass: $flowClassName, " +
                         "clientRequestId: $clientRequestId on vNode $holdingIdentityShortHash", it)
                 
                 if (it is CordaMessageAPIFatalException) {
                     // Note: not throwing returned exception as this call will be performed asynchronously from 
-                    // publisher's thread pool
+                    // publisher's thread pool, just calling this method to log the fatal error
                     markFatalAndReturnFailureException(it)
                 }
             }
