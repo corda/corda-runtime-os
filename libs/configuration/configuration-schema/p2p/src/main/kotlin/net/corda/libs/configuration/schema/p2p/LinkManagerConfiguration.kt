@@ -11,6 +11,8 @@ class LinkManagerConfiguration {
         const val HEARTBEAT_MESSAGE_PERIOD_KEY = "heartbeatMessagePeriod"
         const val SESSION_TIMEOUT_KEY = "sessionTimeout"
         const val SESSIONS_PER_PEER_KEY = "sessionsPerPeer"
+        const val SESSIONS_PER_PEER_FOR_MEMBER_KEY = "numOfSessionsPerPeer.forMembers"
+        const val SESSIONS_PER_PEER_FOR_MGM_KEY = "numOfSessionsPerPeer.forMgm"
         const val REPLAY_ALGORITHM_KEY = "replayAlgorithm"
         const val REVOCATION_CHECK_KEY = "revocationCheck.mode"
         const val SESSION_REFRESH_THRESHOLD_KEY = "sessionRefreshThreshold"

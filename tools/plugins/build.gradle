@@ -9,6 +9,15 @@ configurations {
     cliHostDist
 }
 
+var commitId = com.gradle.Utils.execAndGetStdOut "git", "rev-parse", "--verify", "HEAD"
+subprojects {
+    pluginManager.withPlugin('corda.cli-plugin-packager') {
+        cliPlugin {
+            cliPluginGitCommitId = "$commitId"
+        }
+    }
+}
+
 dependencies {
     cliHostDist "net.corda.cli.host:corda-cli:${pluginHostVersion}"
 }

@@ -113,8 +113,8 @@ class SessionManagerTest {
         const val GROUP_ID = "myGroup"
         const val MAX_MESSAGE_SIZE = 1024 * 1024
         const val SESSION_REFRESH_THRESHOLD_KEY = 432000
-        const val SESSIONS_PER_COUNTERPARTIES = 2
-        val PROTOCOL_MODES = listOf(ProtocolMode.AUTHENTICATED_ENCRYPTION, ProtocolMode.AUTHENTICATION_ONLY)
+        const val SESSIONS_PER_COUNTERPARTIES_FOR_MEMBERS = 2
+        const val SESSIONS_PER_COUNTERPARTIES_FOR_MGM = 1
         val RANDOM_BYTES = ByteBuffer.wrap("some-random-data".toByteArray())
 
         private val sixDaysInMillis = 6.days.toMillis()
@@ -132,12 +132,13 @@ class SessionManagerTest {
 
         private val OUR_PARTY = createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", GROUP_ID)
         private val OUR_KEY = keyGenerator.genKeyPair()
+        private const val OUR_ENDPOINT = "http://alice.com"
         private val OUR_MEMBER_INFO = mockMemberInfo(
             OUR_PARTY,
-            "http://alice.com",
+            OUR_ENDPOINT,
             OUR_KEY.public,
         )
-        private val PEER_ENDPOINT = "http://bob.com"
+        private const val PEER_ENDPOINT = "http://bob.com"
         private val PEER_PARTY = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", GROUP_ID)
         private val PEER_KEY = keyGenerator.genKeyPair()
         private val PEER_MEMBER_INFO = mockMemberInfo(
@@ -240,7 +241,11 @@ class SessionManagerTest {
     )
 
     private val counterparties = SessionManager.SessionCounterparties(
-        OUR_PARTY, PEER_PARTY, MembershipStatusFilter.ACTIVE, 1L
+        ourId = OUR_PARTY,
+        counterpartyId = PEER_PARTY,
+        status = MembershipStatusFilter.ACTIVE,
+        serial = 1L,
+        communicationWithMgm = false,
     )
     private val linkManagerHostingMap = mock<LinkManagerHostingMap> {
         val hostingMapDominoTile = mock<ComplexDominoTile> {
@@ -289,6 +294,20 @@ class SessionManagerTest {
 
     private val mockTimeFacilitiesProvider = MockTimeFacilitiesProvider()
     private val outboundSessionPool = Mockito.mockConstruction(OutboundSessionPool::class.java)
+    private val config = SessionManagerImpl.SessionManagerConfig(
+        MAX_MESSAGE_SIZE,
+        SESSIONS_PER_COUNTERPARTIES_FOR_MEMBERS,
+        SESSIONS_PER_COUNTERPARTIES_FOR_MGM,
+        RevocationCheckMode.OFF,
+        SESSION_REFRESH_THRESHOLD_KEY,
+    )
+    private val configWithOneSessionBetweenMembers = SessionManagerImpl.SessionManagerConfig(
+        MAX_MESSAGE_SIZE,
+        1,
+        SESSIONS_PER_COUNTERPARTIES_FOR_MGM,
+        RevocationCheckMode.OFF,
+        SESSION_REFRESH_THRESHOLD_KEY,
+    )
 
     private val sessionManager = SessionManagerImpl(
         groupPolicyProvider,
@@ -312,12 +331,7 @@ class SessionManagerTest {
     ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
         setRunning()
         configHandler.applyNewConfiguration(
-            SessionManagerImpl.SessionManagerConfig(
-                MAX_MESSAGE_SIZE,
-                SESSIONS_PER_COUNTERPARTIES,
-                RevocationCheckMode.OFF,
-                SESSION_REFRESH_THRESHOLD_KEY,
-            ),
+            config,
             null,
             mock(),
         )
@@ -429,6 +443,87 @@ class SessionManagerTest {
     }
 
     @Test
+    fun `when no session exists, config is used to determine how many sessions are needed - members only`() {
+        whenever(outboundSessionPool.constructed().first().getNextSession(counterparties))
+            .thenReturn(OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded)
+        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
+        whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(mock())
+
+        sessionManager.processOutboundMessage(message)
+        verify(protocolFactory, times(SESSIONS_PER_COUNTERPARTIES_FOR_MEMBERS))
+            .createInitiator(any(), any(), any(), eq(OUR_KEY.public), eq(OUR_PARTY.groupId), any())
+    }
+
+    @Test
+    fun `when no session exists, config is used to determine how many sessions are needed - initiator is MGM`() {
+        val counterparties = SessionManager.SessionCounterparties(
+            ourId = OUR_PARTY,
+            counterpartyId = PEER_PARTY,
+            status = MembershipStatusFilter.ACTIVE,
+            serial = 1L,
+            communicationWithMgm = true,
+        )
+        whenever(outboundSessionPool.constructed().first().getNextSession(counterparties))
+            .thenReturn(OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded)
+        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
+        whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(mock())
+        val mgmInfo = mockMemberInfo(
+            OUR_PARTY, OUR_ENDPOINT, OUR_KEY.public, isMgm = true
+        )
+        whenever(membershipGroupReader.lookup(OUR_PARTY.x500Name, MembershipStatusFilter.ACTIVE_OR_SUSPENDED))
+            .thenReturn(mgmInfo)
+
+        sessionManager.processOutboundMessage(message)
+        verify(protocolFactory, times(SESSIONS_PER_COUNTERPARTIES_FOR_MGM))
+            .createInitiator(any(), any(), any(), eq(OUR_KEY.public), eq(OUR_PARTY.groupId), any())
+    }
+
+    @Test
+    fun `when no session exists, config is used to determine how many sessions are needed - counterparty is MGM`() {
+        val counterparties = SessionManager.SessionCounterparties(
+            ourId = OUR_PARTY,
+            counterpartyId = PEER_PARTY,
+            status = MembershipStatusFilter.ACTIVE,
+            serial = 1L,
+            communicationWithMgm = true,
+        )
+        whenever(outboundSessionPool.constructed().first().getNextSession(counterparties))
+            .thenReturn(OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded)
+        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
+        whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(mock())
+        val counterpartyInfo = mockMemberInfo(
+            PEER_PARTY, PEER_ENDPOINT, PEER_KEY.public, isMgm = true
+        )
+        whenever(membershipGroupReader.lookup(OUR_PARTY.x500Name, MembershipStatusFilter.ACTIVE_OR_SUSPENDED))
+            .thenReturn(counterpartyInfo)
+
+        sessionManager.processOutboundMessage(message)
+        verify(protocolFactory, times(SESSIONS_PER_COUNTERPARTIES_FOR_MGM))
+            .createInitiator(any(), any(), any(), eq(OUR_KEY.public), eq(OUR_PARTY.groupId), any())
+    }
+
+    @Test
+    fun `when no session exists, config is used to determine how many sessions are needed - initiator is missing its info`() {
+        val counterparties = SessionManager.SessionCounterparties(
+            ourId = OUR_PARTY,
+            counterpartyId = PEER_PARTY,
+            status = MembershipStatusFilter.ACTIVE,
+            serial = 1L,
+            communicationWithMgm = false,
+        )
+        whenever(outboundSessionPool.constructed().first().getNextSession(counterparties))
+            .thenReturn(OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded)
+        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
+        whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(mock())
+        whenever(membershipGroupReader.lookup(OUR_PARTY.x500Name, MembershipStatusFilter.ACTIVE_OR_SUSPENDED))
+            .thenReturn(null)
+
+        sessionManager.processOutboundMessage(message)
+        verify(protocolFactory, times(SESSIONS_PER_COUNTERPARTIES_FOR_MEMBERS))
+            .createInitiator(any(), any(), any(), eq(OUR_KEY.public), eq(OUR_PARTY.groupId), any())
+    }
+
+    @Test
     fun `when no session exists, if destination member info is missing from network map on second lookup no message is sent`() {
         whenever(outboundSessionPool.constructed().first().getNextSession(counterparties))
             .thenReturn(OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded)
@@ -447,7 +542,7 @@ class SessionManagerTest {
             verify(sessionReplayer, times(2)).addMessageForReplay(
                 any(),
                 this.capture(),
-                eq(SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY, MembershipStatusFilter.ACTIVE, 1L))
+                eq(counterparties),
             )
             assertThat(this.allValues.size).isEqualTo(2)
             assertThat(this.allValues).extracting<HoldingIdentity> {
@@ -500,7 +595,7 @@ class SessionManagerTest {
             verify(sessionReplayer, times(2)).addMessageForReplay(
                 any(),
                 this.capture(),
-                eq(SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY, MembershipStatusFilter.ACTIVE, 1L))
+                eq(counterparties),
             )
             assertThat(this.allValues.size).isEqualTo(2)
             assertThat(this.allValues).extracting<HoldingIdentity> {
@@ -545,13 +640,13 @@ class SessionManagerTest {
         whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(anotherInitiatorHello)
 
         val sessionState = sessionManager.processOutboundMessage(message)
-        assertThat(sessionState).isInstanceOf(SessionManager.SessionState.NewSessionsNeeded::class.java)
+        assertThat(sessionState).isInstanceOf(NewSessionsNeeded::class.java)
 
         argumentCaptor<InMemorySessionReplayer.SessionMessageReplay> {
             verify(sessionReplayer, times(2)).addMessageForReplay(
                 any(),
                 this.capture(),
-                eq(SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY, MembershipStatusFilter.ACTIVE, 1L))
+                eq(counterparties),
             )
             assertThat(this.allValues.size).isEqualTo(2)
             assertThat(this.allValues).extracting<HoldingIdentity> {
@@ -582,18 +677,8 @@ class SessionManagerTest {
         val sessionIds = listOf("firstSession", "anotherSession")
         whenever(outboundSessionPool.constructed().first().getAllSessionIds()).thenReturn(sessionIds)
         configHandler.applyNewConfiguration(
-            SessionManagerImpl.SessionManagerConfig(
-                MAX_MESSAGE_SIZE,
-                SESSIONS_PER_COUNTERPARTIES,
-                RevocationCheckMode.OFF,
-                SESSION_REFRESH_THRESHOLD_KEY,
-            ),
-            SessionManagerImpl.SessionManagerConfig(
-                MAX_MESSAGE_SIZE,
-                SESSIONS_PER_COUNTERPARTIES,
-                RevocationCheckMode.OFF,
-                SESSION_REFRESH_THRESHOLD_KEY,
-            ),
+            config,
+            config,
             mock(),
         )
         verify(pendingSessionMessageQueues, times(1)).destroyAllQueues()
@@ -1054,12 +1139,7 @@ class SessionManagerTest {
         sessionManager.inboundSessionEstablished(sessionId)
 
         configHandler.applyNewConfiguration(
-            SessionManagerImpl.SessionManagerConfig(
-                MAX_MESSAGE_SIZE,
-                SESSIONS_PER_COUNTERPARTIES,
-                RevocationCheckMode.OFF,
-                SESSION_REFRESH_THRESHOLD_KEY
-            ),
+            config,
             mock(),
             mock(),
         )
@@ -1561,7 +1641,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, RevocationCheckMode.OFF, SESSION_REFRESH_THRESHOLD_KEY),
+                configWithOneSessionBetweenMembers,
                 null,
                 mock(),
             )
@@ -1614,7 +1694,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, RevocationCheckMode.OFF, SESSION_REFRESH_THRESHOLD_KEY),
+                configWithOneSessionBetweenMembers,
                 null,
                 mock(),
             )
@@ -1695,7 +1775,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, RevocationCheckMode.OFF, SESSION_REFRESH_THRESHOLD_KEY),
+                configWithOneSessionBetweenMembers,
                 null,
                 mock(),
             )
@@ -1765,7 +1845,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, RevocationCheckMode.OFF, SESSION_REFRESH_THRESHOLD_KEY),
+                configWithOneSessionBetweenMembers,
                 null,
                 mock(),
             )
@@ -1828,7 +1908,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, RevocationCheckMode.OFF, SESSION_REFRESH_THRESHOLD_KEY),
+                configWithOneSessionBetweenMembers,
                 null,
                 mock(),
             )
@@ -1850,8 +1930,14 @@ class SessionManagerTest {
         assertThat(linkOutMessages).isEqualTo(2)
 
         configHandler.applyNewConfiguration(
-            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, RevocationCheckMode.OFF, SESSION_REFRESH_THRESHOLD_KEY),
-            SessionManagerImpl.SessionManagerConfig(2 * MAX_MESSAGE_SIZE, 1, RevocationCheckMode.OFF, SESSION_REFRESH_THRESHOLD_KEY),
+            configWithOneSessionBetweenMembers,
+            SessionManagerImpl.SessionManagerConfig(
+                2 * MAX_MESSAGE_SIZE,
+                1,
+                SESSIONS_PER_COUNTERPARTIES_FOR_MGM,
+                RevocationCheckMode.OFF,
+                SESSION_REFRESH_THRESHOLD_KEY,
+            ),
             resourcesHolder,
         )
 
@@ -1898,7 +1984,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, RevocationCheckMode.OFF, SESSION_REFRESH_THRESHOLD_KEY),
+                configWithOneSessionBetweenMembers,
                 null,
                 mock(),
             )
@@ -1969,7 +2055,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, RevocationCheckMode.OFF, SESSION_REFRESH_THRESHOLD_KEY),
+                configWithOneSessionBetweenMembers,
                 null,
                 mock(),
             )
@@ -2074,7 +2160,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, RevocationCheckMode.OFF, SESSION_REFRESH_THRESHOLD_KEY),
+                configWithOneSessionBetweenMembers,
                 null,
                 mock(),
             )

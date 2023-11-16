@@ -113,18 +113,14 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
 
     // TODO following method should be extracted to dedicated file, to be tested separately
     // TODO Must add to the below DEBUG logging reporting to be reconciled records potentially more
-    /**
-     * @throws [ReconciliationException] to notify an error occurred at kafka or db [ReconcilerReader.getAllVersionedRecords].
-     */
     @Suppress("ComplexMethod")
     @VisibleForTesting
     internal fun reconcile(): Int {
         val kafkaRecords =
-            kafkaReader.getAllVersionedRecords()?.asSequence()?.associateBy { it.key }
-                ?: throw ReconciliationException("Error occurred while retrieving kafka records")
+            kafkaReader.getAllVersionedRecords().asSequence().associateBy { it.key }
 
         val toBeReconciledDbRecords =
-            dbReader.getAllVersionedRecords()?.filter { dbRecord ->
+            dbReader.getAllVersionedRecords().filter { dbRecord ->
                 val matchedKafkaRecord = kafkaRecords[dbRecord.key]
                 val toBeReconciled = if (matchedKafkaRecord == null) {
                     !dbRecord.isDeleted // reconcile db inserted records (i.e. db column cpi.is_deleted == false)
