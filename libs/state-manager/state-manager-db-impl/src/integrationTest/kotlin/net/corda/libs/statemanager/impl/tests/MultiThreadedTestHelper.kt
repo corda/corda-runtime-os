@@ -16,20 +16,19 @@ object MultiThreadedTestHelper {
          */
         val assignedStates: List<State>,
         /**
-         * The list of States in this group that overlap with the next group, for assertions on failed keys.
+         * The list of States in this group that overlap with the next group. These are states that will have contention with the next
+         * group and can be used for assertions on failed keys.
          */
-        val statesOverlappingNextGroup: List<State>
+        val overlappingStates: List<State>
     ) {
         /**
          * States to test optimistic locking, with some overlapping into the next group's States.
          */
-        fun getStatesForTest() = assignedStates + statesOverlappingNextGroup
+        fun getStatesForTest() = assignedStates + overlappingStates
     }
 
     /**
-     * The resulting test summary for a thread in a multi threaded optimistic locking test.
-     *
-     * Includes the states assigned to the thread, and the keys that failed.
+     * A summary of a thread's assigned state group and keys that failed to update/delete in a multi threaded optimistic locking test.
      */
     data class ThreadTestSummary(
         /**
@@ -42,6 +41,9 @@ object MultiThreadedTestHelper {
         val failedKeysSummary: FailedKeysSummary
     )
 
+    /**
+     * Summary of keys that failed to update and delete in a request to the State Manager.
+     */
     data class FailedKeysSummary(
         /**
          * Keys that failed to be updated by this thread due to optimistic locking.
@@ -72,7 +74,7 @@ object MultiThreadedTestHelper {
 
     /**
      * Divide the given states between the number of threads, such that each group of states has overlapping states with the next
-     * group. The last group in the list will have overlapping states with the first group.
+     * group in round robin fashion. The last group in the list will have overlapping states with the first group.
      *
      * Runs the [block] in an executor with the set [numThreads].
      *
@@ -106,8 +108,8 @@ object MultiThreadedTestHelper {
 
     /**
      * Divide a list of states between threads so that each thread's group of states contains some states from the next
-     * thread's group. A thread's group will contain unique states, plus [sharedStatesPerThread] states from the next group
-     * in round robin fashion.
+     * thread's group, in round robin fashion. A thread's group will contain unique states, plus [sharedStatesPerThread] states from the
+     * next group.
      *
      * Example: a list of [a, b, c, d, e, f, g, h, i] split among 3 threads with 1 shared states per thread results in:
      * [[a, b, c, d], [d, e, f, g], [g, h, i, a]]

@@ -333,7 +333,7 @@ class StateManagerIntegrationTest {
         }
 
         val actualFailedKeys = threadResults.map { it.failedKeysSummary.failedUpdates }.flatten()
-        val expectedFailedKeys = threadResults.map { it.assignedStateGrouping.statesOverlappingNextGroup }.flatten().map { it.key }
+        val expectedFailedKeys = threadResults.map { it.assignedStateGrouping.overlappingStates }.flatten().map { it.key }
         assertThat(actualFailedKeys)
             .containsExactlyInAnyOrder(*expectedFailedKeys.toTypedArray())
             .withFailMessage("Expected one failure for every state shared between another thread")
