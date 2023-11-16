@@ -15,7 +15,7 @@ import java.io.FileWriter
 import java.security.InvalidParameterException
 import java.security.SecureRandom
 import java.time.Instant
-import java.util.*
+import java.util.Base64
 
 @CommandLine.Command(
     name = "create-crypto-config",
@@ -98,7 +98,15 @@ class CryptoConfigSubcommand : Runnable {
     override fun run() {
         val (wrappingPassphraseSecret, wrappingSaltSecret) = createWrappingPassphraseAndSaltSecrets()
 
-        val config = createDefaultCryptoConfig(listOf(KeyDerivationParameters(wrappingPassphraseSecret.root().toString(), wrappingSaltSecret.root().toString()))).root()
+        val config = createDefaultCryptoConfig(
+            listOf(
+                KeyDerivationParameters(
+                    wrappingPassphraseSecret.root().toString(),
+                    wrappingSaltSecret.root().toString()
+                )
+            )
+        )
+            .root()
             .render(ConfigRenderOptions.concise())
 
         val entity = ConfigEntity(
