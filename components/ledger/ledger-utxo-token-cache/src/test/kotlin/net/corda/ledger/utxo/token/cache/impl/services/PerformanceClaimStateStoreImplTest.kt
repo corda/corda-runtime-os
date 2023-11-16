@@ -57,22 +57,8 @@ class PerformanceClaimStateStoreImplTest {
             this.create(listOf(baseState))
         }
 
-        val initialStoredPoolClaimStateA = StoredPoolClaimState(
-            0, POOL_KEY, TokenPoolCacheState.newBuilder()
-                .setPoolKey(POOL_KEY.toAvro())
-                .setAvailableTokens(listOf())
-                .setTokenClaims(listOf())
-                .build()
-        )
-        val initialStoredPoolClaimStateB = StoredPoolClaimState(
-            0, POOL_KEY, TokenPoolCacheState.newBuilder()
-                .setPoolKey(POOL_KEY.toAvro())
-                .setAvailableTokens(listOf())
-                .setTokenClaims(listOf())
-                .build()
-        )
-        val instanceA = createTarget(initialStoredPoolClaimStateA, slowStateManager)
-        val instanceB = createTarget(initialStoredPoolClaimStateB, slowStateManager)
+        val instanceA = createTarget(slowStateManager)
+        val instanceB = createTarget(slowStateManager)
 
         val claimCount = 100
         var instanceAClaims = (0..claimCount).map { createTokenClaim("A$it") }
@@ -171,7 +157,6 @@ class PerformanceClaimStateStoreImplTest {
     }
 
     private fun createTarget(
-        storedPoolClaimState: StoredPoolClaimState,
         sm: StateManager
     ): PerformanceClaimStateStoreImpl {
         return PerformanceClaimStateStoreImpl(POOL_KEY, serialization, sm, tokenPoolCacheManager, clock)
