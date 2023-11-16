@@ -45,8 +45,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
-import net.corda.membership.lib.exceptions.BadGroupPolicyException
-import org.mockito.kotlin.doThrow
 
 class OutboundMessageProcessorTest {
     private val myIdentity = createTestHoldingIdentity("CN=PartyA, O=Corp, L=LDN, C=GB", "Group")
