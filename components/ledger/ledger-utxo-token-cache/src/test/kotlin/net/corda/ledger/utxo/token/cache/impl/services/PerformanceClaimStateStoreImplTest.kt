@@ -41,9 +41,6 @@ class PerformanceClaimStateStoreImplTest {
         serialization.serialize(TOKEN_POOL_CACHE_STATE),
         modifiedTime = now
     )
-    private val stateManager = StateManagerSimulator().apply {
-        this.create(listOf(baseState))
-    }
 
     @Test
     //@org.junit.jupiter.api.Disabled
@@ -177,7 +174,7 @@ class PerformanceClaimStateStoreImplTest {
         storedPoolClaimState: StoredPoolClaimState,
         sm: StateManager
     ): PerformanceClaimStateStoreImpl {
-        return PerformanceClaimStateStoreImpl(POOL_KEY, storedPoolClaimState, serialization, sm, tokenPoolCacheManager, clock)
+        return PerformanceClaimStateStoreImpl(POOL_KEY, serialization, sm, tokenPoolCacheManager, clock)
     }
 
     class StateManagerSimulator(private val updateSleepTime: Long = 0) : StateManager {
@@ -191,9 +188,7 @@ class PerformanceClaimStateStoreImplTest {
         override fun create(states: Collection<State>): Map<String, Exception> {
             return lock.withLock {
                 val invalidStates = states
-                    .filter { store.containsKey(it.key) }
-                    .map { it.key to IllegalStateException() }
-                    .toMap()
+                    .filter { store.containsKey(it.key) }.associate { it.key to IllegalStateException() }
 
                 states
                     .filterNot { store.containsKey(it.key) }
@@ -207,10 +202,7 @@ class PerformanceClaimStateStoreImplTest {
 
         override fun get(keys: Collection<String>): Map<String, State> {
             return lock.withLock {
-                keys.map { store[it] }
-                    .filterNotNull()
-                    .map { it.key to it }
-                    .toMap()
+                keys.mapNotNull { store[it] }.associateBy { it.key }
             }
         }
 
