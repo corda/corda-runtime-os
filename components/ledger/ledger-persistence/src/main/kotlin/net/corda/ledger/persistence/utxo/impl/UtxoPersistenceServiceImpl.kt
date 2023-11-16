@@ -278,7 +278,7 @@ class UtxoPersistenceServiceImpl(
                     .ifBlank { "{}" } // Default to "{}" if the provided factory returns empty string to avoid exception
             } catch (e: Exception) {
                 // We can't log the JSON string here because the failed before we have a JSON
-                log.warn("Error while processing factory for class: ${it.stateType.name}. Defaulting to empty JSON.")
+                log.warn("Error while processing factory for class: ${it.stateType.name}. Defaulting to empty JSON.", e)
                 "{}"
             }
 
