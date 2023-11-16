@@ -50,13 +50,13 @@ class PerformanceClaimStateStoreImpl(
     }
 
     private fun drainAndProcessQueue() {
-        var itemsToProcess = drainQueuedRequests()
+        var requests = drainQueuedRequests()
 
-        while (itemsToProcess.isNotEmpty()) {
+        while (requests.isNotEmpty()) {
             // Executing all pending requests against the current state
             var currentPoolState = currentState.poolState
             val unexceptionalRequests = mutableListOf<CompletableFuture<Boolean>>()
-            itemsToProcess.forEach { queuedRequest ->
+            requests.forEach { queuedRequest ->
                 try {
                     currentPoolState = queuedRequest.requestAction(currentPoolState)
                     unexceptionalRequests.add(queuedRequest.requestFuture)
@@ -111,7 +111,7 @@ class PerformanceClaimStateStoreImpl(
             }
 
             // look for more request to process
-            itemsToProcess = drainQueuedRequests()
+            requests = drainQueuedRequests()
         }
     }
 
