@@ -1,6 +1,5 @@
 package net.corda.ledger.utxo.token.cache.services
 
-import net.corda.ledger.utxo.token.cache.entities.TokenPoolCache
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.utilities.time.Clock
@@ -8,7 +7,7 @@ import net.corda.utilities.time.Clock
 class ClaimStateStoreFactoryImpl(
     private val stateManager: StateManager,
     private val serialization: TokenPoolCacheStateSerialization,
-    private val tokenPoolCache: TokenPoolCache,
+    private val tokenPoolCacheManager: TokenPoolCacheManager,
     private val clock: Clock
 ) : ClaimStateStoreFactory {
 
@@ -18,7 +17,7 @@ class ClaimStateStoreFactoryImpl(
             storedPoolClaimState,
             serialization,
             stateManager,
-            tokenPoolCache,
+            tokenPoolCacheManager,
             clock
         )
     }
