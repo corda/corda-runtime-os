@@ -106,7 +106,6 @@ internal class InboundMessageProcessor(
         return if (response != null) {
             when (val payload = message.payload) {
                 is InitiatorHelloMessage -> {
-                    sessionManager.sessionMessageReceived(payload.header.sessionId)
                     val partitionsAssigned =
                         inboundAssignmentListener.getCurrentlyAssignedPartitions()
                     if (partitionsAssigned.isNotEmpty()) {
@@ -128,7 +127,6 @@ internal class InboundMessageProcessor(
                     }
                 }
                 is InitiatorHandshakeMessage -> {
-                    sessionManager.sessionMessageReceived(payload.header.sessionId)
                     listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response))
                 }
                 else -> {
@@ -144,7 +142,11 @@ internal class InboundMessageProcessor(
         val messages = mutableListOf<Record<*, *>>()
         when (val sessionDirection = sessionManager.getSessionById(sessionId)) {
             is SessionManager.SessionDirection.Inbound -> {
-                sessionManager.dataMessageReceived(sessionId)
+                sessionManager.dataMessageReceived(
+                    sessionId,
+                    sessionDirection.counterparties.counterpartyId,
+                    sessionDirection.counterparties.ourId
+                )
                 checkAllowedCommunication(sessionDirection.counterparties) {
                     messages.addAll(
                         processLinkManagerPayload(

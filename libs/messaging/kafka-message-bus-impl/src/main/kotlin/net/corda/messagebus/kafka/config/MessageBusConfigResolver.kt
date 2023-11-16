@@ -1,7 +1,6 @@
 package net.corda.messagebus.kafka.config
 
 import com.typesafe.config.ConfigFactory
-import java.util.Properties
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messagebus.api.configuration.AdminConfig
@@ -16,6 +15,7 @@ import net.corda.utilities.debug
 import org.apache.kafka.clients.producer.ProducerConfig.PARTITIONER_CLASS_CONFIG
 import org.osgi.framework.FrameworkUtil
 import org.slf4j.LoggerFactory
+import java.util.Properties
 
 /**
  * Resolve a Kafka bus configuration against the enforced and default configurations provided by the library.
@@ -71,6 +71,7 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
         val properties = roleConfig.toKafkaProperties()
 
         logger.debug {"Kafka properties for role $rolePath: $properties" }
+
         return properties
     }
 
@@ -97,13 +98,15 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
      * @return Resolved user configurable consumer values and kafka properties to be used for the given role type
      */
     fun resolve(messageBusConfig: SmartConfig, consumerConfig: ConsumerConfig): Pair<ResolvedConsumerConfig, Properties> {
-        val kafkaProperties = resolve(messageBusConfig, consumerConfig.role.configPath, consumerConfig.toSmartConfig())
-        val resolvedConfig = ResolvedConsumerConfig(
-            consumerConfig.group,
-            consumerConfig.clientId,
-            messageBusConfig.getString(BootConfig.TOPIC_PREFIX)
-        )
-        return Pair(resolvedConfig, kafkaProperties)
+        val topicPrefix = messageBusConfig.getString(BootConfig.TOPIC_PREFIX)
+        val amendedConfig = consumerConfig.addGroupPrefix(topicPrefix)
+        val kafkaProperties = resolve(messageBusConfig, amendedConfig.role.configPath, amendedConfig.toSmartConfig())
+
+        return ResolvedConsumerConfig(
+            amendedConfig.group,
+            amendedConfig.clientId,
+            topicPrefix
+        ) to kafkaProperties
     }
 
     /**
@@ -119,13 +122,13 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
         val kafkaProperties = resolve(messageBusConfig, producerConfig.role.configPath, producerConfig.toSmartConfig())
         //enforce the partitioner to be our custom partitioner for producers only
         kafkaProperties[PARTITIONER_CLASS_CONFIG] = KafkaProducerPartitioner::class.java
-        val resolvedConfig = ResolvedProducerConfig(
+
+        return ResolvedProducerConfig(
             producerConfig.clientId,
             producerConfig.transactional,
             messageBusConfig.getString(BootConfig.TOPIC_PREFIX),
             producerConfig.throwOnSerializationError
-        )
-        return Pair(resolvedConfig, kafkaProperties)
+        ) to kafkaProperties
     }
 
     /**
@@ -164,6 +167,10 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
                 )
             )
         )
+    }
+
+    private fun ConsumerConfig.addGroupPrefix(prefix: String) : ConsumerConfig {
+        return this.copy(group = prefix + this.group)
     }
 
     private fun ProducerConfig.toSmartConfig(): SmartConfig {

@@ -14,11 +14,14 @@ import net.corda.reconciliation.VersionedRecord
 import org.slf4j.LoggerFactory
 
 /**
- * A [DbReconcilerReader] for database data that map to compacted topics data. This class is a [Lifecycle] and therefore
- * has its own lifecycle. What's special about it is, when its public API [getAllVersionedRecords] method gets called,
- * if an error occurs during the call the exception gets captured and its lifecycle state gets notified with a
- * [GetRecordsErrorEvent]. Then depending on if the exception is a transient or not its state should be taken to
- * [LifecycleStatus.DOWN] or [LifecycleStatus.ERROR].
+ * A [DbReconcilerReader] for database data that map to compacted topics data.
+ *
+ * This class has its own lifecycle. What's special about it is, when its public API [getAllVersionedRecords] method gets called,
+ * if an error occurs during the call the exception needs to get captured and its lifecycle to be notified with a
+ * [GetRecordsErrorEvent] (depending on if the exception is a transient error or not its lifecycle should
+ * be set to [LifecycleStatus.DOWN] or [LifecycleStatus.ERROR]). And then the exception needs to be re-thrown
+ * for the reconciler to be notified immediately.
+ * .
  */
 @Suppress("LongParameterList")
 class DbReconcilerReader<K : Any, V : Any>(
@@ -70,7 +73,7 @@ class DbReconcilerReader<K : Any, V : Any>(
      * be following this service will get notified of this service's stop event as well.
      */
     @Suppress("SpreadOperator")
-    override fun getAllVersionedRecords(): Stream<VersionedRecord<K, V>>? {
+    override fun getAllVersionedRecords(): Stream<VersionedRecord<K, V>> {
         return reconciliationContextFactory().map { context ->
             try {
                 val currentTransaction = context.getOrCreateEntityManager().transaction

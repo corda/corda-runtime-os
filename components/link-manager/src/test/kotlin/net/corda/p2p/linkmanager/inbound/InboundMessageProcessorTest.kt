@@ -202,7 +202,7 @@ class InboundMessageProcessorTest {
                 }
                 false
             }
-            verify(sessionManager).dataMessageReceived(SESSION_ID)
+            verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
         }
 
         @Test
@@ -240,7 +240,7 @@ class InboundMessageProcessorTest {
                     value.marker is LinkManagerReceivedMarker && value.timestamp == 1000000L
             }
             verify(sessionManager).messageAcknowledged(SESSION_ID)
-            verify(sessionManager, never()).dataMessageReceived(SESSION_ID)
+            verify(sessionManager, never()).dataMessageReceived(eq(SESSION_ID), any(), any())
         }
 
         @Test
@@ -271,7 +271,7 @@ class InboundMessageProcessorTest {
 
             assertThat(records).hasSize(0)
             verify(sessionManager).messageAcknowledged(SESSION_ID)
-            verify(sessionManager, never()).dataMessageReceived(SESSION_ID)
+            verify(sessionManager, never()).dataMessageReceived(eq(SESSION_ID), any(), any())
         }
 
         @Test
@@ -302,7 +302,7 @@ class InboundMessageProcessorTest {
             assertThat(loggingInterceptor.errors).allSatisfy {
                 assertThat(it).matches("Could not deserialize message for session Session.* The message was discarded\\.")
             }
-            verify(sessionManager, never()).dataMessageReceived(SESSION_ID)
+            verify(sessionManager, never()).dataMessageReceived(eq(SESSION_ID), any(), any())
         }
 
         @Test
@@ -339,7 +339,7 @@ class InboundMessageProcessorTest {
                 .anySatisfy {
                     assertThat(it).matches("Could not deserialize message for session Session\\..* Cannot resolve schema for fingerprint.*")
                 }
-            verify(sessionManager).dataMessageReceived(SESSION_ID)
+            verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
         }
 
         @Test
@@ -375,7 +375,7 @@ class InboundMessageProcessorTest {
             assertThat(loggingInterceptor.warnings)
                 .hasSize(1)
                 .contains("Received message with SessionId = Session for which there is no active session. The message was discarded.")
-            verify(sessionManager, never()).dataMessageReceived(SESSION_ID)
+            verify(sessionManager, never()).dataMessageReceived(eq(SESSION_ID), any(), any())
         }
 
         @Test
@@ -404,7 +404,7 @@ class InboundMessageProcessorTest {
 
             assertThat(records).isEmpty()
             verify(networkMessagingValidator).invokeIfValidInbound<Unit>(eq(myIdentity), eq(remoteIdentity), any())
-            verify(sessionManager).dataMessageReceived(SESSION_ID)
+            verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
         }
 
         @Test
@@ -434,7 +434,7 @@ class InboundMessageProcessorTest {
             assertThat(records).isEmpty()
             verify(sessionManager, never()).messageAcknowledged(any())
             verify(networkMessagingValidator).invokeIfValidInbound<Unit>(eq(myIdentity), eq(remoteIdentity), any())
-            verify(sessionManager, never()).dataMessageReceived(SESSION_ID)
+            verify(sessionManager, never()).dataMessageReceived(eq(SESSION_ID), any(), any())
         }
     }
 
@@ -507,7 +507,7 @@ class InboundMessageProcessorTest {
                 false
             }
             verify(sessionManager).inboundSessionEstablished(anyOrNull())
-            verify(sessionManager).dataMessageReceived(SESSION_ID)
+            verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
         }
 
         @Test
@@ -568,7 +568,7 @@ class InboundMessageProcessorTest {
                             " which indicates a spoofing attempt! The message was discarded\\."
                     )
                 }
-            verify(sessionManager).dataMessageReceived(SESSION_ID)
+            verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
         }
 
         @Test
@@ -629,7 +629,7 @@ class InboundMessageProcessorTest {
                             " which indicates a spoofing attempt! The message was discarded"
                     )
                 }
-            verify(sessionManager).dataMessageReceived(SESSION_ID)
+            verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
         }
 
         @Test
@@ -681,7 +681,7 @@ class InboundMessageProcessorTest {
                 }
                 false
             }
-            verify(sessionManager).dataMessageReceived(SESSION_ID)
+            verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
         }
 
         @Test
@@ -712,7 +712,7 @@ class InboundMessageProcessorTest {
             assertThat(records).isEmpty()
             verify(sessionManager, never()).inboundSessionEstablished(anyOrNull())
             verify(networkMessagingValidator).invokeIfValidInbound<Unit>(eq(myIdentity), eq(remoteIdentity), any())
-            verify(sessionManager).dataMessageReceived(SESSION_ID)
+            verify(sessionManager).dataMessageReceived(eq(SESSION_ID), any(), any())
         }
 
         @Test
@@ -744,7 +744,7 @@ class InboundMessageProcessorTest {
             verify(sessionManager, never()).inboundSessionEstablished(anyOrNull())
             verify(sessionManager, never()).messageAcknowledged(any())
             verify(networkMessagingValidator).invokeIfValidInbound<Unit>(eq(myIdentity), eq(remoteIdentity), any())
-            verify(sessionManager, never()).dataMessageReceived(SESSION_ID)
+            verify(sessionManager, never()).dataMessageReceived(eq(SESSION_ID), any(), any())
         }
     }
 
@@ -762,7 +762,6 @@ class InboundMessageProcessorTest {
             )
 
             verify(sessionManager).processSessionMessage(message)
-            verify(sessionManager, never()).sessionMessageReceived(any())
         }
         @Test
         fun `ResponderHandshakeMessage calls to processSessionMessage`() {
@@ -776,7 +775,6 @@ class InboundMessageProcessorTest {
             )
 
             verify(sessionManager).processSessionMessage(message)
-            verify(sessionManager, never()).sessionMessageReceived(any())
         }
         @Test
         fun `InitiatorHandshakeMessage calls to processSessionMessage`() {
@@ -863,7 +861,6 @@ class InboundMessageProcessorTest {
                     "No partitions from topic link.in are currently assigned to the inbound message processor. " +
                             "Not going to reply to session initiation for session Session."
                 )
-            verify(sessionManager).sessionMessageReceived(SESSION_ID)
         }
         @Test
         fun `InitiatorHelloMessage responses from sessionManager with partitions will produce records to the correct topics`() {
@@ -889,7 +886,6 @@ class InboundMessageProcessorTest {
                 assertThat(it.key).isSameAs(SESSION_ID)
                 assertThat(it.value).isEqualTo(SessionPartitions(listOf(4, 5, 8)))
             }
-            verify(sessionManager).sessionMessageReceived(SESSION_ID)
         }
     }
 

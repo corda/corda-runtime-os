@@ -1,6 +1,7 @@
+#! groovy
 @Library('corda-shared-build-pipeline-steps@5.2') _
 
-/*
+/**
  * Forward merge any changes in current branch to the branch with following version.
  *
  * Please note, the branches names are intentionally separated as variables, to minimised conflicts
@@ -19,13 +20,12 @@ String originBranch = 'release/os/5.1'
  * the branch name of target branch, it should be the branch with the next version
  * after the one in current branch.
  */
-String targetBranch = 'release/interop/syntax'
+String targetBranch = 'release/os/5.2'
 
 /**
- * Forward merge any changes between #originBranch and #targetBranch
+ * Forward merge any changes between {@code originBranch} and {@code targetBranch}
  */
 forwardMerger(
     targetBranch: targetBranch,
     originBranch: originBranch,
-    slackChannel: '#interop-forward-merge-bot-notifications',
-)
+    slackChannel: '#c5-forward-merge-bot-notifications')

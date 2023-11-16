@@ -24,6 +24,8 @@ import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
 import java.util.UUID
 
 @Suppress("Unused", "FunctionName")
@@ -32,6 +34,7 @@ import java.util.UUID
 // their patterns are DOWN - CORE-8015
 @Order(Int.MAX_VALUE)
 @TestInstance(Lifecycle.PER_CLASS)
+@Execution(ExecutionMode.SAME_THREAD)
 class ConfigurationChangeTest {
 
     companion object {

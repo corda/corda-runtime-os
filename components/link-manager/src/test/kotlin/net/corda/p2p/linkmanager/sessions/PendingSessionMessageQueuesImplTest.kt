@@ -53,7 +53,8 @@ class PendingSessionMessageQueuesImplTest {
         createTestHoldingIdentity("CN=Carol, O=Corp, L=LDN, C=GB", "group-1"),
         createTestHoldingIdentity("CN=David, O=Corp, L=LDN, C=GB", "group-1"),
         MembershipStatusFilter.ACTIVE,
-        serial
+        serial,
+        false,
     )
 
     private val queue = PendingSessionMessageQueuesImpl(mock(), mock(), mock())
@@ -137,7 +138,8 @@ class PendingSessionMessageQueuesImplTest {
             createTestHoldingIdentity("CN=Carol, O=Corp, L=LDN, C=GB", "group-2"),
             createTestHoldingIdentity("CN=David, O=Corp, L=LDN, C=GB", "group-1"),
             MembershipStatusFilter.ACTIVE,
-            serial
+            serial,
+            false,
         )
         queue.sessionNegotiatedCallback(sessionManager, anotherSessionCounterparties, session)
 
