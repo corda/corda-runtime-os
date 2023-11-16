@@ -9,9 +9,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
+import org.mockito.Mockito.any
 import org.mockito.Mockito.times
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -50,7 +50,7 @@ class MessageBusClientTest {
             messageProps.toHeaders(),
         )
 
-        verify(cordaProducer).send(eq(expected), isNull())
+        verify(cordaProducer).send(eq(expected), any())
     }
 
     @Test
@@ -62,7 +62,7 @@ class MessageBusClientTest {
             messageProps.toHeaders(),
         )
 
-        Mockito.doThrow(CordaRuntimeException("")).whenever(cordaProducer).send(eq(record), isNull())
+        Mockito.doThrow(CordaRuntimeException("")).whenever(cordaProducer).send(eq(record), any())
         assertThrows<CordaRuntimeException> {
             messageBusClient.send(message)
         }
