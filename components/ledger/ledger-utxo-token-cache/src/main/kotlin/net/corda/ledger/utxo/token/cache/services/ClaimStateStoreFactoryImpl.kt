@@ -1,8 +1,6 @@
 package net.corda.ledger.utxo.token.cache.services
 
-import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
-import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.utilities.time.Clock
 

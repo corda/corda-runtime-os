@@ -34,7 +34,7 @@ class PerformanceClaimStateStoreImpl(
         ThreadPoolExecutor.DiscardPolicy()
     )
     private val requestQueue = LinkedBlockingQueue<QueuedRequestItem>()
-    private var currentState = getStoredPoolClaimState()
+    private var currentState = createClaimState()
 
     private data class QueuedRequestItem(
         val requestAction: (TokenPoolCacheState) -> TokenPoolCacheState,
@@ -132,7 +132,7 @@ class PerformanceClaimStateStoreImpl(
             .build()
     }
 
-    private fun getStoredPoolClaimState(): StoredPoolClaimState {
+    private fun createClaimState(): StoredPoolClaimState {
         // No existing Store for this key, we need to create one
         // Try and get the existing state from storage
         val stateRecord = stateManager.get(listOf(tokenPoolKey.toString()))
