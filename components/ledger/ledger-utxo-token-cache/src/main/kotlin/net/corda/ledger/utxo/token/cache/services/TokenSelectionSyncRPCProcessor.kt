@@ -10,6 +10,7 @@ import net.corda.ledger.utxo.token.cache.converters.EventConverter
 import net.corda.ledger.utxo.token.cache.entities.TokenEvent
 import net.corda.messaging.api.processor.SyncRPCProcessor
 import net.corda.utilities.debug
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -25,7 +26,7 @@ class TokenSelectionSyncRPCProcessor(
 ) : SyncRPCProcessor<TokenPoolCacheEvent, FlowEvent> {
 
     private companion object {
-        val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
     private val eventProcessLock = ReentrantLock()
@@ -63,14 +64,14 @@ class TokenSelectionSyncRPCProcessor(
 
                 val stateWriteSuccess = eventCompletion.get()
 
-                if (!stateWriteSuccess) {
-                    return@recordProcessingTime externalEventResponseFactory.transientError(
+                if (stateWriteSuccess) {
+                    responseEvent
+                } else {
+                    externalEventResponseFactory.transientError(
                         tokenEvent,
                         IllegalStateException("Failed to save state, version out of sync, please retry.")
                     )
                 }
-
-                return@recordProcessingTime responseEvent
             } catch (exception: Exception) {
                 externalEventResponseFactory.platformError(tokenEvent, exception)
             }

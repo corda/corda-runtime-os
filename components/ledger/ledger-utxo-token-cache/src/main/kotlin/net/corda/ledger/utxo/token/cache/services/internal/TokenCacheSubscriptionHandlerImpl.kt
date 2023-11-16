@@ -18,6 +18,7 @@ import net.corda.messaging.api.constants.WorkerRPCPaths
 import net.corda.messaging.api.subscription.config.SyncRPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.utilities.debug
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @Suppress("LongParameterList")
@@ -32,7 +33,7 @@ class TokenCacheSubscriptionHandlerImpl(
 ) : TokenCacheSubscriptionHandler {
 
     companion object {
-        private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         private const val RPC_SUBSCRIPTION = "TOKEN_RPC_SUBSCRIPTION"
         private val rpcConfig = SyncRPCConfig("Token Selection Processor", WorkerRPCPaths.TOKEN_SELECTION_PATH)
     }
@@ -52,17 +53,18 @@ class TokenCacheSubscriptionHandlerImpl(
 
             // Create a new state manager and the token selection rpc processor
             val messagingConfig = toStateManagerConfig(config)
-            stateManager = stateManagerFactory.create(messagingConfig)
-            val processor = tokenCacheEventProcessorFactory.createTokenSelectionSyncRPCProcessor(stateManager!!)
+            val localStateManager = stateManagerFactory.create(messagingConfig)
+            val processor = tokenCacheEventProcessorFactory.createTokenSelectionSyncRPCProcessor(localStateManager)
 
             // Create the HTTP RPC subscription
             createAndRegisterSyncRPCSubscription(processor)
 
             subscriptionRegistrationHandle = coordinator.followStatusChangesByName(
-                setOf(stateManager!!.name)
+                setOf(localStateManager.name)
             )
 
-            stateManager?.start()
+            localStateManager.start()
+            stateManager = localStateManager
         } catch (ex: Exception) {
             val reason = "Failed to configure the Token Event Handler using '${config}'"
             log.error(reason, ex)
@@ -91,6 +93,7 @@ class TokenCacheSubscriptionHandlerImpl(
                 log.debug { "Token Cache configuration handler is stopping..." }
                 subscriptionRegistrationHandle?.close()
                 stateManager?.stop()
+                stateManager = null
                 log.debug { "Token Cache configuration handler stopped" }
             }
         }
