@@ -3,17 +3,19 @@ package net.corda.flow.testing.tests
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
+import net.corda.data.flow.output.FlowStates
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.FindEntities
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.FLOW_FAILED
 import net.corda.flow.state.FlowCheckpoint
+import net.corda.flow.testing.context.ALICE_FLOW_KEY_MAPPER
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.flowResumedWithError
 import net.corda.schema.configuration.FlowConfig
-import net.corda.utilities.seconds
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -400,6 +402,9 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
                 markedForDlq()
                 flowDidNotResume()
                 flowFiberCacheDoesNotContainKey(ALICE_HOLDING_IDENTITY, REQUEST_ID1)
+                scheduleFlowMapperCleanupEvents(ALICE_FLOW_KEY_MAPPER)
+                nullStateRecord()
+                flowStatus(state = FlowStates.FAILED, errorType = FLOW_FAILED, errorMessage = "message")
             }
         }
     }

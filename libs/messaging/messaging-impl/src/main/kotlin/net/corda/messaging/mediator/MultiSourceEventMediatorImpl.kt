@@ -167,7 +167,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
             var states = stateManager.get(messages.map { it.key.toString() }.distinct())
 
             while (groups.isNotEmpty()) {
-                val asynchronousOutputs = mutableListOf<MediatorMessage<Any>>()
+                val asynchronousOutputs = ConcurrentHashMap<String, MutableList<MediatorMessage<Any>>>()
                 val statesToCreate = ConcurrentHashMap<String, State?>()
                 val statesToUpdate = ConcurrentHashMap<String, State?>()
                 val statesToDelete = ConcurrentHashMap<String, State?>()
@@ -179,7 +179,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                 }.map { group ->
                     taskManager.executeShortRunningTask {
                         // Process all same flow events in one go
-                        group.map { it ->
+                        group.map {
                             // Keep track of all records belonging to one flow
                             flowEvents.compute(it.key.toString()) { _, v ->
                                 if (v == null) {
@@ -201,7 +201,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                                 val event = queue.removeFirst()
                                 val response = config.messageProcessor.onNext(processorState, event)
                                 processorState = response.updatedState
-                                processOutputEvents(response, asynchronousOutputs, queue, event)
+                                processOutputEvents(it.key.toString(), response, asynchronousOutputs, queue, event)
                             }
 
                             // ---- Manage the state ----
@@ -218,7 +218,6 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                     it.join()
                 }
 
-                sendAsynchronousEvents(asynchronousOutputs)
                 // Persist states changes
                 val failedToCreateKeys = stateManager.create(statesToCreate.values.mapNotNull { it })
                 val failedToCreate = stateManager.get(failedToCreateKeys.keys)
@@ -230,6 +229,8 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                 } else {
                     listOf()
                 }
+                states.keys.forEach { asynchronousOutputs.remove(it) }
+                sendAsynchronousEvents(asynchronousOutputs.values.flatten())
             }
             metrics.commitTimer.recordCallable {
                 consumer.syncCommitOffsets()
@@ -266,7 +267,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    private fun sendAsynchronousEvents(busEvents: MutableList<MediatorMessage<Any>>) {
+    private fun sendAsynchronousEvents(busEvents: Collection<MediatorMessage<Any>>) {
         busEvents.forEach { message ->
             with(messageRouter.getDestination(message)) {
                 message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
@@ -279,8 +280,9 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
      * Send any synchronous events immediately, add asynchronous events to the busEvents collection to be sent later
      */
     private fun processOutputEvents(
+        key: String,
         response: StateAndEventProcessor.Response<S>,
-        busEvents: MutableList<MediatorMessage<Any>>,
+        busEvents: MutableMap<String, MutableList<MediatorMessage<Any>>>,
         queue: ArrayDeque<Record<K, E>>,
         event: Record<K, E>
     ) {
@@ -288,7 +290,11 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         output.forEach { message ->
             val destination = messageRouter.getDestination(message)
             if (destination.type == RoutingDestination.Type.ASYNCHRONOUS) {
-                busEvents.add(message)
+                busEvents.compute(key) { _, value ->
+                    val list = value ?: mutableListOf()
+                    list.add(message)
+                    list
+                }
             } else {
                 @Suppress("UNCHECKED_CAST")
                 val reply = with(destination) {
