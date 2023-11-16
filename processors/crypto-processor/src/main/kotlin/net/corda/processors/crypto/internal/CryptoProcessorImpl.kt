@@ -54,8 +54,6 @@ import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.configuration.helper.getConfig
-import net.corda.libs.statemanager.api.StateManager
-import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -77,7 +75,6 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.schema.configuration.StateManagerConfig
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
@@ -85,7 +82,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.lang.IllegalStateException
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.Provider
@@ -123,9 +119,7 @@ class CryptoProcessorImpl @Activate constructor(
     private val schemeMetadata: CipherSchemeMetadata,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
-    @Reference(service = StateManagerFactory::class)
-    private val stateManagerFactory: StateManagerFactory,
-    ) : CryptoProcessor {
+) : CryptoProcessor {
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         val configKeys = setOf(
@@ -151,7 +145,7 @@ class CryptoProcessorImpl @Activate constructor(
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
         ::dbConnectionManager,
-        ::virtualNodeInfoReadService
+        ::virtualNodeInfoReadService,
     )
 
     // We are making the below coordinator visible to be able to test the processor as if it were a `Lifecycle`
@@ -165,8 +159,7 @@ class CryptoProcessorImpl @Activate constructor(
     
     private lateinit var cryptoService: CryptoService
     private lateinit var tenantInfoService: TenantInfoService
-    private var bootConfigRecord: SmartConfig? = null
-    private var stateManager: StateManager? = null
+
     override val isRunning: Boolean
         get() = lifecycleCoordinator.isRunning
 
@@ -174,7 +167,6 @@ class CryptoProcessorImpl @Activate constructor(
         logger.trace("Crypto processor starting.")
         lifecycleCoordinator.start()
         lifecycleCoordinator.postEvent(BootConfigEvent(bootConfig))
-        bootConfigRecord = bootConfig
     }
 
     override fun stop() {
@@ -183,7 +175,7 @@ class CryptoProcessorImpl @Activate constructor(
     }
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.info("Crypto processor received event $event.")
+        logger.trace("Crypto processor received event $event.")
         when (event) {
             is StartEvent -> {
                 logger.trace("Crypto processor starting")
@@ -191,7 +183,7 @@ class CryptoProcessorImpl @Activate constructor(
                 // This already happens in `coordinatorFactory.createCoordinator` above.
             }
             is StopEvent -> {
-                stateManager?.stop()
+                // Nothing to do
             }
             is BootConfigEvent -> {
                 val bootstrapConfig = event.config
@@ -215,14 +207,6 @@ class CryptoProcessorImpl @Activate constructor(
             is ConfigChangedEvent -> {
                 tenantInfoService = startTenantInfoService()
                 cryptoService = startCryptoService(event.config.getConfig(CRYPTO_CONFIG), tenantInfoService)
-                val bootConfig = bootConfigRecord?: throw IllegalStateException("boot config not available")
-                val stateManagerConfig = bootConfig.getConfig(StateManagerConfig.STATE_MANAGER)
-                logger.info("making statement manager $stateManagerConfig")
-                logger.info("state manager config is $stateManagerConfig")
-                stateManager = stateManagerFactory.create(stateManagerConfig).also {
-                    it.start()
-                }
-                logger.info("state managaer created and started $stateManager")
                 CryptoConsts.Categories.all.forEach { category ->
                     CryptoTenants.allClusterTenants.forEach { tenantId ->
                         tenantInfoService.populate(tenantId, category, cryptoService)
@@ -230,11 +214,10 @@ class CryptoProcessorImpl @Activate constructor(
                     }
                 }
                 startBusProcessors(event, coordinator) // to be removed when Event Mediator is fully implemented
-                startProcessors(event, coordinator, stateManager!!)
+                startProcessors(event, coordinator)
                 setStatus(LifecycleStatus.UP, coordinator)
             }
         }
-        logger.info("finished handling $event")
     }
     
     @Suppress("ThrowsCount")
@@ -332,7 +315,7 @@ class CryptoProcessorImpl @Activate constructor(
         )
     }
 
-    private fun startProcessors(event: ConfigChangedEvent, coordinator: LifecycleCoordinator, stateManager: StateManager) {
+    private fun startProcessors(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         val cryptoConfig = event.config.getConfig(CRYPTO_CONFIG)
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         val wrappingRepositoryFactory = { tenantId: String ->
@@ -360,7 +343,7 @@ class CryptoProcessorImpl @Activate constructor(
         val hsmRegistrationProcessor = HSMRegistrationBusProcessor(tenantInfoService, cryptoService, retryingConfig)
         val rewrapProcessor = CryptoRewrapBusProcessor(cryptoService)
         val rekeyProcessor = CryptoRekeyBusProcessor(cryptoService, virtualNodeInfoReadService,
-            wrappingRepositoryFactory, stateManager)
+            wrappingRepositoryFactory)
 
         // create and start subscriptions
         val flowGroupName = "crypto.ops.flow"

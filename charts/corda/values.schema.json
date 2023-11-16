@@ -1644,8 +1644,7 @@
                         {
                             "additionalProperties": false,
                             "required": [
-                                "clusterDbConnectionPool",
-                                "stateManager"
+                                "clusterDbConnectionPool"
                             ],
                             "properties": {
                                 "image": {},
@@ -1657,9 +1656,6 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
-                                "stateManager" : {
-                                    "$ref": "#/$defs/stateManager"
-                                },
                                 "clusterDbConnectionPool": {
                                     "type": "object",
                                     "default": {},

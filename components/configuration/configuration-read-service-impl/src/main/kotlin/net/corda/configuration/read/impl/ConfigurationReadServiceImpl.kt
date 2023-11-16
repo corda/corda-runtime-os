@@ -19,7 +19,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
-import org.slf4j.LoggerFactory
 import java.util.stream.Stream
 
 /**
@@ -44,10 +43,6 @@ class ConfigurationReadServiceImpl @Activate constructor(
     private val publisherFactory: PublisherFactory
 ) : ConfigurationReadService, ConfigReconcilerReader, ConfigurationGetService {
 
-    private companion object {
-        private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-    }
-
     private val eventHandler
         = ConfigReadServiceEventHandler(subscriptionFactory, configMerger, avroSchemaRegistry, publisherFactory)
 
@@ -61,13 +56,9 @@ class ConfigurationReadServiceImpl @Activate constructor(
         lifecycleCoordinator.postEvent(BootstrapConfigProvided(config))
     }
 
-
     override fun registerComponentForUpdates(coordinator: LifecycleCoordinator, requiredKeys: Set<String>): Resource {
-        logger.info("registering for updates on $requiredKeys on ${coordinator.name}")
         val handler = ComponentConfigHandler(coordinator, requiredKeys)
-        val r=  registerForUpdates(handler)
-        logger.info("register for updates done with $requiredKeys on ${coordinator.name}")
-        return r
+        return registerForUpdates(handler)
     }
 
     override fun registerForUpdates(configHandler: ConfigurationHandler): Resource {
