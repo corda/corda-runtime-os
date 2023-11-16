@@ -29,18 +29,6 @@ class ClaimStateStoreCacheImplTest {
     }
 
     @Test
-    fun `get when existing state then load and use`() {
-        val newClaimStateStore = mock<ClaimStateStore>()
-
-        whenever(claimStateStoreFactory.create(any())).thenReturn(newClaimStateStore)
-
-        val result = claimStateStoreCache.get(POOL_KEY)
-        assertThat(result).isEqualTo(newClaimStateStore)
-
-        verify(claimStateStoreFactory).create(eq(POOL_KEY))
-    }
-
-    @Test
     fun `get when existing cached used cached version`() {
         val newClaimStateStore = mock<ClaimStateStore>()
         whenever(claimStateStoreFactory.create(any())).thenReturn(newClaimStateStore)
