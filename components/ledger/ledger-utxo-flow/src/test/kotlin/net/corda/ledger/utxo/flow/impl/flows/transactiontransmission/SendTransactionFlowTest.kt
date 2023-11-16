@@ -34,6 +34,7 @@ class SendTransactionFlowTest {
     private val sessions = listOf(sessionAlice, sessionBob)
 
     private val transaction = mock<UtxoSignedTransactionInternal>()
+    private val successMessage = "Successfully received transaction."
 
     @BeforeEach
     fun beforeEach() {
@@ -44,7 +45,10 @@ class SendTransactionFlowTest {
     @Test
     fun `does nothing when receiving payload successfully`() {
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(
-            Payload.Success("Successfully received transaction.")
+            Payload.Success(successMessage)
+        )
+        whenever(sessionBob.receive(Payload::class.java)).thenReturn(
+            Payload.Success(successMessage)
         )
 
         callSendTransactionFlow(transaction, sessions)
@@ -58,7 +62,10 @@ class SendTransactionFlowTest {
         whenever(transaction.inputStateRefs).thenReturn(listOf(mock()))
 
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(
-            Payload.Success("Successfully received transaction.")
+            Payload.Success(successMessage)
+        )
+        whenever(sessionBob.receive(Payload::class.java)).thenReturn(
+            Payload.Success(successMessage)
         )
 
         callSendTransactionFlow(transaction, sessions)
@@ -70,7 +77,10 @@ class SendTransactionFlowTest {
     fun `sending transaction with no dependencies should not call backchain flow`() {
 
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(
-            Payload.Success("Successfully received transaction.")
+            Payload.Success(successMessage)
+        )
+        whenever(sessionBob.receive(Payload::class.java)).thenReturn(
+            Payload.Success(successMessage)
         )
 
         callSendTransactionFlow(transaction, sessions)

@@ -7,13 +7,17 @@ import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.flows.finality.getVisibleStateIndexes
+import net.corda.ledger.utxo.flow.impl.flows.finality.v1.UtxoFinalityFlowV1Test.TestContact
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
+import net.corda.v5.ledger.utxo.TransactionState
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -23,6 +27,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.security.PublicKey
 
 class ReceiveTransactionFlowTest {
 
@@ -50,17 +55,32 @@ class ReceiveTransactionFlowTest {
     private val transaction = mock<UtxoSignedTransactionInternal>()
     private val ledgerTransaction = mock<UtxoLedgerTransaction>()
 
+    private val publicKeyAlice = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x01)) }
+    private val publicKeyBob = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x02)) }
+
+    private val stateAndRef = mock<StateAndRef<TestState>>()
+    private val transactionState = mock<TransactionState<TestState>>()
+    private val testState = TestState(listOf(publicKeyAlice))
+
+
     @BeforeEach
     fun beforeEach() {
         whenever(transaction.id).thenReturn(TX_ID_1)
         whenever(flowEngine.subFlow(any<TransactionBackchainResolutionFlow>())).thenReturn(Unit)
         whenever(transaction.toLedgerTransaction()).thenReturn(ledgerTransaction)
+
+        // Single output State
+        whenever(transaction.outputStateAndRefs).thenReturn(listOf(stateAndRef))
+        whenever(stateAndRef.state).thenReturn(transactionState)
+        whenever(transactionState.contractType).thenReturn(TestContact::class.java)
+        whenever(transactionState.contractState).thenReturn(testState)
     }
 
     @Test
     fun `successful verification in receive flow should persist transaction`() {
         whenever(sessionAlice.receive(UtxoSignedTransactionInternal::class.java)).thenReturn(transaction)
-        whenever(transaction.getVisibleStateIndexes(visibilityChecker)).thenReturn(mutableListOf(0))
+        whenever(visibilityChecker.containsMySigningKeys(listOf(publicKeyAlice))).thenReturn(true)
+        whenever(visibilityChecker.containsMySigningKeys(listOf(publicKeyBob))).thenReturn(true)
 
         callReceiveTransactionFlow(sessionAlice)
 
@@ -118,5 +138,11 @@ class ReceiveTransactionFlowTest {
         flow.visibilityChecker = visibilityChecker
 
         flow.call()
+    }
+    class TestState(private val participants: List<PublicKey>) : ContractState {
+
+        override fun getParticipants(): List<PublicKey> {
+            return participants
+        }
     }
 }
