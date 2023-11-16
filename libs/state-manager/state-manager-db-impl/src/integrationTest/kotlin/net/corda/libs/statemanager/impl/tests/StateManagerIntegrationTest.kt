@@ -43,7 +43,7 @@ import org.mockito.kotlin.mock
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StateManagerIntegrationTest {
     private val maxConcurrentThreadJdbcConnections = 10
-    private val dataSource = DbUtils.createPostgresDataSource(maxJdbcConnections = maxConcurrentThreadJdbcConnections)
+    private val dataSource = DbUtils.createPostgresDataSource(maximumPoolSize = maxConcurrentThreadJdbcConnections)
 
     init {
         val dbChange = ClassloaderChangeLog(

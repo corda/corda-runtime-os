@@ -135,8 +135,8 @@ object MultiThreadedTestHelper {
             val nextIndex = (index + 1) % chunkedThreadGroups.size
             val nextThreadStates = chunkedThreadGroups[nextIndex]
 
-            val statesOverlappingIntoNextGroup = nextThreadStates.take(sharedStatesPerThread)
-            StateGrouping(currentGroup, statesOverlappingIntoNextGroup)
+            val overlappingStates = nextThreadStates.take(sharedStatesPerThread)
+            StateGrouping(currentGroup, overlappingStates)
         }
     }
 }
