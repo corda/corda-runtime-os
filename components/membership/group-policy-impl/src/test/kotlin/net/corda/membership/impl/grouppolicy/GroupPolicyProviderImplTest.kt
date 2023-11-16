@@ -642,9 +642,9 @@ class GroupPolicyProviderImplTest {
         postConfigChangedEvent()
         startComponentAndDependencies()
 
-        groupPolicyProvider.FinishedRegistrationsProcessor(memberInfoFactory)  {_, _ -> }
+        groupPolicyProvider.FinishedRegistrationsProcessor()  {_, _ -> }
             .onNext(
-                Record("", "", mgmPersistentMemberInfo),
+                Record("", "", validPersistentMemberInfo),
                 null,
                 emptyMap(),
             )
@@ -659,9 +659,9 @@ class GroupPolicyProviderImplTest {
             on { p2pParameters } doThrow BadGroupPolicyException("Bad group policy.")
         }
         whenever(groupPolicyParser.parse(eq(holdingIdentity5), any(), any())).thenReturn(mgmGroupPolicy)
-        groupPolicyProvider.FinishedRegistrationsProcessor(memberInfoFactory)  {_, _ -> }
+        groupPolicyProvider.FinishedRegistrationsProcessor()  {_, _ -> }
             .onNext(
-                Record("", "", mgmPersistentMemberInfo),
+                Record("", "", validPersistentMemberInfo),
                 null,
                 emptyMap(),
             )
