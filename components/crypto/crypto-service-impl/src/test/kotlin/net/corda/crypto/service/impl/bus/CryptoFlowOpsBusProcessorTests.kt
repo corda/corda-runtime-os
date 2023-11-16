@@ -69,7 +69,7 @@ import kotlin.test.assertTrue
             mapOf(
                 ConfigKeys.CRYPTO_CONFIG to
                         SmartConfigFactory.createWithoutSecurityServices().create(
-                            createDefaultCryptoConfig("pass", "salt")
+                            createDefaultCryptoConfig(listOf("pass"), listOf("salt"))
                         )
             )
         )

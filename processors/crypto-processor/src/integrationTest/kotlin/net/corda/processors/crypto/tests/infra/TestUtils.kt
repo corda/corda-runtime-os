@@ -83,7 +83,7 @@ fun makeBootstrapConfig(dbParams: SmartConfig): SmartConfig = smartConfigFactory
         )
 )
 
-fun makeCryptoConfig(): SmartConfig = createDefaultCryptoConfig("master-key-pass", "master-key-salt")
+fun makeCryptoConfig(): SmartConfig = createDefaultCryptoConfig(listOf("master-key-pass"), listOf("master-key-salt"))
 
 fun randomDataByteArray(): ByteArray {
     val random = Random(Instant.now().toEpochMilli())

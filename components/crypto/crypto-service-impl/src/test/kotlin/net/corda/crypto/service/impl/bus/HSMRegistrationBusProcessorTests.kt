@@ -48,7 +48,7 @@ class HSMRegistrationBusProcessorTests {
         private val configEvent = ConfigChangedEvent(
             setOf(ConfigKeys.CRYPTO_CONFIG),
             mapOf(ConfigKeys.CRYPTO_CONFIG to SmartConfigFactory.createWithoutSecurityServices().create(
-                createDefaultCryptoConfig("pass", "salt")
+                createDefaultCryptoConfig(listOf("pass"), listOf("salt"))
             )
             )
         )

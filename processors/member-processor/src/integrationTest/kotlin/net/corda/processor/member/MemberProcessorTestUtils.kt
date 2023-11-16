@@ -102,7 +102,7 @@ class MemberProcessorTestUtils {
             listOf(EncryptionSecretsServiceFactory())
         )
 
-        fun makeCryptoConfig(): SmartConfig = createDefaultCryptoConfig("master-key-pass", "master-key-salt")
+        fun makeCryptoConfig(): SmartConfig = createDefaultCryptoConfig(listOf("master-key-pass"), listOf("master-key-salt"))
 
         fun makeMessagingConfig(): SmartConfig =
             smartConfigFactory.create(

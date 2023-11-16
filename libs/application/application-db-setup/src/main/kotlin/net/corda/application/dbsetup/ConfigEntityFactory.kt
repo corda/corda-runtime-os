@@ -42,8 +42,14 @@ class ConfigEntityFactory(
     fun createCryptoConfig(): ConfigEntity {
         val random = SecureRandom()
         val config = createDefaultCryptoConfig(
-            smartConfigFactory.makeSecret(random.randomString(), "corda-master-wrapping-key-passphrase").root(),
-            smartConfigFactory.makeSecret(random.randomString(), "corda-master-wrapping-key-passphrase").root(),
+            listOf(
+                smartConfigFactory.makeSecret(random.randomString(), "corda-master-wrapping-key-passphrase").root(),
+                smartConfigFactory.makeSecret(random.randomString(), "corda-master-wrapping-key-2-passphrase").root()
+            ),
+            listOf(
+                smartConfigFactory.makeSecret(random.randomString(), "corda-master-wrapping-key-salt").root(),
+                smartConfigFactory.makeSecret(random.randomString(), "corda-master-wrapping-key-salt-2").root(),
+            )
         ).root().render(ConfigRenderOptions.concise())
 
         return ConfigEntity(

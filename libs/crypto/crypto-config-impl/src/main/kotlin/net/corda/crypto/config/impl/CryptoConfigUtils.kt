@@ -220,7 +220,9 @@ fun createCryptoBootstrapParamsMap(hsmId: String): Map<String, String> =
 
 // TODO - get this from the JSON config schema, or eliminate this function
 @Suppress("LongMethod")
-fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any): SmartConfig =
+fun createDefaultCryptoConfig(
+    wrappingKeyPassphrases: List<Any>,
+    wrappingKeySalts: List<Any>): SmartConfig =
     SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty())
         .withValue(
             CACHING,
@@ -243,22 +245,16 @@ fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any):
                         CryptoHSMConfig.RetryConfig::attemptTimeoutMills.name to 20000,
                     ),
                     CryptoHSMConfig::defaultWrappingKey.name to ConfigValueFactory.fromAnyRef("root1"),
-                    CryptoHSMConfig::wrappingKeys.name to listOf(
-                        ConfigValueFactory.fromAnyRef(
-                            mapOf(
-                                "alias" to "root1",
-                                "salt" to wrappingKeySalt,
-                                "passphrase" to wrappingKeyPassphrase,
+                    CryptoHSMConfig::wrappingKeys.name to
+                        wrappingKeyPassphrases.withIndex().map { (i, passphrase) ->
+                            ConfigValueFactory.fromAnyRef(
+                                mapOf(
+                                    "alias" to "root$i",
+                                    "salt" to wrappingKeySalts.elementAt(i),
+                                    "passphrase" to passphrase,
+                                )
                             )
-                        ),
-                        ConfigValueFactory.fromAnyRef(
-                            mapOf(
-                                "alias" to "root2",
-                                "salt" to "secondsalt",
-                                "passphrase" to "secondpassphrase",
-                            )
-                        )
-                    )
+                        }.toList()
                 )
             )
         )

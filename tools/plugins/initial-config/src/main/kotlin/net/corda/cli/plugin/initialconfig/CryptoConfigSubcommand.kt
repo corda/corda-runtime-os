@@ -97,7 +97,7 @@ class CryptoConfigSubcommand : Runnable {
     override fun run() {
         val (wrappingPassphraseSecret, wrappingSaltSecret) = createWrappingPassphraseAndSaltSecrets()
 
-        val config = createDefaultCryptoConfig(wrappingPassphraseSecret.root(), wrappingSaltSecret.root()).root()
+        val config = createDefaultCryptoConfig(listOf(wrappingPassphraseSecret.root()), listOf(wrappingSaltSecret.root())).root()
             .render(ConfigRenderOptions.concise())
 
         val entity = ConfigEntity(
