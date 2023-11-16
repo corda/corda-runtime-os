@@ -1,10 +1,8 @@
 package net.corda.ledger.utxo.token.cache.impl.services
 
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaim
-import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
 import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
 import net.corda.ledger.utxo.token.cache.impl.TOKEN_POOL_CACHE_STATE
-import net.corda.ledger.utxo.token.cache.services.StoredPoolClaimState
 import net.corda.ledger.utxo.token.cache.services.PerformanceClaimStateStoreImpl
 import net.corda.ledger.utxo.token.cache.services.TokenPoolCacheManager
 import net.corda.ledger.utxo.token.cache.services.TokenPoolCacheStateSerializationImpl
