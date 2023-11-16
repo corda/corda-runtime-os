@@ -2,6 +2,7 @@ package net.corda.cli.plugin.initialconfig
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigRenderOptions
+import net.corda.crypto.config.impl.KeyDerivationParameters
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.libs.configuration.datamodel.ConfigEntity
 import net.corda.libs.configuration.helper.VaultSecretConfigGenerator
@@ -97,7 +98,7 @@ class CryptoConfigSubcommand : Runnable {
     override fun run() {
         val (wrappingPassphraseSecret, wrappingSaltSecret) = createWrappingPassphraseAndSaltSecrets()
 
-        val config = createDefaultCryptoConfig(listOf(wrappingPassphraseSecret.root()), listOf(wrappingSaltSecret.root())).root()
+        val config = createDefaultCryptoConfig(listOf(KeyDerivationParameters(wrappingPassphraseSecret.root().toString(), wrappingSaltSecret.root().toString()))).root()
             .render(ConfigRenderOptions.concise())
 
         val entity = ConfigEntity(
