@@ -34,7 +34,6 @@ class ClaimStateStoreCacheImplTest {
         whenever(claimStateStoreFactory.create(any())).thenReturn(newClaimStateStore)
         whenever(serialization.serialize(any())).thenReturn(stateBytes)
 
-        val expectedState = TOKEN_POOL_CACHE_STATE
         val expectedStoredState = State(POOL_KEY.toString(), stateBytes, modifiedTime = now)
 
         val result = target.get(POOL_KEY)
