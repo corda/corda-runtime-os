@@ -19,7 +19,10 @@ class MessageBusClient(
     }
 
     override fun send(message: MediatorMessage<*>): MediatorMessage<*>? {
-        producer.send(message.toCordaProducerRecord(), null)
+        producer.send(message.toCordaProducerRecord()) { ex ->
+            log.info("Encountered an error while sending a message.", ex)
+            ex?.let {throw ex }
+        }
         return null
     }
 
