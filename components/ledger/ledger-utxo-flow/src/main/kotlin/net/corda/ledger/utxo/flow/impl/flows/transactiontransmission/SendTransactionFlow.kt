@@ -3,7 +3,6 @@ package net.corda.ledger.utxo.flow.impl.flows.transactiontransmission
 import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
-import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.utilities.trace
@@ -30,9 +29,6 @@ class SendTransactionFlow(
 
     @CordaInject
     lateinit var flowEngine: FlowEngine
-
-    @CordaInject
-    lateinit var utxoLedgerPersistenceService: UtxoLedgerPersistenceService
 
     @Suspendable
     override fun call() {
