@@ -249,7 +249,7 @@ fun createDefaultCryptoConfig(
                         wrappingKeyPassphrases.withIndex().map { (i, passphrase) ->
                             ConfigValueFactory.fromAnyRef(
                                 mapOf(
-                                    "alias" to "root$i",
+                                    "alias" to "root${i+1}",
                                     "salt" to wrappingKeySalts.elementAt(i),
                                     "passphrase" to passphrase,
                                 )
