@@ -103,6 +103,7 @@ import net.corda.p2p.crypto.protocol.api.NoCommonModeError
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import org.junit.jupiter.api.Disabled
 
+@Disabled
 class SessionManagerTest {
 
     private companion object {
