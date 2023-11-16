@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/stale@v8.0.0
         with:
-          debug-only: true
+          debug-only: false
           exempt-pr-labels: 'DO_NOT_CLOSE'
           stale-pr-message: 'This PR is stale because it has been open 7 days with no activity. Remove the `Stale` label or add a comment - otherwise this will be closed in 7 days.'
           close-pr-message: 'This PR was closed because it has been stale for 7 days with no activity.'
