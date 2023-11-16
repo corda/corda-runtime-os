@@ -18,6 +18,7 @@ import net.corda.db.core.CloseableDataSource
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
+import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.libs.virtualnode.common.exception.InvalidStateChangeRuntimeException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationBadRequestException
@@ -39,9 +40,7 @@ import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.Virtua
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
-import javax.persistence.EntityManager
 import javax.sql.DataSource
-import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 
 /**
  * An RPC responder processor that handles virtual node creation requests.
@@ -136,7 +135,6 @@ internal class VirtualNodeWriterProcessor(
                     dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).use { dataSource ->
                         // changelog tags are the CPK file checksum the changelog belongs to
                         val cpkChecksumsOfAppliedChangelogs: Set<String> = getAppliedChangelogTags(
-                            em,
                             dataSource,
                             systemTerminatorTag
                         )
@@ -147,7 +145,7 @@ internal class VirtualNodeWriterProcessor(
                         )
 
                         val changesetsToRollback =
-                            cpkDbChangeLogRepository.findByFileChecksum(em, cpkChecksumsOfAppliedChangelogs)
+                            cpkDbChangeLogRepository.findByFileChecksum(dataSource, cpkChecksumsOfAppliedChangelogs)
                                 .groupBy { it.id.cpkFileChecksum }
 
                         changesetsToRollback.forEach { (cpkFileChecksum, changelogs) ->
@@ -347,17 +345,22 @@ internal class VirtualNodeWriterProcessor(
 
     @Suppress("UNCHECKED_CAST")
     private fun getAppliedChangelogTags(
-        em: EntityManager,
         dataSource: DataSource,
         systemTerminatorTag: String
-    ): Set<String> = (
-            em.createNativeQuery(
-                "SELECT tag FROM ${dataSource.connection.schema}.databasechangelog " +
-                        "WHERE tag IS NOT NULL and tag != :systemTerminatorTag " +
-                        "ORDER BY orderexecuted"
-            )
-                .setParameter("systemTerminatorTag", systemTerminatorTag)
-                .resultList
-                .toSet() as Set<String>
-            ).toSet()
+    ): Set<String> {
+        val connectionDb = dataSource.connection
+        val statement = connectionDb.prepareStatement(
+            "SELECT tag FROM ${dataSource.connection.schema}.databasechangelog " +
+                    "WHERE tag IS NOT NULL and tag != ? " +
+                    "ORDER BY orderexecuted"
+        )
+        statement.setString(1, systemTerminatorTag)
+        val resultSet = statement.executeQuery()
+        val resultList = resultSet.use {
+            generateSequence {
+                if (resultSet.next()) resultSet.getString(1) else null
+            }.toList()
+        }
+        return resultList.toSet()
+    }
 }
