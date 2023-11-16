@@ -45,12 +45,12 @@ class ConfigEntityFactory(
         val config = createDefaultCryptoConfig(
             listOf(
                 KeyDerivationParameters(
-                    smartConfigFactory.makeSecret(random.randomString(), "corda-master-wrapping-key-passphrase").root().toString(),
-                    smartConfigFactory.makeSecret(random.randomString(), "corda-master-wrapping-key-salt").root().toString()
+                    smartConfigFactory.makeSecret(random.randomString(), "corda-master-wrapping-key-passphrase").root(),
+                    smartConfigFactory.makeSecret(random.randomString(), "corda-master-wrapping-key-salt").root()
                 ),
                 KeyDerivationParameters(
-                    smartConfigFactory.makeSecret(random.randomString(), "corda-master-wrapping-key-2-passphrase").root().toString(),
-                    smartConfigFactory.makeSecret(random.randomString(), "corda-master-wrapping-key-2-salt").root().toString()
+                    smartConfigFactory.makeSecret(random.randomString(), "corda-master-wrapping-key-2-passphrase").root(),
+                    smartConfigFactory.makeSecret(random.randomString(), "corda-master-wrapping-key-2-salt").root()
                 )
             ),
         ).root().render(ConfigRenderOptions.concise())

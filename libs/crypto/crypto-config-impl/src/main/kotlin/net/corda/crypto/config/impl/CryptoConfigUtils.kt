@@ -220,8 +220,8 @@ fun createCryptoBootstrapParamsMap(hsmId: String): Map<String, String> =
 
 
 data class KeyDerivationParameters(
-    val passphrase: String,
-    val salt: String
+    val passphrase: Any,
+    val salt: Any
 )
 
 // TODO - get this from the JSON config schema, or eliminate this function

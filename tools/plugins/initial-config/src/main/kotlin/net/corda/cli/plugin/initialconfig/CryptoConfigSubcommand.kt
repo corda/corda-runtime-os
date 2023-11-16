@@ -101,8 +101,8 @@ class CryptoConfigSubcommand : Runnable {
         val config = createDefaultCryptoConfig(
             listOf(
                 KeyDerivationParameters(
-                    wrappingPassphraseSecret.root().toString(),
-                    wrappingSaltSecret.root().toString()
+                    wrappingPassphraseSecret.root(),
+                    wrappingSaltSecret.root()
                 )
             )
         )
