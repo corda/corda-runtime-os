@@ -38,13 +38,14 @@ class PersistMemberRegistrationStateHandlerTest {
         } doReturn operation
     }
     private val reason = "some reason"
-    val command = PersistMemberRegistrationState(
+    private val request = SetOwnRegistrationStatus(
+        UUID(1,2).toString(),
+        RegistrationStatus.DECLINED,
+        reason
+    )
+    private val command = PersistMemberRegistrationState(
         HoldingIdentity("O=Alice, L=London, C=GB", "GroupId"),
-        SetOwnRegistrationStatus(
-            UUID(1,2).toString(),
-            RegistrationStatus.DECLINED,
-            reason
-        )
+        request
     )
 
     private val handler = PersistMemberRegistrationStateHandler(
@@ -66,8 +67,8 @@ class PersistMemberRegistrationStateHandlerTest {
 
         verify(membershipPersistenceClient).setRegistrationRequestStatus(
             command.member.toCorda(),
-            command.setStatusRequest.registrationId,
-            command.setStatusRequest.newStatus,
+            request.registrationId,
+            request.newStatus,
             reason
         )
     }
