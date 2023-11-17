@@ -71,11 +71,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
         TODO("Not yet implemented")
     }
 
-    override fun startKeyRotation(
-        oldKeyAlias: String,
-        newKeyAlias: String
-    ): ResponseEntity<KeyRotationResponse> {
-
+    override fun startKeyRotation(oldKeyAlias: String, newKeyAlias: String): ResponseEntity<KeyRotationResponse> {
         // We cannot validate oldKeyAlias or newKeyAlias early here on the client side of the RPC since
         // those values are considered sensitive.
 
