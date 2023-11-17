@@ -14,15 +14,14 @@ import java.util.stream.Stream
  */
 interface ReconcilerReader<K : Any, V : Any> {
     /**
-     * Gets records and their versions (input to the reconciliation process). Implementations of
-     * this method should not allow exceptions escape it, instead they should be notifying the
-     * [ReconcilerReader] lifecycle service about the error occurred by scheduling an error event.
+     * Gets records and their versions (input to the reconciliation process).
      *
-     * For the calling service to know immediately that an error occurred a null value should be returned.
-     * Subsequently, the calling service, that should be following [ReconcilerReader], will as well get
-     * notified of the [ReconcilerReader]'s changed status by a RegistrationStatusChangeEvent.
+     * Should an error occur in [getAllVersionedRecords] implementation, the owning [ReconcilerReader] lifecycle
+     * should be notified about the error (by scheduling an error event to its lifecycle coordinator).
+     * Then the exception should be re-thrown and not swallowed for the calling lifecycle service to
+     * immediately know that an error occurred.
      */
-    fun getAllVersionedRecords(): Stream<VersionedRecord<K, V>>?
+    fun getAllVersionedRecords(): Stream<VersionedRecord<K, V>>
 
     val lifecycleCoordinatorName: LifecycleCoordinatorName
 }

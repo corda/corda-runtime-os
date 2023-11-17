@@ -1,12 +1,15 @@
 package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.module.kotlin.contains
-import java.time.Duration
 import net.corda.rest.ResponseCode
 import net.corda.test.util.eventually
 import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
+import java.time.Duration
+import java.util.concurrent.Semaphore
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 /**
  * Transform a Corda Package Bundle (CPB) into a Corda Package Installer (CPI) by adding a group policy file and upload
@@ -20,24 +23,27 @@ fun ClusterInfo.conditionallyUploadCordaPackage(
     cpiUpload(cpbResourceName, groupPolicy, cpiName)
 }
 
+val signingCertLock = ReentrantLock()
 fun ClusterInfo.conditionallyUploadCpiSigningCertificate() = cluster {
-    val hasCertificateChain = assertWithRetryIgnoringExceptions {
-        interval(1.seconds)
-        command { getCertificateChain(CODE_SIGNER_CERT_USAGE, CODE_SIGNER_CERT_ALIAS) }
-        condition {
-            it.code == ResponseCode.RESOURCE_NOT_FOUND.statusCode ||
-                    it.code == ResponseCode.OK.statusCode
+    signingCertLock.withLock {
+        val hasCertificateChain = assertWithRetryIgnoringExceptions {
+            interval(1.seconds)
+            command { getCertificateChain(CODE_SIGNER_CERT_USAGE, CODE_SIGNER_CERT_ALIAS) }
+            condition {
+                it.code == ResponseCode.RESOURCE_NOT_FOUND.statusCode ||
+                        it.code == ResponseCode.OK.statusCode
+            }
+        }.let {
+            it.code != ResponseCode.RESOURCE_NOT_FOUND.statusCode
         }
-    }.let {
-        it.code != ResponseCode.RESOURCE_NOT_FOUND.statusCode
-    }
-    if (!hasCertificateChain) {
-        assertWithRetryIgnoringExceptions {
-            // Certificate upload can be slow in the combined worker, especially after it has just started up.
-            timeout(30.seconds)
-            interval(2.seconds)
-            command { importCertificate(CODE_SIGNER_CERT, CODE_SIGNER_CERT_USAGE, CODE_SIGNER_CERT_ALIAS) }
-            condition { it.code == ResponseCode.NO_CONTENT.statusCode }
+        if (!hasCertificateChain) {
+            assertWithRetryIgnoringExceptions {
+                // Certificate upload can be slow in the combined worker, especially after it has just started up.
+                timeout(30.seconds)
+                interval(2.seconds)
+                command { importCertificate(CODE_SIGNER_CERT, CODE_SIGNER_CERT_USAGE, CODE_SIGNER_CERT_ALIAS) }
+                condition { it.code == ResponseCode.NO_CONTENT.statusCode }
+            }
         }
     }
 }
@@ -64,24 +70,27 @@ fun ClusterInfo.conditionallyUploadCordaPackage(
     cpiUpload(cpbResourceName, groupId, staticMemberNames, cpiName, customGroupParameters = customGroupParameters)
 }
 
+val packageUploadSemaphore = Semaphore(2)
 fun ClusterInfo.conditionallyUploadCordaPackage(
     name: String,
     cpiUpload: ClusterBuilder.() -> SimpleResponse
-) = cluster {
-    if (getExistingCpi(name) == null) {
-        val responseStatusId = cpiUpload().run {
-            assertThat(code).isEqualTo(ResponseCode.OK.statusCode)
-            assertThat(toJson()["id"].textValue()).isNotEmpty
-            toJson()["id"].textValue()
-        }
+) = packageUploadSemaphore.runWith {
+    cluster {
+        if (getExistingCpi(name) == null) {
+            val responseStatusId = cpiUpload().run {
+                assertThat(code).isEqualTo(ResponseCode.OK.statusCode)
+                assertThat(toJson()["id"].textValue()).isNotEmpty
+                toJson()["id"].textValue()
+            }
 
-        assertWithRetryIgnoringExceptions {
-            timeout(Duration.ofSeconds(100))
-            interval(Duration.ofSeconds(2))
-            command { cpiStatus(responseStatusId) }
-            condition {
-                it.code == ResponseCode.OK.statusCode
-                        && it.toJson()["status"].textValue() == ResponseCode.OK.toString()
+            assertWithRetryIgnoringExceptions {
+                timeout(Duration.ofSeconds(100))
+                interval(Duration.ofSeconds(2))
+                command { cpiStatus(responseStatusId) }
+                condition {
+                    it.code == ResponseCode.OK.statusCode
+                            && it.toJson()["status"].textValue() == ResponseCode.OK.toString()
+                }
             }
         }
     }
@@ -92,6 +101,7 @@ fun getOrCreateVirtualNodeFor(
     cpiName: String
 ) = DEFAULT_CLUSTER.getOrCreateVirtualNodeFor(x500, cpiName)
 
+val vNodeCreationSemaphore = Semaphore(2)
 fun ClusterInfo.getOrCreateVirtualNodeFor(
     x500: String,
     cpiName: String
@@ -106,27 +116,29 @@ fun ClusterInfo.getOrCreateVirtualNodeFor(
     }
     val hash = truncateLongHash(json["cpiFileChecksum"].textValue())
 
-    val vNodesJson = assertWithRetryIgnoringExceptions {
-        command { vNodeList() }
-        condition { it.code == 200 }
-        failMessage("Failed to retrieve virtual nodes")
-    }.toJson()
-
-    val normalizedX500 = MemberX500Name.parse(x500).toString()
-
-    if (vNodesJson.findValuesAsText("x500Name").contains(normalizedX500)) {
-        vNodeList().toJson()["virtualNodes"].toList().first {
-            it["holdingIdentity"]["x500Name"].textValue() == normalizedX500
-        }["holdingIdentity"]["shortHash"].textValue()
-    } else {
-        val createVNodeRequest = assertWithRetry {
-            command { vNodeCreate(hash, x500) }
-            condition { it.code == 202 }
-            failMessage("Failed to create the virtual node for '$x500'")
+    vNodeCreationSemaphore.runWith {
+        val vNodesJson = assertWithRetryIgnoringExceptions {
+            command { vNodeList() }
+            condition { it.code == 200 }
+            failMessage("Failed to retrieve virtual nodes")
         }.toJson()
 
-        val requestId = createVNodeRequest["requestId"].textValue()
-        awaitVirtualNodeOperationStatusCheck(requestId)
+        val normalizedX500 = MemberX500Name.parse(x500).toString()
+
+        if (vNodesJson.findValuesAsText("x500Name").contains(normalizedX500)) {
+            vNodeList().toJson()["virtualNodes"].toList().first {
+                it["holdingIdentity"]["x500Name"].textValue() == normalizedX500
+            }["holdingIdentity"]["shortHash"].textValue()
+        } else {
+            val createVNodeRequest = assertWithRetry {
+                command { vNodeCreate(hash, x500) }
+                condition { it.code == 202 }
+                failMessage("Failed to create the virtual node for '$x500'")
+            }.toJson()
+
+            val requestId = createVNodeRequest["requestId"].textValue()
+            awaitVirtualNodeOperationStatusCheck(requestId)
+        }
     }
 }
 
@@ -206,5 +218,12 @@ fun ClusterInfo.rotateCryptoUnmanagedWrappingKeys(
     assertWithRetry {
         command { doRotateCryptoUnmanagedWrappingKeys(oldKeyAlias, newKeyAlias, limit, timeToLive) }
         condition { it.code == ResponseCode.ACCEPTED.statusCode }
+
+private fun <T> Semaphore.runWith(block: () -> T): T {
+    this.acquire()
+    try {
+        return block()
+    } finally {
+        this.release()
     }
 }

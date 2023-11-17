@@ -32,6 +32,7 @@ def cliPluginPackager = tasks.register("cliPluginTask", Jar) {
     inputs.property('cliPluginClass', cliPlugin.cliPluginClass)
     inputs.property('cliPluginProvider', cliPlugin.cliPluginProvider)
     inputs.property('cliPluginDescription', cliPlugin.cliPluginDescription)
+    inputs.property('cliPluginGitCommitId', cliPlugin.cliPluginGitCommitId)
 
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     reproducibleFileOrder = true
@@ -52,10 +53,12 @@ def cliPluginPackager = tasks.register("cliPluginTask", Jar) {
     }
     manifest {
         attributes['Plugin-Class'] = cliPlugin.cliPluginClass
+        attributes["Plugin-Name"] = cliPlugin.cliPluginId
         attributes['Plugin-Id'] = cliPlugin.cliPluginId
         attributes['Plugin-Version'] = archiveVersion
         attributes['Plugin-Provider'] = cliPlugin.cliPluginProvider
         attributes['Plugin-Description'] = cliPlugin.cliPluginDescription
+        attributes["Plugin-Git-Commit"] = cliPlugin.cliPluginGitCommitId
     }
 }
 
@@ -71,10 +74,12 @@ class CliPluginPackagerExtension {
         cliPluginClass = objects.property(String)
         cliPluginProvider = objects.property(String).convention("R3 Ltd")
         cliPluginDescription = objects.property(String)
+        cliPluginGitCommitId = objects.property(String)
     }
 
     final Property<String> cliPluginId
     final Property<String> cliPluginClass
     final Property<String> cliPluginProvider
     final Property<String> cliPluginDescription
+    final Property<String> cliPluginGitCommitId
 }

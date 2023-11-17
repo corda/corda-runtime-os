@@ -225,9 +225,9 @@ class CryptoRPCSmokeTests {
         assertEquals(expected.requestId, actual.requestId)
         assertEquals(expected.requestingComponent, actual.requestingComponent)
         assertEquals(expected.requestTimestamp, actual.requestTimestamp)
-        assertThat(actual.responseTimestamp.epochSecond)
-            .isGreaterThanOrEqualTo(expected.requestTimestamp.epochSecond)
-            .isLessThanOrEqualTo(now.epochSecond)
+        assertThat(actual.responseTimestamp.toEpochMilli())
+            .isGreaterThanOrEqualTo(expected.requestTimestamp.toEpochMilli())
+            .isLessThanOrEqualTo(now.toEpochMilli())
         assertSoftly { softly ->
             softly.assertThat(actual.other.items.size == expected.other.items.size)
             softly.assertThat(actual.other.items.containsAll(expected.other.items))

@@ -19,6 +19,7 @@ import net.corda.v5.base.versioning.Version
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.LoggerFactory
 
 // This needs to be a `Lifecycle` for reconciliation, maybe not only for that. However it cannot really wait on
 // `ConfigurationReadService`, because it will be used by `ConfigWriteService` which needs to be started before
@@ -35,6 +36,10 @@ class ConfigPublishServiceImpl @Activate constructor(
     @Reference(service = ConfigurationValidatorFactory::class)
     configurationValidatorFactory: ConfigurationValidatorFactory
 ) : ConfigPublishService {
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(ConfigPublishServiceImpl::class.java)
+    }
 
     private val handler = ConfigPublishServiceHandler(publisherFactory, configMerger)
 
@@ -100,6 +105,56 @@ class ConfigPublishServiceImpl @Activate constructor(
     @Suppress("parameter_name_changed_on_override")
     override fun remove(configSection: String) {
         TODO("Not yet implemented")
+    }
+
+    override fun valuesMisalignedAfterDefaults(
+        recordKey: String,
+        dbRecordValue: Configuration,
+        kafkaRecordValue: Configuration
+    ): Boolean {
+        require(dbRecordValue.version == kafkaRecordValue.version)
+        require(dbRecordValue.schemaVersion.majorVersion == kafkaRecordValue.schemaVersion.majorVersion)
+        val schemaMajorVersion = dbRecordValue.schemaVersion.majorVersion
+        require(dbRecordValue.schemaVersion.minorVersion == kafkaRecordValue.schemaVersion.minorVersion)
+        val schemaMinorVersion = dbRecordValue.schemaVersion.minorVersion
+
+        val dbConfigValueWithDefaults =
+            smartConfigFactory.create(ConfigFactory.parseString(dbRecordValue.value)).run {
+                validator.validate(
+                    recordKey,
+                    Version(schemaMajorVersion, schemaMinorVersion),
+                    this,
+                    applyDefaults = true
+                )
+            }
+
+        val kafkaConfigValue =
+            smartConfigFactory.create(ConfigFactory.parseString(kafkaRecordValue.value)).run {
+                validator.validate(
+                    recordKey,
+                    Version(schemaMajorVersion, schemaMinorVersion),
+                    this,
+                    applyDefaults = false,
+                )
+            }
+
+
+        val configsAreNotEqual = dbConfigValueWithDefaults != kafkaConfigValue
+        if (configsAreNotEqual) {
+            logger.info(
+                "Configuration for key $recordKey is misaligned on Kafka after applying defaults (Kafka will be updated).\n" +
+                        "DB config value: ${
+                            dbConfigValueWithDefaults.toSafeConfig().root()
+                                .render(ConfigRenderOptions.concise().setFormatted(true))
+                        }\n" +
+                        "Kafka config value: ${
+                            kafkaConfigValue.toSafeConfig().root()
+                                .render(ConfigRenderOptions.concise().setFormatted(true))
+                        }"
+            )
+        }
+
+        return configsAreNotEqual
     }
 
     override val isRunning get() = coordinator.isRunning

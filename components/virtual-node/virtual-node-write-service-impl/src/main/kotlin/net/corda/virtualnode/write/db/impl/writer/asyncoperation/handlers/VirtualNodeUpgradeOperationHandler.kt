@@ -150,6 +150,7 @@ internal class VirtualNodeUpgradeOperationHandler(
 
         if (upgradedVNodeInfo.vaultDdlConnectionId == null) {
             logger.info("No vault DDL connection provided, CPI migrations must be run out of process (request $requestId)")
+            publishVirtualNodeInfo(completeVirtualNodeOperation(request.virtualNodeShortHash))
             return
         }
 
@@ -255,15 +256,15 @@ internal class VirtualNodeUpgradeOperationHandler(
                     try {
                         // Get the latest registration request
                         val registrationRequestDetails = payload.sortedBy { it.serial }.last()
-                        
+
                         val registrationContext = registrationRequestDetails
                             .memberProvidedContext.data.array()
                             .deserializeContext(keyValuePairListDeserializer)
                             .toMutableMap()
 
                         if (isEnriched(registrationContext)) {
-                            // In some cases, the registration request contains the platform-transformed data, 
-                            // instead of the user-provided context, so we skip re-registration. 
+                            // In some cases, the registration request contains the platform-transformed data,
+                            // instead of the user-provided context, so we skip re-registration.
                             // This is applicable only for old registration requests, as it's now fixed.
                             logger.warn("The platform was not able to automatically re-register the vNode. " +
                                     "Please perform re-registration of vNode $holdingIdentity manually.")

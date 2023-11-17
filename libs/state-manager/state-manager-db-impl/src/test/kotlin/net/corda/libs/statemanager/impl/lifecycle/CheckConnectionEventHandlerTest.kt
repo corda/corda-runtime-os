@@ -2,20 +2,33 @@ package net.corda.libs.statemanager.impl.lifecycle
 
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.LifecycleException
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
+import org.mockito.kotlin.whenever
 import java.lang.IllegalStateException
 
 class CheckConnectionEventHandlerTest {
     private val coordinatorName = mock<LifecycleCoordinatorName>()
     private val lifecycleCoordinator = mock<LifecycleCoordinator>()
+
+    @Test
+    fun scheduleConnectionCheckHandleExceptions() {
+        whenever(lifecycleCoordinator.setTimer(any(), any(), any())).thenThrow(LifecycleException("Mock"))
+        val connectionEventHandler = CheckConnectionEventHandler(coordinatorName) {}
+
+        Assertions.assertThatCode {
+            connectionEventHandler.scheduleConnectionCheck(lifecycleCoordinator)
+        }.doesNotThrowAnyException()
+    }
 
     @Test
     fun processStartEventSchedulesConnectionCheck() {

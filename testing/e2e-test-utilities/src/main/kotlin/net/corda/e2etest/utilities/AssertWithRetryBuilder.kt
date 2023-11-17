@@ -8,6 +8,7 @@ import java.time.Duration
 class AssertWithRetryArgs {
     var timeout: Duration = Duration.ofSeconds(10)
     var interval: Duration = Duration.ofMillis(500)
+    var startDelay: Duration = Duration.ofMillis(10)
     var command: (() -> SimpleResponse)? = null
     var condition: ((SimpleResponse) -> Boolean) = { it.code in 200..299 }
     var immediateFailCondition: ((SimpleResponse) -> Boolean)? = null
@@ -68,8 +69,8 @@ fun assertWithRetry(initialize: AssertWithRetryBuilder.() -> Unit): SimpleRespon
 
         var retry = 0
         var timeTried: Long
+        Thread.sleep(args.startDelay.toMillis())
         do {
-            Thread.sleep(args.interval.toMillis())
             response = args.command!!.invoke()
             if(null != args.immediateFailCondition && args.immediateFailCondition!!.invoke(response)) {
                 fail("Failed without retry with status code = ${response.code} and body =\n${response.body}")
@@ -78,6 +79,7 @@ fun assertWithRetry(initialize: AssertWithRetryBuilder.() -> Unit): SimpleRespon
             retry++
             timeTried = args.interval.toMillis() * retry
             println("Failed after $retry retry ($timeTried ms): $response")
+            Thread.sleep(args.interval.toMillis())
         } while (timeTried < args.timeout.toMillis())
 
         assertThat(args.condition.invoke(response!!))
@@ -116,9 +118,8 @@ fun assertWithRetryIgnoringExceptions(initialize: AssertWithRetryBuilder.() -> U
         var result: Any?
         var timeTried: Long
 
+        Thread.sleep(args.startDelay.toMillis())
         do {
-            Thread.sleep(args.interval.toMillis())
-
             result = try {
                 args.command!!.invoke()
             } catch (exception: Exception) {
@@ -136,6 +137,7 @@ fun assertWithRetryIgnoringExceptions(initialize: AssertWithRetryBuilder.() -> U
             retry++
             timeTried = args.interval.toMillis() * retry
             println("Failed after $retry retry ($timeTried ms): $result")
+            Thread.sleep(args.interval.toMillis())
         } while (timeTried < args.timeout.toMillis())
 
         when (result) {

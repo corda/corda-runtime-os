@@ -2,16 +2,8 @@
 # Helm chart and a state-manager deployed via bitnami postgres helm chart with the overrides from
 # `state-manager-postgres.yaml`.
 #
-# First use `./gradlew publishOSGiImage --parallel` to create local docker images
-#
-# Then deploy the prereqs using:
-# helm upgrade --install prereqs -n corda \
-#   oci://corda-os-docker.software.r3.com/helm-charts/corda-dev-prereqs \
-#   --render-subchart-notes \
-#   --timeout 10m \
-#
 # Then deploy the state manager using the bitnami helm chart
-# helm install state-manager-db oci://docker-remotes.software.r3.com/bitnamicharts/postgresql -n corda --version "12.1.0" \
+# helm install state-manager-db oci://registry-1.docker.io/bitnamicharts/postgresql -n corda --version "12.1.0" \
 # -f ./state-manager-postgres.yaml  \
 # --timeout 10m \
 # --wait
@@ -39,6 +31,14 @@ bootstrap:
               name: "state-manager-db-postgresql"
               key: "postgres-password"
       flowMapper:
+        username:
+          value: "postgres"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "state-manager-db-postgresql"
+              key: "postgres-password"
+      tokenSelection:
         username:
           value: "postgres"
         password:

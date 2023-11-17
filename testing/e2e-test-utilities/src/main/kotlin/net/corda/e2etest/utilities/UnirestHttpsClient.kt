@@ -4,6 +4,7 @@ import kong.unirest.Headers
 import kong.unirest.MultipartBody
 import kong.unirest.Unirest
 import kong.unirest.apache.ApacheClient
+import org.apache.http.client.config.RequestConfig
 import org.apache.http.conn.ssl.NoopHostnameVerifier
 import org.apache.http.conn.ssl.TrustAllStrategy
 import org.apache.http.impl.client.HttpClients
@@ -39,7 +40,8 @@ class UnirestHttpsClient(private val endpoint: URI, private val username: String
     override fun post(cmd: String, body: String): SimpleResponse {
         val url = endpoint.resolve(cmd).toURL().toString()
 
-        val response = Unirest.post(url).basicAuth(username, password)
+        val response = Unirest.post(url)
+            .basicAuth(username, password)
             .body(body)
             .asString()
 
@@ -88,14 +90,22 @@ class UnirestHttpsClient(private val endpoint: URI, private val username: String
             .loadTrustMaterial(TrustAllStrategy())
             .build()
 
+        val requestConfig = RequestConfig.custom()
+            .setConnectionRequestTimeout(60_000)
+            .setConnectTimeout(60_000)
+            .setSocketTimeout(60_000)
+            .build()
+
         val httpClient = HttpClients.custom()
             .setSSLContext(sslContext)
             .setSSLHostnameVerifier(NoopHostnameVerifier())
+            .setDefaultRequestConfig(requestConfig)
             .build()
 
-        Unirest.config().let { config ->
-            config.httpClient(ApacheClient.builder(httpClient).apply(config))
-        }
+        Unirest.config()
+            .let { config ->
+                config.httpClient(ApacheClient.builder(httpClient).apply(config))
+            }
     }
 
     private fun MultipartBody.fields(fields: Map<String, String>): MultipartBody {
