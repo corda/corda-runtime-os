@@ -73,7 +73,7 @@ class CryptoOpsBusProcessor(
 
     override fun onNext(request: RpcOpsRequest, respFuture: CompletableFuture<RpcOpsResponse>) {
         try {
-            logger.info("Handling {} for tenant {}", request.request::class.java.name, request.context.tenantId)
+            logger.debug { "Handling ${request.request::class.java.name} for tenant ${request.context.tenantId}" }
             val response = executor.executeWithRetry {
                 handleRequest(request.request, request.context)
             }
@@ -84,10 +84,10 @@ class CryptoOpsBusProcessor(
             }
             respFuture.complete(result)
         } catch (e: KeyAlreadyExistsException) {
-            logger.info("Key alias ${e.alias} already exists in tenant ${e.tenantId}; returning error rather than recreating")
+            logger.warn("Key alias ${e.alias} already exists in tenant ${e.tenantId}; returning error rather than recreating")
             respFuture.completeExceptionally(e)
         } catch (e: Throwable) {
-            logger.error("Failed to handle ${request.request::class.java} for tenant ${request.context.tenantId}", e)
+            logger.warn("Failed to handle ${request.request::class.java} for tenant ${request.context.tenantId}", e)
             respFuture.completeExceptionally(e)
         }
     }

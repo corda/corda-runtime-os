@@ -2,6 +2,7 @@ package net.corda.reconciliation.impl
 
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.reconciliation.ReconcilerReader
+import net.corda.reconciliation.ReconcilerWriter
 import net.corda.reconciliation.VersionedRecord
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -92,11 +93,15 @@ internal class ReconcilerEventHandlerTest {
             }
         }
 
+        val writer = mock<ReconcilerWriter<String, Int>>().also {
+            whenever(it.valuesMisalignedAfterDefaults(any(), any(), any())).thenReturn(true)
+        }
+
         reconcilerEventHandler =
             ReconcilerEventHandler(
                 dbReader,
                 kafkaReader,
-                writer = mock(),
+                writer,
                 keyClass = String::class.java,
                 valueClass = Int::class.java,
                 10L,

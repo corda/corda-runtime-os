@@ -1,29 +1,34 @@
 #! groovy
-@Library('corda-shared-build-pipeline-steps@5.1') _
+@Library('corda-shared-build-pipeline-steps@5.2') _
 
+import com.r3.build.agents.KubernetesAgent
 import com.r3.build.enums.BuildEnvironment
+import com.r3.build.enums.KubernetesCluster
 import com.r3.build.utils.PublishingUtils
 
-int cpus = 1
-BuildEnvironment buildEnvironment = BuildEnvironment.AMD64_LINUX_JAVA17
+/**
+ * Jenkins Kubernetes agent
+ */
+KubernetesAgent k8s = new KubernetesAgent(
+    BuildEnvironment.AMD64_LINUX_JAVA17,
+    KubernetesCluster.JenkinsAgents,
+    1
+)
 
 PublishingUtils publishingUtils = new PublishingUtils(this)
 
 pipeline {
     agent {
         kubernetes {
-            cloud "eks-e2e"
-            yaml kubernetesBuildAgentYaml('build', buildEnvironment, cpus)
+            cloud k8s.buildCluster.cloudName
+            yaml k8s.JSON
             yamlMergeStrategy merge() // important to keep tolerations from the inherited template
             idleMinutes 15
             podRetention always()
-            label ([
-                    "gradle-build",
-                    "${cpus}cpus",
-                    "${buildEnvironment.jenkinsLabel}"
-            ].join('-'))
+            nodeSelector k8s.nodeSelector
+            label k8s.jenkinsLabel
             showRawYaml false
-            defaultContainer 'build'
+            defaultContainer k8s.defaultContainer.name
         }
     }
 

@@ -58,6 +58,8 @@ import java.util.SortedMap
 import java.util.TreeMap
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
@@ -121,40 +123,41 @@ class SandboxGroupContextServiceImpl @Activate constructor(
     }
 
     private val cache = SandboxGroupContextCacheImpl(0)
+    private val lock = ReentrantLock()
 
-    override fun resizeCache(type: SandboxGroupType, capacity: Long) {
+    override fun resizeCache(type: SandboxGroupType, capacity: Long) = lock.withLock {
         if (capacity != cache.capacities[type]) {
             logger.info("Changing Sandbox cache capacity for type {} from {} to {}", type, cache.capacities[type], capacity)
             cache.resize(type, capacity)
         }
     }
 
-    override fun flushCache(): CompletableFuture<*> {
-        return cache.flush()
+    override fun flushCache(): CompletableFuture<*> = lock.withLock {
+        cache.flush()
     }
 
     @Throws(InterruptedException::class)
-    override fun waitFor(completion: CompletableFuture<*>, duration: Duration): Boolean {
+    override fun waitFor(completion: CompletableFuture<*>, duration: Duration): Boolean = lock.withLock {
         return cache.waitFor(completion, duration)
     }
 
-    override fun remove(virtualNodeContext: VirtualNodeContext): CompletableFuture<*>? {
-        return cache.remove(virtualNodeContext)
+    override fun remove(virtualNodeContext: VirtualNodeContext): CompletableFuture<*>? = lock.withLock {
+        cache.remove(virtualNodeContext)
     }
 
-    override fun addEvictionListener(type: SandboxGroupType, listener: EvictionListener): Boolean {
-        return cache.addEvictionListener(type, listener)
+    override fun addEvictionListener(type: SandboxGroupType, listener: EvictionListener): Boolean = lock.withLock {
+        cache.addEvictionListener(type, listener)
     }
 
-    override fun removeEvictionListener(type: SandboxGroupType, listener: EvictionListener): Boolean {
-        return cache.removeEvictionListener(type, listener)
+    override fun removeEvictionListener(type: SandboxGroupType, listener: EvictionListener): Boolean = lock.withLock{
+        cache.removeEvictionListener(type, listener)
     }
 
     override fun getOrCreate(
         virtualNodeContext: VirtualNodeContext,
         initializer: SandboxGroupContextInitializer
-    ): SandboxGroupContext {
-        return cache.get(virtualNodeContext) { vnc ->
+    ): SandboxGroupContext = lock.withLock {
+        cache.get(virtualNodeContext) { vnc ->
             val sandboxTimer = CordaMetrics.Metric.SandboxCreateTime.builder()
                 .forVirtualNode(vnc.holdingIdentity.shortHash.value)
                 .withTag(CordaMetrics.Tag.SandboxGroupType, vnc.sandboxGroupType.name)
@@ -326,7 +329,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
         serviceNames: (CpkMetadata) -> Iterable<String>,
         isMetadataService: (Class<*>) -> Boolean,
         serviceMarkerType: Class<*>
-    ): AutoCloseable {
+    ): AutoCloseable = lock.withLock {
         val group = sandboxGroupContext.sandboxGroup
         val services = group.metadata.flatMap { (mainBundle, cpkMetadata) ->
             // Fetch metadata classes provided by each CPK main bundle.
@@ -373,8 +376,12 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                     }
                 )
 
-                logger.info("Registered Metadata Service [{}] for bundle [{}][{}]",
-                    serviceInterfaces.joinToString(), serviceBundle.symbolicName, serviceBundle.bundleId)
+                if (logger.isDebugEnabled) {
+                    logger.debug(
+                        "Registered Metadata Service [{}] for bundle [{}][{}]",
+                        serviceInterfaces.joinToString(), serviceBundle.symbolicName, serviceBundle.bundleId
+                    )
+                }
 
                 // Add an AutoCloseable that can unregister this service.
                 allCloseables.addFirst(AutoCloseable(registration::unregister))
@@ -389,14 +396,16 @@ class SandboxGroupContextServiceImpl @Activate constructor(
     }
 
     override fun acceptCustomMetadata(sandboxGroupContext: MutableSandboxGroupContext) {
-        sandboxGroupContext.getObjectByKey<Iterable<Any>>(SANDBOX_SINGLETONS)
-            ?.filterIsInstance<CustomMetadataConsumer>()
-            ?.forEach { customMetadataConsumer ->
-                customMetadataConsumer.accept(sandboxGroupContext)
-            }
+        lock.withLock {
+            sandboxGroupContext.getObjectByKey<Iterable<Any>>(SANDBOX_SINGLETONS)
+                ?.filterIsInstance<CustomMetadataConsumer>()
+                ?.forEach { customMetadataConsumer ->
+                    customMetadataConsumer.accept(sandboxGroupContext)
+                }
+        }
     }
 
-    override fun hasCpks(cpkChecksums: Set<SecureHash>): Boolean {
+    override fun hasCpks(cpkChecksums: Set<SecureHash>): Boolean = lock.withLock {
         val missingCpks = cpkChecksums.filter {
             cpkReadService.get(it) == null
         }
@@ -405,11 +414,11 @@ class SandboxGroupContextServiceImpl @Activate constructor(
             logger.info("CPK(s) not (yet) found in cache: {}", missingCpks)
         }
 
-        return missingCpks.isEmpty()
+        missingCpks.isEmpty()
     }
 
     @Deactivate
-    override fun close() {
+    override fun close() = lock.withLock {
         cache.close()
     }
 

@@ -1,13 +1,13 @@
 topics:
-  - name: config.management.request
+  - name: prefix.config.management.request
     partitions: 1
     replicas: 1
     config: {}
-  - name: config.management.request.resp
+  - name: prefix.config.management.request.resp
     partitions: 1
     replicas: 1
     config: {}
-  - name: config.topic
+  - name: prefix.config.topic
     partitions: 1
     replicas: 1
     config:
@@ -18,7 +18,7 @@ topics:
       max.compaction.lag.ms: 604800000
       min.cleanable.dirty.ratio: 0.5
 acls:
-  - topic: config.management.request
+  - topic: prefix.config.management.request
     users:
       - name: B
         operations:
@@ -28,7 +28,7 @@ acls:
         operations:
           - write
           - describe
-  - topic: config.management.request.resp
+  - topic: prefix.config.management.request.resp
     users:
       - name: J
         operations:
@@ -38,7 +38,7 @@ acls:
         operations:
           - write
           - describe
-  - topic: config.topic
+  - topic: prefix.config.topic
     users:
       - name: A
         operations:

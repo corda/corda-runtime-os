@@ -133,7 +133,9 @@ class PersistRegistrationRequestHandlerTest {
         ourHoldingIdentity.toAvro(),
     )
 
-    private fun getPersistRegistrationRequest(): PersistRegistrationRequest {
+    private fun getPersistRegistrationRequest(
+        status: RegistrationStatus = RegistrationStatus.PENDING_MEMBER_VERIFICATION
+    ): PersistRegistrationRequest {
         val memberContext = SignedData(
             ByteBuffer.wrap(memberContext),
             CryptoSignatureWithKey(
@@ -151,7 +153,7 @@ class PersistRegistrationRequestHandlerTest {
             CryptoSignatureSpec(registrationContextSignatureSpec, null, null)
         )
         return PersistRegistrationRequest(
-            RegistrationStatus.SENT_TO_MGM,
+            status,
             ourHoldingIdentity.toAvro(),
             MembershipRegistrationRequest(
                 ourRegistrationId,
@@ -186,7 +188,7 @@ class PersistRegistrationRequestHandlerTest {
             val entity = this as RegistrationRequestEntity
             assertThat(entity.registrationId).isEqualTo(ourRegistrationId)
             assertThat(entity.holdingIdentityShortHash).isEqualTo(ourHoldingIdentity.shortHash.value)
-            assertThat(entity.status).isEqualTo(RegistrationStatus.SENT_TO_MGM.toString())
+            assertThat(entity.status).isEqualTo(RegistrationStatus.PENDING_MEMBER_VERIFICATION.toString())
             assertThat(entity.created).isBeforeOrEqualTo(clock.instant())
             assertThat(entity.lastModified).isBeforeOrEqualTo(clock.instant())
             assertThat(entity.memberContext)
@@ -211,7 +213,7 @@ class PersistRegistrationRequestHandlerTest {
     @Test
     fun `invoke will not merge anything if the status as already moved on`() {
         val status = mock<RegistrationRequestEntity> {
-            on { status } doReturn "APPROVED"
+            on { status } doReturn RegistrationStatus.APPROVED.toString()
         }
         whenever(
             entityManager.find(
@@ -230,9 +232,85 @@ class PersistRegistrationRequestHandlerTest {
     }
 
     @Test
+    fun `invoke will merge nothing except serial if the status is sent to MGM and serial is null`() {
+        val now = clock.instant().minusSeconds(100)
+        val previousEntity = mock<RegistrationRequestEntity> {
+            on { status } doReturn RegistrationStatus.APPROVED.toString()
+            on { serial } doReturn null
+            on { registrationId } doReturn ourRegistrationId
+            on { holdingIdentityShortHash } doReturn ourHoldingIdentity.shortHash.value
+            on { created } doReturn now
+            on { lastModified } doReturn now
+            on { memberContext } doReturn memberContext
+            on { memberContextSignatureKey } doReturn memberContextSignatureKey
+            on { memberContextSignatureContent } doReturn memberContextSignatureContent
+            on { memberContextSignatureSpec } doReturn memberContextSignatureSpec
+            on { registrationContext } doReturn registrationContext
+            on { registrationContextSignatureKey } doReturn registrationContextSignatureKey
+            on { registrationContextSignatureContent } doReturn registrationContextSignatureContent
+            on { registrationContextSignatureSpec } doReturn registrationContextSignatureSpec
+        }
+        whenever(
+            entityManager.find(
+                RegistrationRequestEntity::class.java,
+                ourRegistrationId,
+                LockModeType.PESSIMISTIC_WRITE,
+            )
+        ).doReturn(previousEntity)
+
+        persistRegistrationRequestHandler.invoke(
+            getMemberRequestContext(),
+            getPersistRegistrationRequest(RegistrationStatus.SENT_TO_MGM),
+        )
+        val mergedEntity = argumentCaptor<Any>()
+        verify(entityManager).merge(mergedEntity.capture())
+
+        with(mergedEntity.firstValue) {
+            assertThat(this).isInstanceOf(RegistrationRequestEntity::class.java)
+            val entity = this as RegistrationRequestEntity
+            assertThat(entity.status).isEqualTo(RegistrationStatus.APPROVED.toString())
+            assertThat(entity.serial).isEqualTo(0L)
+            assertThat(entity.registrationId).isEqualTo(previousEntity.registrationId)
+            assertThat(entity.holdingIdentityShortHash).isEqualTo(previousEntity.holdingIdentityShortHash)
+            assertThat(entity.created).isEqualTo(now)
+            assertThat(entity.lastModified).isAfter(now)
+            assertThat(entity.memberContext).isEqualTo(previousEntity.memberContext)
+            assertThat(entity.memberContextSignatureKey).isEqualTo(previousEntity.memberContextSignatureKey)
+            assertThat(entity.memberContextSignatureContent).isEqualTo(previousEntity.memberContextSignatureContent)
+            assertThat(entity.memberContextSignatureSpec).isEqualTo(previousEntity.memberContextSignatureSpec)
+            assertThat(entity.registrationContext).isEqualTo(previousEntity.registrationContext)
+            assertThat(entity.registrationContextSignatureKey).isEqualTo(previousEntity.registrationContextSignatureKey)
+            assertThat(entity.registrationContextSignatureContent).isEqualTo(entity.registrationContextSignatureContent)
+            assertThat(entity.registrationContextSignatureSpec).isEqualTo(entity.registrationContextSignatureSpec)
+        }
+    }
+
+    @Test
+    fun `invoke will not merge anything if the status is sent to MGM and serial is not null`() {
+        val status = mock<RegistrationRequestEntity> {
+            on { status } doReturn RegistrationStatus.APPROVED.toString()
+            on { serial } doReturn 1L
+        }
+        whenever(
+            entityManager.find(
+                RegistrationRequestEntity::class.java,
+                ourRegistrationId,
+                LockModeType.PESSIMISTIC_WRITE,
+            )
+        ).doReturn(status)
+
+        persistRegistrationRequestHandler.invoke(
+            getMemberRequestContext(),
+            getPersistRegistrationRequest(RegistrationStatus.SENT_TO_MGM),
+        )
+
+        verify(entityManager, never()).merge(any<RegistrationRequestEntity>())
+    }
+
+    @Test
     fun `invoke will merge if the status is in earlier state`() {
         val status = mock<RegistrationRequestEntity> {
-            on { status } doReturn "NEW"
+            on { status } doReturn RegistrationStatus.NEW.toString()
         }
         whenever(
             entityManager.find(

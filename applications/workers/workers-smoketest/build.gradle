@@ -153,4 +153,11 @@ tasks.register('smokeTest', Test) {
     systemProperty "uniquenessWorkerUrl", uniquenessWorkerUrl
 
     jvmArgs '--add-opens', 'java.base/java.lang.reflect=ALL-UNNAMED'
+
+    systemProperties([
+            // Configuration parameters to execute top-level classes in parallel but methods in same thread
+            'junit.jupiter.execution.parallel.enabled'                 : 'true',
+            'junit.jupiter.execution.parallel.mode.default'            : 'same_thread',
+            'junit.jupiter.execution.parallel.mode.classes.default'    : 'concurrent',
+    ])
 }

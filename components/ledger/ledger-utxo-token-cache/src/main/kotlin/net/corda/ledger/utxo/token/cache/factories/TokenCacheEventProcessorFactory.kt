@@ -1,18 +1,17 @@
 package net.corda.ledger.utxo.token.cache.factories
 
-import net.corda.data.ledger.utxo.token.selection.event.TokenPoolCacheEvent
-import net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey
-import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
-import net.corda.messaging.api.processor.StateAndEventProcessor
+import net.corda.ledger.utxo.token.cache.services.TokenSelectionSyncRPCProcessor
+import net.corda.libs.statemanager.api.StateManager
 
 /**
- * The [TokenCacheEventProcessorFactory] creates instances of the [StateAndEventProcessor]
+ * The [TokenCacheEventProcessorFactory] creates instances of the [TokenSelectionSyncRPCProcessor]
  */
 interface TokenCacheEventProcessorFactory {
 
     /**
-     * Creates an instance of the  [StateAndEventProcessor]
+     * Creates an instance of the [TokenSelectionSyncRPCProcessor]
      */
-    fun create(): StateAndEventProcessor<TokenPoolCacheKey, TokenPoolCacheState, TokenPoolCacheEvent>
+    fun createTokenSelectionSyncRPCProcessor(
+        stateManager: StateManager,
+    ): TokenSelectionSyncRPCProcessor
 }
-

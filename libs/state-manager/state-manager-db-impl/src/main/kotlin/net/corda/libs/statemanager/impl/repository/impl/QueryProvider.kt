@@ -12,15 +12,14 @@ interface QueryProvider {
 
     val createState: String
 
-    val updateState: String
-
-    val findStatesByKey: String
-
     val deleteStatesByKey: String
 
     val findStatesUpdatedBetween: String
 
-    // TODO-[CORE-17025]: make below methods regular queries with parameters instead of embedding the filter value.
+    fun updateStates(size: Int): String
+
+    fun findStatesByKey(size: Int): String
+
     fun findStatesByMetadataMatchingAll(filters: Collection<MetadataFilter>): String
 
     fun findStatesByMetadataMatchingAny(filters: Collection<MetadataFilter>): String

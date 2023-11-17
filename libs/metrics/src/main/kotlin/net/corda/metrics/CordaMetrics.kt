@@ -7,7 +7,6 @@ import io.micrometer.core.instrument.Meter
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Metrics
 import io.micrometer.core.instrument.Tags
-import io.micrometer.core.instrument.Tag as micrometerTag
 import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.binder.BaseUnits
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry
@@ -19,6 +18,7 @@ import java.nio.file.Path
 import java.util.function.Supplier
 import java.util.function.ToDoubleFunction
 import java.util.function.ToLongFunction
+import io.micrometer.core.instrument.Tag as micrometerTag
 
 
 object CordaMetrics {
@@ -206,6 +206,11 @@ object CordaMetrics {
          * Number of outbound peer-to-peer sessions that timed out (indicating communication issues with peers).
          */
         object OutboundSessionTimeoutCount : Metric<Counter>("p2p.session.outbound.timeout", Metrics::counter)
+
+        /**
+         * Number of inbound peer-to-peer sessions that timed out (indicating communication issues with peers).
+         */
+        object InboundSessionTimeoutCount : Metric<Counter>("p2p.session.inbound.timeout", Metrics::counter)
 
         /**
          * Number of outbound peer-to-peer sessions.
@@ -660,6 +665,17 @@ object CordaMetrics {
                 "consumer.partitioned.inmemory.store",
                 computation
             )
+
+            /**
+             * Record how long a HTTP RPC call from the messaging library takes to receive a response
+             */
+            object HTTPRPCResponseTime : Metric<Timer>("rpc.http.response.time", CordaMetrics::timer)
+
+            /**
+             * Record the size of HTTP RPC responses
+             */
+            object HTTPRPCResponseSize : Metric<DistributionSummary>("rpc.http.response.size", Metrics::summary)
+
         }
 
         object TaskManager {
@@ -691,6 +707,16 @@ object CordaMetrics {
          * Http method for which the metric is applicable.
          */
         HttpMethod("http.method"),
+
+        /**
+         * The URI that a HTTP request was sent to
+         */
+        HttpRequestUri("http.request.uri"),
+
+        /**
+         * Response code received for a HTTP response
+         */
+        HttpResponseCode("http.response.code"),
 
         /**
          * Type of the SandboxGroup to which the metric applies.

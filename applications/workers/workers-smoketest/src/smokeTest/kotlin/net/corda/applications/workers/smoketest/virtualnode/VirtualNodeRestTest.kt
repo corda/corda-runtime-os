@@ -1,5 +1,6 @@
 package net.corda.applications.workers.smoketest.virtualnode
 
+import com.fasterxml.jackson.databind.JsonNode
 import java.util.UUID
 import net.corda.applications.workers.smoketest.utils.ERROR_CPI_NOT_UPLOADED
 import net.corda.applications.workers.smoketest.utils.TEST_CPB_LOCATION
@@ -16,7 +17,7 @@ import net.corda.e2etest.utilities.CODE_SIGNER_CERT_ALIAS
 import net.corda.e2etest.utilities.CODE_SIGNER_CERT_USAGE
 import net.corda.e2etest.utilities.ClusterBuilder
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
-import net.corda.e2etest.utilities.assertWithRetry
+import net.corda.e2etest.utilities.SimpleResponse
 import net.corda.e2etest.utilities.assertWithRetryIgnoringExceptions
 import net.corda.e2etest.utilities.cluster
 import net.corda.e2etest.utilities.conditionallyUploadCpiSigningCertificate
@@ -117,7 +118,7 @@ class VirtualNodeRestTest {
                 timeout(retryTimeout)
                 interval(retryInterval)
                 command { cpiList() }
-                condition { it.code == 200 }
+                condition { it.code == 200 && it.toJson()["cpis"].size() > 0 }
             }.toJson()
 
             assertThat(json["cpis"].size()).isGreaterThan(0)
@@ -179,12 +180,19 @@ class VirtualNodeRestTest {
     }
 
     private fun ClusterBuilder.getCpiChecksum(cpiName: String): String {
+
+        fun SimpleResponse.cpiJsonNode(): JsonNode? {
+            return body.toJson()["cpis"]?.toList()?.find { it["id"]?.get("cpiName")?.textValue() == cpiName }
+        }
+
         val cpis = assertWithRetryIgnoringExceptions {
             command { cpiList() }
-            condition { it.code == ResponseCode.OK.statusCode }
-        }.body.toJson()["cpis"]
+            condition { resp ->
+                resp.code == ResponseCode.OK.statusCode && resp.cpiJsonNode() != null
+            }
+        }
 
-        val cpiJson = cpis.toList().find { it["id"]["cpiName"].textValue() == cpiName }
+        val cpiJson: JsonNode? = cpis.cpiJsonNode()
         assertNotNull(cpiJson, "Cpi with name $cpiName not yet found in cpi list.")
         return truncateLongHash(cpiJson!!["cpiFileChecksum"].textValue())
     }

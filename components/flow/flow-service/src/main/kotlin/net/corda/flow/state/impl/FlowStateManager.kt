@@ -30,6 +30,8 @@ class FlowStateManager(private val initialState: FlowState) {
 
     val holdingIdentity: HoldingIdentity = state.flowStartContext.identity.toCorda()
 
+    val suspendCount: Int get() = state.suspendCount
+
     val fiber: ByteBuffer
         get() = state.fiber ?: ByteBuffer.wrap(byteArrayOf())
 
@@ -40,7 +42,7 @@ class FlowStateManager(private val initialState: FlowState) {
 
     fun updateSuspendedFiber(fiber: ByteBuffer) {
         state.fiber = fiber
-        state.suspendCount++
+        state.suspendCount += 1
     }
 
     fun getSessionState(sessionId: String): SessionState? {

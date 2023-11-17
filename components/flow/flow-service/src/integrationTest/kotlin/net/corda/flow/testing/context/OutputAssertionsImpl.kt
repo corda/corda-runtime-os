@@ -2,7 +2,6 @@ package net.corda.flow.testing.context
 
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
-import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
@@ -19,6 +18,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.data.persistence.EntityRequest
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.cache.FlowFiberCache
+import net.corda.flow.fiber.cache.impl.FlowFiberCacheImpl
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
@@ -424,7 +424,8 @@ class OutputAssertionsImpl(
     override fun flowFiberCacheContainsKey(holdingId: HoldingIdentity, flowId: String) {
         asserts.add {
             assertNotNull(
-                flowFiberCache.get(FlowKey(flowId, holdingId)),
+                // :(
+                (flowFiberCache as FlowFiberCacheImpl).findInCache(holdingId, flowId),
                 "Expected flow fiber cache to contain flowKey: $flowId, $holdingId.")
         }
     }
@@ -432,7 +433,8 @@ class OutputAssertionsImpl(
     override fun flowFiberCacheDoesNotContainKey(holdingId: HoldingIdentity, flowId: String) {
         asserts.add {
             assertNull(
-                flowFiberCache.get(FlowKey(flowId, holdingId)),
+                // :(
+                (flowFiberCache as FlowFiberCacheImpl).findInCache(holdingId, flowId),
                 "Expected flow fiber cache to not contain flowKey: $flowId, $holdingId"
             )
         }
@@ -443,7 +445,7 @@ class OutputAssertionsImpl(
         response: StateAndEventProcessor.Response<Checkpoint>,
     ): List<FlowEvent> {
         return response.responseEvents
-            .filter { it.key == flowId || it.topic == Schemas.Flow.FLOW_EVENT_TOPIC || it.value is FlowEvent }
+            .filter { it.key == flowId || it.topic == Schemas.Flow.FLOW_SESSION || it.value is FlowEvent }
             .map { it.value as FlowEvent }
     }
 
@@ -452,7 +454,7 @@ class OutputAssertionsImpl(
     ): List<Record<*, FlowMapperEvent>> {
         @Suppress("unchecked_cast")
         return response.responseEvents
-            .filter { it.topic == Schemas.Flow.FLOW_MAPPER_EVENT_TOPIC && it.value is FlowMapperEvent }
+            .filter { it.topic == Schemas.Flow.FLOW_MAPPER_SESSION_OUT && it.value is FlowMapperEvent }
                 as List<Record<*, FlowMapperEvent>>
     }
 

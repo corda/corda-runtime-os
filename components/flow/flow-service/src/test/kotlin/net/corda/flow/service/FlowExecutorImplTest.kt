@@ -36,7 +36,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class FlowExecutorImplTest {
-
     private val coordinatorFactory = mock<LifecycleCoordinatorFactory>()
     private val flowEventProcessorFactory = mock<FlowEventProcessorFactory>()
     private val stateManagerFactory = mock<StateManagerFactory>()
@@ -71,7 +70,6 @@ class FlowExecutorImplTest {
 
         whenever(coordinatorFactory.createCoordinator(any(), any())).thenReturn(flowExecutorCoordinator)
         whenever(flowExecutorCoordinator.followStatusChangesByName(any())).thenReturn(subscriptionRegistrationHandle)
-        whenever(flowExecutorCoordinator.createManagedResource(any(), any<() -> StateManager>())).thenReturn(stateManager)
     }
 
     @Test
@@ -95,15 +93,17 @@ class FlowExecutorImplTest {
     }
 
     @Test
-    fun `lifecycle - flow executor signals error if event mediator signals error`() {
-        val name = LifecycleCoordinatorName("", "")
-        whenever(multiSourceEventMediator.subscriptionName).thenReturn(name)
+    fun `lifecycle - flow executor follows event mediator and state manager lifecycle events`() {
+        val subscriptionName = LifecycleCoordinatorName("mediator", "1")
+        whenever(multiSourceEventMediator.subscriptionName).thenReturn(subscriptionName)
+        val stateManagerName = LifecycleCoordinatorName("stateManager", "1")
+        whenever(stateManager.name).thenReturn(stateManagerName)
 
         val flowExecutor = getFlowExecutor()
         flowExecutor.start()
         flowExecutor.onConfigChange(config)
 
-        verify(flowExecutorCoordinator).followStatusChangesByName(eq(setOf(name)))
+        verify(flowExecutorCoordinator).followStatusChangesByName(eq(setOf(subscriptionName, stateManagerName)))
     }
 
     @Test
@@ -114,7 +114,7 @@ class FlowExecutorImplTest {
     }
 
     @Test
-    fun `lifecycle - flow executor stops event mediator when stopped`() {
+    fun `lifecycle - flow executor stops event mediator and state manager when stopped`() {
         val flowExecutor = getFlowExecutor()
         flowExecutor.onConfigChange(config)
 
@@ -126,17 +126,24 @@ class FlowExecutorImplTest {
 
         verify(subscriptionRegistrationHandle).close()
         verify(multiSourceEventMediator).close()
+        verify(stateManager).stop()
     }
 
     @Test
     fun `lifecycle - flow executor does not signal lifecycle change for successful reconfiguration`() {
-        val name1 = LifecycleCoordinatorName("", "")
-        val name2 = LifecycleCoordinatorName("", "")
+        val subscriptionName1 = LifecycleCoordinatorName("mediator", "1")
+        val stateManagerName1 = LifecycleCoordinatorName("stateManager", "1")
+        val subscriptionName2 = LifecycleCoordinatorName("mediator", "2")
+        val stateManagerName2 = LifecycleCoordinatorName("stateManager", "2")
+
+        val stateManager2 = mock<StateManager>()
         val subscriptionRegistrationHandle2 = mock<RegistrationHandle>()
         val multiSourceEventMediator2 = mock<MultiSourceEventMediator<String, Checkpoint, FlowEvent>>()
 
-        whenever(multiSourceEventMediator.subscriptionName).thenReturn(name1)
-        whenever(multiSourceEventMediator2.subscriptionName).thenReturn(name2)
+        whenever(stateManager.name).thenReturn(stateManagerName1)
+        whenever(multiSourceEventMediator.subscriptionName).thenReturn(subscriptionName1)
+        whenever(stateManager2.name).thenReturn(stateManagerName2)
+        whenever(multiSourceEventMediator2.subscriptionName).thenReturn(subscriptionName2)
 
         // First config change gets us subscribed
         val flowExecutor = getFlowExecutor()
@@ -152,7 +159,7 @@ class FlowExecutorImplTest {
                 any(),
             )
         ).thenReturn(multiSourceEventMediator2)
-
+        whenever(stateManagerFactory.create(any())).thenReturn(stateManager2)
         whenever(flowExecutorCoordinator.followStatusChangesByName(any())).thenReturn(subscriptionRegistrationHandle2)
 
         flowExecutor.onConfigChange(config)
@@ -160,13 +167,16 @@ class FlowExecutorImplTest {
         inOrder(
             multiSourceEventMediator,
             multiSourceEventMediator2,
+            stateManager, stateManager2,
             subscriptionRegistrationHandle,
             subscriptionRegistrationHandle2,
             flowExecutorCoordinator
         ).apply {
             verify(subscriptionRegistrationHandle).close()
             verify(multiSourceEventMediator).close()
-            verify(flowExecutorCoordinator).followStatusChangesByName(eq(setOf(name2)))
+            verify(stateManager).stop()
+            verify(flowExecutorCoordinator).followStatusChangesByName(eq(setOf(subscriptionName2, stateManagerName2)))
+            verify(stateManager2).start()
             verify(multiSourceEventMediator2).start()
         }
     }
@@ -202,5 +212,6 @@ class FlowExecutorImplTest {
             .withEndpoint(BootConfig.PERSISTENCE_WORKER_REST_ENDPOINT, "TEST_PERSISTENCE_ENDPOINT")
             .withEndpoint(BootConfig.UNIQUENESS_WORKER_REST_ENDPOINT, "TEST_UNIQUENESS_ENDPOINT")
             .withEndpoint(BootConfig.VERIFICATION_WORKER_REST_ENDPOINT, "TEST_VERIFICATION_ENDPOINT")
+            .withEndpoint(BootConfig.TOKEN_SELECTION_WORKER_REST_ENDPOINT, "TEST_TOKEN_SELECTION_ENDPOINT")
     }
 }

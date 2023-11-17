@@ -4,7 +4,11 @@ import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
+import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.SignedData
+import net.corda.data.membership.common.RegistrationRequestDetails
+import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
@@ -17,6 +21,7 @@ import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationStateDto
 import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.membership.client.MemberResourceClient
+import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -49,6 +54,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
@@ -391,6 +397,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
                 any(), any(), any(), any(), any(), any(), any(), any(), any(),
             )
         ).thenReturn(vNode)
+        whenever(virtualNodeRepository.completedOperation(any(), any())).thenReturn(vNode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
         whenever(oldVirtualNodeEntityRepository.getCPIMetadataById(any(), any())).thenReturn(currentCpiMetadata)
         whenever(virtualNodeInfoPublisher.publish(any())).thenReturn(emptyList())
@@ -523,13 +530,14 @@ class VirtualNodeUpgradeOperationHandlerTest {
                 eq(request.toString())
             )
         ).thenReturn(inProgressVnodeInfoWithoutVaultDdl)
+        whenever(virtualNodeRepository.completedOperation(any(), any())).thenReturn(inProgressVnodeInfoWithoutVaultDdl)
 
         val vnodeInfoCapture =
             argumentCaptor<List<Record<net.corda.data.identity.HoldingIdentity, net.corda.data.virtualnode.VirtualNodeInfo>>>()
 
         handler.handle(requestTimestamp, requestId, request)
 
-        verify(virtualNodeInfoPublisher, times(1)).publish(vnodeInfoCapture.capture())
+        verify(virtualNodeInfoPublisher, times(2)).publish(vnodeInfoCapture.capture())
 
         assertUpgradedVnodeInfoIsPublished(
             vnodeInfoCapture.firstValue,
@@ -561,12 +569,105 @@ class VirtualNodeUpgradeOperationHandlerTest {
                 eq(request.toString())
             )
         ).thenReturn(inProgressVnodeInfoWithoutVaultDdl)
+        whenever(virtualNodeRepository.completedOperation(any(), any())).thenReturn(inProgressVnodeInfoWithoutVaultDdl)
         val mgmRecord = mock<Record<*, *>>()
         whenever(recordFactory.createMgmInfoRecord(any(), eq(newMgmInfo))).thenReturn(mgmRecord)
 
         handler.handle(requestTimestamp, requestId, request)
 
         verify(virtualNodeInfoPublisher).publish(eq(listOf(mgmRecord)))
+    }
+
+    @Test
+    fun `serial from registration request is increased when not null for automated re-registration`() {
+        val requestTimestamp = Instant.now()
+
+        whenever(virtualNodeRepository.find(em, ShortHash.of(vnodeId))).thenReturn(vNode)
+        whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(
+            nonStaticTargetCpiMetadata
+        )
+        whenever(oldVirtualNodeEntityRepository.getCPIMetadataById(eq(em), eq(cpiId)))
+            .thenReturn(nonStaticTargetCpiMetadata)
+        whenever(
+            virtualNodeRepository.upgradeVirtualNodeCpi(
+                eq(em),
+                eq(vnodeId),
+                eq(cpiName),
+                eq("v2"),
+                eq(sshString),
+                eq(newExternalMessagingRouteConfig),
+                eq(requestId),
+                eq(requestTimestamp),
+                eq(request.toString())
+            )
+        ).thenReturn(inProgressVnodeInfoWithoutVaultDdl)
+        whenever(virtualNodeRepository.completedOperation(any(), any())).thenReturn(inProgressVnodeInfoWithoutVaultDdl)
+
+        val memberBytes = byteArrayOf(1, 2)
+        val registrationRequest = mock<RegistrationRequestDetails> {
+            on { serial } doReturn 1L
+            on { memberProvidedContext } doReturn SignedData(ByteBuffer.wrap(memberBytes), mock(), mock())
+        }
+        whenever(deserializer.deserialize(any()))
+            .thenReturn(KeyValuePairList(listOf(KeyValuePair("key", "value"))))
+        whenever(membershipQueryClient.queryRegistrationRequests(
+            eq(mockHoldingIdentity), eq(mockHoldingIdentity.x500Name), eq(listOf(RegistrationStatus.APPROVED)), anyOrNull(),
+        )).thenReturn(MembershipQueryResult.Success(listOf(registrationRequest)))
+        val requestCaptor = argumentCaptor<Map<String, String>>()
+        whenever(memberResourceClient.startRegistration(eq(mockHoldingIdentity.shortHash), requestCaptor.capture()))
+            .thenReturn(mock())
+
+        handler.handle(requestTimestamp, requestId, request)
+
+        assertThat(requestCaptor.allValues).hasSize(1)
+        assertThat(requestCaptor.firstValue)
+            .containsAllEntriesOf(mapOf("key" to "value", MemberInfoExtension.SERIAL to "2"))
+    }
+
+    @Test
+    fun `serial from registration request is not attached when null for automated re-registration`() {
+        val requestTimestamp = Instant.now()
+
+        whenever(virtualNodeRepository.find(em, ShortHash.of(vnodeId))).thenReturn(vNode)
+        whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(
+            nonStaticTargetCpiMetadata
+        )
+        whenever(oldVirtualNodeEntityRepository.getCPIMetadataById(eq(em), eq(cpiId)))
+            .thenReturn(nonStaticTargetCpiMetadata)
+        whenever(
+            virtualNodeRepository.upgradeVirtualNodeCpi(
+                eq(em),
+                eq(vnodeId),
+                eq(cpiName),
+                eq("v2"),
+                eq(sshString),
+                eq(newExternalMessagingRouteConfig),
+                eq(requestId),
+                eq(requestTimestamp),
+                eq(request.toString())
+            )
+        ).thenReturn(inProgressVnodeInfoWithoutVaultDdl)
+        whenever(virtualNodeRepository.completedOperation(any(), any())).thenReturn(inProgressVnodeInfoWithoutVaultDdl)
+
+        val memberBytes = byteArrayOf(1, 2)
+        val registrationRequest = mock<RegistrationRequestDetails> {
+            on { serial } doReturn null
+            on { memberProvidedContext } doReturn SignedData(ByteBuffer.wrap(memberBytes), mock(), mock())
+        }
+        whenever(deserializer.deserialize(any()))
+            .thenReturn(KeyValuePairList(listOf(KeyValuePair("key", "value"))))
+        whenever(membershipQueryClient.queryRegistrationRequests(
+            eq(mockHoldingIdentity), eq(mockHoldingIdentity.x500Name), eq(listOf(RegistrationStatus.APPROVED)), anyOrNull(),
+        )).thenReturn(MembershipQueryResult.Success(listOf(registrationRequest)))
+        val requestCaptor = argumentCaptor<Map<String, String>>()
+        whenever(memberResourceClient.startRegistration(eq(mockHoldingIdentity.shortHash), requestCaptor.capture()))
+            .thenReturn(mock())
+
+        handler.handle(requestTimestamp, requestId, request)
+
+        assertThat(requestCaptor.allValues).hasSize(1)
+        assertThat(requestCaptor.firstValue)
+            .containsAllEntriesOf(mapOf("key" to "value"))
     }
 
     @Test
