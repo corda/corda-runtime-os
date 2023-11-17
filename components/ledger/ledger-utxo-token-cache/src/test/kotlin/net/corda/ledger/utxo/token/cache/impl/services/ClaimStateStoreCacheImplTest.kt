@@ -34,11 +34,12 @@ class ClaimStateStoreCacheImplTest {
         whenever(claimStateStoreFactory.create(any())).thenReturn(newClaimStateStore)
 
         val result1 = claimStateStoreCache.get(POOL_KEY)
-        assertThat(result1).isEqualTo(newClaimStateStore)
-
         val result2 = claimStateStoreCache.get(POOL_KEY)
-        verify(claimStateStoreFactory, times(1)).create(any())
+
+        assertThat(result1).isEqualTo(newClaimStateStore)
         assertThat(result2).isSameAs(result1)
+
+        // Ensure that the claim state was only created once
         verify(claimStateStoreFactory, times(1)).create(any())
     }
 }
