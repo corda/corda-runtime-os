@@ -24,9 +24,9 @@ class WrappingRepositoryImpl(
     override fun close() = entityManagerFactory.close()
 
     override fun saveKeyWithId(key: WrappingKeyInfo, id: UUID?): WrappingKeyInfo =
-        entityManagerFactory.createEntityManager().use {
-            it.transaction {
-                val r2 = it.merge(
+        entityManagerFactory.createEntityManager().use { em ->
+            em.transaction { t ->
+                t.merge(
                     WrappingKeyEntity(
                         id = id ?: UUID.randomUUID(),
                         generation = key.generation,
@@ -39,9 +39,7 @@ class WrappingRepositoryImpl(
                         isParentKeyManaged = false,
                         parentKeyReference = key.parentKeyAlias,
                     )
-                )
-                check(r2.generation == key.generation)
-                r2
+                ).also { wrappingKeyEntity -> check(wrappingKeyEntity.generation == key.generation) }
             }.toDto().also {
                 logger.info("Storing wrapping key with alias ${key.alias} in tenant $tenantId")
             }

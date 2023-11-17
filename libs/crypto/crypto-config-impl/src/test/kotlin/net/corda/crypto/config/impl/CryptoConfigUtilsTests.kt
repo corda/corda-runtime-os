@@ -37,7 +37,7 @@ class CryptoConfigUtilsTests {
 
     @Test
     fun `Default config should have expected values`() {
-        val config = createDefaultCryptoConfig("master-passphrase", "master-salt")
+        val config = createDefaultCryptoConfig(listOf(KeyDerivationParameters("master-passphrase", "master-salt")))
         val signingService = config.signingService()
         assertEquals(60, signingService.cache.expireAfterAccessMins)
         assertEquals(10000, signingService.cache.maximumSize)
@@ -65,7 +65,7 @@ class CryptoConfigUtilsTests {
     @Test
     fun `Crypto config should validate`() {
         val validator = ConfigurationValidatorFactoryImpl().createConfigValidator()
-        val config = createDefaultCryptoConfig("pass", "salt")
+        val config = createDefaultCryptoConfig(listOf(KeyDerivationParameters("pass", "salt")))
         val configJSON = config.root().render(ConfigRenderOptions.defaults())
         assertThat(configJSON.contains("passphrase"))
         validator.validate(CRYPTO_CONFIG, Version(1, 0), config, true)
@@ -73,7 +73,7 @@ class CryptoConfigUtilsTests {
 
     @Test
     fun `Test config should have expected values`() {
-        val config = createDefaultCryptoConfig("pass", "salt")
+        val config = createDefaultCryptoConfig(listOf(KeyDerivationParameters("pass", "salt")))
         val signingService = config.signingService()
         assertEquals(60, signingService.cache.expireAfterAccessMins)
         assertEquals(10000, signingService.cache.maximumSize)
@@ -97,7 +97,7 @@ class CryptoConfigUtilsTests {
     @Test
     fun `Should be able to get crypto config from the map of configs`() {
         val config = SmartConfigFactory.createWithoutSecurityServices().create(
-            createDefaultCryptoConfig("master-passphrase", "master-salt")
+            createDefaultCryptoConfig(listOf(KeyDerivationParameters("master-passphrase", "master-salt")))
         )
         val map = mapOf(
             FLOW_CONFIG to configFactory.create(ConfigFactory.empty()),
@@ -120,7 +120,7 @@ class CryptoConfigUtilsTests {
     @Test
     fun `Should be able to get signing service config`() {
         val config = createDefaultCryptoConfig(
-            "master-passphrase", "master-salt"
+            listOf(KeyDerivationParameters("master-passphrase", "master-salt"))
         ).signingService()
         assertEquals(60, config.cache.expireAfterAccessMins)
         assertEquals(10000, config.cache.maximumSize)

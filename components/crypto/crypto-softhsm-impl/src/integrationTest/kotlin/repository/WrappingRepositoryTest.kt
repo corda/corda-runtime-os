@@ -33,7 +33,7 @@ class WrappingRepositoryTest : CryptoRepositoryTest() {
         val keyAlias = "save-key-${UUID.randomUUID()}"
         val repo = WrappingRepositoryImpl(emf, "test")
 
-        val savedKey = repo.saveKey(wrappingKeyInfo)
+        val savedKey = repo.saveKey(wrappingKeyInfo.copy(alias = keyAlias))
 
         val loadedKey = emf.createEntityManager().use {
             it
@@ -63,12 +63,13 @@ class WrappingRepositoryTest : CryptoRepositoryTest() {
     @MethodSource("emfs")
     fun findKey(emf: EntityManagerFactory) {
         val keyAlias = "find-key-${UUID.randomUUID()}"
+        val wrappingKeyInfoWithAlias = wrappingKeyInfo.copy(alias=keyAlias)
         val repo = WrappingRepositoryImpl(emf, "test")
-        repo.saveKey(wrappingKeyInfo)
+        repo.saveKey(wrappingKeyInfoWithAlias)
 
         val loadedKey = repo.findKey(keyAlias)
 
-        assertThat(loadedKey).isEqualTo(wrappingKeyInfo)
+        assertThat(loadedKey).isEqualTo(wrappingKeyInfoWithAlias)
     }
 
     @ParameterizedTest
@@ -82,34 +83,37 @@ class WrappingRepositoryTest : CryptoRepositoryTest() {
     @ParameterizedTest
     @MethodSource("emfs")
     fun `findKeyWithId returns the UUID and the key`(emf: EntityManagerFactory) {
+        val keyAlias = "save-key-${UUID.randomUUID()}"
+        val wrappingKeyInfoWithUniqueAlias = wrappingKeyInfo.copy(alias=keyAlias)
         val repo = WrappingRepositoryImpl(emf, "test")
-        repo.saveKey(wrappingKeyInfo)
-        val loadedKeyAndId = repo.findKeyAndId(wrappingKeyInfo.alias)
+        repo.saveKey(wrappingKeyInfoWithUniqueAlias)
+        val loadedKeyAndId = repo.findKeyAndId(wrappingKeyInfoWithUniqueAlias.alias)
 
         assertThat(loadedKeyAndId).isNotNull()
         assertInstanceOf(UUID::class.java, loadedKeyAndId!!.first)
-        assertThat(loadedKeyAndId.second).isEqualTo(wrappingKeyInfo)
+        assertThat(loadedKeyAndId.second).isEqualTo(wrappingKeyInfoWithUniqueAlias)
     }
 
     @ParameterizedTest
     @MethodSource("emfs")
     fun `saveKeyWithId with existing UUID updates the record`(emf: EntityManagerFactory) {
-        val wrappingKeyInfo2 = WrappingKeyInfo(
+        val keyAlias = "find-key-${UUID.randomUUID()}"
+        val wrappingKeyInfoWithUniqueAlias = WrappingKeyInfo(
             encodingVersion = 234,
             algorithmName = "algo-234",
             keyMaterial = SecureHashUtils.randomBytes(),
             generation = 777,
             parentKeyAlias = "Salamander",
-            alias = "alias"
+            alias = keyAlias
         )
 
         val repo = WrappingRepositoryImpl(emf, "test")
-        repo.saveKey(wrappingKeyInfo)
-        val loadedKeyAndId = repo.findKeyAndId(wrappingKeyInfo.alias)
-        val updatedKey = repo.saveKeyWithId(wrappingKeyInfo2, loadedKeyAndId?.first)
-        val loadedKeyAndId2 = repo.findKeyAndId(wrappingKeyInfo.alias)
+        repo.saveKey(wrappingKeyInfoWithUniqueAlias)
+        val loadedKeyAndId = repo.findKeyAndId(wrappingKeyInfoWithUniqueAlias.alias)
+        val updatedKey = repo.saveKeyWithId(wrappingKeyInfoWithUniqueAlias, loadedKeyAndId?.first)
+        val loadedKeyAndId2 = repo.findKeyAndId(wrappingKeyInfoWithUniqueAlias.alias)
 
-        assertThat(updatedKey).isEqualTo(wrappingKeyInfo2)
+        assertThat(updatedKey).isEqualTo(wrappingKeyInfoWithUniqueAlias)
         assertThat(loadedKeyAndId).isNotNull()
         assertThat(loadedKeyAndId2).isNotNull()
         assertThat(loadedKeyAndId!!.first).isEqualTo(loadedKeyAndId2!!.first)

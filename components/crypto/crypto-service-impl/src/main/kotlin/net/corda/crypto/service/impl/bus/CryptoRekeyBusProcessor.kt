@@ -5,7 +5,6 @@ import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.softhsm.WrappingRepositoryFactory
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
-import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -19,7 +18,6 @@ class CryptoRekeyBusProcessor(
     val cryptoService: CryptoService,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val wrappingRepositoryFactory: WrappingRepositoryFactory,
-    private val stateManager: StateManager
 ) : DurableProcessor<String, KeyRotationRequest> {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
