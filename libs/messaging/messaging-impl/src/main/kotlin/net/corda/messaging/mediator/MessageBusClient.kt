@@ -2,12 +2,15 @@ package net.corda.messaging.mediator
 
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
+import net.corda.messaging.api.exception.CordaMessageAPIFatalException
+import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_ENDPOINT
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_KEY
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.concurrent.CompletableFuture
 
 class MessageBusClient(
     override val id: String,
@@ -18,12 +21,44 @@ class MessageBusClient(
         private val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun send(message: MediatorMessage<*>): MediatorMessage<*>? {
-        producer.send(message.toCordaProducerRecord()) { ex ->
-            log.info("Encountered an error while sending a message.", ex)
-            ex?.let { throw ex }
+    override fun send(message: MediatorMessage<*>): MediatorMessage<*> {
+        val future = CompletableFuture<Unit>()
+        val record = message.toCordaProducerRecord()
+        producer.send(record) { ex ->
+            setFutureFromResponse(ex, future, record.topic)
         }
-        return null
+
+        return MediatorMessage(future)
+    }
+
+    /**
+     * Helper function to set a [future] result based on the presence of an [exception]
+     */
+    private fun setFutureFromResponse(
+        exception: Exception?,
+        future: CompletableFuture<Unit>,
+        topic: String
+    ) {
+        when (exception) {
+            null -> future.complete(Unit)
+            else -> {
+                val baseMessage = "Producer clientId $id for topic $topic failed to send."
+                val errorMessage = when (exception) {
+                    is CordaMessageAPIIntermittentException -> baseMessage
+                    is CordaMessageAPIFatalException -> "$baseMessage Fatal producer error occurred."
+                    else -> "$baseMessage Unknown error occurred."
+                }
+
+                log.warn(errorMessage, exception)
+
+                val wrappedException = when (exception) {
+                    is CordaMessageAPIIntermittentException, is CordaMessageAPIFatalException -> exception
+                    else -> CordaMessageAPIFatalException(errorMessage, exception)
+                }
+
+                future.completeExceptionally(wrappedException)
+            }
+        }
     }
 
     override fun close() {
@@ -37,6 +72,9 @@ class MessageBusClient(
     }
 }
 
+/**
+ * Helper function to convert a [MediatorMessage] of a specific format to a [CordaProducerRecord]
+ */
 private fun MediatorMessage<*>.toCordaProducerRecord(): CordaProducerRecord<*, *> {
     return CordaProducerRecord(
         topic = this.getProperty<String>(MSG_PROP_ENDPOINT),
@@ -46,5 +84,8 @@ private fun MediatorMessage<*>.toCordaProducerRecord(): CordaProducerRecord<*, *
     )
 }
 
+/**
+ * Helper function to extract headers from message props
+ */
 private fun Map<String, Any>.toHeaders() =
     map { (key, value) -> (key to value.toString()) }
