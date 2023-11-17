@@ -249,7 +249,7 @@ allprojects {
         if (!postgresPort.isBlank()){
             databasePort = postgresPort
             databaseType = 'POSTGRES'
-            databaseName = postgresDatabase
+            databaseName = postgresDb
             databaseHost = postgresHost
             databaseAdminUser = postgresUser
             databaseAdminPassword = postgresPassword
