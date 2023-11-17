@@ -48,7 +48,7 @@ class VaultNamedQueryFactoryProvider @Activate constructor(
     private fun registerPlatformQueries(vaultNamedQueryBuilderFactory: VaultNamedQueryBuilderFactory) {
         vaultNamedQueryBuilderFactory
             .create(FIND_UNCONSUMED_STATES_BY_EXACT_TYPE)
-            .whereJson("WHERE visible_states.type = :type")
+            .whereJson("WHERE visible_states.type = :type AND visible_states.consumed IS NULL")
             .register()
     }
 }
