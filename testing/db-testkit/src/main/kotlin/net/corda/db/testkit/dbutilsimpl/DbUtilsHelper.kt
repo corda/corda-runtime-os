@@ -30,7 +30,8 @@ interface DbUtilsHelper {
         dbPassword: String? = null,
         schemaName: String? = null,
         createSchema: Boolean = false,
-        rewriteBatchedInserts: Boolean = false
+        rewriteBatchedInserts: Boolean = false,
+        maximumPoolSize: Int = 5
     ): CloseableDataSource
 
     fun createConfig(

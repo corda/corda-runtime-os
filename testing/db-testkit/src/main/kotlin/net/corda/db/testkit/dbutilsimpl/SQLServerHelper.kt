@@ -59,7 +59,8 @@ class SQLServerHelper : AbstractDBHelper() {
         dbPassword: String?,
         schemaName: String?,
         createSchema: Boolean,
-        rewriteBatchedInserts: Boolean
+        rewriteBatchedInserts: Boolean,
+        maximumPoolSize: Int
     ): CloseableDataSource {
         val user = dbUser ?: getAdminUser()
         val password = dbPassword ?: getAdminPassword()
@@ -74,7 +75,7 @@ class SQLServerHelper : AbstractDBHelper() {
                         jdbcUrl,
                         user,
                         password,
-                        maximumPoolSize = 1
+                        maximumPoolSize = maximumPoolSize
                     ).connection, schemaName
                 )
             }
@@ -85,7 +86,13 @@ class SQLServerHelper : AbstractDBHelper() {
         }
 
         logger.info("Using URL $jdbcUrl".emphasise())
-        return net.corda.db.core.createDataSource(driverClass, jdbcUrl, credentials.first, credentials.second)
+        return net.corda.db.core.createDataSource(
+            driverClass,
+            jdbcUrl,
+            credentials.first,
+            credentials.second,
+            maximumPoolSize = maximumPoolSize
+        )
     }
 
     override fun createConfig(

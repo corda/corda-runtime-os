@@ -30,7 +30,8 @@ class PostgresHelper : AbstractDBHelper() {
         dbPassword: String?,
         schemaName: String?,
         createSchema: Boolean,
-        rewriteBatchedInserts: Boolean
+        rewriteBatchedInserts: Boolean,
+        maximumPoolSize: Int
     ): CloseableDataSource {
         val user = dbUser ?: getAdminUser()
         val password = dbPassword ?: getAdminPassword()
@@ -43,7 +44,7 @@ class PostgresHelper : AbstractDBHelper() {
                     jdbcUrl,
                     user,
                     password,
-                    maximumPoolSize = 1
+                    maximumPoolSize = maximumPoolSize
                 ).connection.use{ conn ->
                     conn.prepareStatement("CREATE SCHEMA IF NOT EXISTS $schemaName;").execute()
                     conn.commit()
@@ -59,7 +60,13 @@ class PostgresHelper : AbstractDBHelper() {
             jdbcUrl
         }
         logger.info("Using URL $jdbcUrlCopy".emphasise())
-        return net.corda.db.core.createDataSource(driverClass, jdbcUrlCopy, user, password)
+        return net.corda.db.core.createDataSource(
+            driverClass,
+            jdbcUrlCopy,
+            user,
+            password,
+            maximumPoolSize = maximumPoolSize
+        )
     }
 
 

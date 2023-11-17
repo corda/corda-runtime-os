@@ -51,7 +51,8 @@ class HSQLHelper : DbUtilsHelper {
         dbPassword: String?,
         schemaName: String?,
         createSchema: Boolean,
-        rewriteBatchedInserts: Boolean
+        rewriteBatchedInserts: Boolean,
+        maximumPoolSize: Int
     ): CloseableDataSource {
         val user = dbUser ?: getAdminUser()
         val password = dbPassword ?: getAdminPassword()
