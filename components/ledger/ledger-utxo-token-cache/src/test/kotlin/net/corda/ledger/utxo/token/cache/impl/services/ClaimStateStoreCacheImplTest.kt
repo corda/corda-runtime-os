@@ -33,9 +33,12 @@ class ClaimStateStoreCacheImplTest {
         val newClaimStateStore = mock<ClaimStateStore>()
         whenever(claimStateStoreFactory.create(any())).thenReturn(newClaimStateStore)
 
+        // The claim state store is created
         val result1 = claimStateStoreCache.get(POOL_KEY)
+        // The previous created claim state store is retrieved
         val result2 = claimStateStoreCache.get(POOL_KEY)
 
+        // Ensure the claim state store are all the same
         assertThat(result1).isEqualTo(newClaimStateStore)
         assertThat(result2).isSameAs(result1)
 
