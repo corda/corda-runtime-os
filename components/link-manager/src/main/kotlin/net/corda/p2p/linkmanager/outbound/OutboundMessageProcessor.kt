@@ -273,6 +273,8 @@ internal class OutboundMessageProcessor(
 
         if (ttlExpired(messageAndKey.message.header.ttl)) {
             val expiryMarker = recordForTTLExpiredMarker(messageAndKey.message.header.messageId)
+            logger.info("TTL expired for message from ${messageAndKey.message.header.source.x500Name} " +
+                    "to ${messageAndKey.message.header.destination.x500Name}")
             return if (isReplay) {
                 listOf(expiryMarker)
             } else {
