@@ -3,7 +3,6 @@ package net.corda.messaging.mediator
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
-import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_ENDPOINT
@@ -39,25 +38,12 @@ class MessageBusClient(
         future: CompletableFuture<Unit>,
         topic: String
     ) {
-        when (exception) {
-            null -> future.complete(Unit)
-            else -> {
-                val baseMessage = "Producer clientId $id for topic $topic failed to send."
-                val errorMessage = when (exception) {
-                    is CordaMessageAPIIntermittentException -> baseMessage
-                    is CordaMessageAPIFatalException -> "$baseMessage Fatal producer error occurred."
-                    else -> "$baseMessage Unknown error occurred."
-                }
-
-                log.warn(errorMessage, exception)
-
-                val wrappedException = when (exception) {
-                    is CordaMessageAPIIntermittentException, is CordaMessageAPIFatalException -> exception
-                    else -> CordaMessageAPIFatalException(errorMessage, exception)
-                }
-
-                future.completeExceptionally(wrappedException)
-            }
+        if (exception == null) {
+            future.complete(Unit)
+        } else {
+            val message = "Producer clientId $id for topic $topic failed to send."
+            log.warn(message, exception)
+            future.completeExceptionally(CordaMessageAPIFatalException(message, exception))
         }
     }
 

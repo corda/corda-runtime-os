@@ -3,7 +3,6 @@ package net.corda.messaging.mediator
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
-import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_ENDPOINT
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -88,27 +87,6 @@ class MessageBusClientTest {
 
     @Suppress("UNCHECKED_CAST")
     @Test
-    fun `send should handle asynchronous CordaMessageAPIIntermittentException`() {
-        doAnswer {
-            val callback = it.getArgument<CordaProducer.Callback>(1)
-            callback.onCompletion(CordaMessageAPIIntermittentException("test"))
-        }.whenever(cordaProducer).send(eq(record), any())
-
-        val result = messageBusClient.send(message) as MediatorMessage<CompletableFuture<Unit>>
-
-        verify(cordaProducer).send(eq(record), any())
-        assertNotNull(result.payload)
-
-        result.payload?.isCompletedExceptionally?.let { assertTrue(it) }
-
-        result.payload?.handle { _, exception ->
-            assertTrue(exception is CordaMessageAPIIntermittentException)
-            assertEquals("test", exception.message)
-        }?.get()
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    @Test
     fun `send should handle asynchronous CordaMessageAPIFatalException`() {
         doAnswer {
             val callback = it.getArgument<CordaProducer.Callback>(1)
@@ -124,7 +102,7 @@ class MessageBusClientTest {
 
         result.payload?.handle { _, exception ->
             assertTrue(exception is CordaMessageAPIFatalException)
-            assertEquals("test", exception.message)
+            assertEquals("Producer clientId client-id for topic topic failed to send.", exception.message)
         }?.get()
     }
 
@@ -145,10 +123,7 @@ class MessageBusClientTest {
 
         result.payload?.handle { _, exception ->
             assertTrue(exception is CordaMessageAPIFatalException)
-            assertEquals(
-                "Producer clientId client-id for topic topic failed to send. Unknown error occurred.",
-                exception.message
-            )
+            assertEquals("Producer clientId client-id for topic topic failed to send.", exception.message)
         }?.get()
     }
 
