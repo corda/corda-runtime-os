@@ -16,37 +16,23 @@ import java.time.Instant
 class CryptoRewrapBusProcessor(
     val cryptoService: CryptoService
 ) : DurableProcessor<String, IndividualKeyRotationRequest> {
-
     override val keyClass: Class<String> = String::class.java
     override val valueClass = IndividualKeyRotationRequest::class.java
 
     override fun onNext(events: List<Record<String, IndividualKeyRotationRequest>>): List<Record<*, *>> {
-        val records = mutableListOf<Record<String, IndividualKeyRotationResponse>>()
-        events.forEach {
-            val request = it.value
-            if (request != null) {
-                cryptoService.rewrapWrappingKey(request.tenantId, request.oldParentKeyAlias, request.newParentKeyAlias)
-            }
-            val endTimestamp = Instant.now()
-
-            val value = createRewrapResponse(
-                    request!!.requestId,
+        return events.mapNotNull { it.value }.map { request ->
+            cryptoService.rewrapWrappingKey(request.tenantId, request.targetKeyAlias, request.newParentKeyAlias)
+            Record(
+                REWRAP_MESSAGE_RESPONSE_TOPIC,
+                request.requestId, IndividualKeyRotationResponse(
+                    request.requestId,
                     request.tenantId,
                     request.oldParentKeyAlias,
                     request.newParentKeyAlias,
-                    endTimestamp
+                    request.targetKeyAlias,
+                    Instant.now()
                 )
-            records.add(Record(REWRAP_MESSAGE_RESPONSE_TOPIC, request.requestId, value))
+            )
         }
-        return records
     }
-
-    private fun createRewrapResponse(
-        requestId: String,
-        tenantId: String,
-        oldKeyAlias: String,
-        newKeyAlias: String,
-        endTimestamp: Instant,
-    ): IndividualKeyRotationResponse =
-        IndividualKeyRotationResponse(requestId, tenantId, oldKeyAlias, newKeyAlias, "", endTimestamp)
 }
