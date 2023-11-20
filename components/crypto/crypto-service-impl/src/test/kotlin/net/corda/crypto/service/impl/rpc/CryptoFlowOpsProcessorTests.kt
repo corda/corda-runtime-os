@@ -306,15 +306,9 @@ import kotlin.test.assertTrue
          val transformer = buildTransformer()
          val flowOps = indices.map { flowOpCallbacks[it](transformer, flowExternalEventContexts[it]) }
 
-         val requests = indices.map {
-             flowOps[it]
-         }
-
          // run the flows ops processor
          val result = act {
-             requests.filterNotNull().map {
-                 processor.process(it)
-             }
+             indices.mapNotNull { flowOps[it] }.map { processor.process(it) }
          }
 
          val successfulFlowOpsResponses =
@@ -337,6 +331,7 @@ import kotlin.test.assertTrue
              flowExternalEventContexts = flowExternalEventContexts
          )
      }
+
      @Suppress("UNCHECKED_CAST")
      @Test
      fun `Should process filter my keys query`() {
@@ -398,7 +393,7 @@ import kotlin.test.assertTrue
                  )
              }
          )
-    }
+     }
 
      @Test
      fun `Should process list with valid event and skip event without value`() {
@@ -427,7 +422,6 @@ import kotlin.test.assertTrue
          assertTrue(transformed.any { it.encoded.contentEquals(myPublicKeys[1].encoded) })
      }
 
-     @Suppress("UNCHECKED_CAST")
      @Test
      fun `Should process list with valid event and return error for failed event`() {
          val failingTenantId = UUID.randomUUID().toString()
