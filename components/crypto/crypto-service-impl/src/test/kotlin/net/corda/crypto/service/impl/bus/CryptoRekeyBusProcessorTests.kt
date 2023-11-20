@@ -102,7 +102,7 @@ class CryptoRekeyBusProcessorTests {
 
         verify(rewrapPublisher, times(1)).publish(any())
         assertThat(rewrapPublishCapture.allValues).hasSize(1)
-        assertThat(rewrapPublishCapture.firstValue).hasSize(4)
+        assertThat(rewrapPublishCapture.firstValue).hasSize(2)
     }
 
     @Test
@@ -114,7 +114,7 @@ class CryptoRekeyBusProcessorTests {
 
         verify(rewrapPublisher, times(1)).publish(any())
         assertThat(rewrapPublishCapture.allValues).hasSize(1)
-        assertThat(rewrapPublishCapture.firstValue).hasSize(6)
+        assertThat(rewrapPublishCapture.firstValue).hasSize(4)
     }
 
     /**

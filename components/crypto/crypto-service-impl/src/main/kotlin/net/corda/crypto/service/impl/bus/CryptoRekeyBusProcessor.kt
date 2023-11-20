@@ -49,14 +49,17 @@ class CryptoRekeyBusProcessor(
             val virtualNodeInfo = virtualNodeInfoReadService.getAll() // Get all the virtual nodes
             val virtualNodeTenantIds = virtualNodeInfo.map { it.holdingIdentity.shortHash.toString() }
 
-            val allTenantIds = virtualNodeTenantIds+listOf(CryptoTenants.CRYPTO, CryptoTenants.P2P, CryptoTenants.REST)
+            // we do not need to use separate wrapping repositories for the different cluster level tenants,
+            // since they share the cluster crypto database. So we scan over the virtual node tenants and an arbitary
+            // choice of cluster level tenant. We pick CryptoTenants.CRYPTO as the arbitrary cluster level tenant,
+            // and we should not also check CryptoTenants.P2P and CryptoTenants.REST since if we do we'll get duplicate.
+            val allTenantIds = virtualNodeTenantIds+listOf(CryptoTenants.CRYPTO)
             logger.debug("Found ${allTenantIds.size} tenants; first few are: ${allTenantIds.take(10)}")
             val targetWrappingKeys = allTenantIds.asSequence().map { tenantId ->
                 wrappingRepositoryFactory.create(tenantId).use { wrappingRepo ->
                     wrappingRepo.findKeysWrappedByAlias (request.oldKeyAlias).map { wki -> tenantId to wki}
                 }
             }.flatten()
-
             rekeyPublisher.publish(
                 targetWrappingKeys.map { (tenantId, wrappingKeyInfo) ->
                     Record(

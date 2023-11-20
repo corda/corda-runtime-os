@@ -603,6 +603,7 @@ open class SoftCryptoService(
                     // we lost a race updating the generation number, and we
                     // don't know if the other update rewrapped as we are trying to do
                     // so retry
+                    logger.info("Collision on key rotation of $targetAlias")
                     Thread.sleep(10)
                 }
             }

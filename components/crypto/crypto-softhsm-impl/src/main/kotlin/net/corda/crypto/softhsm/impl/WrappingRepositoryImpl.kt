@@ -41,7 +41,7 @@ class WrappingRepositoryImpl(
                     )
                 ).also { wrappingKeyEntity -> check(wrappingKeyEntity.generation == key.generation) }
             }.toDto().also {
-                logger.info("Storing wrapping key with alias ${key.alias} in tenant $tenantId")
+                logger.info("Storing wrapping key with alias ${key.alias} generation ${key.generation} in tenant $tenantId")
             }
         }
 
