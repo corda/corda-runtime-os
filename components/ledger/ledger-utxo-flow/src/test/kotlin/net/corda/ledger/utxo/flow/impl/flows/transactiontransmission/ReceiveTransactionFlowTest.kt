@@ -31,18 +31,6 @@ import org.mockito.kotlin.whenever
 import java.security.PublicKey
 
 class ReceiveTransactionFlowTest {
-    @BeforeEach
-    fun beforeEach() {
-        whenever(transaction.id).thenReturn(TX_ID_1)
-        whenever(flowEngine.subFlow(any<TransactionBackchainResolutionFlow>())).thenReturn(Unit)
-        whenever(transaction.toLedgerTransaction()).thenReturn(ledgerTransaction)
-
-        // Single output State
-        whenever(transaction.outputStateAndRefs).thenReturn(listOf(stateAndRef))
-        whenever(stateAndRef.state).thenReturn(transactionState)
-        whenever(transactionState.contractType).thenReturn(TestContact::class.java)
-        whenever(transactionState.contractState).thenReturn(testState)
-    }
     private companion object {
         val TX_ID_1 = SecureHashImpl("SHA", byteArrayOf(2, 2, 2, 2))
         val TX_ID_2 = SecureHashImpl("SHA", byteArrayOf(3, 3, 3, 3))
@@ -74,7 +62,18 @@ class ReceiveTransactionFlowTest {
     private val transactionState = mock<TransactionState<TestState>>()
     private val testState = TestState(listOf(publicKeyAlice))
 
-    private val exceptionMessage = "Failed to verify transaction and signatures of transaction: ${transaction.id}"
+    @BeforeEach
+    fun beforeEach() {
+        whenever(transaction.id).thenReturn(TX_ID_1)
+        whenever(flowEngine.subFlow(any<TransactionBackchainResolutionFlow>())).thenReturn(Unit)
+        whenever(transaction.toLedgerTransaction()).thenReturn(ledgerTransaction)
+
+        // Single output State
+        whenever(transaction.outputStateAndRefs).thenReturn(listOf(stateAndRef))
+        whenever(stateAndRef.state).thenReturn(transactionState)
+        whenever(transactionState.contractType).thenReturn(TestContact::class.java)
+        whenever(transactionState.contractState).thenReturn(testState)
+    }
 
     @Test
     fun `successful verification in receive flow should persist transaction`() {
@@ -122,7 +121,8 @@ class ReceiveTransactionFlowTest {
             .hasMessageContaining("Failed to verify transaction")
 
         verify(sessionAlice).receive(UtxoSignedTransactionInternal::class.java)
-        verify(sessionAlice).send(Payload.Failure<List<DigitalSignatureAndMetadata>>(exceptionMessage))
+        verify(sessionAlice).send(Payload.Failure<List<DigitalSignatureAndMetadata>>(
+            "Failed to verify transaction and signatures of transaction: ${transaction.id}"))
     }
 
     @Test
@@ -137,7 +137,9 @@ class ReceiveTransactionFlowTest {
             .hasMessageContaining("Failed to verify transaction")
 
         verify(sessionAlice).receive(UtxoSignedTransactionInternal::class.java)
-        verify(sessionAlice).send(Payload.Failure<List<DigitalSignatureAndMetadata>>(exceptionMessage))
+        verify(sessionAlice).send(Payload.Failure<List<DigitalSignatureAndMetadata>>(
+            "Failed to verify transaction and signatures of transaction: ${transaction.id}"
+        ))
     }
 
     @Test
@@ -152,7 +154,9 @@ class ReceiveTransactionFlowTest {
             .hasMessageContaining("Failed to verify transaction")
 
         verify(sessionAlice).receive(UtxoSignedTransactionInternal::class.java)
-        verify(sessionAlice).send(Payload.Failure<List<DigitalSignatureAndMetadata>>(exceptionMessage))
+        verify(sessionAlice).send(Payload.Failure<List<DigitalSignatureAndMetadata>>(
+            "Failed to verify transaction and signatures of transaction: ${transaction.id}"
+        ))
     }
 
     private fun callReceiveTransactionFlow(session: FlowSession) {
