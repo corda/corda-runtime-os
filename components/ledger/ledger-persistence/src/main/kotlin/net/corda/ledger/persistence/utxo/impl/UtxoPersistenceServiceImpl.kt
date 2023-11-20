@@ -278,7 +278,7 @@ class UtxoPersistenceServiceImpl(
                     .ifBlank { "{}" } // Default to "{}" if the provided factory returns empty string to avoid exception
             } catch (e: Exception) {
                 // We can't log the JSON string here because the failed before we have a JSON
-                log.warn("Error while processing factory for class: ${it.stateType.name}. Defaulting to empty JSON.")
+                log.warn("Error while processing factory for class: ${it.stateType.name}. Defaulting to empty JSON.", e)
                 "{}"
             }
 
@@ -286,7 +286,7 @@ class UtxoPersistenceServiceImpl(
                 jsonMarshallingService.parse(jsonToParse, Any::class.java)
             } catch (e: Exception) {
                 log.warn("Error while processing factory for class: ${it.stateType.name}. " +
-                        "JSON that could not be processed: $jsonToParse. Defaulting to empty JSON.")
+                        "JSON that could not be processed: $jsonToParse. Defaulting to empty JSON.", e)
                 jsonMarshallingService.parse("{}", Any::class.java)
             }
         }.toMutableMap()
@@ -297,7 +297,7 @@ class UtxoPersistenceServiceImpl(
                 Any::class.java
             )
         } catch (e: Exception) {
-            log.warn("Error while processing factory for class: ${ContractState::class.java.name}. Defaulting to empty JSON.")
+            log.warn("Error while processing factory for class: ${ContractState::class.java.name}. Defaulting to empty JSON.", e)
             jsonMarshallingService.parse("{}", Any::class.java)
         }
 
@@ -305,7 +305,7 @@ class UtxoPersistenceServiceImpl(
             jsonMarshallingService.format(jsonMap)
         } catch (e: JsonProcessingException) {
             // Since we validate the factory outputs one-by-one this should not happen.
-            log.warn("Error while formatting combined JSON, defaulting to empty JSON.")
+            log.warn("Error while formatting combined JSON, defaulting to empty JSON.", e)
             "{}"
         }
     }
