@@ -244,7 +244,8 @@ class UpsertCpiTests {
             on { groupIdFromJson(any()) } doReturn (groupId)
         }
         val cpiPersistence =
-            DatabaseCpiPersistence(entityManagerFactory, networkInfoWriter, cpiMetadataRepository, mock(), mock(), mock(), groupPolicyParser)
+            DatabaseCpiPersistence(
+                entityManagerFactory, networkInfoWriter, cpiMetadataRepository, mock(), mock(), mock(), groupPolicyParser)
 
         val cpi = persistCpi(name, version, groupId, cpiPersistence)
         val cpiMetadata = findCpiMetadata(cpi)

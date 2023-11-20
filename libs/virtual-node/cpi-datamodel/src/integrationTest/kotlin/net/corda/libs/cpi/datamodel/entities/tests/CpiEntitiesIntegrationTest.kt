@@ -1,8 +1,5 @@
 package net.corda.libs.cpi.datamodel.entities.tests
 
-import java.util.*
-import javax.persistence.EntityManagerFactory
-import kotlin.streams.toList
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.parseSecureHash
 import net.corda.db.admin.impl.ClassloaderChangeLog
@@ -26,7 +23,10 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import java.util.*
+import javax.persistence.EntityManagerFactory
 
+@Suppress("TooManyFunctions")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CpiEntitiesIntegrationTest {
     private val dbConfig: EntityManagerConfiguration = DbUtils.getEntityManagerConfiguration("cpi_db")

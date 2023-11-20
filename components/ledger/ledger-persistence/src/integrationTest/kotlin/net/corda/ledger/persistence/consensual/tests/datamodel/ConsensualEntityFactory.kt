@@ -12,6 +12,7 @@ class ConsensualEntityFactory(entityManagerFactory: EntityManagerFactory) {
     val consensualTransactionStatus: Class<*> get() = classFor("ConsensualTransactionStatusEntity")
     val consensualTransactionSignature: Class<*> get() = classFor("ConsensualTransactionSignatureEntity")
 
+    @Suppress("LongParameterList")
     fun createConsensualCpkEntity(
         fileChecksum: String,
         name: String,
@@ -36,6 +37,7 @@ class ConsensualEntityFactory(entityManagerFactory: EntityManagerFactory) {
         )
     }
 
+    @Suppress("LongParameterList")
     fun createConsensualTransactionComponentEntity(
         consensualTransaction: Any,
         groupIdx: Int,

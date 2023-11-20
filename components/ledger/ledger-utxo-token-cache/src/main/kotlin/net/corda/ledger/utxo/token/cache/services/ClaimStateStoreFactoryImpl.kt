@@ -11,10 +11,9 @@ class ClaimStateStoreFactoryImpl(
     private val clock: Clock
 ) : ClaimStateStoreFactory {
 
-    override fun create(key: TokenPoolKey, storedPoolClaimState: StoredPoolClaimState): ClaimStateStore {
+    override fun create(key: TokenPoolKey): ClaimStateStore {
         return PerformanceClaimStateStoreImpl(
             key,
-            storedPoolClaimState,
             serialization,
             stateManager,
             tokenPoolCacheManager,

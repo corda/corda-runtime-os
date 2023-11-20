@@ -24,10 +24,19 @@ class RestServerDurableStreamsRequestsTest : RestServerTestBase() {
         @BeforeAll
         @JvmStatic
         fun setUpBeforeClass() {
-            val restServerSettings = RestServerSettings(NetworkHostAndPort("localhost",  0),
-                context, null, null, RestServerSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE, 20000L)
+            val restServerSettings = RestServerSettings(
+                NetworkHostAndPort("localhost",  0),
+                context,
+                null,
+                null,
+                RestServerSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+                20000L)
             server = RestServerImpl(
-                listOf(NumberSequencesRestResourceImpl(), CalendarRestResourceImpl(), TestHealthCheckAPIImpl(), CustomSerializationAPIImpl()),
+                listOf(
+                    NumberSequencesRestResourceImpl(),
+                    CalendarRestResourceImpl(),
+                    TestHealthCheckAPIImpl(),
+                    CustomSerializationAPIImpl()),
                 { FakeSecurityManager() } ,
                 restServerSettings,
                 multipartDir,
@@ -59,7 +68,8 @@ class RestServerDurableStreamsRequestsTest : RestServerTestBase() {
             |"remainingElementsCountEstimate":9223372036854775807
             |}""".compact()
 
-        val response = client.call(net.corda.rest.tools.HttpVerb.POST, WebRequest<Any>("numberseq/retrieve", requestBody), userName, password)
+        val response = client.call(net.corda.rest.tools.HttpVerb.POST,
+            WebRequest<Any>("numberseq/retrieve", requestBody), userName, password)
 
         assertEquals(HttpStatus.SC_OK, response.responseStatus, response.toString())
         assertEquals(responseBody, response.body)

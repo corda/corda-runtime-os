@@ -35,6 +35,7 @@ interface TestMembershipPersistenceClient : MembershipPersistenceClient {
     fun getPersistedGroupParameters(): InternalGroupParameters?
 }
 
+@Suppress("TooManyFunctions")
 @ServiceRanking(Int.MAX_VALUE)
 @Component(service = [MembershipPersistenceClient::class, TestMembershipPersistenceClient::class])
 class TestMembershipPersistenceClientImpl @Activate constructor(

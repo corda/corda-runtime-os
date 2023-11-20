@@ -206,11 +206,17 @@ class VaultNamedQueryExecutorImpl(
             log.trace { "Executing try: $currentRetry, fetched ${filteredRawData.size} number of results so far." }
 
             // Fetch the state and refs for the given transaction IDs
-            val rawResults = fetchStateAndRefs(
-                request,
-                vaultNamedQuery.query.query,
-                currentResumePoint
-            )
+            val rawResults = try {
+                fetchStateAndRefs(
+                    request,
+                    vaultNamedQuery.query.query,
+                    currentResumePoint
+                )
+            } catch (e: Exception) {
+                log.warn("Failed to query \"${request.queryName}\" " +
+                        "with parameters \"${deserializedParams}\" limit \"${request.limit}\".", e)
+                throw e
+            }
 
             // If we have no filter, there's no need to continue the loop
             if (vaultNamedQuery.filter == null) {
