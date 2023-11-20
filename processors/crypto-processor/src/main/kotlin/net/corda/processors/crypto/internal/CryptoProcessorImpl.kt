@@ -87,7 +87,6 @@ import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.Provider
 import java.security.PublicKey
-import java.util.*
 import java.util.concurrent.TimeUnit
 
 // An OSGi component, with no unit tests; instead, tested by using OGGi and mocked out databases in
@@ -344,7 +343,7 @@ class CryptoProcessorImpl @Activate constructor(
         val rpcOpsProcessor = CryptoOpsBusProcessor(cryptoService, retryingConfig, keyEncodingService)
         val hsmRegistrationProcessor = HSMRegistrationBusProcessor(tenantInfoService, cryptoService, retryingConfig)
         val rewrapProcessor = CryptoRewrapBusProcessor(cryptoService)
-        val publisherConfig = PublisherConfig(UUID.randomUUID().toString(), false)
+        val publisherConfig =PublisherConfig("RekeyBusProcessor", false)
         val rekeyPublisher =  publisherFactory.createPublisher(publisherConfig, messagingConfig)
         val rekeyProcessor = CryptoRekeyBusProcessor(
             cryptoService,
