@@ -17,6 +17,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import java.security.PublicKey
 import java.time.Instant
+import java.util.UUID
 
 private const val KEY = "12345"
 private val key: PublicKey = Mockito.mock(PublicKey::class.java)
@@ -46,28 +47,28 @@ private const val DUMMY_KEY = "dummyKey"
 @Suppress("SpreadOperator")
 fun createDummyMemberInfo(
     converters: List<CustomPropertyConverter<out Any>>,
-    additionalMemberInfoProperties: List<Pair<String, String>> = emptyList(),
+    additionalMemberContext: List<Pair<String, String>> = emptyList(),
 ): MemberInfo = MemberInfoImpl(
-    memberProvidedContext = createDummyMemberContext(converters, additionalMemberInfoProperties),
+    memberProvidedContext = createDummyMemberContext(converters, additionalMemberContext),
     mgmProvidedContext = createDummyMgmContext(converters)
 )
 
 @Suppress("SpreadOperator")
 fun createDummyMemberContext(
     converters: List<CustomPropertyConverter<out Any>>,
-    additionalMemberInfoProperties: List<Pair<String, String>> = emptyList(),
+    additionalMemberContext: List<Pair<String, String>> = emptyList(),
 ) = LayeredPropertyMapMocks.create<MemberContextImpl>(
     sortedMapOf(
         MemberInfoExtension.PARTY_NAME to "O=Alice,L=London,C=GB",
         String.format(MemberInfoExtension.PARTY_SESSION_KEYS, 0) to KEY,
-        MemberInfoExtension.GROUP_ID to "DEFAULT_MEMBER_GROUP_ID",
+        MemberInfoExtension.GROUP_ID to UUID.randomUUID().toString(),
         *convertPublicKeys().toTypedArray(),
         *convertEndpoints().toTypedArray(),
-        *additionalMemberInfoProperties.toTypedArray(),
         MemberInfoExtension.SOFTWARE_VERSION to "5.0.0",
         MemberInfoExtension.PLATFORM_VERSION to "5000",
         DUMMY_KEY to "dummyValue",
         NULL_KEY to null,
+        *additionalMemberContext.toTypedArray(),
     ), converters
 )
 

@@ -97,7 +97,7 @@ class MemberInfoTest {
         fun setUp() {
             memberInfo = createDummyMemberInfo(
                 converters = converters,
-                additionalMemberInfoProperties = convertTestObjects() + createInvalidListFormat(),
+                additionalMemberContext = convertTestObjects() + createInvalidListFormat(),
             )
         }
     }
