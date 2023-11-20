@@ -122,7 +122,7 @@ internal class StartRegistrationHandler(
             validateRegistrationRequest(registrationRequest != null,
                 "Could not find registration request with ID `$registrationId`.", DECLINED_REASON_FOR_USER_INTERNAL_ERROR)
 
-            logger.info("Registering $pendingMemberHoldingId with MGM for holding identity: $mgmHoldingId")
+            logger.info("Registering $pendingMemberHoldingId with MGM for holding identitys: $mgmHoldingId")
             val pendingMemberInfo = buildPendingMemberInfo(registrationRequest!!)
             // Parse the registration request and verify contents
             // The MemberX500Name matches the source MemberX500Name from the P2P messaging
