@@ -135,7 +135,8 @@ class CryptoRPCSmokeTests {
 
         assertThat(responseEvent).isNotNull
 
-        val deserializedExternalEventResponse = avroCryptoDeserializer.deserialize((responseEvent?.payload as ExternalEventResponse).payload.array())
+        val deserializedExternalEventResponse =
+            avroCryptoDeserializer.deserialize((responseEvent?.payload as ExternalEventResponse).payload.array())
 
         assertThat(deserializedExternalEventResponse).isNotNull
         assertStandardSuccessResponse(deserializedExternalEventResponse!!, testClock)

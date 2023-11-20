@@ -229,8 +229,10 @@ class MembershipPersistenceTest {
         lateinit var keyEncodingService: KeyEncodingService
 
         /**
-         * Wrapper class which allows the client to wait until the underlying DB message bus has been set up correctly with partitions required.
-         * Without this the client often tries to send RPC requests before the service has set up the kafka topics required
+         * Wrapper class which allows the client to wait until the underlying DB message bus has been set
+         * up correctly with partitions required.
+         * Without this the client often tries to send RPC requests before the service has set up the kafka
+         * topics required
          * for the DB message bus.
          */
         val membershipPersistenceClientWrapper = object : MembershipPersistenceClient {
@@ -1491,6 +1493,7 @@ class MembershipPersistenceTest {
     }
 
     @Test
+    @Suppress("ForEachOnRange")
     fun `queryRegistrationRequest retrieves the oldest queued registration request`() {
         vnodeEmf.transaction {
             it.createQuery("DELETE FROM RegistrationRequestEntity").executeUpdate()
@@ -1975,6 +1978,7 @@ class MembershipPersistenceTest {
             ?.items
             ?.associate { it.key to it.value } ?: fail("Failed to deserialize context.")
 
+    @Suppress("LongParameterList")
     private fun notaryMemberContext(
         memberX500Name: MemberX500Name,
         groupId: String,

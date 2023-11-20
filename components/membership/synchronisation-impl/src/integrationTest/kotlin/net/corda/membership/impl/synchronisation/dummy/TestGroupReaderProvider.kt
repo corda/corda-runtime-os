@@ -108,7 +108,8 @@ class TestGroupReader(private val groupParametersFactory: GroupParametersFactory
 
     override fun lookup(filter: MembershipStatusFilter): Collection<MemberInfo> = members
 
-    override fun lookup(name: MemberX500Name, filter: MembershipStatusFilter): MemberInfo? = members.firstOrNull { it.holdingIdentity.x500Name == name }
+    override fun lookup(name: MemberX500Name, filter: MembershipStatusFilter): MemberInfo?
+    = members.firstOrNull { it.holdingIdentity.x500Name == name }
 
     override fun lookupByLedgerKey(ledgerKeyHash: SecureHash, filter: MembershipStatusFilter): MemberInfo? {
         with(UNIMPLEMENTED_FUNCTION) {
