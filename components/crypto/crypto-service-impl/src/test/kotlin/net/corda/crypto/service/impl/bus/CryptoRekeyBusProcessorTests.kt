@@ -94,19 +94,7 @@ class CryptoRekeyBusProcessorTests {
     }
 
     @Test
-    fun `do a mocked key rotation`() {
-        val virtualNodes = getStubVirtualNodes(listOf(tenantId1))
-        whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
-
-        cryptoRekeyBusProcessor.onNext(listOf(getKafkaRecord("")))
-
-        verify(rewrapPublisher, times(1)).publish(any())
-        assertThat(rewrapPublishCapture.allValues).hasSize(1)
-        assertThat(rewrapPublishCapture.firstValue).hasSize(2)
-    }
-
-    @Test
-    fun `key rotation re-wraps all the keys if limit is not specified`() {
+    fun `key rotation re-wraps all the keys`() {
         val virtualNodes = getStubVirtualNodes(listOf(tenantId1, tenantId2, tenantId3))
         whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
 
@@ -114,7 +102,7 @@ class CryptoRekeyBusProcessorTests {
 
         verify(rewrapPublisher, times(1)).publish(any())
         assertThat(rewrapPublishCapture.allValues).hasSize(1)
-        assertThat(rewrapPublishCapture.firstValue).hasSize(4)
+        assertThat(rewrapPublishCapture.firstValue).hasSize(4) // 4 since 3 tenants plus cluster
     }
 
     /**
