@@ -1,6 +1,7 @@
 package net.corda.rest.server.impl
 
 import net.corda.rest.server.config.models.RestServerSettings
+import net.corda.rest.server.impl.security.provider.basic.UsernamePasswordAuthenticationProvider
 import net.corda.rest.test.TestHealthCheckAPIImpl
 import net.corda.rest.test.utils.TestHttpClientUnirestImpl
 import net.corda.rest.test.utils.WebRequest
@@ -80,7 +81,7 @@ class RestServerCaseSensitiveLoginTest: RestServerTestBase() {
             "invalidPassword"
         )
         assertEquals(
-            "Basic realm=\"Corda REST Worker\"",
+            "Basic realm=\"${UsernamePasswordAuthenticationProvider.REALM_VALUE}\"",
             plusOneResponse.headers["WWW-Authenticate"]
         )
     }

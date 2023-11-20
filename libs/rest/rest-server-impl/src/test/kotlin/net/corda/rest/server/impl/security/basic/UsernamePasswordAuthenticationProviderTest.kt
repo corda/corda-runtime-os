@@ -9,6 +9,9 @@ import org.junit.jupiter.api.Assertions.assertEquals
 class UsernamePasswordAuthenticationProviderTest {
     @Test
     fun `Ensure that the REALM_KEY is set to the correct value in the UsernamePasswordAuthenticationProvider`() {
-        assertEquals("Corda REST Worker", UsernamePasswordAuthenticationProvider(mock()).provideParameters()[AuthenticationSchemeProvider.REALM_KEY])
+        assertEquals(
+            UsernamePasswordAuthenticationProvider.REALM_VALUE,
+            UsernamePasswordAuthenticationProvider(mock()).provideParameters()[AuthenticationSchemeProvider.REALM_KEY]
+        )
     }
 }
