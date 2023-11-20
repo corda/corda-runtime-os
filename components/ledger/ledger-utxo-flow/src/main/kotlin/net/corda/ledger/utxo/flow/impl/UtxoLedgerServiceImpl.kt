@@ -106,6 +106,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
     }
 
     @Suspendable
+    @Deprecated("Deprecated in inherited API")
     @Suppress("deprecation", "removal")
     override fun <T : ContractState> findUnconsumedStatesByType(type: Class<T>): List<StateAndRef<T>> {
         return utxoLedgerStateQueryService.findUnconsumedStatesByType(type)
@@ -231,7 +232,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun sendTransaction(sessions: List<FlowSession>, signedTransaction: UtxoSignedTransaction) {
+    override fun sendTransaction(signedTransaction: UtxoSignedTransaction, sessions: List<FlowSession>) {
         flowEngine.subFlow(SendTransactionFlow(signedTransaction, sessions))
     }
 

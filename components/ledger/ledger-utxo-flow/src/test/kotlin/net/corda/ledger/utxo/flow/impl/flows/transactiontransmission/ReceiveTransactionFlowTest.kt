@@ -11,6 +11,7 @@ import net.corda.ledger.utxo.flow.impl.flows.finality.v1.UtxoFinalityFlowV1Test.
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -30,7 +31,18 @@ import org.mockito.kotlin.whenever
 import java.security.PublicKey
 
 class ReceiveTransactionFlowTest {
+    @BeforeEach
+    fun beforeEach() {
+        whenever(transaction.id).thenReturn(TX_ID_1)
+        whenever(flowEngine.subFlow(any<TransactionBackchainResolutionFlow>())).thenReturn(Unit)
+        whenever(transaction.toLedgerTransaction()).thenReturn(ledgerTransaction)
 
+        // Single output State
+        whenever(transaction.outputStateAndRefs).thenReturn(listOf(stateAndRef))
+        whenever(stateAndRef.state).thenReturn(transactionState)
+        whenever(transactionState.contractType).thenReturn(TestContact::class.java)
+        whenever(transactionState.contractState).thenReturn(testState)
+    }
     private companion object {
         val TX_ID_1 = SecureHashImpl("SHA", byteArrayOf(2, 2, 2, 2))
         val TX_ID_2 = SecureHashImpl("SHA", byteArrayOf(3, 3, 3, 3))
@@ -62,19 +74,7 @@ class ReceiveTransactionFlowTest {
     private val transactionState = mock<TransactionState<TestState>>()
     private val testState = TestState(listOf(publicKeyAlice))
 
-
-    @BeforeEach
-    fun beforeEach() {
-        whenever(transaction.id).thenReturn(TX_ID_1)
-        whenever(flowEngine.subFlow(any<TransactionBackchainResolutionFlow>())).thenReturn(Unit)
-        whenever(transaction.toLedgerTransaction()).thenReturn(ledgerTransaction)
-
-        // Single output State
-        whenever(transaction.outputStateAndRefs).thenReturn(listOf(stateAndRef))
-        whenever(stateAndRef.state).thenReturn(transactionState)
-        whenever(transactionState.contractType).thenReturn(TestContact::class.java)
-        whenever(transactionState.contractState).thenReturn(testState)
-    }
+    private val exceptionMessage = "Failed to verify transaction and signatures of transaction: ${transaction.id}"
 
     @Test
     fun `successful verification in receive flow should persist transaction`() {
@@ -84,11 +84,6 @@ class ReceiveTransactionFlowTest {
 
         callReceiveTransactionFlow(sessionAlice)
 
-        verify(sessionAlice).receive(UtxoSignedTransactionInternal::class.java)
-        verify(transaction).verifySignatorySignatures()
-        verify(transaction).verifyAttachedNotarySignature()
-        verify(transactionVerificationService).verify(ledgerTransaction)
-        verify(sessionAlice).send(Payload.Success("Successfully received transaction."))
         verify(utxoLedgerPersistenceService).persist(transaction, VERIFIED, transaction.getVisibleStateIndexes(visibilityChecker))
     }
 
@@ -116,17 +111,48 @@ class ReceiveTransactionFlowTest {
     }
 
     @Test
-    fun `receiving invalid transaction should throw exception`() {
+    fun `receiving invalid transaction with signatory signature verification failure should throw exception`() {
         whenever(sessionAlice.receive(UtxoSignedTransactionInternal::class.java)).thenReturn(transaction)
         whenever(transaction.verifySignatorySignatures()).thenThrow(
-            CordaRuntimeException("Failed to verify"))
+            CordaRuntimeException("Failed to verify")
+        )
 
         assertThatThrownBy { callReceiveTransactionFlow(sessionAlice) }
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessageContaining("Failed to verify transaction")
 
         verify(sessionAlice).receive(UtxoSignedTransactionInternal::class.java)
-        verify(transaction).verifySignatorySignatures()
+        verify(sessionAlice).send(Payload.Failure<List<DigitalSignatureAndMetadata>>(exceptionMessage))
+    }
+
+    @Test
+    fun `receiving invalid transaction with notary signature verification failure should throw exception`() {
+        whenever(sessionAlice.receive(UtxoSignedTransactionInternal::class.java)).thenReturn(transaction)
+        whenever(transaction.verifyAttachedNotarySignature()).thenThrow(
+            CordaRuntimeException("Failed to verify")
+        )
+
+        assertThatThrownBy { callReceiveTransactionFlow(sessionAlice) }
+            .isInstanceOf(CordaRuntimeException::class.java)
+            .hasMessageContaining("Failed to verify transaction")
+
+        verify(sessionAlice).receive(UtxoSignedTransactionInternal::class.java)
+        verify(sessionAlice).send(Payload.Failure<List<DigitalSignatureAndMetadata>>(exceptionMessage))
+    }
+
+    @Test
+    fun `receiving invalid transaction with transaction verification failure should throw exception`() {
+        whenever(sessionAlice.receive(UtxoSignedTransactionInternal::class.java)).thenReturn(transaction)
+        whenever(transactionVerificationService.verify(ledgerTransaction)).thenThrow(
+            CordaRuntimeException("Failed to verify")
+        )
+
+        assertThatThrownBy { callReceiveTransactionFlow(sessionAlice) }
+            .isInstanceOf(CordaRuntimeException::class.java)
+            .hasMessageContaining("Failed to verify transaction")
+
+        verify(sessionAlice).receive(UtxoSignedTransactionInternal::class.java)
+        verify(sessionAlice).send(Payload.Failure<List<DigitalSignatureAndMetadata>>(exceptionMessage))
     }
 
     private fun callReceiveTransactionFlow(session: FlowSession) {
@@ -139,6 +165,7 @@ class ReceiveTransactionFlowTest {
 
         flow.call()
     }
+
     class TestState(private val participants: List<PublicKey>) : ContractState {
 
         override fun getParticipants(): List<PublicKey> {

@@ -89,7 +89,7 @@ class SendTransactionFlowTest {
     }
 
     @Test
-    fun `sending unverified transaction with no dependencies should not call backchain flow`() {
+    fun `sending unverified transaction should throw exception`() {
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(
             Payload.Failure<List<DigitalSignatureAndMetadata>>("fail")
         )
