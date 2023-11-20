@@ -209,7 +209,7 @@ internal class RestServerInternal(
     private fun Javalin.registerHandlerForRoute(routeInfo: RouteInfo, handlerType: HandlerType) {
         try {
             addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeHttpMethod())
-            log.debug { "Added \"$handlerType\" handler for \"${routeInfo.fullPath}\"." }
+            log.info("Added \"$handlerType\" handler for \"${routeInfo.fullPath}\".")
         } catch (e: Exception) {
             "Error during adding route. Handler type=$handlerType, Path=\"${routeInfo.fullPath}\"".let {
                 log.error("$it: ${e.message}")

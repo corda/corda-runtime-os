@@ -126,7 +126,7 @@ class VirtualNodeInfoReadServiceFake internal constructor(
         return AutoCloseable { callbacks.remove(listener) }
     }
 
-    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>>? {
+    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>> {
         throw CordaRuntimeException("Not yet implemented")
     }
 

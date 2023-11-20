@@ -1,13 +1,10 @@
 package net.corda.ledger.utxo.token.cache.impl.services
 
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaim
-import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
-import net.corda.ledger.utxo.token.cache.entities.TokenCache
-import net.corda.ledger.utxo.token.cache.entities.TokenPoolCache
 import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
 import net.corda.ledger.utxo.token.cache.impl.TOKEN_POOL_CACHE_STATE
-import net.corda.ledger.utxo.token.cache.services.StoredPoolClaimState
 import net.corda.ledger.utxo.token.cache.services.PerformanceClaimStateStoreImpl
+import net.corda.ledger.utxo.token.cache.services.TokenPoolCacheManager
 import net.corda.ledger.utxo.token.cache.services.TokenPoolCacheStateSerializationImpl
 import net.corda.libs.statemanager.api.IntervalFilter
 import net.corda.libs.statemanager.api.MetadataFilter
@@ -36,16 +33,12 @@ class PerformanceClaimStateStoreImplTest {
         TokenPoolCacheStateSerializationImpl(CordaAvroSerializationFactoryImpl(AvroSchemaRegistryImpl()))
     private val now = Instant.ofEpochMilli(1)
     private val clock = mock<Clock>().apply { whenever(instant()).thenReturn(now) }
-    private val tokenCache = mock<TokenCache>()
-    private val tokenPoolCache = mock<TokenPoolCache>().apply { whenever(get(POOL_KEY)).thenReturn(tokenCache) }
+    private val tokenPoolCacheManager = mock<TokenPoolCacheManager>()
     private val baseState = State(
         POOL_KEY.toString(),
         serialization.serialize(TOKEN_POOL_CACHE_STATE),
         modifiedTime = now
     )
-    private val stateManager = StateManagerSimulator().apply {
-        this.create(listOf(baseState))
-    }
 
     @Test
     //@org.junit.jupiter.api.Disabled
@@ -62,22 +55,8 @@ class PerformanceClaimStateStoreImplTest {
             this.create(listOf(baseState))
         }
 
-        val initialStoredPoolClaimStateA = StoredPoolClaimState(
-            0, POOL_KEY, TokenPoolCacheState.newBuilder()
-                .setPoolKey(POOL_KEY.toAvro())
-                .setAvailableTokens(listOf())
-                .setTokenClaims(listOf())
-                .build()
-        )
-        val initialStoredPoolClaimStateB = StoredPoolClaimState(
-            0, POOL_KEY, TokenPoolCacheState.newBuilder()
-                .setPoolKey(POOL_KEY.toAvro())
-                .setAvailableTokens(listOf())
-                .setTokenClaims(listOf())
-                .build()
-        )
-        val instanceA = createTarget(initialStoredPoolClaimStateA, slowStateManager)
-        val instanceB = createTarget(initialStoredPoolClaimStateB, slowStateManager)
+        val instanceA = createTarget(slowStateManager)
+        val instanceB = createTarget(slowStateManager)
 
         val claimCount = 100
         var instanceAClaims = (0..claimCount).map { createTokenClaim("A$it") }
@@ -159,7 +138,7 @@ class PerformanceClaimStateStoreImplTest {
         assertThat(pool.tokenClaims.map { it.claimId }).containsOnlyOnceElementsOf(allClaimIds)
 
         // We expect the available tokens cache to be cleared for each concurrency failure
-        verify(tokenCache, atLeast(1)).removeAll()
+        verify(tokenPoolCacheManager, atLeast(1)).removeAllTokensFromCache(POOL_KEY)
 
         println("Update Call Count: ${slowStateManager.updateCallCount}")
         println("Update Fail Count: ${slowStateManager.updateFailCount}")
@@ -176,10 +155,9 @@ class PerformanceClaimStateStoreImplTest {
     }
 
     private fun createTarget(
-        storedPoolClaimState: StoredPoolClaimState,
         sm: StateManager
     ): PerformanceClaimStateStoreImpl {
-        return PerformanceClaimStateStoreImpl(POOL_KEY, storedPoolClaimState, serialization, sm, tokenPoolCache, clock)
+        return PerformanceClaimStateStoreImpl(POOL_KEY, serialization, sm, tokenPoolCacheManager, clock)
     }
 
     class StateManagerSimulator(private val updateSleepTime: Long = 0) : StateManager {
@@ -193,9 +171,7 @@ class PerformanceClaimStateStoreImplTest {
         override fun create(states: Collection<State>): Map<String, Exception> {
             return lock.withLock {
                 val invalidStates = states
-                    .filter { store.containsKey(it.key) }
-                    .map { it.key to IllegalStateException() }
-                    .toMap()
+                    .filter { store.containsKey(it.key) }.associate { it.key to IllegalStateException() }
 
                 states
                     .filterNot { store.containsKey(it.key) }
@@ -209,10 +185,7 @@ class PerformanceClaimStateStoreImplTest {
 
         override fun get(keys: Collection<String>): Map<String, State> {
             return lock.withLock {
-                keys.map { store[it] }
-                    .filterNotNull()
-                    .map { it.key to it }
-                    .toMap()
+                keys.mapNotNull { store[it] }.associateBy { it.key }
             }
         }
 

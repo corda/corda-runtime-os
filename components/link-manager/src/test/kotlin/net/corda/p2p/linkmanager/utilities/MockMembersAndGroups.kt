@@ -5,6 +5,7 @@ import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS
+import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
@@ -14,6 +15,7 @@ import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.EndpointInfo
+import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -37,20 +39,24 @@ fun mockMemberInfo(
     endPoint: String,
     publicKey: PublicKey,
     serialNumber: Long = 1,
+    isMgm: Boolean = false,
 ): MemberInfo {
     val endpoints = mock<EndpointInfo> {
         on { url } doReturn endPoint
         on { protocolVersion } doReturn ProtocolConstants.PROTOCOL_VERSION
     }
-    val context = mock<MemberContext> {
+    val memberContext = mock<MemberContext> {
         on { parse(GROUP_ID, String::class.java) } doReturn holdingIdentity.groupId
         on { parseList(ENDPOINTS, EndpointInfo::class.java) } doReturn listOf(endpoints)
         on { parseList(SESSION_KEYS, PublicKey::class.java) } doReturn listOf(publicKey)
     }
+    val mgmContext = mock<MGMContext>()
     return mock {
-        on { memberProvidedContext } doReturn context
+        on { memberProvidedContext } doReturn memberContext
+        on { mgmProvidedContext } doReturn mgmContext
         on { name } doReturn holdingIdentity.x500Name
         on { serial } doReturn serialNumber
+        on { this.isMgm } doReturn isMgm
     }
 }
 
