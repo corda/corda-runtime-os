@@ -8,6 +8,7 @@ import io.javalin.core.util.Header.WWW_AUTHENTICATE
 import net.corda.rest.server.apigen.test.TestJavaPrimitivesRestResourceImpl
 import net.corda.rest.server.config.models.RestServerSettings
 import net.corda.rest.server.impl.apigen.processing.openapi.schema.toExample
+import net.corda.rest.server.impl.security.provider.basic.UsernamePasswordAuthenticationProvider
 import net.corda.rest.test.CustomNonSerializableString
 import net.corda.rest.test.CustomSerializationAPIImpl
 import net.corda.rest.test.CustomUnsafeString
@@ -288,7 +289,7 @@ class RestServerRequestsTest : RestServerTestBase() {
     fun `GET without auth header returns WWW-Authenticate header`() {
         val getPathResponse = client.call(GET, WebRequest<Any>("health/sanity"))
         val headerValue = getPathResponse.headers[WWW_AUTHENTICATE]
-        assertEquals("Basic realm=\"FakeSecurityManager\"", headerValue)
+        assertEquals("Basic realm=\"${UsernamePasswordAuthenticationProvider.REALM_VALUE}\"", headerValue)
     }
 
     @Test

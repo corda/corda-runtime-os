@@ -1,6 +1,7 @@
 package net.corda.rest.server.impl
 
 import net.corda.rest.server.config.models.RestServerSettings
+import net.corda.rest.server.impl.security.provider.basic.UsernamePasswordAuthenticationProvider
 import net.corda.rest.test.TestHealthCheckAPIImpl
 import net.corda.rest.test.utils.TestHttpClientUnirestImpl
 import net.corda.rest.test.utils.WebRequest
@@ -68,5 +69,20 @@ class RestServerCaseSensitiveLoginTest: RestServerTestBase() {
             "aDmIn"
         )
         assertEquals(HttpStatus.SC_UNAUTHORIZED, plusOneResponse.responseStatus)
+    }
+
+    @Test
+    fun `ensure the REST framework returns a descriptive realm value`() {
+        val plusOneResponse = client.call(
+            net.corda.rest.tools.HttpVerb.GET,
+            WebRequest<Any>("health/plusone", queryParameters = mapOf("numbers" to listOf(1.0, 2.0))),
+            List::class.java,
+            "InvalidUsername",
+            "invalidPassword"
+        )
+        assertEquals(
+            "Basic realm=\"${UsernamePasswordAuthenticationProvider.REALM_VALUE}\"",
+            plusOneResponse.headers["WWW-Authenticate"]
+        )
     }
 }
