@@ -61,7 +61,7 @@ fun createDummyMemberContext(
     sortedMapOf(
         MemberInfoExtension.PARTY_NAME to "O=Alice,L=London,C=GB",
         String.format(MemberInfoExtension.PARTY_SESSION_KEYS, 0) to KEY,
-        MemberInfoExtension.GROUP_ID to UUID.randomUUID().toString(),
+        MemberInfoExtension.GROUP_ID to UUID(0,1).toString(),
         *convertPublicKeys().toTypedArray(),
         *convertEndpoints().toTypedArray(),
         MemberInfoExtension.SOFTWARE_VERSION to "5.0.0",
