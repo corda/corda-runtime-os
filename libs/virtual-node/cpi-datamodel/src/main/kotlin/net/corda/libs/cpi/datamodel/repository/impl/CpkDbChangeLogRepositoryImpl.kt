@@ -8,9 +8,7 @@ import net.corda.libs.cpi.datamodel.entities.internal.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.entities.internal.CpkDbChangeLogKey
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
 import net.corda.libs.packaging.core.CpiIdentifier
-import java.sql.Types
 import javax.persistence.EntityManager
-import javax.sql.DataSource
 
 internal class CpkDbChangeLogRepositoryImpl: CpkDbChangeLogRepository {
     override fun put(em: EntityManager, cpkDbChangeLog: CpkDbChangeLog) {
@@ -32,23 +30,6 @@ internal class CpkDbChangeLogRepositoryImpl: CpkDbChangeLogRepository {
                 CpkDbChangeLogEntity::class.java
             ).setParameter("cpkFileChecksums", batch)
                 .resultList.map { it.toDto() }
-        }.flatten()
-    }
-
-    override fun findByFileChecksum(
-        dataSource: DataSource,
-        cpkFileChecksums: Set<String>
-    ): List<CpkDbChangeLog> {
-        return cpkFileChecksums.chunked(100).map { batch ->
-            val connectionDb = dataSource.connection
-            val statement = connectionDb.prepareStatement(
-                "FROM ${CpkDbChangeLogEntity::class.simpleName}" +
-                    " WHERE id.cpkFileChecksum IN ?"
-            )
-            statement.setObject(1, batch, Types.VARCHAR)
-            val resultSet = statement.executeQuery()
-            val resultList = listOf(resultSet as CpkDbChangeLogEntity)
-            resultList.map { it.toDto() }
         }.flatten()
     }
 

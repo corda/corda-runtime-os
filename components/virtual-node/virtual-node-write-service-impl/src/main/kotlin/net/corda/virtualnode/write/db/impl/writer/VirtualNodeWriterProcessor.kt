@@ -40,7 +40,6 @@ import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.Virtua
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
-import javax.persistence.EntityManager
 import javax.sql.DataSource
 
 /**
@@ -136,7 +135,6 @@ internal class VirtualNodeWriterProcessor(
                     dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).use { dataSource ->
                         // changelog tags are the CPK file checksum the changelog belongs to
                         val cpkChecksumsOfAppliedChangelogs: Set<String> = getAppliedChangelogTags(
-                            em,
                             dataSource,
                             systemTerminatorTag
                         )
@@ -147,7 +145,7 @@ internal class VirtualNodeWriterProcessor(
                         )
 
                         val changesetsToRollback =
-                            cpkDbChangeLogRepository.findByFileChecksum(dataSource, cpkChecksumsOfAppliedChangelogs)
+                            cpkDbChangeLogRepository.findByFileChecksum(em, cpkChecksumsOfAppliedChangelogs)
                                 .groupBy { it.id.cpkFileChecksum }
 
                         changesetsToRollback.forEach { (cpkFileChecksum, changelogs) ->
@@ -347,17 +345,22 @@ internal class VirtualNodeWriterProcessor(
 
     @Suppress("UNCHECKED_CAST")
     private fun getAppliedChangelogTags(
-        em: EntityManager,
         dataSource: DataSource,
         systemTerminatorTag: String
-    ): Set<String> = (
-            em.createNativeQuery(
-                "SELECT tag FROM ${dataSource.connection.schema}.databasechangelog " +
-                        "WHERE tag IS NOT NULL and tag != :systemTerminatorTag " +
-                        "ORDER BY orderexecuted"
-            )
-                .setParameter("systemTerminatorTag", systemTerminatorTag)
-                .resultList
-                .toSet() as Set<String>
-            ).toSet()
+    ): Set<String> {
+        val connectionDb = dataSource.connection
+        val statement = connectionDb.prepareStatement(
+            "SELECT tag FROM ${dataSource.connection.schema}.databasechangelog " +
+                    "WHERE tag IS NOT NULL and tag != ? " +
+                    "ORDER BY orderexecuted"
+        )
+        statement.setString(1, systemTerminatorTag)
+        val resultSet = statement.executeQuery()
+        val resultList = resultSet.use {
+            generateSequence {
+                if (resultSet.next()) resultSet.getString(1) else null
+            }.toList()
+        }
+        return resultList.toSet()
+    }
 }

@@ -4,7 +4,6 @@ import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
 import net.corda.libs.packaging.core.CpiIdentifier
 import javax.persistence.EntityManager
-import javax.sql.DataSource
 
 /**
  * Interface for CRUD operations for cpk database change log
@@ -14,8 +13,6 @@ interface CpkDbChangeLogRepository {
     fun update(em: EntityManager, cpkDbChangeLog: CpkDbChangeLog)
 
     fun findByFileChecksum(em: EntityManager, cpkFileChecksums: Set<String>): List<CpkDbChangeLog>
-
-    fun findByFileChecksum(dataSource: DataSource, cpkFileChecksums: Set<String>): List<CpkDbChangeLog>
 
     fun findByContent(em: EntityManager, content: String): List<CpkDbChangeLog>
 
