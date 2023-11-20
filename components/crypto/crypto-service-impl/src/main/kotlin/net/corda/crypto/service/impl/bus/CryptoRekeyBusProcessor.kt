@@ -69,7 +69,7 @@ class CryptoRekeyBusProcessor(
                             tenantId,
                             request.oldKeyAlias,
                             request.newKeyAlias,
-                            wrappingKeyInfo . alias,
+                            wrappingKeyInfo.alias,
                             KeyType.UNMANAGED
                         )
                     )
