@@ -96,7 +96,7 @@ class SendTransactionFlowTest {
 
         assertThatThrownBy { callSendTransactionFlow(transaction, sessions) }
             .isInstanceOf(CordaRuntimeException::class.java)
-            .hasMessageContaining("Failed to send transaction")
+            .hasMessageContaining("fail")
     }
 
     private fun callSendTransactionFlow(signedTransaction: UtxoSignedTransaction, sessions: List<FlowSession>) {

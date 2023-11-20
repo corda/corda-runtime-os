@@ -46,7 +46,7 @@ class SendTransactionFlow(
             val sendingTransactionResult = it.receive(Payload::class.java)
             if (sendingTransactionResult is Payload.Failure) {
                 throw CordaRuntimeException(
-                    "Failed to send transaction: ${transaction.id} due to unverified transaction sent."
+                    sendingTransactionResult.message
                 )
             }
         }

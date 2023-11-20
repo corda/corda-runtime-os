@@ -75,8 +75,8 @@ class ReceiveTransactionFlow(
             throw CordaRuntimeException(message, e)
         }
 
-        session.send(Payload.Success("Successfully received transaction."))
         ledgerPersistenceService.persist(transaction, VERIFIED, transaction.getVisibleStateIndexes(visibilityChecker))
+        session.send(Payload.Success("Successfully received transaction."))
 
         return transaction
     }
