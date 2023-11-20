@@ -57,7 +57,7 @@ class CryptoRekeyBusProcessor(
             logger.debug("Found ${allTenantIds.size} tenants; first few are: ${allTenantIds.take(10)}")
             val targetWrappingKeys = allTenantIds.asSequence().map { tenantId ->
                 wrappingRepositoryFactory.create(tenantId).use { wrappingRepo ->
-                    wrappingRepo.findKeysWrappedByAlias (request.oldKeyAlias).map { wki -> tenantId to wki}
+                    wrappingRepo.findKeysWrappedByAlias (request.oldParentKeyAlias).map { wki -> tenantId to wki}
                 }
             }.flatten()
             rekeyPublisher.publish(
@@ -67,8 +67,8 @@ class CryptoRekeyBusProcessor(
                         request.requestId,
                         IndividualKeyRotationRequest(request.requestId,
                             tenantId,
-                            request.oldKeyAlias,
-                            request.newKeyAlias,
+                            request.oldParentKeyAlias,
+                            request.newParentKeyAlias,
                             wrappingKeyInfo.alias,
                             KeyType.UNMANAGED
                         )
