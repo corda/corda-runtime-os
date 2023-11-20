@@ -343,24 +343,24 @@ internal class VirtualNodeWriterProcessor(
         logger.info("Resync migrations for CPK '$cpkFileChecksum' completed.")
     }
 
-    @Suppress("UNCHECKED_CAST")
     private fun getAppliedChangelogTags(
         dataSource: DataSource,
         systemTerminatorTag: String
     ): Set<String> {
-        val connectionDb = dataSource.connection
-        val statement = connectionDb.prepareStatement(
-            "SELECT tag FROM ${dataSource.connection.schema}.databasechangelog " +
-                    "WHERE tag IS NOT NULL and tag != ? " +
-                    "ORDER BY orderexecuted"
-        )
-        statement.setString(1, systemTerminatorTag)
-        val resultSet = statement.executeQuery()
-        val resultList = resultSet.use {
-            generateSequence {
-                if (resultSet.next()) resultSet.getString(1) else null
-            }.toList()
+        dataSource.connection.use {
+            val statement = it.prepareStatement(
+                "SELECT tag FROM ${dataSource.connection.schema}.databasechangelog " +
+                        "WHERE tag IS NOT NULL and tag != ? " +
+                        "ORDER BY orderexecuted"
+            )
+            statement.setString(1, systemTerminatorTag)
+            val resultSet = statement.executeQuery()
+            val resultList = resultSet.use {
+                generateSequence {
+                    if (resultSet.next()) resultSet.getString(1) else null
+                }.toList()
+            }
+            return resultList.toSet()
         }
-        return resultList.toSet()
     }
 }
