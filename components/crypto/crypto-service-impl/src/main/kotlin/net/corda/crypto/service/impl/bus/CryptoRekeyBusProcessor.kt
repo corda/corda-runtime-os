@@ -28,9 +28,9 @@ class CryptoRekeyBusProcessor(
 
     @Suppress("NestedBlockDepth")
     override fun onNext(events: List<Record<String, KeyRotationRequest>>): List<Record<*, *>> {
-        logger.info("received ${events.size} key rotation requests")
+        logger.debug("received ${events.size} key rotation requests")
         events.map { it.value}.filterNotNull().forEach { request ->
-            logger.info("processing $request")
+            logger.debug("processing $request")
             // root (unmanaged) keys can be used in clusterDB and vNodeDB
             // then for each key we will send a record on Kafka
             // We do not have a code that deals with rewrapping the root key in a cluster DB
@@ -44,16 +44,17 @@ class CryptoRekeyBusProcessor(
             val virtualNodeTenantIds = virtualNodeInfo.map { it.holdingIdentity.shortHash.toString() }
 
             val allTenantIds = virtualNodeTenantIds+listOf(CryptoTenants.CRYPTO, CryptoTenants.P2P, CryptoTenants.REST)
-            logger.info("Found ${allTenantIds.size} tenants; first few are: ${allTenantIds.take(10)}")
+            logger.debug("Found ${allTenantIds.size} tenants; first few are: ${allTenantIds.take(10)}")
             val targetWrappingKeys = allTenantIds.asSequence().map { tenantId ->
                 wrappingRepositoryFactory.create(tenantId).use { wrappingRepo ->
                     wrappingRepo.findKeysWrappedByAlias (request.oldParentKeyAlias).map { wki -> tenantId to wki}
                 }
             }.flatten()
 
+
             targetWrappingKeys.map { (tenantId, wrappingKeyInfo) ->
                 val newGeneration = cryptoService.rewrapWrappingKey(tenantId, wrappingKeyInfo.alias, request.newParentKeyAlias)
-                logger.info("Rewrapped ${wrappingKeyInfo.alias} in tenant ${tenantId} from "+
+                logger.debug("Rewrapped ${wrappingKeyInfo.alias} in tenant ${tenantId} from "+
                         "${wrappingKeyInfo.parentKeyAlias} to ${request.newParentKeyAlias}; "+
                         "generation number now ${newGeneration}")
             }.count()

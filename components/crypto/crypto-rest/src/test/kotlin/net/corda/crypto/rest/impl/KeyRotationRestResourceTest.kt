@@ -17,6 +17,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.schema.configuration.ConfigKeys
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mock
@@ -62,15 +63,17 @@ class KeyRotationRestResourceTest {
         whenever(publisherFactory.createPublisher(any(), any())).thenReturn(publisher)
     }
 
-//    @Test
-//    fun `get key rotation status`() {
-//        TODO("Not yet implemented")
-//    }
-//
-//    @Test
-//    fun `get key rotation status for unknown requestID throws`() {
-//        TODO("Not yet implemented")
-//    }
+    @Disabled
+    @Test
+    fun `get key rotation status`() {
+        TODO("Not yet implemented")
+    }
+
+    @Disabled
+    @Test
+    fun `get key rotation status for unknown requestID throws`() {
+        TODO("Not yet implemented")
+    }
 
     @Test
     fun `initialize creates the publisher`() {

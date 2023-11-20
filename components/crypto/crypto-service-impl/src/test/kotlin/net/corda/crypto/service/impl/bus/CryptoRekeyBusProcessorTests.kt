@@ -230,7 +230,7 @@ class CryptoRekeyBusProcessorTests {
             oldKeyAlias,
             "",
             null,
-            tenantId
+            tenantId,
         )
     )
 }

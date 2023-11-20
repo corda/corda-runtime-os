@@ -20,7 +20,7 @@ import net.corda.rest.response.ResponseEntity
     name = "Key Rotation API",
     description = "Contains operations related to rotation of the wrapping keys.",
     path = "wrappingkey",
-    minVersion = RestApiVersion.C5_1
+    minVersion = RestApiVersion.C5_2
 )
 interface KeyRotationRestResource : RestResource {
     /**
@@ -76,6 +76,6 @@ interface KeyRotationRestResource : RestResource {
             description = "The alias of the new wrapping key that old one will be rotated with.",
             required = true
         )
-        newKeyAlias: String
+        newKeyAlias: String,
     ): ResponseEntity<KeyRotationResponse>
 }
