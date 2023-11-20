@@ -76,21 +76,6 @@ interface KeyRotationRestResource : RestResource {
             description = "The alias of the new wrapping key that old one will be rotated with.",
             required = true
         )
-        newKeyAlias: String,
-        @ClientRequestBodyParameter(
-            description = "If true, only work out the number of keys to rotate.",
-            required = false
-        )
-        simulate: Boolean,
-        @ClientRequestBodyParameter(
-            description = "The maximum number of milliseconds which should pass, after which the key rotation loop will exit.",
-            required = false
-        )
-        timeToLive: Int,
-        @ClientRequestBodyParameter(
-            description = "The maximum number of key rotations to do, after which the key rotation loop will exit.",
-            required = false
-        )
-        limit: Int,
+        newKeyAlias: String
     ): ResponseEntity<KeyRotationResponse>
 }

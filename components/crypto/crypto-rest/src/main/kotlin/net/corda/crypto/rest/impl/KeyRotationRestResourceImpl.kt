@@ -73,10 +73,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
 
     override fun startKeyRotation(
         oldKeyAlias: String,
-        newKeyAlias: String,
-        simulate: Boolean,
-        timeToLive: Int,
-        limit: Int
+        newKeyAlias: String
     ): ResponseEntity<KeyRotationResponse> {
 
         // We cannot validate oldKeyAlias or newKeyAlias early here on the client side of the RPC since
@@ -91,10 +88,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
             oldKeyAlias,
             newKeyAlias,
             null,
-            null,
-            simulate,
-            timeToLive,
-            limit
+            null
         )
 
         publisher?.publish(listOf(Record(uploadTopic, requestId, keyRotationRequest)))
