@@ -47,15 +47,15 @@ class CryptoRekeyBusProcessor(
             logger.debug("Found ${allTenantIds.size} tenants; first few are: ${allTenantIds.take(10)}")
             val targetWrappingKeys = allTenantIds.asSequence().map { tenantId ->
                 wrappingRepositoryFactory.create(tenantId).use { wrappingRepo ->
-                    wrappingRepo.findKeysWrappedByAlias (request.oldKeyAlias).map { wki -> tenantId to wki}
+                    wrappingRepo.findKeysWrappedByAlias (request.oldParentKeyAlias).map { wki -> tenantId to wki}
                 }
             }.flatten()
 
 
             targetWrappingKeys.map { (tenantId, wrappingKeyInfo) ->
-                val newGeneration = cryptoService.rewrapWrappingKey(tenantId, wrappingKeyInfo.alias, request.newKeyAlias)
+                val newGeneration = cryptoService.rewrapWrappingKey(tenantId, wrappingKeyInfo.alias, request.newParentKeyAlias)
                 logger.debug("Rewrapped ${wrappingKeyInfo.alias} in tenant ${tenantId} from "+
-                        "${wrappingKeyInfo.parentKeyAlias} to ${request.newKeyAlias}; "+
+                        "${wrappingKeyInfo.parentKeyAlias} to ${request.newParentKeyAlias}; "+
                         "generation number now ${newGeneration}")
             }.count()
         }
