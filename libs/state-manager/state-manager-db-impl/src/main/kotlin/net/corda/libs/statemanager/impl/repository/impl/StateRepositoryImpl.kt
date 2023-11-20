@@ -89,11 +89,21 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
             it.executeQuery().resultSetAsStateEntityCollection()
         }
 
-    override fun filterByUpdatedBetweenAndMetadata(
+    override fun filterByUpdatedBetweenWithMetadataMatchingAll(
         connection: Connection,
         interval: IntervalFilter,
-        filter: MetadataFilter
-    ) = connection.prepareStatement(queryProvider.findStatesUpdatedBetweenAndFilteredByMetadataKey(filter)).use {
+        filters: Collection<MetadataFilter>
+    ) = connection.prepareStatement(queryProvider.findStatesUpdatedBetweenWithMetadataMatchingAll(filters)).use {
+        it.setTimestamp(1, Timestamp.from(interval.start))
+        it.setTimestamp(2, Timestamp.from(interval.finish))
+        it.executeQuery().resultSetAsStateEntityCollection()
+    }
+
+    override fun filterByUpdatedBetweenWithMetadataMatchingAny(
+        connection: Connection,
+        interval: IntervalFilter,
+        filters: Collection<MetadataFilter>
+    ) = connection.prepareStatement(queryProvider.findStatesUpdatedBetweenWithMetadataMatchingAny(filters)).use {
         it.setTimestamp(1, Timestamp.from(interval.start))
         it.setTimestamp(2, Timestamp.from(interval.finish))
         it.executeQuery().resultSetAsStateEntityCollection()

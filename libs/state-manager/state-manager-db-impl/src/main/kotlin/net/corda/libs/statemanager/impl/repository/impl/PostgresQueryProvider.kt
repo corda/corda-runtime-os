@@ -37,21 +37,25 @@ class PostgresQueryProvider : AbstractQueryProvider() {
         """
             SELECT s.$KEY_COLUMN, s.$VALUE_COLUMN, s.$METADATA_COLUMN, s.$VERSION_COLUMN, s.$MODIFIED_TIME_COLUMN 
             FROM $STATE_MANAGER_TABLE s
-            WHERE ${metadataKeyFilters(filters).joinToString(" AND ")}
+            WHERE (${metadataKeyFilters(filters).joinToString(" AND ")})
         """.trimIndent()
 
     override fun findStatesByMetadataMatchingAny(filters: Collection<MetadataFilter>) =
         """
             SELECT s.$KEY_COLUMN, s.$VALUE_COLUMN, s.$METADATA_COLUMN, s.$VERSION_COLUMN, s.$MODIFIED_TIME_COLUMN 
             FROM $STATE_MANAGER_TABLE s
-            WHERE ${metadataKeyFilters(filters).joinToString(" OR ")}
+            WHERE (${metadataKeyFilters(filters).joinToString(" OR ")})
         """.trimIndent()
 
-    override fun findStatesUpdatedBetweenAndFilteredByMetadataKey(filter: MetadataFilter): String {
+    override fun findStatesUpdatedBetweenWithMetadataMatchingAll(filters: Collection<MetadataFilter>): String {
         return """
-            SELECT s.$KEY_COLUMN, s.$VALUE_COLUMN, s.$METADATA_COLUMN, s.$VERSION_COLUMN, s.$MODIFIED_TIME_COLUMN
-            FROM $STATE_MANAGER_TABLE s
-            WHERE (${metadataKeyFilter(filter)}) AND (${updatedBetweenFilter()})
+            ${findStatesByMetadataMatchingAll(filters)} AND (${updatedBetweenFilter()})
+        """.trimIndent()
+    }
+
+    override fun findStatesUpdatedBetweenWithMetadataMatchingAny(filters: Collection<MetadataFilter>): String {
+        return """
+            ${findStatesByMetadataMatchingAny(filters)} AND (${updatedBetweenFilter()})
         """.trimIndent()
     }
 
