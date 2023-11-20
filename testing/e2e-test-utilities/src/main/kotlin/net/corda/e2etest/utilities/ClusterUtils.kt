@@ -211,12 +211,10 @@ fun ClusterInfo.keyExists(
 
 fun ClusterInfo.rotateCryptoUnmanagedWrappingKeys(
     oldKeyAlias: String,
-    newKeyAlias: String,
-    limit: Int = 0,
-    timeToLive: Int = 0
+    newKeyAlias: String
 ) = cluster {
     assertWithRetry {
-        command { doRotateCryptoUnmanagedWrappingKeys(oldKeyAlias, newKeyAlias, limit, timeToLive) }
+        command { doRotateCryptoUnmanagedWrappingKeys(oldKeyAlias, newKeyAlias) }
         condition { it.code == ResponseCode.ACCEPTED.statusCode }
     }
 }

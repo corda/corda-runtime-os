@@ -76,6 +76,6 @@ interface KeyRotationRestResource : RestResource {
             description = "The alias of the new wrapping key that old one will be rotated with.",
             required = true
         )
-        newKeyAlias: String
+        newKeyAlias: String,
     ): ResponseEntity<KeyRotationResponse>
 }
