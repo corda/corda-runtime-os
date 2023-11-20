@@ -51,9 +51,8 @@ class CryptoRekeyBusProcessor(
                 }
             }.flatten()
 
-            val truncatedWrappingKeys = targetWrappingKeys.take(request.limit ?: Int.MAX_VALUE)
 
-            truncatedWrappingKeys.map { (tenantId, wrappingKeyInfo) ->
+            targetWrappingKeys.map { (tenantId, wrappingKeyInfo) ->
                 val newGeneration = cryptoService.rewrapWrappingKey(tenantId, wrappingKeyInfo.alias, request.newKeyAlias)
                 logger.debug("Rewrapped ${wrappingKeyInfo.alias} in tenant ${tenantId} from "+
                         "${wrappingKeyInfo.parentKeyAlias} to ${request.newKeyAlias}; "+
