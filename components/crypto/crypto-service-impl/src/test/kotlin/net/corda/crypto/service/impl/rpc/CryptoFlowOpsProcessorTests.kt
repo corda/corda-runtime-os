@@ -60,7 +60,7 @@ import kotlin.random.Random
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
- class CryptoFlowOpsRpcProcessorTests {
+ class CryptoFlowOpsProcessorTests {
     companion object {
         private val configEvent = ConfigChangedEvent(
             setOf(ConfigKeys.CRYPTO_CONFIG),
@@ -81,7 +81,7 @@ import kotlin.test.assertTrue
     private lateinit var cryptoOpsClient: CryptoOpsProxyClient
     private lateinit var cryptoService: CryptoService
     private lateinit var externalEventResponseFactory: ExternalEventResponseFactory
-    private lateinit var processor: CryptoFlowOpsRpcProcessor
+    private lateinit var processor: CryptoFlowOpsProcessor
     private lateinit var digestService: DigestService
 
     private val flowOpsResponseArgumentCaptor = argumentCaptor<FlowOpsResponse>()
@@ -182,7 +182,7 @@ import kotlin.test.assertTrue
             on { lookupSigningKeysByPublicKeyHashes(any(), any()) } doReturn singleSigningKeyInfo
         }
         val retryingConfig = configEvent.config.toCryptoConfig().retrying()
-        processor = CryptoFlowOpsRpcProcessor(
+        processor = CryptoFlowOpsProcessor(
             cryptoService,
             externalEventResponseFactory,
             retryingConfig,

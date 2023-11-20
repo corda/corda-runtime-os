@@ -31,7 +31,7 @@ import net.corda.crypto.persistence.getEntityManagerFactory
 import net.corda.crypto.service.impl.TenantInfoServiceImpl
 import net.corda.crypto.service.impl.bus.CryptoOpsBusProcessor
 import net.corda.crypto.service.impl.bus.HSMRegistrationBusProcessor
-import net.corda.crypto.service.impl.rpc.CryptoFlowOpsRpcProcessor
+import net.corda.crypto.service.impl.rpc.CryptoFlowOpsProcessor
 import net.corda.crypto.softhsm.TenantInfoService
 import net.corda.crypto.softhsm.impl.HSMRepositoryImpl
 import net.corda.crypto.softhsm.impl.ShortHashCacheKey
@@ -310,7 +310,7 @@ class CryptoProcessorImpl @Activate constructor(
 
         val rpcOpsProcessor = CryptoOpsBusProcessor(cryptoService, cryptoConfig, keyEncodingService)
         val hsmRegistrationProcessor = HSMRegistrationBusProcessor(tenantInfoService, cryptoService, cryptoConfig)
-        val flowOpsProcessor = CryptoFlowOpsRpcProcessor(
+        val flowOpsProcessor = CryptoFlowOpsProcessor(
             cryptoService,
             externalEventResponseFactory,
             cryptoConfig, keyEncodingService,
