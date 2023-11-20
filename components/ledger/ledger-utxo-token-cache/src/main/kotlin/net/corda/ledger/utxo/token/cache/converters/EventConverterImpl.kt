@@ -10,12 +10,11 @@ import net.corda.ledger.utxo.token.cache.entities.TokenEvent
 
 class EventConverterImpl(private val entityConverter: EntityConverter) : EventConverter {
 
-    override fun convert(tokenPoolCacheEvent: TokenPoolCacheEvent?): TokenEvent {
-        val event = checkNotNull(tokenPoolCacheEvent) { "The received TokenPoolCacheEvent is null." }
-        val key = event.poolKey
+    override fun convert(tokenPoolCacheEvent: TokenPoolCacheEvent): TokenEvent {
+        val key = tokenPoolCacheEvent.poolKey
 
         return when (val payload =
-            checkNotNull(event.payload) { "The received TokenPoolCacheEvent payload is null." }) {
+            checkNotNull(tokenPoolCacheEvent.payload) { "The received TokenPoolCacheEvent payload is null." }) {
             is TokenClaimQuery -> {
                 entityConverter.toClaimQuery(key, payload)
             }
