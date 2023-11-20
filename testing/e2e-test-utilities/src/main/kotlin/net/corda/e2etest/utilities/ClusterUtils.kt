@@ -218,6 +218,8 @@ fun ClusterInfo.rotateCryptoUnmanagedWrappingKeys(
     assertWithRetry {
         command { doRotateCryptoUnmanagedWrappingKeys(oldKeyAlias, newKeyAlias, limit, timeToLive) }
         condition { it.code == ResponseCode.ACCEPTED.statusCode }
+    }
+}
 
 private fun <T> Semaphore.runWith(block: () -> T): T {
     this.acquire()

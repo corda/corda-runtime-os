@@ -26,7 +26,6 @@ import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito.never
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.kotlin.any
@@ -91,7 +90,7 @@ class CryptoRekeyBusProcessorTests {
         val virtualNodes = getStubVirtualNodes(listOf(tenantId1))
         whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
 
-        cryptoRekeyBusProcessor.onNext(listOf(getKafkaRecord("", null)))
+        cryptoRekeyBusProcessor.onNext(listOf(getKafkaRecord("")))
 
         // This now counts the CryptoTenants.CRYPTO, P2P and REST values
         verify(cryptoService, times(4)).rewrapWrappingKey(any(), any(), any())
@@ -102,29 +101,9 @@ class CryptoRekeyBusProcessorTests {
         val virtualNodes = getStubVirtualNodes(listOf(tenantId1, tenantId2, tenantId3))
         whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
 
-        cryptoRekeyBusProcessor.onNext(listOf(getKafkaRecord("", null)))
+        cryptoRekeyBusProcessor.onNext(listOf(getKafkaRecord("")))
 
         verify(cryptoService, times(6)).rewrapWrappingKey(any(), any(), any())
-    }
-
-    @Test
-    fun `zero limit for key rotation operations is reflected`() {
-        val virtualNodes = getStubVirtualNodes(listOf(tenantId1, tenantId2, tenantId3, tenantId4, tenantId5))
-        whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
-
-        cryptoRekeyBusProcessor.onNext(listOf(getKafkaRecord("", 0)))
-
-        verify(cryptoService, never()).rewrapWrappingKey(any(), any(), any())
-    }
-
-    @Test
-    fun `limit for key rotation operations is reflected`() {
-        val virtualNodes = getStubVirtualNodes(listOf(tenantId1, tenantId2, tenantId3, tenantId4, tenantId5))
-        whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
-
-        cryptoRekeyBusProcessor.onNext(listOf(getKafkaRecord("", 2)))
-
-        verify(cryptoService, times(2)).rewrapWrappingKey(any(), any(), any())
     }
 
     /**
@@ -169,7 +148,7 @@ class CryptoRekeyBusProcessorTests {
         cryptoRekeyBusProcessor = CryptoRekeyBusProcessor(
             cryptoService, virtualNodeInfoReadService, wrappingRepositoryFactory)
 
-        cryptoRekeyBusProcessor.onNext(listOf(getKafkaRecord(oldKeyAlias, null)))
+        cryptoRekeyBusProcessor.onNext(listOf(getKafkaRecord(oldKeyAlias)))
 
         verify(cryptoService, times(2)).rewrapWrappingKey(any(), any(), any())
     }
@@ -242,7 +221,7 @@ class CryptoRekeyBusProcessorTests {
         return virtualNodesInfos
     }
 
-    private fun getKafkaRecord(oldKeyAlias: String, limit: Int?): Record<String, KeyRotationRequest> = Record(
+    private fun getKafkaRecord(oldKeyAlias: String): Record<String, KeyRotationRequest> = Record(
         "TBC",
         UUID.randomUUID().toString(),
         KeyRotationRequest(
@@ -251,10 +230,7 @@ class CryptoRekeyBusProcessorTests {
             oldKeyAlias,
             "",
             null,
-            tenantId,
-            false,
-            0,
-            limit
+            tenantId
         )
     )
 }

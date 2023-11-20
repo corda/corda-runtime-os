@@ -52,6 +52,7 @@ import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 
+@Suppress("TooManyFunctions")
 class MemberProcessorTestUtils {
     companion object {
 
@@ -103,7 +104,8 @@ class MemberProcessorTestUtils {
             listOf(EncryptionSecretsServiceFactory())
         )
 
-        fun makeCryptoConfig(): SmartConfig = createDefaultCryptoConfig(listOf(KeyDerivationParameters("master-key-pass", "master-key-salt")))
+        fun makeCryptoConfig(): SmartConfig = createDefaultCryptoConfig(
+            listOf(KeyDerivationParameters("master-key-pass", "master-key-salt")))
 
         fun makeMessagingConfig(): SmartConfig =
             smartConfigFactory.create(

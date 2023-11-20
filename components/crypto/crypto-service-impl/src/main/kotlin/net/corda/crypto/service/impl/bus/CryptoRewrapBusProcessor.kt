@@ -25,15 +25,15 @@ class CryptoRewrapBusProcessor(
         events.forEach {
             val request = it.value
             if (request != null) {
-                cryptoService.rewrapWrappingKey(request.tenantId, request.oldKeyAlias, request.newKeyAlias)
+                cryptoService.rewrapWrappingKey(request.tenantId, request.oldParentKeyAlias, request.newParentKeyAlias)
             }
             val endTimestamp = Instant.now()
 
             val value = createRewrapResponse(
                     request!!.requestId,
                     request.tenantId,
-                    request.oldKeyAlias,
-                    request.newKeyAlias,
+                    request.oldParentKeyAlias,
+                    request.newParentKeyAlias,
                     endTimestamp
                 )
             records.add(Record(REWRAP_MESSAGE_RESPONSE_TOPIC, request.requestId, value))

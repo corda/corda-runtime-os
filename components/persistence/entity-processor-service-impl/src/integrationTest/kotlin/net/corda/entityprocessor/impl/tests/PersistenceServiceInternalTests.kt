@@ -391,7 +391,8 @@ class PersistenceServiceInternalTests {
         // save a dog
         val dog = sandbox.createDog("Basil")
         val dog2 = sandbox.createDog("Lassie")
-        persistDirectInDb(dog.instance) // don't write dog2 yet so we test what happens when you merge on both existent and non-existent records
+        persistDirectInDb(dog.instance) // don't write dog2 yet so we test what happens when you merge on both
+        // existent and non-existent records
 
         // change the dog's name twice, without changing the ID
         val bellaTheDog = sandbox.createDog("Bella", id = dog.id)
@@ -816,6 +817,7 @@ class PersistenceServiceInternalTests {
         return EntityRequest(holdingId.toAvro(), entity, externalEventContext)
     }
 
+    @Suppress("LongParameterList")
     private fun assertQuery(
         querySetup: QuerySetup,
         offset: Int = 0,

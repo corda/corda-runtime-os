@@ -120,22 +120,6 @@ class SigningServiceImpl @Activate constructor(
         return recordSuspendable({ cryptoFlowTimer("findMySigningKeys") }, operation)
     }
 
-    override fun signWithMyKeys(
-        bytes: ByteArray,
-        keys: MutableSet<PublicKey>,
-        signatureSpec: SignatureSpec
-    ): MutableSet<DigitalSignature.WithKeyId> {
-        TODO("Not yet implemented")
-    }
-
-    override fun signWithMyCategoryKeys(
-        bytes: ByteArray,
-        category: String,
-        signatureSpec: SignatureSpec
-    ): MutableSet<DigitalSignature.WithKeyId> {
-        TODO("Not yet implemented")
-    }
-
     private fun cryptoFlowTimer(operationName: String): Timer {
         return CordaMetrics.Metric.CryptoOperationsFlowTime
             .builder()

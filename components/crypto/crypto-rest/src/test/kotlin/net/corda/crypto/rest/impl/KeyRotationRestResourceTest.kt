@@ -81,7 +81,7 @@ class KeyRotationRestResourceTest {
     @Test
     fun `start key rotation event triggers successfully`() {
         val keyRotationRestResource = createKeyRotationRestResource()
-        keyRotationRestResource.startKeyRotation(oldKeyAlias, newKeyAlias, false, 0, 0)
+        keyRotationRestResource.startKeyRotation(oldKeyAlias, newKeyAlias)
 
         verify(publisher, times(1)).publish(any())
     }
@@ -91,7 +91,7 @@ class KeyRotationRestResourceTest {
     fun `start key rotation event throws when not initialised`() {
         val keyRotationRestResource = createKeyRotationRestResource(false)
         assertThrows<ServiceUnavailableException> {
-            keyRotationRestResource.startKeyRotation("", "", false, 0, 0)
+            keyRotationRestResource.startKeyRotation("", "")
         }
         verify(publisher, never()).publish(any())
     }

@@ -65,6 +65,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
         }
     }
 
+    @Suppress("MaxLineLength")
     @Test
     fun `Given a subFlow contains an initiated and closed session when the subFlow fails a single session error event is sent to the initiated session and session cleanup is scheduled`() {
         `when` {
@@ -163,6 +164,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
         }
     }
 
+    @Suppress("MaxLineLength")
     @Test
     fun `Given a subFlow contains no sessions when the subFlow fails and flow finishes, requestid is cleaned up and no session errors are sent`() {
         `when` {
@@ -179,6 +181,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
         }
     }
 
+    @Suppress("MaxLineLength")
     @Test
     fun `Given an initiated top level flow with an initiated session when it finishes and calls SubFlowFailed a session error event is sent and session cleanup is scheduled`() {
         given {
@@ -205,6 +208,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
         }
     }
 
+    @Suppress("MaxLineLength")
     @Test
     fun `Given an initiated top level flow with a closed session when it finishes and calls SubFlowFailed, schedules cleanup and does not send a session error event`() {
         given {
@@ -232,6 +236,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
         }
     }
 
+    @Suppress("MaxLineLength")
     @Test
     fun `Given an initiated top level flow with an errored session when it finishes and calls SubFlowFailed, schedules cleanup and does not send a session error event`() {
         given {
@@ -291,7 +296,9 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
                 sessionErrorEvents(SESSION_ID_1)
                 scheduleFlowMapperCleanupEvents(SESSION_ID_1, ALICE_FLOW_KEY_MAPPER)
                 nullStateRecord()
-                flowStatus(state = FlowStates.FAILED,  errorType = FLOW_FAILED, errorMessage = "Session: BrokenSession does not exist when executing session operation that requires an existing session")
+                flowStatus(state = FlowStates.FAILED,  errorType = FLOW_FAILED,
+                    errorMessage = "Session: BrokenSession does not exist when executing session operation that " +
+                            "requires an existing session")
             }
         }
     }

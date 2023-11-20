@@ -1,10 +1,6 @@
 package net.corda.libs.statemanager.impl.tests
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import java.sql.SQLException
-import java.time.Instant
-import java.util.UUID
-import java.util.concurrent.CountDownLatch
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.core.utils.transaction
@@ -38,6 +34,10 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.kotlin.mock
+import java.sql.SQLException
+import java.time.Instant
+import java.util.UUID
+import java.util.concurrent.CountDownLatch
 
 // TODO-[CORE-16663]: make database provider pluggable
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -321,6 +321,7 @@ class StateManagerIntegrationTest {
         )
     }
 
+    @Suppress("SpreadOperator")
     @Test
     fun `optimistic locking ensures no double updates across threads`() {
         val totalStates = 100
