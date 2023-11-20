@@ -35,6 +35,6 @@ internal class UsernamePasswordAuthenticationProvider(private val restSecurityMa
     }
 
     companion object {
-        const val REALM_VALUE =  "Corda REST Worker"
+        const val REALM_VALUE = "Corda REST Worker"
     }
 }
