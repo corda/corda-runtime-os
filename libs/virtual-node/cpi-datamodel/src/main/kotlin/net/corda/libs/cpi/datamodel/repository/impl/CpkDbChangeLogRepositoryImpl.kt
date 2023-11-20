@@ -1,5 +1,6 @@
 package net.corda.libs.cpi.datamodel.repository.impl
 
+import javax.persistence.EntityManager
 import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
@@ -8,7 +9,6 @@ import net.corda.libs.cpi.datamodel.entities.internal.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.entities.internal.CpkDbChangeLogKey
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
 import net.corda.libs.packaging.core.CpiIdentifier
-import javax.persistence.EntityManager
 
 internal class CpkDbChangeLogRepositoryImpl: CpkDbChangeLogRepository {
     override fun put(em: EntityManager, cpkDbChangeLog: CpkDbChangeLog) {
