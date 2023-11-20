@@ -39,7 +39,7 @@ interface WrappingRepository : Closeable {
     fun findKey(alias: String): WrappingKeyInfo?
 
     /**
-     * Find a wrapping key in the database`
+     * Find a wrapping key in the database
      *
      * @param alias The name for the  wrapping key, as previously passed into save.
      * @return The pair of UUID and the wrapping key material with metadata about version and algorithm.
