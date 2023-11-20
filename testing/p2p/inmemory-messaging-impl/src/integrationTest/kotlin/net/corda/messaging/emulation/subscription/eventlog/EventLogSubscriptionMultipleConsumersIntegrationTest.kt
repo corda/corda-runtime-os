@@ -55,6 +55,7 @@ class EventLogSubscriptionMultipleConsumersIntegrationTest {
         return Record(this.topic, this.key, this.value)
     }
 
+    @Suppress("ForEachOnRange")
     private fun publish() {
         (1..numberOfPublisher).forEach { publisherId ->
             thread {
@@ -79,6 +80,7 @@ class EventLogSubscriptionMultipleConsumersIntegrationTest {
         }
     }
 
+    @Suppress("ForEachOnRange", "NestedBlockDepth")
     private fun consume() {
         (1..numberOfTopics).forEach { topicId ->
             val topicName = "topic.$topicId"
@@ -90,7 +92,9 @@ class EventLogSubscriptionMultipleConsumersIntegrationTest {
                 val processor = object : EventLogProcessor<String, String> {
                     override fun onNext(events: List<EventLogRecord<String, String>>): List<Record<*, *>> {
                         if (events.any { it.topic != topicName }) {
-                            issues.add(Exception("Got the wrong topic! expecting only $topicName but got ${events.filter { it.topic != topicName }}"))
+                            issues.add(
+                                Exception("Got the wrong topic! expecting only $topicName but got " +
+                                        "${events.filter { it.topic != topicName }}"))
                         }
                         events.forEach {
                             val record = it.toRecord()
@@ -115,11 +119,17 @@ class EventLogSubscriptionMultipleConsumersIntegrationTest {
                         override fun onPartitionsUnassigned(topicPartitions: List<Pair<String, Int>>) {
                             val topics = topicPartitions.map { it.first }.toSet()
                             if (topics != setOf(topicName)) {
-                                issues.add(Exception("$consumerNumber unassigned for the wrong topic - expected $topicName, got $topicPartitions"))
+                                issues.add(
+                                    Exception(
+                                        "$consumerNumber unassigned for the wrong topic - " +
+                                                "expected $topicName, got $topicPartitions"))
                             }
                             val partitions = topicPartitions.map { it.second }.toSet()
                             if ((partitions - myAssignments).isNotEmpty()) {
-                                issues.add(Exception("$consumerNumber unassigned something that was never assigned. I know of $myAssignments, I got $topicPartitions"))
+                                issues.add(
+                                    Exception(
+                                        "$consumerNumber unassigned something that was never assigned. I know of " +
+                                                "$myAssignments, I got $topicPartitions"))
                             }
                             myAssignments.removeAll(partitions)
                         }
@@ -127,11 +137,15 @@ class EventLogSubscriptionMultipleConsumersIntegrationTest {
                         override fun onPartitionsAssigned(topicPartitions: List<Pair<String, Int>>) {
                             val topics = topicPartitions.map { it.first }.toSet()
                             if (topics != setOf(topicName)) {
-                                issues.add(Exception("$consumerNumber assigned for the wrong topic - expected $topicName, got $topicPartitions"))
+                                issues.add(Exception(
+                                    "$consumerNumber assigned for the wrong topic - expected $topicName, " +
+                                            "got $topicPartitions"))
                             }
                             val partitions = topicPartitions.map { it.second }.toSet()
                             if (myAssignments.any { partitions.contains(it) }) {
-                                issues.add(Exception("$consumerNumber assigned something that was never unassigned. I know of $myAssignments, I got $topicPartitions"))
+                                issues.add(Exception(
+                                    "$consumerNumber assigned something that was never unassigned. " +
+                                            "I know of $myAssignments, I got $topicPartitions"))
                             }
                             myAssignments.addAll(partitions)
                         }
@@ -140,7 +154,8 @@ class EventLogSubscriptionMultipleConsumersIntegrationTest {
                         subscriptionConfig = config,
                         processor = processor,
                         partitionAssignmentListener = listener,
-                        messagingConfig = SmartConfigImpl.empty().withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(consumerNumber))
+                        messagingConfig = SmartConfigImpl.empty()
+                            .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(consumerNumber))
                     )
                     subscriptions.add(subscription)
                 }

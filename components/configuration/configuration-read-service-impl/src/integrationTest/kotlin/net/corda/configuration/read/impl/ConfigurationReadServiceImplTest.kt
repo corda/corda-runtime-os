@@ -138,10 +138,20 @@ class ConfigurationReadServiceImplTest {
         latch.await(TIMEOUT, TimeUnit.MILLISECONDS)
 
         assertEquals(expectedKeys, receivedKeys, "Incorrect keys")
-        assertEquals(expectedConfig[BOOT_CONFIG], receivedConfig[BOOT_CONFIG], "Incorrect config for key $BOOT_CONFIG")
-        assertEquals(expectedConfig[FLOW_CONFIG], receivedConfig[FLOW_CONFIG], "Incorrect config for key $FLOW_CONFIG")
-        assertEquals(expectedConfig[DB_CONFIG], receivedConfig[DB_CONFIG], "Incorrect config for key $DB_CONFIG")
-        assertEquals(expectedConfig[STATE_MANAGER_CONFIG], receivedConfig[STATE_MANAGER_CONFIG], "Incorrect config for key $STATE_MANAGER_CONFIG")
+        assertEquals(
+            expectedConfig[BOOT_CONFIG],
+            receivedConfig[BOOT_CONFIG],
+            "Incorrect config for key $BOOT_CONFIG")
+        assertEquals(
+            expectedConfig[FLOW_CONFIG],
+            receivedConfig[FLOW_CONFIG],
+            "Incorrect config for key $FLOW_CONFIG")
+        assertEquals(
+            expectedConfig[DB_CONFIG], receivedConfig[DB_CONFIG], "Incorrect config for key $DB_CONFIG")
+        assertEquals(
+            expectedConfig[STATE_MANAGER_CONFIG],
+            receivedConfig[STATE_MANAGER_CONFIG],
+            "Incorrect config for key $STATE_MANAGER_CONFIG")
 
         // Cleanup
         reg.close()

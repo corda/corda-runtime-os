@@ -372,6 +372,7 @@ class PersistenceExceptionTests {
         }
     }
 
+    @Suppress("NestedBlockDepth")
     private fun getDogDbCount(connectionId: UUID, dogDBTable: String = "dog"): Int =
         dbConnectionManager
                 .getDataSource(connectionId).connection.use { connection ->

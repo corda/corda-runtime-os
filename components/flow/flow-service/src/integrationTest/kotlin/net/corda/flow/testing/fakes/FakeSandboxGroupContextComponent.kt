@@ -1,8 +1,5 @@
 package net.corda.flow.testing.fakes
 
-import java.time.Duration
-import java.util.UUID
-import java.util.concurrent.CompletableFuture
 import net.corda.flow.pipeline.events.FlowEventContext
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxGroupContextImpl
 import net.corda.flow.pipeline.sessions.protocol.FlowAndProtocolVersion
@@ -28,9 +25,14 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.framework.Bundle
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.propertytypes.ServiceRanking
+import java.time.Duration
+import java.util.UUID
+import java.util.concurrent.CompletableFuture
 
+@Suppress("TooManyFunctions")
 @ServiceRanking(Int.MAX_VALUE)
-@Component(service = [SandboxGroupContextComponent::class, FakeSandboxGroupContextComponent::class, CacheEviction::class])
+@Component(
+    service = [SandboxGroupContextComponent::class, FakeSandboxGroupContextComponent::class, CacheEviction::class])
 class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
 
     private val availableCpk = mutableSetOf<SecureHash>()
@@ -45,7 +47,8 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         availableCpk.clear()
     }
 
-    fun initiatingToInitiatedFlowPair(protocolName: String, initiatingFlowClassName: String, initiatedFlowClassName: String) {
+    fun initiatingToInitiatedFlowPair(
+        protocolName: String, initiatingFlowClassName: String, initiatedFlowClassName: String) {
         initiatingToInitiatedFlowsMap = mapOf(protocolName to Pair(initiatingFlowClassName, initiatedFlowClassName))
     }
 
@@ -215,16 +218,23 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         private val responderForProtocol: Map<String, String>
     ) : FlowProtocolStore {
         override fun initiatorForProtocol(protocolName: String, supportedVersions: Collection<Int>): String {
-            return initiatorForProtocol[protocolName] ?: throw IllegalArgumentException("No initiator configured for $protocolName")
+            return initiatorForProtocol[protocolName] ?:
+            throw IllegalArgumentException("No initiator configured for $protocolName")
         }
 
-        override fun responderForProtocol(protocolName: String, supportedVersions: Collection<Int>, context: FlowEventContext<*>): FlowAndProtocolVersion {
-            val flowClass = responderForProtocol[protocolName] ?: throw IllegalArgumentException("No responder configured for $protocolName")
+        override fun responderForProtocol(
+            protocolName: String,
+            supportedVersions: Collection<Int>,
+            context: FlowEventContext<*>): FlowAndProtocolVersion {
+            val flowClass = responderForProtocol[protocolName] ?:
+            throw IllegalArgumentException("No responder configured for $protocolName")
             return FlowAndProtocolVersion(protocolName, flowClass, 1)
         }
 
-        override fun protocolsForInitiator(initiator: String, context: FlowEventContext<*>): Pair<String, List<Int>> {
-            return protocolForInitiator[initiator] ?: throw IllegalArgumentException("No protocol configured for $initiator")
+        override fun protocolsForInitiator(
+            initiator: String, context: FlowEventContext<*>): Pair<String, List<Int>> {
+            return protocolForInitiator[initiator] ?:
+            throw IllegalArgumentException("No protocol configured for $initiator")
         }
     }
 }

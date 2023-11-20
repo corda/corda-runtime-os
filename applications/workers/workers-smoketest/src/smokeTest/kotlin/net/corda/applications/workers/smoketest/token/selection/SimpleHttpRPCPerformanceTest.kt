@@ -83,7 +83,8 @@ class SimpleHttpRPCPerformanceTest {
                 0
             }
 
-            println("${diff/1000} ${concurrentClaims.size} ${concurrentReleases.size} $completedClaims $completedReleases $claimRate $releaseRate ${claimRate+releaseRate}")
+            println("${diff/1000} ${concurrentClaims.size} ${concurrentReleases.size} " +
+                    "$completedClaims $completedReleases $claimRate $releaseRate ${claimRate+releaseRate}")
         }
 
         while (running) {
