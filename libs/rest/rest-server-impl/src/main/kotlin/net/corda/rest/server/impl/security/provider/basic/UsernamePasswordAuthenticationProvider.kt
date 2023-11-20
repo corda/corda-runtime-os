@@ -31,6 +31,6 @@ internal class UsernamePasswordAuthenticationProvider(private val restSecurityMa
     }
 
     override fun provideParameters(): Map<String, String> {
-        return mapOf(REALM_KEY to restSecurityManagerSupplier.get().id.value)
+        return mapOf(REALM_KEY to "Corda REST Worker")
     }
 }
