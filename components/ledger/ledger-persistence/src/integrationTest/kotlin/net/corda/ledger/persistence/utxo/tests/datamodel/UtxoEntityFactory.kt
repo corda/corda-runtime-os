@@ -14,6 +14,7 @@ class UtxoEntityFactory(private val entityManagerFactory: EntityManagerFactory) 
     val utxoTransactionSignature: Class<*> get() = classFor("UtxoTransactionSignatureEntity")
     val utxoTransactionSource: Class<*> get() = classFor("UtxoTransactionSourceEntity")
 
+    @Suppress("LongParameterList")
     fun createUtxoTransactionEntity(
         transactionId: String,
         privacySalt: ByteArray,

@@ -62,6 +62,9 @@ import net.corda.v5.ledger.utxo.EncumbranceGroup
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TransactionState
+import net.corda.v5.ledger.utxo.observer.UtxoToken
+import net.corda.v5.ledger.utxo.observer.UtxoTokenFilterFields
+import net.corda.v5.ledger.utxo.observer.UtxoTokenPoolKey
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
@@ -91,9 +94,6 @@ import java.time.temporal.ChronoUnit
 import java.util.Random
 import java.util.concurrent.atomic.AtomicInteger
 import javax.persistence.EntityManagerFactory
-import net.corda.v5.ledger.utxo.observer.UtxoToken
-import net.corda.v5.ledger.utxo.observer.UtxoTokenFilterFields
-import net.corda.v5.ledger.utxo.observer.UtxoTokenPoolKey
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
@@ -302,8 +302,10 @@ class UtxoPersistenceServiceImplTest {
         val visibleTransactionOutput = unconsumedStates.first()
         assertThat(visibleTransactionOutput.transactionId).isEqualTo(transaction1.id.toString())
         assertThat(visibleTransactionOutput.leafIndex).isEqualTo(1)
-        assertThat(visibleTransactionOutput.info).isEqualTo(transaction1.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal][1])
-        assertThat(visibleTransactionOutput.data).isEqualTo(transaction1.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal][1])
+        assertThat(visibleTransactionOutput.info)
+            .isEqualTo(transaction1.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal][1])
+        assertThat(visibleTransactionOutput.data)
+            .isEqualTo(transaction1.wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal][1])
     }
 
     @Test
@@ -327,8 +329,11 @@ class UtxoPersistenceServiceImplTest {
 
             assertThat(visibleTransactionOutput.transactionId).isEqualTo(transactions[i].id.toString())
             assertThat(visibleTransactionOutput.leafIndex).isEqualTo(i)
-            assertThat(visibleTransactionOutput.info).isEqualTo(transactions[i].wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal][i])
-            assertThat(visibleTransactionOutput.data).isEqualTo(transactions[i].wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal][i])
+            assertThat(visibleTransactionOutput.info)
+                .isEqualTo(
+                    transactions[i].wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS_INFO.ordinal][i])
+            assertThat(visibleTransactionOutput.data)
+                .isEqualTo(transactions[i].wireTransaction.componentGroupLists[UtxoComponentGroup.OUTPUTS.ordinal][i])
         }
     }
 
@@ -553,10 +558,15 @@ class UtxoPersistenceServiceImplTest {
 
         val persistedSignedGroupParameters = persistenceService.findSignedGroupParameters(hash)
 
-        assertThat(persistedSignedGroupParameters?.mgmSignature?.publicKey.toString()).isEqualTo(signedGroupParameters.mgmSignature?.publicKey.toString())
-        assertThat(persistedSignedGroupParameters?.mgmSignatureSpec.toString()).isEqualTo(signedGroupParameters.mgmSignatureSpec.toString())
+        assertThat(
+            persistedSignedGroupParameters?.mgmSignature?.publicKey.toString())
+            .isEqualTo(signedGroupParameters.mgmSignature?.publicKey.toString())
+        assertThat(
+            persistedSignedGroupParameters?.mgmSignatureSpec.toString())
+            .isEqualTo(signedGroupParameters.mgmSignatureSpec.toString())
     }
 
+    @Suppress("LongParameterList")
     private fun createUtxoTokenMap(
         transactionReader: TestUtxoTransactionReader,
         tokenType: String,

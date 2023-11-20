@@ -3,14 +3,6 @@ package net.corda.chunking.db.impl.tests
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.jimfs.Jimfs
-import java.nio.file.FileSystem
-import java.nio.file.Files
-import java.nio.file.Path
-import java.security.PublicKey
-import java.time.Instant
-import java.util.Random
-import java.util.UUID
-import javax.persistence.PersistenceException
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.chunking.datamodel.ChunkingEntities
@@ -68,10 +60,17 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
-
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.nio.file.FileSystem
+import java.nio.file.Files
+import java.nio.file.Path
+import java.security.PublicKey
+import java.time.Instant
+import java.util.Random
+import java.util.UUID
+import javax.persistence.PersistenceException
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class DatabaseCpiPersistenceTest {
@@ -232,6 +231,7 @@ internal class DatabaseCpiPersistenceTest {
         whenever(cpk.metadata).thenReturn(metadata)
     }
 
+    @Suppress("LongParameterList")
     private fun mockCpi(
         vararg cpks: Cpk,
         signerSummaryHash: SecureHash = SecureHashImpl("SHA-256", ByteArray(12)),
@@ -931,24 +931,40 @@ internal class DatabaseCpiPersistenceTest {
         combos.forEach { (cpi, cpk) ->
             val (pairEntityVersionAndCpkMetadata, cpkFile, cpiCpk) = entityManagerFactory.createEntityManager().transaction { em ->
                 val cpkKey = cpk.metadata.fileChecksum
-                val cpiCpk = cpiCpkRepository.findById(em, CpiCpkIdentifier(cpi.metadata.cpiId.name, cpi.metadata.cpiId.version, cpi.metadata.cpiId.signerSummaryHash, cpk.metadata.fileChecksum))!!
+                val cpiCpk =
+                    cpiCpkRepository.findById(
+                        em,
+                        CpiCpkIdentifier(
+                            cpi.metadata.cpiId.name,
+                            cpi.metadata.cpiId.version,
+                            cpi.metadata.cpiId.signerSummaryHash,
+                            cpk.metadata.fileChecksum))!!
                 val pairEntityVersionAndCpkMetadata = cpkRepository.findById(em, cpkKey)!!
                 val cpkFile = cpkFileRepository.findById(em, cpkKey)
                 Triple(pairEntityVersionAndCpkMetadata, cpkFile, cpiCpk)
             }
 
-            assertThat(pairEntityVersionAndCpkMetadata.second.fileChecksum).isEqualTo(expectedCpkFileChecksum ?: cpk.metadata.fileChecksum)
-            assertThat(cpkFile.fileChecksum).isEqualTo(expectedCpkFileChecksum ?: cpk.metadata.fileChecksum)
-            assertThat(pairEntityVersionAndCpkMetadata.second.toJsonAvro()).isEqualTo(cpk.metadata.toJsonAvro())
+            assertThat(pairEntityVersionAndCpkMetadata.second.fileChecksum)
+                .isEqualTo(expectedCpkFileChecksum ?: cpk.metadata.fileChecksum)
+            assertThat(cpkFile.fileChecksum)
+                .isEqualTo(expectedCpkFileChecksum ?: cpk.metadata.fileChecksum)
+            assertThat(pairEntityVersionAndCpkMetadata.second.toJsonAvro())
+                .isEqualTo(cpk.metadata.toJsonAvro())
 
             assertThat(pairEntityVersionAndCpkMetadata.first)
-                .withFailMessage("CpkMetadataEntity.entityVersion expected $expectedMetadataEntityVersion but was ${pairEntityVersionAndCpkMetadata.first}.")
+                .withFailMessage(
+                    "CpkMetadataEntity.entityVersion expected $expectedMetadataEntityVersion " +
+                            "but was ${pairEntityVersionAndCpkMetadata.first}.")
                 .isEqualTo(expectedMetadataEntityVersion)
             assertThat(cpkFile.version)
-                .withFailMessage("CpkFileEntity.entityVersion expected $expectedFileEntityVersion but was ${cpkFile.version}.")
+                .withFailMessage(
+                    "CpkFileEntity.entityVersion expected $expectedFileEntityVersion " +
+                            "but was ${cpkFile.version}.")
                 .isEqualTo(expectedFileEntityVersion)
             assertThat(cpiCpk.entityVersion)
-                .withFailMessage("CpiCpkEntity.entityVersion expected $expectedCpiCpkEntityVersion but was ${cpiCpk.entityVersion}.")
+                .withFailMessage(
+                    "CpiCpkEntity.entityVersion expected $expectedCpiCpkEntityVersion " +
+                            "but was ${cpiCpk.entityVersion}.")
                 .isEqualTo(expectedCpiCpkEntityVersion)
         }
     }

@@ -130,6 +130,7 @@ class SendAcceptanceTest : FlowServiceTestBase() {
         }
     }
 
+    @Suppress("MaxLineLength")
     @Test
     fun `Given a flow resumes after receiving session data events calling 'send' on the sessions sends session data events and no session ack for the session that resumed the flow`() {
         given {

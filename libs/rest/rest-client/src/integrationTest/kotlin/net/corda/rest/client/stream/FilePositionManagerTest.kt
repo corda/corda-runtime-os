@@ -102,6 +102,7 @@ class FilePositionManagerTest {
         }
     }
 
+    @Suppress("ForEachOnRange")
     @Test
     fun multiThreadedTest() {
         val filePath = tempFolder / "multiThreadedTest.txt"
