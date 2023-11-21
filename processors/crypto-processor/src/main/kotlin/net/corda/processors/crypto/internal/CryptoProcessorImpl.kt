@@ -63,6 +63,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.SubscriptionBase
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -342,9 +343,14 @@ class CryptoProcessorImpl @Activate constructor(
         val rpcOpsProcessor = CryptoOpsBusProcessor(cryptoService, retryingConfig, keyEncodingService)
         val hsmRegistrationProcessor = HSMRegistrationBusProcessor(tenantInfoService, cryptoService, retryingConfig)
         val rewrapProcessor = CryptoRewrapBusProcessor(cryptoService)
-        val rekeyProcessor = CryptoRekeyBusProcessor(cryptoService, virtualNodeInfoReadService,
-            wrappingRepositoryFactory)
-
+        val publisherConfig = PublisherConfig("RekeyBusProcessor", false)
+        val rekeyPublisher = publisherFactory.createPublisher(publisherConfig, messagingConfig)
+        val rekeyProcessor = CryptoRekeyBusProcessor(
+            cryptoService,
+            virtualNodeInfoReadService,
+            wrappingRepositoryFactory,
+            rekeyPublisher
+        )
         // create and start subscriptions
         val flowGroupName = "crypto.ops.flow"
 

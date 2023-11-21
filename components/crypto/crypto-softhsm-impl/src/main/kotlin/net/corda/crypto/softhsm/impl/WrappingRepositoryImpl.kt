@@ -11,6 +11,7 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
+import kotlin.streams.asSequence
 
 class WrappingRepositoryImpl(
     private val entityManagerFactory: EntityManagerFactory,
@@ -39,9 +40,9 @@ class WrappingRepositoryImpl(
                         isParentKeyManaged = false,
                         parentKeyReference = key.parentKeyAlias,
                     )
-                ).also { wrappingKeyEntity -> check(wrappingKeyEntity.generation == key.generation) }
+                )
             }.toDto().also {
-                logger.info("Storing wrapping key with alias ${key.alias} in tenant $tenantId")
+                logger.info("Storing wrapping key with alias ${key.alias} generation ${key.generation} in tenant $tenantId")
             }
         }
 
@@ -61,11 +62,11 @@ class WrappingRepositoryImpl(
 
     // TODO add test coverage
     override fun findKeysWrappedByAlias(alias: String): Sequence<WrappingKeyInfo> =
-        entityManagerFactory.createEntityManager().use { it ->
+        entityManagerFactory.createEntityManager().use {
             it.createQuery(
                 "FROM ${WrappingKeyEntity::class.simpleName} AS k WHERE k.parentKeyReference = :alias",
                 WrappingKeyEntity::class.java
-            ).setParameter("alias", alias).resultStream.map {dao -> dao.toDto() }.toList().asSequence()
+            ).setParameter("alias", alias).resultStream.asSequence().map {dao -> dao.toDto() }
         }
 
     override fun getKeyById(id: UUID): WrappingKeyInfo? = entityManagerFactory.createEntityManager().use {

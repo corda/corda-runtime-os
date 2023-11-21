@@ -19,18 +19,22 @@ import net.corda.data.crypto.wire.ops.key.rotation.KeyType
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.doReturn
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
+import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
-import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -45,12 +49,12 @@ class CryptoRekeyBusProcessorTests {
     private val tenantId1 = ShortHash.of(parseSecureHash("SHA-256:ABC12345678911111111111111")).toString()
     private val tenantId2 = ShortHash.of(parseSecureHash("SHA-256:BCC12345678911111111111111")).toString()
     private val tenantId3 = ShortHash.of(parseSecureHash("SHA-256:CBC12345678911111111111111")).toString()
-    private val tenantId4 = ShortHash.of(parseSecureHash("SHA-256:DBC12345678911111111111111")).toString()
-    private val tenantId5 = ShortHash.of(parseSecureHash("SHA-256:EBC12345678911111111111111")).toString()
     private lateinit var cryptoRekeyBusProcessor: CryptoRekeyBusProcessor
     private lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
     private lateinit var wrappingRepositoryFactory: WrappingRepositoryFactory
+    private lateinit var rewrapPublishCapture: KArgumentCaptor<List<Record<*, *>>>
     private lateinit var cryptoService: CryptoService
+    private lateinit var rewrapPublisher: Publisher
     private lateinit var config: Map<String, SmartConfig>
     private val oldKeyAlias = "oldKeyAlias"
 
@@ -79,31 +83,26 @@ class CryptoRekeyBusProcessorTests {
         wrappingRepositoryFactory = mock {
             on { create(any()) } doReturn wrappingRepository
         }
+        rewrapPublishCapture = argumentCaptor()
+        rewrapPublisher = mock {
+            on { publish(rewrapPublishCapture.capture()) } doReturn emptyList()
+        }
 
         cryptoRekeyBusProcessor = CryptoRekeyBusProcessor(
             cryptoService, virtualNodeInfoReadService,
-            wrappingRepositoryFactory)
+            wrappingRepositoryFactory, rewrapPublisher)
     }
 
     @Test
-    fun `do a mocked key rotation`() {
-        val virtualNodes = getStubVirtualNodes(listOf(tenantId1))
-        whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
-
-        cryptoRekeyBusProcessor.onNext(listOf(getKafkaRecord("")))
-
-        // This now counts the CryptoTenants.CRYPTO, P2P and REST values
-        verify(cryptoService, times(4)).rewrapWrappingKey(any(), any(), any())
-    }
-
-    @Test
-    fun `key rotation re-wraps all the keys if limit is not specified`() {
+    fun `key rotation re-wraps all the keys`() {
         val virtualNodes = getStubVirtualNodes(listOf(tenantId1, tenantId2, tenantId3))
         whenever(virtualNodeInfoReadService.getAll()).thenReturn(virtualNodes)
 
         cryptoRekeyBusProcessor.onNext(listOf(getKafkaRecord("")))
 
-        verify(cryptoService, times(6)).rewrapWrappingKey(any(), any(), any())
+        verify(rewrapPublisher, times(1)).publish(any())
+        assertThat(rewrapPublishCapture.allValues).hasSize(1)
+        assertThat(rewrapPublishCapture.firstValue).hasSize(4) // 4 since 3 tenants plus cluster
     }
 
     /**
@@ -146,11 +145,17 @@ class CryptoRekeyBusProcessorTests {
         }
 
         cryptoRekeyBusProcessor = CryptoRekeyBusProcessor(
-            cryptoService, virtualNodeInfoReadService, wrappingRepositoryFactory)
+            cryptoService,
+            virtualNodeInfoReadService,
+            wrappingRepositoryFactory,
+            rewrapPublisher
+        )
 
         cryptoRekeyBusProcessor.onNext(listOf(getKafkaRecord(oldKeyAlias)))
 
-        verify(cryptoService, times(2)).rewrapWrappingKey(any(), any(), any())
+        verify(rewrapPublisher, times(1)).publish(any())
+        assertThat(rewrapPublishCapture.allValues).hasSize(1)
+        assertThat(rewrapPublishCapture.firstValue).hasSize(2)
     }
 
     private fun makeWrappingKeyEntity(
