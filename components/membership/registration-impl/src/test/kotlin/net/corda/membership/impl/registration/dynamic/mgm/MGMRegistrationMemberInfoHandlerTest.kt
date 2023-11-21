@@ -41,6 +41,8 @@ import net.corda.membership.lib.SelfSignedMemberInfo
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.records.Record
 import net.corda.test.util.TestRandom
 import net.corda.test.util.time.TestClock
@@ -73,7 +75,7 @@ import java.util.UUID
 
 class MGMRegistrationMemberInfoHandlerTest {
 
-    companion object {
+    private companion object {
         const val EMPTY_STRING = ""
         const val TEST_PLATFORM_VERSION = 5000
         const val TEST_SOFTWARE_VERSION = "5.0.0.0-test"
@@ -199,12 +201,19 @@ class MGMRegistrationMemberInfoHandlerTest {
         on { get(eq(holdingIdentity)) } doReturn virtualNodeInfo
     }
 
+    private val membershipQueryClient = mock<MembershipQueryClient>{
+        on {
+            queryMemberInfo(eq(holdingIdentity), eq(setOf(holdingIdentity)), eq(listOf(MEMBER_STATUS_ACTIVE)))
+        } doReturn MembershipQueryResult.Success(listOf(signedMemberInfo))
+    }
+
     private val mgmRegistrationMemberInfoHandler = MGMRegistrationMemberInfoHandler(
         clock,
         cryptoOpsClient,
         keyEncodingService,
         memberInfoFactory,
         membershipPersistenceClient,
+        membershipQueryClient,
         platformInfoProvider,
         virtualNodeInfoReadService,
         cordaAvroSerializationFactory,
@@ -230,9 +239,9 @@ class MGMRegistrationMemberInfoHandlerTest {
     @Test
     fun `MGM info is returned if all is processed successfully`() {
         val result = assertDoesNotThrow {
-            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
+            mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
                 holdingIdentity,
-                validTestContext
+                validTestContext,
             )
         }
 
@@ -240,15 +249,14 @@ class MGMRegistrationMemberInfoHandlerTest {
     }
 
     @Test
-    fun `Expected services are called by buildAndPersistMgmMemberInfo`() {
+    fun `Expected services are called by buildMgmMemberInfo`() {
         assertDoesNotThrow {
-            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
+            mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
                 holdingIdentity,
-                validTestContext
+                validTestContext,
             )
         }
 
-        verify(membershipPersistenceClient).persistMemberInfo(any(), any())
         verify(memberInfoFactory).createSelfSignedMemberInfo(memberContextBytes, mgmContextBytes, signature, signatureSpec)
         verify(platformInfoProvider).activePlatformVersion
         verify(platformInfoProvider).localWorkerSoftwareVersion
@@ -259,11 +267,22 @@ class MGMRegistrationMemberInfoHandlerTest {
     }
 
     @Test
+    fun `Expected services are called by persistMgmMemberInfo`() {
+        assertDoesNotThrow {
+            mgmRegistrationMemberInfoHandler.persistMgmMemberInfo(
+                holdingIdentity,
+                signedMemberInfo
+            )
+        }
+        verify(membershipPersistenceClient).persistMemberInfo(any(), any())
+    }
+
+    @Test
     fun `Member context filters out group policy properties`() {
         assertDoesNotThrow {
-            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
+            mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
                 holdingIdentity,
-                validTestContext
+                validTestContext,
             )
         }
 
@@ -273,9 +292,9 @@ class MGMRegistrationMemberInfoHandlerTest {
     @Test
     fun `Member context is built as expected`() {
         assertDoesNotThrow {
-            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
+            mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
                 holdingIdentity,
-                validTestContext
+                validTestContext,
             )
         }
 
@@ -298,9 +317,9 @@ class MGMRegistrationMemberInfoHandlerTest {
     @Test
     fun `MGM context is built as expected`() {
         assertDoesNotThrow {
-            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
+            mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
                 holdingIdentity,
-                validTestContext
+                validTestContext,
             )
         }
 
@@ -313,9 +332,9 @@ class MGMRegistrationMemberInfoHandlerTest {
     @Test
     fun `Signature is built as expected`() {
         val result = assertDoesNotThrow {
-            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
+            mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
                 holdingIdentity,
-                validTestContext
+                validTestContext,
             )
         }
 
@@ -333,9 +352,9 @@ class MGMRegistrationMemberInfoHandlerTest {
             )
         ).doReturn(null)
         assertThrows<MGMRegistrationMemberInfoHandlingException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
+            mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
                 holdingIdentity,
-                validTestContext
+                validTestContext,
             )
         }
         verify(virtualNodeInfoReadService).get(eq(holdingIdentity))
@@ -352,9 +371,9 @@ class MGMRegistrationMemberInfoHandlerTest {
         ).doReturn(emptyList())
 
         assertThrows<MGMRegistrationMemberInfoHandlingException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
+            mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
                 holdingIdentity,
-                validTestContext
+                validTestContext,
             )
         }
         verify(virtualNodeInfoReadService).get(eq(holdingIdentity))
@@ -371,9 +390,9 @@ class MGMRegistrationMemberInfoHandlerTest {
         ).doThrow(RuntimeException::class)
 
         assertThrows<MGMRegistrationMemberInfoHandlingException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
+            mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
                 holdingIdentity,
-                validTestContext
+                validTestContext,
             )
         }
         verify(virtualNodeInfoReadService).get(eq(holdingIdentity))
@@ -390,9 +409,9 @@ class MGMRegistrationMemberInfoHandlerTest {
         ).doReturn(Operation(MembershipPersistenceResult.Failure("")))
 
         assertThrows<MGMRegistrationMemberInfoHandlingException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
+            mgmRegistrationMemberInfoHandler.persistMgmMemberInfo(
                 holdingIdentity,
-                validTestContext
+                signedMemberInfo
             )
         }
         verify(membershipPersistenceClient).persistMemberInfo(
@@ -435,9 +454,9 @@ class MGMRegistrationMemberInfoHandlerTest {
         whenever(keyEncodingService.decodePublicKey(encryptedPublicKey)).doReturn(ecdhPublicKey)
 
         assertThrows<MGMRegistrationContextValidationException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
+            mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
                 holdingIdentity,
-                validTestContext
+                validTestContext,
             )
         }
     }
@@ -470,9 +489,9 @@ class MGMRegistrationMemberInfoHandlerTest {
         )
 
         assertThrows<MGMRegistrationContextValidationException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
+            mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
                 holdingIdentity,
-                validTestContext
+                validTestContext,
             )
         }
     }
@@ -505,12 +524,13 @@ class MGMRegistrationMemberInfoHandlerTest {
         )
 
         assertThrows<MGMRegistrationContextValidationException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
+            mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
                 holdingIdentity,
-                validTestContext
+                validTestContext,
             )
         }
     }
+
 
     @Test
     fun `session key with unsupported key scheme will cause an exception`() {
@@ -540,7 +560,7 @@ class MGMRegistrationMemberInfoHandlerTest {
         )
 
         assertThrows<MGMRegistrationContextValidationException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
+            mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
                 holdingIdentity,
                 validTestContext
             )
@@ -552,11 +572,33 @@ class MGMRegistrationMemberInfoHandlerTest {
         // the value isn't changed
         assertThat(sessionKeySchema).isEqualTo(KeySchemeCodes.RSA_CODE_NAME)
         assertThrows<MGMRegistrationContextValidationException> {
-            mgmRegistrationMemberInfoHandler.buildAndPersistMgmMemberInfo(
+            mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
                 holdingIdentity,
                 validTestContext + mapOf(SESSION_KEYS_SIGNATURE_SPEC.format(0) to ECDSA_SHA256.signatureName)
             )
         }
+    }
+
+
+    @Test
+    fun `querying for mgm info is successful`() {
+        assertThat(mgmRegistrationMemberInfoHandler.queryForMGMMemberInfo(holdingIdentity)).isEqualTo(signedMemberInfo)
+    }
+
+    @Test
+    fun `build MGM info keeps original creation time and sets the serial as expected`() {
+        val serial = 2L
+        val creationTime = clock.instant()
+        mgmRegistrationMemberInfoHandler.buildMgmMemberInfo(
+            holdingIdentity,
+            validTestContext,
+            serial,
+            creationTime.toString(),
+        )
+
+        assertThat(mgmContext)
+            .containsEntry(SERIAL, "2")
+            .containsEntry(CREATION_TIME, creationTime.toString())
     }
 
     private class Operation(

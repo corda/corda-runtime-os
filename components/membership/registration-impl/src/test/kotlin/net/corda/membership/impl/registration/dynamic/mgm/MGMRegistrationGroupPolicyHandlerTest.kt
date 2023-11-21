@@ -4,6 +4,8 @@ import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceOperation
 import net.corda.membership.persistence.client.MembershipPersistenceResult
+import net.corda.membership.persistence.client.MembershipQueryClient
+import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
@@ -60,9 +62,12 @@ class MGMRegistrationGroupPolicyHandlerTest {
         SESSION_KEY_IDS.format(0) to "non group policy property"
     )
 
+    private val membershipQueryClient = mock<MembershipQueryClient>()
+
     private val mgmRegistrationGroupPolicyHandler = MGMRegistrationGroupPolicyHandler(
         layeredPropertyMapFactory,
         membershipPersistenceClient,
+        membershipQueryClient,
     )
 
     @Test
@@ -109,5 +114,26 @@ class MGMRegistrationGroupPolicyHandlerTest {
 
         assertThat(output)
             .isEqualTo(mockLayeredPropertyMap)
+    }
+
+    @Test
+    fun `retrieving group policy is successful`() {
+        val groupPolicy = mock<LayeredPropertyMap>()
+        whenever(membershipQueryClient.queryGroupPolicy(testHoldingIdentity))
+            .thenReturn(MembershipQueryResult.Success(Pair(groupPolicy, 1)))
+
+        assertThat(mgmRegistrationGroupPolicyHandler.getLastGroupPolicy(testHoldingIdentity)).isEqualTo(groupPolicy)
+    }
+
+    @Test
+    fun `retrieving group policy fails and gets propagated`() {
+        val errorMsg = "Test failed!"
+        whenever(membershipQueryClient.queryGroupPolicy(testHoldingIdentity))
+            .thenReturn(MembershipQueryResult.Failure(errorMsg))
+
+        val message = assertThrows<MGMRegistrationGroupPolicyHandlingException> {
+            mgmRegistrationGroupPolicyHandler.getLastGroupPolicy(testHoldingIdentity)
+        }.message
+        assertThat(message).contains(errorMsg)
     }
 }

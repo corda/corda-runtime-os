@@ -45,6 +45,7 @@ class HikariDataSourceFactoryTest {
 
     @Disabled("This test should not be run in the pipeline. It is useful for observing Hikari behaviour for particular" +
             " configuration settings, but it isn't a useful test for corda and will always be time bound.")
+    @Suppress("ForEachOnRange")
     @Test
     fun `observe hikari remove idle connections`() {
         val maxConnections = 5

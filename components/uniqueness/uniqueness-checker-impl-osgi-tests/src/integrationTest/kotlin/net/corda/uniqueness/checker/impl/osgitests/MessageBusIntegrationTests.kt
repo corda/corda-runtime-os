@@ -1,15 +1,9 @@
 package net.corda.uniqueness.checker.impl.osgitests
 
 import com.typesafe.config.ConfigFactory
-import java.time.Duration
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneOffset
-import java.util.LinkedList
-import java.util.UUID
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
-import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -44,7 +38,6 @@ import net.corda.test.util.time.AutoTickTestClock
 import net.corda.uniqueness.backingstore.BackingStore
 import net.corda.uniqueness.backingstore.BackingStoreLifecycle
 import net.corda.uniqueness.backingstore.impl.fake.BackingStoreImplFake
-import net.corda.uniqueness.checker.UniquenessChecker
 import net.corda.uniqueness.checker.UniquenessCheckerLifecycle
 import net.corda.uniqueness.checker.impl.BatchedUniquenessCheckerImpl
 import net.corda.uniqueness.checker.impl.BatchedUniquenessCheckerLifecycleImpl
@@ -63,6 +56,12 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import org.slf4j.LoggerFactory
+import java.time.Duration
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
+import java.util.LinkedList
+import java.util.UUID
 
 /**
  * Tests the integration of the uniqueness checker component with the message bus. This duplicates
@@ -149,6 +148,7 @@ class MessageBusIntegrationTests {
     ) : BackingStoreImplFake(coordinatorFactory) {
         private var throwException: Boolean = false
 
+        @Suppress("TooGenericExceptionThrown")
         override fun session(
             holdingIdentity: HoldingIdentity,
             block: (BackingStore.Session) -> Unit

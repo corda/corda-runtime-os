@@ -147,12 +147,25 @@ class StateManagerImpl(
         }
     }
 
-    override fun findUpdatedBetweenWithMetadataFilter(
+    override fun findUpdatedBetweenWithMetadataMatchingAll(
         intervalFilter: IntervalFilter,
-        metadataFilter: MetadataFilter
+        metadataFilters: Collection<MetadataFilter>
     ): Map<String, State> {
         return dataSource.connection.transaction { connection ->
-            stateRepository.filterByUpdatedBetweenAndMetadata(connection, intervalFilter, metadataFilter)
+            stateRepository.filterByUpdatedBetweenWithMetadataMatchingAll(connection, intervalFilter, metadataFilters)
+        }.map {
+            it.fromPersistentEntity()
+        }.associateBy {
+            it.key
+        }
+    }
+
+    override fun findUpdatedBetweenWithMetadataMatchingAny(
+        intervalFilter: IntervalFilter,
+        metadataFilters: Collection<MetadataFilter>
+    ): Map<String, State> {
+        return dataSource.connection.transaction { connection ->
+            stateRepository.filterByUpdatedBetweenWithMetadataMatchingAny(connection, intervalFilter, metadataFilters)
         }.map {
             it.fromPersistentEntity()
         }.associateBy {

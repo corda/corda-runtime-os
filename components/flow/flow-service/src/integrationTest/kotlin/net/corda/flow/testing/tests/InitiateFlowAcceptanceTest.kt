@@ -46,6 +46,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
         }
     }
 
+    @Suppress("MaxLineLength")
     @Test
     fun `Requesting counterparty info from the flow engine that has already sent a CounterpartyInfoRequest event does not send another SessionInit`() {
         given {
@@ -74,7 +75,9 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionCounterpartyInfoRequestReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL, ALICE_HOLDING_IDENTITY, BOB_HOLDING_IDENTITY, true)
+            sessionCounterpartyInfoRequestReceived(
+                FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL, ALICE_HOLDING_IDENTITY,
+                BOB_HOLDING_IDENTITY, true)
                 .suspendsWith(FlowIORequest.InitialCheckpoint)
                 .suspendsWith(
                     FlowIORequest.Receive(

@@ -51,6 +51,7 @@ import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 
+@Suppress("TooManyFunctions")
 class MemberProcessorTestUtils {
     companion object {
 

@@ -30,7 +30,9 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.toAvro
 import org.apache.avro.AvroRuntimeException
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertAll
+import org.junit.jupiter.api.Assertions.assertIterableEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -55,7 +57,7 @@ import kotlin.test.assertEquals
  * and an associated JPA compatible DB. This mostly duplicates the test cases of
  * [UniquenessCheckerImplTests].
  */
-// TODO: Find an elegant way to avoid duplication of unit tests
+// TODO - Find an elegant way to avoid duplication of unit tests
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class UniquenessCheckerImplDBIntegrationTests {
 
@@ -1602,6 +1604,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             }
         }
 
+        @Suppress("SpreadOperator")
         @Test
         fun `Complex test scenario with multiple successes and failures in one batch`() {
             val priorSpentStates = List(2) { generateUnspentStates(1).single() }

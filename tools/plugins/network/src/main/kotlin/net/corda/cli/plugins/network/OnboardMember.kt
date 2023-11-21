@@ -19,6 +19,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_SIGNATURE_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
@@ -122,14 +123,17 @@ class OnboardMember : Runnable, BaseOnboard() {
             return it.cpiFileChecksum
         }
         if (!cpiFile.exists()) {
-            createCpi(cpbFile, cpiFile)
+            val exitCode = createCpi(cpbFile, cpiFile)
+            if (exitCode != 0) {
+                throw CordaRuntimeException("Create CPI returned non-zero exit code")
+            }
             println("CPI file saved as ${cpiFile.absolutePath}")
         }
         uploadSigningCertificates()
         return uploadCpi(cpiFile.inputStream(), cpiFile.name)
     }
 
-    private fun createCpi(cpbFile: File, cpiFile: File) {
+    private fun createCpi(cpbFile: File, cpiFile: File): Int {
         println(
             "Using the cpb file is not recommended." +
                     " It is advised to create CPI using the package create-cpi command."
@@ -143,7 +147,7 @@ class OnboardMember : Runnable, BaseOnboard() {
         creator.cpiUpgrade = false
         creator.outputFileName = cpiFile.absolutePath
         creator.signingOptions = createDefaultSingingOptions()
-        creator.run()
+        return creator.call()
     }
 
     private val ledgerKeyId by lazy {
