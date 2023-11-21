@@ -25,11 +25,20 @@ class CreateSignatureExternalEventFactory @Activate constructor(
         flowExternalEventContext: ExternalEventContext,
         parameters: SignParameters
     ): ExternalEventRecord {
-        TODO("Not implemented")
+        val flowOpsRequest = cryptoFlowOpsTransformer.createSign(
+            requestId = flowExternalEventContext.requestId,
+            tenantId = checkpoint.holdingIdentity.shortHash.value,
+            encodedPublicKeyBytes = parameters.encodedPublicKeyBytes,
+            signatureSpec = parameters.signatureSpec,
+            data = parameters.bytes,
+            context = emptyMap(),
+            flowExternalEventContext = flowExternalEventContext
+        )
+        return ExternalEventRecord(topic = "PLACEHOLDER", payload = flowOpsRequest)
     }
 
     override fun resumeWith(checkpoint: FlowCheckpoint, response: FlowOpsResponse): DigitalSignatureWithKey {
-        TODO("Not implemented")
+        return cryptoFlowOpsTransformer.transform(response) as DigitalSignatureWithKey
     }
 }
 

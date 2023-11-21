@@ -23,10 +23,18 @@ class FilterMyKeysExternalEventFactory @Activate constructor(
         flowExternalEventContext: ExternalEventContext,
         parameters: Collection<PublicKey>
     ): ExternalEventRecord {
-        TODO("Not implemented")
+        val flowOpsRequest =
+            cryptoFlowOpsTransformer
+                .createFilterMyKeys(
+                    tenantId = checkpoint.holdingIdentity.shortHash.value,
+                    candidateKeys = parameters,
+                    flowExternalEventContext = flowExternalEventContext
+                )
+        return ExternalEventRecord(topic = "PLACEHOLDER", payload = flowOpsRequest)
     }
 
     override fun resumeWith(checkpoint: FlowCheckpoint, response: FlowOpsResponse): List<PublicKey> {
-        TODO("Not implemented")
+        @Suppress("unchecked_cast")
+        return cryptoFlowOpsTransformer.transform(response) as List<PublicKey>
     }
 }
