@@ -141,10 +141,7 @@ class WrappingRepositoryImplTests {
             on { createQuery(any(), eq(WrappingKeyEntity::class.java)) } doAnswer {
                 mock {
                     on { setParameter(any<String>(), any()) } doReturn it
-                    on { setMaxResults(any()) } doReturn it
                     on { resultList } doReturn listOf(savedWrappingKey)
-                    on { resultStream } doReturn listOf(savedWrappingKey).stream()
-
                 }
             }
         }

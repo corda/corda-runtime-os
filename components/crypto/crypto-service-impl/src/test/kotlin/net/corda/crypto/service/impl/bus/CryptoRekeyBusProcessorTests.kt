@@ -77,7 +77,7 @@ class CryptoRekeyBusProcessorTests {
         virtualNodeInfoReadService = mock()
 
         val wrappingRepository: WrappingRepository = mock {
-            on { findKeysWrappedByAlias(any()) } doReturn sequenceOf(WrappingKeyInfo(0, "", byteArrayOf(), 0, oldKeyAlias, "alias1"))
+            on { findKeysWrappedByAlias(any()) } doReturn listOf(WrappingKeyInfo(0, "", byteArrayOf(), 0, oldKeyAlias, "alias1"))
         }
 
         wrappingRepositoryFactory = mock {
