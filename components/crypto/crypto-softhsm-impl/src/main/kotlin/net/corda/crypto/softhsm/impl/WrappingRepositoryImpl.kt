@@ -60,12 +60,12 @@ class WrappingRepositoryImpl(
             }
         }
 
-    override fun findKeysWrappedByAlias(alias: String): Sequence<WrappingKeyInfo> =
+    override fun findKeysWrappedByAlias(alias: String): List<WrappingKeyInfo> =
         entityManagerFactory.createEntityManager().use {
             it.createQuery(
                 "FROM ${WrappingKeyEntity::class.simpleName} AS k WHERE k.parentKeyReference = :alias",
                 WrappingKeyEntity::class.java
-            ).setParameter("alias", alias).resultStream.asSequence().map {dao -> dao.toDto() }
+            ).setParameter("alias", alias).resultList.map { dao -> dao.toDto() }
         }
 
     override fun getKeyById(id: UUID): WrappingKeyInfo? = entityManagerFactory.createEntityManager().use {
