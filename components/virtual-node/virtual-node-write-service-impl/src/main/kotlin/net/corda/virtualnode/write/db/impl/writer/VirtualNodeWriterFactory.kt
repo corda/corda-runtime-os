@@ -31,6 +31,7 @@ import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.orm.JpaEntitiesRegistry
 import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_ASYNC_REQUEST_TOPIC
 import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_CREATION_REQUEST_TOPIC
 import net.corda.schema.configuration.VirtualNodeDatasourceConfig
@@ -61,6 +62,7 @@ internal class VirtualNodeWriterFactory(
     private val memberInfoFactory: MemberInfoFactory,
     private val cpiCpkRepositoryFactory: CpiCpkRepositoryFactory,
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    private val jpaEntitiesSet: JpaEntitiesRegistry,
     private val cpkDbChangeLogRepository: CpkDbChangeLogRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogRepository(),
 ) {
 
@@ -212,7 +214,8 @@ internal class VirtualNodeWriterFactory(
             virtualNodeOperationStatusHandler,
             cpkDbChangeLogRepository,
             virtualNodeRepository = virtualNodeRepository,
-            migrationUtility = MigrationUtilityImpl(dbConnectionManager, schemaMigrator)
+            migrationUtility = MigrationUtilityImpl(dbConnectionManager, schemaMigrator),
+            jpaEntitiesSet
         )
 
         return subscriptionFactory.createRPCSubscription(rpcConfig, messagingConfig, processor)
