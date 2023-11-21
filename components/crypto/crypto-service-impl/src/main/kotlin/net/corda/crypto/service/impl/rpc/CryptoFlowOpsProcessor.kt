@@ -55,7 +55,7 @@ class CryptoFlowOpsProcessor(
     )
 
     override fun process(request: FlowOpsRequest): FlowEvent {
-        logger.trace { "Processing request... ${request::class.java.name}" }
+        logger.trace { "Processing request: ${request::class.java.name}" }
 
         val clientRequestId = request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
 
