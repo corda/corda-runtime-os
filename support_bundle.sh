@@ -45,11 +45,34 @@ for podName in $(kubectl --namespace "$namespace" get pods -o jsonpath="{.items[
   if [[ "$podName" == *-worker-* ]]; then
     echo "Collecting status for pod ${podName}"
     kubectl port-forward --namespace "${namespace}" "${podName}" 7000:7000  >/dev/null 2>&1 &
+    while ! nc -vz localhost 7000 > /dev/null 2>&1 ; do sleep 0.1; done
     pid=$!
     curl -s localhost:7000/status -o "${podDir}/status.json"
     disown $pid
     kill $pid
   fi
+done
+
+for restSvcName in $(kubectl get svc --namespace "$namespace" -l app.kubernetes.io/component=rest-worker -o jsonpath="{.items[*].metadata.name}"); do
+    instance=$(kubectl get --namespace "$namespace" svc "$restSvcName" -o go-template='{{ index .metadata.labels "app.kubernetes.io/instance" }}')
+    if kubectl get secret --namespace "$namespace" "$instance-rest-api-admin" > /dev/null 2>&1; then
+      configDir="${namespaceDir}/config/${instance}"
+      mkdir -p "$configDir"
+      echo "Collecting Corda configuration via service ${restSvcName}"
+      username=$(kubectl get secret --namespace "$namespace" "$instance-rest-api-admin" -o go-template='{{ .data.username | base64decode }}')
+      password=$(kubectl get secret --namespace "$namespace" "$instance-rest-api-admin" -o go-template='{{ .data.password | base64decode }}')
+      kubectl port-forward --namespace "${namespace}" "svc/${restSvcName}" 9443:443  >/dev/null 2>&1 &
+      while ! nc -vz localhost 9443 > /dev/null 2>&1 ; do sleep 0.1; done
+      pid=$!
+      sections="crypto externalMessaging flow ledger.utxo membership messaging p2p.gateway p2p.linkManager reconciliation rest sandbox secrets security stateManager vnode.datasource"
+      for section in $sections; do
+          curl -sk -u "${username}:${password}" "https://localhost:9443/api/v1/config/corda.${section}" -o "${configDir}/corda.${section}.json"
+      done
+      disown $pid
+      kill $pid
+    else
+      echo "Unable to collect Corda configuration via service ${restSvcName} as REST API credentials unavailable"
+    fi
 done
 
 bundle="${namespace}-support-bundle-$(date +"%Y-%m-%dT%H_%M_%S").tgz"
