@@ -335,8 +335,36 @@ class CryptoProcessorImpl @Activate constructor(
         createFlowOpsSubscription(coordinator, retryingConfig)
         createRpcOpsSubscription(coordinator, messagingConfig, retryingConfig)
         createHsmRegSubscription(coordinator, messagingConfig, retryingConfig)
-        val rpcOpsProcessor = CryptoOpsBusProcessor(cryptoService, retryingConfig, keyEncodingService)
-        val hsmRegistrationProcessor = HSMRegistrationBusProcessor(tenantInfoService, cryptoService, retryingConfig)
+        val rekeyProcessor = createRekeySubscription(messagingConfig, wrappingRepositoryFactory, coordinator)
+        createRewrapSubscription(coordinator, rekeyProcessor, messagingConfig)
+    }
+
+    private fun createRewrapSubscription(
+        coordinator: LifecycleCoordinator,
+        rekeyProcessor: CryptoRekeyBusProcessor,
+        messagingConfig: SmartConfig
+    ) {
+        val rekeyGroupName = "crypto.key.rotation.ops"
+        coordinator.createManagedResource(REKEY_SUBSCRIPTION) {
+            subscriptionFactory.createDurableSubscription(
+                subscriptionConfig = SubscriptionConfig(
+                    groupName = rekeyGroupName,
+                    eventTopic = Schemas.Crypto.REKEY_MESSAGE_TOPIC
+                ),
+                processor = rekeyProcessor,
+                messagingConfig = messagingConfig,
+                partitionAssignmentListener = null
+            )
+        }
+        logger.trace("Starting processing on $rekeyGroupName ${Schemas.Crypto.REKEY_MESSAGE_TOPIC}")
+        coordinator.getManagedResource<SubscriptionBase>(REKEY_SUBSCRIPTION)!!.start()
+    }
+
+    private fun createRekeySubscription(
+        messagingConfig: SmartConfig,
+        wrappingRepositoryFactory: (String) -> WrappingRepositoryImpl,
+        coordinator: LifecycleCoordinator
+    ): CryptoRekeyBusProcessor {
         val rewrapProcessor = CryptoRewrapBusProcessor(cryptoService)
         val publisherConfig = PublisherConfig("RekeyBusProcessor", false)
         val rekeyPublisher = publisherFactory.createPublisher(publisherConfig, messagingConfig)
@@ -361,22 +389,7 @@ class CryptoProcessorImpl @Activate constructor(
         }
         logger.trace("Starting processing on $rewrapGroupName ${Schemas.Crypto.REWRAP_MESSAGE_TOPIC}")
         coordinator.getManagedResource<SubscriptionBase>(REWRAP_SUBSCRIPTION)!!.start()
-
-        val rekeyGroupName = "crypto.key.rotation.ops"
-        coordinator.createManagedResource(REKEY_SUBSCRIPTION) {
-            subscriptionFactory.createDurableSubscription(
-                subscriptionConfig = SubscriptionConfig(
-                    groupName = rekeyGroupName,
-                    eventTopic = Schemas.Crypto.REKEY_MESSAGE_TOPIC
-                ),
-                processor = rekeyProcessor,
-                messagingConfig = messagingConfig,
-                partitionAssignmentListener = null
-            )
-        }
-        logger.trace("Starting processing on $rekeyGroupName ${Schemas.Crypto.REKEY_MESSAGE_TOPIC}")
-        coordinator.getManagedResource<SubscriptionBase>(REKEY_SUBSCRIPTION)!!.start()
-
+        return rekeyProcessor
     }
 
     private fun createFlowOpsSubscription(
