@@ -17,6 +17,7 @@ import net.corda.crypto.config.impl.EXPIRE_AFTER_ACCESS_MINS
 import net.corda.crypto.config.impl.HSM
 import net.corda.crypto.config.impl.MAXIMUM_SIZE
 import net.corda.crypto.config.impl.PASSPHRASE
+import net.corda.crypto.config.impl.RetryingConfig
 import net.corda.crypto.config.impl.SALT
 import net.corda.crypto.config.impl.WRAPPING_KEYS
 import net.corda.crypto.config.impl.retrying
@@ -118,7 +119,7 @@ class CryptoProcessorImpl @Activate constructor(
             MESSAGING_CONFIG,
             CRYPTO_CONFIG
         )
-        const val RPC_SUBSCRIPTION = "RPC_SUBSCRIPTION"
+        const val FLOW_OPS_SUBSCRIPTION = "FLOW_OPS_SUBSCRIPTION"
         const val RPC_OPS_SUBSCRIPTION = "RPC_OPS_SUBSCRIPTION"
         const val HSM_REG_SUBSCRIPTION = "HSM_REG_SUBSCRIPTION"
 
@@ -304,29 +305,41 @@ class CryptoProcessorImpl @Activate constructor(
     }
 
     private fun startProcessors(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        val cryptoConfig = event.config.getConfig(CRYPTO_CONFIG).retrying()
+        val retryingConfig = event.config.getConfig(CRYPTO_CONFIG).retrying()
         val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
-        val rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, CRYPTO_PATH)
 
-        val rpcOpsProcessor = CryptoOpsBusProcessor(cryptoService, cryptoConfig, keyEncodingService)
-        val hsmRegistrationProcessor = HSMRegistrationBusProcessor(tenantInfoService, cryptoService, cryptoConfig)
+        createFlowOpsSubscription(coordinator, retryingConfig)
+        createRpcOpsSubscription(coordinator, messagingConfig, retryingConfig)
+        createHsmRegSubscription(coordinator, messagingConfig, retryingConfig)
+    }
+
+    private fun createFlowOpsSubscription(
+        coordinator: LifecycleCoordinator,
+        retryingConfig: RetryingConfig
+    ) {
         val flowOpsProcessor = CryptoFlowOpsProcessor(
             cryptoService,
             externalEventResponseFactory,
-            cryptoConfig, keyEncodingService,
+            retryingConfig, keyEncodingService,
             FlowOpsRequest::class.java,
             FlowEvent::class.java
         )
 
-        coordinator.createManagedResource(RPC_SUBSCRIPTION) {
+        coordinator.createManagedResource(FLOW_OPS_SUBSCRIPTION) {
             subscriptionFactory.createHttpRPCSubscription(
-                rpcConfig = rpcConfig,
+                rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, CRYPTO_PATH),
                 processor = flowOpsProcessor
             ).also {
                 it.start()
             }
         }
+    }
 
+    private fun createRpcOpsSubscription(
+        coordinator: LifecycleCoordinator,
+        messagingConfig: SmartConfig,
+        retryingConfig: RetryingConfig
+    ) {
         val rpcGroupName = "crypto.ops.rpc"
         val rpcClientName = "crypto.ops.rpc"
 
@@ -339,16 +352,23 @@ class CryptoProcessorImpl @Activate constructor(
                     requestType = RpcOpsRequest::class.java,
                     responseType = RpcOpsResponse::class.java
                 ),
-                responderProcessor = rpcOpsProcessor,
+                responderProcessor = CryptoOpsBusProcessor(cryptoService, retryingConfig, keyEncodingService),
                 messagingConfig = messagingConfig
             )
         }.also {
             logger.trace("Starting processing on $rpcGroupName ${Schemas.Crypto.RPC_OPS_MESSAGE_TOPIC}")
             it.start()
         }
+    }
 
+    private fun createHsmRegSubscription(
+        coordinator: LifecycleCoordinator,
+        messagingConfig: SmartConfig,
+        retryingConfig: RetryingConfig
+    ) {
         val hsmRegGroupName = "crypto.hsm.rpc.registration"
         val hsmRegClientName = "crypto.hsm.rpc.registration"
+
         coordinator.createManagedResource(HSM_REG_SUBSCRIPTION) {
             subscriptionFactory.createRPCSubscription(
                 rpcConfig = RPCConfig(
@@ -358,7 +378,9 @@ class CryptoProcessorImpl @Activate constructor(
                     requestType = HSMRegistrationRequest::class.java,
                     responseType = HSMRegistrationResponse::class.java
                 ),
-                responderProcessor = hsmRegistrationProcessor,
+                responderProcessor = HSMRegistrationBusProcessor(
+                    tenantInfoService, cryptoService, retryingConfig
+                ),
                 messagingConfig = messagingConfig
             )
         }.also {

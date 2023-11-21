@@ -55,7 +55,7 @@ class CryptoFlowOpsProcessor(
     )
 
     override fun process(request: FlowOpsRequest): FlowEvent {
-        logger.trace { "CryptoFlowOpsProcessor began processing request: ${request::class.java.name}" }
+        logger.trace { "Processing request... ${request::class.java.name}" }
 
         val clientRequestId = request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
 
@@ -80,11 +80,11 @@ class CryptoFlowOpsProcessor(
                     request.flowExternalEventContext,
                     FlowOpsResponse(createResponseContext(request), response, null)
                 )
-            } catch (ex: Exception) {
-                logger.error(
-                    "Failed to handle ${requestPayload::class.java.name} for tenant ${request.context.tenantId}", ex
+            } catch (e: Exception) {
+                logger.warn(
+                    "Failed to handle ${requestPayload::class.java.name} for tenant ${request.context.tenantId}", e
                 )
-                externalEventResponseFactory.platformError(request.flowExternalEventContext, ex)
+                externalEventResponseFactory.platformError(request.flowExternalEventContext, e)
             }.also {
                 CordaMetrics.Metric.Crypto.FlowOpsProcessorExecutionTime.builder()
                     .withTag(CordaMetrics.Tag.OperationName, requestPayload::class.java.simpleName)
