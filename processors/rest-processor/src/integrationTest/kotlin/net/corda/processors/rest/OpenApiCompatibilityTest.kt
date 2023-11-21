@@ -3,13 +3,9 @@ package net.corda.processors.rest
 
 import io.swagger.v3.core.util.Json
 import io.swagger.v3.oas.models.OpenAPI
+import net.corda.crypto.rest.KeyRotationRestResource
 import net.corda.flow.rest.v1.FlowClassRestResource
 import net.corda.flow.rest.v1.FlowRestResource
-import net.corda.rest.PluggableRestResource
-import net.corda.rest.RestResource
-import net.corda.rest.server.config.models.RestContext
-import net.corda.rest.server.config.models.RestServerSettings
-import net.corda.rest.server.factory.RestServerFactory
 import net.corda.libs.configuration.endpoints.v1.ConfigRestResource
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
@@ -28,7 +24,12 @@ import net.corda.membership.rest.v1.MemberLookupRestResource
 import net.corda.membership.rest.v1.MemberRegistrationRestResource
 import net.corda.membership.rest.v1.NetworkRestResource
 import net.corda.processors.rest.diff.diff
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.RestResource
 import net.corda.rest.annotations.RestApiVersion
+import net.corda.rest.server.config.models.RestContext
+import net.corda.rest.server.config.models.RestServerSettings
+import net.corda.rest.server.factory.RestServerFactory
 import net.corda.utilities.NetworkHostAndPort
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -68,11 +69,12 @@ class OpenApiCompatibilityTest {
             PermissionEndpoint::class.java, // REST
             RoleEndpoint::class.java, // REST
             UserEndpoint::class.java, // REST
-            VirtualNodeMaintenanceRestResource::class.java // REST
+            VirtualNodeMaintenanceRestResource::class.java, // REST
+            KeyRotationRestResource::class.java, // Crypto
         )
 
         // `cardinality` is not equal to `importantRestResources.size` as there might be some test RestResource as well
-        @InjectService(service = PluggableRestResource::class, cardinality = 17, timeout = 10_000)
+        @InjectService(service = PluggableRestResource::class, cardinality = 18, timeout = 10_000)
         lateinit var dynamicRestResources: List<RestResource>
 
         @InjectService(service = RestServerFactory::class, timeout = 10_000)

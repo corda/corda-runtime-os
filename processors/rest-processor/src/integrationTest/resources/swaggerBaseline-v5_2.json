@@ -36,6 +36,9 @@
     "name" : "Key Management API",
     "description" : "The Keys Management API consists of endpoints used to manage public and private key pairs. The API allows you to list scheme codes which are supported by the associated HSM integration, retrieve information about key pairs owned by a tenant, generate a key pair for a tenant, and retrieve a tenant's public key in PEM format."
   }, {
+    "name" : "Key Rotation API",
+    "description" : "Contains operations related to rotation of the wrapping keys."
+  }, {
     "name" : "MGM API",
     "description" : "The MGM API consists of a number of endpoints used to manage membership groups. A membership group is a logical grouping of a number of Corda Identities to communicate and transact with one another with a specific set of CorDapps. The API allows you to generate the group policy for a membership group, required for new members to join the group."
   }, {
@@ -4030,6 +4033,139 @@
           }
         }
       }
+    },
+    "/wrappingkey/getprotocolversion" : {
+      "get" : {
+        "tags" : [ "Key Rotation API" ],
+        "description" : "",
+        "operationId" : "get_wrappingkey_getprotocolversion",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "An integer value specifying the version of the endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32",
+                  "nullable" : false,
+                  "example" : 0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/wrappingkey/unmanaged/rotation" : {
+      "get" : {
+        "tags" : [ "Key Rotation API" ],
+        "description" : "This method gets the status of the current rotation.",
+        "operationId" : "get_wrappingkey_unmanaged_rotation",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "Success",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "uniqueItems" : false,
+                  "type" : "array",
+                  "nullable" : false,
+                  "items" : {
+                    "type" : "object",
+                    "properties" : {
+                      "first" : {
+                        "type" : "string",
+                        "nullable" : false,
+                        "example" : "string"
+                      },
+                      "second" : {
+                        "uniqueItems" : false,
+                        "type" : "array",
+                        "nullable" : false,
+                        "items" : {
+                          "type" : "string",
+                          "example" : "string"
+                        }
+                      }
+                    },
+                    "example" : "No example available for this type"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/wrappingkey/unmanaged/rotation/{oldkeyalias}" : {
+      "post" : {
+        "tags" : [ "Key Rotation API" ],
+        "description" : "This method enables to rotate a current wrapping key with a new wrapping key.",
+        "operationId" : "post_wrappingkey_unmanaged_rotation__oldkeyalias_",
+        "parameters" : [ {
+          "name" : "oldkeyalias",
+          "in" : "path",
+          "description" : "The alias of the current wrapping key to be rotated.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The alias of the current wrapping key to be rotated.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "newKeyAlias" : {
+                    "type" : "string",
+                    "description" : "The alias of the new wrapping key that old one will be rotated with.",
+                    "nullable" : false,
+                    "example" : "string"
+                  }
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Key rotation response",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/KeyRotationResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
     }
   },
   "components" : {
@@ -4849,6 +4985,27 @@
         "type" : "object",
         "properties" : {
           "id" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
+      "KeyRotationResponse" : {
+        "required" : [ "newKeyAlias", "oldKeyAlias", "requestId" ],
+        "type" : "object",
+        "properties" : {
+          "newKeyAlias" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "oldKeyAlias" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "requestId" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
