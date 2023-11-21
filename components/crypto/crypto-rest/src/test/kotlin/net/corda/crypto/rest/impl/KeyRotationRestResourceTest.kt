@@ -171,7 +171,7 @@ class KeyRotationRestResourceTest {
                 )
             )
 
-    // MESSAGING_CONFIG just needs to be initialised without any particular datt
+    // MESSAGING_CONFIG just needs to be initialised without any particular data
     private fun createMessagingConfig(): SmartConfig =
         SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty())
             .withValue(

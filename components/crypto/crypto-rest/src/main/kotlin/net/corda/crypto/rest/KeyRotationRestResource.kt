@@ -9,12 +9,11 @@ import net.corda.rest.annotations.HttpPOST
 import net.corda.rest.annotations.HttpRestResource
 import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.annotations.RestPathParameter
-import net.corda.rest.exception.InvalidInputDataException
 import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.rest.response.ResponseEntity
 
 /**
- * Key Rotation API consists of endpoints to request a key rotation operation and to check the status of such operation,
+ * Key Rotation API consists of endpoints to request a key rotation operation and to check the status of such operation.
  */
 @HttpRestResource(
     name = "Key Rotation API",
@@ -49,9 +48,6 @@ interface KeyRotationRestResource : RestResource {
      *
      * @param oldKeyAlias Alias of the key to be rotated.
      * @param newKeyAlias Alias of the new key the [oldKeyAlias] key will be rotated with.
-     * @param simulate If true, only work out the number of keys to rotate.
-     * @param timeToLive The maximum number of milliseconds which should pass, after which the key rotation loop will exit.
-     * @param limit The maximum number of key rotations to do, after which the key rotation loop will exit.
      *
      * @return Key rotation response where
      *  - requestId is the unique ID for the key rotation start request.
@@ -59,7 +55,6 @@ interface KeyRotationRestResource : RestResource {
      *  - newKeyAlias is the alias of the new key the oldKeyAlias key will be rotated with.
      *
      * @throws ServiceUnavailableException If the underlying service for sending messages is not available.
-     * @throws InvalidInputDataException If the [oldKeyAlias] or [newKeyAlias] are not part of the supplied configuration.
      */
 
     @HttpPOST(
