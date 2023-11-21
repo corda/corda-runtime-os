@@ -24,15 +24,15 @@ class CryptoRekeyBusProcessor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val wrappingRepositoryFactory: WrappingRepositoryFactory,
     private val rekeyPublisher: Publisher
-) : DurableProcessor<String, KeyRotationRequest> {
+) : DurableProcessor<UUID, KeyRotationRequest> {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override val keyClass: Class<String> = String::class.java
+    override val keyClass: Class<UUID> = UUID::class.java
     override val valueClass = KeyRotationRequest::class.java
     @Suppress("NestedBlockDepth")
-    override fun onNext(events: List<Record<String, KeyRotationRequest>>): List<Record<*, *>> {
+    override fun onNext(events: List<Record<UUID, KeyRotationRequest>>): List<Record<*, *>> {
         logger.debug("received ${events.size} key rotation requests")
         events.mapNotNull { it.value }.forEach { request ->
             logger.debug("processing $request")
