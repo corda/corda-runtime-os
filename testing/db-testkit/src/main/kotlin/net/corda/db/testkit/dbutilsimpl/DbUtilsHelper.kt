@@ -25,6 +25,7 @@ interface DbUtilsHelper {
         rewriteBatchedInserts: Boolean = false
     ): EntityManagerConfiguration
 
+    @Suppress("LongParameterList")
     fun createDataSource(
         dbUser:String? = null,
         dbPassword: String? = null,
