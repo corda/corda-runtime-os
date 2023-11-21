@@ -1,11 +1,8 @@
 package net.corda.ledger.persistence
 
-import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.ledger.persistence.processor.LedgerPersistenceRequestSubscriptionFactory
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -15,9 +12,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
-import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.subscription.Subscription
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
@@ -45,7 +40,6 @@ class LedgerPersistenceService @Activate constructor(
     private val ledgerPersistenceRequestSubscriptionFactory: LedgerPersistenceRequestSubscriptionFactory
 ) : Lifecycle {
     private var configHandle: Resource? = null
-    private var ledgerProcessorSubscription: Subscription<String, LedgerPersistenceRequest>? = null
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -79,27 +73,12 @@ class LedgerPersistenceService @Activate constructor(
                     coordinator.updateStatus(event.status)
                 }
             }
-            is ConfigChangedEvent -> {
-                ledgerProcessorSubscription?.close()
-                val newLedgerProcessorSubscription = ledgerPersistenceRequestSubscriptionFactory.create(
-                    event.config.getConfig(MESSAGING_CONFIG)
-                )
-                logger.debug("Starting LedgerPersistenceService.")
-                newLedgerProcessorSubscription.start()
-                ledgerProcessorSubscription = newLedgerProcessorSubscription
-                coordinator.updateStatus(LifecycleStatus.UP)
-            }
-            is StopEvent -> {
-                ledgerProcessorSubscription?.close()
-                logger.debug { "Stopping LedgerPersistenceService." }
-            }
         }
     }
 
     private fun initialiseRpcSubscription() {
-        val subscription = ledgerPersistenceRequestSubscriptionFactory.createRpcSubscription()
         lifecycleCoordinator.createManagedResource(RPC_SUBSCRIPTION) {
-            subscription.also {
+            ledgerPersistenceRequestSubscriptionFactory.createRpcSubscription().also {
                 it.start()
             }
         }
