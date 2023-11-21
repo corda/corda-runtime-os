@@ -15,7 +15,7 @@ class AssertWithRetryArgs {
     var failMessage: String = ""
 
     fun validate() {
-        if (command == null) throw IllegalArgumentException("command not specified in AssertWithRetryArgs")
+        if (command == null) throw IllegalArgumentException("Command not specified in AssertWithRetryArgs")
     }
 }
 

@@ -60,7 +60,6 @@ class WrappingRepositoryImpl(
             }
         }
 
-    // TODO add test coverage
     override fun findKeysWrappedByAlias(alias: String): Sequence<WrappingKeyInfo> =
         entityManagerFactory.createEntityManager().use {
             it.createQuery(
