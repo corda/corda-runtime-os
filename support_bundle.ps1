@@ -33,6 +33,7 @@ foreach ($release in $(helm ls -q --namespace "${namespace}").Split([System.Envi
   helm get manifest "${release}" --namespace "${namespace}" > (Join-Path $releaseDir "manifest.txt")
 }
 
+$job = Start-Job -ScriptBlock {kubectl proxy}
 foreach ($podName in $(kubectl --namespace "$namespace" get pods -o jsonpath="{.items[*].metadata.name}").Split(" "))
 {
   Write-Output "Collecting configuration and logs for pod ${podName}"
@@ -49,14 +50,10 @@ foreach ($podName in $(kubectl --namespace "$namespace" get pods -o jsonpath="{.
   if ($podName -match '.*-worker-.*')
   {
     Write-Output "Collecting status for pod ${podName}"
-    $job = Start-Job -ScriptBlock {kubectl port-forward --namespace $args[0] $args[1] 7000:7000} -ArgumentList $namespace,$podName
-    while( !( Test-Connection -ComputerName 'localhost' -TcpPort '7000' -Quiet ) ) {
-      Start-Sleep -Seconds 0.1
-    }
-    Invoke-RestMethod -Uri http://localhost:7000/status -OutFile (Join-Path $podDir "status.json")
-    Stop-Job $job
+    Invoke-RestMethod -Uri "http://localhost:8001/api/v1/namespaces/${namespace}/pods/${podName}:7000/proxy/status" -OutFile (Join-Path $podDir "status.json")
   }
 }
+Stop-Job $job
 
 foreach ($restSvcName in (kubectl get svc --namespace $namespace -l app.kubernetes.io/component=rest-worker -o jsonpath="{.items[*].metadata.name}").Split(" ")) {
   $instance = (kubectl get --namespace $namespace svc $restSvcName -o go-template='{{ index .metadata.labels "app.kubernetes.io/instance" }}')

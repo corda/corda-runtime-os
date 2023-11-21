@@ -31,6 +31,8 @@ for release in $(helm ls -q --namespace "${namespace}"); do
   helm get manifest "${release}" --namespace "${namespace}" > "${releaseDir}/manifest.txt"
 done
 
+kubectl proxy >/dev/null 2>&1 &
+pid=$!
 for podName in $(kubectl --namespace "$namespace" get pods -o jsonpath="{.items[*].metadata.name}"); do
   echo "Collecting configuration and logs for pod ${podName}"
   podDir="${namespaceDir}/${podName}"
@@ -44,14 +46,11 @@ for podName in $(kubectl --namespace "$namespace" get pods -o jsonpath="{.items[
   fi
   if [[ "$podName" == *-worker-* ]]; then
     echo "Collecting status for pod ${podName}"
-    kubectl port-forward --namespace "${namespace}" "${podName}" 7000:7000  >/dev/null 2>&1 &
-    while ! nc -vz localhost 7000 > /dev/null 2>&1 ; do sleep 0.1; done
-    pid=$!
-    curl -s localhost:7000/status -o "${podDir}/status.json"
-    disown $pid
-    kill $pid
+    curl -s "localhost:8001/api/v1/namespaces/${namespace}/pods/${podName}:7000/proxy/status" -o "${podDir}/status.json"
   fi
 done
+disown $pid
+kill $pid
 
 for restSvcName in $(kubectl get svc --namespace "$namespace" -l app.kubernetes.io/component=rest-worker -o jsonpath="{.items[*].metadata.name}"); do
     instance=$(kubectl get --namespace "$namespace" svc "$restSvcName" -o go-template='{{ index .metadata.labels "app.kubernetes.io/instance" }}')
