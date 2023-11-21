@@ -27,6 +27,7 @@ import net.corda.rest.exception.ServiceUnavailableException
 import net.corda.rest.response.ResponseEntity
 import net.corda.schema.Schemas.Crypto.REKEY_MESSAGE_TOPIC
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.v5.base.annotations.VisibleForTesting
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -56,7 +57,8 @@ class KeyRotationRestResourceImpl @Activate constructor(
     override val protocolVersion: Int = platformInfoProvider.localWorkerPlatformVersion
 
     private val requestId = UUID.randomUUID().toString()
-    override fun initialise(config: Map<String, SmartConfig>) {
+    @VisibleForTesting
+    fun initialise(config: Map<String, SmartConfig>) {
         val messagingConfig = config.getConfig(ConfigKeys.MESSAGING_CONFIG)
 
         // Initialise publisher with messaging config
