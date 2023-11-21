@@ -343,8 +343,8 @@ class CryptoProcessorImpl @Activate constructor(
         val rpcOpsProcessor = CryptoOpsBusProcessor(cryptoService, retryingConfig, keyEncodingService)
         val hsmRegistrationProcessor = HSMRegistrationBusProcessor(tenantInfoService, cryptoService, retryingConfig)
         val rewrapProcessor = CryptoRewrapBusProcessor(cryptoService)
-        val publisherConfig =PublisherConfig("RekeyBusProcessor", false)
-        val rekeyPublisher =  publisherFactory.createPublisher(publisherConfig, messagingConfig)
+        val publisherConfig = PublisherConfig("RekeyBusProcessor", false)
+        val rekeyPublisher = publisherFactory.createPublisher(publisherConfig, messagingConfig)
         val rekeyProcessor = CryptoRekeyBusProcessor(
             cryptoService,
             virtualNodeInfoReadService,
