@@ -64,7 +64,7 @@ internal class VirtualNodeWriterProcessor(
     private val changeLogsRepository: CpkDbChangeLogRepository,
     private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl(),
     private val migrationUtility: MigrationUtility,
-    private val entitiesSet: JpaEntitiesRegistry,
+    private val jpaEntitiesRegistry: JpaEntitiesRegistry,
 ) : RPCResponderProcessor<VirtualNodeManagementRequest, VirtualNodeManagementResponse> {
 
     companion object {
@@ -138,7 +138,7 @@ internal class VirtualNodeWriterProcessor(
                     )!!
                     dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).use { dataSource ->
                         val emVault = dbConnectionManager.getOrCreateEntityManagerFactory(virtualNodeInfo.vaultDdlConnectionId!!,
-                            entitiesSet.get(CordaDb.Vault.persistenceUnitName)!!
+                            jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)!!
                         ).createEntityManager()
                         // changelog tags are the CPK file checksum the changelog belongs to
                         val cpkChecksumsOfAppliedChangelogs: Set<String> = getAppliedChangelogTags(
