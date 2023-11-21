@@ -2,11 +2,9 @@ package net.corda.crypto.service.impl.bus
 
 import net.corda.crypto.core.CryptoService
 import net.corda.data.crypto.wire.ops.key.rotation.IndividualKeyRotationRequest
-import net.corda.data.crypto.wire.ops.key.rotation.IndividualKeyRotationResponse
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Crypto.REWRAP_MESSAGE_RESPONSE_TOPIC
-import java.time.Instant
+
 
 /**
  * This processor does actual re-wrapping of the keys.
