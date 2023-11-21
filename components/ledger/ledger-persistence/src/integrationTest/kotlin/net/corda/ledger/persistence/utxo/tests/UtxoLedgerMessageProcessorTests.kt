@@ -1,8 +1,9 @@
 package net.corda.ledger.persistence.utxo.tests
 
-import net.corda.cpiinfo.read.CpiInfoReadService
+import assertSuccessResponse
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
@@ -25,10 +26,9 @@ import net.corda.ledger.common.testkit.createExample
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.ledger.persistence.consensual.tests.ConsensualLedgerMessageProcessorTests
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
-import net.corda.ledger.persistence.processor.LedgerPersistenceRequestProcessor
+import net.corda.ledger.persistence.processor.LedgerPersistenceRpcRequestProcessor
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
-import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
@@ -63,14 +63,13 @@ import java.nio.file.Path
 import java.security.KeyPairGenerator
 import java.security.PublicKey
 import java.time.Instant
-import java.util.UUID
 
 /**
  * To use Postgres rather than in-memory (HSQL):
  *
  *     docker run --rm --name test-instance -e POSTGRES_PASSWORD=password -p 5432:5432 postgres
  *
- *     gradlew integrationTest -PpostgresPort=5432
+ *     gradlew integrationTest -P postgresPort=5432
  *
  * Rather than creating a new serializer in these tests from scratch,
  * we grab a reference to the one in the sandbox and use that to serialize and de-serialize.
@@ -80,7 +79,6 @@ import java.util.UUID
 @Suppress("FunctionName")
 class UtxoLedgerMessageProcessorTests {
     companion object {
-        const val TOPIC = "utxo-ledger-dummy-topic"
         const val TIMEOUT_MILLIS = 10000L
         val EXTERNAL_EVENT_CONTEXT = ExternalEventContext(
             "request id", "flow id", KeyValuePairList(listOf(KeyValuePair("corda.account", "test account")))
@@ -103,6 +101,9 @@ class UtxoLedgerMessageProcessorTests {
 
     @InjectService(timeout = TIMEOUT_MILLIS)
     lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
+
+    private val requestClass = LedgerPersistenceRequest::class.java
+    private val responseClass = FlowEvent::class.java
 
     @BeforeAll
     fun setup(
@@ -130,7 +131,6 @@ class UtxoLedgerMessageProcessorTests {
         val virtualNodeInfo = virtualNode.load(Resources.EXTENDABLE_CPB)
         val cpkFileHashes = cpiInfoReadService.getCpkFileHashes(virtualNodeInfo)
         val ctx = virtualNode.entitySandboxService.get(virtualNodeInfo.holdingIdentity, cpkFileHashes)
-
         val transaction = createTestTransaction(ctx)
 
         // Serialise tx into bytebuffer and add to PersistTransaction payload
@@ -149,19 +149,18 @@ class UtxoLedgerMessageProcessorTests {
             })
 
         // Send request to message processor
-        val processor = LedgerPersistenceRequestProcessor(
+        val processor = LedgerPersistenceRpcRequestProcessor(
             currentSandboxGroupContext,
             virtualNode.entitySandboxService,
             delegatedRequestHandlerSelector,
-            responseFactory
+            responseFactory,
+            requestClass,
+            responseClass
         )
 
-        val requestId = UUID.randomUUID().toString()
-        val records = listOf(Record(TOPIC, requestId, request))
-
         // Process the messages (this should persist transaction to the DB)
-        var responses = assertSuccessResponses(processor.onNext(records))
-        assertThat(responses).hasSize(1)
+        var response = assertSuccessResponse(processor.process(request), logger)
+        assertThat(response).isNotNull
 
         // Check that we wrote the expected things to the DB
         val findRequest = createRequest(
@@ -174,14 +173,13 @@ class UtxoLedgerMessageProcessorTests {
                 )
             })
 
-        responses =
-            assertSuccessResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), findRequest))))
+        response =
+            assertSuccessResponse(processor.process(findRequest), logger)
 
-        assertThat(responses).hasSize(1)
-        val flowEvent = responses.first().value as FlowEvent
-        val response = flowEvent.payload as ExternalEventResponse
-        assertThat(response.error).isNull()
-        val entityResponse = deserializer.deserialize(response.payload.array())!!
+        assertThat(response).isNotNull
+        val result = response.payload as ExternalEventResponse
+        assertThat(result.error).isNull()
+        val entityResponse = deserializer.deserialize(result.payload.array())!!
         assertThat(entityResponse.results).hasSize(1)
         val retrievedTransaction = ctx.deserialize<Pair<SignedTransactionContainer, String>>(entityResponse.results.first())
         assertThat(retrievedTransaction).isEqualTo(transaction to "V")
@@ -234,18 +232,6 @@ class UtxoLedgerMessageProcessorTests {
             request,
             externalEventContext
         )
-    }
-
-    private fun assertSuccessResponses(records: List<Record<*, *>>): List<Record<*, *>> {
-        records.forEach {
-            val flowEvent = it.value as FlowEvent
-            val response = flowEvent.payload as ExternalEventResponse
-            if (response.error != null) {
-                logger.error("Incorrect error response: {}", response.error)
-            }
-            assertThat(response.error).isNull()
-        }
-        return records
     }
 
     class TestContractState : ContractState {
