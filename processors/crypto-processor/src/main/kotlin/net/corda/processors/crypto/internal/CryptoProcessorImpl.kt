@@ -213,7 +213,6 @@ class CryptoProcessorImpl @Activate constructor(
                         logger.trace("Assigned SOFT HSM for $tenantId:$category")
                     }
                 }
-                startBusProcessors(event, coordinator) // to be removed when Event Mediator is fully implemented
                 startProcessors(event, coordinator)
                 setStatus(LifecycleStatus.UP, coordinator)
             }
