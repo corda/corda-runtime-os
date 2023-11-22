@@ -7,19 +7,8 @@ import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
 import java.io.Serializable
 import java.time.Instant
-import java.util.Objects
-import java.util.UUID
-import javax.persistence.CascadeType
-import javax.persistence.Column
-import javax.persistence.Entity
-import javax.persistence.EnumType
-import javax.persistence.Enumerated
-import javax.persistence.Id
-import javax.persistence.JoinColumn
-import javax.persistence.MapsId
-import javax.persistence.OneToOne
-import javax.persistence.Table
-import javax.persistence.Version
+import java.util.*
+import javax.persistence.*
 
 /**
  * The entity for a virtual node instance in the cluster database.
@@ -136,7 +125,7 @@ internal class VirtualNodeEntity(
             cryptoDDLConnectionId,
             cryptoDMLConnectionId!!,
             uniquenessDDLConnectionId,
-            uniquenessDMLConnectionId!!,
+            uniquenessDMLConnectionId,
             holdingIdentity.hsmConnectionId,
             flowP2pOperationalStatus,
             flowStartOperationalStatus,
