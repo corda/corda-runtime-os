@@ -622,6 +622,8 @@ class ClusterBuilder {
         sessionCertAlias: String? = null,
         tlsCertificateAlias: String = CERT_ALIAS_P2P,
     ): SimpleResponse {
+        println("QQQ II configureNetworkParticipant(tlsCertificateAlias=$tlsCertificateAlias)")
+        Exception("QQQ II $tlsCertificateAlias").printStackTrace()
         val sessionKeysSection = if (sessionCertAlias == null) {
             """
                     "sessionKeysAndCertificates": [{

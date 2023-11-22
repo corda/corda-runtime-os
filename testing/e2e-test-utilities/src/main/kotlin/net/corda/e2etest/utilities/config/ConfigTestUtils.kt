@@ -53,6 +53,7 @@ fun ClusterInfo.getConfig(section: String): JsonNode {
  */
 fun updateConfig(config: String, section: String) = DEFAULT_CLUSTER.updateConfig(config, section)
 
+@Synchronized
 fun ClusterInfo.updateConfig(config: String, section: String) {
     return cluster {
         val currentConfig = assertWithRetryIgnoringExceptions {
