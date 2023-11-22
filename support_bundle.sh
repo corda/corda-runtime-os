@@ -60,9 +60,9 @@ for restSvcName in $(kubectl get svc --namespace "$namespace" -l app.kubernetes.
       echo "Collecting Corda configuration via service ${restSvcName}"
       username=$(kubectl get secret --namespace "$namespace" "$instance-rest-api-admin" -o go-template='{{ .data.username | base64decode }}')
       password=$(kubectl get secret --namespace "$namespace" "$instance-rest-api-admin" -o go-template='{{ .data.password | base64decode }}')
-      kubectl port-forward --namespace "${namespace}" "svc/${restSvcName}" 9443:443  >/dev/null 2>&1 &
-      while ! nc -vz localhost 9443 > /dev/null 2>&1 ; do sleep 0.1; done
+      kubectl port-forward --namespace "${namespace}" "svc/${restSvcName}" 9443:443 > /dev/null 2>&1 &
       pid=$!
+      while ! curl -sk "https://localhost:9443" > /dev/null 2>&1; do sleep 0.1; done
       sections="crypto externalMessaging flow ledger.utxo membership messaging p2p.gateway p2p.linkManager reconciliation rest sandbox secrets security stateManager vnode.datasource"
       for section in $sections; do
           curl -sk -u "${username}:${password}" "https://localhost:9443/api/v1/config/corda.${section}" -o "${configDir}/corda.${section}.json"
