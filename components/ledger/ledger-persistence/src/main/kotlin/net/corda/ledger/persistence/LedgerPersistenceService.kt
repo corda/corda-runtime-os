@@ -10,6 +10,7 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.utilities.debug
@@ -51,16 +52,22 @@ class LedgerPersistenceService @Activate constructor(
         logger.debug { "LedgerPersistenceService received: $event" }
         when (event) {
             is StartEvent -> {
-                logger.debug { "Starting ledger persistence component." }
+                logger.debug { "Received start event: $event Starting ledger persistence component." }
             }
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
+                    logger.debug("Received status change: ${event.status} Starting LedgerPersistenceService.")
                     initialiseRpcSubscription()
                     coordinator.updateStatus(LifecycleStatus.UP)
                 } else {
                     coordinator.updateStatus(event.status)
                     coordinator.closeManagedResources(setOf(RPC_SUBSCRIPTION))
+                    logger.debug { "Received status change: ${event.status} Stopping LedgerPersistenceService." }
                 }
+            }
+            is StopEvent -> {
+                coordinator.closeManagedResources(setOf(RPC_SUBSCRIPTION))
+                logger.debug { "Received stop event: $event Stopping LedgerPersistenceService." }
             }
         }
     }
