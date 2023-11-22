@@ -28,13 +28,13 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.doReturn
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -224,9 +224,9 @@ class CryptoRekeyBusProcessorTests {
         return virtualNodesInfos
     }
 
-    private fun getKafkaRecord(oldKeyAlias: String): Record<String, KeyRotationRequest> = Record(
+    private fun getKafkaRecord(oldKeyAlias: String): Record<UUID, KeyRotationRequest> = Record(
         "TBC",
-        UUID.randomUUID().toString(),
+        UUID.randomUUID(),
         KeyRotationRequest(
             UUID.randomUUID().toString(),
             KeyType.UNMANAGED,
