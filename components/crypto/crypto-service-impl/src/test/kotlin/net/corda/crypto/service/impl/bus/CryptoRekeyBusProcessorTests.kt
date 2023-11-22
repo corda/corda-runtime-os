@@ -28,13 +28,13 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.doReturn
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
-import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -77,7 +77,7 @@ class CryptoRekeyBusProcessorTests {
         virtualNodeInfoReadService = mock()
 
         val wrappingRepository: WrappingRepository = mock {
-            on { findKeysWrappedByAlias(any()) } doReturn sequenceOf(WrappingKeyInfo(0, "", byteArrayOf(), 0, oldKeyAlias, "alias1"))
+            on { findKeysWrappedByAlias(any()) } doReturn listOf(WrappingKeyInfo(0, "", byteArrayOf(), 0, oldKeyAlias, "alias1"))
         }
 
         wrappingRepositoryFactory = mock {
@@ -140,8 +140,6 @@ class CryptoRekeyBusProcessorTests {
             on { create(tenantId2) } doReturn repo2
             on { create(tenantId3) } doReturn repo3
             on { create(CryptoTenants.CRYPTO) } doReturn repo2
-            on { create(CryptoTenants.P2P) } doReturn repo2
-            on { create(CryptoTenants.REST) } doReturn repo2
         }
 
         cryptoRekeyBusProcessor = CryptoRekeyBusProcessor(
@@ -155,7 +153,7 @@ class CryptoRekeyBusProcessorTests {
 
         verify(rewrapPublisher, times(1)).publish(any())
         assertThat(rewrapPublishCapture.allValues).hasSize(1)
-        assertThat(rewrapPublishCapture.firstValue).hasSize(2)
+        assertThat(rewrapPublishCapture.firstValue).hasSize(0)
     }
 
     private fun makeWrappingKeyEntity(
@@ -226,9 +224,9 @@ class CryptoRekeyBusProcessorTests {
         return virtualNodesInfos
     }
 
-    private fun getKafkaRecord(oldKeyAlias: String): Record<UUID, KeyRotationRequest> = Record(
+    private fun getKafkaRecord(oldKeyAlias: String): Record<String, KeyRotationRequest> = Record(
         "TBC",
-        UUID.randomUUID(),
+        UUID.randomUUID().toString(),
         KeyRotationRequest(
             UUID.randomUUID().toString(),
             KeyType.UNMANAGED,

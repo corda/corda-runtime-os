@@ -36,7 +36,7 @@ class TestWrappingRepository(
         TODO("Not yet implemented")
     }
 
-    override fun findKeysWrappedByAlias(alias: String): Sequence<WrappingKeyInfo> {
+    override fun findKeysWrappedByAlias(alias: String): List<WrappingKeyInfo> {
         TODO("Not yet implemented")
     }
     

@@ -146,6 +146,7 @@ class AppSimulator @Activate constructor(
 
     private fun runSink(commonConfig: CommonConfig) {
         val connectionDetails = DBParams.read(commonConfig)
+            ?: throw IllegalArgumentException("Database parameters must be specified on the command line, or in a config file.")
         val sink = Sink(subscriptionFactory, configMerger, commonConfig, connectionDetails)
         sink.start()
         resources.add(sink)
@@ -297,11 +298,15 @@ data class TopicCreationParams(val numPartitions: Int, val replicationFactor: In
 
 data class DBParams(val username: String, val password: String, val host: String, val db: String) {
     companion object {
-        fun read(commonConfig: CommonConfig): DBParams {
+        fun read(commonConfig: CommonConfig): DBParams? {
             val username = getDbParameter("username", commonConfig.configFromFile, commonConfig.parameters)
+                ?: return null
             val password = getDbParameter("password", commonConfig.configFromFile, commonConfig.parameters)
+                ?: return null
             val host = getDbParameter("host", commonConfig.configFromFile, commonConfig.parameters)
+                ?: return null
             val db = getDbParameter("db", commonConfig.configFromFile, commonConfig.parameters)
+                ?: return null
             return DBParams(username, password, host, db)
         }
     }

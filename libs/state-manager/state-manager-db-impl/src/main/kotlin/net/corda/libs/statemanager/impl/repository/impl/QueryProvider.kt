@@ -24,5 +24,7 @@ interface QueryProvider {
 
     fun findStatesByMetadataMatchingAny(filters: Collection<MetadataFilter>): String
 
-    fun findStatesUpdatedBetweenAndFilteredByMetadataKey(filter: MetadataFilter): String
+    fun findStatesUpdatedBetweenWithMetadataMatchingAll(filters: Collection<MetadataFilter>): String
+
+    fun findStatesUpdatedBetweenWithMetadataMatchingAny(filters: Collection<MetadataFilter>): String
 }
