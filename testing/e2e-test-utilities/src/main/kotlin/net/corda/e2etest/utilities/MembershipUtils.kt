@@ -69,6 +69,7 @@ fun ClusterInfo.onboardMember(
     useLedgerKey: Boolean = true,
     certificateAuthority: NamedFileSystemCertificatesAuthority = getCa(),
 ): NetworkOnboardingMetadata {
+    println("QQQ groupPolicy: \n$groupPolicy\n")
     conditionallyUploadCpiSigningCertificate()
     conditionallyUploadCordaPackage(cpiName, cpb, groupPolicy)
     val holdingId = getOrCreateVirtualNodeFor(x500Name, cpiName)
@@ -113,6 +114,8 @@ fun ClusterInfo.onboardMember(
         println("QQQ csr = \n$tlsCsr\n")
         println("QQQ tlsCert = \n$tlsCert\n")
         println("QQQ Root ca = \n${certificateAuthority.caCertificate.toPem()}\n")
+    } else {
+        println("QQQ Key exists")
     }
 
     val registrationContext = createRegistrationContext(
@@ -195,6 +198,7 @@ fun ClusterInfo.configureNetworkParticipant(
     sessionCertAlias: String? = null,
     tlsCertificateAlias: String,
 ) {
+    println("QQQ configureNetworkParticipant(tlsCertificateAlias=$tlsCertificateAlias)")
     return cluster {
         assertWithRetryIgnoringExceptions {
             interval(1.seconds)
