@@ -26,7 +26,6 @@ open class ActResultTimestamps(
     val after: Instant,
 ) {
     fun assertThatIsBetween(timestamp: Instant) = assertThatIsBetween(timestamp, before, after)
-
 }
 
 
