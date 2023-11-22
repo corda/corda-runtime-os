@@ -1,6 +1,7 @@
 package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.e2etest.utilities.types.NamedFileSystemCertificatesAuthority
 import net.corda.e2etest.utilities.types.NetworkOnboardingMetadata
 import net.corda.e2etest.utilities.types.jsonToMemberList
@@ -107,6 +108,11 @@ fun ClusterInfo.onboardMember(
         }
         importCertificate(tlsCertFile, CERT_USAGE_P2P, tlsCertificateAlias)
         tlsCertificateUploadedCallback(tlsCert)
+        println("QQQ In onboard member for ${certificateAuthority.name}")
+        println("QQQ tlsKeyId = $tlsKeyId")
+        println("QQQ csr = \n$tlsCsr\n")
+        println("QQQ tlsCert = \n$tlsCert\n")
+        println("QQQ Root ca = \n${certificateAuthority.caCertificate.toPem()}\n")
     }
 
     val registrationContext = createRegistrationContext(
