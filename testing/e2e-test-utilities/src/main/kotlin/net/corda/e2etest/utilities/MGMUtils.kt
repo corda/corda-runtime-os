@@ -25,8 +25,8 @@ import java.security.cert.X509Certificate
 fun ClusterInfo.onboardMgm(
     mgmName: String = "O=Mgm, L=London, C=GB, OU=$testRunUniqueId",
     groupPolicyConfig: GroupPolicyConfig = GroupPolicyConfig(),
+    mgmCpiName: String = "mgm.cpi"
 ): NetworkOnboardingMetadata {
-    val mgmCpiName = "mgm.cpi"
     conditionallyUploadCpiSigningCertificate()
     conditionallyUploadCordaPackage(mgmCpiName, null, getMgmGroupPolicy())
     val mgmHoldingId = getOrCreateVirtualNodeFor(mgmName, mgmCpiName)
