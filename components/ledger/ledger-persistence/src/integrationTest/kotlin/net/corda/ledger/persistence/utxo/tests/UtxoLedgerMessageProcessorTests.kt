@@ -1,6 +1,5 @@
 package net.corda.ledger.persistence.utxo.tests
 
-import assertSuccessResponse
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.cpiinfo.read.CpiInfoReadService
@@ -24,6 +23,7 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.testkit.createExample
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
+import net.corda.ledger.persistence.assertSuccessResponse
 import net.corda.ledger.persistence.consensual.tests.ConsensualLedgerMessageProcessorTests
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.ledger.persistence.processor.LedgerPersistenceRpcRequestProcessor

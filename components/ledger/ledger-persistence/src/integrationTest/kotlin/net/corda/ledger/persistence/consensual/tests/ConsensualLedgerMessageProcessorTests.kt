@@ -1,6 +1,5 @@
 package net.corda.ledger.persistence.consensual.tests
 
-import assertSuccessResponse
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.cpiinfo.read.CpiInfoReadService
@@ -31,6 +30,7 @@ import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.ledger.consensual.data.transaction.TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
 import net.corda.ledger.consensual.data.transaction.consensualComponentGroupStructure
+import net.corda.ledger.persistence.assertSuccessResponse
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.ledger.persistence.processor.LedgerPersistenceRpcRequestProcessor
 import net.corda.messaging.api.records.Record

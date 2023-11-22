@@ -1,3 +1,4 @@
+package net.corda.ledger.persistence
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventResponse
