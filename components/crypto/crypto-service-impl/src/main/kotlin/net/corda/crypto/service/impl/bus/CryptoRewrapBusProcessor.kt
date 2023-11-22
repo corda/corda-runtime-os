@@ -4,7 +4,7 @@ import net.corda.crypto.core.CryptoService
 import net.corda.data.crypto.wire.ops.key.rotation.IndividualKeyRotationRequest
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
-
+import java.util.UUID
 
 /**
  * This processor does actual re-wrapping of the keys.
@@ -13,12 +13,12 @@ import net.corda.messaging.api.records.Record
 @Suppress("LongParameterList")
 class CryptoRewrapBusProcessor(
     val cryptoService: CryptoService
-) : DurableProcessor<String, IndividualKeyRotationRequest> {
-    override val keyClass: Class<String> = String::class.java
+) : DurableProcessor<UUID, IndividualKeyRotationRequest> {
+    override val keyClass: Class<UUID> = UUID::class.java
     override val valueClass = IndividualKeyRotationRequest::class.java
 
-    override fun onNext(events: List<Record<String, IndividualKeyRotationRequest>>): List<Record<*, *>> {
-        events.mapNotNull { it.value }.forEach { request ->
+    override fun onNext(events: List<Record<UUID, IndividualKeyRotationRequest>>): List<Record<*, *>> {
+        return events.mapNotNull { it.value }.map { request ->
             cryptoService.rewrapWrappingKey(request.tenantId, request.targetKeyAlias, request.newParentKeyAlias)
         }
         return emptyList()
