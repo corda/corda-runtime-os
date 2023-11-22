@@ -2,7 +2,6 @@ package net.corda.virtualnode.write.db.impl.tests.writer
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import javax.persistence.EntityManagerFactory
 import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
@@ -33,6 +32,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import javax.persistence.EntityManagerFactory
 
 /** Tests of [VirtualNodeWriterFactory]. */
 class VirtualNodeWriterFactoryTests {
@@ -101,6 +101,7 @@ class VirtualNodeWriterFactoryTests {
             mock(), mock(), mock(), mock(), mock(), mock(), mock(),
             CpiCpkRepositoryFactory(),
             mock(),
+            mock(),
         )
         virtualNodeWriterFactory.create(expectedConfig, externalMsgConfig, vnodeDatasourceConfig)
 
@@ -130,6 +131,7 @@ class VirtualNodeWriterFactoryTests {
             getDbConnectionManager(),
             mock(), mock(), mock(), mock(), mock(), mock(), mock(),
             CpiCpkRepositoryFactory(),
+            mock(),
             mock(),
         )
 
