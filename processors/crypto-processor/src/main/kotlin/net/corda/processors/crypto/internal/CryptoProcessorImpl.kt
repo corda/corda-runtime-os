@@ -32,7 +32,6 @@ import net.corda.crypto.persistence.getEntityManagerFactory
 import net.corda.crypto.service.impl.TenantInfoServiceImpl
 import net.corda.crypto.service.impl.bus.CryptoOpsBusProcessor
 import net.corda.crypto.service.impl.bus.CryptoRekeyBusProcessor
-import net.corda.crypto.service.impl.bus.CryptoRewrapBusProcessor
 import net.corda.crypto.service.impl.bus.HSMRegistrationBusProcessor
 import net.corda.crypto.service.impl.rpc.CryptoFlowOpsProcessor
 import net.corda.crypto.softhsm.TenantInfoService

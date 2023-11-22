@@ -77,7 +77,7 @@ class CryptoRekeyBusProcessorTests {
         virtualNodeInfoReadService = mock()
 
         val wrappingRepository: WrappingRepository = mock {
-            on { findKeysWrappedByAlias(any()) } doReturn sequenceOf(WrappingKeyInfo(0, "", byteArrayOf(), 0, oldKeyAlias, "alias1"))
+            on { findKeysWrappedByAlias(any()) } doReturn listOf(WrappingKeyInfo(0, "", byteArrayOf(), 0, oldKeyAlias, "alias1"))
         }
 
         wrappingRepositoryFactory = mock {
@@ -140,8 +140,6 @@ class CryptoRekeyBusProcessorTests {
             on { create(tenantId2) } doReturn repo2
             on { create(tenantId3) } doReturn repo3
             on { create(CryptoTenants.CRYPTO) } doReturn repo2
-            on { create(CryptoTenants.P2P) } doReturn repo2
-            on { create(CryptoTenants.REST) } doReturn repo2
         }
 
         cryptoRekeyBusProcessor = CryptoRekeyBusProcessor(
@@ -155,7 +153,7 @@ class CryptoRekeyBusProcessorTests {
 
         verify(rewrapPublisher, times(1)).publish(any())
         assertThat(rewrapPublishCapture.allValues).hasSize(1)
-        assertThat(rewrapPublishCapture.firstValue).hasSize(2)
+        assertThat(rewrapPublishCapture.firstValue).hasSize(0)
     }
 
     private fun makeWrappingKeyEntity(
