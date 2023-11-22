@@ -24,7 +24,7 @@ class CryptoRewrapBusProcessorTests {
             listOf(
                 Record(
                     "TBC",
-                    UUID.randomUUID(),
+                    UUID.randomUUID().toString(),
                     IndividualKeyRotationRequest(UUID.randomUUID().toString(), tenantId, "alias1", "root2", "alias1", KeyType.UNMANAGED)
                 )
             )
