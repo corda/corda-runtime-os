@@ -42,7 +42,6 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
-import org.assertj.core.error.ShouldBeEqualIgnoringSeconds
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
@@ -57,7 +56,6 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
-import java.time.temporal.TemporalAmount
 import java.util.UUID
 import kotlin.random.Random
 import kotlin.test.assertEquals
