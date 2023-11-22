@@ -30,7 +30,7 @@ class FilterMyKeysExternalEventFactory @Activate constructor(
                     candidateKeys = parameters,
                     flowExternalEventContext = flowExternalEventContext
                 )
-        return ExternalEventRecord(topic = "PLACEHOLDER", payload = flowOpsRequest)
+        return ExternalEventRecord(payload = flowOpsRequest)
     }
 
     override fun resumeWith(checkpoint: FlowCheckpoint, response: FlowOpsResponse): List<PublicKey> {

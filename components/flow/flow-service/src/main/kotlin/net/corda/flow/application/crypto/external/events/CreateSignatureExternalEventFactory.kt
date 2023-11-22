@@ -34,7 +34,7 @@ class CreateSignatureExternalEventFactory @Activate constructor(
             context = emptyMap(),
             flowExternalEventContext = flowExternalEventContext
         )
-        return ExternalEventRecord(topic = "PLACEHOLDER", payload = flowOpsRequest)
+        return ExternalEventRecord(payload = flowOpsRequest)
     }
 
     override fun resumeWith(checkpoint: FlowCheckpoint, response: FlowOpsResponse): DigitalSignatureWithKey {
