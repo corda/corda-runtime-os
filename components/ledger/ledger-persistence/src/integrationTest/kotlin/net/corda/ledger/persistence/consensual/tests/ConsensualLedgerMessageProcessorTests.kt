@@ -7,7 +7,6 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
-import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.ledger.persistence.FindTransaction
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
@@ -33,7 +32,6 @@ import net.corda.ledger.consensual.data.transaction.consensualComponentGroupStru
 import net.corda.ledger.persistence.assertSuccessResponse
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.ledger.persistence.processor.LedgerPersistenceRpcRequestProcessor
-import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
@@ -64,7 +62,6 @@ import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.nio.file.Path
 import java.time.Instant
-import java.util.UUID
 
 /**
  * To use Postgres rather than in-memory (HSQL):
@@ -158,12 +155,8 @@ class ConsensualLedgerMessageProcessorTests {
             responseClass
         )
 
-        val requestId = UUID.randomUUID().toString()
-        listOf(Record(TOPIC, requestId, request))
-
         // Process the messages (this should persist transaction to the DB)
-        var response = assertSuccessResponse(processor.process(request), logger)
-        assertThat(response).isNotNull
+        assertSuccessResponse(processor.process(request), logger)
 
         // Check that we wrote the expected things to the DB
         val findRequest = createRequest(
@@ -176,10 +169,7 @@ class ConsensualLedgerMessageProcessorTests {
                 )
             }
         )
-        response = assertSuccessResponse(processor.process(findRequest), logger)
-        assertThat(response).isNotNull
-        val result = response.payload as ExternalEventResponse
-        assertThat(result.error).isNull()
+        val result = assertSuccessResponse(processor.process(findRequest), logger)
         val entityResponse = deserializer.deserialize(result.payload.array())!!
         assertThat(entityResponse.results).hasSize(1)
         val retrievedTransaction = ctx.deserialize<SignedTransactionContainer>(entityResponse.results.first())

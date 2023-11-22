@@ -7,7 +7,6 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
-import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.ledger.persistence.FindTransaction
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
@@ -159,8 +158,7 @@ class UtxoLedgerMessageProcessorTests {
         )
 
         // Process the messages (this should persist transaction to the DB)
-        var response = assertSuccessResponse(processor.process(request), logger)
-        assertThat(response).isNotNull
+        assertSuccessResponse(processor.process(request), logger)
 
         // Check that we wrote the expected things to the DB
         val findRequest = createRequest(
@@ -173,12 +171,7 @@ class UtxoLedgerMessageProcessorTests {
                 )
             })
 
-        response =
-            assertSuccessResponse(processor.process(findRequest), logger)
-
-        assertThat(response).isNotNull
-        val result = response.payload as ExternalEventResponse
-        assertThat(result.error).isNull()
+        val result = assertSuccessResponse(processor.process(findRequest), logger)
         val entityResponse = deserializer.deserialize(result.payload.array())!!
         assertThat(entityResponse.results).hasSize(1)
         val retrievedTransaction = ctx.deserialize<Pair<SignedTransactionContainer, String>>(entityResponse.results.first())
