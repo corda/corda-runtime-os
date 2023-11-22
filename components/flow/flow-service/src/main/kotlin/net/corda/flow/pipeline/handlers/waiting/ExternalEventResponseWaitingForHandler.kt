@@ -44,7 +44,7 @@ class ExternalEventResponseWaitingForHandler @Activate constructor(
             ExternalEventStateType.OK -> {
                 resumeIfResponseReceived(context.checkpoint, externalEventState)
             }
-            ExternalEventStateType.RETRY -> {
+            ExternalEventStateType.RETRY, ExternalEventStateType.RETRYING -> {
                 retryOrError(context.flowConfig, status.exception, externalEventState)
             }
             ExternalEventStateType.PLATFORM_ERROR -> {

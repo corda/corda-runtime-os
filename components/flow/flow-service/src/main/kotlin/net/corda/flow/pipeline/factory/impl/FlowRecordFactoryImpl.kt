@@ -2,10 +2,12 @@ package net.corda.flow.pipeline.factory.impl
 
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.external.ExternalEventRetry
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.output.FlowStatus
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.messaging.api.records.Record
+import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.FLOW_MAPPER_SESSION_OUT
 import net.corda.schema.Schemas.Flow.FLOW_SESSION
 import net.corda.schema.Schemas.Flow.FLOW_STATUS_TOPIC
@@ -13,6 +15,13 @@ import org.osgi.service.component.annotations.Component
 
 @Component(service = [FlowRecordFactory::class])
 class FlowRecordFactoryImpl : FlowRecordFactory {
+    override fun createExternalEventRetryRecord(flowId: String, payload: Any, retries: Int): Record<String, FlowEvent> {
+        return Record(
+            topic = FLOW_EVENT_TOPIC,
+            key = flowId,
+            value = FlowEvent(flowId, ExternalEventRetry(retries, payload))
+        )
+    }
 
     override fun createFlowEventRecord(flowId: String, payload: Any): Record<String, FlowEvent> {
         return Record(

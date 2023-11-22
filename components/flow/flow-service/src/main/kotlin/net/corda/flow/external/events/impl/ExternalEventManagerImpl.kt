@@ -11,7 +11,9 @@ import net.corda.data.flow.state.external.ExternalEventStateStatus
 import net.corda.data.flow.state.external.ExternalEventStateType
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.messaging.api.records.Record
+import net.corda.schema.Schemas.Flow.FLOW_EVENT_TOPIC
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.osgi.service.component.annotations.Activate
@@ -28,7 +30,8 @@ class ExternalEventManagerImpl(
     private val serializer: CordaAvroSerializer<Any>,
     private val stringDeserializer: CordaAvroDeserializer<String>,
     private val byteArrayDeserializer: CordaAvroDeserializer<ByteArray>,
-    private val anyDeserializer: CordaAvroDeserializer<Any>
+    private val anyDeserializer: CordaAvroDeserializer<Any>,
+    private val flowRecordFactory: FlowRecordFactory
 ) : ExternalEventManager {
 
     private companion object {
@@ -39,11 +42,14 @@ class ExternalEventManagerImpl(
     constructor(
         @Reference(service = CordaAvroSerializationFactory::class)
         cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+        @Reference(service = FlowRecordFactory::class)
+        flowRecordFactory: FlowRecordFactory,
     ) : this(
         cordaAvroSerializationFactory.createAvroSerializer<Any> {},
         cordaAvroSerializationFactory.createAvroDeserializer({}, String::class.java),
         cordaAvroSerializationFactory.createAvroDeserializer({}, ByteArray::class.java),
-        cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
+        cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java),
+        flowRecordFactory
     )
 
     override fun processEventToSend(
@@ -80,55 +86,23 @@ class ExternalEventManagerImpl(
         val requestId = externalEventResponse.requestId
         log.trace { "Processing response for external event with id '$requestId'" }
 
-        if (requestId == externalEventState.requestId) {
-            log.debug { "External event response with id $requestId matched last sent request" }
-            externalEventState.response = externalEventResponse
-
-            if (externalEventResponse.error == null) {
-                if (externalEventState.status.type != ExternalEventStateType.OK) {
-                    externalEventState.status = ExternalEventStateStatus(ExternalEventStateType.OK, null)
-                }
-            } else {
-                val error = externalEventResponse.error
-                val exception = error.exception
-                externalEventState.status = when (error.errorType) {
-                    ExternalEventResponseErrorType.TRANSIENT -> {
-                        log.debug {
-                            "Received a transient error in external event response: $exception. Updating external " +
-                                    "event status to RETRY."
-                        }
-                        ExternalEventStateStatus(ExternalEventStateType.RETRY, exception)
-                    }
-
-                    ExternalEventResponseErrorType.PLATFORM -> {
-                        log.debug {
-                            "Received a platform error in external event response: $exception. Updating external " +
-                                    "event status to PLATFORM_ERROR."
-                        }
-                        ExternalEventStateStatus(ExternalEventStateType.PLATFORM_ERROR, exception)
-                    }
-
-                    ExternalEventResponseErrorType.FATAL -> {
-                        log.debug {
-                            "Received a fatal error in external event response: $exception. Updating external event " +
-                                    "status to FATAL_ERROR."
-                        }
-                        ExternalEventStateStatus(ExternalEventStateType.FATAL_ERROR, exception)
-                    }
-
-                    else -> throw FlowFatalException(
-                        "Unexpected null ${Error::class.java.name} for external event with request id $requestId"
-                    )
-                }
-            }
-        } else {
+        if (requestId != externalEventState.requestId) {
             log.warn(
                 "Received an external event response with id $requestId when waiting for a response with id " +
                         "${externalEventState.requestId}. This response will be discarded. Content of the response: " +
                         externalEventResponse
             )
+            return externalEventState
         }
-        return externalEventState
+
+        log.debug { "External event response with id $requestId matched last sent request" }
+        externalEventState.response = externalEventResponse
+
+        if (externalEventResponse.isErrorResponse()) {
+            return processErrorResponse(externalEventResponse, externalEventState, requestId)
+        }
+
+        return processOKResponse(externalEventState)
     }
 
     override fun hasReceivedResponse(externalEventState: ExternalEventState): Boolean {
@@ -148,7 +122,8 @@ class ExternalEventManagerImpl(
     override fun getEventToSend(
         externalEventState: ExternalEventState,
         instant: Instant,
-        retryWindow: Duration
+        retryWindow: Duration,
+        flowId: String
     ): Pair<ExternalEventState, Record<*, *>?> {
         val sendTimestamp = externalEventState.sendTimestamp
         val record = when (externalEventState.status.type) {
@@ -161,17 +136,70 @@ class ExternalEventManagerImpl(
                     null
                 }
             }
+            ExternalEventStateType.RETRYING -> {
+                // retries will not be 0, sendTimestamp will not be null and is effectively the timestamp the first external event was sent.
+                checkRetry(externalEventState, instant, retryWindow)
+                // Generate the external event output record.
+                generateRecord(externalEventState, instant)
+            }
             ExternalEventStateType.RETRY -> {
                 checkRetry(externalEventState, instant, retryWindow)
-                // Hacky wacky. Will be removed very soon
-                Thread.sleep(externalEventState.retries * 100L)
-                generateRecord(externalEventState, instant)
+                generateRetryRecord(externalEventState, instant, flowId)//todo sort this flowId out
             }
             else -> {
                 null
             }
         }
         return externalEventState to record
+    }
+
+    private fun ExternalEventResponse.isErrorResponse() = error != null
+
+    private fun processErrorResponse(
+        externalEventResponse: ExternalEventResponse,
+        externalEventState: ExternalEventState,
+        requestId: String?
+    ): ExternalEventState {
+        val error = externalEventResponse.error
+        val exception = error.exception
+        externalEventState.status = when (error.errorType) {
+
+            ExternalEventResponseErrorType.TRANSIENT -> {
+                log.debug {
+                    "Received a transient error in external event response: $exception. Updating external " +
+                            "event status to RETRY."
+                }
+                ExternalEventStateStatus(ExternalEventStateType.RETRY, exception)
+            }
+
+            ExternalEventResponseErrorType.PLATFORM -> {
+                log.debug {
+                    "Received a platform error in external event response: $exception. Updating external " +
+                            "event status to PLATFORM_ERROR."
+                }
+                ExternalEventStateStatus(ExternalEventStateType.PLATFORM_ERROR, exception)
+            }
+
+            ExternalEventResponseErrorType.FATAL -> {
+                log.debug {
+                    "Received a fatal error in external event response: $exception. Updating external event " +
+                            "status to FATAL_ERROR."
+                }
+                ExternalEventStateStatus(ExternalEventStateType.FATAL_ERROR, exception)
+            }
+
+            else -> throw FlowFatalException(
+                "Unexpected null ${Error::class.java.name} for external event with request id $requestId"
+            )
+        }
+        return externalEventState
+    }
+
+    private fun processOKResponse(externalEventState: ExternalEventState): ExternalEventState {
+        if (externalEventState.status.type != ExternalEventStateType.OK) {
+            externalEventState.status = ExternalEventStateStatus(ExternalEventStateType.OK, null)
+        }
+        return externalEventState
     }
 
     private fun checkRetry(externalEventState: ExternalEventState, instant: Instant, retryWindow: Duration) {
@@ -199,5 +227,16 @@ class ExternalEventManagerImpl(
         eventToSend.timestamp = instant
         log.trace { "Dispatching external event with id '${externalEventState.requestId}' to '${eventToSend.topic}'" }
         return Record(eventToSend.topic, eventToSend.key.array(), eventToSend.payload.array())
+    }
+
+    private fun generateRetryRecord(externalEventState: ExternalEventState, instant: Instant, flowId: String) : Record<*, *> {
+        val transientRetryEventPayload = externalEventState.eventToSend
+        transientRetryEventPayload.timestamp = instant
+        log.trace { "Dispatching ExternalEventRetry event for flow '$flowId' to '$FLOW_EVENT_TOPIC'" }
+        return flowRecordFactory.createExternalEventRetryRecord(
+            flowId,
+            transientRetryEventPayload,
+            externalEventState.retries
+        )
     }
 }

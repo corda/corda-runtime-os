@@ -269,7 +269,7 @@ class FlowGlobalPostProcessorImplTest {
         val updatedExternalEventState = ExternalEventState().apply { REQUEST_ID_1 }
 
         whenever(checkpoint.externalEventState).thenReturn(externalEventState)
-        whenever(externalEventManager.getEventToSend(eq(externalEventState), any(), any()))
+        whenever(externalEventManager.getEventToSend(eq(externalEventState), any(), any(), any()))
             .thenReturn(updatedExternalEventState to externalEventRecord)
 
         val outputContext = flowGlobalPostProcessor.postProcess(testContext)
@@ -284,7 +284,7 @@ class FlowGlobalPostProcessorImplTest {
         val updatedExternalEventState = ExternalEventState().apply { REQUEST_ID_1 }
 
         whenever(checkpoint.externalEventState).thenReturn(externalEventState)
-        whenever(externalEventManager.getEventToSend(eq(externalEventState), any(), any()))
+        whenever(externalEventManager.getEventToSend(eq(externalEventState), any(), any(), any()))
             .thenReturn(updatedExternalEventState to null)
 
         val outputContext = flowGlobalPostProcessor.postProcess(testContext)
@@ -300,7 +300,7 @@ class FlowGlobalPostProcessorImplTest {
         val outputContext = flowGlobalPostProcessor.postProcess(testContext)
 
         assertThat(outputContext.outputRecords).doesNotContain(externalEventRecord)
-        verify(externalEventManager, never()).getEventToSend(any(), any(), any())
+        verify(externalEventManager, never()).getEventToSend(any(), any(), any(), any())
         verify(checkpoint, never()).externalEventState = any()
     }
 

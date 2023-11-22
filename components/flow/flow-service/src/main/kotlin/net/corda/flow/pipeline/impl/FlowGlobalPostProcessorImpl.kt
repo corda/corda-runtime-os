@@ -164,7 +164,7 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
             listOf()
         } else {
             val retryWindow = context.flowConfig.getLong(EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW)
-            externalEventManager.getEventToSend(externalEventState, now, Duration.ofMillis(retryWindow))
+            externalEventManager.getEventToSend(externalEventState, now, Duration.ofMillis(retryWindow), context.inputEvent.flowId)
                 .let { (updatedExternalEventState, record) ->
                     context.checkpoint.externalEventState = updatedExternalEventState
                     if (record != null) {

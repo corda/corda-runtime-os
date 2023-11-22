@@ -84,6 +84,7 @@ interface ExternalEventManager {
     fun getEventToSend(
         externalEventState: ExternalEventState,
         instant: Instant,
-        retryWindow: Duration
+        retryWindow: Duration,
+        flowId: String
     ): Pair<ExternalEventState, Record<*, *>?>
 }

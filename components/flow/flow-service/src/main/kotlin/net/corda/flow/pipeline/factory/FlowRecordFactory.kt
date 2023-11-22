@@ -14,6 +14,16 @@ import net.corda.messaging.api.records.Record
 interface FlowRecordFactory {
 
     /**
+     * Creates a [FlowEvent] record to retry an external event.
+     *
+     * @param flowId The id of the flow generating or receiving the event.
+     * @param payload The payload to be retried.
+     * @param retries The total number of retries.
+     * @return a new instance of a [FlowEvent] record.
+     */
+    fun createExternalEventRetryRecord(flowId: String, payload: Any, retries: Int): Record<String, FlowEvent>
+
+    /**
      * Creates a generic [FlowEvent] record
      *
      * @param flowId The id of the flow generating or receiving the event.
