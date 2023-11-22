@@ -2,6 +2,7 @@ package net.corda.chunking.db.impl.validation
 
 import com.typesafe.config.ConfigException
 import net.corda.libs.configuration.validation.ConfigurationValidationException
+import net.corda.libs.configuration.validation.impl.ExternalChannelsConfigValidatorImpl
 import net.corda.libs.configuration.validation.impl.ConfigurationValidatorFactoryImpl
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkMetadata
@@ -84,7 +85,7 @@ class ExternalChannelsConfigValidatorTest {
         val mockCpiMetadata = mock<CpiMetadata> { on { cpksMetadata }.doReturn(listOf(mockCpkMetadata)) }
 
         assertDoesNotThrow {
-            cordappConfigValidator.validate(mockCpiMetadata.cpksMetadata)
+            cordappConfigValidator.validate(mockCpiMetadata.cpksMetadata.mapNotNull{ it.externalChannelsConfig })
         }
     }
 
@@ -323,5 +324,9 @@ class ExternalChannelsConfigValidatorTest {
         assertThrows<ConfigurationValidationException> {
             cordappConfigValidator.validate(mockCpiMetadata.cpksMetadata)
         }
+    }
+
+    private fun ExternalChannelsConfigValidatorImpl.validate(metadata: Collection<CpkMetadata>) {
+        validate(metadata.mapNotNull { it.externalChannelsConfig })
     }
 }
