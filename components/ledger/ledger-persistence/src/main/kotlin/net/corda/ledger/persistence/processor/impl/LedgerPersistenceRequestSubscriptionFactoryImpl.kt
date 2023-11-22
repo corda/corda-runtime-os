@@ -4,7 +4,7 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.ledger.persistence.processor.LedgerPersistenceRequestSubscriptionFactory
-import net.corda.ledger.persistence.processor.LedgerPersistenceRpcRequestProcessor
+import net.corda.ledger.persistence.processor.LedgerPersistenceRequestProcessor
 import net.corda.messaging.api.constants.WorkerRPCPaths.LEDGER_PATH
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.SyncRPCConfig
@@ -35,7 +35,7 @@ class LedgerPersistenceRequestSubscriptionFactoryImpl @Activate constructor(
     }
 
     override fun createRpcSubscription(): RPCSubscription<LedgerPersistenceRequest, FlowEvent> {
-        val processor = LedgerPersistenceRpcRequestProcessor(
+        val processor = LedgerPersistenceRequestProcessor(
             currentSandboxGroupContext,
             entitySandboxService,
             delegatedRequestHandlerSelector,

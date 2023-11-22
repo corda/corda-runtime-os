@@ -26,7 +26,7 @@ import java.time.Duration
  * Handles incoming requests, typically from the flow worker, and sends responses.
  */
 @Suppress("LongParameterList")
-class LedgerPersistenceRpcRequestProcessor(
+class LedgerPersistenceRequestProcessor(
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     private val entitySandboxService: EntitySandboxService,
     private val delegatedRequestHandlerSelector: DelegatedRequestHandlerSelector,
@@ -36,7 +36,7 @@ class LedgerPersistenceRpcRequestProcessor(
 ) : SyncRPCProcessor<LedgerPersistenceRequest, FlowEvent> {
 
     private companion object {
-        val log: Logger = LoggerFactory.getLogger(LedgerPersistenceRpcRequestProcessor::class.java)
+        val log: Logger = LoggerFactory.getLogger(LedgerPersistenceRequestProcessor::class.java)
     }
 
     override fun process(request: LedgerPersistenceRequest): FlowEvent {

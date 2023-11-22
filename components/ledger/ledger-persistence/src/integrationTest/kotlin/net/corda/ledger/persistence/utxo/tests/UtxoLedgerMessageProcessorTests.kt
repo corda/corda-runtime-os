@@ -25,7 +25,7 @@ import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.ledger.persistence.assertSuccessResponse
 import net.corda.ledger.persistence.consensual.tests.ConsensualLedgerMessageProcessorTests
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
-import net.corda.ledger.persistence.processor.LedgerPersistenceRpcRequestProcessor
+import net.corda.ledger.persistence.processor.LedgerPersistenceRequestProcessor
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.persistence.common.ResponseFactory
@@ -148,7 +148,7 @@ class UtxoLedgerMessageProcessorTests {
             })
 
         // Send request to message processor
-        val processor = LedgerPersistenceRpcRequestProcessor(
+        val processor = LedgerPersistenceRequestProcessor(
             currentSandboxGroupContext,
             virtualNode.entitySandboxService,
             delegatedRequestHandlerSelector,

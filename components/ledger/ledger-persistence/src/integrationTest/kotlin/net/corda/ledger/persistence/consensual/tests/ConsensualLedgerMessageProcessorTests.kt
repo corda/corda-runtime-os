@@ -31,7 +31,7 @@ import net.corda.ledger.consensual.data.transaction.TRANSACTION_META_DATA_CONSEN
 import net.corda.ledger.consensual.data.transaction.consensualComponentGroupStructure
 import net.corda.ledger.persistence.assertSuccessResponse
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
-import net.corda.ledger.persistence.processor.LedgerPersistenceRpcRequestProcessor
+import net.corda.ledger.persistence.processor.LedgerPersistenceRequestProcessor
 import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
@@ -146,7 +146,7 @@ class ConsensualLedgerMessageProcessorTests {
         )
 
         // Send request to message processor
-        val processor = LedgerPersistenceRpcRequestProcessor(
+        val processor = LedgerPersistenceRequestProcessor(
             currentSandboxGroupContext,
             virtualNode.entitySandboxService,
             delegatedRequestHandlerSelector,
