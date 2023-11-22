@@ -6,6 +6,7 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.client.CryptoOpsProxyClient
+import net.corda.crypto.config.impl.KeyDerivationParameters
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.config.impl.retrying
 import net.corda.crypto.config.impl.toCryptoConfig
@@ -67,7 +68,7 @@ import kotlin.test.assertTrue
             mapOf(
                 ConfigKeys.CRYPTO_CONFIG to
                         SmartConfigFactory.createWithoutSecurityServices().create(
-                            createDefaultCryptoConfig("pass", "salt")
+                            createDefaultCryptoConfig(listOf(KeyDerivationParameters("pass", "salt")))
                         )
             )
         )
