@@ -25,7 +25,14 @@ open class ActResultTimestamps(
     val after: Instant,
 ) {
     fun assertThatIsBetween(timestamp: Instant) = assertThatIsBetween(timestamp, before, after)
+    fun assertClose(timestamp: Instant, toleranceMilliseconds: Long) = assertThatIsBetween(
+        timestamp,
+        before=timestamp-toleranceMilliseconds,
+        after=timestamp+toleranceMilliseconds
+    )
 }
+
+
 
 class ActResult<RESULT>(
     before: Instant,

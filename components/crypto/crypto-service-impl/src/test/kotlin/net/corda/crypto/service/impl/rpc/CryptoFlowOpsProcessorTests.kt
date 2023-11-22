@@ -121,8 +121,8 @@ import kotlin.test.assertTrue
         context: CryptoResponseContext,
         ttl: Long
     ) {
-        timestamps.assertThatIsBetween(context.responseTimestamp)
-        //timestamps.assertThatIsBetween(context.requestTimestamp) // not always (or not normally?) true, TODO - find some way to cover?
+        timestamps.assertClose(context.responseTimestamp, 1000L)
+        timestamps.assertThatIsBetween(context.requestTimestamp, 5000L)
         assertEquals(componentName, context.requestingComponent)
         assertTrue(context.other.items.size >= 3)
         assertTrue {
