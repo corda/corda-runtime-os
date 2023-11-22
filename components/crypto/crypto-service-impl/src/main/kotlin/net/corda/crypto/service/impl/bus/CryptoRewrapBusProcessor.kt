@@ -17,7 +17,7 @@ class CryptoRewrapBusProcessor(
     override val valueClass = IndividualKeyRotationRequest::class.java
 
     override fun onNext(events: List<Record<String, IndividualKeyRotationRequest>>): List<Record<*, *>> {
-        return events.mapNotNull { it.value }.map { request ->
+        events.mapNotNull { it.value }.map { request ->
             cryptoService.rewrapWrappingKey(request.tenantId, request.targetKeyAlias, request.newParentKeyAlias)
         }
         return emptyList()
