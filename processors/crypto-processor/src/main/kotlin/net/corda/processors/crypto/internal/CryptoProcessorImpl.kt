@@ -32,6 +32,7 @@ import net.corda.crypto.persistence.getEntityManagerFactory
 import net.corda.crypto.service.impl.TenantInfoServiceImpl
 import net.corda.crypto.service.impl.bus.CryptoOpsBusProcessor
 import net.corda.crypto.service.impl.bus.CryptoRekeyBusProcessor
+import net.corda.crypto.service.impl.bus.CryptoRewrapBusProcessor
 import net.corda.crypto.service.impl.bus.HSMRegistrationBusProcessor
 import net.corda.crypto.service.impl.rpc.CryptoFlowOpsProcessor
 import net.corda.crypto.softhsm.TenantInfoService
@@ -332,7 +333,7 @@ class CryptoProcessorImpl @Activate constructor(
         createRpcOpsSubscription(coordinator, messagingConfig, retryingConfig)
         createHsmRegSubscription(coordinator, messagingConfig, retryingConfig)
         createRekeySubscription(coordinator, messagingConfig, wrappingRepositoryFactory)
-        createRewrapSubscription(coordinator, messagingConfig, wrappingRepositoryFactory)
+        createRewrapSubscription(coordinator, messagingConfig)
     }
 
     private fun createRekeySubscription(
@@ -368,17 +369,8 @@ class CryptoProcessorImpl @Activate constructor(
     private fun createRewrapSubscription(
         coordinator: LifecycleCoordinator,
         messagingConfig: SmartConfig,
-        wrappingRepositoryFactory: (String) -> WrappingRepositoryImpl,
     ) {
-        val publisherConfig = PublisherConfig("RewrapyBusProcessor", false)
-        val rekeyPublisher = publisherFactory.createPublisher(publisherConfig, messagingConfig)
-        val rewrapProcessor = CryptoRekeyBusProcessor(
-            cryptoService,
-            virtualNodeInfoReadService,
-            wrappingRepositoryFactory,
-            rekeyPublisher
-        )
-
+        val rewrapProcessor = CryptoRewrapBusProcessor(cryptoService)
         val rewrapGroupName = "crypto.key.rotation.individual"
         coordinator.createManagedResource(REWRAP_SUBSCRIPTION) {
             subscriptionFactory.createDurableSubscription(
