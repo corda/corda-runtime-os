@@ -85,7 +85,7 @@ class ExternalChannelsConfigValidatorTest {
         val mockCpiMetadata = mock<CpiMetadata> { on { cpksMetadata }.doReturn(listOf(mockCpkMetadata)) }
 
         assertDoesNotThrow {
-            cordappConfigValidator.validate(mockCpiMetadata.cpksMetadata.mapNotNull{ it.externalChannelsConfig })
+            cordappConfigValidator.validate(mockCpiMetadata.cpksMetadata)
         }
     }
 
