@@ -199,6 +199,7 @@ fun ClusterInfo.configureNetworkParticipant(
     tlsCertificateAlias: String,
 ) {
     println("QQQ configureNetworkParticipant(tlsCertificateAlias=$tlsCertificateAlias)")
+    Exception("QQQ, $tlsCertificateAlias").printStackTrace()
     return cluster {
         assertWithRetryIgnoringExceptions {
             interval(1.seconds)

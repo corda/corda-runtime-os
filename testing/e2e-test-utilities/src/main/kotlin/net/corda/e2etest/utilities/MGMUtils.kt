@@ -84,7 +84,13 @@ fun ClusterInfo.onboardMgm(
         certificateAlias
     }
     val registrationId = register(mgmHoldingId, registrationContext, waitForApproval = true)
-    configureNetworkParticipant(mgmHoldingId, sessionKeyId, mgmSessionCertAliases.firstOrNull(), certificateAliases.first())
+    println("QQQ certificateAliases=> $certificateAliases")
+    configureNetworkParticipant(
+        holdingId = mgmHoldingId,
+        sessionKeyId = sessionKeyId,
+        sessionCertAlias = mgmSessionCertAliases.firstOrNull(),
+        tlsCertificateAlias = certificateAliases.first(),
+    )
 
     return NetworkOnboardingMetadata(mgmHoldingId, mgmName, registrationId, registrationContext, this)
 }
