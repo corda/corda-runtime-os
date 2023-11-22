@@ -21,6 +21,7 @@ import net.corda.crypto.flow.impl.CryptoFlowOpsTransformerImpl
 import net.corda.crypto.service.impl.infra.ActResult
 import net.corda.crypto.service.impl.infra.ActResultTimestamps
 import net.corda.crypto.service.impl.infra.act
+import net.corda.crypto.service.impl.infra.assertClose
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoResponseContext
@@ -41,6 +42,7 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
+import org.assertj.core.error.ShouldBeEqualIgnoringSeconds
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
@@ -55,12 +57,14 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
+import java.time.temporal.TemporalAmount
 import java.util.UUID
 import kotlin.random.Random
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 
- class CryptoFlowOpsProcessorTests {
+class CryptoFlowOpsProcessorTests {
     companion object {
         private val configEvent = ConfigChangedEvent(
             setOf(ConfigKeys.CRYPTO_CONFIG),
@@ -121,8 +125,8 @@ import kotlin.test.assertTrue
         context: CryptoResponseContext,
         ttl: Long
     ) {
-        timestamps.assertClose(context.responseTimestamp, 1000L)
-        timestamps.assertThatIsBetween(context.requestTimestamp, 5000L)
+        assertClose(timestamps.after, context.responseTimestamp, 5.seconds)
+        assertClose(timestamps.before, context.requestTimestamp, 5.seconds)
         assertEquals(componentName, context.requestingComponent)
         assertTrue(context.other.items.size >= 3)
         assertTrue {
