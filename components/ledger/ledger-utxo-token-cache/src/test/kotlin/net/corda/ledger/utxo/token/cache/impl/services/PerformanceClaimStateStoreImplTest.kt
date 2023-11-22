@@ -233,6 +233,20 @@ class PerformanceClaimStateStoreImplTest {
             TODO("Not yet implemented")
         }
 
+        override fun findUpdatedBetweenWithMetadataMatchingAll(
+            intervalFilter: IntervalFilter,
+            metadataFilters: Collection<MetadataFilter>
+        ): Map<String, State> {
+            TODO("Not yet implemented")
+        }
+
+        override fun findUpdatedBetweenWithMetadataMatchingAny(
+            intervalFilter: IntervalFilter,
+            metadataFilters: Collection<MetadataFilter>
+        ): Map<String, State> {
+            TODO("Not yet implemented")
+        }
+
         override val isRunning: Boolean
             get() = true
 

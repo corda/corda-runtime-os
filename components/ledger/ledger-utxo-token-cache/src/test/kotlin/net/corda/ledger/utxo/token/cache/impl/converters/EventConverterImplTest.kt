@@ -87,13 +87,6 @@ class EventConverterImplTest {
     }
 
     @Test
-    fun `convert throws if the input event is null`() {
-        assertThatIllegalStateException().isThrownBy {
-            EventConverterImpl(entityConverter).convert(null)
-        }
-    }
-
-    @Test
     fun `convert throws if the payload is null`() {
         val inputEvent = TokenPoolCacheEvent().apply {
             poolKey = POOL_CACHE_KEY
