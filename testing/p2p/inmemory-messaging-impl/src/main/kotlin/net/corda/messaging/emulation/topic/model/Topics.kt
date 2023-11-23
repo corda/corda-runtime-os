@@ -11,14 +11,14 @@ class Topics(
 
     internal fun getWriteLock(records: Collection<Record<*, *>>): PartitionsWriteLock {
         val partitions = records.map {
-            val topic = getTopic(it.topic)
+            val topic = getTopic(it.topic!!)
             topic.getPartition(it)
         }
         return PartitionsWriteLock(partitions)
     }
     internal fun getWriteLock(records: Collection<Record<*, *>>, partitionId: Int): PartitionsWriteLock {
         val partitions = records.map {
-            val topic = getTopic(it.topic)
+            val topic = getTopic(it.topic!!)
             topic.getPartition(partitionId)
         }
         return PartitionsWriteLock(partitions)

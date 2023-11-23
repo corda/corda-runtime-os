@@ -9,7 +9,7 @@ package net.corda.messaging.api.records
  * @property headers Optional list of headers to added to the message.
  */
 data class Record<K : Any, V : Any>(
-    val topic: String,
+    val topic: String?,
     val key: K,
     val value: V?,
     val timestamp: Long = 0,
