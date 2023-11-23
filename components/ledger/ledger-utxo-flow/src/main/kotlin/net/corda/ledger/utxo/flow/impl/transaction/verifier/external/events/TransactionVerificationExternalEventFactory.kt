@@ -33,7 +33,6 @@ class TransactionVerificationExternalEventFactory(
         parameters: TransactionVerificationParameters
     ): ExternalEventRecord {
         return ExternalEventRecord(
-            topic = "",
             payload = TransactionVerificationRequestAvro.newBuilder()
                 .setTimestamp(clock.instant())
                 .setHoldingIdentity(checkpoint.holdingIdentity.toAvro())
