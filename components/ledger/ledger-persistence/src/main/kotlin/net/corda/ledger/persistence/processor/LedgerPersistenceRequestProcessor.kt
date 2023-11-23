@@ -47,53 +47,52 @@ class LedgerPersistenceRequestProcessor(
 
         val result =
             withMDC(
-            mapOf(
-                MDC_CLIENT_ID to clientRequestId,
-                MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
-            ) + translateFlowContextToMDC(request.flowExternalEventContext.contextProperties.toMap())
-        ) {
-            try {
+                mapOf(
+                    MDC_CLIENT_ID to clientRequestId,
+                    MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId
+                ) + translateFlowContextToMDC(request.flowExternalEventContext.contextProperties.toMap())
+            ) {
+                try {
 
-                val cpkFileHashes = request.flowExternalEventContext.contextProperties.items
-                    .filter { it.key.startsWith(CPK_FILE_CHECKSUM) }
-                    .map { it.value.toSecureHash() }
-                    .toSet()
+                    val cpkFileHashes = request.flowExternalEventContext.contextProperties.items
+                        .filter { it.key.startsWith(CPK_FILE_CHECKSUM) }
+                        .map { it.value.toSecureHash() }
+                        .toSet()
 
-                val sandbox = entitySandboxService.get(holdingIdentity, cpkFileHashes)
+                    val sandbox = entitySandboxService.get(holdingIdentity, cpkFileHashes)
 
-                currentSandboxGroupContext.set(sandbox)
+                    currentSandboxGroupContext.set(sandbox)
 
-                delegatedRequestHandlerSelector.selectHandler(sandbox, request).execute()
-            } catch (e: Exception) {
-                listOf(
-                    when (e) {
-                        is UnsupportedLedgerTypeException,
-                        is UnsupportedRequestTypeException,
-                        is InconsistentLedgerStateException -> {
-                            responseFactory.fatalErrorResponse(request.flowExternalEventContext, e)
+                    delegatedRequestHandlerSelector.selectHandler(sandbox, request).execute()
+                } catch (e: Exception) {
+                    listOf(
+                        when (e) {
+                            is UnsupportedLedgerTypeException,
+                            is UnsupportedRequestTypeException,
+                            is InconsistentLedgerStateException -> {
+                                responseFactory.fatalErrorResponse(request.flowExternalEventContext, e)
+                            }
+
+                            else -> {
+                                responseFactory.errorResponse(request.flowExternalEventContext, e)
+                            }
                         }
-
-                        else -> {
-                            responseFactory.errorResponse(request.flowExternalEventContext, e)
-                        }
-                    }
-                )
-            } finally {
-                currentSandboxGroupContext.remove()
-            }.also {
-                CordaMetrics.Metric.Ledger.PersistenceExecutionTime
-                    .builder()
-                    .forVirtualNode(holdingIdentity.shortHash.toString())
-                    .withTag(CordaMetrics.Tag.LedgerType, request.ledgerType.toString())
-                    .withTag(CordaMetrics.Tag.OperationName, request.request.javaClass.simpleName)
-                    .build()
-                    .record(Duration.ofNanos(System.nanoTime() - startTime))
+                    )
+                } finally {
+                    currentSandboxGroupContext.remove()
+                }.also {
+                    CordaMetrics.Metric.Ledger.PersistenceExecutionTime
+                        .builder()
+                        .forVirtualNode(holdingIdentity.shortHash.toString())
+                        .withTag(CordaMetrics.Tag.LedgerType, request.ledgerType.toString())
+                        .withTag(CordaMetrics.Tag.OperationName, request.request.javaClass.simpleName)
+                        .build()
+                        .record(Duration.ofNanos(System.nanoTime() - startTime))
+                }
             }
-        }
         return result.single().value as FlowEvent
     }
 }
 
 private fun String.toSecureHash() = parseSecureHash(this)
-
 

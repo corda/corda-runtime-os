@@ -49,25 +49,22 @@ class LedgerPersistenceService @Activate constructor(
         coordinatorFactory.createCoordinator<LedgerPersistenceService>(dependentComponents, ::eventHandler)
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.debug { "LedgerPersistenceService received: $event" }
         when (event) {
-            is StartEvent -> {
-                logger.debug { "Received start event: $event Starting ledger persistence component." }
-            }
+            is StartEvent -> {}
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
-                    logger.debug("Received status change: ${event.status} Starting LedgerPersistenceService.")
+                    logger.debug {"The status of event: $event changed to ${event.status}, starting subscription."}
                     initialiseRpcSubscription()
                     coordinator.updateStatus(LifecycleStatus.UP)
                 } else {
                     coordinator.updateStatus(event.status)
                     coordinator.closeManagedResources(setOf(RPC_SUBSCRIPTION))
-                    logger.debug { "Received status change: ${event.status} Stopping LedgerPersistenceService." }
+                    logger.debug {"The status of event: $event changed to ${event.status}, stopping subscription."}
                 }
             }
             is StopEvent -> {
                 coordinator.closeManagedResources(setOf(RPC_SUBSCRIPTION))
-                logger.debug { "Received stop event: $event Stopping LedgerPersistenceService." }
+                logger.debug { "Received stop event: $event, stopping subscription." }
             }
         }
     }
