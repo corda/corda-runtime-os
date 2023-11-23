@@ -20,6 +20,7 @@ import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.EPOCH_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.MODIFIED_TIME_KEY
+import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_BACKCHAIN_REQUIRED
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_KEYS_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_NAME_KEY
 import net.corda.membership.lib.GroupParametersNotaryUpdater.Companion.NOTARY_SERVICE_PROTOCOL_KEY
@@ -294,8 +295,9 @@ class AddNotaryToGroupParametersHandlerTest {
                     KeyValuePair(String.format(NOTARY_SERVICE_KEYS_KEY, 0, 0), "test-key"),
                     KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, 0), KNOWN_NOTARY_SERVICE),
                     KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_KEY, 0), KNOWN_NOTARY_PROTOCOL),
+                    KeyValuePair(String.format(NOTARY_SERVICE_BACKCHAIN_REQUIRED, 0), "false"),
                     KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 0), "1"),
-                    KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 1), "3"),
+                    KeyValuePair(String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS_KEY, 0, 1), "3")
                 )
             )
         )

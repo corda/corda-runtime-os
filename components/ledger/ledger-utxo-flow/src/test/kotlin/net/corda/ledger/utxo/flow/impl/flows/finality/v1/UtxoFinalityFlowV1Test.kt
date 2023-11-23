@@ -1132,7 +1132,7 @@ class UtxoFinalityFlowV1Test {
             sessions,
             pluggableNotaryDetails
         ))
-//        doReturn(pluggableNotaryDetails).whenever(pluggableNotaryClientFlow.javaClass)
+
         doReturn(pluggableNotaryClientFlow).whenever(flow).newPluggableNotaryClientFlowInstance(any())
 
         flow.memberLookup = memberLookup
