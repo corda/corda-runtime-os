@@ -27,11 +27,10 @@ import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.ledger.utxo.verification.TransactionVerificationResponse
 import net.corda.ledger.utxo.verification.TransactionVerificationStatus
 import net.corda.ledger.verification.processor.impl.VerificationRequestHandlerImpl
-import net.corda.ledger.verification.processor.impl.VerificationRequestProcessor
+import net.corda.ledger.verification.processor.impl.VerificationRpcRequestProcessor
 import net.corda.ledger.verification.tests.helpers.VirtualNodeService
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.membership.lib.GroupParametersFactory
-import net.corda.messaging.api.records.Record
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP
 import net.corda.sandboxgroupcontext.SandboxGroupContext
@@ -77,7 +76,6 @@ import java.util.UUID
 @TestInstance(PER_CLASS)
 class VerificationRequestProcessorTest {
     private companion object {
-        const val TOPIC = "ledger-verification-dummy-topic"
         const val TEST_CPB = "/META-INF/ledger-utxo-demo-app.cpb"
         const val VERIFICATION_ERROR_MESSAGE = "Output state has invalid field value"
         const val TIMEOUT_MILLIS = 10000L
@@ -156,20 +154,18 @@ class VerificationRequestProcessorTest {
         val request = createRequest(sandbox, holdingIdentity, transaction, cpkSummaries)
 
         // Create request processor
-        val processor = VerificationRequestProcessor(
+        val processor = VerificationRpcRequestProcessor(
             currentSandboxGroupContext,
             verificationSandboxService,
             VerificationRequestHandlerImpl(externalEventResponseFactory),
-            externalEventResponseFactory
+            externalEventResponseFactory,
+            TransactionVerificationRequest::class.java,
+            FlowEvent::class.java
         )
 
         // Send request to message processor
-        val records = processor.onNext(
-            listOf(Record(TOPIC, REQUEST_ID, request))
-        )
+        val flowEvent = processor.process(request)
 
-        assertThat(records).hasSize(1)
-        val flowEvent = records.first().value as FlowEvent
         val response = flowEvent.payload as ExternalEventResponse
         assertThat(response.error).isNull()
         assertThat(response.requestId).isEqualTo(REQUEST_ID)
@@ -192,20 +188,18 @@ class VerificationRequestProcessorTest {
         val request = createRequest(sandbox, holdingIdentity, transaction, cpkSummaries)
 
         // Create request processor
-        val processor = VerificationRequestProcessor(
+        val processor = VerificationRpcRequestProcessor(
             currentSandboxGroupContext,
             verificationSandboxService,
             VerificationRequestHandlerImpl(externalEventResponseFactory),
-            externalEventResponseFactory
+            externalEventResponseFactory,
+            TransactionVerificationRequest::class.java,
+            FlowEvent::class.java
         )
 
         // Send request to message processor
-        val records = processor.onNext(
-            listOf(Record(TOPIC, REQUEST_ID, request))
-        )
+        val flowEvent = processor.process(request)
 
-        assertThat(records).hasSize(1)
-        val flowEvent = records.first().value as FlowEvent
         val response = flowEvent.payload as ExternalEventResponse
         assertThat(response.error).isNull()
         assertThat(response.requestId).isEqualTo(REQUEST_ID)
@@ -231,21 +225,18 @@ class VerificationRequestProcessorTest {
         val transaction = createTestTransaction(sandbox, isValid = true)
         val request = createRequest(sandbox, holdingIdentity, transaction, listOf(NON_EXISTING_CPK))
 
-        // Create request processor
-        val processor = VerificationRequestProcessor(
+        val processor = VerificationRpcRequestProcessor(
             currentSandboxGroupContext,
             verificationSandboxService,
             VerificationRequestHandlerImpl(externalEventResponseFactory),
             externalEventResponseFactory,
+            TransactionVerificationRequest::class.java,
+            FlowEvent::class.java
         )
 
         // Send request to message processor (there were max number of redeliveries)
-        val records = processor.onNext(
-            listOf(Record(TOPIC, REQUEST_ID, request))
-        )
+        val flowEvent = processor.process(request)
 
-        assertThat(records).hasSize(1)
-        val flowEvent = records.first().value as FlowEvent
         val response = flowEvent.payload as ExternalEventResponse
         assertThat(response.error).isNotNull
         val error = response.error

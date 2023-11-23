@@ -1,10 +1,7 @@
 package net.corda.ledger.verification
 
-import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.ledger.verification.processor.VerificationSubscriptionFactory
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -12,14 +9,10 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
-import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.subscription.Subscription
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
-import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
-import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -38,8 +31,6 @@ class LedgerVerificationComponent @Activate constructor(
     @Reference(service = VerificationSubscriptionFactory::class)
     private val verificationRequestSubscriptionFactory: VerificationSubscriptionFactory,
 ) : Lifecycle {
-    private var configHandle: Resource? = null
-    private var verificationProcessorSubscription: Subscription<String, TransactionVerificationRequest>? = null
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -61,29 +52,17 @@ class LedgerVerificationComponent @Activate constructor(
             }
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
-                    configHandle?.close()
-                    configHandle = configurationReadService.registerComponentForUpdates(
-                        coordinator,
-                        setOf(BOOT_CONFIG, MESSAGING_CONFIG)
-                    )
+                    logger.debug("Starting LedgerVerificationComponent.")
                     initialiseRpcSubscription()
+                    coordinator.updateStatus(LifecycleStatus.UP)
                 } else {
                     coordinator.updateStatus(event.status)
+                    coordinator.closeManagedResources(setOf(RPC_SUBSCRIPTION))
                 }
             }
-            is ConfigChangedEvent -> {
-                verificationProcessorSubscription?.close()
-                val newVerificationProcessorSubscription = verificationRequestSubscriptionFactory.create(
-                    event.config.getConfig(MESSAGING_CONFIG)
-                )
-                logger.debug("Starting LedgerVerificationComponent.")
-                newVerificationProcessorSubscription.start()
-                verificationProcessorSubscription = newVerificationProcessorSubscription
-                coordinator.updateStatus(LifecycleStatus.UP)
-            }
             is StopEvent -> {
-                verificationProcessorSubscription?.close()
                 logger.debug { "Stopping LedgerVerificationComponent." }
+                coordinator.closeManagedResources(setOf(RPC_SUBSCRIPTION))
             }
         }
     }
