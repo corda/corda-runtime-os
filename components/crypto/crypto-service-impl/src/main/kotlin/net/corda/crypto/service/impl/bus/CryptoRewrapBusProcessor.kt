@@ -2,6 +2,7 @@ package net.corda.crypto.service.impl.bus
 
 import net.corda.crypto.core.CryptoService
 import net.corda.data.crypto.wire.ops.key.rotation.IndividualKeyRotationRequest
+import net.corda.data.crypto.wire.ops.key.rotation.KeyType
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 
@@ -18,7 +19,10 @@ class CryptoRewrapBusProcessor(
 
     override fun onNext(events: List<Record<String, IndividualKeyRotationRequest>>): List<Record<*, *>> {
         events.mapNotNull { it.value }.map { request ->
-            cryptoService.rewrapWrappingKey(request.tenantId, request.targetKeyAlias, request.newParentKeyAlias)
+            when (request.keyType) {
+                KeyType.UNMANAGED -> cryptoService.rewrapWrappingKey(request.tenantId, request.targetKeyId, request.newParentKeyAlias)
+                KeyType.MANAGED -> cryptoService.rewrapSigningKey(request.tenantId, request.)
+            }
         }
         return emptyList()
     }

@@ -11,6 +11,7 @@ import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import java.security.PublicKey
+import java.util.*
 
 /**
  * Crypto service which can be used to sign and generate new key pairs.
@@ -306,14 +307,14 @@ interface CryptoService {
      * just the way it is stored in the database.
      *
      * @param tenantId the tenant that holds the wrapping key
-     * @param targetAlias the alias of the wrapping key that is to be decrypted then encrypted
+     * @param targetID the database primary key synthetic iD of the wrapping key that is to be decrypted then encrypted
      * @param newParentKeyAlias the new parent key to use for encrypting the wrapping key at rest
      * @return the new wrapping generation number
      *
      * @throws IllegalStateException if the newParentKeyAlias or the current parent key alias is not
      *         in the configuration unmanaged keys map or targetAlias is not found
      */
-    fun rewrapWrappingKey(tenantId: String, targetAlias: String, newParentKeyAlias: String): Int
+    fun rewrapWrappingKey(tenantId: String, targetId: UUID, newParentKeyAlias: String): Int
 
     /**
      * Rotate the encryption of a private key withing a signing key itself, without changing the private key itself,
@@ -324,7 +325,7 @@ interface CryptoService {
      * only the private key pair of the key pair as sensitive.
      *
      * @param tenantId the tenant that owns the private key
-     * @param publicKey the public key within the key pair to rotate
+     * @param id the database primary key synthetic ID of the key pair to rewrap
      * @param newWrappingKeyAlias the new wrapping key to use
      * @return updated information about the signing key pair
      *
@@ -332,5 +333,5 @@ interface CryptoService {
      *    - the public key cannot be found in the specified tenant's signing keys table
      *    - the new wrapping key cannot be found
      */
-    fun rewrapSigningKey(tenantId: String, publicKey: PublicKey, newWrappingKeyAlias: String): SigningKeyInfo
+    fun rewrapSigningKey(tenantId: String, id: UUID, newWrappingKeyAlias: String): SigningKeyInfo
 }
