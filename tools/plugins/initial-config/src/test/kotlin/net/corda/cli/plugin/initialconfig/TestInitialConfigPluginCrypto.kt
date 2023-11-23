@@ -158,13 +158,16 @@ class TestInitialConfigPluginCrypto {
         val outJsonEnd = outText.indexOf("}}}',", expectedPrefix.length)
         val json = outText.substring(expectedPrefix.length until (outJsonEnd + 3))
         assertGeneratedJson(json) { it: ConfigList, _: SmartConfigFactory ->
+            assertThat(it.size).isEqualTo(2)
             val key1 = it[0] as ConfigObject
+            val key2 = it[1] as ConfigObject
             assertThat(key1.getValue("salt").render()).doesNotContain("encryptedSecret")
             assertThat(key1.getValue("passphrase").render()).doesNotContain("encryptedSecret")
             assertThat(key1.getValue("salt").render()).contains("vaultKey")
             assertThat(key1.getValue("salt").render()).contains("vaultPath")
             assertThat(key1.getValue("passphrase").render()).contains("vaultKey")
             assertThat(key1.getValue("passphrase").render()).contains("vaultPath")
+            assertThat(key1.getValue("passphrase")).isNotEqualTo((key2.getValue("passphrase")))
         }
     }
     @Test
