@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@5.1') _
+@Library('corda-shared-build-pipeline-steps@ES-1657/enable-sonarcloud') _
 
 endToEndPipeline(
     assembleAndCompile: false,
@@ -7,5 +7,6 @@ endToEndPipeline(
     gradleTestTargetsToExecute: ['smokeTest', 'e2eTest'],
     usePackagedCordaHelmChart: false,
     // TODO - remove this when J17 is the default in the pipeline
-    javaVersion: '17'
+    javaVersion: '17',
+    sonarCloudAnalysis: true
 )
