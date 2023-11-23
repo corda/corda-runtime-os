@@ -9,7 +9,6 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
-import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
@@ -50,7 +49,6 @@ class LedgerPersistenceService @Activate constructor(
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
-            is StartEvent -> {}
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
                     logger.debug {"The status of event: $event changed to ${event.status}, starting subscription."}
