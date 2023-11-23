@@ -8,6 +8,7 @@ import net.corda.membership.impl.registration.MemberRole.Companion.toMemberInfo
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_BACKCHAIN_REQUIRED
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
@@ -34,6 +35,7 @@ class MemberRoleTest {
                 mapOf(
                     "${ROLES_PREFIX}.0" to "notary",
                     NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
+                    NOTARY_SERVICE_BACKCHAIN_REQUIRED to "true",
                     NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
                     String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0) to "1",
                     String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 1) to "2",
@@ -177,6 +179,7 @@ class MemberRoleTest {
             mapOf(
                 "${ROLES_PREFIX}.0" to "notary",
                 NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
+                NOTARY_SERVICE_BACKCHAIN_REQUIRED to "true",
                 NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
                 String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0) to "1",
                 String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 1) to "2",
@@ -191,6 +194,7 @@ class MemberRoleTest {
             .containsExactlyInAnyOrder(
                 "${ROLES_PREFIX}.0" to "notary",
                 NOTARY_SERVICE_NAME to "O=MyNotaryService, L=London, C=GB",
+                NOTARY_SERVICE_BACKCHAIN_REQUIRED to "true",
                 NOTARY_SERVICE_PROTOCOL to "net.corda.notary.MyNotaryService",
                 String.format(NOTARY_KEY_PEM, 0) to "pem1",
                 String.format(NOTARY_KEY_HASH, 0) to key1Hash.toString(),
@@ -199,7 +203,7 @@ class MemberRoleTest {
                 String.format(NOTARY_KEY_HASH, 1) to key2Hash.toString(),
                 String.format(NOTARY_KEY_SPEC, 1) to "SHA512withECDSA",
                 String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 0) to "1",
-                String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 1) to "2",
+                String.format(NOTARY_SERVICE_PROTOCOL_VERSIONS, 1) to "2"
             )
     }
 }
