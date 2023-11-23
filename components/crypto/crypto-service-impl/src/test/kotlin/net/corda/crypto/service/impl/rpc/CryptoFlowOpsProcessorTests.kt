@@ -22,6 +22,7 @@ import net.corda.crypto.flow.impl.CryptoFlowOpsTransformerImpl
 import net.corda.crypto.service.impl.infra.ActResult
 import net.corda.crypto.service.impl.infra.ActResultTimestamps
 import net.corda.crypto.service.impl.infra.act
+import net.corda.crypto.service.impl.infra.assertClose
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoResponseContext
@@ -60,8 +61,9 @@ import java.util.UUID
 import kotlin.random.Random
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 
- class CryptoFlowOpsProcessorTests {
+class CryptoFlowOpsProcessorTests {
     companion object {
         private val configEvent = ConfigChangedEvent(
             setOf(ConfigKeys.CRYPTO_CONFIG),
@@ -122,8 +124,8 @@ import kotlin.test.assertTrue
         context: CryptoResponseContext,
         ttl: Long
     ) {
-        timestamps.assertThatIsBetween(context.responseTimestamp)
-        //timestamps.assertThatIsBetween(context.requestTimestamp) // not always (or not normally?) true, TODO - find some way to cover?
+        assertClose(timestamps.after, context.responseTimestamp, 5.seconds)
+        assertClose(timestamps.before, context.requestTimestamp, 5.seconds)
         assertEquals(componentName, context.requestingComponent)
         assertTrue(context.other.items.size >= 3)
         assertTrue {
