@@ -1,6 +1,5 @@
 package net.corda.db.testkit.dbutilsimpl
 
-import net.corda.db.testkit.dbutilsimpl.DbUtilsHelperFunctions.getPropertyNonBlank
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.DdlManage
 import net.corda.orm.EntityManagerConfiguration
@@ -28,6 +27,19 @@ abstract class AbstractDBHelper : DbUtilsHelper {
         const val DBNAME_PROPERTY = "databaseName"
         const val DB_ADMIN_USER_PROPERTY = "databaseAdminUser"
         const val DB_ADMIN_PASSWORD_PROPERTY = "databaseAdminPassword"
+
+        /**
+         * This function is very similar to System.getProperty(key, defaultValue), but it also
+         * applies the default value to blank properties.
+         */
+        fun getPropertyNonBlank(key: String, defaultValue: String): String {
+            val value = System.getProperty(key)
+            return if (value.isNullOrBlank()) {
+                defaultValue
+            } else {
+                value
+            }
+        }
     }
 
     abstract val port: String
