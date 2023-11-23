@@ -31,6 +31,7 @@ class NotaryInfoConverter @Activate constructor(
         const val PROTOCOL = "flow.protocol.name"
         const val PROTOCOL_VERSIONS_PREFIX = "flow.protocol.version"
         const val KEYS_PREFIX = "keys"
+        const val BACKCHAIN_REQUIRED = "backchain.required"
     }
 
     override val type = NotaryInfo::class.java
@@ -44,11 +45,14 @@ class NotaryInfoConverter @Activate constructor(
         val keysWithWeight = context.map.parseList(KEYS_PREFIX, PublicKey::class.java).map {
             CompositeKeyNodeAndWeight(it, 1)
         }
+        val backchainRequired = context.map.parseOrNull(BACKCHAIN_REQUIRED, Boolean::class.java)
+
         return NotaryInfoImpl(
             name,
             protocol,
             protocolVersions,
-            compositeKeyProvider.create(keysWithWeight, 1)
+            compositeKeyProvider.create(keysWithWeight, 1),
+            backchainRequired ?: true
         )
     }
 }
@@ -58,9 +62,11 @@ private data class NotaryInfoImpl(
     private val protocol: String,
     private val protocolVersions: Collection<Int>,
     private val publicKey: PublicKey,
+    private val backchainRequired: Boolean
 ) : NotaryInfo {
     override fun getName() = name
     override fun getProtocol() = protocol
     override fun getProtocolVersions() = protocolVersions
     override fun getPublicKey() = publicKey
+    override fun getBackchainRequired() = backchainRequired
 }

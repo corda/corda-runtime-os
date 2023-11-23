@@ -11,6 +11,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_SIGNATURE_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEYS_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_BACKCHAIN_REQUIRED
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
@@ -170,9 +171,12 @@ class OnboardMember : Runnable, BaseOnboard() {
             val notaryServiceName = customProperties[NOTARY_SERVICE_NAME] ?:
                 throw IllegalArgumentException("When specifying a NOTARY role, " +
                         "you also need to specify a custom property for its name under $NOTARY_SERVICE_NAME.")
+            val backchainRequired = customProperties[NOTARY_SERVICE_BACKCHAIN_REQUIRED] ?: true
+            val notaryProtocol = customProperties[NOTARY_SERVICE_PROTOCOL] ?: "com.r3.corda.notary.plugin.nonvalidating"
             mapOf(
                 NOTARY_SERVICE_NAME to notaryServiceName,
-                NOTARY_SERVICE_PROTOCOL to "com.r3.corda.notary.plugin.nonvalidating",
+                NOTARY_SERVICE_BACKCHAIN_REQUIRED to "$backchainRequired",
+                NOTARY_SERVICE_PROTOCOL to notaryProtocol,
                 NOTARY_SERVICE_PROTOCOL_VERSIONS.format("0") to "1",
                 NOTARY_KEYS_ID.format("0") to notaryKeyId,
                 NOTARY_KEY_SPEC.format("0") to "SHA256withECDSA"

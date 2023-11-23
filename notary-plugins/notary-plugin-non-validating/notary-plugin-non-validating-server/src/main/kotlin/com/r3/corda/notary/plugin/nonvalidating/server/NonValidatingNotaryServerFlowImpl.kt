@@ -34,6 +34,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
 
         const val NOTARY_SERVICE_NAME = "corda.notary.service.name"
+        const val NOTARY_SERVICE_BACKCHAIN_REQUIRED = "corda.notary.service.backchain.required"
     }
 
     @CordaInject
@@ -127,14 +128,21 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
      * */
     @Suspendable
     private fun validateTransactionNotaryAgainstCurrentNotary(txDetails: NonValidatingNotaryTransactionDetails) {
-        val currentNotaryServiceName = memberLookup
+        val currentNotaryContext = memberLookup
             .myInfo()
             .memberProvidedContext
+        val currentNotaryServiceName = currentNotaryContext
             .parse(NOTARY_SERVICE_NAME, MemberX500Name::class.java)
+        val currentNotaryBackchainRequired = currentNotaryContext
+            .parse(NOTARY_SERVICE_BACKCHAIN_REQUIRED, Boolean::class.java)
 
         require(currentNotaryServiceName == txDetails.notaryName) {
             "Notary service on the transaction ${txDetails.notaryName} does not match the notary service represented" +
                     " by this notary virtual node (${currentNotaryServiceName})"
+        }
+
+        require(currentNotaryBackchainRequired) {
+            "Non-validating notary can't switch bachchain verification off."
         }
     }
 

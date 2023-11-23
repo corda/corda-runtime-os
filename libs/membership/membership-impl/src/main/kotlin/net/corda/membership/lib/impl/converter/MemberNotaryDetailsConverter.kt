@@ -23,6 +23,7 @@ class MemberNotaryDetailsConverter @Activate constructor(
 ) : CustomPropertyConverter<MemberNotaryDetails> {
     private companion object {
         const val SERVICE_NAME = "service.name"
+        const val SERVICE_BACKCHAIN_REQUIRED = "service.backchain.required"
         const val SERVICE_PROTOCOL = "service.flow.protocol.name"
         const val PROTOCOL_VERSIONS_PREFIX = "service.flow.protocol.version."
         const val KEYS_PREFIX = "keys."
@@ -36,6 +37,7 @@ class MemberNotaryDetailsConverter @Activate constructor(
 
     override fun convert(context: ConversionContext): MemberNotaryDetails {
         val serviceName = context.value(SERVICE_NAME) ?: throw ValueNotFoundException("'$SERVICE_NAME' is null or absent.")
+        val serviceBackchainRequired = context.value(SERVICE_BACKCHAIN_REQUIRED).toBoolean()
         val serviceProtocol = context.value(SERVICE_PROTOCOL)
         val serviceProtocolVersions = generateSequence(0) {
             it + 1
@@ -70,7 +72,8 @@ class MemberNotaryDetailsConverter @Activate constructor(
             serviceName = MemberX500Name.parse(serviceName),
             serviceProtocol = serviceProtocol,
             serviceProtocolVersions = serviceProtocolVersions,
-            keys = keys
+            keys = keys,
+            backchainRequired = serviceBackchainRequired
         )
     }
 }

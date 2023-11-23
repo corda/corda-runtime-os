@@ -155,7 +155,8 @@ fun ClusterInfo.onboardNotaryMember(
     wait: Boolean = true,
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null,
     tlsCertificateUploadedCallback: (String) -> Unit = {},
-    notaryServiceName: String = DEFAULT_NOTARY_SERVICE
+    notaryServiceName: String = DEFAULT_NOTARY_SERVICE,
+    backchainRequired: Boolean = true
 ) = onboardMember(
     resourceName,
     cpiName,
@@ -169,6 +170,7 @@ fun ClusterInfo.onboardNotaryMember(
         mapOf(
             "corda.roles.0" to "notary",
             "corda.notary.service.name" to MemberX500Name.parse(notaryServiceName).toString(),
+            "corda.notary.service.backchain.required" to "$backchainRequired",
             "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.nonvalidating",
             "corda.notary.service.flow.protocol.version.0" to "1",
             "corda.notary.keys.0.id" to notaryKeyId,

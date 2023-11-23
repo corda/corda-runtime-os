@@ -4,6 +4,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_BACKCHAIN_REQUIRED
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
@@ -65,7 +66,8 @@ internal sealed class MemberRole {
             return Notary(
                 serviceName = MemberX500Name.parse(serviceName),
                 protocol = protocol,
-                protocolVersions = protocolVersions
+                protocolVersions = protocolVersions,
+                backchainRequired =  context[NOTARY_SERVICE_BACKCHAIN_REQUIRED].toBoolean()
             )
         }
     }
@@ -79,6 +81,7 @@ internal sealed class MemberRole {
         val serviceName: MemberX500Name,
         val protocol: String,
         val protocolVersions: Collection<Int>,
+        val backchainRequired: Boolean
     ) : MemberRole() {
         override fun toMemberInfo(
             notariesKeysFactory: () -> List<KeyDetails>,
@@ -99,7 +102,8 @@ internal sealed class MemberRole {
             return keys + versions + listOf(
                 "$ROLES_PREFIX.$index" to NOTARY_ROLE,
                 NOTARY_SERVICE_NAME to serviceName.toString(),
-                NOTARY_SERVICE_PROTOCOL to protocol
+                NOTARY_SERVICE_PROTOCOL to protocol,
+                NOTARY_SERVICE_BACKCHAIN_REQUIRED to backchainRequired.toString()
             )
         }
     }
