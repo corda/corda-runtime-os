@@ -18,6 +18,8 @@ import net.corda.libs.permissions.endpoints.v1.user.types.UserPermissionSummaryR
 import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
+import net.corda.libs.permissions.manager.request.ChangeUserPasswordOtherDto
+import net.corda.libs.permissions.manager.request.ChangeUserPasswordSelfDto
 import net.corda.libs.permissions.manager.request.GetPermissionSummaryRequestDto
 import net.corda.libs.permissions.manager.request.GetRoleRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
@@ -102,6 +104,32 @@ class UserEndpointImpl @Activate constructor(
         }
 
         return userResponseDto?.convertToEndpointType() ?: throw ResourceNotFoundException("User", loginName)
+    }
+
+    override fun changeUserPasswordSelf(loginName: String, password: String): UserResponseType {
+        // reject if same password as current
+        val principal = getRestThreadLocalContext()
+
+        // Create request object, send it to kafka for db worker
+        val userResponseDto = withPermissionManager(permissionManagementService.permissionManager, logger) {
+            changeUserPasswordSelf(ChangeUserPasswordSelfDto(principal, password))
+        }
+
+        return userResponseDto.convertToEndpointType()
+    }
+
+    override fun changeOtherUserPassword(loginName: String, password: String): UserResponseType {
+        // reject if same password as current
+        TODO("verify that user is admin and has permission to update other user passwords")
+
+//        val principal = getRestThreadLocalContext()
+//
+//        // Create request object, send it to kafka for db worker
+//        val userResponseDto = withPermissionManager(permissionManagementService.permissionManager, logger) {
+//            changeUserPasswordOther(ChangeUserPasswordOtherDto(principal, loginName, password))
+//        }
+//
+//        return userResponseDto.convertToEndpointType()
     }
 
     override fun addRole(loginName: String, roleId: String): ResponseEntity<UserResponseType> {

@@ -4,6 +4,8 @@ import net.corda.data.permissions.User
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
+import net.corda.data.permissions.management.user.ChangeUserPasswordSelfRequest
+import net.corda.data.permissions.management.user.ChangeUserPasswordOtherRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.libs.configuration.SmartConfig
@@ -13,6 +15,8 @@ import net.corda.libs.permissions.manager.PermissionUserManager
 import net.corda.libs.permissions.manager.impl.SmartConfigUtil.getEndpointTimeout
 import net.corda.libs.permissions.manager.impl.converter.convertToResponseDto
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
+import net.corda.libs.permissions.manager.request.ChangeUserPasswordOtherDto
+import net.corda.libs.permissions.manager.request.ChangeUserPasswordSelfDto
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.request.GetPermissionSummaryRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
@@ -65,6 +69,30 @@ class PermissionUserManagerImpl(
         }
         val cachedUser: User = permissionManagementCache.getUser(userRequestDto.loginName) ?: return null
         return cachedUser.convertToResponseDto()
+    }
+
+    override fun changeUserPasswordSelf(changeUserPasswordSelfDto: ChangeUserPasswordSelfDto): UserResponseDto {
+        val result = sendPermissionWriteRequest<User>(
+            rpcSender,
+            writerTimeout,
+            PermissionManagementRequest(
+                changeUserPasswordSelfDto.requestedBy,
+                null,
+                ChangeUserPasswordSelfRequest(
+                    
+                )
+//                AddRoleToUserRequest(
+//                    addRoleToUserRequestDto.loginName,
+//                    addRoleToUserRequestDto.roleId
+//                )
+            )
+        )
+
+        return result.convertToResponseDto()
+    }
+
+    override fun changeUserPasswordOther(changeUserPasswordOtherDto: ChangeUserPasswordOtherDto): UserResponseDto {
+        TODO("Not yet implemented")
     }
 
     override fun addRoleToUser(addRoleToUserRequestDto: AddRoleToUserRequestDto): UserResponseDto {
