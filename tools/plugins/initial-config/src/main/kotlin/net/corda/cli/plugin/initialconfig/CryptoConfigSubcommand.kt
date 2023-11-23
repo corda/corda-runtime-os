@@ -50,7 +50,7 @@ class CryptoConfigSubcommand : Runnable {
     @CommandLine.Option(
         names = ["-ws", "--wrapping-salt"],
         description = ["Salt for deriving a SOFT HSM root unmanaged wrapping key. Can be specified multiple times. "+
-                "If there are fewer of these options than the number of unmanaged root wrapping keys the remainder "+
+                "If there are fewer of these options than the number of unmanaged root wrapping keys, the remainder "+
                 "will be randomly generated."]
     )
     var softHsmRootSalt: List<String> = emptyList()
