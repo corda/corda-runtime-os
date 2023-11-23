@@ -25,7 +25,7 @@ import java.time.Duration
  * Handles incoming requests, typically from the flow worker, and sends responses.
  */
 @Suppress("LongParameterList")
-class VerificationRpcRequestProcessor(
+class VerificationRequestProcessor(
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     private val verificationSandboxService: VerificationSandboxService,
     private val requestHandler: VerificationRequestHandler,

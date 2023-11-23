@@ -21,7 +21,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
 
-class VerificationRpcRequestProcessorTest {
+class VerificationRequestProcessorTest {
 
     private companion object {
         const val ALICE_X500 = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
@@ -44,7 +44,7 @@ class VerificationRpcRequestProcessorTest {
     private val requestClass = TransactionVerificationRequest::class.java
     private val responseClass = FlowEvent::class.java
 
-    private val verificationRpcRequestProcessor = VerificationRpcRequestProcessor(
+    private val verificationRequestProcessor = VerificationRequestProcessor(
         currentSandboxGroupContext,
         verificationSandboxService,
         verificationRequestHandler,
@@ -77,7 +77,7 @@ class VerificationRpcRequestProcessorTest {
         val responseRecord = Record("", "1", flowEvent)
         whenever(verificationRequestHandler.handleRequest(sandbox, request)).thenReturn(responseRecord)
 
-        val results = verificationRpcRequestProcessor.process(request)
+        val results = verificationRequestProcessor.process(request)
 
         assertThat(results).isNotNull
         assertThat(results).isEqualTo(flowEvent)
@@ -93,7 +93,7 @@ class VerificationRpcRequestProcessorTest {
         whenever(responseFactory.transientError(request.flowExternalEventContext, response))
             .thenReturn(failureResponseRecord)
 
-        val results = verificationRpcRequestProcessor.process(request)
+        val results = verificationRequestProcessor.process(request)
 
         assertThat(results).isNotNull
         assertThat(results).isEqualTo(failureResponseRecord.value)

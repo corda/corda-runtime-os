@@ -27,7 +27,7 @@ import net.corda.ledger.utxo.verification.TransactionVerificationRequest
 import net.corda.ledger.utxo.verification.TransactionVerificationResponse
 import net.corda.ledger.utxo.verification.TransactionVerificationStatus
 import net.corda.ledger.verification.processor.impl.VerificationRequestHandlerImpl
-import net.corda.ledger.verification.processor.impl.VerificationRpcRequestProcessor
+import net.corda.ledger.verification.processor.impl.VerificationRequestProcessor
 import net.corda.ledger.verification.tests.helpers.VirtualNodeService
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.membership.lib.GroupParametersFactory
@@ -154,7 +154,7 @@ class VerificationRequestProcessorTest {
         val request = createRequest(sandbox, holdingIdentity, transaction, cpkSummaries)
 
         // Create request processor
-        val processor = VerificationRpcRequestProcessor(
+        val processor = VerificationRequestProcessor(
             currentSandboxGroupContext,
             verificationSandboxService,
             VerificationRequestHandlerImpl(externalEventResponseFactory),
@@ -188,7 +188,7 @@ class VerificationRequestProcessorTest {
         val request = createRequest(sandbox, holdingIdentity, transaction, cpkSummaries)
 
         // Create request processor
-        val processor = VerificationRpcRequestProcessor(
+        val processor = VerificationRequestProcessor(
             currentSandboxGroupContext,
             verificationSandboxService,
             VerificationRequestHandlerImpl(externalEventResponseFactory),
@@ -225,7 +225,7 @@ class VerificationRequestProcessorTest {
         val transaction = createTestTransaction(sandbox, isValid = true)
         val request = createRequest(sandbox, holdingIdentity, transaction, listOf(NON_EXISTING_CPK))
 
-        val processor = VerificationRpcRequestProcessor(
+        val processor = VerificationRequestProcessor(
             currentSandboxGroupContext,
             verificationSandboxService,
             VerificationRequestHandlerImpl(externalEventResponseFactory),

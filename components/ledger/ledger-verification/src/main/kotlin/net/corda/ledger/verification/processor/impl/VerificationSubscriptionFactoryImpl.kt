@@ -29,8 +29,8 @@ class VerificationSubscriptionFactoryImpl @Activate constructor(
         const val SUBSCRIPTION_NAME = "Verification"
     }
 
-    override fun createRpcSubscription(): RPCSubscription<TransactionVerificationRequest, FlowEvent> {
-        val processor = VerificationRpcRequestProcessor(
+    override fun createSubscription(): RPCSubscription<TransactionVerificationRequest, FlowEvent> {
+        val processor = VerificationRequestProcessor(
             currentSandboxGroupContext,
             verificationSandboxService,
             VerificationRequestHandlerImpl(responseFactory),

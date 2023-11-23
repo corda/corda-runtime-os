@@ -9,5 +9,5 @@ import net.corda.messaging.api.subscription.RPCSubscription
  */
 interface VerificationSubscriptionFactory {
 
-    fun createRpcSubscription(): RPCSubscription<TransactionVerificationRequest, FlowEvent>
+    fun createSubscription(): RPCSubscription<TransactionVerificationRequest, FlowEvent>
 }

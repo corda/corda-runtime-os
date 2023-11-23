@@ -64,7 +64,7 @@ class LedgerVerificationComponent @Activate constructor(
     }
 
     private fun initialiseRpcSubscription() {
-        val subscription = verificationRequestSubscriptionFactory.createRpcSubscription()
+        val subscription = verificationRequestSubscriptionFactory.createSubscription()
         lifecycleCoordinator.createManagedResource(RPC_SUBSCRIPTION) {
             subscription.also {
                 it.start()
