@@ -20,8 +20,8 @@ import java.util.Base64
 @CommandLine.Command(
     name = "create-crypto-config",
     description = [
-        "Creates and saves to the database the initial crypto configuration." +
-                "The operation must be done after the cluster database is initialised" +
+        "Creates and saves to the database the initial crypto configuration. " +
+                "The operation must be done after the cluster database is initialised " +
                 "but before the cluster is started."
     ],
     mixinStandardHelpOptions = true
@@ -49,15 +49,25 @@ class CryptoConfigSubcommand : Runnable {
 
     @CommandLine.Option(
         names = ["-ws", "--wrapping-salt"],
-        description = ["Salt for the SOFT HSM root wrapping key."]
+        description = ["Salt for deriving a SOFT HSM root unmanaged wrapping key. Can be specified multiple times. "+
+                "If there are fewer of these options than the number of unmanaged root wrapping keys, the remainder "+
+                "will be randomly generated."]
     )
-    var softHsmRootSalt: String? = null
+    var softHsmRootSalt: List<String> = emptyList()
 
     @CommandLine.Option(
         names = ["-wp", "--wrapping-passphrase"],
-        description = ["Passphrase for the SOFT HSM root wrapping key."]
+        description = ["Passphrase for a SOFT HSM unmanaged root wrapping key. Can be specified multiple times. "+
+                "If there are fewer of these options than the number of unmanaged root wrapping keys, the "+
+                "remainder will be randomly generated."]
     )
-    var softHsmRootPassphrase: String? = null
+    var softHsmRootPassphrase: List<String> = emptyList()
+
+    @CommandLine.Option(
+        names = ["-n", "--number-of-unmanaged-root-wrapping-keys"],
+        description = ["Number of unmanaged root wrapping keys. There must be at least 1, default is 2."]
+    )
+    var numberOfUnmanagedWrappingKeys: Int = 2
 
     @CommandLine.Option(
         names = ["-l", "--location"],
@@ -76,14 +86,15 @@ class CryptoConfigSubcommand : Runnable {
         description = ["Vault key for the wrapping key salt. Used only by VAULT type secrets service."],
         defaultValue = "corda-master-wrapping-key-passphrase",
     )
-    var vaultWrappingKeySalt: String = "corda-master-wrapping-key-passphrase"
+    var vaultWrappingKeySalts: List<String> = listOf("corda-master-wrapping-key-passphrase")
 
     @CommandLine.Option(
         names = ["-kp", "--key-passphrase"],
-        description = ["Vault key for the wrapping key service passphrase. Used only by VAULT type secrets service."],
+        description = ["Vault key for an unmanaged root wrapping key service passphrase. "+
+                "Used only by VAULT type secrets service. Can be specified multiples times, once per unmanaged key."],
         defaultValue = "corda-master-wrapping-key-passphrase",
     )
-    var vaultWrappingKeyPassphrase: String = "corda-master-wrapping-key-passphrase"
+    var vaultWrappingKeyPassphrases: List<String> =  listOf("corda-master-wrapping-key-passphrase")
 
     @CommandLine.Option(
         names = ["-t", "--type"],
@@ -96,16 +107,15 @@ class CryptoConfigSubcommand : Runnable {
     var type: SecretsServiceType = SecretsServiceType.CORDA
 
     override fun run() {
-        val (wrappingPassphraseSecret, wrappingSaltSecret) = createWrappingPassphraseAndSaltSecrets()
-
-        val config = createDefaultCryptoConfig(
-            listOf(
-                KeyDerivationParameters(
-                    wrappingPassphraseSecret.root(),
-                    wrappingSaltSecret.root()
-                )
+        val wrappingKeys = (1..numberOfUnmanagedWrappingKeys).toList().map { index ->
+            val (wrappingPassphraseSecret, wrappingSaltSecret) = createWrappingPassphraseAndSaltSecrets(index)
+            KeyDerivationParameters(
+                wrappingPassphraseSecret.root(),
+                wrappingSaltSecret.root()
             )
-        )
+        }
+
+        val config = createDefaultCryptoConfig(wrappingKeys)
             .root()
             .render(ConfigRenderOptions.concise())
 
@@ -134,7 +144,7 @@ class CryptoConfigSubcommand : Runnable {
         }
     }
 
-    private fun createWrappingPassphraseAndSaltSecrets(): Pair<Config, Config> = when (type) {
+    private fun createWrappingPassphraseAndSaltSecrets(index: Int): Pair<Config, Config> = when (type) {
         SecretsServiceType.CORDA -> {
             val ess = EncryptionSecretsServiceImpl(
                 checkParamPassed(passphrase)
@@ -142,7 +152,7 @@ class CryptoConfigSubcommand : Runnable {
                 checkParamPassed(salt)
                 { "'salt' must be set for CORDA type secrets." }
             )
-            val (passphraseSecretValue, saltSecretValue) = generateSecretValuesForType()
+            val (passphraseSecretValue, saltSecretValue) = generateSecretValuesForType(index)
             Pair(
                 ess.createValue(passphraseSecretValue, "unused"),
                 ess.createValue(saltSecretValue, "unused")
@@ -151,35 +161,28 @@ class CryptoConfigSubcommand : Runnable {
         SecretsServiceType.VAULT -> {
             val vss = VaultSecretConfigGenerator(checkParamPassed(vaultPath)
             { "'vaultPath' must be set for VAULT type secrets." })
+            if (vaultWrappingKeySalts.size < index)
+                throw makeParameterException("Not enough vault wrapping key salt keys passed in; need "+
+                        "$numberOfUnmanagedWrappingKeys have ${vaultWrappingKeySalts.size}")
+
+            if (vaultWrappingKeyPassphrases.size < index)
+                throw makeParameterException("Not enough vault wrapping key passphrase keys passed in; need "+
+                        "$numberOfUnmanagedWrappingKeys have ${vaultWrappingKeyPassphrases.size}")
             Pair(
-                vss.createValue("unused", vaultWrappingKeyPassphrase),
-                vss.createValue("unused", vaultWrappingKeySalt)
+                vss.createValue("unused", vaultWrappingKeyPassphrases[index-1]),
+                vss.createValue("unused", vaultWrappingKeySalts[index-1])
             )
         }
     }
 
-    private fun generateSecretValuesForType(): Pair<String, String> {
-        return if (type == SecretsServiceType.VAULT) {
-            Pair(
-                checkParamPassed(vaultWrappingKeyPassphrase) { "'vaultWrappingKeyPassphrase' must be set for VAULT type secrets." },
-                checkParamPassed(vaultWrappingKeySalt) { "'vaultWappiingKeySalt' must be set for VAULT type secrets." }
-            )
-        } else { // type == SecretsServiceType.CORDA
-            val random = SecureRandom()
+    private fun generateSecretValuesForType(index: Int): Pair<String, String> {
+        check(type == SecretsServiceType.CORDA)
+        val random = SecureRandom()
 
-            // Use the salt and passphrase passed to the plugin by the user, or generate random ones if not supplied
-            val wrappingPassphraseDefined = (if (softHsmRootPassphrase.isNullOrBlank()) {
-                random.randomString()
-            } else {
-                softHsmRootPassphrase!!
-            })
-            val wrappingSaltDefined = (if (softHsmRootSalt.isNullOrBlank()) {
-                random.randomString()
-            } else {
-                softHsmRootSalt!!
-            })
-            Pair(wrappingPassphraseDefined, wrappingSaltDefined)
-        }
+        // Use the salt and passphrase passed to the plugin by the user, or generate random ones if not supplied
+        val wrappingPassphraseDefined = softHsmRootPassphrase.getOrNull(index-1)?: random.randomString()
+        val wrappingSaltDefined = softHsmRootSalt.getOrNull(index-1)?: random.randomString()
+        return Pair(wrappingPassphraseDefined, wrappingSaltDefined)
     }
 
     private fun SecureRandom.randomString(length: Int = 32): String = ByteArray(length).let {
@@ -188,9 +191,13 @@ class CryptoConfigSubcommand : Runnable {
     }
 
     private inline fun checkParamPassed(value: String?, lazyMessage: () -> String) = if (value.isNullOrBlank()) {
-        val specNotNull = spec ?: throw InvalidParameterException(lazyMessage())
-        throw ParameterException(specNotNull.commandLine(), lazyMessage())
+        throw makeParameterException(lazyMessage())
     } else {
         value
+    }
+
+    private fun makeParameterException(message:String): Throwable {
+        val specNotNull = spec ?: throw InvalidParameterException(message)
+        return ParameterException(specNotNull.commandLine(), message)
     }
 }
