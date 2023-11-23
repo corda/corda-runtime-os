@@ -15,9 +15,11 @@ import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType.VAULT
 import net.corda.db.core.CloseableDataSource
+import net.corda.db.schema.CordaDb
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
+import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 import net.corda.libs.virtualnode.common.exception.InvalidStateChangeRuntimeException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationBadRequestException
@@ -26,6 +28,7 @@ import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
+import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
 import net.corda.schema.Schemas.VirtualNode.VIRTUAL_NODE_INFO_TOPIC
@@ -41,7 +44,6 @@ import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManager
 import javax.sql.DataSource
-import net.corda.libs.cpi.datamodel.repository.factory.CpiCpkRepositoryFactory
 
 /**
  * An RPC responder processor that handles virtual node creation requests.
@@ -61,7 +63,8 @@ internal class VirtualNodeWriterProcessor(
     private val virtualNodeOperationStatusHandler: VirtualNodeOperationStatusHandler,
     private val changeLogsRepository: CpkDbChangeLogRepository,
     private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl(),
-    private val migrationUtility: MigrationUtility
+    private val migrationUtility: MigrationUtility,
+    private val jpaEntitiesRegistry: JpaEntitiesRegistry,
 ) : RPCResponderProcessor<VirtualNodeManagementRequest, VirtualNodeManagementResponse> {
 
     companion object {
@@ -134,9 +137,12 @@ internal class VirtualNodeWriterProcessor(
                         virtualNodeInfo.cpiIdentifier.version
                     )!!
                     dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).use { dataSource ->
+                        val emVault = dbConnectionManager.getOrCreateEntityManagerFactory(virtualNodeInfo.vaultDdlConnectionId!!,
+                            jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)!!
+                        ).createEntityManager()
                         // changelog tags are the CPK file checksum the changelog belongs to
                         val cpkChecksumsOfAppliedChangelogs: Set<String> = getAppliedChangelogTags(
-                            em,
+                            emVault,
                             dataSource,
                             systemTerminatorTag
                         )

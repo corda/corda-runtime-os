@@ -39,6 +39,7 @@ import net.corda.metrics.CordaMetrics
 import net.corda.metrics.CordaMetrics.Metric.InboundSessionCount
 import net.corda.metrics.CordaMetrics.Metric.OutboundSessionCount
 import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
@@ -96,6 +97,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
+import net.corda.metrics.CordaMetrics.NOT_APPLICABLE_TAG_VALUE
 import net.corda.p2p.crypto.protocol.api.InvalidSelectedModeError
 import net.corda.p2p.crypto.protocol.api.NoCommonModeError
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.badGroupPolicy
@@ -143,7 +145,13 @@ internal class SessionManagerImpl(
     // This default needs to be removed and the lifecycle dependency graph adjusted to ensure the inbound subscription starts only after
     // the configuration has been received and the session manager has started (see CORE-6730).
     private val config = AtomicReference(
-        SessionManagerConfig(1000000, 4, RevocationCheckMode.OFF, 432000)
+        SessionManagerConfig(
+            1000000,
+            2,
+            1,
+            RevocationCheckMode.OFF,
+            432000
+        )
     )
 
     private val heartbeatManager: HeartbeatManager = HeartbeatManager(
@@ -196,7 +204,8 @@ internal class SessionManagerImpl(
     @VisibleForTesting
     internal data class SessionManagerConfig(
         val maxMessageSize: Int,
-        val sessionsPerCounterparties: Int,
+        val sessionsPerPeerForMembers: Int,
+        val sessionsPerPeerForMgm: Int,
         val revocationConfigMode: RevocationCheckMode,
         val sessionRefreshThreshold: Int,
     )
@@ -240,7 +249,12 @@ internal class SessionManagerImpl(
     private fun fromConfig(config: Config): SessionManagerConfig {
         return SessionManagerConfig(
             config.getInt(LinkManagerConfiguration.MAX_MESSAGE_SIZE_KEY),
-            config.getInt(LinkManagerConfiguration.SESSIONS_PER_PEER_KEY),
+            if (config.getIsNull(LinkManagerConfiguration.SESSIONS_PER_PEER_KEY)) {
+                config.getInt(LinkManagerConfiguration.SESSIONS_PER_PEER_FOR_MEMBER_KEY)
+            } else {
+                config.getInt(LinkManagerConfiguration.SESSIONS_PER_PEER_KEY)
+            },
+            config.getInt(LinkManagerConfiguration.SESSIONS_PER_PEER_FOR_MGM_KEY),
             config.getEnum(RevocationCheckMode::class.java, LinkManagerConfiguration.REVOCATION_CHECK_KEY),
             config.getInt(LinkManagerConfiguration.SESSION_REFRESH_THRESHOLD_KEY),
         )
@@ -250,12 +264,33 @@ internal class SessionManagerImpl(
         val peer = message.header.destination
         val us = message.header.source
         val status = message.header.statusFilter
-        val info = membershipGroupReaderProvider.lookup(us.toCorda(), peer.toCorda(), status)
-        if (info == null) {
+        val ourInfo = membershipGroupReaderProvider.lookup(
+            us.toCorda(), us.toCorda(), MembershipStatusFilter.ACTIVE_OR_SUSPENDED
+        )
+        // could happen when member has pending registration or something went wrong
+        if (ourInfo == null) {
+            logger.warn("Could not get member information about us from message sent from $us" +
+                    " to $peer with ID `${message.header.messageId}`.")
+        }
+        val counterpartyInfo = membershipGroupReaderProvider.lookup(us.toCorda(), peer.toCorda(), status)
+        if (counterpartyInfo == null) {
             logger.couldNotFindSessionInformation(us.toCorda().shortHash, peer.toCorda().shortHash, message.header.messageId)
             return null
         }
-        return SessionCounterparties(us.toCorda(), peer.toCorda(), status, info.serial)
+        return SessionCounterparties(
+            us.toCorda(),
+            peer.toCorda(),
+            status,
+            counterpartyInfo.serial,
+            isCommunicationBetweenMgmAndMember(ourInfo, counterpartyInfo)
+        )
+    }
+
+    private fun isCommunicationBetweenMgmAndMember(ourInfo: MemberInfo?, counterpartyInfo: MemberInfo): Boolean {
+        if (counterpartyInfo.isMgm || ourInfo?.isMgm == true) {
+            return true
+        }
+        return false
     }
 
     override fun processOutboundMessage(message: AuthenticatedMessageAndKey): SessionState {
@@ -271,7 +306,7 @@ internal class SessionManagerImpl(
                         SessionState.SessionAlreadyPending(counterparties)
                     }
                     is OutboundSessionPool.SessionPoolStatus.NewSessionsNeeded -> {
-                        val initMessages = genSessionInitMessages(counterparties, config.get().sessionsPerCounterparties)
+                        val initMessages = genSessionInitMessages(counterparties, counterparties.calculateSessionMultiplicity())
                         if (initMessages.isEmpty()) return@read SessionState.CannotEstablishSession
                         outboundSessionPool.addPendingSessions(counterparties, initMessages.map { it.first })
                         val messages = linkOutMessagesFromSessionInitMessages(
@@ -283,6 +318,14 @@ internal class SessionManagerImpl(
                     }
                 }
             }
+        }
+    }
+
+    private fun SessionCounterparties.calculateSessionMultiplicity(): Int {
+        return if (communicationWithMgm) {
+            config.get().sessionsPerPeerForMgm
+        } else {
+            config.get().sessionsPerPeerForMembers
         }
     }
 
@@ -338,15 +381,15 @@ internal class SessionManagerImpl(
         }
     }
 
-    override fun sessionMessageReceived(sessionId: String) {
+    fun sessionMessageReceived(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity?) {
         dominoTile.withLifecycleLock {
-            heartbeatManager.sessionMessageReceived(sessionId)
+            heartbeatManager.sessionMessageReceived(sessionId, source, destination)
         }
     }
 
-    override fun dataMessageReceived(sessionId: String) {
+    override fun dataMessageReceived(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity) {
         dominoTile.withLifecycleLock {
-            heartbeatManager.dataMessageReceived(sessionId)
+            heartbeatManager.dataMessageReceived(sessionId, source, destination)
         }
     }
 
@@ -781,6 +824,7 @@ internal class SessionManagerImpl(
         }
 
         val (hostedIdentityInSameGroup, peerMemberInfo) = locallyHostedIdentityWithPeerMemberInfo
+        sessionMessageReceived(message.header.sessionId, peerMemberInfo.holdingIdentity, null)
         val p2pParams = try {
             groupPolicyProvider.getP2PParameters(hostedIdentityInSameGroup)
         } catch (except: BadGroupPolicyException) {
@@ -902,6 +946,7 @@ internal class SessionManagerImpl(
             SessionManager.Counterparties(ourIdentityInfo.holdingIdentity, peer.holdingIdentity),
             session.getSession()
         )
+        sessionMessageReceived(message.header.sessionId, peer.holdingIdentity, ourIdentityInfo.holdingIdentity)
         logger.info(
             "Inbound session ${message.header.sessionId} established " +
                 "(local=${ourIdentityInfo.holdingIdentity}, remote=${peer.holdingIdentity})."
@@ -1139,28 +1184,28 @@ internal class SessionManagerImpl(
             }
         }
 
-        fun sessionMessageReceived(sessionId: String) {
+        fun sessionMessageReceived(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity?) {
             dominoTile.withLifecycleLock {
                 check(isRunning) { "A session message was received before the HeartbeatManager was started." }
-                messageReceived(sessionId)
+                messageReceived(sessionId, source, destination)
             }
         }
 
-        fun dataMessageReceived(sessionId: String) {
+        fun dataMessageReceived(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity) {
             dominoTile.withLifecycleLock {
                 check(isRunning) { "A data message was received before the HeartbeatManager was started." }
-                messageReceived(sessionId)
+                messageReceived(sessionId, source, destination)
             }
         }
 
-        private fun messageReceived(sessionId: String) {
+        private fun messageReceived(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity?) {
             trackedInboundSessions.compute(sessionId) { _, initialTrackedSession ->
                 if (initialTrackedSession != null) {
                     initialTrackedSession.lastReceivedTimestamp = timeStamp()
                     initialTrackedSession
                 } else {
                     executorService.schedule(
-                        { inboundSessionTimeout(sessionId) },
+                        { inboundSessionTimeout(sessionId, source, destination) },
                         config.get().sessionTimeout.toMillis(),
                         TimeUnit.MILLISECONDS
                     )
@@ -1184,7 +1229,7 @@ internal class SessionManagerImpl(
                 )
                 destroyOutboundSession(counterparties, sessionId)
                 trackedOutboundSessions.remove(sessionId)
-                recordSessionTimeoutMetric(counterparties.ourId, counterparties.counterpartyId)
+                recordOutboundSessionTimeoutMetric(counterparties.ourId, counterparties.counterpartyId)
             } else {
                 val delay = if (waitingForAck) {
                     maxWaitForAck - timeSinceLastSent
@@ -1199,7 +1244,7 @@ internal class SessionManagerImpl(
             }
         }
 
-        private fun inboundSessionTimeout(sessionId: String) {
+        private fun inboundSessionTimeout(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity?) {
             val sessionInfo = trackedInboundSessions[sessionId] ?: return
             val timeSinceLastReceived = timeStamp() - sessionInfo.lastReceivedTimestamp
             val sessionTimeoutMs = config.get().sessionTimeout.toMillis()
@@ -1210,9 +1255,10 @@ internal class SessionManagerImpl(
                 )
                 destroyInboundSession(sessionId)
                 trackedInboundSessions.remove(sessionId)
+                recordInboundSessionTimeoutMetric(source, destination)
             } else {
                 executorService.schedule(
-                    { inboundSessionTimeout(sessionId) },
+                    { inboundSessionTimeout(sessionId, source, destination) },
                     sessionTimeoutMs - timeSinceLastReceived,
                     TimeUnit.MILLISECONDS
                 )
@@ -1294,10 +1340,18 @@ internal class SessionManagerImpl(
             return clock.instant().toEpochMilli()
         }
 
-        private fun recordSessionTimeoutMetric(source: HoldingIdentity, destination: HoldingIdentity) {
+        private fun recordOutboundSessionTimeoutMetric(source: HoldingIdentity, destination: HoldingIdentity) {
             CordaMetrics.Metric.OutboundSessionTimeoutCount.builder()
                 .withTag(CordaMetrics.Tag.SourceVirtualNode, source.x500Name.toString())
                 .withTag(CordaMetrics.Tag.DestinationVirtualNode, destination.x500Name.toString())
+                .withTag(CordaMetrics.Tag.MembershipGroup, source.groupId)
+                .build().increment()
+        }
+
+        private fun recordInboundSessionTimeoutMetric(source: HoldingIdentity, destination: HoldingIdentity?) {
+            CordaMetrics.Metric.InboundSessionTimeoutCount.builder()
+                .withTag(CordaMetrics.Tag.SourceVirtualNode, source.x500Name.toString())
+                .withTag(CordaMetrics.Tag.DestinationVirtualNode, destination?.x500Name?.toString() ?: NOT_APPLICABLE_TAG_VALUE)
                 .withTag(CordaMetrics.Tag.MembershipGroup, source.groupId)
                 .build().increment()
         }

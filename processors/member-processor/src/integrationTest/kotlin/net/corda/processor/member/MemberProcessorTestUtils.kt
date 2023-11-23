@@ -3,6 +3,7 @@ package net.corda.processor.member
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.config.impl.KeyDerivationParameters
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.core.CryptoConsts
@@ -51,6 +52,7 @@ import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 
+@Suppress("TooManyFunctions")
 class MemberProcessorTestUtils {
     companion object {
 
@@ -102,7 +104,8 @@ class MemberProcessorTestUtils {
             listOf(EncryptionSecretsServiceFactory())
         )
 
-        fun makeCryptoConfig(): SmartConfig = createDefaultCryptoConfig("master-key-pass", "master-key-salt")
+        fun makeCryptoConfig(): SmartConfig = createDefaultCryptoConfig(
+            listOf(KeyDerivationParameters("master-key-pass", "master-key-salt")))
 
         fun makeMessagingConfig(): SmartConfig =
             smartConfigFactory.create(

@@ -22,6 +22,7 @@ import org.mockito.kotlin.whenever
 import java.time.Instant
 
 class VerificationRequestProcessorTest {
+
     private companion object {
         const val ALICE_X500 = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
         val ALICE_X500_HOLDING_ID = HoldingIdentity(ALICE_X500, "group1")
@@ -39,70 +40,18 @@ class VerificationRequestProcessorTest {
     private val sandbox = mock<SandboxGroupContext>()
     private val virtualNodeContext = mock<VirtualNodeContext>()
     private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
+    private val flowEvent = mock<FlowEvent>()
+    private val requestClass = TransactionVerificationRequest::class.java
+    private val responseClass = FlowEvent::class.java
 
     private val verificationRequestProcessor = VerificationRequestProcessor(
         currentSandboxGroupContext,
         verificationSandboxService,
         verificationRequestHandler,
-        responseFactory
+        responseFactory,
+        requestClass,
+        responseClass
     )
-
-    @BeforeEach
-    fun setup() {
-        whenever(verificationSandboxService.get(cordaHoldingIdentity, cpkSummaries)).thenReturn(sandbox)
-        whenever(sandbox.virtualNodeContext).thenReturn(virtualNodeContext)
-        whenever(virtualNodeContext.holdingIdentity).thenReturn(cordaHoldingIdentity)
-        whenever(currentSandboxGroupContext.get()).thenReturn(sandbox)
-    }
-
-    @Test
-    fun `key should be of type String`() {
-        assertThat(verificationRequestProcessor.keyClass).isEqualTo(String::class.java)
-    }
-
-    @Test
-    fun `value should be of type TransactionVerificationRequest`() {
-        assertThat(verificationRequestProcessor.valueClass).isEqualTo(TransactionVerificationRequest::class.java)
-    }
-
-    @Test
-    fun `successful response messages`() {
-        val request1 = createRequest("r1")
-        val requestRecord1 = Record("", "1", request1)
-        val responseRecord1 = Record("", "1", "")
-        whenever(verificationRequestHandler.handleRequest(sandbox, request1)).thenReturn(responseRecord1)
-
-        val request2 = createRequest("r2")
-        val requestRecord2 = Record("", "2", request2)
-        val responseRecord2 = Record("", "2", "")
-        whenever(verificationRequestHandler.handleRequest(sandbox, request2)).thenReturn(responseRecord2)
-
-        val results = verificationRequestProcessor.onNext(listOf(requestRecord1, requestRecord2))
-
-        assertThat(results).containsOnly(responseRecord1, responseRecord2)
-    }
-
-    @Test
-    fun `failed request returns failure response back to the flow`() {
-        // Success response for request 1
-        val request1 = createRequest("r1")
-        val requestRecord1 = Record("", "1", request1)
-        val responseRecord1 = Record("", "1", "")
-        whenever(verificationRequestHandler.handleRequest(sandbox, request1)).thenReturn(responseRecord1)
-
-        // Failure response for request 2
-        val request2 = createRequest("r2")
-        val requestRecord2 = Record("", "2", request2)
-        val failureResponseRecord = Record("", "3", FlowEvent())
-        val request2Response = IllegalStateException()
-        whenever(verificationRequestHandler.handleRequest(sandbox, request2)).thenThrow(request2Response)
-        whenever(responseFactory.transientError(request2.flowExternalEventContext, request2Response))
-            .thenReturn(failureResponseRecord)
-
-        val results = verificationRequestProcessor.onNext(listOf(requestRecord1, requestRecord2))
-
-        assertThat(results).containsOnly(responseRecord1, failureResponseRecord)
-    }
 
     private fun createRequest(requestId: String) =
         TransactionVerificationRequest().apply {
@@ -113,4 +62,40 @@ class VerificationRequestProcessorTest {
                 CordaPackageSummary(CPK_NAME, CPK_VERSION, SIGNER_SUMMARY_HASH, CPK_CHECKSUM)
             )
         }
+
+    @BeforeEach
+    fun setup() {
+        whenever(verificationSandboxService.get(cordaHoldingIdentity, cpkSummaries)).thenReturn(sandbox)
+        whenever(sandbox.virtualNodeContext).thenReturn(virtualNodeContext)
+        whenever(virtualNodeContext.holdingIdentity).thenReturn(cordaHoldingIdentity)
+        whenever(currentSandboxGroupContext.get()).thenReturn(sandbox)
+    }
+
+    @Test
+    fun `successful response messages`() {
+        val request = createRequest("r1")
+        val responseRecord = Record("", "1", flowEvent)
+        whenever(verificationRequestHandler.handleRequest(sandbox, request)).thenReturn(responseRecord)
+
+        val results = verificationRequestProcessor.process(request)
+
+        assertThat(results).isNotNull
+        assertThat(results).isEqualTo(flowEvent)
+    }
+
+    @Test
+    fun `failed request returns failure response back to the flow`() {
+        val request = createRequest("r2")
+        val failureResponseRecord = Record("", "3", FlowEvent())
+        val response = IllegalStateException()
+
+        whenever(verificationRequestHandler.handleRequest(sandbox, request)).thenThrow(response)
+        whenever(responseFactory.transientError(request.flowExternalEventContext, response))
+            .thenReturn(failureResponseRecord)
+
+        val results = verificationRequestProcessor.process(request)
+
+        assertThat(results).isNotNull
+        assertThat(results).isEqualTo(failureResponseRecord.value)
+    }
 }

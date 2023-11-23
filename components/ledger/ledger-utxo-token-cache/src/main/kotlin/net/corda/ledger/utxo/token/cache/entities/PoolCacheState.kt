@@ -71,6 +71,12 @@ interface PoolCacheState {
      */
     fun removeExpiredClaims()
 
+
+    /**
+     * Ensures that all claims which are classified as invalid are removed from the state.
+     */
+    fun removeInvalidClaims()
+
     /**
      * Creates an Avro representation of the [PoolCacheState].
      *

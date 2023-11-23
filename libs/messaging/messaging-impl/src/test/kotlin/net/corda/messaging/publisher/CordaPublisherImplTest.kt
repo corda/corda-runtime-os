@@ -17,6 +17,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIProducerRequiresReset
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.config.ResolvedPublisherConfig
 import net.corda.messaging.utils.toCordaProducerRecord
+import net.corda.test.util.eventually
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
@@ -238,10 +239,12 @@ class CordaPublisherImplTest {
     fun testBatchPublish() {
         val publisher = createPublisher(true)
         val future = publisher.batchPublish(listOf(record))
-        verify(producer).sendRecords(any())
-        verify(producer).beginTransaction()
-        verify(producer).commitTransaction()
-        assertEquals(Unit, future.get())
+        eventually {
+            verify(producer).sendRecords(any())
+            verify(producer).beginTransaction()
+            verify(producer).commitTransaction()
+            assertEquals(Unit, future.get())
+        }
     }
 
     @Test
@@ -278,7 +281,7 @@ class CordaPublisherImplTest {
     }
 
     @Test
-    fun `testBatchPublishFailsAllThreadsIfPublishFails`() {
+    fun testBatchPublishFailsAllThreadsIfPublishFails() {
         val publisher = createPublisher(true)
         whenever(producer.sendRecords(any())).thenThrow(CordaMessageAPIFatalException(""))
         val numThreads = 100

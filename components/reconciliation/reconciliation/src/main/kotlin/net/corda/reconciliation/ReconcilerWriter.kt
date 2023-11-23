@@ -18,4 +18,14 @@ interface ReconcilerWriter<K : Any, V : Any> {
     fun remove(recordKey: K)
 
     val lifecycleCoordinatorName: LifecycleCoordinatorName
+
+    /**
+     * Compare DB record value to its Kafka respective one to see if after applying defaults
+     * to the DB record, the DB record is different to the Kafka one.
+     */
+    fun valuesMisalignedAfterDefaults(
+        recordKey: K,
+        dbRecordValue: V,
+        kafkaRecordValue: V
+    ): Boolean = false
 }

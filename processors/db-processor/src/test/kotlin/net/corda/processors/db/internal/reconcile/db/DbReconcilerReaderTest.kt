@@ -237,7 +237,7 @@ class DbReconcilerReaderTest {
         @Test
         fun `Expected services called when get versioned records executed successfully`() {
             // call terminal operation to process stream
-            dbReconcilerReader.getAllVersionedRecords()?.count()
+            dbReconcilerReader.getAllVersionedRecords().count()
 
             verify(reconciliationContextFactory).invoke()
 
@@ -265,7 +265,7 @@ class DbReconcilerReaderTest {
             verify(reconciliationContext2, never()).close()
 
             // run terminal operation on stream to process and close
-            versionedRecordsStream?.collect(Collectors.toList())
+            versionedRecordsStream.collect(Collectors.toList())
 
             verify(transaction1).rollback()
             verify(transaction2).rollback()
@@ -297,7 +297,7 @@ class DbReconcilerReaderTest {
 
             val ex = assertThrows<RuntimeException> {
                 // call terminal operation to process stream
-                dbReconcilerReader.getAllVersionedRecords()?.count()
+                dbReconcilerReader.getAllVersionedRecords().count()
             }
 
             verify(em1).transaction
@@ -310,7 +310,7 @@ class DbReconcilerReaderTest {
 
             val ex = assertThrows<RuntimeException> {
                 // call terminal operation to process stream
-                dbReconcilerReader.getAllVersionedRecords()?.count()
+                dbReconcilerReader.getAllVersionedRecords().count()
             }
 
             verify(transaction1).begin()
@@ -323,7 +323,7 @@ class DbReconcilerReaderTest {
 
             val ex = assertThrows<RuntimeException> {
                 // call terminal operation to process stream
-                dbReconcilerReader.getAllVersionedRecords()?.count()
+                dbReconcilerReader.getAllVersionedRecords().count()
             }
 
             verify(getAllVersionRecordsMock, times(2)).invoke(any())

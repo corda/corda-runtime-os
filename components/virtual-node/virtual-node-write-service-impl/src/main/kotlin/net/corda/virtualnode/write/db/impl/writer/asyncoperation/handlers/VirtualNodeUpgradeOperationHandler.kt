@@ -150,6 +150,7 @@ internal class VirtualNodeUpgradeOperationHandler(
 
         if (upgradedVNodeInfo.vaultDdlConnectionId == null) {
             logger.info("No vault DDL connection provided, CPI migrations must be run out of process (request $requestId)")
+            publishVirtualNodeInfo(completeVirtualNodeOperation(request.virtualNodeShortHash))
             return
         }
 

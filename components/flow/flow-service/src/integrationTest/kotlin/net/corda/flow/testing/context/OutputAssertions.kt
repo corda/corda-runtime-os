@@ -3,6 +3,7 @@ package net.corda.flow.testing.context
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.identity.HoldingIdentity
 
+@Suppress("TooManyFunctions")
 interface OutputAssertions {
 
     fun sessionAckEvents(

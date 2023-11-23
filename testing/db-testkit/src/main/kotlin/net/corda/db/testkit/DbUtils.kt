@@ -73,12 +73,14 @@ object DbUtils {
      * @param dbPassword DB password. If value is not provided, value of the system property "postgresPassword" is used.
      *                   If system property is not set then value "password" is used
      */
+    @Suppress("LongParameterList")
     fun createPostgresDataSource(
         dbUser: String? = null,
         dbPassword: String? = null,
         schemaName: String? = null,
         createSchema: Boolean = false,
-        rewriteBatchedInserts: Boolean = false
+        rewriteBatchedInserts: Boolean = false,
+        maximumPoolSize: Int = 5
     ): CloseableDataSource {
         val port = System.getProperty(POSTGRES_PORT_PROPERTY)
         val postgresDb = getPostgresDatabase()
@@ -102,7 +104,7 @@ object DbUtils {
         }
         logger.info("Using Postgres URL $jdbcUrl".emphasise())
         // reduce poolsize when testing
-        return factory.create(jdbcUrl, user, password)
+        return factory.create(jdbcUrl, user, password, maximumPoolSize)
     }
 
     fun createConfig(

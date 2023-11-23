@@ -70,7 +70,7 @@ fun ClusterInfo.generateCsr(
         } else {
             command {
                 post(
-                    "/api/${RestApiVersion.C5_1.versionPath}/certificate/$tenantId/$keyId",
+                    "/api/${restApiVersion.versionPath}/certificate/$tenantId/$keyId",
                     ObjectMapper().writeValueAsString(payload)
                 )
             }

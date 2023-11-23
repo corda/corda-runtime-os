@@ -156,6 +156,7 @@ class VirtualNodeRepositoryTest {
         assertEquals(virtualNodeOperation[0].requestData, "data")
     }
 
+    @Suppress("ForEachOnRange")
     @Test
     fun `find returns null if no vnode found`() {
         // "set up"

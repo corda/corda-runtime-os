@@ -192,12 +192,12 @@ class SoftCryptoServiceCachingTests {
         var findCount = 0
         val testCryptoRepositoryWrapping = TestWrappingRepository()
         val countingWrappingRepository: WrappingRepository = object : WrappingRepository {
-            override fun saveKey(alias: String, key: WrappingKeyInfo): WrappingKeyInfo {
+            override fun saveKey(key: WrappingKeyInfo): WrappingKeyInfo {
                 saveCount++
-                return testCryptoRepositoryWrapping.saveKey(alias, key)
+                return testCryptoRepositoryWrapping.saveKey(key)
             }
 
-            override fun saveKeyWithId(alias: String, key: WrappingKeyInfo, id: UUID?): WrappingKeyInfo {
+            override fun saveKeyWithId(key: WrappingKeyInfo, id: UUID?): WrappingKeyInfo {
                 TODO("Not yet implemented")
             }
 
@@ -207,6 +207,14 @@ class SoftCryptoServiceCachingTests {
             }
 
             override fun findKeyAndId(alias: String): Pair<UUID, WrappingKeyInfo>? = TODO("Not needed")
+
+            override fun findKeysWrappedByAlias(alias: String): List<WrappingKeyInfo> {
+                TODO("Not yet implemented")
+            }
+
+            override fun getKeyById(id: UUID): WrappingKeyInfo? {
+                TODO("Not yet implemented")
+            }
 
             override fun close() {
             }

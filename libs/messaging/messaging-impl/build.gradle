@@ -35,6 +35,7 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation "com.google.guava:guava:$guavaVersion"
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
