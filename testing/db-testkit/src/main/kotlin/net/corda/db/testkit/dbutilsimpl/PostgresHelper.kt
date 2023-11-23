@@ -9,7 +9,7 @@ import net.corda.test.util.LoggingUtils.emphasise
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-class PostgresHelper : AbstractDBHelper() {
+class PostgresHelper : ExternalDbHelper() {
     private val logger: Logger = LoggerFactory.getLogger(this::class.java)
 
     override fun getDatabase() = getPropertyNonBlank(DBNAME_PROPERTY,"postgres")

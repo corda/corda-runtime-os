@@ -19,7 +19,7 @@ import net.corda.orm.EntityManagerConfiguration
  * @property jdbcUrl The JDBC URL used to connect to the database.
  * @property driverClass The name of the JDBC driver to be used.
  */
-abstract class AbstractDBHelper : DbUtilsHelper {
+abstract class ExternalDbHelper : DbUtilsHelper {
 
     companion object {
         const val DBPORT_PROPERTY = "databasePort"

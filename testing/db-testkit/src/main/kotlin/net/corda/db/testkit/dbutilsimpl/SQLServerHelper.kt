@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory
 import java.security.InvalidParameterException
 import java.sql.Connection
 
-class SQLServerHelper : AbstractDBHelper() {
+class SQLServerHelper : ExternalDbHelper() {
     private val logger: Logger = LoggerFactory.getLogger(this::class.java)
 
       override fun getDatabase() = getPropertyNonBlank(DBNAME_PROPERTY, "master")
