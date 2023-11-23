@@ -46,6 +46,7 @@ class MemberRoleTest {
                     MemberX500Name.parse("O=MyNotaryService, L=London, C=GB"),
                     "net.corda.notary.MyNotaryService",
                     setOf(1, 2),
+                    true
                 )
             }
     }

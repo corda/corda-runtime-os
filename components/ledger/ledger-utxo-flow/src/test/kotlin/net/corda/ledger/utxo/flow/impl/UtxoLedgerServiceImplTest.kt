@@ -282,6 +282,6 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
             utxoLedgerService.getPluggableNotaryClientFlow(notaryX500Name)
         }
 
-        assertEquals(MyClientFlow::class.java.name, result.name)
+        assertEquals(MyClientFlow::class.java.name, result.flowClass.name)
     }
 }

@@ -13,6 +13,7 @@ import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesExce
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.notary.worker.selection.NotaryVirtualNodeSelectorService
 import net.corda.ledger.utxo.data.transaction.TransactionVerificationStatus
+import net.corda.ledger.utxo.flow.impl.PluggableNotaryDetails
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainSenderFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
@@ -126,6 +127,7 @@ class UtxoFinalityFlowV1Test {
     private val updatedTxAllSigs = mock<UtxoSignedTransactionInternal>()
     private val notarizedTx = mock<UtxoSignedTransactionInternal>()
 
+    private val pluggableNotaryDetails = mock<PluggableNotaryDetails>()
     private val pluggableNotaryClientFlow = mock<PluggableNotaryClientFlow>()
     private val ledgerTransaction = mock<UtxoLedgerTransaction>()
 
@@ -192,6 +194,8 @@ class UtxoFinalityFlowV1Test {
         whenever(stateAndRef.state).thenReturn(transactionState)
         whenever(transactionState.contractType).thenReturn(TestContact::class.java)
         whenever(transactionState.contractState).thenReturn(testState)
+
+        whenever(pluggableNotaryDetails.flowClass).thenReturn(pluggableNotaryClientFlow.javaClass)
     }
 
     @Test
@@ -1126,9 +1130,9 @@ class UtxoFinalityFlowV1Test {
         val flow = spy(UtxoFinalityFlowV1(
             signedTransaction,
             sessions,
-            pluggableNotaryClientFlow.javaClass
+            pluggableNotaryDetails
         ))
-
+//        doReturn(pluggableNotaryDetails).whenever(pluggableNotaryClientFlow.javaClass)
         doReturn(pluggableNotaryClientFlow).whenever(flow).newPluggableNotaryClientFlowInstance(any())
 
         flow.memberLookup = memberLookup
