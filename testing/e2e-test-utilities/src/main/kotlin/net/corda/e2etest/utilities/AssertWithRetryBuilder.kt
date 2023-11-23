@@ -49,14 +49,14 @@ class AssertWithRetryBuilder(private val args: AssertWithRetryArgs) {
 private data class Attempt(val attemptNumber: Int, val timeTried: Duration, val response: String)
 
 private fun Iterable<Attempt>.prettyPrint(): String =
-    attempts.joinToString("\n") { "${it.attemptNumber} (${it.timeTried}): ${it.response}" }
+    joinToString("\n") { "${it.attemptNumber} (${it.timeTried}): ${it.response}" }
 
 private fun <T> trackRetryAttempts(block: ((Attempt) -> Unit) -> T): T {
     val attempts = mutableListOf<Attempt>()
     try {
         return block { attempts.add(it) }
     } catch (t: Throwable) {
-        println("\nAttempts:\n${formatAttempts(attempts)}")
+        println("\nAttempts:\n${attempts.prettyPrint()}")
         throw t
     }
 }
