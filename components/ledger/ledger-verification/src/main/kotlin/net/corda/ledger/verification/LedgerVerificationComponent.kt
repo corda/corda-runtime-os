@@ -1,6 +1,5 @@
 package net.corda.ledger.verification
 
-import net.corda.configuration.read.ConfigurationReadService
 import net.corda.ledger.verification.processor.VerificationSubscriptionFactory
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.Lifecycle
@@ -24,8 +23,6 @@ import org.slf4j.LoggerFactory
 class LedgerVerificationComponent @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = ConfigurationReadService::class)
-    private val configurationReadService: ConfigurationReadService,
     @Reference(service = SandboxGroupContextComponent::class)
     private val sandboxGroupContextComponent: SandboxGroupContextComponent,
     @Reference(service = VerificationSubscriptionFactory::class)
@@ -38,7 +35,6 @@ class LedgerVerificationComponent @Activate constructor(
     }
 
     private val dependentComponents = DependentComponents.of(
-        ::configurationReadService,
         ::sandboxGroupContextComponent
     )
     private val lifecycleCoordinator =
