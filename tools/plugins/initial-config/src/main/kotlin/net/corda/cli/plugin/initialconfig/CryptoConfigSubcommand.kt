@@ -167,7 +167,7 @@ class CryptoConfigSubcommand : Runnable {
 
             if (vaultWrappingKeyPassphrases.size < index)
                 throw makeParameterException("Not enough vault wrapping key passphrase keys passed in; need "+
-                        "$numberOfUnmanagedWrappingKeys have ${vaultWrappingKeyPassphrases.size <= index}")
+                        "$numberOfUnmanagedWrappingKeys have ${vaultWrappingKeyPassphrases.size}")
             Pair(
                 vss.createValue("unused", vaultWrappingKeyPassphrases[index-1]),
                 vss.createValue("unused", vaultWrappingKeySalts[index-1])
