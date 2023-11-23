@@ -107,7 +107,7 @@ class TestInitialConfigPluginCrypto {
     }
 
     @Test
-    fun `Should be able to create vault initial crypto configuration with two random wrapping keys`() {
+    fun `Should be able to create vault initial crypto configuration with single random wrapping key`() {
         val colorScheme = CommandLine.Help.ColorScheme.Builder().ansi(CommandLine.Help.Ansi.OFF).build()
         val app = InitialConfigPlugin.PluginEntryPoint()
         val outText = SystemLambda.tapSystemOutNormalized {
