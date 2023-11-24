@@ -6,6 +6,7 @@ import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
 import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
 import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
+import net.corda.e2etest.utilities.TestRequestIdGenerator
 import net.corda.e2etest.utilities.awaitRpcFlowFinished
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
 import net.corda.e2etest.utilities.conditionallyUploadCpiSigningCertificate
@@ -119,8 +120,10 @@ class TokenSelectionTests {
     @Test
     @Order(1)
     fun `ensure it is possible to send a balance query request and receive a response`(testInfo: TestInfo) {
+        val idGenerator = TestRequestIdGenerator(testInfo)
+
         // Start the flow that will send the request and receive the response
-        val tokenBalanceQuery = runTokenBalanceQueryFlow(testInfo.displayName)
+        val tokenBalanceQuery = runTokenBalanceQueryFlow(idGenerator.nextId)
 
         // Check that the balance of the token cache is zero since no token has been created
         assertThat(tokenBalanceQuery.availableBalance).isEqualTo(BigDecimal.ZERO)
@@ -130,13 +133,14 @@ class TokenSelectionTests {
     @Test
     @Order(2)
     fun `Claim a token in a flow and let the flow finish to validate the token claim is automatically released`(testInfo: TestInfo){
+        val idGenerator = TestRequestIdGenerator(testInfo)
         // Create a simple UTXO transaction
         val input = "token test input"
         val utxoFlowRequestId = startRpcFlow(
             bobHoldingId,
             mapOf("input" to input, "members" to listOf(aliceX500), "notary" to NOTARY_SERVICE_X500),
             "com.r3.corda.demo.utxo.UtxoDemoFlow",
-            requestId = "${testInfo.displayName}-1"
+            requestId = idGenerator.nextId
         )
         val utxoFlowResult = awaitRpcFlowFinished(bobHoldingId, utxoFlowRequestId)
         assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
@@ -147,7 +151,7 @@ class TokenSelectionTests {
             aliceHoldingId,
             mapOf(),
             "com.r3.corda.demo.utxo.token.selection.TokenSelectionFlow2",
-            requestId = "${testInfo.displayName}-2"
+            requestId = idGenerator.nextId
         )
         val tokenSelectionResult1 = awaitRpcFlowFinished(aliceHoldingId, tokenSelectionFlowId1)
         assertThat(tokenSelectionResult1.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
@@ -159,7 +163,7 @@ class TokenSelectionTests {
             aliceHoldingId,
             mapOf(),
             "com.r3.corda.demo.utxo.token.selection.TokenSelectionFlow2",
-            requestId = "${testInfo.displayName}-3"
+            requestId = idGenerator.nextId
         )
         val tokenSelectionResult2 = awaitRpcFlowFinished(aliceHoldingId, tokenSelectionFlowId2)
         assertThat(tokenSelectionResult2.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
