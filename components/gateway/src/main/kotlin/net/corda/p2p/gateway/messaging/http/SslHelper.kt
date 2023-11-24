@@ -3,8 +3,10 @@ package net.corda.p2p.gateway.messaging.http
 import io.netty.handler.ssl.SslHandler
 import net.corda.crypto.utils.certPathToString
 import org.bouncycastle.asn1.x500.X500Name
+import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.io.StringWriter
 import java.net.Socket
 import java.net.URI
 import java.security.SecureRandom
@@ -162,7 +164,23 @@ class IdentityCheckingTrustManager(private val wrapped: X509ExtendedTrustManager
             expectedX500Name?.let {
                 checkServerIdentity(chain)
             }
-            wrapped.checkServerTrusted(chain, authType, engine)
+            try {
+                wrapped.checkServerTrusted(chain, authType, engine)
+            } catch (e: Throwable) {
+                logger.info("QQQ Failed: $e expectedX500Name is $expectedX500Name", e)
+                chain?.forEachIndexed { i, c ->
+                    logger.info("QQQ Certificate $i\n${c.toPem()}\n")
+                }
+                throw e
+            }
+        }
+    }
+    private fun Certificate.toPem(): String {
+        return StringWriter().use { str ->
+            JcaPEMWriter(str).use { writer ->
+                writer.writeObject(this)
+            }
+            str.toString()
         }
     }
 
