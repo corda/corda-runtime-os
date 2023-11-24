@@ -42,6 +42,7 @@ fun convertToKeyStore(certificateFactory: CertificateFactory, pemCertificates: C
             }
             try {
                 keyStore.setCertificateEntry("$alias-$index", certificate)
+                logger.info("QQQ key store has entry $alias-$index:\n$pemCertificate\n")
             } catch (except: KeyStoreException) {
                 logger.warn("Could not load certificate into keystore: ${except.message}.")
                 return null
