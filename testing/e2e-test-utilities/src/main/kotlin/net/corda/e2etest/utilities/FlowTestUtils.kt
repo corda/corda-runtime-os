@@ -42,12 +42,18 @@ fun startRpcFlow(
     holdingId: String,
     args: Map<String, Any>,
     flowName: String,
-    expectedCode: Int = 202
-) = DEFAULT_CLUSTER.startRpcFlow(holdingId, args, flowName, expectedCode)
+    expectedCode: Int = 202,
+    requestId: String = UUID.randomUUID().toString()
+) = DEFAULT_CLUSTER.startRpcFlow(holdingId, args, flowName, expectedCode, requestId)
 
-fun ClusterInfo.startRpcFlow(holdingId: String, args: Map<String, Any>, flowName: String, expectedCode: Int = 202): String {
+fun ClusterInfo.startRpcFlow(
+    holdingId: String,
+    args: Map<String, Any>,
+    flowName: String,
+    expectedCode: Int = 202,
+    requestId: String = UUID.randomUUID().toString()
+): String {
     return cluster {
-        val requestId = UUID.randomUUID().toString()
 
         assertWithRetry {
             timeout(RETRY_TIMEOUT)
