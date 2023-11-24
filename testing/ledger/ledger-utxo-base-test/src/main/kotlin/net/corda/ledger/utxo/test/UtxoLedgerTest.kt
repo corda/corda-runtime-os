@@ -93,7 +93,8 @@ abstract class UtxoLedgerTest : CommonLedgerTest() {
         mockCurrentSandboxGroupContext,
         mockNotaryLookup,
         mockExternalEventExecutor,
-        mockResultSetFactory
+        mockResultSetFactory,
+        mockUtxoLedgerTransactionVerificationService
     )
     val utxoSignedTransactionKryoSerializer = UtxoSignedTransactionKryoSerializer(
         serializationServiceWithWireTx,

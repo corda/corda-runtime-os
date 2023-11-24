@@ -20,6 +20,7 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInterna
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.UtxoFilteredTransactionBuilderImpl
 import net.corda.ledger.utxo.flow.impl.transaction.filtered.factory.UtxoFilteredTransactionFactory
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
@@ -65,7 +66,9 @@ class UtxoLedgerServiceImpl @Activate constructor(
     @Reference(service = CurrentSandboxGroupContext::class) private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     @Reference(service = NotaryLookup::class) private val notaryLookup: NotaryLookup,
     @Reference(service = ExternalEventExecutor::class) private val externalEventExecutor: ExternalEventExecutor,
-    @Reference(service = ResultSetFactory::class) private val resultSetFactory: ResultSetFactory
+    @Reference(service = ResultSetFactory::class) private val resultSetFactory: ResultSetFactory,
+    @Reference(service = UtxoLedgerTransactionVerificationService::class)
+    private val transactionVerificationService: UtxoLedgerTransactionVerificationService
 ) : UtxoLedgerService, UsedByFlow, SingletonSerializeAsToken {
 
     private companion object {
@@ -178,6 +181,32 @@ class UtxoLedgerServiceImpl @Activate constructor(
             resultClass,
             clock
         )
+    }
+
+    @Suspendable
+    override fun persistDraftSignedTransaction(utxoSignedTransaction: UtxoSignedTransaction) {
+        // Verifications need to be at least as strong as what
+        // net.corda.ledger.utxo.flow.impl.flows.finality.v1.UtxoFinalityFlowV1.call
+        // does before the initial persist()
+
+        utxoSignedTransaction as UtxoSignedTransactionInternal
+        // verifyExistingSignatures
+        check(utxoSignedTransaction.signatures.isNotEmpty()) {
+            "Received draft transaction without signatures."
+        }
+        utxoSignedTransaction.signatures.forEach {
+            utxoSignedTransaction.verifySignatorySignature(it)
+        }
+        //verifyTransaction
+        transactionVerificationService.verify(utxoSignedTransaction.toLedgerTransaction())
+
+        // Initial verifications passed, the transaction can be saved in the database.
+        utxoLedgerPersistenceService.persist(utxoSignedTransaction, TransactionStatus.DRAFT)
+    }
+
+    @Suspendable
+    override fun findDraftSignedTransaction(id: SecureHash): UtxoSignedTransaction? {
+        return utxoLedgerPersistenceService.findSignedTransaction(id, TransactionStatus.DRAFT)
     }
 
     // Retrieve notary client plugin class for specified notary service identity. This is done in
