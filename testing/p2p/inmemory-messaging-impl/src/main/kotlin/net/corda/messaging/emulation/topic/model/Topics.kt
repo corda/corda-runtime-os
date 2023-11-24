@@ -19,7 +19,7 @@ class Topics(
     internal fun getWriteLock(records: Collection<Record<*, *>>, partitionId: Int): PartitionsWriteLock {
         val partitions = records.map {
             val topic = requireNotNull(it.topic) { "Topic is not allowed to be null for message bus records" }
-            getTopic(topic).getPartition(it)
+            getTopic(topic).getPartition(partitionId)
         }
         return PartitionsWriteLock(partitions)
     }
