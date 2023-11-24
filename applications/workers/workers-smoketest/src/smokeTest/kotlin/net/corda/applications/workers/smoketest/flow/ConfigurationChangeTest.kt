@@ -2,6 +2,8 @@ package net.corda.applications.workers.smoketest.flow
 
 import net.corda.applications.workers.smoketest.utils.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.utils.TEST_CPI_NAME
+import net.corda.e2etest.utilities.ClusterReadiness
+import net.corda.e2etest.utilities.ClusterReadinessChecker
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
 import net.corda.e2etest.utilities.RpcSmokeTestInput
@@ -26,6 +28,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
+import java.time.Duration
 import java.util.UUID
 
 @Suppress("Unused", "FunctionName")
@@ -35,7 +38,7 @@ import java.util.UUID
 @Order(Int.MAX_VALUE)
 @TestInstance(Lifecycle.PER_CLASS)
 @Execution(ExecutionMode.SAME_THREAD)
-class ConfigurationChangeTest {
+class ConfigurationChangeTest : ClusterReadiness by ClusterReadinessChecker() {
 
     companion object {
         private val testRunUniqueId = UUID.randomUUID()
@@ -49,29 +52,31 @@ class ConfigurationChangeTest {
             bobX500,
             charlyX500,
         )
+    }
 
-        @BeforeAll
-        @JvmStatic
-        internal fun beforeAll() {
-            DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
+    @BeforeAll
+    internal fun beforeAll() {
+        // check cluster is ready
+        assertIsReady(Duration.ofMinutes(1), Duration.ofMillis(100))
 
-            // Upload test flows if not already uploaded
-            conditionallyUploadCordaPackage(
-                applicationCpiName, TEST_CPB_LOCATION, groupId, staticMemberList
-            )
+        DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
 
-            // Make sure Virtual Nodes are created
-            val bobActualHoldingId = getOrCreateVirtualNodeFor(bobX500, applicationCpiName)
-            val charlieActualHoldingId = getOrCreateVirtualNodeFor(charlyX500, applicationCpiName)
+        // Upload test flows if not already uploaded
+        conditionallyUploadCordaPackage(
+            applicationCpiName, TEST_CPB_LOCATION, groupId, staticMemberList
+        )
 
-            // Just validate the function and actual vnode holding ID hash are in sync
-            // if this fails the X500_BOB formatting could have changed or the hash implementation might have changed
-            assertThat(bobActualHoldingId).isEqualTo(bobHoldingId)
-            assertThat(charlieActualHoldingId).isEqualTo(charlieHoldingId)
+        // Make sure Virtual Nodes are created
+        val bobActualHoldingId = getOrCreateVirtualNodeFor(bobX500, applicationCpiName)
+        val charlieActualHoldingId = getOrCreateVirtualNodeFor(charlyX500, applicationCpiName)
 
-            registerStaticMember(bobHoldingId)
-            registerStaticMember(charlieHoldingId)
-        }
+        // Just validate the function and actual vnode holding ID hash are in sync
+        // if this fails the X500_BOB formatting could have changed or the hash implementation might have changed
+        assertThat(bobActualHoldingId).isEqualTo(bobHoldingId)
+        assertThat(charlieActualHoldingId).isEqualTo(charlieHoldingId)
+
+        registerStaticMember(bobHoldingId)
+        registerStaticMember(charlieHoldingId)
     }
 
     @Test
