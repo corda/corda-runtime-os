@@ -1,7 +1,10 @@
 package net.corda.crypto.delegated.signing
 
+import org.bouncycastle.openssl.jcajce.JcaPEMWriter
+import org.slf4j.LoggerFactory
 import java.io.InputStream
 import java.io.OutputStream
+import java.io.StringWriter
 import java.security.Key
 import java.security.KeyStore
 import java.security.KeyStoreSpi
@@ -14,7 +17,23 @@ internal class DelegatedKeystore(
     private val certificateStore: DelegatedCertificateStore,
     private val signer: DelegatedSigner,
 ) : KeyStoreSpi() {
-    private fun getCertificates(alias: String): Collection<Certificate>? = certificateStore.aliasToCertificates[alias]
+    private companion object {
+        val logger = LoggerFactory.getLogger("TTTQQQ")
+    }
+    fun Certificate.toPem(): String {
+        return StringWriter().use { str ->
+            JcaPEMWriter(str).use { writer ->
+                writer.writeObject(this)
+            }
+            str.toString()
+        }
+    }
+    private fun getCertificates(alias: String): Collection<Certificate>? = certificateStore.aliasToCertificates[alias].also {
+        logger.info("getCertificates for ${alias}")
+        it?.forEachIndexed { index, certificate ->
+            logger.info("certificate $index \n ${certificate.toPem()}\n")
+        }
+    }
 
     override fun engineGetKey(alias: String, password: CharArray): Key? =
         getCertificates(alias)
@@ -30,7 +49,9 @@ internal class DelegatedKeystore(
         getCertificates(alias)?.toTypedArray()
 
     override fun engineAliases(): Enumeration<String> =
-        Collections.enumeration(certificateStore.aliasToCertificates.keys)
+        Collections.enumeration(certificateStore.aliasToCertificates.keys).also {
+            logger.info("engineAliases-> ${certificateStore.aliasToCertificates.keys}")
+        }
 
     override fun engineContainsAlias(alias: String): Boolean = certificateStore.aliasToCertificates.containsKey(alias)
 

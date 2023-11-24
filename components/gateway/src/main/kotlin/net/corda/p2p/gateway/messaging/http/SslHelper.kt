@@ -165,12 +165,14 @@ class IdentityCheckingTrustManager(private val wrapped: X509ExtendedTrustManager
                 checkServerIdentity(chain)
             }
             try {
-                wrapped.checkServerTrusted(chain, authType, engine)
-            } catch (e: Throwable) {
-                logger.info("QQQ Failed: $e expectedX500Name is $expectedX500Name", e)
+                logger.info("QQQ Checking...")
                 chain?.forEachIndexed { i, c ->
                     logger.info("QQQ Certificate $i\n${c.toPem()}\n")
                 }
+                wrapped.checkServerTrusted(chain, authType, engine)
+                logger.info("QQQ Passed")
+            } catch (e: Throwable) {
+                logger.info("QQQ failed", e)
                 throw e
             }
         }
