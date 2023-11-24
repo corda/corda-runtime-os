@@ -221,7 +221,7 @@ class TestRequestIdGenerator( testName: String ){
     private val baseName: String = Regex("[^-._A-Za-z0-9]").replace(testName, "_")
     private var count = 0
 
-    fun getNextId(): String{
+    val nextId: String get() {
         return "$baseName-${count++}"
     }
 }
