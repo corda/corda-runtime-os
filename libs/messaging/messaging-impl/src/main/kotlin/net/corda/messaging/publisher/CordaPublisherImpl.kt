@@ -254,7 +254,7 @@ internal class CordaPublisherImpl(
                 if (!config.transactional) {
                     future.complete(Unit)
                 } else {
-                    log.debug { "Asynchronous send completed completed successfully." }
+                    log.debug { "Asynchronous send completed successfully." }
                 }
             }
 
