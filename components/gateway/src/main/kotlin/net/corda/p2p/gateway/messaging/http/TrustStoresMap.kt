@@ -124,6 +124,7 @@ internal class TrustStoresMap(
                 trustRootsPerHoldingIdentity[truststoreKey] = trustedCertificates
                 logger.info("Trust roots updated for x500 name ${truststoreKey.sourceX500Name} and " +
                         "group ID ${truststoreKey.destinationGroupId}.")
+                logger.info("QQQ for ${truststoreKey.sourceX500Name} we have \n$trustedCertificates\n")
             } else {
                 val truststoreKey = entriesPerKey.remove(newRecord.key)
                 if (truststoreKey != null) {

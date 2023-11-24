@@ -171,11 +171,13 @@ internal class DynamicKeyStore(
                 logger.info("TLS certificate removed for the following identities: ${currentData.keys}.")
             } else {
                 aliasToCertificates[newRecord.key] = chain.tlsCertificates.map { pemCertificate ->
+                    logger.info("QQQ Got PEM certificate for ${newRecord.key} -> \n$pemCertificate\n")
                     ByteArrayInputStream(pemCertificate.toByteArray()).use {
                         certificateFactory.generateCertificate(it)
                     }
                 }.also { certificates ->
                     certificates.firstOrNull()?.publicKey?.also { publicKey ->
+                        logger.info("QQQ \t public key is -> $publicKey")
                         publicKeyToTenantId[publicKey] = chain.tenantId
                     }
                     holdingIdentityToClientKeyStore[chain.holdingIdentity] = ClientKeyStore(

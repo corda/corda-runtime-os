@@ -76,7 +76,7 @@ fun ClusterInfo.onboardMgm(
             println("QQQ In onboard MGM for ${ca.name}")
             println("QQQ tlsKeyId = $tlsKeyId")
             println("QQQ csr = \n$mgmTlsCsr\n")
-            println("QQQ tlsCert = \n$mgmTlsCert\n")
+            println("QQQ tlsCert = \n${mgmTlsCert.readText()}\n")
             println("QQQ Root ca = \n${ca.caCertificate.toPem()}\n")
         } else {
             println("QQQ Key exists")
