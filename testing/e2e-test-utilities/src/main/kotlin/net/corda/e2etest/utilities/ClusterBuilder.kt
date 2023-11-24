@@ -654,6 +654,17 @@ class ClusterBuilder {
         )
     }
 
+    fun doRotateCryptoUnmanagedWrappingKeys(
+        oldKeyAlias: String,
+        newKeyAlias: String
+    ): SimpleResponse {
+        return post("/api/$REST_API_VERSION_PATH/wrappingkey/unmanaged/rotation/${oldKeyAlias}",
+            body = """{
+                "newKeyAlias": "$newKeyAlias"
+            }""".trimMargin()
+        )
+    }
+
 }
 
 fun <T> cluster(

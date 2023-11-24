@@ -12,6 +12,7 @@ import net.corda.crypto.cipher.suite.CipherSchemeMetadata
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureVerificationService
 import net.corda.crypto.component.test.utils.TestConfigurationReadService
+import net.corda.crypto.config.impl.KeyDerivationParameters
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
@@ -49,7 +50,7 @@ class TestServicesFactory {
     val emptyConfig: SmartConfig = configFactory.create(ConfigFactory.empty())
 
     val cryptoConfig: SmartConfig = configFactory.create(
-        createDefaultCryptoConfig("salt", "passphrase")
+        createDefaultCryptoConfig(listOf(KeyDerivationParameters( "passphrase", "salt")))
     ).withFallback(
         ConfigFactory.parseString(
             """
@@ -146,7 +147,8 @@ class TestServicesFactory {
     val rootWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
     val secondLevelWrappingKey = WrappingKeyImpl.generateWrappingKey(schemeMetadata)
     val secondLevelWrappingKeyWrapped = rootWrappingKey.wrap(secondLevelWrappingKey)
-    val secondLevelWrappingKeyInfo = WrappingKeyInfo(1, "AES", secondLevelWrappingKeyWrapped, 1, "root")
+    val secondLevelWrappingKeyInfo = WrappingKeyInfo(
+        1, "AES", secondLevelWrappingKeyWrapped, 1, "root", "key1")
     val wrappingRepository = TestWrappingRepository(secondLevelWrappingKeyInfo)
     val shortHashCache: Cache<ShortHashCacheKey, SigningKeyInfo> = CacheFactoryImpl().build(
         "test short hash cache", Caffeine.newBuilder()

@@ -10,7 +10,6 @@ import net.corda.ledger.utxo.verification.CordaPackageSummary as CordaPackageSum
 import net.corda.ledger.utxo.verification.TransactionVerificationStatus as TransactionVerificationStatusAvro
 import net.corda.ledger.utxo.verification.TransactionVerificationRequest as TransactionVerificationRequestAvro
 import net.corda.ledger.utxo.verification.TransactionVerificationResponse as TransactionVerificationResponseAvro
-import net.corda.schema.Schemas
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
@@ -34,7 +33,6 @@ class TransactionVerificationExternalEventFactory(
         parameters: TransactionVerificationParameters
     ): ExternalEventRecord {
         return ExternalEventRecord(
-            topic = Schemas.Verification.VERIFICATION_LEDGER_PROCESSOR_TOPIC,
             payload = TransactionVerificationRequestAvro.newBuilder()
                 .setTimestamp(clock.instant())
                 .setHoldingIdentity(checkpoint.holdingIdentity.toAvro())
