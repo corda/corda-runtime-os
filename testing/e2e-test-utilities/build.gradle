@@ -15,22 +15,24 @@ dependencies {
     }
 
     api "org.eclipse.jetty.websocket:websocket-client:$jettyVersion"
+
     implementation "net.corda:corda-config-schema:$cordaApiVersion"
 
-    implementation "com.konghq:unirest-java:$unirestVersion"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
+    implementation "com.konghq:unirest-java:$unirestVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation project(':testing:test-utilities')
-
     implementation "org.apache.commons:commons-text:$commonsTextVersion"
     implementation "org.assertj:assertj-core:$assertjVersion"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$kotlinCoroutinesVersion"
     implementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+
     implementation project(':components:flow:flow-rest-resource-service')
     implementation project(':libs:crypto:certificate-generation')
+    implementation project(':libs:crypto:crypto-core')
     implementation project(':libs:crypto:crypto-utils')
     implementation project(':tools:plugins:package')
     implementation project(":testing:packaging-test-utilities")
-    implementation "org.slf4j:slf4j-api:$slf4jVersion"
-    implementation project(':libs:crypto:crypto-core')
+    implementation project(':testing:test-utilities')
 }

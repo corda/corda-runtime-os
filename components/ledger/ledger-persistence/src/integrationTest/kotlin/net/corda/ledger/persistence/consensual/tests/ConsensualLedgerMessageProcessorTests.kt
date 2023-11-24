@@ -1,13 +1,12 @@
 package net.corda.ledger.persistence.consensual.tests
 
-import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
-import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.ledger.persistence.FindTransaction
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
@@ -30,9 +29,9 @@ import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.ledger.consensual.data.transaction.TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
 import net.corda.ledger.consensual.data.transaction.consensualComponentGroupStructure
+import net.corda.ledger.persistence.assertSuccessResponse
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
 import net.corda.ledger.persistence.processor.LedgerPersistenceRequestProcessor
-import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
@@ -63,14 +62,13 @@ import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.nio.file.Path
 import java.time.Instant
-import java.util.UUID
 
 /**
  * To use Postgres rather than in-memory (HSQL):
  *
  *     docker run --rm --name test-instance -e POSTGRES_PASSWORD=password -p 5432:5432 postgres
  *
- *     gradlew integrationTest -PpostgresPort=5432
+ *     gradlew integrationTest -PdatabaseType=POSTGRES
  *
  * Rather than creating a new serializer in these tests from scratch,
  * we grab a reference to the one in the sandbox and use that to serialize and de-serialize.
@@ -99,6 +97,9 @@ class ConsensualLedgerMessageProcessorTests {
 
     @InjectService(timeout = TIMEOUT_MILLIS)
     lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
+
+    private val requestClass = LedgerPersistenceRequest::class.java
+    private val responseClass = FlowEvent::class.java
 
     @BeforeAll
     fun setup(
@@ -139,7 +140,7 @@ class ConsensualLedgerMessageProcessorTests {
             EXTERNAL_EVENT_CONTEXT.apply {
                 this.contextProperties = keyValuePairListOf(
                     this.contextProperties.toMap() +
-                    cpkFileHashes.toKeyValuePairList(CPK_FILE_CHECKSUM).toMap()
+                            cpkFileHashes.toKeyValuePairList(CPK_FILE_CHECKSUM).toMap()
                 )
             }
         )
@@ -149,15 +150,13 @@ class ConsensualLedgerMessageProcessorTests {
             currentSandboxGroupContext,
             virtualNode.entitySandboxService,
             delegatedRequestHandlerSelector,
-            responseFactory
+            responseFactory,
+            requestClass,
+            responseClass
         )
 
-        val requestId = UUID.randomUUID().toString()
-        val records = listOf(Record(TOPIC, requestId, request))
-
         // Process the messages (this should persist transaction to the DB)
-        var responses = assertSuccessResponses(processor.onNext(records))
-        assertThat(responses).hasSize(1)
+        assertSuccessResponse(processor.process(request), logger)
 
         // Check that we wrote the expected things to the DB
         val findRequest = createRequest(
@@ -170,13 +169,8 @@ class ConsensualLedgerMessageProcessorTests {
                 )
             }
         )
-        responses = assertSuccessResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), findRequest))))
-
-        assertThat(responses).hasSize(1)
-        val flowEvent = responses.first().value as FlowEvent
-        val response = flowEvent.payload as ExternalEventResponse
-        assertThat(response.error).isNull()
-        val entityResponse = deserializer.deserialize(response.payload.array())!!
+        val result = assertSuccessResponse(processor.process(findRequest), logger)
+        val entityResponse = deserializer.deserialize(result.payload.array())!!
         assertThat(entityResponse.results).hasSize(1)
         val retrievedTransaction = ctx.deserialize<SignedTransactionContainer>(entityResponse.results.first())
         assertThat(retrievedTransaction).isEqualTo(transaction)
@@ -186,16 +180,18 @@ class ConsensualLedgerMessageProcessorTests {
 
     private fun createTestTransaction(ctx: SandboxGroupContext): SignedTransactionContainer {
         val wireTransactionFactory: WireTransactionFactory = ctx.getSandboxSingletonService()
-        val metadata = TransactionMetadataImpl(mapOf(
-            TransactionMetadataImpl.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.name,
-            TransactionMetadataImpl.LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
-            TransactionMetadataImpl.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
-            TransactionMetadataImpl.PLATFORM_VERSION_KEY to 123,
-            TransactionMetadataImpl.CPI_METADATA_KEY to cpiPackageSummaryExample,
-            TransactionMetadataImpl.CPK_METADATA_KEY to cpkPackageSummaryListExample(),
-            TransactionMetadataImpl.SCHEMA_VERSION_KEY to TransactionMetadataImpl.SCHEMA_VERSION,
-            TransactionMetadataImpl.COMPONENT_GROUPS_KEY to consensualComponentGroupStructure
-        ))
+        val metadata = TransactionMetadataImpl(
+            mapOf(
+                TransactionMetadataImpl.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.name,
+                TransactionMetadataImpl.LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
+                TransactionMetadataImpl.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
+                TransactionMetadataImpl.PLATFORM_VERSION_KEY to 123,
+                TransactionMetadataImpl.CPI_METADATA_KEY to cpiPackageSummaryExample,
+                TransactionMetadataImpl.CPK_METADATA_KEY to cpkPackageSummaryListExample(),
+                TransactionMetadataImpl.SCHEMA_VERSION_KEY to TransactionMetadataImpl.SCHEMA_VERSION,
+                TransactionMetadataImpl.COMPONENT_GROUPS_KEY to consensualComponentGroupStructure
+            )
+        )
         val wireTransaction = wireTransactionFactory.createExample(
             ctx.getSandboxSingletonService(),
             ctx.getSandboxSingletonService(),
@@ -220,18 +216,6 @@ class ConsensualLedgerMessageProcessorTests {
             request,
             externalEventContext
         )
-    }
-
-    private fun assertSuccessResponses(records: List<Record<*, *>>): List<Record<*, *>> {
-        records.forEach {
-            val flowEvent = it.value as FlowEvent
-            val response = flowEvent.payload as ExternalEventResponse
-            if (response.error != null) {
-                logger.error("Incorrect error response: {}", response.error)
-            }
-            assertThat(response.error).isNull()
-        }
-        return records
     }
 
     /* Simple wrapper to serialize bytes correctly during test */

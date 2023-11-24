@@ -26,6 +26,7 @@ dependencies {
     integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+    integrationTestRuntimeOnly "com.microsoft.sqlserver:mssql-jdbc:$mssqlDriverVersion"
 
     // NOTE: these are needed for resolving bundle requirements
     integrationTestRuntimeOnly project(":testing:bundles:testing-cats")
