@@ -34,7 +34,7 @@ import net.corda.db.persistence.testkit.helpers.SandboxHelper.getCatClass
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getDogClass
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getOwnerClass
 import net.corda.db.schema.DbSchema
-import net.corda.entityprocessor.impl.internal.EntityRequestProcessor
+import net.corda.entityprocessor.impl.internal.EntityRpcRequestProcessor
 import net.corda.entityprocessor.impl.internal.PersistenceServiceInternal
 import net.corda.entityprocessor.impl.internal.getClass
 import net.corda.entityprocessor.impl.tests.helpers.AnimalCreator.createCats
@@ -136,6 +136,9 @@ class PersistenceServiceInternalTests {
 
     @InjectService(timeout = TIMEOUT_MILLIS)
     lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
+
+    private val requestClass = EntityRequest::class.java
+    private val responseClass = FlowEvent::class.java
 
     @BeforeAll
     fun setup(
@@ -286,23 +289,20 @@ class PersistenceServiceInternalTests {
             }
         )
 
-        val processor = EntityRequestProcessor(
+        val processor = EntityRpcRequestProcessor(
             currentSandboxGroupContext,
             myEntitySandboxService,
             responseFactory,
-            this::noOpPayloadCheck
+            requestClass,
+            responseClass
         )
 
-        val requestId = UUID.randomUUID().toString() // just needs to be something unique.
-        val records = listOf(Record(TOPIC, requestId, request))
-
         // Now "send" the request for processing and "receive" the responses.
-        val responses = processor.onNext(records)
+        val responses = processor.process(request)
 
         // And check the results
 
         // It's a failure
-        assertThat(responses.size).isEqualTo(1)
         val flowEvent = responses.first().value as FlowEvent
         val response = flowEvent.payload as ExternalEventResponse
         assertThat(response.error).isNotNull
@@ -569,7 +569,7 @@ class PersistenceServiceInternalTests {
         val request = createRequest(virtualNodeInfo.holdingIdentity, FindAll(DOG_CLASS_NAME, 0, Int.MAX_VALUE))
 
         val responses =
-            assertFailureResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), request))))
+            assertFailureResponses(processor.process(request))
 
         val flowEvent = responses.first().value as FlowEvent
         val response = flowEvent.payload as ExternalEventResponse
@@ -591,7 +591,7 @@ class PersistenceServiceInternalTests {
         )
 
         val responses =
-            assertFailureResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), request))))
+            assertFailureResponses(processor.process(request))
 
         val flowEvent = responses.first().value as FlowEvent
         val response = flowEvent.payload as ExternalEventResponse
@@ -615,7 +615,7 @@ class PersistenceServiceInternalTests {
         )
 
         val responses =
-            assertFailureResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), request))))
+            assertFailureResponses(processor.process(request))
 
         val flowEvent = responses.first().value as FlowEvent
         val response = flowEvent.payload as ExternalEventResponse
@@ -656,14 +656,20 @@ class PersistenceServiceInternalTests {
     @Test
     fun `find with named query with many results`() {
         persistDogs()
-        val r = assertQuery(QuerySetup.NamedQuery(mapOf("name" to "%o%"), query = "Dog.summonLike"), numberOfRowsFromQuery = 4)
+        val r = assertQuery(
+            QuerySetup.NamedQuery(mapOf("name" to "%o%"), query = "Dog.summonLike"),
+            numberOfRowsFromQuery = 4
+        )
         assertThat(r.size).isEqualTo(4)
     }
 
     @Test
     fun `find with named query with 1 result`() {
-       persistDogs()
-        val r = assertQuery(QuerySetup.NamedQuery(mapOf("name" to "Rover 1"), query = "Dog.summon"), numberOfRowsFromQuery = 1)
+        persistDogs()
+        val r = assertQuery(
+            QuerySetup.NamedQuery(mapOf("name" to "Rover 1"), query = "Dog.summon"),
+            numberOfRowsFromQuery = 1
+        )
         assertThat(r.size).isEqualTo(1)
     }
 
@@ -753,7 +759,10 @@ class PersistenceServiceInternalTests {
 
     @Test
     fun `find with named query with 0 results`() {
-        val r = assertQuery(QuerySetup.NamedQuery(mapOf("name" to "Topcat"), query = "Dog.summon"), numberOfRowsFromQuery = 0)
+        val r = assertQuery(
+            QuerySetup.NamedQuery(mapOf("name" to "Topcat"), query = "Dog.summon"),
+            numberOfRowsFromQuery = 0
+        )
         assertThat(r.size).isEqualTo(0)
     }
 
@@ -842,7 +851,7 @@ class PersistenceServiceInternalTests {
             it
         }
         val request = createRequest(virtualNodeInfo.holdingIdentity, rec)
-        val records = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), request)))
+        val records = processor.process(request)
         assertThat(records.size).withFailMessage("can only use this helper method with 1 result").isEqualTo(1)
         val record = records.first()
         val flowEvent = record.value as FlowEvent
@@ -860,7 +869,8 @@ class PersistenceServiceInternalTests {
                 (flowEvent.payload as ExternalEventResponse).payload.array()
             )!!
             if (numberOfRowsFromQuery != null) {
-                val actualNumberOfRowsFromQuery = entityResponse.metadata.items.associate { it.key to it.value }["numberOfRowsFromQuery"]
+                val actualNumberOfRowsFromQuery =
+                    entityResponse.metadata.items.associate { it.key to it.value }["numberOfRowsFromQuery"]
                 assertThat(actualNumberOfRowsFromQuery).isNotNull
                 assertThat(actualNumberOfRowsFromQuery?.toInt()).isEqualTo(numberOfRowsFromQuery)
             }
@@ -875,7 +885,7 @@ class PersistenceServiceInternalTests {
         val processor = getMessageProcessor(this::noOpPayloadCheck)
 
         val responses = assertSuccessResponses(
-            processor.onNext(
+            processor.process(
                 listOf(
                     Record(
                         TOPIC,
@@ -908,7 +918,7 @@ class PersistenceServiceInternalTests {
                 createRequest(virtualNodeInfo.holdingIdentity, deleteByPrimaryKey)
             )
         )
-        return processor.onNext(records)
+        return processor.process(records)
     }
 
     /** Find an entity and do some asserting
@@ -918,7 +928,7 @@ class PersistenceServiceInternalTests {
         val processor = getMessageProcessor(this::noOpPayloadCheck)
 
         val responses = assertSuccessResponses(
-            processor.onNext(
+            processor.process(
                 listOf(
                     Record(
                         TOPIC,
@@ -946,7 +956,7 @@ class PersistenceServiceInternalTests {
 
         val requestId = UUID.randomUUID().toString()
         val responses = assertSuccessResponses(
-            processor.onNext(
+            processor.process(
                 listOf(
                     Record(
                         TOPIC,
@@ -975,7 +985,7 @@ class PersistenceServiceInternalTests {
         val processor = getMessageProcessor(this::noOpPayloadCheck)
 
         val responses = assertSuccessResponses(
-            processor.onNext(
+            processor.process(
                 listOf(
                     Record(
                         TOPIC,
@@ -1012,14 +1022,15 @@ class PersistenceServiceInternalTests {
         return cats.size
     }
 
-    private fun SandboxGroupContext.serialize(obj: Any) = ByteBuffer.wrap(getSerializationService().serialize(obj).bytes)
+    private fun SandboxGroupContext.serialize(obj: Any) =
+        ByteBuffer.wrap(getSerializationService().serialize(obj).bytes)
 
     /** Simple wrapper to deserialize */
     private fun SandboxGroupContext.deserialize(bytes: ByteBuffer) =
         getSerializationService().deserialize(bytes.array(), Any::class.java)
 
-    private fun getMessageProcessor(payloadCheck: (bytes: ByteBuffer) -> ByteBuffer): EntityRequestProcessor {
-        return EntityRequestProcessor(
+    private fun getMessageProcessor(payloadCheck: (bytes: ByteBuffer) -> ByteBuffer): EntityRpcRequestProcessor {
+        return EntityRpcRequestProcessor(
             currentSandboxGroupContext,
             entitySandboxService,
             responseFactory,
