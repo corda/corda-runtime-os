@@ -15,11 +15,13 @@ import net.corda.e2etest.utilities.getHoldingIdShortHash
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
 import net.corda.e2etest.utilities.registerStaticMember
 import net.corda.e2etest.utilities.startRpcFlow
+import net.corda.utilities.reflection.declaredField
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInfo
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import org.junit.jupiter.api.TestMethodOrder
@@ -63,7 +65,7 @@ class TokenSelectionTests {
             TokenBalanceQueryResponseMsg::class.java
         )
 
-    private fun runTokenBalanceQueryFlow(): TokenBalanceQueryResponseMsg {
+    private fun runTokenBalanceQueryFlow(flowRequestId: String): TokenBalanceQueryResponseMsg {
 
         val tokenBalanceQueryFlowName = "com.r3.corda.demo.utxo.token.selection.TokenBalanceQueryFlow"
 
@@ -73,7 +75,7 @@ class TokenSelectionTests {
             "currency" to "USD"
         )
 
-        val flowRequestId = startRpcFlow(aliceHoldingId, tokenBalanceQueryRpcStartArgs, tokenBalanceQueryFlowName)
+        startRpcFlow(aliceHoldingId, tokenBalanceQueryRpcStartArgs, tokenBalanceQueryFlowName, requestId = flowRequestId)
 
         val flowResult = awaitRpcFlowFinished(aliceHoldingId, flowRequestId)
         assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
@@ -117,9 +119,9 @@ class TokenSelectionTests {
 
     @Test
     @Order(1)
-    fun `ensure it is possible to send a balance query request and receive a response`() {
+    fun `ensure it is possible to send a balance query request and receive a response`(testInfo: TestInfo) {
         // Start the flow that will send the request and receive the response
-        val tokenBalanceQuery = runTokenBalanceQueryFlow()
+        val tokenBalanceQuery = runTokenBalanceQueryFlow(testInfo.displayName)
 
         // Check that the balance of the token cache is zero since no token has been created
         assertThat(tokenBalanceQuery.availableBalance).isEqualTo(BigDecimal.ZERO)
@@ -128,13 +130,14 @@ class TokenSelectionTests {
 
     @Test
     @Order(2)
-    fun `Claim a token in a flow and let the flow finish to validate the token claim is automatically released`(){
+    fun `Claim a token in a flow and let the flow finish to validate the token claim is automatically released`(testInfo: TestInfo){
         // Create a simple UTXO transaction
         val input = "token test input"
         val utxoFlowRequestId = startRpcFlow(
             bobHoldingId,
             mapOf("input" to input, "members" to listOf(aliceX500), "notary" to NOTARY_SERVICE_X500),
-            "com.r3.corda.demo.utxo.UtxoDemoFlow"
+            "com.r3.corda.demo.utxo.UtxoDemoFlow",
+            requestId = "${testInfo.displayName}-1"
         )
         val utxoFlowResult = awaitRpcFlowFinished(bobHoldingId, utxoFlowRequestId)
         assertThat(utxoFlowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
@@ -144,7 +147,8 @@ class TokenSelectionTests {
         val tokenSelectionFlowId1 = startRpcFlow(
             aliceHoldingId,
             mapOf(),
-            "com.r3.corda.demo.utxo.token.selection.TokenSelectionFlow2"
+            "com.r3.corda.demo.utxo.token.selection.TokenSelectionFlow2",
+            requestId = "${testInfo.displayName}-2"
         )
         val tokenSelectionResult1 = awaitRpcFlowFinished(aliceHoldingId, tokenSelectionFlowId1)
         assertThat(tokenSelectionResult1.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
@@ -155,7 +159,8 @@ class TokenSelectionTests {
         val tokenSelectionFlowId2 = startRpcFlow(
             aliceHoldingId,
             mapOf(),
-            "com.r3.corda.demo.utxo.token.selection.TokenSelectionFlow2"
+            "com.r3.corda.demo.utxo.token.selection.TokenSelectionFlow2",
+            requestId = "${testInfo.displayName}-3"
         )
         val tokenSelectionResult2 = awaitRpcFlowFinished(aliceHoldingId, tokenSelectionFlowId2)
         assertThat(tokenSelectionResult2.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
