@@ -43,7 +43,7 @@ import java.util.concurrent.CountDownLatch
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StateManagerIntegrationTest {
     private val maxConcurrentThreadJdbcConnections = 10
-    private val dataSource = DbUtils.createPostgresDataSource(maximumPoolSize = maxConcurrentThreadJdbcConnections)
+    private val dataSource = DbUtils.createDataSource(maximumPoolSize = maxConcurrentThreadJdbcConnections)
 
     init {
         val dbChange = ClassloaderChangeLog(
@@ -647,6 +647,141 @@ class StateManagerIntegrationTest {
             stateManager.findUpdatedBetweenWithMetadataFilter(
                 IntervalFilter(finishTime, finishTime.plusSeconds(30)),
                 MetadataFilter("number", Operation.LesserThan, count)
+            )
+        ).isEmpty()
+    }
+
+    @Test
+    @DisplayName(value = "can filter states using multiple conjunctive comparisons on metadata values and last updated time")
+    fun canFilterStatesUsingMultipleConjunctiveComparisonsOnMetadataValuesAndLastUpdatedTime() {
+        val count = 20
+        val half = count / 2
+        val keyIndexRange = 1..count
+        persistStateEntities(
+            (keyIndexRange),
+            { _, _ -> State.VERSION_INITIAL_VALUE },
+            { i, _ -> "state_$i" },
+            { i, _ -> """{ "number": $i, "boolean": ${i % 2 == 0}, "string": "random_$i" }""" }
+        )
+        val (halfTime, finishTime) = getIntervalBetweenEntities(
+            buildStateKey(keyIndexRange.elementAt(half)),
+            buildStateKey(keyIndexRange.last)
+        )
+
+        assertThat(
+            stateManager.findUpdatedBetweenWithMetadataMatchingAll(
+                IntervalFilter(Instant.EPOCH, halfTime),
+                listOf(
+                    MetadataFilter("number", Operation.GreaterThan, 5),
+                    MetadataFilter("number", Operation.LesserThan, 7),
+                    MetadataFilter("boolean", Operation.Equals, true),
+                    MetadataFilter("string", Operation.Equals, "random_6"),
+                )
+            )
+        ).hasSize(1)
+
+        assertThat(
+            stateManager.findUpdatedBetweenWithMetadataMatchingAll(
+                IntervalFilter(finishTime, finishTime.plusSeconds(60)),
+                listOf(
+                    MetadataFilter("number", Operation.GreaterThan, 5),
+                    MetadataFilter("number", Operation.LesserThan, 7),
+                    MetadataFilter("boolean", Operation.Equals, true),
+                    MetadataFilter("string", Operation.Equals, "random_6"),
+                )
+            )
+        ).isEmpty()
+
+        assertThat(
+            stateManager.findUpdatedBetweenWithMetadataMatchingAll(
+                IntervalFilter(halfTime, finishTime),
+                listOf(
+                    MetadataFilter("number", Operation.GreaterThan, 10),
+                    MetadataFilter("boolean", Operation.Equals, true),
+                )
+            )
+        ).hasSize(half / 2)
+
+        assertThat(
+            stateManager.findUpdatedBetweenWithMetadataMatchingAll(
+                IntervalFilter(Instant.EPOCH, finishTime.plusSeconds(60)),
+                listOf(
+                    MetadataFilter("number", Operation.GreaterThan, 1),
+                    MetadataFilter("boolean", Operation.Equals, true),
+                    MetadataFilter("string", Operation.Equals, "non_existing_value"),
+                )
+            )
+        ).isEmpty()
+
+        assertThat(
+            stateManager.findUpdatedBetweenWithMetadataMatchingAll(
+                IntervalFilter(halfTime, finishTime),
+                listOf(
+                    MetadataFilter("number", Operation.GreaterThan, 10),
+                    MetadataFilter("number", Operation.LesserThan, 50),
+                    MetadataFilter("string", Operation.NotEquals, "non_existing_value"),
+                )
+            )
+        ).hasSize(half)
+    }
+
+    @Test
+    @DisplayName(value = "can filter states using multiple disjunctive comparisons on metadata values and last updated time")
+    fun canFilterStatesUsingMultipleDisjunctiveComparisonsOnMetadataValuesAndLastUpdatedTime() {
+        val count = 20
+        val half = count / 2
+        val keyIndexRange = 1..count
+        persistStateEntities(
+            (keyIndexRange),
+            { _, _ -> State.VERSION_INITIAL_VALUE },
+            { i, _ -> "state_$i" },
+            { i, _ -> """{ "number": $i, "boolean": ${i % 2 == 0}, "string": "random_$i" }""" }
+        )
+        val (halfTime, finishTime) = getIntervalBetweenEntities(
+            buildStateKey(keyIndexRange.elementAt(half)),
+            buildStateKey(keyIndexRange.last)
+        )
+
+        assertThat(
+            stateManager.findUpdatedBetweenWithMetadataMatchingAny(
+                IntervalFilter(Instant.EPOCH, halfTime),
+                listOf(
+                    MetadataFilter("number", Operation.Equals, 5),
+                    MetadataFilter("number", Operation.Equals, 7),
+                    MetadataFilter("string", Operation.Equals, "random_6"),
+                )
+            )
+        ).hasSize(3)
+
+        assertThat(
+            stateManager.findUpdatedBetweenWithMetadataMatchingAny(
+                IntervalFilter(finishTime, finishTime.plusSeconds(60)),
+                listOf(
+                    MetadataFilter("number", Operation.GreaterThan, 5),
+                    MetadataFilter("number", Operation.LesserThan, 7),
+                    MetadataFilter("boolean", Operation.Equals, true),
+                    MetadataFilter("string", Operation.Equals, "random_6"),
+                )
+            )
+        ).hasSize(1)
+
+        assertThat(
+            stateManager.findUpdatedBetweenWithMetadataMatchingAny(
+                IntervalFilter(halfTime, finishTime),
+                listOf(
+                    MetadataFilter("number", Operation.GreaterThan, 1),
+                    MetadataFilter("boolean", Operation.Equals, true),
+                )
+            )
+        ).hasSize(half)
+
+        assertThat(
+            stateManager.findUpdatedBetweenWithMetadataMatchingAny(
+                IntervalFilter(Instant.EPOCH, finishTime.plusSeconds(60)),
+                listOf(
+                    MetadataFilter("number", Operation.Equals, 25),
+                    MetadataFilter("string", Operation.Equals, "non_existing_value"),
+                )
             )
         ).isEmpty()
     }

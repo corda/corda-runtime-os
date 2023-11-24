@@ -245,11 +245,21 @@ allprojects {
     }
 
     tasks.register('integrationTest', Test) {
-        inputs.property('postgresHost', postgresHost)
-        inputs.property('postgresDb', postgresDb)
-        inputs.property('postgresPort', postgresPort)
-        inputs.property('postresUser', postgresUser)
-        inputs.property('postgresPassword', postgresPassword)
+        // Conversion of legacy arguments to keep old Jenkins pipeline happy
+        if (!postgresPort.isBlank()){
+            databasePort = postgresPort
+            databaseType = 'POSTGRES'
+            databaseName = postgresDb
+            databaseHost = postgresHost
+            databaseAdminUser = postgresUser
+            databaseAdminPassword = postgresPassword
+        }
+        inputs.property('databaseHost', databaseHost)
+        inputs.property('databaseName', databaseName)
+        inputs.property('databasePort', databasePort)
+        inputs.property('databaseAdminUser', databaseAdminUser)
+        inputs.property('databaseAdminPassword', databaseAdminPassword)
+        inputs.property('databaseType', databaseType)
 
         description = "Runs integration tests."
         group = "verification"
@@ -257,11 +267,12 @@ allprojects {
         testClassesDirs = project.sourceSets["integrationTest"].output.classesDirs
         classpath = project.sourceSets["integrationTest"].runtimeClasspath
 
-        systemProperty 'postgresHost', postgresHost
-        systemProperty 'postgresDb', postgresDb
-        systemProperty 'postgresPort', postgresPort
-        systemProperty 'postgresUser', postgresUser
-        systemProperty 'postgresPassword', postgresPassword
+        systemProperty 'databaseHost', databaseHost
+        systemProperty 'databaseName', databaseName
+        systemProperty 'databasePort', databasePort
+        systemProperty 'databaseAdminUser', databaseAdminUser
+        systemProperty 'databaseAdminPassword', databaseAdminPassword
+        systemProperty 'databaseType', databaseType
         systemProperty 'org.slf4j.simpleLogger.showDateTime', true
         systemProperty 'org.slf4j.simpleLogger.dateTimeFormat', 'yyyy-MM-dd HH:mm:ss:SSS Z'
 

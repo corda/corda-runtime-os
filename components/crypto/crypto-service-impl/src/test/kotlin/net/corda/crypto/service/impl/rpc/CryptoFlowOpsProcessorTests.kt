@@ -6,6 +6,7 @@ import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.crypto.client.CryptoOpsProxyClient
+import net.corda.crypto.config.impl.KeyDerivationParameters
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.config.impl.retrying
 import net.corda.crypto.config.impl.toCryptoConfig
@@ -21,6 +22,7 @@ import net.corda.crypto.flow.impl.CryptoFlowOpsTransformerImpl
 import net.corda.crypto.service.impl.infra.ActResult
 import net.corda.crypto.service.impl.infra.ActResultTimestamps
 import net.corda.crypto.service.impl.infra.act
+import net.corda.crypto.service.impl.infra.assertClose
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoResponseContext
@@ -59,15 +61,16 @@ import java.util.UUID
 import kotlin.random.Random
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 
- class CryptoFlowOpsRpcProcessorTests {
+class CryptoFlowOpsProcessorTests {
     companion object {
         private val configEvent = ConfigChangedEvent(
             setOf(ConfigKeys.CRYPTO_CONFIG),
             mapOf(
                 ConfigKeys.CRYPTO_CONFIG to
                         SmartConfigFactory.createWithoutSecurityServices().create(
-                            createDefaultCryptoConfig("pass", "salt")
+                            createDefaultCryptoConfig(listOf(KeyDerivationParameters("pass", "salt")))
                         )
             )
         )
@@ -81,7 +84,7 @@ import kotlin.test.assertTrue
     private lateinit var cryptoOpsClient: CryptoOpsProxyClient
     private lateinit var cryptoService: CryptoService
     private lateinit var externalEventResponseFactory: ExternalEventResponseFactory
-    private lateinit var processor: CryptoFlowOpsRpcProcessor
+    private lateinit var processor: CryptoFlowOpsProcessor
     private lateinit var digestService: DigestService
 
     private val flowOpsResponseArgumentCaptor = argumentCaptor<FlowOpsResponse>()
@@ -121,8 +124,8 @@ import kotlin.test.assertTrue
         context: CryptoResponseContext,
         ttl: Long
     ) {
-        timestamps.assertThatIsBetween(context.responseTimestamp)
-        //timestamps.assertThatIsBetween(context.requestTimestamp) // not always (or not normally?) true, TODO - find some way to cover?
+        assertClose(timestamps.after, context.responseTimestamp, 5.seconds)
+        assertClose(timestamps.before, context.requestTimestamp, 5.seconds)
         assertEquals(componentName, context.requestingComponent)
         assertTrue(context.other.items.size >= 3)
         assertTrue {
@@ -182,7 +185,7 @@ import kotlin.test.assertTrue
             on { lookupSigningKeysByPublicKeyHashes(any(), any()) } doReturn singleSigningKeyInfo
         }
         val retryingConfig = configEvent.config.toCryptoConfig().retrying()
-        processor = CryptoFlowOpsRpcProcessor(
+        processor = CryptoFlowOpsProcessor(
             cryptoService,
             externalEventResponseFactory,
             retryingConfig,
@@ -306,15 +309,9 @@ import kotlin.test.assertTrue
          val transformer = buildTransformer()
          val flowOps = indices.map { flowOpCallbacks[it](transformer, flowExternalEventContexts[it]) }
 
-         val requests = indices.map {
-             flowOps[it]
-         }
-
          // run the flows ops processor
          val result = act {
-             requests.filterNotNull().map {
-                 processor.process(it)
-             }
+             indices.mapNotNull { flowOps[it] }.map { processor.process(it) }
          }
 
          val successfulFlowOpsResponses =
@@ -337,6 +334,7 @@ import kotlin.test.assertTrue
              flowExternalEventContexts = flowExternalEventContexts
          )
      }
+
      @Suppress("UNCHECKED_CAST")
      @Test
      fun `Should process filter my keys query`() {
@@ -398,7 +396,7 @@ import kotlin.test.assertTrue
                  )
              }
          )
-    }
+     }
 
      @Test
      fun `Should process list with valid event and skip event without value`() {
@@ -427,7 +425,6 @@ import kotlin.test.assertTrue
          assertTrue(transformed.any { it.encoded.contentEquals(myPublicKeys[1].encoded) })
      }
 
-     @Suppress("UNCHECKED_CAST")
      @Test
      fun `Should process list with valid event and return error for failed event`() {
          val failingTenantId = UUID.randomUUID().toString()

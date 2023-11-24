@@ -22,7 +22,7 @@ class WrappingRepositoryImplTests {
     fun `JPA equality on primary key only rule for WrappingKeyEntities`() {
         val uuidAlpha = UUID.randomUUID()
         val uuidBeta = UUID.randomUUID()
-        val golden = WrappingKeyInfo(1, "DES", byteArrayOf(), 1, "root")
+        val golden = WrappingKeyInfo(1, "DES", byteArrayOf(), 1, "root", "k1")
         val alpha1 = makeWrappingKeyEntity(uuidAlpha, golden)
         val alpha2 = makeWrappingKeyEntity(uuidAlpha, golden.copy(algorithmName = "AES", generation = 2))
         val beta = makeWrappingKeyEntity(uuidBeta, golden)
@@ -34,7 +34,7 @@ class WrappingRepositoryImplTests {
     fun `save a wrapping key`() {
         val stored = ArrayList<WrappingKeyEntity>()
         val wrappingKeyInfo = WrappingKeyInfo(
-            1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch")
+            1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch", "alias1")
         val savedWrappingKey = makeWrappingKeyEntity(UUID.randomUUID(), wrappingKeyInfo)
         val em = mock<EntityManager> {
             on { merge(any<WrappingKeyEntity>()) } doReturn(savedWrappingKey)
@@ -47,7 +47,7 @@ class WrappingRepositoryImplTests {
             },
             "test"
         )
-        val savedKey = repo.saveKey("a", wrappingKeyInfo)
+        val savedKey = repo.saveKey(wrappingKeyInfo)
         verify(em).merge(argThat<WrappingKeyEntity>{
                     this.encodingVersion == 1 &&
                     this.algorithmName == "caesar" &&
@@ -62,7 +62,7 @@ class WrappingRepositoryImplTests {
     fun `save a wrapping key with id`() {
         val stored = ArrayList<WrappingKeyEntity>()
         val wrappingKeyInfo = WrappingKeyInfo(
-            1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch")
+            1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch", "alias1")
         val savedWrappingKey = makeWrappingKeyEntity(UUID.randomUUID(), wrappingKeyInfo)
         val em = mock<EntityManager> {
             on { merge(any<WrappingKeyEntity>()) } doReturn(savedWrappingKey)
@@ -76,7 +76,7 @@ class WrappingRepositoryImplTests {
             "test"
         )
         val id = UUID.randomUUID()
-        val savedKey1 = repo.saveKeyWithId("a", wrappingKeyInfo, id)
+        val savedKey1 = repo.saveKeyWithId(wrappingKeyInfo, id)
         verify(em).merge(argThat<WrappingKeyEntity>{
             this.encodingVersion == 1 &&
                     this.algorithmName == "caesar" &&
@@ -87,7 +87,7 @@ class WrappingRepositoryImplTests {
         })
         assertThat(savedKey1).isEqualTo(wrappingKeyInfo)
 
-        val savedKey2 = repo.saveKeyWithId("a", wrappingKeyInfo, null)
+        val savedKey2 = repo.saveKeyWithId(wrappingKeyInfo, null)
         verify(em).merge(argThat<WrappingKeyEntity>{
             this.encodingVersion == 1 &&
                     this.algorithmName == "caesar" &&
@@ -101,9 +101,9 @@ class WrappingRepositoryImplTests {
     }
 
     @Test
-    fun `find a wrapping key and it's id`() {
+    fun `find a wrapping key and its id`() {
         val wrappingKeyInfo = WrappingKeyInfo(
-            1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch")
+            1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch", "alias1")
         val newId  = UUID.randomUUID()
         val savedWrappingKey = makeWrappingKeyEntity(newId, wrappingKeyInfo)
         val em = mock<EntityManager> {
@@ -122,11 +122,48 @@ class WrappingRepositoryImplTests {
             },
             "test"
         )
+
+        // Alias here doesn't matter, mock<EntityManager> returns savedWrappingKey regardless the alias.
+        // There is an integration test dealing with the database where it checks for the alias.
         val foundKey = repo.findKeyAndId("a")
 
         assertThat(foundKey?.first.toString().length).isEqualTo(36)
         assertThat(foundKey?.second).isEqualTo(wrappingKeyInfo)
     }
+
+    @Test
+    fun `find a wrapping key using its alias`() {
+        val wrappingKeyInfo = WrappingKeyInfo(
+            1, "caesar", SecureHashUtils.randomBytes(), 1, "Enoch", "alias1")
+        val newId  = UUID.randomUUID()
+        val savedWrappingKey = makeWrappingKeyEntity(newId, wrappingKeyInfo)
+        val em = mock<EntityManager> {
+            on { createQuery(any(), eq(WrappingKeyEntity::class.java)) } doAnswer {
+                mock {
+                    on { setParameter(any<String>(), any()) } doReturn it
+                    on { setMaxResults(any()) } doReturn it
+                    on { resultList } doReturn listOf(savedWrappingKey)
+                    on { resultStream } doReturn listOf(savedWrappingKey).stream()
+
+                }
+            }
+        }
+
+        val repo = WrappingRepositoryImpl(
+            mock {
+                on { createEntityManager() } doReturn em
+            },
+            "test"
+        )
+
+        // Alias here doesn't matter, mock<EntityManager> returns savedWrappingKey regardless the alias.
+        // There is an integration test dealing with the database where it checks for the alias.
+        val keys = repo.findKeysWrappedByAlias("alias1").toList()
+
+        assertThat(keys).hasSize(1)
+        assertThat(keys.first()).isEqualTo(wrappingKeyInfo)
+    }
+
 
     private fun makeWrappingKeyEntity(
         newId: UUID,

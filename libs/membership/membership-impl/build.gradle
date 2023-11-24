@@ -17,7 +17,9 @@ dependencies {
     implementation project(':libs:crypto:crypto-core')
     implementation project(":libs:membership:membership-common")
     implementation project(":libs:utilities")
+    implementation project(':libs:sandbox-types')
     implementation project(":libs:serialization:serialization-avro")
+    implementation project(':libs:serialization:serialization-internal')
 
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-base"

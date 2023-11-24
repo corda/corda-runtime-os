@@ -27,6 +27,7 @@ import net.corda.metrics.CordaMetrics
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.MDC_EXTERNAL_EVENT_ID
 import net.corda.utilities.MDC_FLOW_ID
+import net.corda.utilities.debug
 import net.corda.utilities.trace
 import net.corda.utilities.translateFlowContextToMDC
 import net.corda.utilities.withMDC
@@ -36,7 +37,7 @@ import java.time.Duration
 import java.time.Instant
 
 @Suppress("LongParameterList")
-class CryptoFlowOpsRpcProcessor(
+class CryptoFlowOpsProcessor(
     private val cryptoService: CryptoService,
     private val externalEventResponseFactory: ExternalEventResponseFactory,
     config: RetryingConfig,
@@ -54,7 +55,7 @@ class CryptoFlowOpsRpcProcessor(
     )
 
     override fun process(request: FlowOpsRequest): FlowEvent {
-        logger.trace { "process just started processing ${request::class.java.name}" }
+        logger.trace { "Processing request: ${request::class.java.name}" }
 
         val clientRequestId = request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
 
@@ -67,7 +68,8 @@ class CryptoFlowOpsRpcProcessor(
         val result = withMDC(mdc) {
             val requestPayload = request.request
             val startTime = System.nanoTime()
-            logger.info("Handling ${requestPayload::class.java.name} for tenant ${request.context.tenantId}")
+
+            logger.debug { "Handling ${requestPayload::class.java.name} for tenant ${request.context.tenantId}" }
 
             try {
                 val response = executor.executeWithRetry {
@@ -78,12 +80,11 @@ class CryptoFlowOpsRpcProcessor(
                     request.flowExternalEventContext,
                     FlowOpsResponse(createResponseContext(request), response, null)
                 )
-            } catch (throwable: Throwable) {
-                logger.error(
-                    "Failed to handle ${requestPayload::class.java.name} for tenant ${request.context.tenantId}",
-                    throwable
+            } catch (e: Exception) {
+                logger.warn(
+                    "Failed to handle ${requestPayload::class.java.name} for tenant ${request.context.tenantId}", e
                 )
-                externalEventResponseFactory.platformError(request.flowExternalEventContext, throwable)
+                externalEventResponseFactory.platformError(request.flowExternalEventContext, e)
             }.also {
                 CordaMetrics.Metric.Crypto.FlowOpsProcessorExecutionTime.builder()
                     .withTag(CordaMetrics.Tag.OperationName, requestPayload::class.java.simpleName)

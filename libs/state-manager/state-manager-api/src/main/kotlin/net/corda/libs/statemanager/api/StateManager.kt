@@ -133,5 +133,39 @@ interface StateManager : Lifecycle {
     fun findUpdatedBetweenWithMetadataFilter(
         intervalFilter: IntervalFilter,
         metadataFilter: MetadataFilter
+    ): Map<String, State> = findUpdatedBetweenWithMetadataMatchingAll(intervalFilter, listOf(metadataFilter))
+
+    /**
+     * Retrieve all states, updated for the last time between [IntervalFilter.start] (inclusive) and
+     * [IntervalFilter.finish] (inclusive), for which all the specified [metadataFilters] exclusively match.
+     * Each [MetadataFilter.value] is evaluated through the [MetadataFilter.operation] against the value stored inside
+     * the [State.metadata] under the [MetadataFilter.key].
+     * Only states that have been successfully committed and distributed within the underlying
+     * persistent storage are returned.
+     *
+     * @param intervalFilter Time filter to use when searching for states.
+     * @param metadataFilters Filter parameters to use when searching for states.
+     * @return states matching the specified filters.
+     */
+    fun findUpdatedBetweenWithMetadataMatchingAll(
+        intervalFilter: IntervalFilter,
+        metadataFilters: Collection<MetadataFilter>
+    ): Map<String, State>
+
+    /**
+     * Retrieve all states, updated for the last time between [IntervalFilter.start] (inclusive) and
+     * [IntervalFilter.finish] (inclusive), for which any of the specified [metadataFilters] match.
+     * Each [MetadataFilter.value] is evaluated through the [MetadataFilter.operation] against the value stored inside
+     * the [State.metadata] under the [MetadataFilter.key].
+     * Only states that have been successfully committed and distributed within the underlying
+     * persistent storage are returned.
+     *
+     * @param intervalFilter Time filter to use when searching for states.
+     * @param metadataFilters Filter parameters to use when searching for states.
+     * @return states matching the specified filters.
+     */
+    fun findUpdatedBetweenWithMetadataMatchingAny(
+        intervalFilter: IntervalFilter,
+        metadataFilters: Collection<MetadataFilter>
     ): Map<String, State>
 }

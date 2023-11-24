@@ -6,11 +6,12 @@
 #-runjdb: 5006
 
 -runvm: \
-    -DpostgresHost=${project.postgresHost},\
-    -DpostgresPort=${project.postgresPort},\
-    -DpostgresDb=${project.postgresDb},\
-    -DpostgresUser=${project.postgresUser},\
-    -DpostgresPassword=${project.postgresPassword}
+  -DdatabaseHost=${project.databaseHost},\
+  -DdatabasePort=${project.databasePort},\
+  -DdatabaseName=${project.databaseName},\
+  -DdatabaseAdminUser=${project.databaseAdminUser},\
+  -DdatabaseAdminPassword=${project.databaseAdminPassword},\
+  -DdatabaseType=${project.databaseType}
 
 -runsystempackages: \
     sun.security.x509

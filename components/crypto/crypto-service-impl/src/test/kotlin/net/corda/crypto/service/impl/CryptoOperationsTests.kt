@@ -663,10 +663,9 @@ class CryptoOperationsTests {
 
 
     private fun testWithBadWrappingKeyInfo(info: (TestServicesFactory) -> WrappingKeyInfo): java.lang.IllegalArgumentException {
-        val alias = UUID.randomUUID().toString()
         val myFactory = TestServicesFactory()
         val rsaScheme = myFactory.schemeMetadata.findKeyScheme(RSA_CODE_NAME)
-        myFactory.wrappingRepository.saveKey(alias, info(myFactory))
+        myFactory.wrappingRepository.saveKey(info(myFactory))
         return assertThrows<java.lang.IllegalArgumentException> {
             myFactory.cryptoService.generateKeyPair(
                 tenantId,
@@ -674,7 +673,7 @@ class CryptoOperationsTests {
                 "key1",
                 null,
                 rsaScheme,
-                mapOf("parentKeyAlias" to alias)
+                mapOf("parentKeyAlias" to "key1")
             )
         }
     }
@@ -687,7 +686,8 @@ class CryptoOperationsTests {
                 it.rootWrappingKey.algorithm + "!",
                 it.rootWrappingKey.wrap(factory.secondLevelWrappingKey),
                 1,
-                "root"
+                "root",
+                "key1"
             )
         }
         assertThat(e.message).contains("Expected algorithm")
@@ -700,7 +700,7 @@ class CryptoOperationsTests {
             WRAPPING_KEY_ENCODING_VERSION + 1,
             it.secondLevelWrappingKey.algorithm,
             it.rootWrappingKey.wrap(it.secondLevelWrappingKey),
-            1, "root"
+            1, "root", "key1"
             )
         }
         assertThat(e.message).contains("Unknown wrapping key encoding. Expected to be 1")

@@ -209,6 +209,16 @@ fun ClusterInfo.keyExists(
     result.code == ResponseCode.OK.statusCode && result.toJson().fieldNames().hasNext()
 }
 
+fun ClusterInfo.rotateCryptoUnmanagedWrappingKeys(
+    oldKeyAlias: String,
+    newKeyAlias: String
+) = cluster {
+    assertWithRetry {
+        command { doRotateCryptoUnmanagedWrappingKeys(oldKeyAlias, newKeyAlias) }
+        condition { it.code == ResponseCode.ACCEPTED.statusCode }
+    }
+}
+
 private fun <T> Semaphore.runWith(block: () -> T): T {
     this.acquire()
     try {
