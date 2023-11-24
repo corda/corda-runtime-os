@@ -892,7 +892,12 @@ class FlowTests {
 
         val issuanceResult = awaitRestFlowResult(bobHoldingId, issuanceRequestID)
 
-        validateResult(issuanceResult)
+        try {
+            validateResult(issuanceResult)
+        } catch (e: Exception){
+            throw AssertionError("Failed flow $issuanceRequestID", e)
+        }
+
     }
 
     /**
@@ -915,6 +920,11 @@ class FlowTests {
 
         val consumeResult = awaitRestFlowResult(bobHoldingId, consumeRequestID)
 
-        validateResult(consumeResult)
+        try {
+            validateResult(consumeResult)
+        }
+        catch (e: Exception){
+            throw AssertionError("Failed flow $consumeRequestID", e)
+        }
     }
 }
