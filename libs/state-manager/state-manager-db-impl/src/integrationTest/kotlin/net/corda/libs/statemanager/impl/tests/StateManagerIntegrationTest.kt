@@ -43,7 +43,7 @@ import java.util.concurrent.CountDownLatch
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StateManagerIntegrationTest {
     private val maxConcurrentThreadJdbcConnections = 10
-    private val dataSource = DbUtils.createPostgresDataSource(maximumPoolSize = maxConcurrentThreadJdbcConnections)
+    private val dataSource = DbUtils.createDataSource(maximumPoolSize = maxConcurrentThreadJdbcConnections)
 
     init {
         val dbChange = ClassloaderChangeLog(

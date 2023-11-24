@@ -102,11 +102,12 @@ tasks.register('backingStoreBenchmark', Test) {
     systemProperty "bsBenchNumIterations", project.getProperty("bsBenchNumIterations")
     systemProperty "bsBenchNumOpsPerIteration", project.getProperty("bsBenchNumOpsPerIteration")
 
-    systemProperty "postgresDb", project.getProperty("postgresDb")
-    systemProperty "postgresHost", project.getProperty("postgresHost")
-    systemProperty "postgresPassword", project.getProperty("postgresPassword")
-    systemProperty "postgresPort", project.getProperty("postgresPort")
-    systemProperty "postgresUser", project.getProperty("postgresUser")
+    systemProperty "databaseName", project.getProperty("databaseName")
+    systemProperty "databaseHost", project.getProperty("databaseHost")
+    systemProperty "databaseAdminPassword", project.getProperty("databaseAdminPassword")
+    systemProperty "databasePort", project.getProperty("databasePort")
+    systemProperty "databaseAdminUser", project.getProperty("databaseAdminUser")
+    systemProperty "databaseType", project.getProperty("databaseType")
 
     // Ensures benchmark is always re-run if executed from the console
     outputs.upToDateWhen { false }
