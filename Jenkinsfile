@@ -6,7 +6,7 @@ cordaPipelineKubernetesAgent(
     createPostgresDb: false,
     publishOSGiImage: false,
     publishPreTestImage: false,
-    publishHelmChart: false,
+    publishHelmChart: true,
     e2eTestName: 'corda-runtime-os-e2e-tests',
     runE2eTests: false,
     combinedWorkere2eTests: false,
