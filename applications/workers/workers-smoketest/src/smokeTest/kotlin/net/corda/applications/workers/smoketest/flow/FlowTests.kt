@@ -5,6 +5,8 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import net.corda.applications.workers.smoketest.utils.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.utils.TEST_CPI_NAME
+import net.corda.e2etest.utilities.ClusterReadiness
+import net.corda.e2etest.utilities.ClusterReadinessChecker
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.e2etest.utilities.FlowResult
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_FAILED
@@ -26,12 +28,13 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
+import java.time.Duration
 import java.util.UUID
 import kotlin.text.Typography.quote
 
 @Suppress("Unused", "FunctionName")
 @TestInstance(Lifecycle.PER_CLASS)
-class FlowTests {
+class FlowTests : ClusterReadiness by ClusterReadinessChecker() {
 
     companion object {
         private val testRunUniqueId = UUID.randomUUID()
@@ -84,41 +87,6 @@ class FlowTests {
 
         val jacksonObjectMapper = jacksonObjectMapper()
 
-        @BeforeAll
-        @JvmStatic
-        internal fun beforeAll() {
-            DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
-
-            // Upload test flows if not already uploaded
-            conditionallyUploadCordaPackage(
-                applicationCpiName, TEST_CPB_LOCATION, groupId, staticMemberList
-            )
-            // Upload notary server CPB
-            conditionallyUploadCordaPackage(
-                notaryCpiName,
-                TEST_NOTARY_CPB_LOCATION,
-                groupId,
-                staticMemberList
-            )
-
-            // Make sure Virtual Nodes are created
-            val bobActualHoldingId = getOrCreateVirtualNodeFor(bobX500, applicationCpiName)
-            val charlieActualHoldingId = getOrCreateVirtualNodeFor(charlyX500, applicationCpiName)
-            val davidActualHoldingId = getOrCreateVirtualNodeFor(davidX500, applicationCpiName)
-            val notaryActualHoldingId = getOrCreateVirtualNodeFor(notaryX500, notaryCpiName)
-
-            // Just validate the function and actual vnode holding ID hash are in sync
-            // if this fails the X500_BOB formatting could have changed or the hash implementation might have changed
-            assertThat(bobActualHoldingId).isEqualTo(bobHoldingId)
-            assertThat(charlieActualHoldingId).isEqualTo(charlieHoldingId)
-            assertThat(davidActualHoldingId).isEqualTo(davidHoldingId)
-            assertThat(notaryActualHoldingId).isEqualTo(notaryHoldingId)
-
-            registerStaticMember(bobHoldingId)
-            registerStaticMember(charlieHoldingId)
-            registerStaticMember(notaryHoldingId, NOTARY_SERVICE_X500)
-        }
-
         private val JsonNode?.command: String
             get() {
                 return this!!["command"].textValue()
@@ -143,6 +111,43 @@ class FlowTests {
             if (char == quote) isInQuotes = !isInQuotes
             !char.isWhitespace() || isInQuotes
         }
+    }
+
+    @BeforeAll
+    internal fun beforeAll() {
+        // check cluster is ready
+        assertIsReady(Duration.ofMinutes(1), Duration.ofMillis(100))
+
+        DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
+
+        // Upload test flows if not already uploaded
+        conditionallyUploadCordaPackage(
+            applicationCpiName, TEST_CPB_LOCATION, groupId, staticMemberList
+        )
+        // Upload notary server CPB
+        conditionallyUploadCordaPackage(
+            notaryCpiName,
+            TEST_NOTARY_CPB_LOCATION,
+            groupId,
+            staticMemberList
+        )
+
+        // Make sure Virtual Nodes are created
+        val bobActualHoldingId = getOrCreateVirtualNodeFor(bobX500, applicationCpiName)
+        val charlieActualHoldingId = getOrCreateVirtualNodeFor(charlyX500, applicationCpiName)
+        val davidActualHoldingId = getOrCreateVirtualNodeFor(davidX500, applicationCpiName)
+        val notaryActualHoldingId = getOrCreateVirtualNodeFor(notaryX500, notaryCpiName)
+
+        // Just validate the function and actual vnode holding ID hash are in sync
+        // if this fails the X500_BOB formatting could have changed or the hash implementation might have changed
+        assertThat(bobActualHoldingId).isEqualTo(bobHoldingId)
+        assertThat(charlieActualHoldingId).isEqualTo(charlieHoldingId)
+        assertThat(davidActualHoldingId).isEqualTo(davidHoldingId)
+        assertThat(notaryActualHoldingId).isEqualTo(notaryHoldingId)
+
+        registerStaticMember(bobHoldingId)
+        registerStaticMember(charlieHoldingId)
+        registerStaticMember(notaryHoldingId, NOTARY_SERVICE_X500)
     }
 
     @Test

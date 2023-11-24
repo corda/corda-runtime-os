@@ -7,9 +7,10 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import java.util.UUID
-import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.crypto.core.parseSecureHash
+import net.corda.e2etest.utilities.ClusterReadiness
+import net.corda.e2etest.utilities.ClusterReadinessChecker
+import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
 import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
 import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
@@ -26,10 +27,12 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
+import java.time.Duration
+import java.util.UUID
 
 @Suppress("Unused", "FunctionName")
 @TestInstance(PER_CLASS)
-class UtxoLedgerTests {
+class UtxoLedgerTests : ClusterReadiness by ClusterReadinessChecker() {
 
     private companion object {
         const val TEST_CPI_NAME = "ledger-utxo-demo-app"
@@ -69,6 +72,9 @@ class UtxoLedgerTests {
 
     @BeforeAll
     fun beforeAll() {
+        // check cluster is ready
+        assertIsReady(Duration.ofMinutes(1), Duration.ofMillis(100))
+
         DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
 
         conditionallyUploadCordaPackage(
