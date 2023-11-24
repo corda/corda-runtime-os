@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.NullNode
 import net.corda.utilities.minutes
 import org.apache.commons.text.StringEscapeUtils.escapeJson
+import org.junit.jupiter.api.TestInfo
 import java.util.UUID
 
 const val SMOKE_TEST_CLASS_NAME = "com.r3.corda.testing.smoketests.flow.RpcSmokeTestFlow"
@@ -212,3 +213,15 @@ data class FlowResult (
     val json: JsonNode?,
     val flowError: FlowError?
 )
+
+class TestRequestIdGenerator( testName: String ){
+
+    constructor( testInfo: TestInfo) : this(testInfo.displayName.removeSuffix("(TestInfo)"))
+
+    private val baseName: String = Regex("[^-._A-Za-z0-9]").replace(testName, "_")
+    private var count = 0
+
+    fun getNextId(): String{
+        return "$baseName-${count++}"
+    }
+}
