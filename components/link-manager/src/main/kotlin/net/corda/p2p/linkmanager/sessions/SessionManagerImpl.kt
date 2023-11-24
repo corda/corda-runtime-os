@@ -1204,11 +1204,11 @@ internal class SessionManagerImpl(
                     initialTrackedSession.lastReceivedTimestamp = timeStamp()
                     initialTrackedSession
                 } else {
-                    executorService.schedule(
-                        { inboundSessionTimeout(sessionId, source, destination) },
-                        config.get().sessionTimeout.toMillis(),
-                        TimeUnit.MILLISECONDS
-                    )
+//                    executorService.schedule(
+//                        { inboundSessionTimeout(sessionId, source, destination) },
+//                        config.get().sessionTimeout.toMillis(),
+//                        TimeUnit.MILLISECONDS
+//                    )
                     TrackedInboundSession(timeStamp())
                 }
             }
