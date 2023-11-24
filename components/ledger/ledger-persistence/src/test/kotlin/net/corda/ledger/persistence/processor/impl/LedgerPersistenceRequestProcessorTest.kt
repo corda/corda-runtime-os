@@ -37,77 +37,18 @@ class LedgerPersistenceRequestProcessorTest {
     private val virtualNodeContext = mock<VirtualNodeContext>()
     private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
 
+    private val flowEvent = mock<FlowEvent>()
+    private val requestClass = LedgerPersistenceRequest::class.java
+    private val responseClass = FlowEvent::class.java
+
     private val target = LedgerPersistenceRequestProcessor(
         currentSandboxGroupContext,
         entitySandboxService,
         delegatedRequestHandlerSelector,
-        responseFactory
+        responseFactory,
+        requestClass,
+        responseClass
     )
-
-    @BeforeEach
-    fun setup() {
-        whenever(entitySandboxService.get(cordaHoldingIdentity, cpkHashes)).thenReturn(sandbox)
-        whenever(sandbox.virtualNodeContext).thenReturn(virtualNodeContext)
-        whenever(virtualNodeContext.holdingIdentity).thenReturn(cordaHoldingIdentity)
-        whenever(currentSandboxGroupContext.get()).thenReturn(sandbox)
-    }
-
-    @Test
-    fun `key should be of type String`() {
-        assertThat(target.keyClass).isEqualTo(String::class.java)
-    }
-
-    @Test
-    fun `value should be of type LedgerPersistenceRequest`() {
-        assertThat(target.valueClass).isEqualTo(LedgerPersistenceRequest::class.java)
-    }
-
-    @Test
-    fun `requests routed to handlers to generate response messages`() {
-        val request1 = createRequest("r1")
-        val requestRecord1 = Record("", "1", request1)
-        val responseRecord11 = Record("", "1", "")
-        val responseRecord12 = Record("", "2", "")
-        val request1Response = listOf(responseRecord11, responseRecord12)
-        val handler1 = mock<RequestHandler>().apply { whenever(this.execute()).thenReturn(request1Response) }
-        whenever(delegatedRequestHandlerSelector.selectHandler(sandbox, request1)).thenReturn(handler1)
-
-        val request2 = createRequest("r2")
-        val requestRecord2 = Record("", "2", request2)
-        val responseRecord21 = Record("", "3", "")
-        val request2Response = listOf(responseRecord21)
-        val handler2 = mock<RequestHandler>().apply { whenever(this.execute()).thenReturn(request2Response) }
-        whenever(delegatedRequestHandlerSelector.selectHandler(sandbox, request2)).thenReturn(handler2)
-
-        val results = target.onNext(listOf(requestRecord1, requestRecord2))
-
-        assertThat(results).containsOnly(responseRecord11, responseRecord12, responseRecord21)
-    }
-
-    @Test
-    fun `failed request returns failure response back to the flow`() {
-        // Success response for request 1
-        val request1 = createRequest("r1")
-        val requestRecord1 = Record("", "1", request1)
-        val responseRecord1 = Record("", "1", "")
-        val request1Response = listOf(responseRecord1)
-        val handler1 = mock<RequestHandler>().apply { whenever(this.execute()).thenReturn(request1Response) }
-        whenever(delegatedRequestHandlerSelector.selectHandler(sandbox, request1)).thenReturn(handler1)
-
-        // Failure response for request 2
-        val request2 = createRequest("r2")
-        val requestRecord2 = Record("", "2", request2)
-        val failureResponseRecord = Record("", "3", FlowEvent())
-        val request2Response = IllegalStateException()
-        val handler2 = mock<RequestHandler>().apply { whenever(this.execute()).thenThrow(request2Response) }
-        whenever(responseFactory.errorResponse(request2.flowExternalEventContext, request2Response))
-            .thenReturn(failureResponseRecord)
-        whenever(delegatedRequestHandlerSelector.selectHandler(sandbox, request2)).thenReturn(handler2)
-
-        val results = target.onNext(listOf(requestRecord1, requestRecord2))
-
-        assertThat(results).containsOnly(responseRecord1, failureResponseRecord)
-    }
 
     private fun createRequest(requestId: String): LedgerPersistenceRequest {
         return LedgerPersistenceRequest().apply {
@@ -120,5 +61,43 @@ class LedgerPersistenceRequestProcessorTest {
             holdingIdentity = ALICE_X500_HOLDING_ID
         }
     }
+
+    @BeforeEach
+    fun setup() {
+        whenever(entitySandboxService.get(cordaHoldingIdentity, cpkHashes)).thenReturn(sandbox)
+        whenever(sandbox.virtualNodeContext).thenReturn(virtualNodeContext)
+        whenever(virtualNodeContext.holdingIdentity).thenReturn(cordaHoldingIdentity)
+        whenever(currentSandboxGroupContext.get()).thenReturn(sandbox)
+    }
+
+    @Test
+    fun `requests routed to handlers to generate response messages`() {
+        val request = createRequest("r1")
+        val responseRecord = Record("", "1", flowEvent)
+        val response = listOf(responseRecord)
+        val handler = mock<RequestHandler>().apply { whenever(this.execute()).thenReturn(response) }
+        whenever(delegatedRequestHandlerSelector.selectHandler(sandbox, request)).thenReturn(handler)
+
+        val results = target.process(request)
+
+        assertThat(results).isEqualTo(responseRecord.value)
+    }
+
+    @Test
+    fun `failed request returns failure response back to the flow`() {
+        val request = createRequest("r2")
+        val failureResponseRecord = Record("", "3", FlowEvent())
+        val response = IllegalStateException()
+        val handler = mock<RequestHandler>().apply { whenever(this.execute()).thenThrow(response) }
+        whenever(responseFactory.errorResponse(request.flowExternalEventContext, response))
+            .thenReturn(failureResponseRecord)
+        whenever(delegatedRequestHandlerSelector.selectHandler(sandbox, request)).thenReturn(handler)
+
+        val results = target.process(request)
+
+        assertThat(results).isEqualTo(failureResponseRecord.value)
+    }
+
+
 }
 
