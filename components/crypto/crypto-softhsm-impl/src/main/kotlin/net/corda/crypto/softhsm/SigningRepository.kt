@@ -7,6 +7,7 @@ import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningWrappedKeySaveContext
 import net.corda.v5.crypto.SecureHash
 import java.io.Closeable
+import java.util.*
 
 /**
  * Crypto JPA repository
@@ -74,4 +75,12 @@ interface SigningRepository : Closeable {
      */
     fun lookupByPublicKeyHashes(fullKeyIds: Set<SecureHash>): Collection<SigningKeyInfo>
 
+    /**
+     * Get key by internal key ID
+     *
+     * @param id the synthetic key ID to look for
+     * @return SigningKeyInfo of the key with ID
+     */
+
+    fun getKey(id: UUID): SigningKeyInfo?
 }

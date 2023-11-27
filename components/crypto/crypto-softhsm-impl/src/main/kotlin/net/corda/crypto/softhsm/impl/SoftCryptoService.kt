@@ -55,6 +55,7 @@ import java.security.PrivateKey
 import java.security.Provider
 import java.security.PublicKey
 import java.time.Duration
+import java.util.*
 import javax.crypto.Cipher
 import javax.persistence.PersistenceException
 
@@ -571,15 +572,15 @@ open class SoftCryptoService(
 
 
     @Suppress("NestedBlockDepth")
-    override fun rewrapWrappingKey(tenantId: String, targetAlias: String, newParentKeyAlias: String): Int {
+    override fun rewrapWrappingKey(tenantId: String, targetID: UUID, newParentKeyAlias: String): Int {
         val newParentKey = checkNotNull(unmanagedWrappingKeys.get(newParentKeyAlias)) {
             "Unable to find parent key $newParentKeyAlias in the configured unmanaged wrapping keys"
         }
         wrappingRepositoryFactory.create(tenantId).use { wrappingRepo ->
             while (true) { // retry if we do optimistic concurrency control
                 try {
-                    val (id, wrappingKeyInfo) = checkNotNull(wrappingRepo.findKeyAndId(targetAlias)) {
-                        "Wrapping key with alias $targetAlias not found"
+                    val (id, wrappingKeyInfo) = checkNotNull(wrappingRepo.getKeyById(targetID§)) {
+                        "Wrapping key with ID $targetID not found"
                     }
                     // Find the current unmanaged parent key passed in via config, so we can decrypt the wrapping key
                     val oldParentKey = checkNotNull(unmanagedWrappingKeys.get(wrappingKeyInfo.parentKeyAlias)) {
@@ -603,17 +604,17 @@ open class SoftCryptoService(
                     // we lost a race updating the generation number, and we
                     // don't know if the other update rewrapped as we are trying to do
                     // so retry
-                    logger.info("Collision on key rotation of $targetAlias")
+                    logger.info("Collision on key rotation of $targetID")
                     Thread.sleep(10)
                 }
             }
         }
     }
 
-    override fun rewrapSigningKey(tenantId: String, publicKey: PublicKey, newWrappingKeyAlias: String): SigningKeyInfo {
+    override fun rewrapSigningKey(tenantId: String, id: UUID, newWrappingKeyAlias: String): SigningKeyInfo {
         val newWrappingKey = obtainAndStoreWrappingKey(newWrappingKeyAlias, tenantId)
         signingRepositoryFactory.getInstance(tenantId).use {signingRepo ->
-            val signingKeyInfo = checkNotNull(signingRepo.findKey(publicKey))
+            val signingKeyInfo = checkNotNull(signingRepo.getKey(id))
             val oldWrappingKey = obtainAndStoreWrappingKey(signingKeyInfo.wrappingKeyAlias, tenantId)
             val clearPrivateKeyBytes = oldWrappingKey.unwrap(signingKeyInfo.keyMaterial)
             val newKeyMaterial = newWrappingKey.wrap(clearPrivateKeyBytes)
@@ -621,7 +622,7 @@ open class SoftCryptoService(
             val alias = checkNotNull(signingKeyInfo.alias)
             return signingRepo.savePrivateKey(
                 SigningWrappedKeySaveContext(
-                    key = GeneratedWrappedKey(publicKey, newKeyMaterial, PRIVATE_KEY_ENCODING_VERSION),
+                    key = GeneratedWrappedKey(signingKeyInfo.publicKey, newKeyMaterial, PRIVATE_KEY_ENCODING_VERSION),
                     wrappingKeyAlias = newWrappingKeyAlias,
                     externalId = signingKeyInfo.externalId,
                     alias = alias,

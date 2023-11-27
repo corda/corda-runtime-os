@@ -229,6 +229,25 @@ class SigningRepositoryImpl(
                 }
             }!!
     }
+
+    override fun getKey(id: UUID): SigningKeyInfo? {
+        return CordaMetrics.Metric.Crypto.SigningKeyLookupTimer.builder()
+            .withTag(CordaMetrics.Tag.SigningKeyLookupMethod, "PublicKeyHashes")
+            .build()
+            .recordCallable {
+                entityManagerFactory.createEntityManager().use { em ->
+                    em.transaction {
+                        em.createQuery<SigningKeyEntity?>(
+                            "FROM ${SigningKeyEntity::class.java.simpleName} " +
+                                    "WHERE id=:id",
+                            SigningKeyEntity::class.java
+                        )
+                            .setParameter("id", id)
+                            .resultList.map { it.joinSigningKeyInfo(em, keyEncodingService) }.firstOrNull()
+                    }
+                }
+            }!!
+    }
 }
 
 
