@@ -152,7 +152,6 @@ class TestInitialConfigPluginDb {
         val outText = createConfigDbConfig(jdbcUrl, username, password, vaultKey, jdbcPoolMaxSize, jdbcPoolMinSize,
             idleTimeout, maxLifetime, keepaliveTime, validationTimeout, secretsService)
 
-        println(outText)
         assertThat(outText).contains("\"user\":\"test\\\"user\"")
     }
 
@@ -179,7 +178,6 @@ class TestInitialConfigPluginDb {
                 "-s", "not so secure",
                 "-e", "not so secret")
         }
-        println(outText)
         assertThat(outText).contains("\"user\":\"test\\\"user\"")
     }
 }
