@@ -247,7 +247,7 @@ class ConfigTests {
         override fun createConfigValidator(): ConfigurationValidator = DummyConfigurationValidator()
         override fun createCordappConfigValidator(): ConfigurationValidator = DummyConfigurationValidator()
         override fun createExternalChannelsConfigValidator(): ExternalChannelsConfigValidator {
-            TODO("Not yet implemented")
+            throw NotImplementedError()
         }
     }
 
