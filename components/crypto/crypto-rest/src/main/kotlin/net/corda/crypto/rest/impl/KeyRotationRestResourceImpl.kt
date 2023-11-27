@@ -56,14 +56,13 @@ class KeyRotationRestResourceImpl @Activate constructor(
     override val targetInterface: Class<KeyRotationRestResource> = KeyRotationRestResource::class.java
     override val protocolVersion: Int = platformInfoProvider.localWorkerPlatformVersion
 
-    private val requestId = UUID.randomUUID().toString()
     @VisibleForTesting
     fun initialise(config: Map<String, SmartConfig>) {
         val messagingConfig = config.getConfig(ConfigKeys.MESSAGING_CONFIG)
 
         // Initialise publisher with messaging config
         publisher?.close()
-        val newPublisher = publisherFactory.createPublisher(PublisherConfig(requestId, false), messagingConfig)
+        val newPublisher = publisherFactory.createPublisher(PublisherConfig("KeyRotationRestResource", false), messagingConfig)
         newPublisher.start()
         publisher = newPublisher
     }
@@ -74,6 +73,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
     }
 
     override fun startKeyRotation(oldKeyAlias: String, newKeyAlias: String): ResponseEntity<KeyRotationResponse> {
+        val requestId = UUID.randomUUID()
         // We cannot validate oldKeyAlias or newKeyAlias early here on the client side of the RPC since
         // those values are considered sensitive.
 
@@ -81,7 +81,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
         // Do we need to start the publisher? FlowRestResource is not starting its publisher for some reason
 
         val keyRotationRequest = KeyRotationRequest(
-            requestId,
+            requestId.toString(),
             KeyType.UNMANAGED,
             oldKeyAlias,
             newKeyAlias,
@@ -92,7 +92,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
         publisher?.publish(listOf(Record(uploadTopic, requestId, keyRotationRequest)))
             ?: throw ServiceUnavailableException("Key rotation resource has not been initialised.")
 
-        return ResponseEntity.accepted(KeyRotationResponse(requestId, oldKeyAlias, newKeyAlias))
+        return ResponseEntity.accepted(KeyRotationResponse(requestId.toString(), oldKeyAlias, newKeyAlias))
     }
 
     private var isUp = false

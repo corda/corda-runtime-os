@@ -15,6 +15,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
+
 /**
  * This processor goes through the databases and find out what keys need re-wrapping.
  * It then posts a message to Kafka for each key needing re-wrapping with the tenant ID.
@@ -65,7 +66,7 @@ class CryptoRekeyBusProcessor(
                 targetWrappingKeys.map { (tenantId, wrappingKeyInfo) ->
                     Record(
                         REWRAP_MESSAGE_TOPIC,
-                        request.requestId,
+                        UUID.randomUUID(),
                         IndividualKeyRotationRequest(request.requestId,
                             tenantId,
                             request.oldParentKeyAlias,
