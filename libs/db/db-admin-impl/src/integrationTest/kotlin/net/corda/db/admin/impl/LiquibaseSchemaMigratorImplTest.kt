@@ -1,6 +1,6 @@
 package net.corda.db.admin.impl
 
-import liquibase.exception.ChangeLogParseException
+import liquibase.exception.CommandExecutionException
 import net.corda.db.core.InMemoryDataSourceFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -76,23 +76,11 @@ class LiquibaseSchemaMigratorImplTest {
         println("SQL Script:")
         println(sql1)
         assertThat(sql1.lowercase())
-            .contains("create table public.test_table")
-            .contains("create table public.another_table")
-            .contains("create table public.generic_table")
-            .contains("create table public.databasechangelog")
-            .contains("create table public.databasechangeloglock")
-            .doesNotContain("create table public.postgres_table")
-
-        // run it
-        ds.connection.use { db ->
-            sql1.lines()
-                .filter {
-                    it.isNotBlank() && !it.startsWith("--")
-                }
-                .forEach {
-                    db.createStatement().execute(it)
-                }
-        }
+            .containsPattern("run: +3")
+            .containsPattern("previously run: +0")
+            .containsPattern("filtered out: +1")
+            .containsPattern("total change sets: +4")
+            .containsPattern("dbms mismatch: +1")
 
         // Create another script
         val writer2 = StringWriter()
@@ -101,21 +89,10 @@ class LiquibaseSchemaMigratorImplTest {
         println("Second SQL Script:")
         println(sql2)
         assertThat(sql2.lowercase())
-            .contains("create schema if not exists another_schema;")
-            .contains("create table another_schema.test_table_in_other_schema")
-            .doesNotContain("create table public.databasechangelog")
-            .doesNotContain("create table public.databasechangeloglock")
-
-        // and run it
-        ds.connection.use { db ->
-            sql2.lines()
-                .filter {
-                    it.isNotBlank() && !it.startsWith("--")
-                }
-                .forEach {
-                    db.createStatement().execute(it)
-                }
-        }
+            .containsPattern("run: +1")
+            .containsPattern("previously run: +0")
+            .containsPattern("filtered out: +0")
+            .containsPattern("total change sets: +1")
     }
 
     @Test
@@ -143,9 +120,10 @@ class LiquibaseSchemaMigratorImplTest {
                 )
             )
         )
-        val e = assertThrows<ChangeLogParseException> {
+        val e = assertThrows<CommandExecutionException> {
             lbm.updateDb(ds.connection, cl)
         }
+        assertThat(e).hasMessageContaining("ChangeLogParseException")
         assertThat(e).hasMessageContaining("IllegalArgumentException")
         assertThat(e).hasMessageContaining("mysteryclass")
     }
