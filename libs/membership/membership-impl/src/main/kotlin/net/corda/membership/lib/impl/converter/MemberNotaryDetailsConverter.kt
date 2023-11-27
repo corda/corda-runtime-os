@@ -37,7 +37,7 @@ class MemberNotaryDetailsConverter @Activate constructor(
 
     override fun convert(context: ConversionContext): MemberNotaryDetails {
         val serviceName = context.value(SERVICE_NAME) ?: throw ValueNotFoundException("'$SERVICE_NAME' is null or absent.")
-        val serviceBackchainRequired = context.value(SERVICE_BACKCHAIN_REQUIRED).toBoolean()
+        val serviceBackchainRequired = context.value(SERVICE_BACKCHAIN_REQUIRED)?.toBoolean() ?: true
         val serviceProtocol = context.value(SERVICE_PROTOCOL)
         val serviceProtocolVersions = generateSequence(0) {
             it + 1

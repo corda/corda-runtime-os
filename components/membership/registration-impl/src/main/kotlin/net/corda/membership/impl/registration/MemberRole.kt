@@ -63,11 +63,13 @@ internal sealed class MemberRole {
             val protocolVersions = NOTARY_SERVICE_PROTOCOL_VERSIONS.format("([0-9]+)").toRegex().let { regex ->
                 context.filter { it.key.matches(regex) }.mapTo(mutableSetOf()) { it.value.toInt() }
             }
+            val backchainRequired = context[NOTARY_SERVICE_BACKCHAIN_REQUIRED]?.toBoolean() ?: true
+
             return Notary(
                 serviceName = MemberX500Name.parse(serviceName),
                 protocol = protocol,
                 protocolVersions = protocolVersions,
-                backchainRequired =  context[NOTARY_SERVICE_BACKCHAIN_REQUIRED].toBoolean()
+                backchainRequired =  backchainRequired
             )
         }
     }
