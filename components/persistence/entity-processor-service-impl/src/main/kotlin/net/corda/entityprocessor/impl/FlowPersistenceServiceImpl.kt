@@ -49,14 +49,15 @@ class FlowPersistenceServiceImpl  @Activate constructor(
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is RegistrationStatusChangeEvent -> {
+                val msg = "The status of event: $event changed to ${event.status}."
                 if (event.status == LifecycleStatus.UP) {
-                    logger.debug {"The status of event: $event changed to ${event.status}, starting subscription."}
+                    logger.debug { "$msg Starting subscription." }
                     initialiseRpcSubscription()
                     coordinator.updateStatus(LifecycleStatus.UP)
                 } else {
                     coordinator.updateStatus(event.status)
                     coordinator.closeManagedResources(setOf(RPC_SUBSCRIPTION))
-                    logger.debug {"The status of event: $event changed to ${event.status}, stopping subscription."}
+                    logger.debug { "$msg Stopping subscription." }
                 }
             }
             is StopEvent -> {
