@@ -28,7 +28,6 @@ class EntityRequestSubscriptionFactoryImpl @Activate constructor(
     private val responseFactory: ResponseFactory
 ) : EntityRequestSubscriptionFactory {
     companion object {
-        internal const val GROUP_NAME = "persistence.entity.processor"
         const val SUBSCRIPTION_NAME = "Persistence"
     }
 
