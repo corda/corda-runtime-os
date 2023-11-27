@@ -11,6 +11,7 @@ import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import net.corda.libs.configuration.secret.SecretsServiceFactoryResolver
 import net.corda.libs.configuration.validation.ConfigurationValidator
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
+import net.corda.libs.configuration.validation.ExternalChannelsConfigValidator
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.registry.CoordinatorStatus
@@ -245,6 +246,9 @@ class ConfigTests {
     private class DummyValidatorFactory : ConfigurationValidatorFactory {
         override fun createConfigValidator(): ConfigurationValidator = DummyConfigurationValidator()
         override fun createCordappConfigValidator(): ConfigurationValidator = DummyConfigurationValidator()
+        override fun createExternalChannelsConfigValidator(): ExternalChannelsConfigValidator {
+            throw NotImplementedError()
+        }
     }
 
     private class DummyConfigurationValidator : ConfigurationValidator {

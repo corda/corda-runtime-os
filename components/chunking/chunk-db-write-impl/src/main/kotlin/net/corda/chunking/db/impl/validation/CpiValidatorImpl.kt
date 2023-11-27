@@ -10,6 +10,7 @@ import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.cpiinfo.write.CpiInfoWriteService
+import net.corda.libs.configuration.validation.ExternalChannelsConfigValidator
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.PackagingConstants
@@ -99,7 +100,8 @@ class CpiValidatorImpl(
         val liquibaseScripts = cpi.extractLiquibaseScripts()
 
         publisher.update(requestId, "Validating configuration for external channels")
-        externalChannelsConfigValidator.validate(cpi.metadata.cpksMetadata)
+        val externalChannelsConfigList = cpi.metadata.cpksMetadata.mapNotNull { it.externalChannelsConfig }
+        externalChannelsConfigValidator.validate(externalChannelsConfigList)
 
         publisher.update(requestId, "Persisting CPI")
         val cpiMetadata =
