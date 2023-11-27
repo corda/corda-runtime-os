@@ -291,20 +291,22 @@ fun registerStaticMember(
     holdingIdentityShortHash: String,
     notaryServiceName: String? = null,
     customMetadata: Map<String, String> = emptyMap(),
-) = DEFAULT_CLUSTER.registerStaticMember(holdingIdentityShortHash, notaryServiceName, customMetadata)
+    backchainRequired: Boolean?
+) = DEFAULT_CLUSTER.registerStaticMember(holdingIdentityShortHash, notaryServiceName, customMetadata, backchainRequired)
 
 val memberRegisterLock = ReentrantLock()
 fun ClusterInfo.registerStaticMember(
     holdingIdentityShortHash: String,
     notaryServiceName: String? = null,
     customMetadata: Map<String, String> = emptyMap(),
+    backchainRequired: Boolean?
 ) {
     cluster {
         memberRegisterLock.withLock {
             assertWithRetry {
                 interval(1.seconds)
                 timeout(10.seconds)
-                command { registerStaticMember(holdingIdentityShortHash, notaryServiceName, customMetadata) }
+                command { registerStaticMember(holdingIdentityShortHash, notaryServiceName, customMetadata, backchainRequired) }
                 condition {
                     it.code == ResponseCode.OK.statusCode
                             && it.toJson()["registrationStatus"].textValue() == REGISTRATION_SUBMITTED
