@@ -2,8 +2,9 @@ package net.corda.ledger.utxo.token.cache.services
 
 import net.corda.ledger.utxo.token.cache.entities.AvailTokenQueryResult
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
-import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 import net.corda.v5.ledger.utxo.token.selection.TokenBalance
+import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
+
 
 interface AvailableTokenService {
 
