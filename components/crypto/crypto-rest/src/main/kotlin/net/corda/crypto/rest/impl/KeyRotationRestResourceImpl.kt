@@ -56,14 +56,13 @@ class KeyRotationRestResourceImpl @Activate constructor(
     override val targetInterface: Class<KeyRotationRestResource> = KeyRotationRestResource::class.java
     override val protocolVersion: Int = platformInfoProvider.localWorkerPlatformVersion
 
-    private val requestId = UUID.randomUUID().toString()
     @VisibleForTesting
     fun initialise(config: Map<String, SmartConfig>) {
         val messagingConfig = config.getConfig(ConfigKeys.MESSAGING_CONFIG)
 
         // Initialise publisher with messaging config
         publisher?.close()
-        val newPublisher = publisherFactory.createPublisher(PublisherConfig(requestId, false), messagingConfig)
+        val newPublisher = publisherFactory.createPublisher(PublisherConfig("KeyRotationRestResource", false), messagingConfig)
         newPublisher.start()
         publisher = newPublisher
     }
@@ -79,6 +78,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
 
         // We need to create a Record that tells Crypto processor to do key rotation
         // Do we need to start the publisher? FlowRestResource is not starting its publisher for some reason
+        val requestId = UUID.randomUUID().toString()
 
         val keyRotationRequest = KeyRotationRequest(
             requestId,
