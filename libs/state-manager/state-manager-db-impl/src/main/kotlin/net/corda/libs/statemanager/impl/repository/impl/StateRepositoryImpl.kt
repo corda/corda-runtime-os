@@ -55,21 +55,23 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
     }
 
     override fun delete(connection: Connection, states: Collection<StateEntity>): Collection<String> {
-        val failedKeys = mutableListOf<String>()
-
-        states.forEach { state ->
-            connection.prepareStatement(queryProvider.deleteStatesByKey).use {
-                it.setString(1, state.key)
-                it.setInt(2, state.version)
-                it.executeUpdate().also { count ->
-                    if (count == 0) {
-                        failedKeys.add(state.key)
-                    }
-                }
+        return connection.prepareStatement(queryProvider.deleteStatesByKey).use { statement ->
+            // The actual state order doesn't matter, but we must ensure that the states are iterated over in the same
+            // order when examining the result as when the statements were generated.
+            val statesOrdered = states.toList()
+            statesOrdered.forEach { state ->
+                statement.setString(1, state.key)
+                statement.setInt(2, state.version)
+                statement.addBatch()
             }
+            statement.executeBatch().zip(statesOrdered).mapNotNull { (count, state) ->
+                if (count == 0) {
+                    state.key
+                } else {
+                    null
+                }
+            }.toList()
         }
-
-        return failedKeys
     }
 
     override fun updatedBetween(connection: Connection, interval: IntervalFilter): Collection<StateEntity> =
