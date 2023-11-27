@@ -77,7 +77,9 @@ internal class OutboundMessageProcessor(
                 )
                 emptyList()
             } else {
-                state.messages.forEach { recordOutboundSessionMessagesMetric(state.sessionCounterparties.ourId, state.sessionCounterparties.counterpartyId) }
+                state.messages.forEach {
+                    recordOutboundSessionMessagesMetric(state.sessionCounterparties.ourId, state.sessionCounterparties.counterpartyId)
+                }
                 state.messages.flatMap {
                     listOf(
                         Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), it.second),
