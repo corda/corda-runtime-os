@@ -15,6 +15,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import java.util.UUID
 
 internal class CordaAvroDeserializerTest {
 
@@ -41,6 +42,20 @@ internal class CordaAvroDeserializerTest {
         val win = deserializer.deserialize("", "Win!".toByteArray())
 
         assertThat(win).isEqualTo("Win!".toByteArray())
+        verifyNoInteractions(schemaRegistry)
+        verifyNoInteractions(callback)
+    }
+
+    @Test
+    fun `simple UUID deserialize test`() {
+        val schemaRegistry: AvroSchemaRegistry = mock()
+        val callback: (String, ByteArray) -> Unit = mock()
+        val deserializer = CordaAvroDeserializerImpl( mock(),  mock(), UUID::class.java)
+        val value = UUID.randomUUID()
+        // Serializing of the UUID is already tested in the CordaAvroSerializerImplTest, hence using here toString
+        val win = deserializer.deserialize("", kafkaSerializer.serialize("", value.toString()))
+
+        assertThat(win).isEqualTo(value)
         verifyNoInteractions(schemaRegistry)
         verifyNoInteractions(callback)
     }

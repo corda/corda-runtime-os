@@ -1,7 +1,5 @@
 package net.corda.messagebus.kafka.serialization
 
-import java.nio.ByteBuffer
-import java.util.function.Consumer
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
@@ -10,6 +8,9 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.apache.kafka.common.serialization.Deserializer
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
+import java.util.function.Consumer
+import java.util.UUID
 
 /**
  * Corda avro serializer impl
@@ -40,6 +41,9 @@ class CordaAvroDeserializerImpl<T: Any>(
             }
             expectedClass == ByteArray::class.java && !isChunkType -> {
                 data
+            }
+            expectedClass == UUID::class.java && !isChunkType -> {
+                UUID.fromString(stringDeserializer.deserialize(null, data))
             }
             else -> {
                 deserializeAvro(data, allowChunks)

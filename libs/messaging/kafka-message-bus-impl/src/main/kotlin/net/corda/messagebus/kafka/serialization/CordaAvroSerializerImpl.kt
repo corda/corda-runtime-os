@@ -6,6 +6,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.apache.kafka.common.serialization.Serializer
 import org.apache.kafka.common.serialization.StringSerializer
 import org.slf4j.LoggerFactory
+import java.util.UUID
 
 /**
  * Corda avro serializer impl
@@ -38,6 +39,7 @@ class CordaAvroSerializerImpl<T : Any>(
             return when (data) {
                 is String -> stringSerializer.serialize(null, data)
                 is ByteArray -> data
+                is UUID -> stringSerializer.serialize(null, data.toString())
                 else -> {
                     schemaRegistry.serialize(data).array()
                 }

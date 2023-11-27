@@ -1,6 +1,5 @@
 package net.corda.messagebus.kafka.serialization
 
-import java.nio.ByteBuffer
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
@@ -11,6 +10,8 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
+import java.util.UUID
 
 class CordaAvroSerializerImplTest {
 
@@ -43,6 +44,11 @@ class CordaAvroSerializerImplTest {
     @Test
     fun testByteArrayValue() {
         assertThat(cordaAvroSerializer.serialize(topic, "bytearray".toByteArray()) != null)
+    }
+
+    @Test
+    fun testUUIDValue() {
+        assertThat(cordaAvroSerializer.serialize(topic, UUID.randomUUID()) != null)
     }
 
     @Test

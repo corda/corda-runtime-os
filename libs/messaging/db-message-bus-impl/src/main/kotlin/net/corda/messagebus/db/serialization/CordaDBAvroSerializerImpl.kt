@@ -4,6 +4,7 @@ import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
+import java.util.UUID
 
 class CordaDBAvroSerializerImpl<T : Any>(
     private val schemaRegistry: AvroSchemaRegistry,
@@ -20,6 +21,7 @@ class CordaDBAvroSerializerImpl<T : Any>(
             return when (data) {
                 is String -> (data as String).encodeToByteArray()
                 is ByteArray -> data
+                is UUID -> (data.toString()).encodeToByteArray()
                 else -> schemaRegistry.serialize(data).array()
             }
         } catch (ex: Throwable) {

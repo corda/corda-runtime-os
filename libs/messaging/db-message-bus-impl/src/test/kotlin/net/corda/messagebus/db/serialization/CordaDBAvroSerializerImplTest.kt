@@ -1,6 +1,5 @@
 package net.corda.messagebus.db.serialization
 
-import java.nio.ByteBuffer
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
@@ -11,6 +10,8 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
+import java.util.UUID
 
 class CordaDBAvroSerializerImplTest {
 
@@ -37,6 +38,11 @@ class CordaDBAvroSerializerImplTest {
     @Test
     fun testByteArrayValue() {
         assertThat(cordaDBAvroSerializer.serialize("data".toByteArray()) != null)
+    }
+
+    @Test
+    fun testUUIDValue() {
+        assertThat(cordaDBAvroSerializer.serialize(UUID.randomUUID()) != null)
     }
 
     @Test

@@ -1,12 +1,13 @@
 package net.corda.messagebus.db.serialization
 
-import java.nio.ByteBuffer
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
+import java.util.UUID
 
 class CordaDBAvroDeserializerImpl<T : Any>(
     private val schemaRegistry: AvroSchemaRegistry,
@@ -28,6 +29,9 @@ class CordaDBAvroDeserializerImpl<T : Any>(
             }
             expectedClass == ByteArray::class.java && !isChunkType -> {
                 data
+            }
+            expectedClass == UUID::class.java && !isChunkType -> {
+                UUID.fromString(data.decodeToString()) as T?
             }
             else -> {
                 deserializeAvro(data, allowChunks)
