@@ -34,7 +34,7 @@ import net.corda.db.persistence.testkit.helpers.SandboxHelper.getCatClass
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getDogClass
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getOwnerClass
 import net.corda.db.schema.DbSchema
-import net.corda.entityprocessor.impl.internal.EntityRpcRequestProcessor
+import net.corda.entityprocessor.impl.internal.EntityRequestProcessor
 import net.corda.entityprocessor.impl.internal.PersistenceServiceInternal
 import net.corda.entityprocessor.impl.internal.getClass
 import net.corda.entityprocessor.impl.tests.helpers.AnimalCreator.createCats
@@ -283,7 +283,7 @@ class PersistenceServiceInternalTests {
             }
         )
 
-        val processor = EntityRpcRequestProcessor(
+        val processor = EntityRequestProcessor(
             currentSandboxGroupContext,
             myEntitySandboxService,
             responseFactory,
@@ -891,8 +891,8 @@ class PersistenceServiceInternalTests {
     private fun SandboxGroupContext.deserialize(bytes: ByteBuffer) =
         getSerializationService().deserialize(bytes.array(), Any::class.java)
 
-    private fun getMessageProcessor(): EntityRpcRequestProcessor {
-        return EntityRpcRequestProcessor(
+    private fun getMessageProcessor(): EntityRequestProcessor {
+        return EntityRequestProcessor(
             currentSandboxGroupContext,
             entitySandboxService,
             responseFactory,

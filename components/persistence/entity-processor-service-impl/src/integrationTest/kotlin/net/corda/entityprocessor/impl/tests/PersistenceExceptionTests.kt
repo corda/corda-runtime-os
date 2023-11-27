@@ -22,7 +22,7 @@ import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.createDog
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getDogClass
 import net.corda.db.schema.DbSchema
-import net.corda.entityprocessor.impl.internal.EntityRpcRequestProcessor
+import net.corda.entityprocessor.impl.internal.EntityRequestProcessor
 import net.corda.entityprocessor.impl.tests.helpers.assertEventResponseWithError
 import net.corda.entityprocessor.impl.tests.helpers.assertEventResponseWithoutError
 import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableException
@@ -103,7 +103,7 @@ class PersistenceExceptionTests {
     private lateinit var dbConnectionManager: FakeDbConnectionManager
 
     private lateinit var entitySandboxService: EntitySandboxService
-    private lateinit var processor: EntityRpcRequestProcessor
+    private lateinit var processor: EntityRequestProcessor
 
     private lateinit var virtualNodeInfo: VirtualNodeInfo
     private lateinit var cpkFileHashes: Set<SecureHash>
@@ -158,7 +158,7 @@ class PersistenceExceptionTests {
                     virtualNodeInfoReadService,
                     dbConnectionManager
                 )
-            processor = EntityRpcRequestProcessor(
+            processor = EntityRequestProcessor(
                 currentSandboxGroupContext,
                 entitySandboxService,
                 responseFactory,
@@ -217,7 +217,7 @@ class PersistenceExceptionTests {
                 dbConnectionManager
             )
 
-        val processor = EntityRpcRequestProcessor(
+        val processor = EntityRequestProcessor(
             currentSandboxGroupContext,
             brokenEntitySandboxService,
             responseFactory,

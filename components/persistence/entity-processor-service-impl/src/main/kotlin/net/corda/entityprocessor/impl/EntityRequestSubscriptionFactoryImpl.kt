@@ -3,7 +3,7 @@ package net.corda.entityprocessor.impl
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.persistence.EntityRequest
 import net.corda.entityprocessor.EntityRequestSubscriptionFactory
-import net.corda.entityprocessor.impl.internal.EntityRpcRequestProcessor
+import net.corda.entityprocessor.impl.internal.EntityRequestProcessor
 import net.corda.messaging.api.constants.WorkerRPCPaths.PERSISTENCE_PATH
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.SyncRPCConfig
@@ -32,7 +32,7 @@ class EntityRequestSubscriptionFactoryImpl @Activate constructor(
     }
 
     override fun createRpcSubscription(): RPCSubscription<EntityRequest, FlowEvent> {
-        val processor = EntityRpcRequestProcessor(
+        val processor = EntityRequestProcessor(
             currentSandboxGroupContext,
             entitySandboxService,
             responseFactory,
