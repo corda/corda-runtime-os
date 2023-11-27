@@ -8,12 +8,12 @@ import net.corda.data.ledger.utxo.token.selection.data.TokenClaimReleaseAck
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaimResultStatus
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
-import net.corda.ledger.utxo.token.cache.entities.TokenBalance
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 import net.corda.messaging.api.records.Record
 import java.math.BigDecimal
 import java.nio.ByteBuffer
 import net.corda.data.ledger.utxo.token.selection.data.Token
+import net.corda.v5.ledger.utxo.token.selection.TokenBalance
 
 class RecordFactoryImpl(private val externalEventResponseFactory: ExternalEventResponseFactory) : RecordFactory {
 
