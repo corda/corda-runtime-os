@@ -13,6 +13,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Crypto.REWRAP_MESSAGE_TOPIC
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.LoggerFactory
+import java.util.UUID
 
 /**
  * This processor goes through the databases and find out what keys need re-wrapping.
@@ -64,7 +65,7 @@ class CryptoRekeyBusProcessor(
                 targetWrappingKeys.map { (tenantId, wrappingKeyInfo) ->
                     Record(
                         REWRAP_MESSAGE_TOPIC,
-                        request.requestId,
+                        UUID.randomUUID().toString(),
                         IndividualKeyRotationRequest(request.requestId,
                             tenantId,
                             request.oldParentKeyAlias,
