@@ -5,7 +5,6 @@ import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.v5.ledger.utxo.token.selection.TokenBalance
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
 
-
 interface AvailableTokenService {
 
     fun findAvailTokens(poolKey: TokenPoolKey, ownerHash: String?, tagRegex: String?, maxTokens: Int): AvailTokenQueryResult
