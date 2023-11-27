@@ -65,7 +65,7 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
                 statement.addBatch()
             }
             statement.executeBatch().zip(statesOrdered).mapNotNull { (count, state) ->
-                if (count == 0) {
+                if (count <= 0) {
                     state.key
                 } else {
                     null

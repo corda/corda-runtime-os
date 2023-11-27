@@ -102,8 +102,12 @@ class StateManagerImpl(
             return if (failedDeletes.isEmpty()) {
                 emptyMap()
             } else {
-                logger.warn("Optimistic locking check failed while deleting States ${failedDeletes.joinToString()}")
-                get(failedDeletes)
+                get(failedDeletes).also {
+                    if (it.isNotEmpty()) {
+                        logger.warn("Optimistic locking check failed while deleting States" +
+                                " ${failedDeletes.joinToString()}")
+                    }
+                }
             }
         } catch (e: Exception) {
             logger.warn("Failed to delete batch of states - ${states.joinToString { it.key }}", e)
