@@ -44,7 +44,7 @@ class EntityRpcRequestProcessor(
 
         val record = processorService.processEvent(
             logger, request, entitySandboxService, currentSandboxGroupContext, responseFactory, requestsIdsRepository
-        ) { it }
+        )
         return record.value as FlowEvent
     }
 }

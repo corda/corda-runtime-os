@@ -69,8 +69,7 @@ class EntityRequestProcessor(
                         entitySandboxService,
                         currentSandboxGroupContext,
                         responseFactory,
-                        requestsIdsRepository,
-                        payloadCheck
+                        requestsIdsRepository
                     )
                 }
             }
