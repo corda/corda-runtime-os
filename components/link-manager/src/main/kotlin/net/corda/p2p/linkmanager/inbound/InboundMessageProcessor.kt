@@ -33,6 +33,7 @@ import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.linkmanager.metrics.recordInboundMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordInboundSessionMessagesMetric
+import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
 import net.corda.schema.Schemas
 import net.corda.tracing.traceEventProcessing
 import net.corda.utilities.debug
@@ -105,8 +106,7 @@ internal class InboundMessageProcessor(
     private fun processSessionMessage(message: LinkInMessage): List<Record<String, *>> {
         val response = sessionManager.processSessionMessage(message)
         return if (response != null) {
-            recordInboundSessionMessagesMetric(response.header.sourceIdentity, response.header.destinationIdentity)
-            when (val payload = message.payload) {
+            val records = when (val payload = message.payload) {
                 is InitiatorHelloMessage -> {
                     val partitionsAssigned =
                         inboundAssignmentListener.getCurrentlyAssignedPartitions()
@@ -135,6 +135,11 @@ internal class InboundMessageProcessor(
                     listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response))
                 }
             }
+            if (records.isNotEmpty()) {
+                recordInboundSessionMessagesMetric(response.header.destinationIdentity, response.header.sourceIdentity)
+                recordOutboundSessionMessagesMetric(response.header.sourceIdentity, response.header.destinationIdentity)
+            }
+            records
         } else {
             emptyList()
         }

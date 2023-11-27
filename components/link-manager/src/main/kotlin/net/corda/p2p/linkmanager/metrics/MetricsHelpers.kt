@@ -29,6 +29,12 @@ fun recordOutboundSessionMessagesMetric(sourceVnode: HoldingIdentity, destinatio
         P2P_SUBSYSTEM, SESSION_MESSAGE_TYPE)
 }
 
+fun recordOutboundSessionMessagesMetric(sourceVnode: net.corda.data.identity.HoldingIdentity,
+                                        destinationVnode: net.corda.data.identity.HoldingIdentity) {
+    recordOutboundMessagesMetric(sourceVnode.x500Name, destinationVnode.x500Name, sourceVnode.groupId,
+        P2P_SUBSYSTEM, SESSION_MESSAGE_TYPE)
+}
+
 fun recordOutboundMessagesMetric(source: String, dest: String, group: String, subsystem: String, messageType: String) {
     CordaMetrics.Metric.OutboundMessageCount.builder()
         .withTag(CordaMetrics.Tag.SourceVirtualNode, source)
