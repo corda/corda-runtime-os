@@ -4,7 +4,7 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.ledger.utxo.token.cache.entities.BalanceQuery
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
-import net.corda.ledger.utxo.token.cache.entities.internal.TokenBalanceImpl
+import net.corda.ledger.utxo.token.cache.entities.internal.TokenBalanceCacheImpl
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.factories.RecordFactory
 import net.corda.ledger.utxo.token.cache.handlers.TokenBalanceQueryEventHandler
@@ -64,7 +64,7 @@ class TokenBalanceQueryEventHandlerTest {
                 isNull(),
                 any()
             )
-        ).thenReturn(TokenBalanceImpl(BigDecimal(0), BigDecimal(0)))
+        ).thenReturn(TokenBalanceCacheImpl(BigDecimal(0), BigDecimal(0)))
 
         val result = target.handle(tokenCache, poolCacheState, balanceQuery)
 
@@ -73,7 +73,7 @@ class TokenBalanceQueryEventHandlerTest {
             flowId,
             balanceId,
             POOL_KEY,
-            TokenBalanceImpl(BigDecimal(0.0), BigDecimal(0.0))
+            TokenBalanceCacheImpl(BigDecimal(0.0), BigDecimal(0.0))
         )
     }
 
@@ -89,7 +89,7 @@ class TokenBalanceQueryEventHandlerTest {
                 isNull(),
                 any()
             )
-        ).thenReturn(TokenBalanceImpl(BigDecimal(99), BigDecimal(99)))
+        ).thenReturn(TokenBalanceCacheImpl(BigDecimal(99), BigDecimal(99)))
         cachedTokens += token99
 
         val result = target.handle(tokenCache, poolCacheState, balanceQuery)
@@ -99,7 +99,7 @@ class TokenBalanceQueryEventHandlerTest {
             flowId,
             balanceId,
             POOL_KEY,
-            TokenBalanceImpl(BigDecimal(99), BigDecimal(99))
+            TokenBalanceCacheImpl(BigDecimal(99), BigDecimal(99))
         )
     }
 
@@ -115,7 +115,7 @@ class TokenBalanceQueryEventHandlerTest {
                 isNull(),
                 any()
             )
-        ).thenReturn(TokenBalanceImpl(BigDecimal(99), BigDecimal(199)))
+        ).thenReturn(TokenBalanceCacheImpl(BigDecimal(99), BigDecimal(199)))
         cachedTokens += token99
         cachedTokens += token100
 
@@ -130,7 +130,7 @@ class TokenBalanceQueryEventHandlerTest {
             flowId,
             balanceId,
             POOL_KEY,
-            TokenBalanceImpl(BigDecimal(99), BigDecimal(199))
+            TokenBalanceCacheImpl(BigDecimal(99), BigDecimal(199))
         )
     }
 

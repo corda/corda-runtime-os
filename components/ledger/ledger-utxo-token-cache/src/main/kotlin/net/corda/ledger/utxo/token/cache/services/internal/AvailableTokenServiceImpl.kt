@@ -10,7 +10,7 @@ import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.repositories.UtxoTokenRepository
  import net.corda.v5.ledger.utxo.token.selection.TokenBalance
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
-import net.corda.ledger.utxo.token.cache.entities.internal.TokenBalanceImpl
+import net.corda.ledger.utxo.token.cache.entities.internal.TokenBalanceCacheImpl
 import net.corda.ledger.utxo.token.cache.services.AvailableTokenService
 import net.corda.ledger.utxo.token.cache.services.TokenSelectionMetrics
 import net.corda.orm.JpaEntitiesRegistry
@@ -60,7 +60,7 @@ class AvailableTokenServiceImpl(
         val claimedBalance = claimedTokens.sumOf { it.amount }
         val availableBalance = totalBalance - claimedBalance
 
-        return TokenBalanceImpl(availableBalance, totalBalance)
+        return TokenBalanceCacheImpl(availableBalance, totalBalance)
     }
 
     private fun getOrCreateEntityManagerFactory(virtualNode: VirtualNodeInfo) =
