@@ -27,10 +27,11 @@ class EntityRequestProcessor(
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     private val entitySandboxService: EntitySandboxService,
     private val responseFactory: ResponseFactory,
-    override val requestClass: Class<EntityRequest>,
-    override val responseClass: Class<FlowEvent>,
     private val requestsIdsRepository: RequestsIdsRepository = RequestsIdsRepositoryImpl()
 ) : SyncRPCProcessor<EntityRequest, FlowEvent> {
+
+    override val requestClass = EntityRequest::class.java
+    override val responseClass = FlowEvent::class.java
 
     private companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)

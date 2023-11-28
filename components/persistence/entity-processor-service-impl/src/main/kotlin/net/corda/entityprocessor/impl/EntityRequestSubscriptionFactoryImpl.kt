@@ -35,9 +35,7 @@ class EntityRequestSubscriptionFactoryImpl @Activate constructor(
         val processor = EntityRequestProcessor(
             currentSandboxGroupContext,
             entitySandboxService,
-            responseFactory,
-            EntityRequest::class.java,
-            FlowEvent::class.java
+            responseFactory
         )
         val rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, PERSISTENCE_PATH)
         return subscriptionFactory.createHttpRPCSubscription(rpcConfig, processor)

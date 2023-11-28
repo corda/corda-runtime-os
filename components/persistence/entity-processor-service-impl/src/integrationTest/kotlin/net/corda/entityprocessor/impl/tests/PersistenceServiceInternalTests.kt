@@ -286,9 +286,7 @@ class PersistenceServiceInternalTests {
         val processor = EntityRequestProcessor(
             currentSandboxGroupContext,
             myEntitySandboxService,
-            responseFactory,
-            requestClass,
-            responseClass
+            responseFactory
         )
 
         // Now "send" the request for processing and "receive" the responses.
@@ -895,9 +893,7 @@ class PersistenceServiceInternalTests {
         return EntityRequestProcessor(
             currentSandboxGroupContext,
             entitySandboxService,
-            responseFactory,
-            requestClass,
-            responseClass
+            responseFactory
         )
     }
 }

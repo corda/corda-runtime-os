@@ -161,9 +161,7 @@ class PersistenceExceptionTests {
             processor = EntityRequestProcessor(
                 currentSandboxGroupContext,
                 entitySandboxService,
-                responseFactory,
-                requestClass,
-                responseClass
+                responseFactory
             )
         }
 
@@ -220,9 +218,7 @@ class PersistenceExceptionTests {
         val processor = EntityRequestProcessor(
             currentSandboxGroupContext,
             brokenEntitySandboxService,
-            responseFactory,
-            requestClass,
-            responseClass
+            responseFactory
         )
 
         // Now "send" the request for processing and "receive" the responses.
