@@ -5,14 +5,13 @@ import net.corda.data.persistence.EntityRequest
 import net.corda.messaging.api.subscription.RPCSubscription
 
 /**
- * The [EntityRequestSubscriptionFactory] creates a new subscription to the durable topic used to receive
+ * The [EntityRequestSubscriptionFactory] creates a new subscription to receive
  * [EntityRequest] messages.
  */
 interface EntityRequestSubscriptionFactory {
     /**
-     * Create a new subscription
+     * Create a new rpc subscription
      *
-     * @param config Configuration for the subscription
      * @return A new subscription for [EntityRequest] messages
      */
 
