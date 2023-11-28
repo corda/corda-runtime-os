@@ -104,6 +104,7 @@ internal class InboundMessageProcessor(
     }
 
     private fun processSessionMessage(message: LinkInMessage): List<Record<String, *>> {
+        recordInboundSessionMessagesMetric()
         val response = sessionManager.processSessionMessage(message)
         return if (response != null) {
             val records = when (val payload = message.payload) {
@@ -136,7 +137,6 @@ internal class InboundMessageProcessor(
                 }
             }
             if (records.isNotEmpty()) {
-                recordInboundSessionMessagesMetric(response.header.destinationIdentity, response.header.sourceIdentity)
                 recordOutboundSessionMessagesMetric(response.header.sourceIdentity, response.header.destinationIdentity)
             }
             records

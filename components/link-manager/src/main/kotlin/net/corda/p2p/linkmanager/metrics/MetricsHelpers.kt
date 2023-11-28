@@ -57,10 +57,8 @@ fun recordInboundMessagesMetric(message: InboundUnauthenticatedMessage) {
         message.header.subsystem, message::class.java.simpleName)
 }
 
-fun recordInboundSessionMessagesMetric(sourceVnode: net.corda.data.identity.HoldingIdentity,
-                                       destinationVnode: net.corda.data.identity.HoldingIdentity) {
-    recordInboundMessagesMetric(sourceVnode.x500Name, destinationVnode.x500Name, sourceVnode.groupId,
-        P2P_SUBSYSTEM, SESSION_MESSAGE_TYPE)
+fun recordInboundSessionMessagesMetric() {
+    recordInboundMessagesMetric(null, null, null, P2P_SUBSYSTEM, SESSION_MESSAGE_TYPE)
 }
 
 private fun recordInboundMessagesMetric(source: String?, dest: String?, group: String?, subsystem: String, messageType: String) {
