@@ -71,7 +71,7 @@ foreach ($restSvcName in (kubectl get svc --namespace $namespace -l app.kubernet
       Start-Sleep -Seconds 0.1
     }
 
-    $sections = "crypto", "externalMessaging", "flow", "ledger.utxo", "membership", "messaging", "p2p.gateway", "p2p.linkManager", "reconciliation", "rest", "rbac", "sandbox", "secrets", "security", "stateManager", "vnode.datasource"
+    $sections = "crypto", "externalMessaging", "flow", "ledger.utxo", "membership", "messaging", "p2p.gateway", "p2p.linkManager", "rbac", "reconciliation", "rest", "sandbox", "secrets", "security", "stateManager", "vnode.datasource"
     foreach ($section in $sections) {
       Invoke-RestMethod -Uri "https://localhost:9443/api/v1/config/corda.$section" -Method Get -SkipCertificateCheck -Headers @{Authorization = "Basic " + [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("${username}:${password}"))} -OutFile (Join-Path $configDir "corda.$section.json")
     }
