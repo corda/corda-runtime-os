@@ -11,11 +11,9 @@ class YearSerializer : BaseProxySerializer<Year, YearSerializer.YearProxy>() {
     override val proxyType: Class<YearProxy> get() = YearProxy::class.java
     override val withInheritance: Boolean get() = false
 
-    override fun toProxy(obj: Year): YearProxy
-        = YearProxy(obj.value)
+    override fun toProxy(obj: Year): YearProxy = YearProxy(obj.value)
 
-    override fun fromProxy(proxy: YearProxy): Year
-        = Year.of(proxy.year)
+    override fun fromProxy(proxy: YearProxy): Year = Year.of(proxy.year)
 
     data class YearProxy(val year: Int)
 }

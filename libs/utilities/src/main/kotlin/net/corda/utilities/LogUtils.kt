@@ -51,7 +51,7 @@ fun Logger.warnOnce(warning: String) {
 /**
  * Run a code block temporary suppressing any StdErr output that might be produced
  */
-fun <T : Any?> executeWithStdErrSuppressed(block: () -> T) : T {
+fun <T : Any?> executeWithStdErrSuppressed(block: () -> T): T {
     val initial = System.err
     return try {
         System.setErr(PrintStream(OutputStream.nullOutputStream()))
@@ -67,7 +67,7 @@ fun <T : Any?> executeWithStdErrSuppressed(block: () -> T) : T {
  * @param block the function to execute whose result is returned
  * @return the result of the [block] function
  */
-fun <R> withMDC(mdcProperties: Map<String, String>, block: () -> R) : R {
+fun <R> withMDC(mdcProperties: Map<String, String>, block: () -> R): R {
     try {
         setMDC(mdcProperties)
         return block()

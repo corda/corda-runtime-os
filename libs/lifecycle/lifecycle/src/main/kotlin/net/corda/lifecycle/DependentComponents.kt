@@ -57,7 +57,7 @@ class DependentComponents private constructor(private val map: Map<LifecycleCoor
             instanceId: String?
         ): DependentComponents {
             val name = LifecycleCoordinatorName(componentType.name, instanceId)
-            return DependentComponents(map.plus(Pair(name,component)))
+            return DependentComponents(map.plus(Pair(name, component)))
         }
     }
 
@@ -74,7 +74,7 @@ class DependentComponents private constructor(private val map: Map<LifecycleCoor
     }
 
     fun <T : Lifecycle> with(component: T, componentType: Class<T>, instanceId: String? = null): DependentComponents {
-        return with(map, component,componentType, instanceId)
+        return with(map, component, componentType, instanceId)
     }
 
     private var registration: RegistrationHandle? = null

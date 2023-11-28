@@ -91,4 +91,3 @@ interface FlowCheckpoint : NonSerializable {
 
     fun toAvro(): Checkpoint?
 }
-

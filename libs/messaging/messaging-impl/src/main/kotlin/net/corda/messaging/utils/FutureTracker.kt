@@ -1,9 +1,9 @@
 package net.corda.messaging.utils
 
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.messaging.api.exception.CordaRPCAPIPartitionException
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Data structure to keep track of active partitions and futures for a given sender and partition listener pair

@@ -133,7 +133,8 @@ inline fun <reified T : Any> DeserializationInput.deserializeAndReturnEnvelope(
     context: SerializationContext? = null
 ): ObjectAndEnvelope<T> {
     return deserializeAndReturnEnvelope(
-        bytes, T::class.java,
+        bytes,
+        T::class.java,
         context ?: testSerializationContext
     )
 }

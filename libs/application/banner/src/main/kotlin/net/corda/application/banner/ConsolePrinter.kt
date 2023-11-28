@@ -13,7 +13,7 @@ class ConsolePrinter(private val linePrinter: (x: String) -> Unit = { it -> kotl
     fun printPaddedLine(text: String, width: Int = DEFAULT_LINE_WIDTH) {
         val paddingSize = floor((width - text.length - 2).toDouble() / 2).toInt()
         val padding = SPACER.repeat(max(paddingSize, 2))
-        val spaces = " ".repeat(width - text.length - (paddingSize*2) - 1)
+        val spaces = " ".repeat(width - text.length - (paddingSize * 2) - 1)
         linePrinter("$padding ${text.replace(System.lineSeparator(), System.lineSeparator() + padding)}$spaces$padding")
     }
 

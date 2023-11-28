@@ -1,6 +1,5 @@
 package net.corda.libs.cpi.datamodel.entities.tests.utils
 
-import java.util.UUID
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.cpi.datamodel.entities.internal.CpiCpkEntity
@@ -8,6 +7,7 @@ import net.corda.libs.cpi.datamodel.entities.internal.CpiCpkKey
 import net.corda.libs.cpi.datamodel.entities.internal.CpkMetadataEntity
 import net.corda.test.util.dsl.entities.cpx.DslException
 import net.corda.v5.crypto.SecureHash
+import java.util.UUID
 
 internal class CpiCpkBuilder(
     private var cpkFileChecksumSupplier: () -> SecureHash? = { null },
@@ -59,7 +59,7 @@ internal class CpiCpkBuilder(
     private var fileName: String? = null
     private var metadata: CpkMetadataBuilder? = null
 
-    //metadata
+    // metadata
     private var metadataEntity: CpkMetadataEntity? = null
     private var formatVersion: String? = null
     private var serializedMetadata: String? = null
@@ -128,21 +128,23 @@ internal class CpiCpkBuilder(
 
     @Suppress("ThrowsCount")
     fun build(): CpiCpkEntity {
-        if (cpkFileChecksumSupplier.invoke() == null) cpkFileChecksumSupplier =
-            { SecureHashImpl("SHA-256", "cpk_file_checksum_$randomId".toByteArray()) }
+        if (cpkFileChecksumSupplier.invoke() == null) {
+            cpkFileChecksumSupplier =
+                { SecureHashImpl("SHA-256", "cpk_file_checksum_$randomId".toByteArray()) }
+        }
         val cpk: CpkMetadataEntity = metadataEntity
             ?: metadata?.build() ?: CpkMetadataBuilder(cpkFileChecksumSupplier, randomId)
-                .cpkName(cpkName ?: "cpkName_$randomId")
-                .cpkVersion(cpkVersion ?: "cpkVersion_$randomId")
-                .cpkSignerSummaryHash(
-                    cpkSignerSummaryHash ?: SecureHashImpl(
-                        "SHA-256",
-                        "cpkSignerSummaryHash_$randomId".toByteArray()
-                    )
+            .cpkName(cpkName ?: "cpkName_$randomId")
+            .cpkVersion(cpkVersion ?: "cpkVersion_$randomId")
+            .cpkSignerSummaryHash(
+                cpkSignerSummaryHash ?: SecureHashImpl(
+                    "SHA-256",
+                    "cpkSignerSummaryHash_$randomId".toByteArray()
                 )
-                .formatVersion(formatVersion)
-                .serializedMetadata(serializedMetadata)
-                .build()
+            )
+            .formatVersion(formatVersion)
+            .serializedMetadata(serializedMetadata)
+            .build()
 
         return CpiCpkEntity(
             CpiCpkKey(

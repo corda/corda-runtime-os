@@ -63,7 +63,7 @@ class ExternalMessagingRouteConfigGeneratorImpl(
     ): String? {
         val routes = generateRoutes(holdingId, cpks)
 
-        if( routes.isEmpty() ) {
+        if (routes.isEmpty()) {
             return null
         }
 
@@ -86,7 +86,6 @@ class ExternalMessagingRouteConfigGeneratorImpl(
             externalChannelsConfig.channels.map { channelConfig ->
                 val defaultConfig = externalMessagingConfigProvider.getDefaults()
                 val topicPattern = defaultConfig.receiveTopicPattern
-
                     .replace("\$HOLDING_ID", holdingId.shortHash.toString())
                     .replace("\$CHANNEL_NAME", channelConfig.name)
 

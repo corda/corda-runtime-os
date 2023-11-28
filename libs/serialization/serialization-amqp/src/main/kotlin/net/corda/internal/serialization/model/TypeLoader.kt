@@ -16,9 +16,9 @@ interface TypeLoader {
      * @param remoteTypeInformation The type information for the remote types.
      */
     fun load(
-            remoteTypeInformation: Collection<RemoteTypeInformation>,
-            sandboxGroup: SandboxGroup,
-            metadata: Metadata
+        remoteTypeInformation: Collection<RemoteTypeInformation>,
+        sandboxGroup: SandboxGroup,
+        metadata: Metadata
     ): Map<TypeIdentifier, Type>
 }
 
@@ -26,7 +26,7 @@ interface TypeLoader {
  * A [TypeLoader] to build a class matching the supplied [RemoteTypeInformation] if none
  * is visible from the current classloader.
  */
-class ClassTypeLoader: TypeLoader {
+class ClassTypeLoader : TypeLoader {
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -35,9 +35,9 @@ class ClassTypeLoader: TypeLoader {
     val cache = DefaultCacheProvider.createCache<TypeIdentifier, Type>()
 
     override fun load(
-            remoteTypeInformation: Collection<RemoteTypeInformation>,
-            sandboxGroup: SandboxGroup,
-            metadata: Metadata
+        remoteTypeInformation: Collection<RemoteTypeInformation>,
+        sandboxGroup: SandboxGroup,
+        metadata: Metadata
     ): Map<TypeIdentifier, Type> {
         val remoteInformationByIdentifier = remoteTypeInformation.associateBy { it.typeIdentifier }
 
@@ -61,4 +61,3 @@ class ClassTypeLoader: TypeLoader {
         return resolvedTypes
     }
 }
-

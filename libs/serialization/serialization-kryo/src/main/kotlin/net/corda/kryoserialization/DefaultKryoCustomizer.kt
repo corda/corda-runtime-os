@@ -56,7 +56,6 @@ class DefaultKryoCustomizer {
             classSerializer: ClassSerializer
         ): Kryo {
             return kryo.apply {
-
                 isRegistrationRequired = false
                 references = true
                 // Needed because of https://github.com/EsotericSoftware/kryo/issues/864
@@ -83,15 +82,18 @@ class DefaultKryoCustomizer {
                     addDefaultSerializer(clazz, serializer)
                 }
 
-                addDefaultSerializer(Iterator::class.java, object: BaseSerializerFactory<IteratorSerializer>() {
-                    override fun newSerializer(kryo: Kryo, type: Class<*>) : IteratorSerializer {
-                        val config = CompatibleFieldSerializer.CompatibleFieldSerializerConfig().apply {
-                            ignoreSyntheticFields = false
-                            extendedFieldNames = true
+                addDefaultSerializer(
+                    Iterator::class.java,
+                    object : BaseSerializerFactory<IteratorSerializer>() {
+                        override fun newSerializer(kryo: Kryo, type: Class<*>): IteratorSerializer {
+                            val config = CompatibleFieldSerializer.CompatibleFieldSerializerConfig().apply {
+                                ignoreSyntheticFields = false
+                                extendedFieldNames = true
+                            }
+                            return IteratorSerializer(type, CompatibleFieldSerializer(kryo, type, config))
                         }
-                        return IteratorSerializer(type, CompatibleFieldSerializer(kryo, type, config))
                     }
-                })
+                )
 
                 addDefaultSerializer(Logger::class.java, LoggerSerializer)
                 addDefaultSerializer(X509Certificate::class.java, X509CertificateSerializer)
@@ -113,19 +115,22 @@ class DefaultKryoCustomizer {
                 register(java.lang.invoke.SerializedLambda::class.java)
                 register(ClosureSerializer.Closure::class.java, CordaClosureSerializer)
 
-                addDefaultSerializer(Throwable::class.java, object: BaseSerializerFactory<ThrowableSerializer<*>>() {
-                    override fun newSerializer(kryo: Kryo, type: Class<*>) = ThrowableSerializer(kryo, type)
-                })
+                addDefaultSerializer(
+                    Throwable::class.java,
+                    object : BaseSerializerFactory<ThrowableSerializer<*>>() {
+                        override fun newSerializer(kryo: Kryo, type: Class<*>) = ThrowableSerializer(kryo, type)
+                    }
+                )
 
                 addDefaultSerializer(InputStream::class.java, InputStreamSerializer)
                 register(FileInputStream::class.java, InputStreamSerializer)
                 // InputStream subclasses whitelisting, required for attachments
                 register(BufferedInputStream::class.java, InputStreamSerializer)
 
-                //register loggers using an int ID to reduce information saved in kryo
-                //ensures Kryo does not write the name of the concrete logging impl class into the serialized stream
-                //See CORE-812 for more details
-                //need to register all known ways of obtaining org.slf4j.Logger here against the same Id
+                // register loggers using an int ID to reduce information saved in kryo
+                // ensures Kryo does not write the name of the concrete logging impl class into the serialized stream
+                // See CORE-812 for more details
+                // need to register all known ways of obtaining org.slf4j.Logger here against the same Id
                 register(LoggerFactory.getLogger("ROOT")::class.java, LOGGER_ID)
                 register(LoggerFactory.getLogger(this::class.java)::class.java, LOGGER_ID)
 

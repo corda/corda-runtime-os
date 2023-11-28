@@ -29,7 +29,7 @@ internal fun verifyCertificates(codeSigners: List<CodeSigner>, trustedCerts: Col
 /** Validates [certPath] against [trustedCerts] checking also signature [timestamp] if provided */
 internal fun validateCertPath(
     certPath: CertPath,
-    certPathName :String,
+    certPathName: String,
     trustedCerts: Collection<X509Certificate>,
     timestamp: Timestamp? = null
 ) {
@@ -52,7 +52,8 @@ internal fun validateCertPath(
     try {
         certPathValidator.validate(certPath, params)
     } catch (e: CertPathValidatorException) {
-        val index: String; val cert: X509Certificate?
+        val index: String
+        val cert: X509Certificate?
 
         // If CertPathValidatorException is thrown, it MAY include the index of the cert which caused the exception
         // but is also does not have to. We should not rely on it too much.

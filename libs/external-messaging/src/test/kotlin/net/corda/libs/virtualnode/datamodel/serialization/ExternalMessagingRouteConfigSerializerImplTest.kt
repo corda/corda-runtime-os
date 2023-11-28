@@ -95,7 +95,6 @@ class ExternalMessagingRouteConfigSerializerImplTest {
             }
         """.trimIndent()
 
-
         val mapper = ObjectMapper()
         assertThat(mapper.readTree(configJson)).isEqualTo(mapper.readTree(expectedJson))
     }
@@ -185,4 +184,3 @@ class ExternalMessagingRouteConfigSerializerImplTest {
         assertThat(config).isEqualTo(expectedConfig)
     }
 }
-

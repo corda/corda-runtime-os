@@ -93,10 +93,16 @@ interface ObjectBuilder {
             properties: Map<String, LocalPropertyInformation>,
             includeAllConstructorParameters: Boolean
         ): ObjectBuilderProvider =
-            if (constructor.hasParameters) makeConstructorBasedProvider(
-                properties, typeIdentifier, constructor, includeAllConstructorParameters
-            )
-            else makeSetterBasedProvider(properties, typeIdentifier, constructor)
+            if (constructor.hasParameters) {
+                makeConstructorBasedProvider(
+                    properties,
+                    typeIdentifier,
+                    constructor,
+                    includeAllConstructorParameters
+                )
+            } else {
+                makeSetterBasedProvider(properties, typeIdentifier, constructor)
+            }
 
         private fun makeConstructorBasedProvider(
             properties: Map<String, LocalPropertyInformation>,

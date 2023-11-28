@@ -12,7 +12,7 @@ import org.osgi.framework.hooks.service.ListenerHook
  * We only allow a bundle to receive service events for bundles it has visibility of.
  */
 internal class IsolatingEventListenerHook(
-        private val sandboxService: SandboxContextService
+    private val sandboxService: SandboxContextService
 ) : EventListenerHook {
 
     override fun event(event: ServiceEvent, listeners: MutableMap<BundleContext, MutableCollection<ListenerHook.ListenerInfo>>) {

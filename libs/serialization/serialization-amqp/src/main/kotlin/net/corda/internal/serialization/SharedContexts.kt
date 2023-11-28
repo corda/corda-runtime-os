@@ -1,4 +1,5 @@
 @file:JvmName("SharedContexts")
+
 package net.corda.internal.serialization
 
 import net.corda.internal.serialization.amqp.amqpMagic

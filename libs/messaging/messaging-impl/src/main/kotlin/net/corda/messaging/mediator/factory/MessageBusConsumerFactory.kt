@@ -24,7 +24,7 @@ class MessageBusConsumerFactory(
     private val groupName: String,
     private val messageBusConfig: SmartConfig,
     private val cordaConsumerBuilder: CordaConsumerBuilder,
-): MediatorConsumerFactory {
+) : MediatorConsumerFactory {
 
     override fun <K : Any, V : Any> create(config: MediatorConsumerConfig<K, V>): MediatorConsumer<K, V> {
         val subscriptionType = "MultiSourceSubscription"

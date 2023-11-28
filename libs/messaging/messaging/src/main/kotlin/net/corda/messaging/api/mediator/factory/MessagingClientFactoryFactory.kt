@@ -15,7 +15,7 @@ interface MessagingClientFactoryFactory {
     fun createMessageBusClientFactory(
         id: String,
         messageBusConfig: SmartConfig,
-    ) : MessagingClientFactory
+    ): MessagingClientFactory
 
     /**
      * Creates an RPC messaging client factory.
@@ -24,5 +24,5 @@ interface MessagingClientFactoryFactory {
      */
     fun createRPCClientFactory(
         id: String
-    ) : MessagingClientFactory
+    ): MessagingClientFactory
 }

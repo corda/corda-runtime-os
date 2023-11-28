@@ -25,10 +25,10 @@ class CustomSerializerRegistryTests {
             override val proxyType: Class<String> get() = String::class.java
             override val withInheritance: Boolean get() = true
 
-            override fun toProxy(obj: Any): String
-                = throw UnsupportedOperationException()
-            override fun fromProxy(proxy: String): Any
-                = throw UnsupportedOperationException()
+            override fun toProxy(obj: Any): String =
+                throw UnsupportedOperationException()
+            override fun fromProxy(proxy: String): Any =
+                throw UnsupportedOperationException()
         }
 
         val serializerForEverything = CustomSerializer.Proxy(EverythingCustomSerializer(), mock())
@@ -47,10 +47,10 @@ class CustomSerializerRegistryTests {
             override val proxyType: Class<String> get() = String::class.java
             override val withInheritance: Boolean get() = true
 
-            override fun toProxy(obj: MyCustomException): String
-                = throw UnsupportedOperationException()
-            override fun fromProxy(proxy: String): MyCustomException
-                = throw UnsupportedOperationException()
+            override fun toProxy(obj: MyCustomException): String =
+                throw UnsupportedOperationException()
+            override fun fromProxy(proxy: String): MyCustomException =
+                throw UnsupportedOperationException()
         }
 
         val customExceptionSerializer = CustomSerializer.Proxy(ExceptionCustomSerializer(), mock())
@@ -69,17 +69,17 @@ class CustomSerializerRegistryTests {
             override val proxyType: Class<String> get() = String::class.java
             override val withInheritance: Boolean get() = true
 
-            override fun toProxy(obj: Cash): String
-                = throw UnsupportedOperationException()
-            override fun fromProxy(proxy: String): Cash
-                = throw UnsupportedOperationException()
+            override fun toProxy(obj: Cash): String =
+                throw UnsupportedOperationException()
+            override fun fromProxy(proxy: String): Cash =
+                throw UnsupportedOperationException()
         }
 
         class EvilCorDappCashSerializer : SerializationCustomSerializer<CashSubclass, String> {
-            override fun fromProxy(proxy: String): CashSubclass
-                = throw UnsupportedOperationException()
-            override fun toProxy(obj: CashSubclass): String
-                = throw UnsupportedOperationException()
+            override fun fromProxy(proxy: String): CashSubclass =
+                throw UnsupportedOperationException()
+            override fun toProxy(obj: CashSubclass): String =
+                throw UnsupportedOperationException()
         }
 
         val weSerializeCash = CustomSerializer.Proxy(CordaCashCustomSerializer(), mock())
@@ -97,15 +97,15 @@ class CustomSerializerRegistryTests {
 
     @Test
     fun `primitive types cannot have custom serializers`() {
-        class TestCustomSerializer: BaseProxySerializer<Float, String>() {
+        class TestCustomSerializer : BaseProxySerializer<Float, String>() {
             override val type: Class<Float> get() = Float::class.java
             override val proxyType: Class<String> get() = String::class.java
             override val withInheritance: Boolean get() = true
 
-            override fun toProxy(obj: Float): String
-                = throw UnsupportedOperationException()
-            override fun fromProxy(proxy: String): Float
-                = throw UnsupportedOperationException()
+            override fun toProxy(obj: Float): String =
+                throw UnsupportedOperationException()
+            override fun fromProxy(proxy: String): Float =
+                throw UnsupportedOperationException()
         }
         unit.register(TestCustomSerializer(), mock())
 

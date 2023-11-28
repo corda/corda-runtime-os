@@ -46,7 +46,7 @@ class ExternalMessagingRouteConfigSerializerImpl : ExternalMessagingRouteConfigS
         }
     }
 
-    class CpiIdentifierSerializer(t: Class<*>? = null, dummy: Boolean=false) : StdSerializer<CpiIdentifier>(t, dummy) {
+    class CpiIdentifierSerializer(t: Class<*>? = null, dummy: Boolean = false) : StdSerializer<CpiIdentifier>(t, dummy) {
         override fun serialize(value: CpiIdentifier?, gen: JsonGenerator?, provider: SerializerProvider?) {
             checkNotNull(gen) {
                 "null JsonGenerator while trying to Serialize CpiIdentifier"

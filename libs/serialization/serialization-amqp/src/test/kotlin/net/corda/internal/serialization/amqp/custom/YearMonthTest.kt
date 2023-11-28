@@ -12,18 +12,20 @@ class YearMonthTest {
         @JvmStatic
         fun everyMonth(): Array<Month> {
             return Month.values()
-
         }
     }
+
     @ParameterizedTest
     @MethodSource("everyMonth")
-    fun twentyTwentyEveryMonth(month: Month){
+    fun twentyTwentyEveryMonth(month: Month) {
         serializeDeserializeAssert(YearMonth.of(3000, month))
     }
+
     @Test
     fun year2000Jan() {
         serializeDeserializeAssert(YearMonth.of(2000, Month.JANUARY))
     }
+
     @Test
     fun year3000Jan() {
         serializeDeserializeAssert(YearMonth.of(3000, Month.JANUARY))

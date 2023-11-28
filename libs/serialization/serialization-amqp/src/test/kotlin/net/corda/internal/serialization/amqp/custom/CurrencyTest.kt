@@ -7,8 +7,8 @@ import net.corda.internal.serialization.amqp.TypeNotation
 import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.fail
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.fail
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import java.util.Currency

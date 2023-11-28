@@ -18,7 +18,7 @@ import java.time.Instant
 
 class SessionStateClosedTransitionTest {
 
-    private val messagingChunkFactory : MessagingChunkFactory = mock<MessagingChunkFactory>().apply {
+    private val messagingChunkFactory: MessagingChunkFactory = mock<MessagingChunkFactory>().apply {
         whenever(createChunkSerializerService(any())).thenReturn(mock())
     }
     private val sessionManager = SessionManagerImpl(SessionEventProcessorFactory(messagingChunkFactory), messagingChunkFactory)
@@ -82,7 +82,6 @@ class SessionStateClosedTransitionTest {
         val outputState = sessionManager.processMessageReceived(sessionState, sessionState, sessionEvent, instant)
         Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CLOSED)
     }
-
 
     private fun buildClosedState(): SessionState {
         return buildSessionState(

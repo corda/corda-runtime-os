@@ -13,7 +13,7 @@ import javax.security.auth.x500.X500Principal
  * It is actually trivial to serialize/deserialize objects of this type as the whole content is encapsulated in the
  * name.
  */
-class X500PrincipalSerializer: Serializer<X500Principal>() {
+class X500PrincipalSerializer : Serializer<X500Principal>() {
     override fun write(kryo: Kryo, output: Output, obj: X500Principal) {
         output.writeString(obj.name)
     }

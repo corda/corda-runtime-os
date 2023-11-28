@@ -54,7 +54,6 @@ interface SessionManager {
      */
     fun processMessageToSend(key: Any, sessionState: SessionState, event: SessionEvent, instant: Instant, maxMsgSize: Long): SessionState
 
-
     /**
      * Generate a new session state
      * @param sessionId id of the session
@@ -97,8 +96,10 @@ interface SessionManager {
      * @param identity Identity of the calling party who owns the session state
      * @return The updated [SessionState]
      */
-    fun getMessagesToSend(sessionState: SessionState, instant: Instant, config: SmartConfig, identity: HoldingIdentity): Pair<SessionState,
-            List<SessionEvent>>
+    fun getMessagesToSend(sessionState: SessionState, instant: Instant, config: SmartConfig, identity: HoldingIdentity): Pair<
+        SessionState,
+        List<SessionEvent>
+        >
 
     /**
      * Errors the passed [SessionState], returning the updated state.

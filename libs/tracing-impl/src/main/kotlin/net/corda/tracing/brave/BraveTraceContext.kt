@@ -24,8 +24,8 @@ internal class BraveTraceContext(
         span.tag(TraceTag.FLOW_VNODE, vNodeId)
     }
 
-    override fun markInScope(): AutoCloseable{
-         return tracer.withSpanInScope(span)
+    override fun markInScope(): AutoCloseable {
+        return tracer.withSpanInScope(span)
     }
 
     override fun errorAndFinish(e: Exception) {

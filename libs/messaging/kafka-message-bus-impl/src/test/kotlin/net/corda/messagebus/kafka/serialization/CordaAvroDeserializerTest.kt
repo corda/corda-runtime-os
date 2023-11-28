@@ -21,12 +21,13 @@ internal class CordaAvroDeserializerTest {
     private companion object {
         val kafkaSerializer = StringSerializer()
     }
+
     @Test
     fun `simple string deserialize test`() {
         val schemaRegistry: AvroSchemaRegistry = mock()
         val callback: (String, ByteArray) -> Unit = mock()
-        val deserializer = CordaAvroDeserializerImpl( mock(),  mock(), String::class.java)
-        val win = deserializer.deserialize("", kafkaSerializer.serialize("","Win!"))
+        val deserializer = CordaAvroDeserializerImpl(mock(), mock(), String::class.java)
+        val win = deserializer.deserialize("", kafkaSerializer.serialize("", "Win!"))
 
         assertThat(win).isEqualTo("Win!")
         verifyNoInteractions(schemaRegistry)
@@ -37,7 +38,7 @@ internal class CordaAvroDeserializerTest {
     fun `simple byte array deserialize test`() {
         val schemaRegistry: AvroSchemaRegistry = mock()
         val callback: (String, ByteArray) -> Unit = mock()
-        val deserializer = CordaAvroDeserializerImpl( mock(),  mock(), ByteArray::class.java)
+        val deserializer = CordaAvroDeserializerImpl(mock(), mock(), ByteArray::class.java)
         val win = deserializer.deserialize("", "Win!".toByteArray())
 
         assertThat(win).isEqualTo("Win!".toByteArray())
@@ -47,7 +48,6 @@ internal class CordaAvroDeserializerTest {
 
     @Test
     fun `complex type deserialize test`() {
-
         val secureHash = SecureHash("algorithm", ByteBuffer.wrap("1".toByteArray()))
         val schemaRegistry: AvroSchemaRegistry = mock<AvroSchemaRegistry>().also {
             whenever(it.deserialize(any(), any(), anyOrNull())).thenReturn(secureHash)

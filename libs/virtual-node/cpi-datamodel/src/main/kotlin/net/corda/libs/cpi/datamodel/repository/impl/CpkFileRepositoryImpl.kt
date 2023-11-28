@@ -1,14 +1,14 @@
 package net.corda.libs.cpi.datamodel.repository.impl
 
-import javax.persistence.EntityManager
-import javax.persistence.NonUniqueResultException
 import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.cpi.datamodel.CpkFile
 import net.corda.libs.cpi.datamodel.entities.internal.CpkFileEntity
 import net.corda.libs.cpi.datamodel.repository.CpkFileRepository
 import net.corda.v5.crypto.SecureHash
+import javax.persistence.EntityManager
+import javax.persistence.NonUniqueResultException
 
-internal class CpkFileRepositoryImpl: CpkFileRepository {
+internal class CpkFileRepositoryImpl : CpkFileRepository {
     override fun exists(em: EntityManager, cpkChecksum: SecureHash): Boolean {
         val query = "SELECT count(c) FROM ${CpkFileEntity::class.simpleName} c WHERE c.fileChecksum = :cpkFileChecksum"
 
@@ -31,7 +31,7 @@ internal class CpkFileRepositoryImpl: CpkFileRepository {
             "FROM ${CpkFileEntity::class.java.simpleName} f WHERE f.fileChecksum IN :ids",
             CpkFileEntity::class.java
         )
-            .setParameter("ids", fileChecksums.map{ it.toString() })
+            .setParameter("ids", fileChecksums.map { it.toString() })
             .resultList.map { it.toDto() }
     }
 
@@ -47,12 +47,13 @@ internal class CpkFileRepositoryImpl: CpkFileRepository {
     override fun findAll(em: EntityManager, fileChecksumsToExclude: Collection<SecureHash>): List<CpkFile> {
         return em.createQuery(
             "FROM ${CpkFileEntity::class.java.simpleName} cpk " +
-                    "WHERE cpk.fileChecksum NOT IN (:checksums)",
+                "WHERE cpk.fileChecksum NOT IN (:checksums)",
             CpkFileEntity::class.java
         )
             .setParameter(
                 "checksums",
-                fileChecksumsToExclude.map { it.toString() }.ifEmpty { "null" })
+                fileChecksumsToExclude.map { it.toString() }.ifEmpty { "null" }
+            )
             .resultList.map { it.toDto() }
     }
 

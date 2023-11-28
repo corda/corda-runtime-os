@@ -13,4 +13,3 @@ class SnappyEncoderImpl : Encoder {
     override fun compress(output: OutputStream) = FlushAverseOutputStream(SnappyFramedOutputStream(output))
     override fun decompress(input: InputStream) = SnappyFramedInputStream(input, false)
 }
-

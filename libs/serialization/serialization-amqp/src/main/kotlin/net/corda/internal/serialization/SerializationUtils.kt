@@ -1,4 +1,5 @@
 @file:JvmName("SerializationUtils")
+
 package net.corda.internal.serialization
 
 import net.corda.v5.application.serialization.SerializationService

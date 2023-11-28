@@ -10,7 +10,8 @@ import java.io.OutputStream
 import java.io.SequenceInputStream
 
 private val serializationBufferPool = LazyPool(
-        newInstance = { ByteArray(64 * 1024) })
+    newInstance = { ByteArray(64 * 1024) }
+)
 
 internal fun <T> kryoInput(underlying: InputStream, task: Input.() -> T): T {
     return serializationBufferPool.run {

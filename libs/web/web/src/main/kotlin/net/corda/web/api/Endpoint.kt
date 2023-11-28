@@ -2,7 +2,6 @@ package net.corda.web.api
 
 import org.apache.commons.validator.routines.UrlValidator
 
-
 /**
  * Endpoint class that stores a http endpoint with its associated WebHandler. Also contains validation logic
  *

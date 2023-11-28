@@ -39,7 +39,7 @@ class WrappingKeyImplTests {
                 }
                 on { findKeyScheme(any<AlgorithmIdentifier>()) } doAnswer {
                     val id = it.getArgument<AlgorithmIdentifier>(0)
-                    if(ECDSA_SECP256R1_TEMPLATE.algorithmOIDs.contains(id)) {
+                    if (ECDSA_SECP256R1_TEMPLATE.algorithmOIDs.contains(id)) {
                         ECDSA_SECP256R1_TEMPLATE.makeScheme("BC")
                     } else {
                         @Suppress("TooGenericExceptionThrown")

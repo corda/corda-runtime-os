@@ -7,13 +7,13 @@ import net.corda.internal.serialization.amqp.TypeNotation
 import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertAll
 import org.junit.jupiter.api.fail
-import org.junit.jupiter.api.Assertions.assertArrayEquals
-import org.junit.jupiter.api.Test
 
 class ThrowableTest {
     class TestException(override val message: String) : CordaRuntimeException(message)
@@ -45,7 +45,7 @@ class ThrowableTest {
             { assertArrayEquals(instance.suppressed, deserialize.suppressed) },
         )
     }
-    
+
     @Test
     fun nullPointerException() {
         val instance = java.lang.NullPointerException("TEST")
@@ -80,9 +80,9 @@ class ThrowableTest {
     }
 
     private fun StackTraceElement.isEqualTo(other: StackTraceElement): Boolean {
-        return className == other.className
-                && methodName == other.methodName
-                && fileName == other.fileName
-                && lineNumber == other.lineNumber
+        return className == other.className &&
+            methodName == other.methodName &&
+            fileName == other.fileName &&
+            lineNumber == other.lineNumber
     }
 }

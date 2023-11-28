@@ -7,7 +7,7 @@ import java.io.Serializable
 
 internal object CordaClosureSerializer : ClosureSerializer() {
     const val ERROR_MESSAGE = "Unable to serialize Java Lambda expression, unless explicitly declared e.g., " +
-            "Runnable r = (Runnable & Serializable) () -> System.out.println(\"Hello world!\");"
+        "Runnable r = (Runnable & Serializable) () -> System.out.println(\"Hello world!\");"
 
     override fun write(kryo: Kryo, output: Output, target: Any) {
         if (!isSerializable(target)) {
@@ -20,4 +20,3 @@ internal object CordaClosureSerializer : ClosureSerializer() {
         return target is Serializable
     }
 }
-

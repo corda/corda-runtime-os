@@ -1,11 +1,11 @@
 package net.corda.kotlin.reflect.types
 
-import kotlin.reflect.KType
-import kotlin.reflect.KTypeParameter
-import kotlin.reflect.KVariance
 import kotlinx.metadata.KmTypeParameter
 import kotlinx.metadata.KmVariance
 import kotlinx.metadata.isReified
+import kotlin.reflect.KType
+import kotlin.reflect.KTypeParameter
+import kotlin.reflect.KVariance
 
 class KotlinTypeParameter(private val kmTypeParameter: KmTypeParameter) : KTypeParameter, KInternal {
     override val isReified: Boolean

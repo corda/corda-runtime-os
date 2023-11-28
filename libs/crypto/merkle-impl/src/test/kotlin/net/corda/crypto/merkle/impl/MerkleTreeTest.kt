@@ -273,7 +273,7 @@ class MerkleTreeTest {
         runMerkelProofTest(treeSize)
     }
 
-    // This test should be run whenever the merkle tree implemenetation is changed. It is disabled on CI since 
+    // This test should be run whenever the merkle tree implemenetation is changed. It is disabled on CI since
     // it can take 30 seconds.
     @Disabled
     @ParameterizedTest(name = "merkle proof tests for trees with extended sizes that run slow ({0} leaves)")
@@ -355,7 +355,10 @@ class MerkleTreeTest {
             // We add one extra hash which breaks the proof.
             val badProof1: MerkleProof =
                 MerkleProofImpl(
-                    MerkleProofType.AUDIT, proof.treeSize, proof.leaves, proof.hashes + digestService.getZeroHash(
+                    MerkleProofType.AUDIT,
+                    proof.treeSize,
+                    proof.leaves,
+                    proof.hashes + digestService.getZeroHash(
                         digestAlgorithm
                     )
                 )
@@ -408,14 +411,12 @@ class MerkleTreeTest {
                         proof.hashes
                     )
                 assertFalse(badProof5.verify(root, hashProvider))
-
             }
 
             // We duplicate one leaf which breaks the proof.
             val badProof6: MerkleProof =
                 MerkleProofImpl(MerkleProofType.AUDIT, proof.treeSize, proof.leaves + proof.leaves.last(), proof.hashes)
             assertFalse(badProof6.verify(root, hashProvider))
-
         }
     }
 
@@ -456,7 +457,8 @@ class MerkleTreeTest {
         assertEquals(leafData.size, sizeOnlyProof.leaves.size)
         assertEquals(
             true,
-            sizeOnlyProof.verify(nonceMerkleTree.root,
+            sizeOnlyProof.verify(
+                nonceMerkleTree.root,
                 NonceHashDigestProvider.SizeOnlyVerify(digestAlgorithm, digestService)
             )
         )

@@ -73,7 +73,6 @@ class RPCClient(
         }
     }
 
-
     private fun deserializePayload(payload: ByteArray): Any? {
         return try {
             when {
@@ -89,7 +88,6 @@ class RPCClient(
     }
 
     private fun buildHttpRequest(message: MediatorMessage<*>): HttpRequest {
-
         val builder = HttpRequest.newBuilder()
             .uri(URI(message.endpoint()))
             .POST(HttpRequest.BodyPublishers.ofByteArray(message.payload as ByteArray))

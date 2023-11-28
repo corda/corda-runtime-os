@@ -19,7 +19,7 @@ class ConsensualLedgerTransactionImpl(
         verifyMetadata(wireTransaction.metadata)
         check(
             wireTransaction.componentGroupLists[ConsensualComponentGroup.OUTPUT_STATES.ordinal].size ==
-                    wireTransaction.componentGroupLists[ConsensualComponentGroup.OUTPUT_STATE_TYPES.ordinal].size
+                wireTransaction.componentGroupLists[ConsensualComponentGroup.OUTPUT_STATE_TYPES.ordinal].size
         ) {
             "The length of the output states and output state types component groups needs to be the same."
         }

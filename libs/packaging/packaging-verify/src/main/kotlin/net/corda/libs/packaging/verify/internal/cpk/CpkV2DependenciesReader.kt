@@ -72,7 +72,7 @@ internal object CpkV2DependenciesReader {
             // Read document
             return mapper.readValue(mapper.treeAsTokens(node), object : TypeReference<CPKDependencyFileV2>() {})
                 .dependencies
-                .map{ toCpkDependency(it, codeSigners) }
+                .map { toCpkDependency(it, codeSigners) }
         } catch (e: Exception) {
             throw DependencyMetadataException("Error reading CPK dependencies in CPK \"$cpkName\"", e)
         }

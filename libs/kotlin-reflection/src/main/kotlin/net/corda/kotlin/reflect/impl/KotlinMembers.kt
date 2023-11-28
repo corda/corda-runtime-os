@@ -149,8 +149,8 @@ class KotlinMembers<T : Any>(
     }
 
     private class Populator(
-         private val methodProvider: Function<MemberSignature, Method?>,
-         private val fieldProvider: Function<JvmFieldSignature, Field?>
+        private val methodProvider: Function<MemberSignature, Method?>,
+        private val fieldProvider: Function<JvmFieldSignature, Field?>
     ) {
         fun forFunction(function: KFunctionInternal<*>): KFunctionInternal<*> {
             val method = function.signature?.let(methodProvider::apply)

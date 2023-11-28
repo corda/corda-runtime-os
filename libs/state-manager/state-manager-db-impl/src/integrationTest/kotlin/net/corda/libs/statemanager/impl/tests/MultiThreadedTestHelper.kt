@@ -1,10 +1,10 @@
 package net.corda.libs.statemanager.impl.tests
 
+import net.corda.libs.statemanager.api.State
+import net.corda.libs.statemanager.api.metadata
 import java.util.UUID
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
-import net.corda.libs.statemanager.api.State
-import net.corda.libs.statemanager.api.metadata
 
 object MultiThreadedTestHelper {
     /**
@@ -94,11 +94,13 @@ object MultiThreadedTestHelper {
         val groupedStates = divideStatesBetweenThreads(states, numThreads, sharedStatesPerThread)
 
         val executor = Executors.newFixedThreadPool(numThreads)
-        val futures = executor.invokeAll((0 until numThreads).mapIndexed { threadId, threadGroup ->
-            Callable {
-                block(threadId, groupedStates[threadGroup])
+        val futures = executor.invokeAll(
+            (0 until numThreads).mapIndexed { threadId, threadGroup ->
+                Callable {
+                    block(threadId, groupedStates[threadGroup])
+                }
             }
-        })
+        )
 
         val failedKeysPerThread = futures.map { it.get() }
         return groupedStates.zip(failedKeysPerThread).map {
@@ -142,4 +144,3 @@ object MultiThreadedTestHelper {
         }
     }
 }
-

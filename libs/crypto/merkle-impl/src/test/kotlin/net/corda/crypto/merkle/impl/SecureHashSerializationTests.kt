@@ -50,10 +50,12 @@ class SecureHashSerializationTests {
         val digest = MessageDigest.getInstance(algorithm).digest(data)
         val cut = SecureHashImpl(algorithm, digest)
 
-        val sha256serialized = byteArrayOf(83, 72, 65, 45, 50, 53, 54,
+        val sha256serialized = byteArrayOf(
+            83, 72, 65, 45, 50, 53, 54,
             58,
             -70, 120, 22, -65, -113, 1, -49, -22, 65, 65, 64, -34, 93, -82, 34, 35,
-            -80, 3, 97, -93, -106, 23, 122, -100, -76, 16, -1, 97, -14, 0, 21, -83)
+            -80, 3, 97, -93, -106, 23, 122, -100, -76, 16, -1, 97, -14, 0, 21, -83
+        )
         val deserialized = deserialize(sha256serialized, digestService)
         assertArrayEquals(cut.bytes, deserialized.bytes)
         assertEquals(cut.algorithm, deserialized.algorithm)
@@ -62,9 +64,11 @@ class SecureHashSerializationTests {
 
     @Test
     fun `deserialize should throw IllegalArgumentException when the serialized bytes have tampered - no delimiter`() {
-        val sha256serialized = byteArrayOf(83, 72, 65, 45, 50, 53, 54,
+        val sha256serialized = byteArrayOf(
+            83, 72, 65, 45, 50, 53, 54,
             -70, 120, 22, -65, -113, 1, -49, -22, 65, 65, 64, -34, 93, -82, 34, 35,
-            -80, 3, 97, -93, -106, 23, 122, -100, -76, 16, -1, 97, -14, 0, 21, -83)
+            -80, 3, 97, -93, -106, 23, 122, -100, -76, 16, -1, 97, -14, 0, 21, -83
+        )
         assertThrows(IllegalArgumentException::class.java) {
             deserialize(sha256serialized, digestService)
         }
@@ -72,10 +76,12 @@ class SecureHashSerializationTests {
 
     @Test
     fun `deserialize should throw IllegalArgumentException when the serialized bytes have tampered - non existing algorithm`() {
-        val sha256serialized = byteArrayOf(72, 65, 45, 50, 53, 54,
+        val sha256serialized = byteArrayOf(
+            72, 65, 45, 50, 53, 54,
             58,
             -70, 120, 22, -65, -113, 1, -49, -22, 65, 65, 64, -34, 93, -82, 34, 35,
-            -80, 3, 97, -93, -106, 23, 122, -100, -76, 16, -1, 97, -14, 0, 21, -83)
+            -80, 3, 97, -93, -106, 23, 122, -100, -76, 16, -1, 97, -14, 0, 21, -83
+        )
         assertThrows(IllegalArgumentException::class.java) {
             deserialize(sha256serialized, digestService)
         }
@@ -83,10 +89,12 @@ class SecureHashSerializationTests {
 
     @Test
     fun `deserialize should throw IllegalArgumentException when the serialized bytes have tampered - too short`() {
-        val sha256serialized = byteArrayOf(83, 72, 65, 45, 50, 53, 54,
+        val sha256serialized = byteArrayOf(
+            83, 72, 65, 45, 50, 53, 54,
             58,
             -70, 120, 22, -65, -113, 1, -49, -22, 65, 65, 64, -34, 93, -82, 34, 35,
-            -80, 3, 97, -93, -106, 23, 122, -100, -76, 16, -1, 97, -14, 0, 21)
+            -80, 3, 97, -93, -106, 23, 122, -100, -76, 16, -1, 97, -14, 0, 21
+        )
         assertThrows(IllegalArgumentException::class.java) {
             deserialize(sha256serialized, digestService)
         }
@@ -94,10 +102,12 @@ class SecureHashSerializationTests {
 
     @Test
     fun `deserialize should throw IllegalArgumentException when the serialized bytes have tampered - too long`() {
-        val sha256serialized = byteArrayOf(83, 72, 65, 45, 50, 53, 54,
+        val sha256serialized = byteArrayOf(
+            83, 72, 65, 45, 50, 53, 54,
             58,
             -70, 120, 22, -65, -113, 1, -49, -22, 65, 65, 64, -34, 93, -82, 34, 35,
-            -80, 3, 97, -93, -106, 23, 122, -100, -76, 16, -1, 97, -14, 0, 21, -83, -83)
+            -80, 3, 97, -93, -106, 23, 122, -100, -76, 16, -1, 97, -14, 0, 21, -83, -83
+        )
         assertThrows(IllegalArgumentException::class.java) {
             deserialize(sha256serialized, digestService)
         }

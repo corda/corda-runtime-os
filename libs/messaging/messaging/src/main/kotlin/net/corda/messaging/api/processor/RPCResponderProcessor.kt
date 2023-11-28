@@ -2,7 +2,6 @@ package net.corda.messaging.api.processor
 
 import java.util.concurrent.CompletableFuture
 
-
 /**
  * This interface defines a processor of events from a rpc subscription on a feed with with requests of type [REQUEST] and
  * responses of type [RESPONSE]

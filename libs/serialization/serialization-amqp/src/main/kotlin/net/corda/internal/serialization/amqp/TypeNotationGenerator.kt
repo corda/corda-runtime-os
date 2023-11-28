@@ -8,7 +8,7 @@ import java.io.NotSerializableException
 
 object TypeNotationGenerator {
 
-    fun getTypeNotation(typeInformation: LocalTypeInformation, typeDescriptor: Symbol) = when(typeInformation) {
+    fun getTypeNotation(typeInformation: LocalTypeInformation, typeDescriptor: Symbol) = when (typeInformation) {
         is LocalTypeInformation.AnInterface -> typeInformation.getTypeNotation(typeDescriptor)
         is LocalTypeInformation.Composable -> typeInformation.getTypeNotation(typeDescriptor)
         is LocalTypeInformation.Abstract -> typeInformation.getTypeNotation(typeDescriptor)
@@ -18,36 +18,39 @@ object TypeNotationGenerator {
     private val LocalTypeInformation.amqpTypeName get() = AMQPTypeIdentifiers.nameForType(typeIdentifier)
 
     private fun LocalTypeInformation.AnInterface.getTypeNotation(typeDescriptor: Symbol): CompositeType =
-            makeCompositeType(
-                    (sequenceOf(this) + interfaces.asSequence()).toList(),
-                    properties,
-                    typeDescriptor)
+        makeCompositeType(
+            (sequenceOf(this) + interfaces.asSequence()).toList(),
+            properties,
+            typeDescriptor
+        )
 
     private fun LocalTypeInformation.Composable.getTypeNotation(typeDescriptor: Symbol): CompositeType =
-            makeCompositeType(interfaces, properties, typeDescriptor)
+        makeCompositeType(interfaces, properties, typeDescriptor)
 
     private fun LocalTypeInformation.Abstract.getTypeNotation(typeDescriptor: Symbol): CompositeType =
-            makeCompositeType(interfaces, properties, typeDescriptor)
+        makeCompositeType(interfaces, properties, typeDescriptor)
 
     private fun LocalTypeInformation.makeCompositeType(
-            interfaces: List<LocalTypeInformation>,
-            properties: Map<String, LocalPropertyInformation>,
-            typeDescriptor: Symbol): CompositeType {
+        interfaces: List<LocalTypeInformation>,
+        properties: Map<String, LocalPropertyInformation>,
+        typeDescriptor: Symbol
+    ): CompositeType {
         val provides = interfaces.map { it.amqpTypeName }
         val fields = properties.map { (name, property) ->
             property.getField(name)
         }
 
         return CompositeType(
-                amqpTypeName,
-                null,
-                provides,
-                Descriptor(typeDescriptor),
-                fields)
+            amqpTypeName,
+            null,
+            provides,
+            Descriptor(typeDescriptor),
+            fields
+        )
     }
 
     private fun LocalPropertyInformation.getField(name: String): Field {
-        val (typeName, requires) = when(type) {
+        val (typeName, requires) = when (type) {
             is LocalTypeInformation.AnInterface,
             is LocalTypeInformation.ACollection,
             is LocalTypeInformation.AMap -> "*" to listOf(type.amqpTypeName)
@@ -60,14 +63,15 @@ object TypeNotationGenerator {
     }
 
     private val defaultValues = sequenceOf(
-            Boolean::class to "false",
-            Byte::class to "0",
-            Int::class to "0",
-            Char::class to "&#0",
-            Short::class to "0",
-            Long::class to "0",
-            Float::class to "0",
-            Double::class to "0").associate { (type, value) ->
+        Boolean::class to "false",
+        Byte::class to "0",
+        Int::class to "0",
+        Char::class to "&#0",
+        Short::class to "0",
+        Long::class to "0",
+        Float::class to "0",
+        Double::class to "0"
+    ).associate { (type, value) ->
         TypeIdentifier.forClass(type.javaPrimitiveType!!) to value
     }
 }

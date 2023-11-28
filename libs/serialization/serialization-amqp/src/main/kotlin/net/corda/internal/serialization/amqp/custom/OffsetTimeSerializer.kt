@@ -13,11 +13,11 @@ class OffsetTimeSerializer : BaseProxySerializer<OffsetTime, OffsetTimeSerialize
     override val proxyType: Class<OffsetTimeProxy> get() = OffsetTimeProxy::class.java
     override val withInheritance: Boolean get() = false
 
-    override fun toProxy(obj: OffsetTime): OffsetTimeProxy
-        = OffsetTimeProxy(obj.toLocalTime(), obj.offset.id)
+    override fun toProxy(obj: OffsetTime): OffsetTimeProxy =
+        OffsetTimeProxy(obj.toLocalTime(), obj.offset.id)
 
-    override fun fromProxy(proxy: OffsetTimeProxy): OffsetTime
-        = OffsetTime.of(proxy.time, ZoneOffset.of(proxy.offset))
+    override fun fromProxy(proxy: OffsetTimeProxy): OffsetTime =
+        OffsetTime.of(proxy.time, ZoneOffset.of(proxy.offset))
 
     data class OffsetTimeProxy(val time: LocalTime, val offset: String)
 }

@@ -6,7 +6,6 @@ import org.osgi.framework.BundleContext
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 
-
 @Component(service = [PlatformInfoProvider::class])
 class PlatformInfoProviderImpl @Activate constructor(
     bundleContext: BundleContext,

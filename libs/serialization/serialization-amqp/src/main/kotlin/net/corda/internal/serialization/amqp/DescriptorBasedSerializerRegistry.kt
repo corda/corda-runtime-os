@@ -14,7 +14,7 @@ interface DescriptorBasedSerializerRegistry {
     fun getOrBuild(descriptor: String, builder: () -> AMQPSerializer<Any>): AMQPSerializer<Any>
 }
 
-class DefaultDescriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry {
+class DefaultDescriptorBasedSerializerRegistry : DescriptorBasedSerializerRegistry {
 
     private val registry: MutableMap<String, AMQPSerializer<Any>> = DefaultCacheProvider.createCache()
 
@@ -25,5 +25,5 @@ class DefaultDescriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistr
     }
 
     override fun getOrBuild(descriptor: String, builder: () -> AMQPSerializer<Any>) =
-            registry.getOrPut(descriptor, builder)
+        registry.getOrPut(descriptor, builder)
 }

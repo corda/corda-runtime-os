@@ -56,7 +56,6 @@ class InputStreamTest {
         }
     }
 
-
     private fun testResource(): URL {
         // Read any file from test resources
         val resource = EvolvabilityTests::class.java.getResource("${EnumEvolveTests::class.java.simpleName}.changedOrdinality")

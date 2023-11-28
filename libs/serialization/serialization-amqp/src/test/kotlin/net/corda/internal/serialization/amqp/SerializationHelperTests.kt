@@ -2,9 +2,9 @@ package net.corda.internal.serialization.amqp
 
 import com.google.common.reflect.TypeToken
 import net.corda.v5.base.annotations.CordaSerializable
+import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
-import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.test.assertNotEquals

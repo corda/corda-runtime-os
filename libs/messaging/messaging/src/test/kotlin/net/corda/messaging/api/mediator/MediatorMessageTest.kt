@@ -12,10 +12,13 @@ class MediatorMessageTest {
     private val partitionKey: String = "partition"
     private val partitionValue: Long = 1L
 
-    private val defaultMessage: MediatorMessage<Any> = MediatorMessage(payload, mutableMapOf(
-        topicKey to topicValue,
-        partitionKey to partitionValue
-    ))
+    private val defaultMessage: MediatorMessage<Any> = MediatorMessage(
+        payload,
+        mutableMapOf(
+            topicKey to topicValue,
+            partitionKey to partitionValue
+        )
+    )
 
     @Test
     fun `Test add property (string)`() {
@@ -35,10 +38,13 @@ class MediatorMessageTest {
 
     @Test
     fun `Test create message with props`() {
-        val message: MediatorMessage<Any> = MediatorMessage(payload, mutableMapOf(
-            topicKey to topicValue,
-            partitionKey to partitionValue
-        ))
+        val message: MediatorMessage<Any> = MediatorMessage(
+            payload,
+            mutableMapOf(
+                topicKey to topicValue,
+                partitionKey to partitionValue
+            )
+        )
 
         assertEquals(message.properties, mutableMapOf(topicKey to topicValue, partitionKey to partitionValue))
     }

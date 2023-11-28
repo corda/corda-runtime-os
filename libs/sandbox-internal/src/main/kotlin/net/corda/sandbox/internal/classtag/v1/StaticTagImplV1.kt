@@ -27,10 +27,12 @@ internal data class StaticTagImplV1(
         /** Deserialises a [StaticTagImplV1] class tag. */
         @Suppress("ThrowsCount")
         fun deserialise(classTagEntries: List<String>): StaticTagImplV1 {
-            if (classTagEntries.size != ENTRIES_LENGTH) throw SandboxException(
-                "Serialised static class tag contained ${classTagEntries.size} entries, whereas $ENTRIES_LENGTH " +
+            if (classTagEntries.size != ENTRIES_LENGTH) {
+                throw SandboxException(
+                    "Serialised static class tag contained ${classTagEntries.size} entries, whereas $ENTRIES_LENGTH " +
                         "entries were expected. The entries were $classTagEntries."
-            )
+                )
+            }
 
             val classType = classTypeFromString(classTagEntries[CLASS_TYPE_IDX])
 

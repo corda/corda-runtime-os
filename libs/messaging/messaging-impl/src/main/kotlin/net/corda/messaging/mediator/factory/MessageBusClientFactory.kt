@@ -23,7 +23,7 @@ class MessageBusClientFactory(
     private val id: String,
     private val messageBusConfig: SmartConfig,
     private val cordaProducerBuilder: CordaProducerBuilder,
-): MessagingClientFactory {
+) : MessagingClientFactory {
 
     override fun create(config: MessagingClientConfig): MessagingClient {
         val uniqueId = UUID.randomUUID().toString()

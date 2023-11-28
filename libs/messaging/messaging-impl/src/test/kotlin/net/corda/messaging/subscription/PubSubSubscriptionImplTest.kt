@@ -9,6 +9,7 @@ import net.corda.messaging.constants.SubscriptionType
 import net.corda.messaging.createResolvedSubscriptionConfig
 import net.corda.messaging.generateMockCordaConsumerRecordList
 import net.corda.messaging.stubs.StubPubSubProcessor
+import net.corda.test.util.waitWhile
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
@@ -21,7 +22,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import net.corda.test.util.waitWhile
 import java.io.IOException
 import java.nio.ByteBuffer
 import java.time.Duration
@@ -197,7 +197,6 @@ class PubSubSubscriptionImplTest {
 
         Assertions.assertFalse(lifeCycleCoordinatorMockHelper.lifecycleCoordinatorThrows)
     }
-
 
     /**
      * Check that the exceptions thrown during processing causes the processor to continue

@@ -64,7 +64,7 @@ fun mockCpkMeta(): CpkMetadata {
     }
 }
 
-private class DummyBundleRevision(private val bundle: Bundle): BundleRevision {
+private class DummyBundleRevision(private val bundle: Bundle) : BundleRevision {
     override fun getBundle(): Bundle = bundle
     override fun getSymbolicName(): String = bundle.symbolicName
     override fun getVersion(): Version = bundle.version

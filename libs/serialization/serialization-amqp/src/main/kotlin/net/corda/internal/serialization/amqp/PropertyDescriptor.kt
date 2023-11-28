@@ -33,11 +33,13 @@ data class PropertyDescriptor(val field: Field?, val setter: Method?, val getter
     fun validate() {
         getter?.apply {
             field?.apply {
-                if (!getter.returnType.boxesOrIsAssignableFrom(field.type))
-                   throw AMQPNotSerializableException(
-                           declaringClass,
-                            "Defined getter for parameter $name returns type ${getter.returnType} " +
-                                    "yet underlying type is $genericType")
+                if (!getter.returnType.boxesOrIsAssignableFrom(field.type)) {
+                    throw AMQPNotSerializableException(
+                        declaringClass,
+                        "Defined getter for parameter $name returns type ${getter.returnType} " +
+                            "yet underlying type is $genericType"
+                    )
+                }
             }
         }
 
@@ -45,26 +47,30 @@ data class PropertyDescriptor(val field: Field?, val setter: Method?, val getter
             val setterType = setter.parameterTypes[0]!!
 
             field?.apply {
-                if (!field.type.boxesOrIsAssignableFrom(setterType))
+                if (!field.type.boxesOrIsAssignableFrom(setterType)) {
                     throw AMQPNotSerializableException(
-                            declaringClass,
-                            "Defined setter for parameter $name takes parameter of type $setterType " +
-                                    "yet underlying type is $genericType")
+                        declaringClass,
+                        "Defined setter for parameter $name takes parameter of type $setterType " +
+                            "yet underlying type is $genericType"
+                    )
+                }
             }
 
             getter?.apply {
-                if (!getter.returnType.boxesOrIsAssignableFrom(setterType))
+                if (!getter.returnType.boxesOrIsAssignableFrom(setterType)) {
                     throw AMQPNotSerializableException(
-                            declaringClass,
-                            "Defined setter for parameter $name takes parameter of type $setterType, " +
-                                    "but getter returns $genericReturnType")
+                        declaringClass,
+                        "Defined setter for parameter $name takes parameter of type $setterType, " +
+                            "but getter returns $genericReturnType"
+                    )
+                }
             }
         }
     }
 }
 
 private fun Class<*>.boxesOrIsAssignableFrom(other: Class<*>) =
-        isAssignableFrom(other) || kotlin.javaPrimitiveType == other
+    isAssignableFrom(other) || kotlin.javaPrimitiveType == other
 
 private fun Type.isSupertypeOf(that: Type) = TypeToken.of(this).isSupertypeOf(that)
 
@@ -91,13 +97,13 @@ internal fun Class<out Any?>.propertyDescriptors(validateProperties: Boolean = t
     val fieldProperties = superclassChain().declaredFields().byFieldName()
 
     return superclassChain().declaredMethods()
-            .thatArePublic()
-            .thatArePropertyMethods()
-            .withValidSignature()
-            .byNameAndClassifier(fieldProperties.keys)
-            .toClassProperties(fieldProperties).run {
-                if (validateProperties) validated() else this
-            }
+        .thatArePublic()
+        .thatArePropertyMethods()
+        .withValidSignature()
+        .byNameAndClassifier(fieldProperties.keys)
+        .toClassProperties(fieldProperties).run {
+            if (validateProperties) validated() else this
+        }
 }
 
 // Generate the sequence of classes starting with this class and ascending through it superclasses.
@@ -121,9 +127,10 @@ private fun Sequence<Method>.thatArePropertyMethods() = mapNotNull(::getProperty
 private fun getPropertyNamedMethod(method: Method): PropertyNamedMethod? {
     return propertyMethodRegex.find(method.name)?.let { result ->
         PropertyNamedMethod(
-                result.groups[2]!!.value,
-                MethodClassifier.valueOf(result.groups[1]!!.value.uppercase()),
-                method)
+            result.groups[2]!!.value,
+            MethodClassifier.valueOf(result.groups[1]!!.value.uppercase()),
+            method
+        )
     }
 }
 
@@ -147,18 +154,21 @@ private fun Sequence<PropertyNamedMethod>.byNameAndClassifier(fieldNames: Set<St
 // Merge the given method into a map of methods by method classifier, picking the least generic method for each classifier.
 private fun EnumMap<MethodClassifier, Method>.merge(classifier: MethodClassifier, method: Method): EnumMap<MethodClassifier, Method> {
     compute(classifier) { _, existingMethod ->
-        if (existingMethod == null) method
-        else when (classifier) {
-            IS -> existingMethod
-            GET -> leastGenericBy({ genericReturnType }, existingMethod, method)
-            SET -> leastGenericBy({ genericParameterTypes[0] }, existingMethod, method)
+        if (existingMethod == null) {
+            method
+        } else {
+            when (classifier) {
+                IS -> existingMethod
+                GET -> leastGenericBy({ genericReturnType }, existingMethod, method)
+                SET -> leastGenericBy({ genericParameterTypes[0] }, existingMethod, method)
+            }
         }
     }
     return this
 }
 
 // Make the property name conform to the underlying field name, if there is one.
-private fun getPropertyName(propertyName: String, fieldNames: Set<String>):String {
+private fun getPropertyName(propertyName: String, fieldNames: Set<String>): String {
     val lowerName = propertyName.replaceFirstChar { it.lowercase(Locale.getDefault()) }
     return if (lowerName in fieldNames) {
         lowerName
@@ -178,9 +188,12 @@ private data class PropertyNamedMethod(val fieldName: String, val classifier: Me
             // We don't check the return type, because some Java frameworks (such as Lombok) generate setters
             // with non-void returns for method chaining.
             SET -> parameterCount == 1
-            IS -> parameterCount == 0 &&
-                    (returnType == Boolean::class.java ||
-                            returnType == Boolean::class.javaObjectType)
+            IS ->
+                parameterCount == 0 &&
+                    (
+                        returnType == Boolean::class.java ||
+                            returnType == Boolean::class.javaObjectType
+                        )
         }
     }
 }
@@ -198,9 +211,9 @@ private fun Map<String, Map<MethodClassifier, Method>>.toClassProperties(fieldMa
 
     for ((name, methodMap) in this) {
         result[name] = PropertyDescriptor(
-                fieldMap[name],
-                methodMap[SET],
-                methodMap[GET] ?: methodMap[IS]
+            fieldMap[name],
+            methodMap[SET],
+            methodMap[GET] ?: methodMap[IS]
         )
     }
 
@@ -209,7 +222,7 @@ private fun Map<String, Map<MethodClassifier, Method>>.toClassProperties(fieldMa
 
 // Select the least generic of two methods by a type associated with each.
 private fun leastGenericBy(feature: Method.() -> Type, first: Method, second: Method) =
-        if (first.feature().isSupertypeOf(second.feature())) second else first
+    if (first.feature().isSupertypeOf(second.feature())) second else first
 
 // Throw an exception if any property descriptor is inconsistent, e.g. the types don't match
 private fun Map<String, PropertyDescriptor>.validated() = apply {

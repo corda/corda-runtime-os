@@ -17,7 +17,7 @@ import java.lang.reflect.Constructor
 internal object LinkedHashMapEntrySerializer : Serializer<Map.Entry<*, *>>() {
     // Create a dummy map so that we can get the LinkedHashMap$Entry from it
     // The element type of the map doesn't matter. The entry is all we want.
-    val serializedType: Class<out Map.Entry<*,*>> = linkedMapOf(Any() to Any()).entries.first()::class.java
+    val serializedType: Class<out Map.Entry<*, *>> = linkedMapOf(Any() to Any()).entries.first()::class.java
 
     private val constr: Constructor<*> = serializedType.declaredConstructors.single().apply { isAccessible = true }
 

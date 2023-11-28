@@ -15,7 +15,7 @@ class SmartConfigObjectImpl(
     private val smartConfigFactory: SmartConfigFactory,
     private val secretsLookupService: SecretsLookupService = maskedSecretsLookupService
 ) : SmartConfigObject {
-    companion object{
+    companion object {
         private val maskedSecretsLookupService = MaskedSecretsLookupService()
     }
 
@@ -28,21 +28,24 @@ class SmartConfigObjectImpl(
     }
 
     override fun toSafeConfig(): SmartConfigObject {
-        if(secretsLookupService is MaskedSecretsLookupService)
+        if (secretsLookupService is MaskedSecretsLookupService) {
             return this
+        }
         return SmartConfigObjectImpl(typeSafeConfigObject, smartConfigFactory, maskedSecretsLookupService)
     }
 
     // NOTE: render will always use Noop Secrets Lookup
     override fun render(): String {
-        if(secretsLookupService is MaskedSecretsLookupService)
+        if (secretsLookupService is MaskedSecretsLookupService) {
             return typeSafeConfigObject.render()
+        }
         return toSafeConfig().render()
     }
 
     override fun render(options: ConfigRenderOptions?): String {
-        if(secretsLookupService is MaskedSecretsLookupService)
+        if (secretsLookupService is MaskedSecretsLookupService) {
             return typeSafeConfigObject.render(options)
+        }
         return toSafeConfig().render(options)
     }
 
@@ -91,18 +94,20 @@ class SmartConfigObjectImpl(
 
     override fun put(key: String, value: ConfigValue): SmartConfigValue? {
         val v = typeSafeConfigObject.put(key, value)
-        if (null == v)
+        if (null == v) {
             return v
+        }
         return SmartConfigValueImpl(v, smartConfigFactory, secretsLookupService)
     }
 
     override fun putAll(from: Map<out String, ConfigValue>) =
         typeSafeConfigObject.putAll((from))
 
-    override fun remove(key: String?): SmartConfigValue?{
+    override fun remove(key: String?): SmartConfigValue? {
         val v = typeSafeConfigObject.remove(key)
-        if (null == v)
+        if (null == v) {
             return v
+        }
         return SmartConfigValueImpl(v, smartConfigFactory, secretsLookupService)
     }
 
@@ -112,8 +117,9 @@ class SmartConfigObjectImpl(
 
     override fun get(key: String?): SmartConfigValue? {
         val v = typeSafeConfigObject.get(key)
-        if (null == v)
+        if (null == v) {
             return v
+        }
         return SmartConfigValueImpl(v, smartConfigFactory, secretsLookupService)
     }
 

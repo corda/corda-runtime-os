@@ -35,5 +35,3 @@ internal object LinkedListItrSerializer : Serializer<ListIterator<*>>() {
         return list.listIterator(index)
     }
 }
-
-

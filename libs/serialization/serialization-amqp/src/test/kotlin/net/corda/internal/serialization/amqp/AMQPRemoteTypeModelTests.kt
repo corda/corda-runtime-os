@@ -33,11 +33,11 @@ class AMQPRemoteTypeModelTests {
     }
 
     @CordaSerializable
-    open class Superclass<K, V>(override val array: Array<out String>, override val list: List<K>, override val map: Map<K, V>)
-        : Interface<String, K, V>
+    open class Superclass<K, V>(override val array: Array<out String>, override val list: List<K>, override val map: Map<K, V>) :
+        Interface<String, K, V>
 
     @CordaSerializable
-    class C<V>(array: Array<out String>, list: List<UUID>, map: Map<UUID, V>, val enum: Enum): Superclass<UUID, V>(array, list, map)
+    class C<V>(array: Array<out String>, list: List<UUID>, map: Map<UUID, V>, val enum: Enum) : Superclass<UUID, V>(array, list, map)
 
     @CordaSerializable
     class SimpleClass(val a: Int, val b: Double, val c: Short?, val d: ByteArray, val e: ByteArray?)
@@ -52,32 +52,37 @@ class AMQPRemoteTypeModelTests {
         arrayOf(byteArrayOf(1, 2, 3)).assertRemoteType("byte[][]")
 
         SimpleClass(1, 2.0, null, byteArrayOf(1, 2, 3), byteArrayOf(4, 5, 6))
-            .assertRemoteType("""
+            .assertRemoteType(
+                """
                 SimpleClass
                   a: int
                   b: double
                   c (optional): Short
                   d: byte[]
                   e (optional): byte[]
-                """)
+                """
+            )
 
         C(arrayOf("a", "b"), listOf(UUID.randomUUID()), mapOf(UUID.randomUUID() to intArrayOf(1, 2, 3)), Enum.BAZ)
-            .assertRemoteType("""
+            .assertRemoteType(
+                """
             C: Interface<String, UUID, Object>
               array: String[]
               enum: Enum(FOO|BAR|BAZ)
               list: List<UUID>
               map: Map<UUID, Object>
-        """)
+        """
+            )
     }
 
     private fun getRemoteType(obj: Any): RemoteTypeInformation {
         val schema = SerializationOutput(factory).serializeAndReturnSchema(obj)
         schema.schema.types.forEach { println(it) }
         val values = typeModel.interpret(SerializationSchemas(schema.schema, schema.transformsSchema), factory.sandboxGroup).values
-        return values.find { it.typeIdentifier.getLocalType(factory.sandboxGroup).accessAsClass().isAssignableFrom(obj::class.java) } ?:
-        throw IllegalArgumentException(
-            "Can't find ${obj::class.java.name} in ${values.map { it.typeIdentifier.name}}")
+        return values.find { it.typeIdentifier.getLocalType(factory.sandboxGroup).accessAsClass().isAssignableFrom(obj::class.java) }
+            ?: throw IllegalArgumentException(
+                "Can't find ${obj::class.java.name} in ${values.map { it.typeIdentifier.name}}"
+            )
     }
 
     private fun Any.assertRemoteType(prettyPrinted: String) {

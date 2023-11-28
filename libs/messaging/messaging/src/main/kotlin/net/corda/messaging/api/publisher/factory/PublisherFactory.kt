@@ -37,7 +37,7 @@ interface PublisherFactory {
      * @param rpcConfig configuration object used to initialize the subscription
      * @param messagingConfig other configuration settings if needed
      */
-    fun <REQUEST: Any, RESPONSE: Any> createRPCSender(
+    fun <REQUEST : Any, RESPONSE : Any> createRPCSender(
         rpcConfig: RPCConfig<REQUEST, RESPONSE>,
         messagingConfig: SmartConfig,
     ): RPCSender<REQUEST, RESPONSE>

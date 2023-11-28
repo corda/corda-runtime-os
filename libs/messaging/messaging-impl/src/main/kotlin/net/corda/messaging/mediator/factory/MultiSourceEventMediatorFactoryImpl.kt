@@ -16,7 +16,7 @@ class MultiSourceEventMediatorFactoryImpl(
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
     private val taskManagerFactory: TaskManagerFactory
-): MultiSourceEventMediatorFactory {
+) : MultiSourceEventMediatorFactory {
 
     @Activate
     constructor(

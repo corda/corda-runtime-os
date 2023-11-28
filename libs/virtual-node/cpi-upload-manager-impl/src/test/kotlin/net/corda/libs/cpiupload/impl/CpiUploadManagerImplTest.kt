@@ -34,7 +34,8 @@ class CpiUploadManagerImplTest {
                 publisher,
                 subscription,
                 ackProcessor,
-                maxAllowedMessageSize)
+                maxAllowedMessageSize
+            )
     }
 
     @Test
@@ -83,7 +84,9 @@ class CpiUploadManagerImplTest {
                 "",
                 UploadStatusKey(request.requestId, 1),
                 UploadStatus(true, "", request.secureHash.toAvro(), null)
-            ), null, emptyMap()
+            ),
+            null,
+            emptyMap()
         )
 
         val status = cpiUploadManagerImpl.status(request.requestId)

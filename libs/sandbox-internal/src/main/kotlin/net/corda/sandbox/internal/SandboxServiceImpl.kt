@@ -1,4 +1,5 @@
 @file:JvmName("SandboxServiceUtils")
+
 package net.corda.sandbox.internal
 
 import net.corda.crypto.core.SecureHashImpl
@@ -31,7 +32,6 @@ import java.security.MessageDigest
 import java.security.PrivilegedAction
 import java.util.UUID
 import kotlin.streams.asSequence
-
 
 /** An implementation of [SandboxCreationService] and [SandboxContextService]. */
 @Suppress("TooManyFunctions")
@@ -67,8 +67,10 @@ internal class SandboxServiceImpl @Activate constructor(
     override fun createPublicSandbox(publicBundles: Iterable<Bundle>, privateBundles: Iterable<Bundle>) {
         if (publicSandboxes.isNotEmpty()) {
             val publicSandbox = publicSandboxes.first()
-            check(publicBundles.toSet() == publicSandbox.publicBundles
-                    && privateBundles.toSet() == publicSandbox.privateBundles) {
+            check(
+                publicBundles.toSet() == publicSandbox.publicBundles &&
+                    privateBundles.toSet() == publicSandbox.privateBundles
+            ) {
                 "Public sandbox was already created with different bundles"
             }
             logger.warn("Public sandbox was already created")
@@ -132,20 +134,24 @@ internal class SandboxServiceImpl @Activate constructor(
 
     override fun getCallingSandboxGroup(): SandboxGroup? {
         @Suppress("deprecation", "removal")
-        return java.security.AccessController.doPrivileged(PrivilegedAction {
-            val stackWalkerInstance = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
+        return java.security.AccessController.doPrivileged(
+            PrivilegedAction {
+                val stackWalkerInstance = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
 
-            stackWalkerInstance.walk { stackFrameStream ->
-                stackFrameStream
-                    .asSequence()
-                    .mapNotNull { stackFrame ->
-                        val bundle = bundleUtils.getBundle(stackFrame.declaringClass)
-                        if (bundle != null) {
-                            bundleIdToSandboxGroup[bundle.bundleId]
-                        } else null
-                    }.firstOrNull()
+                stackWalkerInstance.walk { stackFrameStream ->
+                    stackFrameStream
+                        .asSequence()
+                        .mapNotNull { stackFrame ->
+                            val bundle = bundleUtils.getBundle(stackFrame.declaringClass)
+                            if (bundle != null) {
+                                bundleIdToSandboxGroup[bundle.bundleId]
+                            } else {
+                                null
+                            }
+                        }.firstOrNull()
+                }
             }
-        })
+        )
     }
 
     override fun isSandboxed(bundle: Bundle) = bundleIdToSandbox[bundle.bundleId] != null
@@ -208,7 +214,8 @@ internal class SandboxServiceImpl @Activate constructor(
                 sandboxId,
                 cpk.metadata,
                 mainBundle,
-                libraryBundles)
+                libraryBundles
+            )
 
             (libraryBundles + mainBundle).forEach { bundle ->
                 bundleIdToSandbox[bundle.bundleId] = sandbox
@@ -307,7 +314,6 @@ internal class SandboxServiceImpl @Activate constructor(
         sandboxId: UUID,
         securityDomain: String
     ): Bundle {
-
         val sandboxLocation = SandboxLocation(securityDomain, sandboxId, bundleSource)
         val bundle = try {
             inputStream.use {
@@ -317,7 +323,7 @@ internal class SandboxServiceImpl @Activate constructor(
             if (bundleUtils.allBundles.none { bundle -> bundle.symbolicName == SANDBOX_HOOKS_BUNDLE }) {
                 logger.warn(
                     "The \"$SANDBOX_HOOKS_BUNDLE\" bundle is not installed. This can cause failures when installing " +
-                            "sandbox bundles."
+                        "sandbox bundles."
                 )
             }
             throw SandboxException("Could not install $bundleSource as a bundle in sandbox $sandboxId.", e)
@@ -358,5 +364,5 @@ private inline fun sandboxForbidsThat(condition: Boolean, message: () -> String)
 }
 
 // "Syntactic sugar" around throwing a SandboxException, just to shut Detekt up.
-private inline fun sandboxRequiresThat(condition: Boolean, message: () -> String)
-    = sandboxForbidsThat(!condition, message)
+private inline fun sandboxRequiresThat(condition: Boolean, message: () -> String) =
+    sandboxForbidsThat(!condition, message)

@@ -15,7 +15,7 @@ class MessageBusConfigResolverTest {
     private val smartConfigFactory = SmartConfigFactory.createWithoutSecurityServices()
 
     @Test
-    fun `DB admin config can be resolved`(){
+    fun `DB admin config can be resolved`() {
         val target = MessageBusConfigResolver(smartConfigFactory)
         val testConfig = loadTestConfig(TEST_CONFIG)
         val results = target.resolve(testConfig, AdminConfig("client1"))

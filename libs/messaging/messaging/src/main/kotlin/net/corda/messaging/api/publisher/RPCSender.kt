@@ -4,7 +4,6 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.Resource
 import java.util.concurrent.CompletableFuture
 
-
 /**
  * Interface for posting requests of type [REQUEST] and receiving responses of type [RESPONSE]
  * RPCSender instances can be created via the [PublisherFactory].
@@ -39,5 +38,4 @@ interface RPCSender<REQUEST, RESPONSE> : Resource {
      * The client is responsible for retries in the event of a failure or timeout
      */
     fun sendRequest(req: REQUEST): CompletableFuture<RESPONSE>
-
 }

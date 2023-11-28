@@ -456,8 +456,12 @@ class SerializationOutputTests {
 
     @Test
     fun `test foo list array`() {
-        val obj = WrapFooListArray(arrayOf(listOf(Foo("Fred", 1), Foo("Ginger", 2)),
-            listOf(Foo("Rogers", 3), Foo("Hammerstein", 4))))
+        val obj = WrapFooListArray(
+            arrayOf(
+                listOf(Foo("Fred", 1), Foo("Ginger", 2)),
+                listOf(Foo("Rogers", 3), Foo("Hammerstein", 4))
+            )
+        )
         serdes(obj)
     }
 
@@ -590,10 +594,13 @@ class SerializationOutputTests {
 
         // Double check
         copy[valueIndex] = 0x03
-        assertThat(des.deserialize(
-            OpaqueBytes(copy),
-            NonZeroByte::class.java, testSerializationContext.withEncodingAllowList(encodingAllowList)
-        ).value).isEqualTo(3)
+        assertThat(
+            des.deserialize(
+                OpaqueBytes(copy),
+                NonZeroByte::class.java,
+                testSerializationContext.withEncodingAllowList(encodingAllowList)
+            ).value
+        ).isEqualTo(3)
 
         // Now use the forbidden value
         copy[valueIndex] = 0x00
@@ -759,7 +766,8 @@ class SerializationOutputTests {
     @CordaSerializable
     class GenericSubclass(param: OtherGeneric<String>) : GenericSuperclass<String>(param) {
         override fun equals(other: Any?): Boolean = other is GenericSubclass // This is a bit lame but we just want to
-                                                                             // check it doesn't throw exceptions
+
+        // check it doesn't throw exceptions
         override fun hashCode(): Int = javaClass.hashCode()
     }
 
@@ -893,7 +901,7 @@ class SerializationOutputTests {
         val bytes = ByteArray(10) { it.toByte() }
         val obj = bytes.inputStream()
         val obj2 = serdes<InputStream>(obj, factory, factory2, expectedEqual = false, expectDeserializedEqual = false)
-        val obj3 = bytes.inputStream()  // Can't use original since the stream pointer has moved.
+        val obj3 = bytes.inputStream() // Can't use original since the stream pointer has moved.
         assertEquals(obj3.available(), obj2.available())
         assertEquals(obj3.read(), obj2.read())
     }
@@ -950,9 +958,13 @@ class SerializationOutputTests {
 
         val encodingAllowList = mock(EncodingAllowList::class.java)
         doReturn(true).whenever(encodingAllowList).acceptEncoding(CordaSerializationEncoding.SNAPPY)
-        assertArrayEquals(data, DeserializationInput(factory).deserialize(
-            compressed, testSerializationContext.withEncodingAllowList(encodingAllowList)
-        ))
+        assertArrayEquals(
+            data,
+            DeserializationInput(factory).deserialize(
+                compressed,
+                testSerializationContext.withEncodingAllowList(encodingAllowList)
+            )
+        )
     }
 
     @Test
@@ -962,10 +974,12 @@ class SerializationOutputTests {
         doReturn(false).whenever(encodingAllowList).acceptEncoding(CordaSerializationEncoding.SNAPPY)
         val compressed = SerializationOutput(factory).serialize("whatever", CordaSerializationEncoding.SNAPPY)
         val input = DeserializationInput(factory)
-        catchThrowable { input.deserialize(
-            compressed,
-            testSerializationContext.withEncodingAllowList(encodingAllowList)
-        ) }.run {
+        catchThrowable {
+            input.deserialize(
+                compressed,
+                testSerializationContext.withEncodingAllowList(encodingAllowList)
+            )
+        }.run {
             assertSame(NotSerializableException::class.java, javaClass)
             assertEquals(encodingNotPermittedFormat.format(CordaSerializationEncoding.SNAPPY), message)
         }
@@ -1113,16 +1127,17 @@ class SerializationOutputTests {
 
     // JDK11: backwards compatibility function to deal with StacktraceElement comparison pre-JPMS
     private fun deepEquals(a: Any?, b: Any?): Boolean {
-        return if (a === b)
+        return if (a === b) {
             true
-        else if (a == null || b == null)
+        } else if (a == null || b == null) {
             false
-        else {
-            if (a is Exception && b is Exception)
+        } else {
+            if (a is Exception && b is Exception) {
                 (a.cause == b.cause && a.localizedMessage == b.localizedMessage && a.message == b.message) &&
-                        Objects.deepEquals(a.stackTrace.toStackTraceBasic, b.stackTrace.toStackTraceBasic)
-            else
+                    Objects.deepEquals(a.stackTrace.toStackTraceBasic, b.stackTrace.toStackTraceBasic)
+            } else {
                 Objects.deepEquals(a, b)
+            }
         }
     }
 
@@ -1134,12 +1149,14 @@ class SerializationOutputTests {
     // JPMS adds additional fields that are not equal according to classloader/module hierarchy
     data class StackTraceElementBasic(val ste: StackTraceElement) {
         override fun equals(other: Any?): Boolean {
-            return if (other is StackTraceElementBasic)
+            return if (other is StackTraceElementBasic) {
                 (ste.className == other.ste.className) &&
-                        (ste.methodName == other.ste.methodName) &&
-                        (ste.fileName == other.ste.fileName) &&
-                        (ste.lineNumber == other.ste.lineNumber)
-            else false
+                    (ste.methodName == other.ste.methodName) &&
+                    (ste.fileName == other.ste.fileName) &&
+                    (ste.lineNumber == other.ste.lineNumber)
+            } else {
+                false
+            }
         }
     }
 }

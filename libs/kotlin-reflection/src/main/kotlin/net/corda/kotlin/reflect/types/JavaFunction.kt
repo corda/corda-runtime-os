@@ -11,7 +11,7 @@ import kotlin.reflect.full.starProjectedType
 class JavaFunction<V>(
     override val javaMethod: Method,
     private val instanceClass: Class<*>
-): KFunctionInternal<V>, Function<V> {
+) : KFunctionInternal<V>, Function<V> {
     override val annotations: List<Annotation>
         get() = TODO("Not yet implemented")
     override val isAbstract: Boolean

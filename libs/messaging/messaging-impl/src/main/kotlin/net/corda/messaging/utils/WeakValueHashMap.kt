@@ -4,12 +4,11 @@ import java.lang.ref.ReferenceQueue
 import java.lang.ref.WeakReference
 import java.util.concurrent.ConcurrentHashMap
 
-
 /**
  * This Map will remove entries when the value in the map has been
  * cleaned from garbage collection
  */
-class WeakValueHashMap<K, V>: MutableMap<K, V> {
+class WeakValueHashMap<K, V> : MutableMap<K, V> {
 
     /* Mutable map of Keys to WeakValues */
     private val map: MutableMap<K, WeakValueRef<K, V>> = ConcurrentHashMap()
@@ -86,7 +85,7 @@ class WeakValueHashMap<K, V>: MutableMap<K, V> {
      */
     private fun processQueue() {
         while (true) {
-            val ref = (queue.poll() as? WeakValueRef<*,*>) ?: break
+            val ref = (queue.poll() as? WeakValueRef<*, *>) ?: break
             // only remove if it is the *exact* same WeakValueRef
             map.remove(ref.key, ref)
         }

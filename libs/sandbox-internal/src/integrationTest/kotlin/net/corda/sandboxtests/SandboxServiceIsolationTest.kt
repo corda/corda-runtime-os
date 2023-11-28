@@ -1,7 +1,5 @@
 package net.corda.sandboxtests
 
-import java.nio.file.Path
-import java.util.Calendar
 import net.corda.sandbox.SandboxContextService
 import net.corda.sandbox.SandboxCreationService
 import net.corda.testing.sandboxes.SandboxSetup
@@ -29,6 +27,8 @@ import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
+import java.nio.file.Path
+import java.util.Calendar
 
 /** Tests the isolation of services across sandbox groups. */
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
@@ -110,9 +110,11 @@ class SandboxServiceIsolationTest {
         val mainBundleInOtherSandboxGroupService =
             sandboxFactory.group2.loadClassFromMainBundles(SERVICES_FLOW_CPK_3)
 
-        assertFalse(serviceClasses.any { service ->
-            mainBundleInOtherSandboxGroupService.isAssignableFrom(service)
-        })
+        assertFalse(
+            serviceClasses.any { service ->
+                mainBundleInOtherSandboxGroupService.isAssignableFrom(service)
+            }
+        )
     }
 
     @Test
@@ -123,9 +125,11 @@ class SandboxServiceIsolationTest {
             setOf(SandboxCreationService::class.java, SandboxContextService::class.java)
 
         privateBundleInPublicSandboxServices.forEach { privateService ->
-            assertFalse(serviceClasses.any { service ->
-                privateService.isAssignableFrom(service)
-            })
+            assertFalse(
+                serviceClasses.any { service ->
+                    privateService.isAssignableFrom(service)
+                }
+            )
         }
     }
 

@@ -14,6 +14,4 @@ class DayOfWeekSerializer : BaseDirectSerializer<DayOfWeek>() {
     override fun writeObject(obj: DayOfWeek, writer: InternalDirectSerializer.WriteObject) {
         writer.putAsString(obj.name)
     }
-
 }
-

@@ -71,7 +71,7 @@ sealed class LocalTypeInformation {
          * @param lookup The [LocalTypeLookup] to use to find previously-constructed [LocalTypeInformation].
          */
         fun forType(type: Type, typeIdentifier: TypeIdentifier, lookup: LocalTypeLookup): LocalTypeInformation {
-            val builder =  LocalTypeInformationBuilder(lookup)
+            val builder = LocalTypeInformationBuilder(lookup)
             val result = builder.build(type, typeIdentifier)
 
             // Patch every cyclic reference with a `follow` property pointing to the type information it refers to.
@@ -99,7 +99,7 @@ sealed class LocalTypeInformation {
     /**
      * Get the map of [LocalPropertyInformation], for all types that have it, or an empty map otherwise.
      */
-    val propertiesOrEmptyMap: Map<PropertyName, LocalPropertyInformation> get() = when(this) {
+    val propertiesOrEmptyMap: Map<PropertyName, LocalPropertyInformation> get() = when (this) {
         is Composable -> properties
         is Abstract -> properties
         is AnInterface -> properties
@@ -111,7 +111,7 @@ sealed class LocalTypeInformation {
     /**
      * Get the list of interfaces, for all types that have them, or an empty list otherwise.
      */
-    val interfacesOrEmptyList: List<LocalTypeInformation> get() = when(this) {
+    val interfacesOrEmptyList: List<LocalTypeInformation> get() = when (this) {
         is Composable -> interfaces
         is Abstract -> interfaces
         is AnInterface -> interfaces
@@ -126,7 +126,7 @@ sealed class LocalTypeInformation {
      * of "java.lang.String". If this is set to `false`, then the full class name will be printed instead.
      */
     fun prettyPrint(simplifyClassNames: Boolean = true): String =
-            LocalTypeInformationPrettyPrinter(simplifyClassNames).prettyPrint(this)
+        LocalTypeInformationPrettyPrinter(simplifyClassNames).prettyPrint(this)
 
     /**
      * The [LocalTypeInformation] corresponding to an unbounded wildcard ([TypeIdentifier.UnknownType])
@@ -148,15 +148,16 @@ sealed class LocalTypeInformation {
      * The [LocalTypeInformation] emitted if we hit a cycle while traversing the graph of related types.
      */
     data class Cycle(
-            override val observedType: Type,
-            override val typeIdentifier: TypeIdentifier) : LocalTypeInformation() {
+        override val observedType: Type,
+        override val typeIdentifier: TypeIdentifier
+    ) : LocalTypeInformation() {
         lateinit var follow: LocalTypeInformation
 
         // Custom equals / hashcode omitting "follow"
         override fun equals(other: Any?): Boolean =
-                other is Cycle &&
-                        other.observedType == observedType &&
-                        other.typeIdentifier == typeIdentifier
+            other is Cycle &&
+                other.observedType == observedType &&
+                other.typeIdentifier == typeIdentifier
 
         override fun hashCode(): Int = Objects.hash(observedType, typeIdentifier)
 
@@ -166,8 +167,11 @@ sealed class LocalTypeInformation {
     /**
      * May in fact be a more complex class, but is treated as if atomic, i.e. we don't further expand its properties.
      */
-    data class Opaque(override val observedType: Class<*>, override val typeIdentifier: TypeIdentifier,
-                      val wrapped: LocalTypeInformation) : LocalTypeInformation()
+    data class Opaque(
+        override val observedType: Class<*>,
+        override val typeIdentifier: TypeIdentifier,
+        val wrapped: LocalTypeInformation
+    ) : LocalTypeInformation()
 
     /**
      * Represents a scalar type such as [Int].
@@ -179,7 +183,11 @@ sealed class LocalTypeInformation {
      *
      * @param componentType The [LocalTypeInformation] for the component type of the array (e.g. [Int], if the type is [IntArray])
      */
-    data class AnArray(override val observedType: Type, override val typeIdentifier: TypeIdentifier, val componentType: LocalTypeInformation) : LocalTypeInformation()
+    data class AnArray(
+        override val observedType: Type,
+        override val typeIdentifier: TypeIdentifier,
+        val componentType: LocalTypeInformation
+    ) : LocalTypeInformation()
 
     /**
      * Represents an `enum`
@@ -189,12 +197,13 @@ sealed class LocalTypeInformation {
      * @param interfaces [LocalTypeInformation] for each interface implemented by the type.
      */
     data class AnEnum(
-            override val observedType: Class<*>,
-            override val typeIdentifier: TypeIdentifier,
-            val members: List<String>,
-            val fallbacks: Map<String, String>,
-            val interfaces: List<LocalTypeInformation>,
-            val transforms: EnumTransforms): LocalTypeInformation()
+        override val observedType: Class<*>,
+        override val typeIdentifier: TypeIdentifier,
+        val members: List<String>,
+        val fallbacks: Map<String, String>,
+        val interfaces: List<LocalTypeInformation>,
+        val transforms: EnumTransforms
+    ) : LocalTypeInformation()
 
     /**
      * Represents a type whose underlying class is an interface.
@@ -204,11 +213,12 @@ sealed class LocalTypeInformation {
      * @param typeParameters [LocalTypeInformation] for the resolved type parameters of the type.
      */
     data class AnInterface(
-            override val observedType: Type,
-            override val typeIdentifier: TypeIdentifier,
-            val properties: Map<PropertyName, LocalPropertyInformation>,
-            val interfaces: List<LocalTypeInformation>,
-            val typeParameters: List<LocalTypeInformation>) : LocalTypeInformation()
+        override val observedType: Type,
+        override val typeIdentifier: TypeIdentifier,
+        val properties: Map<PropertyName, LocalPropertyInformation>,
+        val interfaces: List<LocalTypeInformation>,
+        val typeParameters: List<LocalTypeInformation>
+    ) : LocalTypeInformation()
 
     /**
      * Represents a type whose underlying class is abstract.
@@ -219,12 +229,13 @@ sealed class LocalTypeInformation {
      * @param typeParameters [LocalTypeInformation] for the resolved type parameters of the type.
      */
     data class Abstract(
-            override val observedType: Type,
-            override val typeIdentifier: TypeIdentifier,
-            val properties: Map<PropertyName, LocalPropertyInformation>,
-            val superclass: LocalTypeInformation,
-            val interfaces: List<LocalTypeInformation>,
-            val typeParameters: List<LocalTypeInformation>) : LocalTypeInformation()
+        override val observedType: Type,
+        override val typeIdentifier: TypeIdentifier,
+        val properties: Map<PropertyName, LocalPropertyInformation>,
+        val superclass: LocalTypeInformation,
+        val interfaces: List<LocalTypeInformation>,
+        val typeParameters: List<LocalTypeInformation>
+    ) : LocalTypeInformation()
 
     /**
      * Represents a type which has only a single instantiation, e.g. a Kotlin `object`.
@@ -232,7 +243,12 @@ sealed class LocalTypeInformation {
      * @param superclass [LocalTypeInformation] for the superclass of the underlying class of this type.
      * @param interfaces [LocalTypeInformation] for the interfaces extended by this interface.
      */
-    data class Singleton(override val observedType: Type, override val typeIdentifier: TypeIdentifier, val superclass: LocalTypeInformation, val interfaces: List<LocalTypeInformation>) : LocalTypeInformation()
+    data class Singleton(
+        override val observedType: Type,
+        override val typeIdentifier: TypeIdentifier,
+        val superclass: LocalTypeInformation,
+        val interfaces: List<LocalTypeInformation>
+    ) : LocalTypeInformation()
 
     /**
      * Represents a type whose instances can be reversibly decomposed into dictionaries of typed values.
@@ -246,14 +262,15 @@ sealed class LocalTypeInformation {
      * @param typeParameters [LocalTypeInformation] for the resolved type parameters of the type.
      */
     data class Composable(
-            override val observedType: Type,
-            override val typeIdentifier: TypeIdentifier,
-            val constructor: LocalConstructorInformation,
-            val evolutionConstructors: List<EvolutionConstructorInformation>,
-            val properties: Map<PropertyName, LocalPropertyInformation>,
-            val superclass: LocalTypeInformation,
-            val interfaces: List<LocalTypeInformation>,
-            val typeParameters: List<LocalTypeInformation>) : LocalTypeInformation()
+        override val observedType: Type,
+        override val typeIdentifier: TypeIdentifier,
+        val constructor: LocalConstructorInformation,
+        val evolutionConstructors: List<EvolutionConstructorInformation>,
+        val properties: Map<PropertyName, LocalPropertyInformation>,
+        val superclass: LocalTypeInformation,
+        val interfaces: List<LocalTypeInformation>,
+        val typeParameters: List<LocalTypeInformation>
+    ) : LocalTypeInformation()
 
     /**
      * Represents a type whose instances may have observable properties (represented by "getter" methods), but for which
@@ -268,16 +285,17 @@ sealed class LocalTypeInformation {
      * @param nonComposableSubtypes [NonComposable] for the type descriptors that make this type non-composable,
      */
     data class NonComposable(
-            override val observedType: Type,
-            override val typeIdentifier: TypeIdentifier,
-            val constructor: LocalConstructorInformation?,
-            val properties: Map<PropertyName, LocalPropertyInformation>,
-            val superclass: LocalTypeInformation,
-            val interfaces: List<LocalTypeInformation>,
-            val typeParameters: List<LocalTypeInformation>,
-            private val nonComposableSubtypes: Set<NonComposable>,
-            val reason: String,
-            val remedy: String) : LocalTypeInformation() {
+        override val observedType: Type,
+        override val typeIdentifier: TypeIdentifier,
+        val constructor: LocalConstructorInformation?,
+        val properties: Map<PropertyName, LocalPropertyInformation>,
+        val superclass: LocalTypeInformation,
+        val interfaces: List<LocalTypeInformation>,
+        val typeParameters: List<LocalTypeInformation>,
+        private val nonComposableSubtypes: Set<NonComposable>,
+        val reason: String,
+        val remedy: String
+    ) : LocalTypeInformation() {
         val nonComposableTypes: Set<NonComposable> get() = nonComposableSubtypes.flatMapTo(LinkedHashSet()) { it.nonComposableTypes } + this
     }
 
@@ -287,23 +305,28 @@ sealed class LocalTypeInformation {
      * @param elementType [LocalTypeInformation] for the resolved type parameter of the type, i.e. the type of its
      * elements. [Unknown] if the type is erased.
      */
-    data class ACollection(override val observedType: Type, override val typeIdentifier: TypeIdentifier, val elementType: LocalTypeInformation) : LocalTypeInformation() {
+    data class ACollection(
+        override val observedType: Type,
+        override val typeIdentifier: TypeIdentifier,
+        val elementType: LocalTypeInformation
+    ) : LocalTypeInformation() {
         val isErased: Boolean get() = typeIdentifier is TypeIdentifier.Erased
 
-        fun withElementType(parameter: LocalTypeInformation, sandboxGroup: SandboxGroup): ACollection = when(typeIdentifier) {
+        fun withElementType(parameter: LocalTypeInformation, sandboxGroup: SandboxGroup): ACollection = when (typeIdentifier) {
             is TypeIdentifier.Erased -> {
                 val unerasedType = typeIdentifier.toParameterized(listOf(parameter.typeIdentifier))
                 ACollection(
-                        unerasedType.getLocalType(sandboxGroup),
-                        unerasedType,
-                        parameter)
+                    unerasedType.getLocalType(sandboxGroup),
+                    unerasedType,
+                    parameter
+                )
             }
             is TypeIdentifier.Parameterised -> {
                 val reparameterizedType = typeIdentifier.copy(parameters = listOf(parameter.typeIdentifier))
                 ACollection(
-                        reparameterizedType.getLocalType(sandboxGroup),
-                        reparameterizedType,
-                        parameter
+                    reparameterizedType.getLocalType(sandboxGroup),
+                    reparameterizedType,
+                    parameter
                 )
             }
             else -> throw IllegalStateException("Cannot parameterise $this")
@@ -318,24 +341,32 @@ sealed class LocalTypeInformation {
      * @param valueType [LocalTypeInformation] for the second resolved type parameter of the type, i.e. the type of its
      * values. [Unknown] if the type is erased.
      */
-    data class AMap(override val observedType: Type, override val typeIdentifier: TypeIdentifier,
-                    val keyType: LocalTypeInformation, val valueType: LocalTypeInformation) : LocalTypeInformation() {
+    data class AMap(
+        override val observedType: Type,
+        override val typeIdentifier: TypeIdentifier,
+        val keyType: LocalTypeInformation,
+        val valueType: LocalTypeInformation
+    ) : LocalTypeInformation() {
         val isErased: Boolean get() = typeIdentifier is TypeIdentifier.Erased
 
-        fun withParameters(keyType: LocalTypeInformation, valueType: LocalTypeInformation, sandboxGroup: SandboxGroup): AMap = when(typeIdentifier) {
+        fun withParameters(keyType: LocalTypeInformation, valueType: LocalTypeInformation, sandboxGroup: SandboxGroup):
+            AMap = when (typeIdentifier) {
             is TypeIdentifier.Erased -> {
                 val unerasedType = typeIdentifier.toParameterized(listOf(keyType.typeIdentifier, valueType.typeIdentifier))
                 AMap(
-                        unerasedType.getLocalType(sandboxGroup),
-                        unerasedType,
-                        keyType, valueType)
+                    unerasedType.getLocalType(sandboxGroup),
+                    unerasedType,
+                    keyType,
+                    valueType
+                )
             }
             is TypeIdentifier.Parameterised -> {
                 val reparameterizedType = typeIdentifier.copy(parameters = listOf(keyType.typeIdentifier, valueType.typeIdentifier))
                 AMap(
-                        reparameterizedType.getLocalType(sandboxGroup),
-                        reparameterizedType,
-                        keyType, valueType
+                    reparameterizedType.getLocalType(sandboxGroup),
+                    reparameterizedType,
+                    keyType,
+                    valueType
                 )
             }
             else -> throw IllegalStateException("Cannot parameterise $this")
@@ -347,8 +378,9 @@ sealed class LocalTypeInformation {
  * Represents information about a constructor.
  */
 data class LocalConstructorInformation(
-        val observedMethod: Constructor<Any>,
-        val parameters: List<LocalConstructorParameterInformation>) {
+    val observedMethod: Constructor<Any>,
+    val parameters: List<LocalConstructorParameterInformation>
+) {
     val hasParameters: Boolean get() = parameters.isNotEmpty()
 }
 
@@ -357,16 +389,18 @@ data class LocalConstructorInformation(
  * with a different set of properties to the regular constructor.
  */
 data class EvolutionConstructorInformation(
-        val constructor: LocalConstructorInformation,
-        val properties: Map<String, LocalPropertyInformation>)
+    val constructor: LocalConstructorInformation,
+    val properties: Map<String, LocalPropertyInformation>
+)
 
 /**
  * Represents information about a constructor parameter
  */
 data class LocalConstructorParameterInformation(
-        val name: String,
-        val type: LocalTypeInformation,
-        val isMandatory: Boolean)
+    val name: String,
+    val type: LocalTypeInformation,
+    val isMandatory: Boolean
+)
 
 private data class LocalTypeInformationPrettyPrinter(private val simplifyClassNames: Boolean, private val indent: Int = 0) {
 
@@ -375,44 +409,49 @@ private data class LocalTypeInformationPrettyPrinter(private val simplifyClassNa
             when (this) {
                 is LocalTypeInformation.Abstract ->
                     typeIdentifier.prettyPrint(simplifyClassNames) +
-                            printInheritsFrom(interfaces, superclass) +
-                            indentAnd { printProperties(properties) }
+                        printInheritsFrom(interfaces, superclass) +
+                        indentAnd { printProperties(properties) }
                 is LocalTypeInformation.AnInterface ->
                     typeIdentifier.prettyPrint(simplifyClassNames) + printInheritsFrom(interfaces)
                 is LocalTypeInformation.Composable -> typeIdentifier.prettyPrint(simplifyClassNames) +
-                        printConstructor(constructor) +
-                        printInheritsFrom(interfaces, superclass) +
-                        indentAnd { printProperties(properties) }
+                    printConstructor(constructor) +
+                    printInheritsFrom(interfaces, superclass) +
+                    indentAnd { printProperties(properties) }
                 else -> typeIdentifier.prettyPrint(simplifyClassNames)
             }
         }
 
     private fun printConstructor(constructor: LocalConstructorInformation) =
-            constructor.parameters.joinToString(", ", "(", ")") {
-                it.name +
-                        ": " + it.type.typeIdentifier.prettyPrint(simplifyClassNames) +
-                        (if (!it.isMandatory) "?" else "")
-            }
+        constructor.parameters.joinToString(", ", "(", ")") {
+            it.name +
+                ": " + it.type.typeIdentifier.prettyPrint(simplifyClassNames) +
+                (if (!it.isMandatory) "?" else "")
+        }
 
     private fun printInheritsFrom(interfaces: List<LocalTypeInformation>, superclass: LocalTypeInformation? = null): String {
-        val parents = if (superclass == null || superclass == LocalTypeInformation.Top) interfaces.asSequence()
-        else sequenceOf(superclass) + interfaces.asSequence()
-        return if (!parents.iterator().hasNext()) ""
-        else parents.joinToString(", ", ": ", "") { it.typeIdentifier.prettyPrint(simplifyClassNames) }
+        val parents = if (superclass == null || superclass == LocalTypeInformation.Top) {
+            interfaces.asSequence()
+        } else {
+            sequenceOf(superclass) + interfaces.asSequence()
+        }
+        return if (!parents.iterator().hasNext()) {
+            ""
+        } else {
+            parents.joinToString(", ", ": ", "") { it.typeIdentifier.prettyPrint(simplifyClassNames) }
+        }
     }
 
     private fun printProperties(properties: Map<String, LocalPropertyInformation>) =
-            properties.entries.asSequence().sortedBy { it.key }.joinToString("\n", "\n", "") {
-                it.prettyPrint()
-            }
+        properties.entries.asSequence().sortedBy { it.key }.joinToString("\n", "\n", "") {
+            it.prettyPrint()
+        }
 
     private fun Map.Entry<String, LocalPropertyInformation>.prettyPrint(): String =
-            "  ".repeat(indent) + key +
-                    (if(!value.isMandatory) " (optional)" else "") +
-                    (if (value.isCalculated) " (calculated)" else "") +
-                    ": " + prettyPrint(value.type)
+        "  ".repeat(indent) + key +
+            (if (!value.isMandatory) " (optional)" else "") +
+            (if (value.isCalculated) " (calculated)" else "") +
+            ": " + prettyPrint(value.type)
 
     private inline fun indentAnd(block: LocalTypeInformationPrettyPrinter.() -> String) =
-            copy(indent = indent + 1).block()
+        copy(indent = indent + 1).block()
 }
-

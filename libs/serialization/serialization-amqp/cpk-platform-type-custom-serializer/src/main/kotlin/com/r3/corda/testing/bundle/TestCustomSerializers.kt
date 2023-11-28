@@ -41,9 +41,11 @@ class ThreadSerializer : SerializationCustomSerializer<Thread, TestThreadProxy> 
 }
 class TestThreadProxy(val name: String)
 
-
 class SandboxType(val a: Int)
-// Custom serializer for sandbox type should be allowed.
+
+/**
+ * Custom serializer for sandbox type should be allowed.
+ */
 class SandboxTypeSerializer : SerializationCustomSerializer<SandboxType, Int> {
     override fun toProxy(obj: SandboxType): Int {
         TODO("Not yet implemented")

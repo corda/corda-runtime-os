@@ -1,9 +1,5 @@
 package net.corda.lifecycle.impl
 
-import java.util.concurrent.RejectedExecutionException
-import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
 import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
@@ -23,7 +19,10 @@ import net.corda.lifecycle.registry.LifecycleRegistryException
 import net.corda.utilities.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
+import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * A manager of lifecycle events for a single component.
@@ -213,8 +212,11 @@ class LifecycleCoordinatorImpl(
         val coordinators = try {
             coordinatorNames.mapTo(LinkedHashSet(), registry::getCoordinator)
         } catch (e: LifecycleRegistryException) {
-            logger.error("Failed to register on coordinator as an invalid name was provided. " +
-                        (e.message ?: "No exception message provided"), e)
+            logger.error(
+                "Failed to register on coordinator as an invalid name was provided. " +
+                    (e.message ?: "No exception message provided"),
+                e
+            )
             throw LifecycleException("Failed to register on a coordinator as an invalid name was provided", e)
         }
         return followStatusChanges(coordinators)
@@ -224,7 +226,7 @@ class LifecycleCoordinatorImpl(
         return processor.addManagedResource(name, generator)
     }
 
-    override fun <T: Resource> getManagedResource(name: String) : T? {
+    override fun <T : Resource> getManagedResource(name: String): T? {
         @Suppress("unchecked_cast")
         return processor.getManagedResource(name) as? T
     }

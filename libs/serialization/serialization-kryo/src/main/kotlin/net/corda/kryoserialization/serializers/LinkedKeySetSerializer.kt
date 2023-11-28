@@ -23,7 +23,7 @@ internal object LinkedKeySetSerializer : Serializer<Set<*>>() {
     }
 
     override fun read(kryo: Kryo, input: Input?, type: Class<out Set<*>>): Set<*> {
-        val map = kryo.readClassAndObject(input) as Map<*,*>
+        val map = kryo.readClassAndObject(input) as Map<*, *>
         return map.keys
     }
 }

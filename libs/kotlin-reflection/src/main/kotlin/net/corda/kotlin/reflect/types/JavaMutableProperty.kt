@@ -9,15 +9,15 @@ import kotlin.reflect.KTypeParameter
 import kotlin.reflect.KVisibility
 import kotlin.reflect.full.starProjectedType
 
-class JavaMutableProperty<T, V>(javaField: Field, instanceClass: Class<*>)
-    : JavaProperty<T, V>(javaField, instanceClass), KMutableProperty1<T, V>, KMutablePropertyInternal<V> {
+class JavaMutableProperty<T, V>(javaField: Field, instanceClass: Class<*>) :
+    JavaProperty<T, V>(javaField, instanceClass), KMutableProperty1<T, V>, KMutablePropertyInternal<V> {
 
     override fun toString(): String {
         return "var $name: $javaField"
     }
 
-    override fun asPropertyFor(instanceClass: Class<*>)
-        = JavaMutableProperty<T, V>(javaField, instanceClass)
+    override fun asPropertyFor(instanceClass: Class<*>) =
+        JavaMutableProperty<T, V>(javaField, instanceClass)
 
     override fun withJavaAccessors(getter: Method, setter: Method) = this
     override fun withJavaSetter(setter: Method) = this
@@ -28,7 +28,8 @@ class JavaMutableProperty<T, V>(javaField: Field, instanceClass: Class<*>)
     override val javaSetter: Method? get() = null
 
     override val setter: KMutableProperty1.Setter<T, V> = Setter(
-        name = "<set-${javaField.name}>", property = this
+        name = "<set-${javaField.name}>",
+        property = this
     )
 
     override fun set(receiver: T, value: V) {

@@ -22,7 +22,6 @@ class KafkaTopicUtilsTest {
     private lateinit var topicResult: CreateTopicsResult
     private lateinit var kafkaFuture: KafkaFuture<Void>
 
-
     @BeforeEach
     fun beforeEach() {
         adminClient = mock()
@@ -74,6 +73,6 @@ class KafkaTopicUtilsTest {
                 }
             }
         ]
-    """.trimIndent()
+        """.trimIndent()
     )
 }

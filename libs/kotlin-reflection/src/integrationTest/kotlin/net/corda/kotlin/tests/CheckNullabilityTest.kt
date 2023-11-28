@@ -11,8 +11,8 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.ArgumentsProvider
 import org.junit.jupiter.params.provider.ArgumentsSource
-import java.util.concurrent.TimeUnit.MINUTES
 import java.util.Locale
+import java.util.concurrent.TimeUnit.MINUTES
 import java.util.stream.Stream
 
 @Timeout(5, unit = MINUTES)
@@ -67,7 +67,7 @@ class CheckNullabilityTest {
     @ArgumentsSource(ExtendedKotlinApiPropertyProvider::class)
     fun testKotlinExampleProperties(propertyName: String, isNullable: Boolean) {
         val property = KotlinExample::class.kotlinClass.declaredMemberProperties.find { it.name == propertyName }
-                ?: fail("Property $propertyName not found")
+            ?: fail("Property $propertyName not found")
         assertEquals(isNullable, property.returnType.isMarkedNullable)
     }
 
@@ -78,7 +78,7 @@ class CheckNullabilityTest {
         assertNull(KotlinExample::class.kotlinClass.declaredMemberProperties.find { it.name == propertyName })
         val getter = KotlinExample::class.java.getMethod("get${propertyName.capitalise()}")
         val property = getter.declaringClass.kotlinClass.findPropertyForGetter(getter)
-                ?: fail("Property $propertyName not found")
+            ?: fail("Property $propertyName not found")
         assertEquals(isNullable, property.returnType.isMarkedNullable)
     }
 
@@ -87,7 +87,7 @@ class CheckNullabilityTest {
     @ArgumentsSource(ExtendedKotlinApiPropertyProvider::class)
     fun testJavaExampleProperties(propertyName: String, isNullable: Boolean) {
         val property = JavaExample::class.kotlinClass.declaredMemberProperties.find { it.name == propertyName }
-                ?: fail("Property $propertyName not found")
+            ?: fail("Property $propertyName not found")
         assertEquals(isNullable, property.returnType.isMarkedNullable)
     }
 
@@ -98,7 +98,7 @@ class CheckNullabilityTest {
         assertNull(JavaExample::class.kotlinClass.declaredMemberProperties.find { it.name == propertyName })
         val getter = JavaExample::class.java.getMethod("get${propertyName.capitalise()}")
         val property = getter.declaringClass.kotlinClass.findPropertyForGetter(getter)
-                ?: fail("Property $propertyName not found")
+            ?: fail("Property $propertyName not found")
         assertEquals(isNullable, property.returnType.isMarkedNullable)
     }
 
@@ -107,7 +107,7 @@ class CheckNullabilityTest {
     @ArgumentsSource(MemberPropertyProvider::class)
     fun testKotlinExampleMemberProperties(propertyName: String, isNullable: Boolean) {
         val property = KotlinExample::class.kotlinClass.memberProperties.find { it.name == propertyName }
-                ?: fail("Property $propertyName not found")
+            ?: fail("Property $propertyName not found")
         assertEquals(isNullable, property.returnType.isMarkedNullable)
     }
 
@@ -116,7 +116,7 @@ class CheckNullabilityTest {
     @ArgumentsSource(MemberPropertyProvider::class)
     fun testJavaExampleMemberProperties(propertyName: String, isNullable: Boolean) {
         val property = JavaExample::class.kotlinClass.memberProperties.find { it.name == propertyName }
-                ?: fail("Property $propertyName not found")
+            ?: fail("Property $propertyName not found")
         assertEquals(isNullable, property.returnType.isMarkedNullable)
     }
 }

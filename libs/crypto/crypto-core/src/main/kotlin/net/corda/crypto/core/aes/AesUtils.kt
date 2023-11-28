@@ -1,9 +1,9 @@
 package net.corda.crypto.core.aes
 
 import net.corda.crypto.core.ManagedSecret
+import net.corda.crypto.utils.hmac
 import net.corda.v5.crypto.MessageAuthenticationCode
 import java.io.InputStream
-import net.corda.crypto.utils.hmac
 
 const val HMAC_DEFAULT_ALGORITHM = MessageAuthenticationCode.HMAC_SHA256_ALGORITHM
 
@@ -38,5 +38,5 @@ fun ManagedSecret.hmac512Of(inputStream: InputStream): ByteArray =
 /**
  * Calculates HMAC of the [inputStream] [InputStream] using provided algorithm.
  */
-fun ManagedSecret.hmacOf(inputStream : InputStream, algorithm: String= HMAC_DEFAULT_ALGORITHM): ByteArray =
+fun ManagedSecret.hmacOf(inputStream: InputStream, algorithm: String = HMAC_DEFAULT_ALGORITHM): ByteArray =
     inputStream.hmac(secret, algorithm)

@@ -79,7 +79,7 @@ fun generateErrorEvent(
  * @return A new SessionState with a status of ERROR and an Error SessionEvent queued to send.
  */
 fun generateErrorSessionStateFromSessionEvent(errorMessage: String, sessionEvent: SessionEvent, errorType: String, instant: Instant):
-        SessionState {
+    SessionState {
     val sessionState = SessionState.newBuilder()
         .setSessionId(sessionEvent.sessionId)
         .setSessionStartTime(instant)
@@ -110,12 +110,12 @@ fun recalcHighWatermark(sortedEvents: List<SessionEvent>, lastProcessedSeqNum: I
             nextSeqNum++
         } else if (undeliveredMessage.sequenceNum < nextSeqNum) {
             continue
-        }  else {
+        } else {
             break
         }
     }
 
-    return nextSeqNum-1
+    return nextSeqNum - 1
 }
 
 /**

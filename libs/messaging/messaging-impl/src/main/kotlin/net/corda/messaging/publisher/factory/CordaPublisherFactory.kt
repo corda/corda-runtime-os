@@ -52,7 +52,6 @@ class CordaPublisherFactory @Activate constructor(
         rpcConfig: RPCConfig<REQUEST, RESPONSE>,
         messagingConfig: SmartConfig
     ): RPCSender<REQUEST, RESPONSE> {
-
         val configResolver = MessagingConfigResolver(messagingConfig.factory)
         val subscriptionConfig = SubscriptionConfig(rpcConfig.groupName, rpcConfig.requestTopic)
         val config = configResolver.buildSubscriptionConfig(

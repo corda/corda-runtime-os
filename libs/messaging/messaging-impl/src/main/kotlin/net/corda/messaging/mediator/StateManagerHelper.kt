@@ -53,9 +53,11 @@ class StateManagerHelper<K : Any, S : Any, E : Any>(
             val failedStatesKeys = stateManager.create(newStates).keys
             if (failedStatesKeys.isNotEmpty()) {
                 val latestStatesValues = stateManager.get(failedStatesKeys)
-                latestValuesForFailedStates.putAll(failedStatesKeys.associateWith { key ->
-                    latestStatesValues[key]
-                })
+                latestValuesForFailedStates.putAll(
+                    failedStatesKeys.associateWith { key ->
+                        latestStatesValues[key]
+                    }
+                )
             }
         }
         if (existingStateTasks.isNotEmpty()) {

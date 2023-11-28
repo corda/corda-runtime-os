@@ -39,7 +39,7 @@ class MerkleProofImpl(
         if (digest !is MerkleTreeHashDigestProvider) {
             throw CordaRuntimeException(
                 "An instance of MerkleTreeHashDigestProvider is required when " +
-                        "verifying a Merkle root, but received ${digest.javaClass.name} instead."
+                    "verifying a Merkle root, but received ${digest.javaClass.name} instead."
             )
         }
 
@@ -70,12 +70,12 @@ class MerkleProofImpl(
             var index = 0
             while (index < nodeHashes.size) {
                 val item = nodeHashes[index]
-                if (item.first < currentSize and 0x7FFFFFFE) {      // If the level has odd elements, we'll process
-                                                                    // the last element later.
-                    if (index < nodeHashes.size - 1) {              // If there is a next element...
+                if (item.first < currentSize and 0x7FFFFFFE) { // If the level has odd elements, we'll process
+                    // the last element later.
+                    if (index < nodeHashes.size - 1) { // If there is a next element...
                         val next = nodeHashes[index + 1]
-                        if (item.first xor next.first == 1) {       // ... and they are a pair with the current
-                            newItems += Pair(                       // in the original tree, we create their parent.
+                        if (item.first xor next.first == 1) { // ... and they are a pair with the current
+                            newItems += Pair( // in the original tree, we create their parent.
                                 item.first / 2,
                                 digest.nodeHash(treeDepth, item.second, next.second)
                             )
@@ -83,25 +83,25 @@ class MerkleProofImpl(
                             continue
                         }
                     }
-                    if (hashIndex >= hashes.size) {                 // We'll need one more hash to continue. So if
-                        throw MerkleProofRebuildFailureException(   // we do not have more, the proof is incorrect.
+                    if (hashIndex >= hashes.size) { // We'll need one more hash to continue. So if
+                        throw MerkleProofRebuildFailureException( // we do not have more, the proof is incorrect.
                             "MerkleProof root calculation requires more hashes than the proof has."
                         )
                     }
-                                                                    // We pair the current element with a
-                                                                    // hash from the proof
-                    newItems += if ((item.first and 1) == 0) {      // Even index means, that the item is on the left
+                    // We pair the current element with a
+                    // hash from the proof
+                    newItems += if ((item.first and 1) == 0) { // Even index means, that the item is on the left
                         Pair(
                             item.first / 2,
                             digest.nodeHash(treeDepth, item.second, hashes[hashIndex++])
                         )
-                    } else {                                        // Odd index means, that the item is on the right
+                    } else { // Odd index means, that the item is on the right
                         Pair(
                             item.first / 2,
                             digest.nodeHash(treeDepth, hashes[hashIndex++], item.second)
                         )
                     }
-                } else {                                            // The last odd element, just gets lifted.
+                } else { // The last odd element, just gets lifted.
                     newItems += Pair((item.first + 1) / 2, item.second)
                 }
                 ++index

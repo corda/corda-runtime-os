@@ -13,21 +13,24 @@ class LiquibaseSchemaMigratorImplTest {
     val cl1 = ClassloaderChangeLog(
         linkedSetOf(
             ClassloaderChangeLog.ChangeLogResourceFiles(
-                this.javaClass.packageName, listOf("migration/db.changelog-master.xml")
+                this.javaClass.packageName,
+                listOf("migration/db.changelog-master.xml")
             ),
             ClassloaderChangeLog.ChangeLogResourceFiles(
-                this.javaClass.packageName, listOf("migration/db.changelog-master2.xml"), this.javaClass.classLoader
+                this.javaClass.packageName,
+                listOf("migration/db.changelog-master2.xml"),
+                this.javaClass.classLoader
             )
         )
     )
     val cl2 = ClassloaderChangeLog(
         linkedSetOf(
             ClassloaderChangeLog.ChangeLogResourceFiles(
-                this.javaClass.packageName, listOf("migration/db.changelog-master3.xml")
+                this.javaClass.packageName,
+                listOf("migration/db.changelog-master3.xml")
             ),
         )
     )
-
 
     @AfterEach
     fun `clear db`() {
@@ -57,8 +60,11 @@ class LiquibaseSchemaMigratorImplTest {
 
         assertThat(tables).containsAll(
             listOf(
-                "public.test_table", "public.another_table", "public.generic_table",
-                "public.databasechangelog", "public.databasechangeloglock",
+                "public.test_table",
+                "public.another_table",
+                "public.generic_table",
+                "public.databasechangelog",
+                "public.databasechangeloglock",
                 "another_schema.test_table_in_other_schema"
             )
         )
@@ -163,5 +169,4 @@ class LiquibaseSchemaMigratorImplTest {
         )
         lbm.updateDb(ds.connection, cl)
     }
-
 }

@@ -29,7 +29,7 @@ internal class Registration(
     private val registeringCoordinator: LifecycleCoordinatorInternal
 ) : RegistrationHandle {
 
-    private  companion object {
+    private companion object {
         val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
@@ -50,7 +50,6 @@ internal class Registration(
      */
     private val lock = ReentrantLock()
 
-
     /**
      * Update this registration with the status of one of the coordinators.
      *
@@ -70,7 +69,7 @@ internal class Registration(
             val newState = currentStatus
             if (!isClosed.get() && oldState != newState) {
                 val message = "Coordinator ${registeringCoordinator.name} received RegistrationStatusChangeEvent $newState due to " +
-                        "${coordinator.name} changing to state $status"
+                    "${coordinator.name} changing to state $status"
                 if (newState == LifecycleStatus.ERROR) { logger.warn(message) } else { logger.info(message) }
                 registeringCoordinator.postEvent(RegistrationStatusChangeEvent(this, newState))
             }
@@ -120,6 +119,6 @@ internal class Registration(
 
     override fun toString(): String {
         return "Registration(registeringCoordinator=${registeringCoordinator.name}," +
-                "coordinators=${coordinators.map { it.name }.joinToString()})"
+            "coordinators=${coordinators.map { it.name }.joinToString()})"
     }
 }

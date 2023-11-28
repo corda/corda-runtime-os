@@ -23,7 +23,7 @@ class DbBusConfigMergerImplTest {
     }
 
     @Test
-    fun `empty messaging config can be merged with boot config`(){
+    fun `empty messaging config can be merged with boot config`() {
         val bootConfig = loadTestConfig()
         val messagingConfig = smartConfigFactory.create(ConfigFactory.empty())
 
@@ -32,11 +32,15 @@ class DbBusConfigMergerImplTest {
     }
 
     @Test
-    fun `existing messaging config can be merged with boot config`(){
+    fun `existing messaging config can be merged with boot config`() {
         val bootConfig = loadTestConfig()
-        val messagingConfig = smartConfigFactory.create(ConfigFactory.parseMap(mapOf(
-            "db.bus.busType" to "UNKNOWN"
-        )))
+        val messagingConfig = smartConfigFactory.create(
+            ConfigFactory.parseMap(
+                mapOf(
+                    "db.bus.busType" to "UNKNOWN"
+                )
+            )
+        )
 
         val result = merger.getMessagingConfig(bootConfig, messagingConfig)
         assertResultingConfig(result)

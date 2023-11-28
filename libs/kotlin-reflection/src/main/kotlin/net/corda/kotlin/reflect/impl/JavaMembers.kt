@@ -117,7 +117,7 @@ class JavaMembers<T : Any>(
                     ?.extractDeclaredAccessorsFrom(declaredMemberMethods)
                     ?.asPropertyFor(clazz)
             } + declaredFields.map<Field, KProperty1<T, Any?>> { clazz.createProperty(it) }
-        ) as Collection<KProperty1<T, *>>
+            ) as Collection<KProperty1<T, *>>
 
         val accessors = LinkedList<KFunctionInternal<*>>()
 
@@ -128,7 +128,7 @@ class JavaMembers<T : Any>(
                     unionOf(declaredMemberMethods, memberMethods)
                 )?.asPropertyFor(clazz)
             }
-        ).onEach { property ->
+            ).onEach { property ->
             (property as? KPropertyInternal<*>)?.acceptIncompleteAccessors(accessors)
         } as Collection<KProperty1<T, *>>
 
@@ -139,7 +139,7 @@ class JavaMembers<T : Any>(
                     unionOf(declaredMemberMethods, memberMethods)
                 )?.asPropertyFor(clazz)
             }
-        ).onEach { property ->
+            ).onEach { property ->
             (property as? KPropertyInternal<*>)?.acceptJavaAccessors(accessors)
         } as Collection<KProperty2<T, *, *>>
 
@@ -160,13 +160,13 @@ class JavaMembers<T : Any>(
             } + inheritedExtensionFunctions.mapNotNull { function ->
                 (function as? KFunctionInternal<*>)?.captureFor(clazz)
             }
-        ).map { function ->
+            ).map { function ->
             function.asFunctionFor(clazz, isExtension = false)
         } + declaredMemberMethods.values.map { JavaFunction(it, clazz) }
 
         inheritedFunctions = (
             superMemberFunctions + accessors
-        ).map { function ->
+            ).map { function ->
             (function as? KFunctionInternal<*>)?.asFunctionFor(clazz, isExtension = false) ?: function
         }
 

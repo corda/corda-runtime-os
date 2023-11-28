@@ -62,11 +62,11 @@ object SerializerFactoryBuilder {
     @Suppress("ThrowsCount")
     private fun getBundles(): List<Any> {
         val bundle = getBundle?.invoke(this::class.java)
-                ?: throw NullPointerException("Class has no bundle.")
+            ?: throw NullPointerException("Class has no bundle.")
         val bundleContext = getBundleContext?.invoke(bundle)
-                ?: throw NullPointerException("Bundle has no context.")
+            ?: throw NullPointerException("Bundle has no context.")
         val bundles = getBundles?.invoke(bundleContext)
-                ?: throw NullPointerException("Context has no bundles.")
+            ?: throw NullPointerException("Context has no bundles.")
         @Suppress("unchecked_cast")
         return (bundles as Array<Any>).toList()
     }
@@ -75,19 +75,22 @@ object SerializerFactoryBuilder {
      * The standard mapping of Java object types to Java primitive types.
      */
     @Suppress("unchecked_cast")
-    private val javaPrimitiveTypes: Map<Class<*>, Class<*>> = unmodifiableMap(listOf(
-        Boolean::class,
-        Byte::class,
-        Char::class,
-        Double::class,
-        Float::class,
-        Int::class,
-        Long::class,
-        Short::class,
-        Void::class
-    ).associate {
-        klazz -> klazz.javaObjectType to klazz.javaPrimitiveType
-    }) as Map<Class<*>, Class<*>>
+    private val javaPrimitiveTypes: Map<Class<*>, Class<*>> = unmodifiableMap(
+        listOf(
+            Boolean::class,
+            Byte::class,
+            Char::class,
+            Double::class,
+            Float::class,
+            Int::class,
+            Long::class,
+            Short::class,
+            Void::class
+        ).associate {
+                klazz ->
+            klazz.javaObjectType to klazz.javaPrimitiveType
+        }
+    ) as Map<Class<*>, Class<*>>
 
     @JvmStatic
     fun build(sandboxGroup: SandboxGroup): SerializerFactory {
@@ -104,30 +107,33 @@ object SerializerFactoryBuilder {
     @Suppress("LongParameterList")
     @JvmStatic
     fun build(
-            sandboxGroup: SandboxGroup,
-            descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
-                    DefaultDescriptorBasedSerializerRegistry(),
-            allowEvolution: Boolean = true,
-            overrideFingerPrinter: FingerPrinter? = null,
-            onlyCustomSerializers: Boolean = false,
-            mustPreserveDataWhenEvolving: Boolean = false): SerializerFactory {
+        sandboxGroup: SandboxGroup,
+        descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
+            DefaultDescriptorBasedSerializerRegistry(),
+        allowEvolution: Boolean = true,
+        overrideFingerPrinter: FingerPrinter? = null,
+        onlyCustomSerializers: Boolean = false,
+        mustPreserveDataWhenEvolving: Boolean = false
+    ): SerializerFactory {
         return makeFactory(
-                sandboxGroup,
-                descriptorBasedSerializerRegistry,
-                allowEvolution,
-                overrideFingerPrinter,
-                onlyCustomSerializers,
-                mustPreserveDataWhenEvolving)
+            sandboxGroup,
+            descriptorBasedSerializerRegistry,
+            allowEvolution,
+            overrideFingerPrinter,
+            onlyCustomSerializers,
+            mustPreserveDataWhenEvolving
+        )
     }
 
     @Suppress("LongParameterList")
     private fun makeFactory(
-                            sandboxGroup: SandboxGroup,
-                            descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
-                            allowEvolution: Boolean,
-                            overrideFingerPrinter: FingerPrinter?,
-                            onlyCustomSerializers: Boolean,
-                            mustPreserveDataWhenEvolving: Boolean): SerializerFactory {
+        sandboxGroup: SandboxGroup,
+        descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
+        allowEvolution: Boolean,
+        overrideFingerPrinter: FingerPrinter?,
+        onlyCustomSerializers: Boolean,
+        mustPreserveDataWhenEvolving: Boolean
+    ): SerializerFactory {
         val customSerializerRegistry = CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry, sandboxGroup)
 
         val typeModelConfiguration = LocalTypeModelConfigurationImpl(customSerializerRegistry)
@@ -150,29 +156,34 @@ object SerializerFactoryBuilder {
 
         val typeLoader: TypeLoader = ClassTypeLoader()
 
-        val evolutionSerializerFactory = if (allowEvolution) DefaultEvolutionSerializerFactory(
+        val evolutionSerializerFactory = if (allowEvolution) {
+            DefaultEvolutionSerializerFactory(
                 localSerializerFactory,
                 mustPreserveDataWhenEvolving,
                 javaPrimitiveTypes,
                 typeModelConfiguration.baseTypes
-        ) else NoEvolutionSerializerFactory
+            )
+        } else {
+            NoEvolutionSerializerFactory
+        }
 
         val remoteSerializerFactory = DefaultRemoteSerializerFactory(
-                evolutionSerializerFactory,
-                descriptorBasedSerializerRegistry,
-                AMQPRemoteTypeModel(),
-                localTypeModel,
-                typeLoader,
-                localSerializerFactory)
+            evolutionSerializerFactory,
+            descriptorBasedSerializerRegistry,
+            AMQPRemoteTypeModel(),
+            localTypeModel,
+            typeLoader,
+            localSerializerFactory
+        )
 
         return ComposedSerializerFactory(localSerializerFactory, remoteSerializerFactory, customSerializerRegistry)
     }
-
 }
 
 object NoEvolutionSerializerFactory : EvolutionSerializerFactory {
     override fun getEvolutionSerializer(remote: RemoteTypeInformation, local: LocalTypeInformation): AMQPSerializer<Any> {
-        throw NotSerializableException("""
+        throw NotSerializableException(
+            """
 Evolution not permitted.
 
 Remote:
@@ -180,7 +191,8 @@ ${remote.prettyPrint(false)}
 
 Local:
 ${local.prettyPrint(false)}
-        """)
+        """
+        )
     }
 
     override val primitiveTypes: Map<Class<*>, Class<*>> = emptyMap()

@@ -44,8 +44,12 @@ internal class DurableSubscriptionImpl<K : Any, V : Any>(
 ) : Subscription<K, V> {
 
     private val subscription = EventLogSubscriptionImpl(
-        config, cordaConsumerBuilder, cordaProducerBuilder,
-        ForwardingEventLogProcessor(processor), partitionAssignmentListener, lifecycleCoordinatorFactory
+        config,
+        cordaConsumerBuilder,
+        cordaProducerBuilder,
+        ForwardingEventLogProcessor(processor),
+        partitionAssignmentListener,
+        lifecycleCoordinatorFactory
     )
 
     override val subscriptionName: LifecycleCoordinatorName
@@ -77,5 +81,4 @@ internal class DurableSubscriptionImpl<K : Any, V : Any>(
         override val valueClass: Class<V>
             get() = durableProcessor.valueClass
     }
-
 }

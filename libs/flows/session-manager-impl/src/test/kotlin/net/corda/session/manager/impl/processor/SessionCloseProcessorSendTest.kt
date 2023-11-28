@@ -27,7 +27,11 @@ class SessionCloseProcessorSendTest {
         )
 
         val inputState = buildSessionState(
-            SessionStateType.ERROR, 0, emptyList(), 0, mutableListOf()
+            SessionStateType.ERROR,
+            0,
+            emptyList(),
+            0,
+            mutableListOf()
         )
 
         val result = SessionCloseProcessorSend("key", inputState, sessionEvent, Instant.now()).execute()
@@ -48,7 +52,11 @@ class SessionCloseProcessorSendTest {
         )
 
         val inputState = buildSessionState(
-            SessionStateType.CONFIRMED, 0, mutableListOf(SessionEvent()), 0, mutableListOf()
+            SessionStateType.CONFIRMED,
+            0,
+            mutableListOf(SessionEvent()),
+            0,
+            mutableListOf()
         )
 
         val result = SessionCloseProcessorSend("key", inputState, sessionEvent, Instant.now()).execute()
@@ -100,7 +108,11 @@ class SessionCloseProcessorSendTest {
         )
 
         val inputState = buildSessionState(
-            SessionStateType.CREATED, 0, mutableListOf(), 0, mutableListOf()
+            SessionStateType.CREATED,
+            0,
+            mutableListOf(),
+            0,
+            mutableListOf()
         )
 
         val result = SessionCloseProcessorSend("key", inputState, sessionEvent, Instant.now()).execute()
@@ -121,7 +133,11 @@ class SessionCloseProcessorSendTest {
         )
 
         val inputState = buildSessionState(
-            SessionStateType.CLOSED, 0, mutableListOf(), 0, mutableListOf()
+            SessionStateType.CLOSED,
+            0,
+            mutableListOf(),
+            0,
+            mutableListOf()
         )
 
         val result = SessionCloseProcessorSend("key", inputState, sessionEvent, Instant.now()).execute()
@@ -139,7 +155,11 @@ class SessionCloseProcessorSendTest {
         )
 
         val inputState = buildSessionState(
-            SessionStateType.CLOSING, 0, mutableListOf(sessionEvent), 0, mutableListOf()
+            SessionStateType.CLOSING,
+            0,
+            mutableListOf(sessionEvent),
+            0,
+            mutableListOf()
         )
 
         val result = SessionCloseProcessorSend("key", inputState, sessionEvent, Instant.now()).execute()
@@ -147,7 +167,6 @@ class SessionCloseProcessorSendTest {
         assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(0)
         result.sendEventsState.undeliveredMessages.isEmpty()
     }
-
 
     @Test
     fun `Send close when status is already CLOSING due to close sent does not modify session state`() {
@@ -160,7 +179,11 @@ class SessionCloseProcessorSendTest {
         )
 
         val inputState = buildSessionState(
-            SessionStateType.CLOSING, 0, mutableListOf(), 0, mutableListOf(sessionEvent)
+            SessionStateType.CLOSING,
+            0,
+            mutableListOf(),
+            0,
+            mutableListOf(sessionEvent)
         )
 
         val result = SessionCloseProcessorSend("key", inputState, sessionEvent, Instant.now()).execute()

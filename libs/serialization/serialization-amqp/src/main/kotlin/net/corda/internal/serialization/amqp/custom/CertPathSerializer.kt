@@ -27,8 +27,8 @@ class CertPathSerializer : BaseProxySerializer<CertPath, CertPathSerializer.Cert
     data class CertPathProxy(val type: String, val encoded: ByteArray) {
         override fun hashCode() = (type.hashCode() * 31) + encoded.contentHashCode()
         override fun equals(other: Any?): Boolean {
-            return (this === other)
-                || (other is CertPathProxy && (type == other.type && encoded.contentEquals(other.encoded)))
+            return (this === other) ||
+                (other is CertPathProxy && (type == other.type && encoded.contentEquals(other.encoded)))
         }
     }
 }

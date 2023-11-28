@@ -42,8 +42,7 @@ class SessionManagerImpl @Activate constructor(
 
     private val chunkDeserializerService = messagingChunkFactory.createChunkDeserializerService(ByteArray::class.java)
 
-    override fun processMessageReceived(key: Any, sessionState: SessionState?, event: SessionEvent, instant: Instant):
-            SessionState {
+    override fun processMessageReceived(key: Any, sessionState: SessionState?, event: SessionEvent, instant: Instant): SessionState {
         val updatedSessionState = sessionState?.apply {
             lastReceivedMessageTime = instant
         }
@@ -68,17 +67,17 @@ class SessionManagerImpl @Activate constructor(
         instant: Instant,
         initialStatus: SessionStateType,
     ): SessionState = SessionState.newBuilder()
-            .setSessionId(sessionId)
-            .setSessionStartTime(instant)
-            .setLastReceivedMessageTime(instant)
-            .setCounterpartyIdentity(counterparty)
-            .setReceivedEventsState(SessionProcessState(0, mutableListOf()))
-            .setSendEventsState(SessionProcessState(0, mutableListOf()))
-            .setSessionProperties(contextSessionProperties)
-            .setStatus(initialStatus)
-            .setHasScheduledCleanup(false)
-            .setRequireClose(contextSessionProperties.toMap()[Constants.FLOW_SESSION_REQUIRE_CLOSE].toBoolean())
-            .build()
+        .setSessionId(sessionId)
+        .setSessionStartTime(instant)
+        .setLastReceivedMessageTime(instant)
+        .setCounterpartyIdentity(counterparty)
+        .setReceivedEventsState(SessionProcessState(0, mutableListOf()))
+        .setSendEventsState(SessionProcessState(0, mutableListOf()))
+        .setSessionProperties(contextSessionProperties)
+        .setStatus(initialStatus)
+        .setHasScheduledCleanup(false)
+        .setRequireClose(contextSessionProperties.toMap()[Constants.FLOW_SESSION_REQUIRE_CLOSE].toBoolean())
+        .build()
 
     override fun getNextReceivedEvent(sessionState: SessionState): SessionEvent? {
         val receivedEvents = sessionState.receivedEventsState ?: return null
@@ -86,13 +85,13 @@ class SessionManagerImpl @Activate constructor(
         val status = sessionState.status
         val incorrectSessionState = status == SessionStateType.CREATED || status == SessionStateType.ERROR
         return when {
-            //must be an active session
+            // must be an active session
             undeliveredMessages.isEmpty() -> null
-            //don't allow data messages to be consumed when session is not fully established or if there is an error
+            // don't allow data messages to be consumed when session is not fully established or if there is an error
             incorrectSessionState -> null
-            //only allow client to see a close message after the session is closed
+            // only allow client to see a close message after the session is closed
             status != SessionStateType.CLOSED && undeliveredMessages.first().payload is SessionClose -> null
-            //return the next valid message
+            // return the next valid message
             undeliveredMessages.first().sequenceNum <= receivedEvents.lastProcessedSequenceNum -> {
                 val nextMessage = undeliveredMessages.first()
                 val nextMessagePayload = nextMessage.payload
@@ -144,9 +143,9 @@ class SessionManagerImpl @Activate constructor(
         if (sessionEvents.isNotEmpty()) {
             logger.debug {
                 "Dispatching events for session [${sessionState.sessionId}]: " +
-                        sessionEvents.joinToString {
-                            "[Sequence: ${it.sequenceNum}, Class: ${it.payload::class.java.simpleName}, Resend timestamp: ${it.timestamp}]"
-                        }
+                    sessionEvents.joinToString {
+                        "[Sequence: ${it.sequenceNum}, Class: ${it.payload::class.java.simpleName}, Resend timestamp: ${it.timestamp}]"
+                    }
             }
         } else {
             logger.debug {
@@ -179,7 +178,7 @@ class SessionManagerImpl @Activate constructor(
         val sessionTimeoutTimestamp = lastReceivedMessageTime.plusMillis(config.getLong(FlowConfig.SESSION_TIMEOUT_WINDOW))
 
         return if (instant > sessionTimeoutTimestamp) {
-            //send an error if the session has timed out
+            // send an error if the session has timed out
             val updatedSessionState = errorSession(sessionState)
             val (initiatingIdentity, initiatedIdentity) = getInitiatingAndInitiatedParties(updatedSessionState, identity)
             listOf(
@@ -195,8 +194,9 @@ class SessionManagerImpl @Activate constructor(
                     this.initiatingIdentity = initiatingIdentity
                 }
             )
-
-        } else sessionEvents
+        } else {
+            sessionEvents
+        }
     }
 
     /**
@@ -206,7 +206,7 @@ class SessionManagerImpl @Activate constructor(
      * @return Pair with initiating party as the first identity, initiated party as the second identity
      */
     private fun getInitiatingAndInitiatedParties(sessionState: SessionState, identity: HoldingIdentity):
-            Pair<HoldingIdentity, HoldingIdentity> {
+        Pair<HoldingIdentity, HoldingIdentity> {
         return if (sessionState.sessionId.contains(Constants.INITIATED_SESSION_ID_SUFFIX)) {
             Pair(sessionState.counterpartyIdentity, identity)
         } else {
@@ -268,7 +268,9 @@ class SessionManagerImpl @Activate constructor(
                 }
                 sessionEvent
             }
-        } else null
+        } else {
+            null
+        }
     }
 
     /**

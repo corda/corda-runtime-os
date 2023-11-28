@@ -12,7 +12,7 @@ class BraveBatchPublishTracing(
 ) : BatchPublishTracing {
     private val batchSpans = mutableListOf<Span>()
 
-    override fun begin(recordHeaders: List<List<Pair<String,String>>>) {
+    override fun begin(recordHeaders: List<List<Pair<String, String>>>) {
         // Ensure any repeat calls to begin abandon any existing spans
         batchSpans.forEach { it.abandon() }
         batchSpans.clear()
@@ -22,17 +22,17 @@ class BraveBatchPublishTracing(
         // the incoming batch can contain messages with different trace contexts.
         batchSpans.addAll(
             recordHeaders.map(tracingContextExtractor::extract)
-            .filter { it.context() != null }
-            .groupBy { ctx ->
-                ctx.context().traceId()
-            }.map { (_, traceContexts) ->
-                tracer.nextSpan(traceContexts.first())
-                    .name("Send Batch - $clientId")
-                    .tag("send.client.id",clientId)
-                    .tag("send.batch.size", traceContexts.size.toString())
-                    .tag("send.batch.parent.size", recordHeaders.size.toString())
-                    .start()
-            }
+                .filter { it.context() != null }
+                .groupBy { ctx ->
+                    ctx.context().traceId()
+                }.map { (_, traceContexts) ->
+                    tracer.nextSpan(traceContexts.first())
+                        .name("Send Batch - $clientId")
+                        .tag("send.client.id", clientId)
+                        .tag("send.batch.size", traceContexts.size.toString())
+                        .tag("send.batch.parent.size", recordHeaders.size.toString())
+                        .start()
+                }
         )
     }
 

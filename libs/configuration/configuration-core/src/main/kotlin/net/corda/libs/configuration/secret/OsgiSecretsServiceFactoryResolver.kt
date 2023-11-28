@@ -18,7 +18,7 @@ import org.osgi.service.component.annotations.ReferenceCardinality
 )
 class OsgiSecretsServiceFactoryResolver @Activate constructor(
     private val componentContext: ComponentContext
-)    : SecretsServiceFactoryResolver {
+) : SecretsServiceFactoryResolver {
 
     companion object {
         const val SECRETS_SERVICE_FACTORY_SERVICE_NAME = "SecretsServiceFactories"

@@ -65,6 +65,7 @@ class CpiUploadManagerFactoryImpl : CpiUploadManagerFactory {
             publisher,
             subscription,
             ackProcessor,
-            messagingConfig.getInt(MessagingConfig.MAX_ALLOWED_MSG_SIZE))
+            messagingConfig.getInt(MessagingConfig.MAX_ALLOWED_MSG_SIZE)
+        )
     }
 }

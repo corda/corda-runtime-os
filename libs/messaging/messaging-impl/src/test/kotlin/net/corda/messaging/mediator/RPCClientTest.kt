@@ -89,7 +89,6 @@ class RPCClientTest {
             get() = Mocks(mockSerializer, mockDeserializer, mockHttpClient, mockHttpResponse, mockDigestService)
     }
 
-
     private fun createClient(
         mocks: Mocks,
         onSerializationError: (ByteArray) -> Unit = mock(),

@@ -1,6 +1,6 @@
 package net.corda.serialization
 
-interface InternalCustomSerializer<T>  {
+interface InternalCustomSerializer<T> {
     val type: Class<T>
 
     /**

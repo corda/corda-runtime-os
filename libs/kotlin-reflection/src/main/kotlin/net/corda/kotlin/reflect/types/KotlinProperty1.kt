@@ -1,15 +1,5 @@
 package net.corda.kotlin.reflect.types
 
-import java.lang.reflect.Field
-import java.lang.reflect.Method
-import java.util.Collections.singletonList
-import java.util.Objects
-import kotlin.reflect.KParameter
-import kotlin.reflect.KParameter.Kind.INSTANCE
-import kotlin.reflect.KProperty1
-import kotlin.reflect.KType
-import kotlin.reflect.KTypeParameter
-import kotlin.reflect.KVisibility
 import kotlinx.metadata.KmProperty
 import kotlinx.metadata.KmPropertyAccessorAttributes
 import kotlinx.metadata.isConst
@@ -21,6 +11,16 @@ import kotlinx.metadata.jvm.fieldSignature
 import kotlinx.metadata.jvm.getterSignature
 import kotlinx.metadata.modality
 import kotlinx.metadata.visibility
+import java.lang.reflect.Field
+import java.lang.reflect.Method
+import java.util.Collections.singletonList
+import java.util.Objects
+import kotlin.reflect.KParameter
+import kotlin.reflect.KParameter.Kind.INSTANCE
+import kotlin.reflect.KProperty1
+import kotlin.reflect.KType
+import kotlin.reflect.KTypeParameter
+import kotlin.reflect.KVisibility
 
 @Suppress("LongParameterList")
 open class KotlinProperty1<T, V> protected constructor(
@@ -137,10 +137,11 @@ open class KotlinProperty1<T, V> protected constructor(
     override fun equals(other: Any?): Boolean {
         return when {
             other === this -> true
-            other !is KotlinProperty1<*,*> || other::class != this::class -> false
-            else -> name == other.name
-                    && javaField == other.javaField
-                    && javaGetter == other.javaGetter
+            other !is KotlinProperty1<*, *> || other::class != this::class -> false
+            else ->
+                name == other.name &&
+                    javaField == other.javaField &&
+                    javaGetter == other.javaGetter
         }
     }
 

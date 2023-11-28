@@ -2,8 +2,8 @@ package net.corda.libs.configuration.validation.impl
 
 import com.networknt.schema.uri.URIFetcher
 import net.corda.libs.configuration.validation.ConfigurationSchemaFetchException
-import net.corda.schema.configuration.provider.ConfigSchemaException
 import net.corda.schema.common.provider.SchemaProvider
+import net.corda.schema.configuration.provider.ConfigSchemaException
 import java.io.InputStream
 import java.net.URI
 

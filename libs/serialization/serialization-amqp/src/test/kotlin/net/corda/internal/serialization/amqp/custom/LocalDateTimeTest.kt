@@ -9,14 +9,17 @@ class LocalDateTimeTest {
     fun min() {
         serializeDeserializeAssert(LocalDateTime.MIN)
     }
+
     @Test
     fun max() {
         serializeDeserializeAssert(LocalDateTime.MAX)
     }
+
     @Test
     fun year2000ThreePM() {
         serializeDeserializeAssert(LocalDateTime.of(2000, 1, 1, 15, 0))
     }
+
     @Test
     fun year3000ThreePM() {
         serializeDeserializeAssert(LocalDateTime.of(3000, 1, 1, 15, 0))

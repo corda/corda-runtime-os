@@ -33,7 +33,7 @@ import kotlin.LazyThreadSafetyMode.PUBLICATION
 open class ArraySerializer(override val type: Type, factory: LocalSerializerFactory) : AMQPSerializer<Any> {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
-        fun make(type: Type, factory: LocalSerializerFactory) : AMQPSerializer<Any> {
+        fun make(type: Type, factory: LocalSerializerFactory): AMQPSerializer<Any> {
             logger.debug { "Making array serializer, typename=${type.typeName}" }
             return when (type) {
                 Array<Char>::class.java -> CharArraySerializer(factory)
@@ -51,7 +51,7 @@ open class ArraySerializer(override val type: Type, factory: LocalSerializerFact
     //
     // We *need* to retain knowledge for AMQP deserialization whether that lowest primitive
     // was boxed or unboxed so just infer it recursively.
-    private fun calcTypeName(type: Type, debugOffset : Int = 0): String {
+    private fun calcTypeName(type: Type, debugOffset: Int = 0): String {
         logger.trace { "${"".padStart(debugOffset, ' ') }  calcTypeName - ${type.typeName}" }
 
         val componentType = type.componentType()
@@ -59,7 +59,7 @@ open class ArraySerializer(override val type: Type, factory: LocalSerializerFact
             // Special case handler for primitive byte arrays. This is needed because we can silently
             // coerce a byte[] to our own binary type. Normally, if the component type was itself an
             // array we'd keep walking down the chain but for byte[] stop here and use binary instead
-            val typeName =  if (AMQPTypeIdentifiers.isPrimitive(componentType)) {
+            val typeName = if (AMQPTypeIdentifiers.isPrimitive(componentType)) {
                 AMQPTypeIdentifiers.nameForType(componentType)
             } else {
                 calcTypeName(componentType, debugOffset + 4)
@@ -89,8 +89,13 @@ open class ArraySerializer(override val type: Type, factory: LocalSerializerFact
         }
     }
 
-    override fun writeObject(obj: Any, data: Data, type: Type, output: SerializationOutput,
-                             context: SerializationContext, debugIndent: Int
+    override fun writeObject(
+        obj: Any,
+        data: Data,
+        type: Type,
+        output: SerializationOutput,
+        context: SerializationContext,
+        debugIndent: Int
     ) {
         // Write described
         data.withDescribed(typeNotation.descriptor) {
@@ -102,14 +107,20 @@ open class ArraySerializer(override val type: Type, factory: LocalSerializerFact
         }
     }
 
-    override fun readObject(obj: Any, serializationSchemas: SerializationSchemas, metadata: Metadata,
-                            input: DeserializationInput, context: SerializationContext
+    override fun readObject(
+        obj: Any,
+        serializationSchemas: SerializationSchemas,
+        metadata: Metadata,
+        input: DeserializationInput,
+        context: SerializationContext
     ): Any {
         if (obj is List<*>) {
             return obj.map {
                 input.readObjectOrNull(redescribe(it, elementType), serializationSchemas, metadata, elementType, context)
             }.toArrayOfType(elementType)
-        } else throw AMQPNotSerializableException(type, "Expected a List but found $obj")
+        } else {
+            throw AMQPNotSerializableException(type, "Expected a List but found $obj")
+        }
     }
 
     open fun <T> List<T>.toArrayOfType(type: Type): Any {
@@ -140,14 +151,14 @@ abstract class PrimArraySerializer(type: Type, factory: LocalSerializerFactory) 
         // We don't need to handle the unboxed byte type as that is coercible to a byte array, but
         // the other 7 primitive types we do
         private val primTypes: Map<Type, (LocalSerializerFactory) -> PrimArraySerializer> = mapOf(
-                IntArray::class.java to { f -> PrimIntArraySerializer(f) },
-                CharArray::class.java to { f -> PrimCharArraySerializer(f) },
-                BooleanArray::class.java to { f -> PrimBooleanArraySerializer(f) },
-                FloatArray::class.java to { f -> PrimFloatArraySerializer(f) },
-                ShortArray::class.java to { f -> PrimShortArraySerializer(f) },
-                DoubleArray::class.java to { f -> PrimDoubleArraySerializer(f) },
-                LongArray::class.java to { f -> PrimLongArraySerializer(f) }
-                // ByteArray::class.java <-> NOT NEEDED HERE (see comment above)
+            IntArray::class.java to { f -> PrimIntArraySerializer(f) },
+            CharArray::class.java to { f -> PrimCharArraySerializer(f) },
+            BooleanArray::class.java to { f -> PrimBooleanArraySerializer(f) },
+            FloatArray::class.java to { f -> PrimFloatArraySerializer(f) },
+            ShortArray::class.java to { f -> PrimShortArraySerializer(f) },
+            DoubleArray::class.java to { f -> PrimDoubleArraySerializer(f) },
+            LongArray::class.java to { f -> PrimLongArraySerializer(f) }
+            // ByteArray::class.java <-> NOT NEEDED HERE (see comment above)
         )
 
         fun make(type: Type, factory: LocalSerializerFactory) = primTypes[type]!!(factory)
@@ -159,8 +170,13 @@ abstract class PrimArraySerializer(type: Type, factory: LocalSerializerFactory) 
 }
 
 class PrimIntArraySerializer(factory: LocalSerializerFactory) : PrimArraySerializer(IntArray::class.java, factory) {
-    override fun writeObject(obj: Any, data: Data, type: Type, output: SerializationOutput,
-                             context: SerializationContext, debugIndent: Int
+    override fun writeObject(
+        obj: Any,
+        data: Data,
+        type: Type,
+        output: SerializationOutput,
+        context: SerializationContext,
+        debugIndent: Int
     ) {
         localWriteObject(data) {
             (obj as IntArray).forEach { output.writeObjectOrNull(it, data, elementType, context, debugIndent + 1) }
@@ -169,8 +185,13 @@ class PrimIntArraySerializer(factory: LocalSerializerFactory) : PrimArraySeriali
 }
 
 class PrimCharArraySerializer(factory: LocalSerializerFactory) : PrimArraySerializer(CharArray::class.java, factory) {
-    override fun writeObject(obj: Any, data: Data, type: Type, output: SerializationOutput,
-                             context: SerializationContext, debugIndent: Int
+    override fun writeObject(
+        obj: Any,
+        data: Data,
+        type: Type,
+        output: SerializationOutput,
+        context: SerializationContext,
+        debugIndent: Int
     ) {
         localWriteObject(data) {
             (obj as CharArray).forEach {
@@ -190,8 +211,13 @@ class PrimCharArraySerializer(factory: LocalSerializerFactory) : PrimArraySerial
 }
 
 class PrimBooleanArraySerializer(factory: LocalSerializerFactory) : PrimArraySerializer(BooleanArray::class.java, factory) {
-    override fun writeObject(obj: Any, data: Data, type: Type, output: SerializationOutput,
-                             context: SerializationContext, debugIndent: Int
+    override fun writeObject(
+        obj: Any,
+        data: Data,
+        type: Type,
+        output: SerializationOutput,
+        context: SerializationContext,
+        debugIndent: Int
     ) {
         localWriteObject(data) {
             (obj as BooleanArray).forEach { output.writeObjectOrNull(it, data, elementType, context, debugIndent + 1) }
@@ -200,9 +226,14 @@ class PrimBooleanArraySerializer(factory: LocalSerializerFactory) : PrimArraySer
 }
 
 class PrimDoubleArraySerializer(factory: LocalSerializerFactory) :
-        PrimArraySerializer(DoubleArray::class.java, factory) {
-    override fun writeObject(obj: Any, data: Data, type: Type, output: SerializationOutput,
-                             context: SerializationContext, debugIndent: Int
+    PrimArraySerializer(DoubleArray::class.java, factory) {
+    override fun writeObject(
+        obj: Any,
+        data: Data,
+        type: Type,
+        output: SerializationOutput,
+        context: SerializationContext,
+        debugIndent: Int
     ) {
         localWriteObject(data) {
             (obj as DoubleArray).forEach { output.writeObjectOrNull(it, data, elementType, context, debugIndent + 1) }
@@ -211,9 +242,15 @@ class PrimDoubleArraySerializer(factory: LocalSerializerFactory) :
 }
 
 class PrimFloatArraySerializer(factory: LocalSerializerFactory) :
-        PrimArraySerializer(FloatArray::class.java, factory) {
-    override fun writeObject(obj: Any, data: Data, type: Type, output: SerializationOutput,
-                             context: SerializationContext, debugIndent: Int) {
+    PrimArraySerializer(FloatArray::class.java, factory) {
+    override fun writeObject(
+        obj: Any,
+        data: Data,
+        type: Type,
+        output: SerializationOutput,
+        context: SerializationContext,
+        debugIndent: Int
+    ) {
         localWriteObject(data) {
             (obj as FloatArray).forEach { output.writeObjectOrNull(it, data, elementType, context, debugIndent + 1) }
         }
@@ -221,9 +258,14 @@ class PrimFloatArraySerializer(factory: LocalSerializerFactory) :
 }
 
 class PrimShortArraySerializer(factory: LocalSerializerFactory) :
-        PrimArraySerializer(ShortArray::class.java, factory) {
-    override fun writeObject(obj: Any, data: Data, type: Type, output: SerializationOutput,
-                             context: SerializationContext, debugIndent: Int
+    PrimArraySerializer(ShortArray::class.java, factory) {
+    override fun writeObject(
+        obj: Any,
+        data: Data,
+        type: Type,
+        output: SerializationOutput,
+        context: SerializationContext,
+        debugIndent: Int
     ) {
         localWriteObject(data) {
             (obj as ShortArray).forEach { output.writeObjectOrNull(it, data, elementType, context, debugIndent + 1) }
@@ -232,9 +274,14 @@ class PrimShortArraySerializer(factory: LocalSerializerFactory) :
 }
 
 class PrimLongArraySerializer(factory: LocalSerializerFactory) :
-        PrimArraySerializer(LongArray::class.java, factory) {
-    override fun writeObject(obj: Any, data: Data, type: Type, output: SerializationOutput,
-                             context: SerializationContext, debugIndent: Int
+    PrimArraySerializer(LongArray::class.java, factory) {
+    override fun writeObject(
+        obj: Any,
+        data: Data,
+        type: Type,
+        output: SerializationOutput,
+        context: SerializationContext,
+        debugIndent: Int
     ) {
         localWriteObject(data) {
             (obj as LongArray).forEach { output.writeObjectOrNull(it, data, elementType, context, debugIndent + 1) }

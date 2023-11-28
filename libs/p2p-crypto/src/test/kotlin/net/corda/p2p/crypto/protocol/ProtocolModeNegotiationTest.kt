@@ -52,8 +52,10 @@ class ProtocolModeNegotiationTest {
                 setOf(ProtocolMode.AUTHENTICATION_ONLY)
             )
         }.isInstanceOf(NoCommonModeError::class.java)
-         .hasMessageContaining("There was no common mode between those supported by the initiator ([AUTHENTICATED_ENCRYPTION]) " +
-                 "and those supported by the responder ([AUTHENTICATION_ONLY]).")
+            .hasMessageContaining(
+                "There was no common mode between those supported by the initiator ([AUTHENTICATED_ENCRYPTION]) " +
+                    "and those supported by the responder ([AUTHENTICATION_ONLY])."
+            )
 
         assertThatThrownBy {
             ProtocolModeNegotiation.selectMode(
@@ -61,8 +63,9 @@ class ProtocolModeNegotiationTest {
                 setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION)
             )
         }.isInstanceOf(NoCommonModeError::class.java)
-            .hasMessageContaining("There was no common mode between those supported by the initiator ([AUTHENTICATION_ONLY]) " +
-                    "and those supported by the responder ([AUTHENTICATED_ENCRYPTION]).")
+            .hasMessageContaining(
+                "There was no common mode between those supported by the initiator ([AUTHENTICATION_ONLY]) " +
+                    "and those supported by the responder ([AUTHENTICATED_ENCRYPTION])."
+            )
     }
-
 }

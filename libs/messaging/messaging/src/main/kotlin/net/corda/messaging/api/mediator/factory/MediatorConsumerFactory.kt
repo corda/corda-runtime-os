@@ -15,5 +15,5 @@ interface MediatorConsumerFactory {
      * @param <S> The type of the message value (payload).
      * @param config Multi-source event mediator consumer configuration.
      */
-    fun <K: Any, V: Any> create(config: MediatorConsumerConfig<K, V>): MediatorConsumer<K, V>
+    fun <K : Any, V : Any> create(config: MediatorConsumerConfig<K, V>): MediatorConsumer<K, V>
 }

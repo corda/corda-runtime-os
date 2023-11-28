@@ -75,6 +75,4 @@ class CompositeKeyFactory(
         }
         return CompositeKeyProviderImpl().create(keys, threshold?.positiveValue?.toInt())
     }
-
-
 }

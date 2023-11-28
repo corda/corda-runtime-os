@@ -1,7 +1,6 @@
 package net.corda.messagebus.kafka.consumer.builder
 
 import io.micrometer.core.instrument.binder.kafka.KafkaClientMetrics
-import java.util.Properties
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messagebus.api.configuration.ConsumerConfig
 import net.corda.messagebus.api.consumer.CordaConsumer
@@ -21,6 +20,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.Properties
 
 /**
  * Generate a Corda Kafka Consumer.
@@ -68,7 +68,7 @@ class CordaKafkaConsumerBuilderImpl @Activate constructor(
             },
             errorMessage = {
                 "MessageBusConsumerBuilder failed to create consumer for group ${consumerConfig.group}, " +
-                        "with configuration: $messageBusConfig"
+                    "with configuration: $messageBusConfig"
             },
             log = log
         )

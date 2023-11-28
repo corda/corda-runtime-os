@@ -16,9 +16,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-
 val bouncyCastleProvider: Provider = BouncyCastleProvider()
-
 
 fun CompositeKeyProviderImpl.create(vararg keys: CompositeKeyNodeAndWeight, threshold: Int? = null) =
     create(keys.toList(), threshold)
@@ -44,7 +42,6 @@ class CompositeKeyImplTests {
             return keyPairGenerator.generateKeyPair()
         }
 
-
         @BeforeAll
         @JvmStatic
         fun setupEach() {
@@ -58,7 +55,6 @@ class CompositeKeyImplTests {
             target = CompositeKeyProviderImpl()
         }
     }
-
 
     @Test
     fun `(Alice) fulfilled by Alice signature`() {
@@ -76,7 +72,7 @@ class CompositeKeyImplTests {
     }
 
     @Test
-    fun `Composite keys are distinct from their components`(){
+    fun `Composite keys are distinct from their components`() {
         val aliceOrBob = target.createFromKeys(alicePublicKey, bobPublicKey)
         val aliceOrBobList = listOf(aliceOrBob)
         assertEquals(1, aliceOrBobList.count())
@@ -111,7 +107,7 @@ class CompositeKeyImplTests {
 
         assertTrue { KeyUtils.isKeyFulfilledBy(aliceAndBobOrCharlie, signatures.byKeys()) }
     }
-    
+
     @Test
     fun `tree canonical form`() {
         assertEquals(target.createFromKeys(alicePublicKey), alicePublicKey)
@@ -169,7 +165,9 @@ class CompositeKeyImplTests {
                 CompositeKeyNodeAndWeight(
                     alicePublicKey,
                     2
-                ), CompositeKeyNodeAndWeight(bobPublicKey, 2), threshold = 5
+                ),
+                CompositeKeyNodeAndWeight(bobPublicKey, 2),
+                threshold = 5
             )
         }
         // Threshold value different than weight of single child node.
@@ -293,7 +291,8 @@ class CompositeKeyImplTests {
             publicKeyK1,
             publicKeyR1,
             publicKeyEd1,
-            publicKeyEd2, threshold = 5
+            publicKeyEd2,
+            threshold = 5
         ) as CompositeKey
 
         val signatures = listOf(rsaSignature, k1Signature, r1Signature, edSignature1, edSignature2)

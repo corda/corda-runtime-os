@@ -20,23 +20,25 @@ internal open class ZipTweaker {
         WRITE_ORIGINAL_ENTRY, DO_NOTHING
     }
 
-    protected open fun tweakEntry(inputStream : ZipInputStream,
-                        outputStream : ZipOutputStream,
-                        currentEntry: ZipEntry,
-                        buffer : ByteArray) : AfterTweakAction = AfterTweakAction.WRITE_ORIGINAL_ENTRY
+    protected open fun tweakEntry(
+        inputStream: ZipInputStream,
+        outputStream: ZipOutputStream,
+        currentEntry: ZipEntry,
+        buffer: ByteArray
+    ): AfterTweakAction = AfterTweakAction.WRITE_ORIGINAL_ENTRY
 
     @Suppress("NestedBlockDepth", "ComplexMethod")
-    fun run(source : InputStream, destination : OutputStream) {
+    fun run(source: InputStream, destination: OutputStream) {
         val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
         ZipInputStream(source).use { inputStream ->
             ZipOutputStream(destination).use { outputStream ->
-                while(true) {
+                while (true) {
                     val zipEntry = inputStream.nextEntry ?: break
-                    if(tweakEntry(inputStream, outputStream, zipEntry, buffer) == AfterTweakAction.WRITE_ORIGINAL_ENTRY) {
+                    if (tweakEntry(inputStream, outputStream, zipEntry, buffer) == AfterTweakAction.WRITE_ORIGINAL_ENTRY) {
                         outputStream.putNextEntry(zipEntry)
-                        while(true) {
+                        while (true) {
                             val read = inputStream.read(buffer)
-                            if(read < 0) break
+                            if (read < 0) break
                             outputStream.write(buffer, 0, read)
                         }
                     }
@@ -47,9 +49,10 @@ internal open class ZipTweaker {
 
     companion object {
         private fun computeSizeAndCrc32(
-                zipEntry: ZipEntry,
-                inputStream: InputStream,
-                buffer: ByteArray) {
+            zipEntry: ZipEntry,
+            inputStream: InputStream,
+            buffer: ByteArray
+        ) {
             val crc32 = CRC32()
             var sz = 0L
             while (true) {
@@ -64,9 +67,11 @@ internal open class ZipTweaker {
         }
 
         @JvmStatic
-        fun write2Stream(outputStream: ZipOutputStream,
-                         inputStream: InputStream,
-                         buffer: ByteArray) {
+        fun write2Stream(
+            outputStream: ZipOutputStream,
+            inputStream: InputStream,
+            buffer: ByteArray
+        ) {
             while (true) {
                 val read = inputStream.read(buffer)
                 if (read < 0) break
@@ -76,11 +81,12 @@ internal open class ZipTweaker {
 
         @JvmStatic
         fun writeZipEntry(
-                zip: ZipOutputStream,
-                source: () -> InputStream,
-                destinationFileName: String,
-                buffer: ByteArray = ByteArray(DEFAULT_BUFFER_SIZE),
-                compressionMethod: Int = ZipEntry.DEFLATED) {
+            zip: ZipOutputStream,
+            source: () -> InputStream,
+            destinationFileName: String,
+            buffer: ByteArray = ByteArray(DEFAULT_BUFFER_SIZE),
+            compressionMethod: Int = ZipEntry.DEFLATED
+        ) {
             val zipEntry = ZipEntry(destinationFileName).apply {
                 val ze = this
                 method = compressionMethod
@@ -106,19 +112,25 @@ internal open class ZipTweaker {
         }
 
         @JvmStatic
-        fun removeJarSignature(jarFile: Path, outFile : Path? = null) {
+        fun removeJarSignature(jarFile: Path, outFile: Path? = null) {
             val destination = outFile ?: Files.createTempFile(jarFile.parent, jarFile.fileName.toString(), ".tmp")
             @Suppress("TooGenericExceptionCaught")
             try {
                 object : ZipTweaker() {
-                    override fun tweakEntry(inputStream: ZipInputStream, outputStream: ZipOutputStream, currentEntry: ZipEntry, buffer: ByteArray): AfterTweakAction {
-                        return if(currentEntry.name.startsWith("META-INF/") && currentEntry.name.uppercase().endsWith(".SF"))
+                    override fun tweakEntry(
+                        inputStream: ZipInputStream,
+                        outputStream: ZipOutputStream,
+                        currentEntry: ZipEntry,
+                        buffer: ByteArray
+                    ): AfterTweakAction {
+                        return if (currentEntry.name.startsWith("META-INF/") && currentEntry.name.uppercase().endsWith(".SF")) {
                             AfterTweakAction.DO_NOTHING
-                        else
+                        } else {
                             AfterTweakAction.WRITE_ORIGINAL_ENTRY
+                        }
                     }
                 }.run(Files.newInputStream(jarFile), Files.newOutputStream(destination))
-                if(outFile == null) {
+                if (outFile == null) {
                     Files.move(destination, jarFile, StandardCopyOption.REPLACE_EXISTING)
                 }
             } catch (e: Throwable) {

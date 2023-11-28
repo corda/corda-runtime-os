@@ -15,13 +15,14 @@ class SmartConfigValueImpl(
     private val smartConfigFactory: SmartConfigFactory,
     private val secretsLookupService: SecretsLookupService = maskedSecretsLookupService
 ) : SmartConfigValue, ConfigValue {
-    companion object{
+    companion object {
         private val maskedSecretsLookupService = MaskedSecretsLookupService()
     }
 
     override fun toSafeConfigValue(): SmartConfigValue {
-        if(secretsLookupService is MaskedSecretsLookupService)
+        if (secretsLookupService is MaskedSecretsLookupService) {
             return this
+        }
         return SmartConfigValueImpl(typeSafeConfigValue, smartConfigFactory, maskedSecretsLookupService)
     }
 
@@ -42,9 +43,9 @@ class SmartConfigValueImpl(
 
     override fun unwrapped(): Any {
         val unwrapped = typeSafeConfigValue.unwrapped()
-        if (unwrapped is Map<*,*> && unwrapped.containsKey(ConfigKeys.SECRET_KEY)) {
+        if (unwrapped is Map<*, *> && unwrapped.containsKey(ConfigKeys.SECRET_KEY)) {
             @Suppress("UNCHECKED_CAST")
-            return secretsLookupService.getValue(ConfigFactory.parseMap(unwrapped as Map<String,Any>))
+            return secretsLookupService.getValue(ConfigFactory.parseMap(unwrapped as Map<String, Any>))
         }
         return unwrapped
     }

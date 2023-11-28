@@ -1,4 +1,5 @@
 @file:JvmName("ByteBufferStreams")
+
 package net.corda.internal.serialization
 
 import net.corda.utilities.LazyPool
@@ -11,9 +12,10 @@ import java.util.Arrays
 import kotlin.math.min
 
 internal val serializeOutputStreamPool = LazyPool(
-        clear = ByteBufferOutputStream::reset,
-        shouldReturnToPool = { it.size() < 256 * 1024 }, // Discard if it grew too large
-        newInstance = { ByteBufferOutputStream(64 * 1024) })
+    clear = ByteBufferOutputStream::reset,
+    shouldReturnToPool = { it.size() < 256 * 1024 }, // Discard if it grew too large
+    newInstance = { ByteBufferOutputStream(64 * 1024) }
+)
 
 fun <T> byteArrayOutput(task: (ByteBufferOutputStream) -> T): ByteArray {
     return serializeOutputStreamPool.run { underlying ->

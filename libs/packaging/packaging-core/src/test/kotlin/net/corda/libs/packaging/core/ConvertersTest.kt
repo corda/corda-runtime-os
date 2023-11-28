@@ -9,7 +9,7 @@ class ConvertersTest {
 
     private companion object {
 
-        fun assertCpkMetadataEquals(cpkMetadata1 : CpkMetadata, cpkMetadata2 : CpkMetadata) {
+        fun assertCpkMetadataEquals(cpkMetadata1: CpkMetadata, cpkMetadata2: CpkMetadata) {
             Assertions.assertEquals(cpkMetadata1.cpkId, cpkMetadata2.cpkId)
             Assertions.assertEquals(cpkMetadata1.mainBundle, cpkMetadata2.mainBundle)
             Assertions.assertEquals(cpkMetadata1.libraries, cpkMetadata2.libraries)
@@ -20,7 +20,7 @@ class ConvertersTest {
             Assertions.assertEquals(cpkMetadata1.externalChannelsConfig, cpkMetadata2.externalChannelsConfig)
         }
 
-        fun assertCordappManifestEquals(m1 : CordappManifest, m2 : CordappManifest) {
+        fun assertCordappManifestEquals(m1: CordappManifest, m2: CordappManifest) {
             sequenceOf(
                 CordappManifest::bundleSymbolicName,
                 CordappManifest::bundleVersion,

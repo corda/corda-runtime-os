@@ -26,9 +26,10 @@ class SerializationPropertyOrdering {
     // would break where refferenced objects were accessed before they'd been
     // processed thanks to the way the blob was deserialized
     @Test
-	fun refferenceOrdering() {
+    fun refferenceOrdering() {
         @CordaSerializable
         data class Reffed(val c: String, val b: String, val a: String)
+
         @CordaSerializable
         data class User(val b: List<Reffed>, val a: List<Reffed>)
 
@@ -36,17 +37,17 @@ class SerializationPropertyOrdering {
         val r2 = Reffed("do not", "or", "do")
         val l = listOf(r1, r2, r1, r2, r1, r2)
 
-        val u = User(l,l)
+        val u = User(l, l)
         val output = TestSerializationOutput(VERBOSE, sf).serializeAndReturnSchema(u)
         DeserializationInput(sf).deserialize(output.obj)
     }
 
     @Test
-	fun randomOrder() {
+    fun randomOrder() {
         @CordaSerializable
         data class C(val c: Int, val d: Int, val b: Int, val e: Int, val a: Int)
 
-        val c = C(3,4,2,5,1)
+        val c = C(3, 4, 2, 5, 1)
         val output = TestSerializationOutput(VERBOSE, sf).serializeAndReturnSchema(c)
 
         // the schema should reflect the serialized order of properties, not the
@@ -73,7 +74,7 @@ class SerializationPropertyOrdering {
 
     @Suppress("UNCHECKED_CAST")
     @Test
-	fun randomOrderSetter() {
+    fun randomOrderSetter() {
         @CordaSerializable
         data class C(var c: Int, var d: Int, var b: Int, var e: Int, var a: Int) {
             // This will force the serialization engine to use getter / setter

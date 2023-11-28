@@ -13,7 +13,6 @@ import javax.persistence.PreUpdate
 import javax.persistence.Table
 import javax.persistence.Version
 
-
 /**
  * Cpi/cpk mapping table.
  */
@@ -82,7 +81,7 @@ internal class CpiCpkKey(
 
     @Column(name = "cpk_file_checksum", nullable = false)
     var cpkFileChecksum: String,
-): Serializable {
+) : Serializable {
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

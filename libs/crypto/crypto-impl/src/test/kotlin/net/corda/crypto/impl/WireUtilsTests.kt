@@ -45,10 +45,12 @@ class WireUtilsTests {
 
     @Test
     fun `Should transform non empty wire context to map`() {
-        val list = KeyValuePairList(listOf(
-            KeyValuePair("key1", "value11"),
-            KeyValuePair("key2", "value2")
-        ))
+        val list = KeyValuePairList(
+            listOf(
+                KeyValuePair("key1", "value11"),
+                KeyValuePair("key2", "value2")
+            )
+        )
         val map = list.toMap()
         assertEquals(2, map.size)
         assertTrue(map.any { it.key == "key1" && it.value == "value11" })

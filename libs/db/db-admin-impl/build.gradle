@@ -5,6 +5,8 @@ plugins {
 
 description 'Database Admin Implementation'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-base"

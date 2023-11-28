@@ -33,9 +33,11 @@ class JpaEntitiesRegistryImplTest {
         registry.register("set1", classes1)
         registry.register("set2", classes2)
 
-        assertThat(registry.all.map{
-            it.persistenceUnitName to it.classes
-        }).containsExactlyInAnyOrder(
+        assertThat(
+            registry.all.map {
+                it.persistenceUnitName to it.classes
+            }
+        ).containsExactlyInAnyOrder(
             "set1" to classes1,
             "set2" to classes2,
         )
@@ -48,9 +50,11 @@ class JpaEntitiesRegistryImplTest {
         registry.register("set1", classes1)
         registry.register("set1", classes3)
 
-        assertThat(registry.all.map{
-            it.persistenceUnitName to it.classes
-        }).containsExactlyInAnyOrder(
+        assertThat(
+            registry.all.map {
+                it.persistenceUnitName to it.classes
+            }
+        ).containsExactlyInAnyOrder(
             "set1" to setOf(ExampleClass1::class.java, ExampleClass2::class.java, ExampleClass3::class.java),
         )
     }

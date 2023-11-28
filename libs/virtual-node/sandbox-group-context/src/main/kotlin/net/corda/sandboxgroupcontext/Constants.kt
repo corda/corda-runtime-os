@@ -1,4 +1,5 @@
 @file:JvmName("Constants")
+
 package net.corda.sandboxgroupcontext
 
 import net.corda.sandbox.type.SandboxConstants.CORDA_SYSTEM

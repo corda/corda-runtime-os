@@ -11,7 +11,7 @@ sealed class CertificateCheckMode {
     /**
      * [NoCertificate]: Assumes no certificate is sent as a part of the authentication protocol.
      */
-    object NoCertificate: CertificateCheckMode()
+    object NoCertificate : CertificateCheckMode()
 
     /**
      * [CheckCertificate]: Checks the certificate sent as a part of the authentication protocol. Validates that certificate is signed by
@@ -22,7 +22,7 @@ sealed class CertificateCheckMode {
         val truststore: List<PemCertificate>,
         val revocationCheckMode: RevocationCheckMode,
         val revocationChecker: (request: RevocationCheckRequest) -> RevocationCheckResponse
-    ): CertificateCheckMode()
+    ) : CertificateCheckMode()
 }
 
 enum class RevocationCheckMode {

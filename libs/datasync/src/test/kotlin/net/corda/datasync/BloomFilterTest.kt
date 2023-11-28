@@ -8,7 +8,6 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 
-
 class BloomFilterTest {
     companion object {
         private val expectedItemCounts = listOf(99, 1, 2, 3, 937, 3_754)
@@ -51,11 +50,11 @@ class BloomFilterTest {
             bf.hashSeed
         )
 
-        for(i in 0 until bf.expectedItemCount) {
+        for (i in 0 until bf.expectedItemCount) {
             bloomFilter.add(i.toByteArray())
         }
 
-        for(i in 0 until bf.expectedItemCount) {
+        for (i in 0 until bf.expectedItemCount) {
             assertEquals(true, bloomFilter.possiblyContains(i.toByteArray()))
         }
 
@@ -70,7 +69,9 @@ class BloomFilterTest {
         val falsePositiveRate = 0.5
 
         val bloomFilter = createBloomFilter(
-            expectedItemCount, falsePositiveRate, 99
+            expectedItemCount,
+            falsePositiveRate,
+            99
         )
 
         assertEquals(15, bloomFilter.filterLength)
@@ -97,7 +98,7 @@ class BloomFilterTest {
         var j = 1
         var count = 0
         while (j < itemCount) {
-            if(bloomFilter.possiblyContains(j.toByteArray())) {
+            if (bloomFilter.possiblyContains(j.toByteArray())) {
                 ++count
             }
             j += 2
@@ -109,8 +110,8 @@ class BloomFilterTest {
         falsePositives.forEach {
             assertTrue(bloomFilter.possiblyContains(it.toByteArray()))
         }
-        for(m in 0 until falsePositives.last()) {
-            if(m % 2 != 0 && !falsePositives.contains(m)) {
+        for (m in 0 until falsePositives.last()) {
+            if (m % 2 != 0 && !falsePositives.contains(m)) {
                 assertFalse(bloomFilter.possiblyContains(m.toByteArray()))
             }
         }
@@ -124,7 +125,9 @@ class BloomFilterTest {
         falsePositiveRates.forEach { rate ->
             assertThrows<IllegalArgumentException> {
                 createBloomFilter(
-                    expectedItemCount, rate, 99
+                    expectedItemCount,
+                    rate,
+                    99
                 )
             }
         }
@@ -138,7 +141,9 @@ class BloomFilterTest {
         val testElementPool = setOf(41, 149, 151, 243, 249, 253, 261, 265, 271, 287)
 
         createBloomFilter(
-            expectedItemCount, falsePositiveRate, 99
+            expectedItemCount,
+            falsePositiveRate,
+            99
         ).apply {
             assertEquals(0, this.filterLength)
             testElementPool.forEach { testElement ->
@@ -155,7 +160,9 @@ class BloomFilterTest {
         val testElementPool = setOf(41, 149, 151, 243, 249, 253, 261, 265, 271, 287)
 
         createBloomFilter(
-            expectedItemCount, falsePositiveRate, 99
+            expectedItemCount,
+            falsePositiveRate,
+            99
         ).apply {
             assertEquals(0, this.numberOfHashFunctions)
             testElementPool.forEach { testElement ->

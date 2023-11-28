@@ -15,7 +15,6 @@ import kotlin.reflect.KClass
 import kotlin.reflect.full.declaredMemberFunctions
 import kotlin.reflect.full.memberFunctions
 
-
 @Timeout(5, unit = MINUTES)
 class KotlinClassHierarchyTest {
 

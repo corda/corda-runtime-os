@@ -20,7 +20,7 @@ class ClassSerializer : InternalDirectSerializer<Class<*>> {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    override fun writeObject(obj: Class<*>, writer: WriteObject, context: SerializationContext)  {
+    override fun writeObject(obj: Class<*>, writer: WriteObject, context: SerializationContext) {
         logger.trace { "serializer=custom, type=ClassSerializer, name=\"${obj.name}\"" }
         return writer.putAsString(obj.name)
     }
@@ -36,8 +36,9 @@ class ClassSerializer : InternalDirectSerializer<Class<*>> {
                 type,
                 "Could not instantiate $className - not on the classpath",
                 "$className was not found by the node, check the Node containing the CorDapp that " +
-                        "implements $className is loaded and on the Classpath",
-                mutableListOf(className))
+                    "implements $className is loaded and on the Classpath",
+                mutableListOf(className)
+            )
         }
     }
 }

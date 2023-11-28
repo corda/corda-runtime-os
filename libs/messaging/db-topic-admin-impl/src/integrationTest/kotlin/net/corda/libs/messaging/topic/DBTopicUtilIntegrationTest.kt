@@ -20,7 +20,6 @@ import java.io.StringWriter
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
 
-
 class DBTopicUtilIntegrationTest {
 
     companion object {
@@ -90,7 +89,8 @@ class DBTopicUtilIntegrationTest {
     @Test
     fun `DB Util correctly creates topics`() {
         val newTopic = randomId()
-        val conf = ConfigFactory.parseString("""
+        val conf = ConfigFactory.parseString(
+            """
             topics = [ 
                 { 
                     topicName = "$newTopic" 
@@ -110,7 +110,8 @@ class DBTopicUtilIntegrationTest {
     @Test
     fun `DB Util doesnt error when topic added twice`() {
         val newTopic = randomId()
-        val conf = ConfigFactory.parseString("""
+        val conf = ConfigFactory.parseString(
+            """
             topics = [ 
                 { 
                     topicName = "$newTopic" 

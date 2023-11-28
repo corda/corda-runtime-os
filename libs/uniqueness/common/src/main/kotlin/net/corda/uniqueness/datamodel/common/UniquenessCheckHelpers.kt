@@ -37,40 +37,47 @@ import java.time.Instant
  * Converts an Avro result to a [UniquenessCheckResult].
  */
 fun UniquenessCheckResponseAvro.toUniquenessResult(): UniquenessCheckResult {
-
     return when (val avroResult = result) {
         is UniquenessCheckResultInputStateConflictAvro -> {
             UniquenessCheckResultFailureImpl(
                 Instant.now(),
-                UniquenessCheckErrorInputStateConflictImpl(avroResult.conflictingStates.map {
-                    // FIXME Consuming tx hash is populated as [null] for now
-                    UniquenessCheckStateDetailsImpl(it.toStateRef(), null)
-                })
+                UniquenessCheckErrorInputStateConflictImpl(
+                    avroResult.conflictingStates.map {
+                        // FIXME Consuming tx hash is populated as [null] for now
+                        UniquenessCheckStateDetailsImpl(it.toStateRef(), null)
+                    }
+                )
             )
         }
         is UniquenessCheckResultInputStateUnknownAvro -> {
             UniquenessCheckResultFailureImpl(
                 Instant.now(),
-                UniquenessCheckErrorInputStateUnknownImpl(avroResult.unknownStates.map {
-                    it.toStateRef()
-                })
+                UniquenessCheckErrorInputStateUnknownImpl(
+                    avroResult.unknownStates.map {
+                        it.toStateRef()
+                    }
+                )
             )
         }
         is UniquenessCheckResultReferenceStateConflictAvro -> {
             UniquenessCheckResultFailureImpl(
                 Instant.now(),
-                UniquenessCheckErrorReferenceStateConflictImpl(avroResult.conflictingStates.map {
-                    // FIXME Consuming tx hash is populated as [null] for now
-                    UniquenessCheckStateDetailsImpl(it.toStateRef(), null)
-                })
+                UniquenessCheckErrorReferenceStateConflictImpl(
+                    avroResult.conflictingStates.map {
+                        // FIXME Consuming tx hash is populated as [null] for now
+                        UniquenessCheckStateDetailsImpl(it.toStateRef(), null)
+                    }
+                )
             )
         }
         is UniquenessCheckResultReferenceStateUnknownAvro -> {
             UniquenessCheckResultFailureImpl(
                 Instant.now(),
-                UniquenessCheckErrorReferenceStateUnknownImpl(avroResult.unknownStates.map {
-                    it.toStateRef()
-                })
+                UniquenessCheckErrorReferenceStateUnknownImpl(
+                    avroResult.unknownStates.map {
+                        it.toStateRef()
+                    }
+                )
             )
         }
         is UniquenessCheckResultTimeWindowOutOfBoundsAvro -> {
@@ -105,7 +112,8 @@ fun UniquenessCheckResponseAvro.toUniquenessResult(): UniquenessCheckResult {
         }
         else -> {
             throw IllegalArgumentException(
-                "Unable to convert Avro type \"${avroResult.javaClass.typeName}\" to result")
+                "Unable to convert Avro type \"${avroResult.javaClass.typeName}\" to result"
+            )
         }
     }
 }
@@ -168,7 +176,7 @@ fun UniquenessCheckResult.toCharacterRepresentation() = if (this is UniquenessCh
     UniquenessConstants.RESULT_REJECTED_REPRESENTATION
 }
 
-fun String.toStateRef() : UniquenessCheckStateRef {
+fun String.toStateRef(): UniquenessCheckStateRef {
     return UniquenessCheckStateRefImpl(
         parseSecureHash(substringBeforeLast(":")),
         substringAfterLast(":").toInt()

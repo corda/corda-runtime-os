@@ -69,16 +69,16 @@ interface SmartConfig : Config {
 }
 
 fun Config.getStringOrDefault(path: String, default: String): String {
-    if(this.hasPath(path)) return this.getString(path)
+    if (this.hasPath(path)) return this.getString(path)
     return default
 }
 
 fun Config.getLongOrDefault(path: String, default: Long): Long {
-    if(this.hasPath(path)) return this.getLong(path)
+    if (this.hasPath(path)) return this.getLong(path)
     return default
 }
 
 fun Config.getIntOrDefault(path: String, default: Int): Int {
-    if(this.hasPath(path)) return this.getInt(path)
+    if (this.hasPath(path)) return this.getInt(path)
     return default
 }

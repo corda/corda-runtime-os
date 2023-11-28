@@ -3,10 +3,10 @@ package net.corda.libs.cpi.datamodel.entities.internal
 import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Entity
-import javax.persistence.Lob
-import javax.persistence.Table
 import javax.persistence.Id
+import javax.persistence.Lob
 import javax.persistence.NamedQuery
+import javax.persistence.Table
 import javax.persistence.Version
 
 const val QUERY_NAME_UPDATE_CPK_FILE_DATA = "CpkFileEntity.updateFileData"
@@ -31,12 +31,12 @@ const val QUERY_PARAM_ID = "id"
 @NamedQuery(
     name = QUERY_NAME_UPDATE_CPK_FILE_DATA,
     query = "UPDATE CpkFileEntity f" +
-            " SET f.fileChecksum = :$QUERY_PARAM_FILE_CHECKSUM," +
-            " f.data = :$QUERY_PARAM_DATA," +
-            " f.entityVersion = :$QUERY_PARAM_INCREMENTED_ENTITY_VERSION," +
-            " f.insertTimestamp = CURRENT_TIMESTAMP" +
-            " WHERE f.entityVersion = :$QUERY_PARAM_ENTITY_VERSION" +
-            " AND f.id = :$QUERY_PARAM_ID"
+        " SET f.fileChecksum = :$QUERY_PARAM_FILE_CHECKSUM," +
+        " f.data = :$QUERY_PARAM_DATA," +
+        " f.entityVersion = :$QUERY_PARAM_INCREMENTED_ENTITY_VERSION," +
+        " f.insertTimestamp = CURRENT_TIMESTAMP" +
+        " WHERE f.entityVersion = :$QUERY_PARAM_ENTITY_VERSION" +
+        " AND f.id = :$QUERY_PARAM_ID"
 )
 internal class CpkFileEntity(
     @Id

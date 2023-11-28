@@ -116,7 +116,8 @@ class AuthenticatedSessionTest {
             val payload = "ping $i".toByteArray(Charsets.UTF_8)
             val authenticationResult = authenticatedSessionOnA.createMac(payload)
             val initiatorMsg = AuthenticatedDataMessage(
-                authenticationResult.header, ByteBuffer.wrap(payload),
+                authenticationResult.header,
+                ByteBuffer.wrap(payload),
                 ByteBuffer.wrap(authenticationResult.mac)
             )
 
@@ -130,7 +131,8 @@ class AuthenticatedSessionTest {
             val responderMsg =
                 AuthenticatedDataMessage(
                     authenticationResult.header,
-                    ByteBuffer.wrap(payload), ByteBuffer.wrap(authenticationResult.mac)
+                    ByteBuffer.wrap(payload),
+                    ByteBuffer.wrap(authenticationResult.mac)
                 )
 
             authenticatedSessionOnA.validateMac(responderMsg.header, responderMsg.payload.array(), responderMsg.authTag.array())
@@ -200,14 +202,16 @@ class AuthenticatedSessionTest {
         val payload = "ping".toByteArray(Charsets.UTF_8)
         val authenticationResult = authenticatedSessionOnA.createMac(payload)
         val initiatorMsg = AuthenticatedDataMessage(
-            authenticationResult.header, ByteBuffer.wrap(payload),
+            authenticationResult.header,
+            ByteBuffer.wrap(payload),
             ByteBuffer.wrap(authenticationResult.mac)
         )
 
         assertThatThrownBy {
             authenticatedSessionOnB.validateMac(
                 initiatorMsg.header,
-                initiatorMsg.payload.array() + "0".toByteArray(Charsets.UTF_8), initiatorMsg.authTag.array()
+                initiatorMsg.payload.array() + "0".toByteArray(Charsets.UTF_8),
+                initiatorMsg.authTag.array()
             )
         }
             .isInstanceOf(InvalidMac::class.java)

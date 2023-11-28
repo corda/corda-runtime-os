@@ -15,13 +15,13 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
  * @param S Type of event state.
  * @param E Type of event.
  */
-class EventMediatorConfigBuilder<K: Any, S: Any, E: Any> {
+class EventMediatorConfigBuilder<K : Any, S : Any, E : Any> {
 
-    private var name : String? = null
-    private var messagingConfig : SmartConfig? = null
+    private var name: String? = null
+    private var messagingConfig: SmartConfig? = null
     private var consumerFactories = emptyArray<MediatorConsumerFactory>()
     private var clientFactories = emptyArray<MessagingClientFactory>()
-    private var messageProcessor : StateAndEventProcessor<K, S, E>? = null
+    private var messageProcessor: StateAndEventProcessor<K, S, E>? = null
     private var messageRouterFactory: MessageRouterFactory? = null
     private var threads: Int? = null
     private var threadName: String? = null

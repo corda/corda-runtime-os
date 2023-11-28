@@ -18,7 +18,9 @@ class LinkedHashMapIteratorSerializerTest {
         val output = Output(25 * 1024)
         val iterator = (0..1000).associateWith { "$it" }.iterator()
         val index = 100
-        repeat(index) { iterator.next(); }
+        repeat(index) {
+            iterator.next()
+        }
         LinkedHashMapIteratorSerializer.write(kryo, output, iterator)
         val tested = LinkedHashMapIteratorSerializer.read(kryo, Input(output.buffer), iterator.javaClass)
 
@@ -31,7 +33,7 @@ class LinkedHashMapIteratorSerializerTest {
         @Suppress("unchecked_cast")
         val otherNext = tested.next() as Map.Entry<Int, String>
         // Iterator should be pointing to 'index + 1'
-        assertThat(otherNext.key).isEqualTo(index+1)
-        assertThat(otherNext.value).isEqualTo("${index+1}")
+        assertThat(otherNext.key).isEqualTo(index + 1)
+        assertThat(otherNext.value).isEqualTo("${index + 1}")
     }
 }

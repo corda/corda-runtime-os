@@ -13,22 +13,26 @@ class BitSetTest {
     fun empty() {
         serializeDeserializeAssert(BitSet())
     }
+
     @Test
     fun oneFalse() {
         val instance = BitSet(one)
         serializeDeserializeAssert(instance)
     }
+
     @Test
     fun oneTrue() {
         val instance = BitSet(one)
         instance[0] = true
         serializeDeserializeAssert(instance)
     }
+
     @Test
     fun sixtyFourFalse() {
         val instance = BitSet(sixtyFour)
         serializeDeserializeAssert(instance)
     }
+
     @Test
     fun sixtyFourTrue() {
         val instance = BitSet(sixtyFour)
@@ -36,11 +40,13 @@ class BitSetTest {
             instance[i] = true
         serializeDeserializeAssert(instance)
     }
+
     @Test
     fun oneHundredFalse() {
         val instance = BitSet(oneHundred)
         serializeDeserializeAssert(instance)
     }
+
     @Test
     fun oneHundredTrue() {
         val instance = BitSet(oneHundred)
@@ -49,4 +55,3 @@ class BitSetTest {
         serializeDeserializeAssert(instance)
     }
 }
-

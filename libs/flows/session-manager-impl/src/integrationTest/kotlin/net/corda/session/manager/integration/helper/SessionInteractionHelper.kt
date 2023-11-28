@@ -9,14 +9,14 @@ import net.corda.session.manager.integration.SessionPartyFactory
 fun initiateNewSession(config: SmartConfig): Pair<SessionParty, SessionParty> {
     val (initiator, initiated) = SessionPartyFactory().createSessionParties(config)
 
-    //send init
+    // send init
     initiator.processNewOutgoingMessage(SessionMessageType.COUNTERPARTY_INFO, sendMessages = true)
     initiator.assertStatus(SessionStateType.CREATED)
 
     initiated.processNextReceivedMessage(sendMessages = true)
     initiated.assertStatus(SessionStateType.CONFIRMED)
 
-    //process counterparty info rs
+    // process counterparty info rs
     initiator.processNextReceivedMessage()
     initiator.assertStatus(SessionStateType.CONFIRMED)
     initiated.assertStatus(SessionStateType.CONFIRMED)
@@ -31,12 +31,11 @@ fun closeSession(
     partyA: SessionParty,
     partyB: SessionParty
 ) {
-    //partyB sends close to partyA
+    // partyB sends close to partyA
     partyB.processNewOutgoingMessage(SessionMessageType.CLOSE, sendMessages = true)
     partyB.assertStatus(SessionStateType.CLOSED)
 
-    //partyA receives close
+    // partyA receives close
     partyA.processNextReceivedMessage()
     partyA.assertStatus(SessionStateType.CLOSING)
 }
-

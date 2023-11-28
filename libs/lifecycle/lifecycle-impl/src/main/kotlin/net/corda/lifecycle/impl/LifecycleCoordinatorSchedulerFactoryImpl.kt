@@ -1,16 +1,16 @@
 package net.corda.lifecycle.impl
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
-import java.util.concurrent.Executors
 import net.corda.lifecycle.LifecycleCoordinatorScheduler
 import net.corda.lifecycle.LifecycleCoordinatorSchedulerFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.slf4j.LoggerFactory
+import java.util.concurrent.Executors
 
 @Component(service = [ LifecycleCoordinatorSchedulerFactory::class ])
-class LifecycleCoordinatorSchedulerFactoryImpl @Activate constructor(): LifecycleCoordinatorSchedulerFactory {
+class LifecycleCoordinatorSchedulerFactoryImpl @Activate constructor() : LifecycleCoordinatorSchedulerFactory {
     private val logger = LoggerFactory.getLogger(this::class.java)
 
     private fun handleUncaughtException(thread: Thread, exception: Throwable) {

@@ -21,7 +21,7 @@ internal class CpkSandboxImpl(
             if (!accept(clazz)) {
                 throw SandboxException(
                     "The class $className cannot be loaded from bundle $mainBundle in sandbox $id, as " +
-                            "the class was not found in the correct bundle."
+                        "the class was not found in the correct bundle."
                 )
             }
         }

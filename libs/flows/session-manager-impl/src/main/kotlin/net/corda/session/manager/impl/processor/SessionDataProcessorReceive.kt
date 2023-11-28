@@ -60,7 +60,7 @@ class SessionDataProcessorReceive(
         } else {
             logger.debug {
                 "Duplicate message received on key $key with sessionId $sessionId with sequence number of $seqNum when next" +
-                        " expected seqNum is $expectedNextSeqNum"
+                    " expected seqNum is $expectedNextSeqNum"
             }
             sessionState
         }
@@ -75,14 +75,13 @@ class SessionDataProcessorReceive(
         val receivedEventState = sessionState.receivedEventsState
         val currentStatus = sessionState.status
 
-        //store data event received regardless of current state status
+        // store data event received regardless of current state status
         receivedEventState.undeliveredMessages = receivedEventState.undeliveredMessages.plus(sessionEvent)
             .distinctBy { it.sequenceNum }.sortedBy { it.sequenceNum }
 
-
         return if (isSessionMismatch(receivedEventState, expectedNextSeqNum, currentStatus)) {
             val errorMessage = "Received data message on key $key with sessionId $sessionId with sequence number of $seqNum when status" +
-                    " is $currentStatus. Session mismatch error. SessionState: $sessionState"
+                " is $currentStatus. Session mismatch error. SessionState: $sessionState"
             logger.warn(errorMessage)
             sessionState.apply {
                 status = SessionStateType.ERROR
@@ -115,13 +114,16 @@ class SessionDataProcessorReceive(
      * @param currentStatus To validate the state is valid to receive new messages
      * @return True if there is a mismatch of messages between parties, false otherwise.
      */
-    private fun isSessionMismatch(receivedEventState: SessionProcessState, expectedNextSeqNum: Int, currentStatus: SessionStateType):
-            Boolean {
+    private fun isSessionMismatch(
+        receivedEventState: SessionProcessState,
+        expectedNextSeqNum: Int,
+        currentStatus: SessionStateType
+    ): Boolean {
         val receivedCloseSeqNum = receivedEventState.undeliveredMessages.find { it.payload is SessionClose }?.sequenceNum
         val otherPartyClosingMismatch = receivedCloseSeqNum != null && receivedCloseSeqNum <= expectedNextSeqNum
         val thisPartyClosingMismatch = receivedCloseSeqNum == null && currentStatus == SessionStateType.CLOSING
-        val statusMismatch = currentStatus == SessionStateType.ERROR
-                || currentStatus == SessionStateType.CLOSED
+        val statusMismatch = currentStatus == SessionStateType.ERROR ||
+            currentStatus == SessionStateType.CLOSED
         return otherPartyClosingMismatch || thisPartyClosingMismatch || statusMismatch
     }
 }

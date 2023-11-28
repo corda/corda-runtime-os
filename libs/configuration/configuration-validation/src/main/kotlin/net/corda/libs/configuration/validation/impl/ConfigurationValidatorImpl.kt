@@ -11,7 +11,6 @@ import com.networknt.schema.ValidationMessage
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
-import java.io.InputStream
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.validation.ConfigurationSchemaFetchException
@@ -21,6 +20,7 @@ import net.corda.schema.common.provider.SchemaProvider
 import net.corda.utilities.debug
 import net.corda.v5.base.versioning.Version
 import org.slf4j.LoggerFactory
+import java.io.InputStream
 
 internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProvider) : ConfigurationValidator {
 
@@ -33,7 +33,7 @@ internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProv
     private val objectMapper = ObjectMapper()
     private val configSecretHelper = ConfigSecretHelper()
 
-    override fun validate(key: String, version: Version, config: SmartConfig, applyDefaults: Boolean) : SmartConfig {
+    override fun validate(key: String, version: Version, config: SmartConfig, applyDefaults: Boolean): SmartConfig {
         val schemaInput = try {
             schemaProvider.getSchema(key, version)
         } catch (e: Exception) {
@@ -45,12 +45,12 @@ internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProv
         return config.factory.create(ConfigFactory.parseString(configAsJSONNode.toString()))
     }
 
-    override fun validate(key: String, config: SmartConfig, schemaInput: InputStream, applyDefaults: Boolean) : SmartConfig {
+    override fun validate(key: String, config: SmartConfig, schemaInput: InputStream, applyDefaults: Boolean): SmartConfig {
         val configAsJSONNode = validateConfigAndGetJSONNode(key, config, schemaInput, null, applyDefaults)
         return config.factory.create(ConfigFactory.parseString(configAsJSONNode.toString()))
     }
 
-    override fun getDefaults(key: String, version: Version) : Config {
+    override fun getDefaults(key: String, version: Version): Config {
         val schemaInput = try {
             schemaProvider.getSchema(key, version)
         } catch (e: Exception) {
@@ -78,7 +78,7 @@ internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProv
         version: Version?,
         applyDefaults: Boolean
     ): JsonNode {
-        //jsonNode is updated in place by walker when [applyDefaults] is true
+        // jsonNode is updated in place by walker when [applyDefaults] is true
         val configAsJSONNode = config.toJsonNode()
         val secretsNode = configSecretHelper.hideSecrets(configAsJSONNode)
         logger.debug { "Configuration to validate: $configAsJSONNode" }
@@ -134,5 +134,4 @@ internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProv
         builder.uriFetcher(CordaURIFetcher(schemaProvider), REGISTERED_SCHEMES)
         return builder.build()
     }
-
 }

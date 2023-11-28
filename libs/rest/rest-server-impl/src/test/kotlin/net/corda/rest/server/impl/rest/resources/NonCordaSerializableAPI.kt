@@ -6,10 +6,10 @@ import net.corda.rest.annotations.HttpRestResource
 
 @HttpRestResource(path = "nonCordaSerializable")
 interface NonCordaSerializableAPI : RestResource {
-  @HttpPOST
-  fun call(data: NonCordaSerializableClass): String
+    @HttpPOST
+    fun call(data: NonCordaSerializableClass): String
 }
 
 class NonCordaSerializableClass(
-  val data: String
+    val data: String
 )

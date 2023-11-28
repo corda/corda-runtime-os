@@ -22,7 +22,6 @@ class ReusableSerialiseDeserializeAssert {
             return DeserializationInput(withFactory).deserialize(bytes)
         }
 
-
         inline fun <reified T : Any> serializeDeserializeAssert(
             instance: T,
             withFactory: SerializerFactory = factory

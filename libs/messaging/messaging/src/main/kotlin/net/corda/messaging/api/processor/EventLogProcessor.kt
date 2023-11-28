@@ -24,7 +24,7 @@ interface EventLogProcessor<K : Any, V : Any> {
      * Output events can be of different key and value types intended to be put on different topics.
      * NOTE: The returned events will be published and the processed events will be consumed atomically as a single transaction.
      */
-    fun onNext(events: List<EventLogRecord<K, V>>) : List<Record<*, *>>
+    fun onNext(events: List<EventLogRecord<K, V>>): List<Record<*, *>>
 
     /**
      * [keyClass] and [valueClass] to easily get the class types the processor operates on.

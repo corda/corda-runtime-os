@@ -60,7 +60,7 @@ sealed class RemoteTypeInformation {
      * of "java.lang.String". If this is set to `false`, then the full class name will be printed instead.
      */
     fun prettyPrint(simplifyClassNames: Boolean = true): String =
-            RemoteTypeInformationPrettyPrinter(simplifyClassNames).prettyPrint(this)
+        RemoteTypeInformationPrettyPrinter(simplifyClassNames).prettyPrint(this)
 
     /**
      * The [RemoteTypeInformation] corresponding to an unbounded wildcard ([TypeIdentifier.UnknownType])
@@ -93,31 +93,44 @@ sealed class RemoteTypeInformation {
     /**
      * Representation of a simple unparameterised type.
      */
-    data class Unparameterised(override val typeDescriptor: TypeDescriptor, override val typeIdentifier: TypeIdentifier) : RemoteTypeInformation()
+    data class Unparameterised(
+        override val typeDescriptor: TypeDescriptor,
+        override val typeIdentifier: TypeIdentifier
+    ) : RemoteTypeInformation()
 
     /**
      * Representation of a type with type parameters.
      *
      * @param typeParameters The type parameters of the type.
      */
-    data class Parameterised(override val typeDescriptor: TypeDescriptor, override val typeIdentifier: TypeIdentifier, val typeParameters: List<RemoteTypeInformation>) : RemoteTypeInformation()
+    data class Parameterised(
+        override val typeDescriptor: TypeDescriptor,
+        override val typeIdentifier: TypeIdentifier,
+        val typeParameters: List<RemoteTypeInformation>
+    ) : RemoteTypeInformation()
 
     /**
      * Representation of an array of some other type.
      *
      * @param componentType The component type of the array.
      */
-    data class AnArray(override val typeDescriptor: TypeDescriptor, override val typeIdentifier: TypeIdentifier, val componentType: RemoteTypeInformation) : RemoteTypeInformation()
+    data class AnArray(
+        override val typeDescriptor: TypeDescriptor,
+        override val typeIdentifier: TypeIdentifier,
+        val componentType: RemoteTypeInformation
+    ) : RemoteTypeInformation()
 
     /**
      * Representation of an Enum type.
      *
      * @param members The members of the enum.
      */
-    data class AnEnum(override val typeDescriptor: TypeDescriptor,
-                      override val typeIdentifier: TypeIdentifier,
-                      val members: List<String>,
-                      val transforms: EnumTransforms) : RemoteTypeInformation()
+    data class AnEnum(
+        override val typeDescriptor: TypeDescriptor,
+        override val typeIdentifier: TypeIdentifier,
+        val members: List<String>,
+        val transforms: EnumTransforms
+    ) : RemoteTypeInformation()
 
     /**
      * Representation of an interface.
@@ -126,7 +139,13 @@ sealed class RemoteTypeInformation {
      * @param interfaces The interfaces extended by the interface.
      * @param typeParameters The type parameters of the interface.
      */
-    data class AnInterface(override val typeDescriptor: TypeDescriptor, override val typeIdentifier: TypeIdentifier, val properties: Map<String, RemotePropertyInformation>, val interfaces: List<RemoteTypeInformation>, val typeParameters: List<RemoteTypeInformation>) : RemoteTypeInformation()
+    data class AnInterface(
+        override val typeDescriptor: TypeDescriptor,
+        override val typeIdentifier: TypeIdentifier,
+        val properties: Map<String, RemotePropertyInformation>,
+        val interfaces: List<RemoteTypeInformation>,
+        val typeParameters: List<RemoteTypeInformation>
+    ) : RemoteTypeInformation()
 
     /**
      * Representation of a concrete POJO-like class.
@@ -136,46 +155,49 @@ sealed class RemoteTypeInformation {
      * @param typeParameters The type parameters of the class.
      */
     data class Composable(
-            override val typeDescriptor: TypeDescriptor,
-            override val typeIdentifier: TypeIdentifier,
-            val properties: Map<String, RemotePropertyInformation>,
-            val interfaces: List<RemoteTypeInformation>,
-            val typeParameters: List<RemoteTypeInformation>) : RemoteTypeInformation()
+        override val typeDescriptor: TypeDescriptor,
+        override val typeIdentifier: TypeIdentifier,
+        val properties: Map<String, RemotePropertyInformation>,
+        val interfaces: List<RemoteTypeInformation>,
+        val typeParameters: List<RemoteTypeInformation>
+    ) : RemoteTypeInformation()
 }
 
 private data class RemoteTypeInformationPrettyPrinter(private val simplifyClassNames: Boolean = true, private val indent: Int = 0) {
 
-    fun prettyPrint(remoteTypeInformation: RemoteTypeInformation): String = with(remoteTypeInformation){
+    fun prettyPrint(remoteTypeInformation: RemoteTypeInformation): String = with(remoteTypeInformation) {
         when (this) {
             is RemoteTypeInformation.AnInterface -> typeIdentifier.prettyPrint(simplifyClassNames) +
-                    printInterfaces(interfaces) +
-                    indentAnd { printProperties(properties) }
+                printInterfaces(interfaces) +
+                indentAnd { printProperties(properties) }
             is RemoteTypeInformation.Composable -> typeIdentifier.prettyPrint(simplifyClassNames) +
-                    printInterfaces(interfaces) +
-                    indentAnd { printProperties(properties) }
+                printInterfaces(interfaces) +
+                indentAnd { printProperties(properties) }
             is RemoteTypeInformation.AnEnum -> typeIdentifier.prettyPrint(simplifyClassNames) +
-                    members.joinToString("|", "(", ")")
+                members.joinToString("|", "(", ")")
             else -> typeIdentifier.prettyPrint(simplifyClassNames)
         }
     }
 
     private inline fun indentAnd(block: RemoteTypeInformationPrettyPrinter.() -> String) =
-            copy(indent = indent + 1).block()
+        copy(indent = indent + 1).block()
 
     private fun printInterfaces(interfaces: List<RemoteTypeInformation>) =
-            if (interfaces.isEmpty()) ""
-            else interfaces.joinToString(", ", ": ", "") {
+        if (interfaces.isEmpty()) {
+            ""
+        } else {
+            interfaces.joinToString(", ", ": ", "") {
                 it.typeIdentifier.prettyPrint(simplifyClassNames)
             }
+        }
 
     private fun printProperties(properties: Map<String, RemotePropertyInformation>) =
-            properties.entries.joinToString("\n", "\n", "") {
-                it.prettyPrint()
-            }
+        properties.entries.joinToString("\n", "\n", "") {
+            it.prettyPrint()
+        }
 
     private fun Map.Entry<String, RemotePropertyInformation>.prettyPrint(): String =
-            "  ".repeat(indent) + key +
-                    (if(!value.isMandatory) " (optional)" else "") +
-                    ": " + prettyPrint(value.type)
+        "  ".repeat(indent) + key +
+            (if (!value.isMandatory) " (optional)" else "") +
+            ": " + prettyPrint(value.type)
 }
-

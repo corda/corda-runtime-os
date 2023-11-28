@@ -15,6 +15,7 @@ import java.io.NotSerializableException
 import java.lang.reflect.Type
 
 const val DESCRIPTOR_DOMAIN: String = "net.corda"
+
 @JvmField
 val amqpMagic = CordaSerializationMagic("corda".toByteArray() + byteArrayOf(4, 0))
 
@@ -124,13 +125,14 @@ data class Descriptor(val name: Symbol?, val code: UnsignedLong? = null) : Descr
 }
 
 data class Field(
-        val name: String,
-        val type: String,
-        val requires: List<String>,
-        val default: String?,
-        val label: String?,
-        val mandatory: Boolean,
-        val multiple: Boolean) : DescribedType {
+    val name: String,
+    val type: String,
+    val requires: List<String>,
+    val default: String?,
+    val label: String?,
+    val mandatory: Boolean,
+    val multiple: Boolean
+) : DescribedType {
     companion object : DescribedTypeConstructor<Field> {
 
         @JvmField
@@ -202,11 +204,11 @@ sealed class TypeNotation : DescribedType {
 }
 
 data class CompositeType(
-        override val name: String,
-        override val label: String?,
-        override val provides: List<String>,
-        override val descriptor: Descriptor,
-        val fields: List<Field>
+    override val name: String,
+    override val label: String?,
+    override val provides: List<String>,
+    override val descriptor: Descriptor,
+    val fields: List<Field>
 ) : TypeNotation() {
     companion object : DescribedTypeConstructor<CompositeType> {
 
@@ -260,12 +262,14 @@ data class CompositeType(
     }
 }
 
-data class RestrictedType(override val name: String,
-                          override val label: String?,
-                          override val provides: List<String>,
-                          val source: String,
-                          override val descriptor: Descriptor,
-                          val choices: List<Choice>) : TypeNotation() {
+data class RestrictedType(
+    override val name: String,
+    override val label: String?,
+    override val provides: List<String>,
+    val source: String,
+    override val descriptor: Descriptor,
+    val choices: List<Choice>
+) : TypeNotation() {
     companion object : DescribedTypeConstructor<RestrictedType> {
 
         @JvmField
@@ -276,7 +280,9 @@ data class RestrictedType(override val name: String,
                 throw AMQPNoTypeNotSerializableException("Unexpected descriptor ${describedType.descriptor}.")
             }
             val list = describedType.described as List<*>
-            return newInstance(listOf(list[0], list[1], list[2], list[3], Descriptor.get(list[4]!!), (list[5] as List<*>).map { Choice.get(it!!) }))
+            return newInstance(
+                listOf(list[0], list[1], list[2], list[3], Descriptor.get(list[4]!!), (list[5] as List<*>).map { Choice.get(it!!) })
+            )
         }
 
         override fun getTypeClass(): Class<*> = RestrictedType::class.java
@@ -379,5 +385,3 @@ data class ReferencedObject(private val refCounter: Int) : DescribedType {
 
     override fun toString(): String = "<refObject refCounter=$refCounter/>"
 }
-
-

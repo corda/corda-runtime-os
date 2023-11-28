@@ -3,8 +3,6 @@ package net.corda.libs.external.messaging.test
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import java.time.Instant
-import java.util.UUID
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -29,6 +27,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import java.time.Instant
+import java.util.UUID
 
 class ExternalMessagingRouteConfigGeneratorTest {
 
@@ -209,7 +209,7 @@ class ExternalMessagingRouteConfigGeneratorTest {
                                 }
                             ]
                         }
-                    """.trimMargin()
+        """.trimMargin()
 
         val externalChannelsConfigJson2 = """
                         {
@@ -224,7 +224,7 @@ class ExternalMessagingRouteConfigGeneratorTest {
                                 }
                             ]
                         }
-                    """.trimMargin()
+        """.trimMargin()
 
         val expectedRouteConfig =
             """
@@ -292,7 +292,7 @@ class ExternalMessagingRouteConfigGeneratorTest {
                                 }
                             ]
                         }
-                    """.trimMargin()
+        """.trimMargin()
 
         val expectedRouteConfig =
             """
@@ -331,7 +331,7 @@ class ExternalMessagingRouteConfigGeneratorTest {
         val virtualNodeInfo = mock<VirtualNodeInfo> {
             on { holdingIdentity } doReturn ALICE_HOLDING_ID1
             on { externalMessagingRouteConfig } doReturn
-                    """
+                """
                         {
                             "currentRoutes": {
                                 "cpiIdentifier": {
@@ -350,7 +350,7 @@ class ExternalMessagingRouteConfigGeneratorTest {
                             },
                             "previousVersionRoutes": []
                         }
-                    """.trimIndent()
+                """.trimIndent()
         }
 
         val externalChannelsConfigJson = """
@@ -362,7 +362,7 @@ class ExternalMessagingRouteConfigGeneratorTest {
                                 }
                             ]
                         }
-                    """.trimMargin()
+        """.trimMargin()
 
         val expectedRouteConfig =
             """
@@ -417,7 +417,7 @@ class ExternalMessagingRouteConfigGeneratorTest {
         val virtualNodeInfo = mock<VirtualNodeInfo> {
             on { holdingIdentity } doReturn ALICE_HOLDING_ID1
             on { externalMessagingRouteConfig } doReturn
-                    """
+                """
                         {
                             "currentRoutes": {
                                 "cpiIdentifier": {
@@ -452,7 +452,7 @@ class ExternalMessagingRouteConfigGeneratorTest {
                                 }
                             ]
                         }
-                    """.trimIndent()
+                """.trimIndent()
         }
 
         val externalChannelsConfigJson = """
@@ -464,7 +464,7 @@ class ExternalMessagingRouteConfigGeneratorTest {
                                 }
                             ]
                         }
-                    """.trimMargin()
+        """.trimMargin()
 
         val expectedRouteConfig =
             """

@@ -7,6 +7,6 @@ import net.corda.messaging.api.mediator.MessagingClient
  *
  * @property onSerializationError Handler for serialization errors.
  */
-class MessagingClientConfig (
+class MessagingClientConfig(
     val onSerializationError: (ByteArray) -> Unit,
 )

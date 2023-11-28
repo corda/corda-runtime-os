@@ -56,7 +56,8 @@ internal open class SandboxImpl(
             return null
         } catch (e: IllegalStateException) {
             throw SandboxException(
-                "The bundle ${bundle.symbolicName} in sandbox $id has been uninstalled.", e
+                "The bundle ${bundle.symbolicName} in sandbox $id has been uninstalled.",
+                e
             )
         }
     }

@@ -50,7 +50,9 @@ class TaskManagerHelperTest {
         )
 
         val processorTasks = taskManagerHelper.createMessageProcessorTasks(
-            messageGroups, persistedStates, messageProcessor
+            messageGroups,
+            persistedStates,
+            messageProcessor
         )
 
         val expectedProcessorTasks = listOf(
@@ -75,7 +77,11 @@ class TaskManagerHelperTest {
     @Test
     fun `successfully creates message processor tasks from client tasks results`() {
         val updateState = State(
-            KEY2, ByteArray(0), version = 1, mock(), mock()
+            KEY2,
+            ByteArray(0),
+            version = 1,
+            mock(),
+            mock()
         )
 
         fun clientTaskResult(
@@ -84,16 +90,25 @@ class TaskManagerHelperTest {
             replyMessage: MediatorMessage<String>?,
         ): ClientTask.Result<String, String, String> {
             val processorTask = ProcessorTask(
-                key, null, events.toRecords(key), messageProcessor, stateManagerHelper
+                key,
+                null,
+                events.toRecords(key),
+                messageProcessor,
+                stateManagerHelper
             )
             val processorTaskResult = ProcessorTask.Result(
-                processorTask, listOf(), updateState
+                processorTask,
+                listOf(),
+                updateState
             )
             val clientTask = ClientTask(
-                mock(), mock(), processorTaskResult
+                mock(),
+                mock(),
+                processorTaskResult
             )
             return ClientTask.Result(
-                clientTask, replyMessage
+                clientTask,
+                replyMessage
             )
         }
 
@@ -267,14 +282,22 @@ class TaskManagerHelperTest {
     private fun List<String>.toCordaConsumerRecords(key: String) =
         this.map {
             CordaConsumerRecord(
-                topic = "", partition = 0, offset = 0, key, it, timestamp = 0
+                topic = "",
+                partition = 0,
+                offset = 0,
+                key,
+                it,
+                timestamp = 0
             )
         }
 
     private fun List<String>.toRecords(key: String) =
         this.map {
             Record(
-                topic = "", key, it, timestamp = 0
+                topic = "",
+                key,
+                it,
+                timestamp = 0
             )
         }
 }

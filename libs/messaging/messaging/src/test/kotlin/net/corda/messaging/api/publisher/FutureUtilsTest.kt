@@ -16,7 +16,6 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
-
 class FutureUtilsTest {
 
     companion object {
@@ -58,7 +57,7 @@ class FutureUtilsTest {
             waitOnPublisherFutures(completableFutures, VERY_LONG_TIME, TimeUnit.SECONDS, callback)
         }
 
-        completableFutures.forEachIndexed() { index, it ->
+        completableFutures.forEachIndexed { index, it ->
             if (index == 3) {
                 it.completeExceptionally(CordaMessageAPIIntermittentException(""))
             } else {
@@ -81,7 +80,7 @@ class FutureUtilsTest {
             waitOnPublisherFutures(completableFutures, VERY_LONG_TIME, TimeUnit.SECONDS, callback)
         }
 
-        completableFutures.forEachIndexed() { index, it ->
+        completableFutures.forEachIndexed { index, it ->
             if (index == 3) {
                 it.completeExceptionally(CordaMessageAPIFatalException(""))
             } else {
@@ -104,7 +103,7 @@ class FutureUtilsTest {
             waitOnPublisherFutures(completableFutures, VERY_LONG_TIME, TimeUnit.SECONDS, callback)
         }
 
-        completableFutures.forEachIndexed() { index, it ->
+        completableFutures.forEachIndexed { index, it ->
             if (index == 2) {
                 it.completeExceptionally(CordaMessageAPIIntermittentException(""))
             } else if (index == 3) {
@@ -129,7 +128,7 @@ class FutureUtilsTest {
             waitOnPublisherFutures(completableFutures, VERY_LONG_TIME, TimeUnit.SECONDS, callback)
         }
 
-        completableFutures.forEachIndexed() { index, it ->
+        completableFutures.forEachIndexed { index, it ->
             if (index == 3) {
                 it.completeExceptionally(IllegalAccessException())
             } else {

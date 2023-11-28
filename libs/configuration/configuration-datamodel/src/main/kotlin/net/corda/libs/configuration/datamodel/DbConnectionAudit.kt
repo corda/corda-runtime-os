@@ -7,8 +7,8 @@ import java.time.Instant
 import java.util.UUID
 import javax.persistence.Column
 import javax.persistence.Entity
-import javax.persistence.Enumerated
 import javax.persistence.EnumType
+import javax.persistence.Enumerated
 import javax.persistence.GeneratedValue
 import javax.persistence.GenerationType.SEQUENCE
 import javax.persistence.Id
@@ -29,7 +29,7 @@ import javax.persistence.Table
  */
 @Entity
 @Table(name = DbSchema.DB_CONNECTION_AUDIT_TABLE)
-data class DbConnectionAudit (
+data class DbConnectionAudit(
     @Id
     @SequenceGenerator(
         name = DB_CONNECTION_AUDIT_GENERATOR,

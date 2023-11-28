@@ -26,7 +26,12 @@ class SessionCounterpartyInfoRequestProcessorReceiveTest {
     @Test
     fun `receiving a SessionCounterpartyInfoRequest message responds with a SessionCounterpartyInfoResponse`() {
         val inputState = buildSessionState(
-            SessionStateType.CONFIRMED, 0, mutableListOf(), 1, mutableListOf(), sessionProperties = sessionProps
+            SessionStateType.CONFIRMED,
+            0,
+            mutableListOf(),
+            1,
+            mutableListOf(),
+            sessionProperties = sessionProps
         )
 
         val event = buildSessionEvent(

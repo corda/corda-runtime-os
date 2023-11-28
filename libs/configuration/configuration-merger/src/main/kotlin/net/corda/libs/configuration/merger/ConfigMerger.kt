@@ -25,5 +25,5 @@ interface ConfigMerger {
      * @param messagingConfig messaging config taken from the topic
      * @return Messaging config with boot config values merged into it.
      */
-    fun getMessagingConfig(bootConfig: SmartConfig, messagingConfig: SmartConfig? = null) : SmartConfig
+    fun getMessagingConfig(bootConfig: SmartConfig, messagingConfig: SmartConfig? = null): SmartConfig
 }

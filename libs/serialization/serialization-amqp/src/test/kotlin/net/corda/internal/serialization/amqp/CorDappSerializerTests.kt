@@ -27,8 +27,8 @@ class CorDappSerializerTests {
     }
 
     // Standard proxy serializer used internally, here for comparison purposes
-    class ExampleInternalProxySerializer
-        : BaseProxySerializer<NeedsProxy, ExampleInternalProxySerializer.Proxy>() {
+    class ExampleInternalProxySerializer :
+        BaseProxySerializer<NeedsProxy, ExampleInternalProxySerializer.Proxy>() {
         data class Proxy(val proxy_a_: String)
 
         override val type: Class<NeedsProxy> get() = NeedsProxy::class.java
@@ -45,7 +45,7 @@ class CorDappSerializerTests {
     }
 
     @Test
-	fun `type uses proxy`() {
+    fun `type uses proxy`() {
         val proxyFactory = testDefaultFactory()
         val internalProxyFactory = testDefaultFactory()
 
@@ -67,7 +67,7 @@ class CorDappSerializerTests {
     }
 
     @Test
-	fun proxiedTypeIsNested() {
+    fun proxiedTypeIsNested() {
         @CordaSerializable
         data class A(val a: Int, val b: NeedsProxy)
 
@@ -85,7 +85,7 @@ class CorDappSerializerTests {
     }
 
     @Test
-	fun testWithAllowListBlocked() {
+    fun testWithAllowListBlocked() {
         data class A(val a: Int, val b: NeedsProxy)
 
         val factory = testDefaultFactory()
@@ -101,7 +101,7 @@ class CorDappSerializerTests {
     data class NeedsProxyGen<T>(val a: T)
 
     class NeedsProxyGenProxySerializer :
-            SerializationCustomSerializer<NeedsProxyGen<*>, NeedsProxyGenProxySerializer.Proxy> {
+        SerializationCustomSerializer<NeedsProxyGen<*>, NeedsProxyGenProxySerializer.Proxy> {
         data class Proxy(val proxy_a_: Any?)
 
         override fun fromProxy(proxy: Proxy) = NeedsProxyGen(proxy.proxy_a_)
@@ -110,12 +110,11 @@ class CorDappSerializerTests {
 
     // Tests CORDA-1747
     @Test
-	fun proxiedGeneric() {
+    fun proxiedGeneric() {
         val proxyFactory = testDefaultFactory()
         proxyFactory.registerExternal(NeedsProxyGenProxySerializer(), proxyFactory)
 
         val msg = "help"
-
 
         val blob = SerializationOutput(proxyFactory).serialize(NeedsProxyGen(msg))
         val objFromProxy = DeserializationInput(proxyFactory).deserialize(blob)
@@ -134,8 +133,10 @@ class CorDappSerializerTests {
 
     // Proxy for our test class
     class NeedsProxyGenBoundedProxySerializer :
-            SerializationCustomSerializer<NeedsProxyGenBounded<*>,
-                    NeedsProxyGenBoundedProxySerializer.Proxy> {
+        SerializationCustomSerializer<
+            NeedsProxyGenBounded<*>,
+            NeedsProxyGenBoundedProxySerializer.Proxy
+            > {
         data class Proxy(val proxy_a_: Bound)
 
         override fun fromProxy(proxy: Proxy) = NeedsProxyGenBounded(proxy.proxy_a_)
@@ -151,7 +152,7 @@ class CorDappSerializerTests {
     // Because we're enforcing all classes have proxy serializers we
     // have to implement this to avoid the factory erroneously failing
     class HasWibbleProxy :
-            SerializationCustomSerializer<HasWibble, HasWibbleProxy.Proxy> {
+        SerializationCustomSerializer<HasWibble, HasWibbleProxy.Proxy> {
         data class Proxy(val proxy_a_: String)
 
         override fun fromProxy(proxy: Proxy) = HasWibble(proxy.proxy_a_)
@@ -160,7 +161,7 @@ class CorDappSerializerTests {
 
     // Tests CORDA-1747 - Finally the actual bound generics test, on failure it will throw
     @Test
-	fun proxiedBoundedGeneric() {
+    fun proxiedBoundedGeneric() {
         val proxyFactory = testDefaultFactory()
         proxyFactory.registerExternal(NeedsProxyGenBoundedProxySerializer(), proxyFactory)
         proxyFactory.registerExternal(HasWibbleProxy(), proxyFactory)
@@ -174,8 +175,10 @@ class CorDappSerializerTests {
     data class NeedsProxyGenContainer<T>(val a: List<T>)
 
     class NeedsProxyGenContainerProxySerializer :
-            SerializationCustomSerializer<NeedsProxyGenContainer<*>,
-                    NeedsProxyGenContainerProxySerializer.Proxy> {
+        SerializationCustomSerializer<
+            NeedsProxyGenContainer<*>,
+            NeedsProxyGenContainerProxySerializer.Proxy
+            > {
         data class Proxy(val proxy_a_: List<*>)
 
         override fun fromProxy(proxy: Proxy) = NeedsProxyGenContainer(proxy.proxy_a_)
@@ -184,7 +187,7 @@ class CorDappSerializerTests {
 
     // Tests CORDA-1747
     @Test
-	fun proxiedGenericContainer() {
+    fun proxiedGenericContainer() {
         val proxyFactory = testDefaultFactory()
         proxyFactory.registerExternal(NeedsProxyGenContainerProxySerializer(), proxyFactory)
 
@@ -208,7 +211,7 @@ class CorDappSerializerTests {
     class Derived<T>(a: T, val b: String) : Base<T>(a)
 
     class BaseProxy :
-            SerializationCustomSerializer<Base<*>, BaseProxy.Proxy> {
+        SerializationCustomSerializer<Base<*>, BaseProxy.Proxy> {
         data class Proxy(val proxy_a_: Any?)
 
         override fun fromProxy(proxy: Proxy) = Base(proxy.proxy_a_)
@@ -216,7 +219,7 @@ class CorDappSerializerTests {
     }
 
     class DerivedProxy :
-            SerializationCustomSerializer<Derived<*>, DerivedProxy.Proxy> {
+        SerializationCustomSerializer<Derived<*>, DerivedProxy.Proxy> {
         data class Proxy(val proxy_a_: Any?, val proxy_b_: String)
 
         override fun fromProxy(proxy: Proxy) = Derived(proxy.proxy_a_, proxy.proxy_b_)
@@ -225,7 +228,7 @@ class CorDappSerializerTests {
 
     // Tests CORDA-1747
     @Test
-	fun proxiedInheritableGenerics() {
+    fun proxiedInheritableGenerics() {
         val proxyFactory = testDefaultFactory()
         proxyFactory.registerExternal(BaseProxy(), proxyFactory)
         proxyFactory.registerExternal(DerivedProxy(), proxyFactory)

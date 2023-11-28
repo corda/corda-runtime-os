@@ -21,14 +21,16 @@ interface CipherSchemeMetadata : KeyEncodingService, AlgorithmParameterSpecEncod
          * List of digest algorithms that must not be used nor implemented due their vulnerabilities.
          */
         @JvmField
-        val BANNED_DIGESTS: Set<String> = Collections.unmodifiableSet(setOf(
-            "MD5",
-            "MD2",
-            "SHA-1",
-            "MD4",
-            "HARAKA-256",
-            "HARAKA-512"
-        ))
+        val BANNED_DIGESTS: Set<String> = Collections.unmodifiableSet(
+            setOf(
+                "MD5",
+                "MD2",
+                "SHA-1",
+                "MD4",
+                "HARAKA-256",
+                "HARAKA-512"
+            )
+        )
     }
 
     /**

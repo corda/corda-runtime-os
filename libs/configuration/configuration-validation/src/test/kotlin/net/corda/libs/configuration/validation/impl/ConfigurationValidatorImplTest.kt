@@ -133,12 +133,14 @@ class ConfigurationValidatorImplTest {
     @Test
     fun `default values from test schema`() {
         val validator = createSchemaValidator()
-        val expectedConfig = ConfigFactory.parseString("""
+        val expectedConfig = ConfigFactory.parseString(
+            """
             testInteger=7
             testReference.bar=false
             testReference.foo=[1,2,3]
             testObject.testPropertyA.a=1
-        """.trimIndent())
+            """.trimIndent()
+        )
 
         val outputConfig = validator.getDefaults(TEST_SCHEMA, TEST_VERSION)
 
@@ -159,7 +161,7 @@ class ConfigurationValidatorImplTest {
         return SmartConfigFactory.createWithoutSecurityServices().create(rawConfig)
     }
 
-    private fun emptyConfig() : SmartConfig {
+    private fun emptyConfig(): SmartConfig {
         return SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty())
     }
 

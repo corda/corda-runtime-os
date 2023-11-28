@@ -37,5 +37,5 @@ enum class SubscriptionType {
     /**
      * State and event subscription
      */
-    STATE_AND_EVENT;
+    STATE_AND_EVENT
 }

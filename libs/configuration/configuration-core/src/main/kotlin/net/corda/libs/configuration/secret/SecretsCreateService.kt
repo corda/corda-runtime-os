@@ -15,4 +15,3 @@ interface SecretsCreateService {
      */
     fun createValue(plainText: String, key: String): Config
 }
-

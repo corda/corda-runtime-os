@@ -1,9 +1,5 @@
 package net.corda.libs.cpi.datamodel.repository.impl
 
-import java.time.Instant
-import java.util.stream.Stream
-import javax.persistence.EntityManager
-import javax.persistence.LockModeType
 import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.cpi.datamodel.entities.internal.CpiCpkEntity
 import net.corda.libs.cpi.datamodel.entities.internal.CpiCpkKey
@@ -16,8 +12,12 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.v5.crypto.SecureHash
+import java.time.Instant
+import java.util.stream.Stream
+import javax.persistence.EntityManager
+import javax.persistence.LockModeType
 
-internal class CpiMetadataRepositoryImpl: CpiMetadataRepository {
+internal class CpiMetadataRepositoryImpl : CpiMetadataRepository {
     /**
      * @return null if not found
      */
@@ -39,8 +39,8 @@ internal class CpiMetadataRepositoryImpl: CpiMetadataRepository {
     override fun findByNameAndSignerSummaryHash(em: EntityManager, name: String, signerSummaryHash: SecureHash): List<CpiMetadata> {
         return em.createQuery(
             "FROM ${CpiMetadataEntity::class.simpleName} c " +
-                    "WHERE c.name = :cpiName " +
-                    "AND c.signerSummaryHash = :cpiSignerSummaryHash",
+                "WHERE c.name = :cpiName " +
+                "AND c.signerSummaryHash = :cpiSignerSummaryHash",
             CpiMetadataEntity::class.java
         )
             .setParameter("cpiName", name)
@@ -49,10 +49,10 @@ internal class CpiMetadataRepositoryImpl: CpiMetadataRepository {
     }
 
     override fun findByNameAndVersion(em: EntityManager, name: String, version: String): CpiMetadata {
-        return  em.createQuery(
+        return em.createQuery(
             "SELECT cpi FROM ${CpiMetadataEntity::class.simpleName} cpi " +
-                    "WHERE cpi.name = :cpiName "+
-                    "AND cpi.version = :cpiVersion ",
+                "WHERE cpi.name = :cpiName " +
+                "AND cpi.version = :cpiVersion ",
             CpiMetadataEntity::class.java
         )
             .setParameter("cpiName", name)
@@ -63,7 +63,7 @@ internal class CpiMetadataRepositoryImpl: CpiMetadataRepository {
     override fun findByFileChecksum(em: EntityManager, cpiFileChecksum: String): CpiMetadata? {
         val foundCpi = em.createQuery(
             "SELECT cpi FROM ${CpiMetadataEntity::class.simpleName} cpi " +
-                    "WHERE upper(cpi.fileChecksum) like :cpiFileChecksum ",
+                "WHERE upper(cpi.fileChecksum) like :cpiFileChecksum ",
             CpiMetadataEntity::class.java
         )
             .setParameter("cpiFileChecksum", "%${cpiFileChecksum.uppercase()}%")
@@ -76,12 +76,12 @@ internal class CpiMetadataRepositoryImpl: CpiMetadataRepository {
         // Joining the other tables to ensure all data is fetched eagerly
         return em.createQuery(
             "FROM ${CpiMetadataEntity::class.simpleName} cpi_ " +
-                    "INNER JOIN FETCH cpi_.cpks cpk_ " +
-                    "INNER JOIN FETCH cpk_.metadata cpk_meta_ " +
-                    "ORDER BY cpi_.name, cpi_.version, cpi_.signerSummaryHash",
+                "INNER JOIN FETCH cpi_.cpks cpk_ " +
+                "INNER JOIN FETCH cpk_.metadata cpk_meta_ " +
+                "ORDER BY cpi_.name, cpi_.version, cpi_.signerSummaryHash",
             CpiMetadataEntity::class.java
         ).resultList.map { cpiMetadataEntity ->
-           Triple(cpiMetadataEntity.entityVersion, cpiMetadataEntity.isDeleted, cpiMetadataEntity.toDto())
+            Triple(cpiMetadataEntity.entityVersion, cpiMetadataEntity.isDeleted, cpiMetadataEntity.toDto())
         }.stream()
     }
 
@@ -158,7 +158,7 @@ internal class CpiMetadataRepositoryImpl: CpiMetadataRepository {
     private fun createCpiCpkRelationships(em: EntityManager, cpiId: CpiIdentifier, cpks: Collection<Cpk>): Set<CpiCpkEntity> {
         val foundCpks = em.createQuery(
             "FROM ${CpkMetadataEntity::class.java.simpleName} cpk " +
-                    "WHERE cpk.cpkFileChecksum IN :cpkFileChecksums",
+                "WHERE cpk.cpkFileChecksum IN :cpkFileChecksums",
             CpkMetadataEntity::class.java
         )
             .setParameter("cpkFileChecksums", cpks.map { it.metadata.fileChecksum.toString() })

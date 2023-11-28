@@ -68,8 +68,8 @@ internal object LinkedHashMapIteratorSerializer : Serializer<Iterator<*>>() {
      * Fall back to equality for those.
      */
     private fun kryoOptimisesAwayReferencesButEqual(kryo: Kryo, a: Any, b: Any) =
-            (!kryo.referenceResolver.useReferences(a.javaClass) && !kryo.referenceResolver.useReferences(b.javaClass) && a == b)
+        (!kryo.referenceResolver.useReferences(a.javaClass) && !kryo.referenceResolver.useReferences(b.javaClass) && a == b)
 
     private fun mapEntriesEqual(kryo: Kryo, a: Any, b: Any) =
-            (a is Map.Entry<*, *> && b is Map.Entry<*, *> && iteratedObjectsEqual(kryo, a.key, b.key))
+        (a is Map.Entry<*, *> && b is Map.Entry<*, *> && iteratedObjectsEqual(kryo, a.key, b.key))
 }

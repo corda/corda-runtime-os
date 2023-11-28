@@ -22,15 +22,16 @@ class SchedulerLogTest {
         "batman",
         "joker",
         now.minusSeconds(diffInSeconds),
-        Date.from(now))
+        Date.from(now)
+    )
     private val tx = mock<EntityTransaction>()
-    private val em = mock<EntityManager>() {
+    private val em = mock<EntityManager> {
         on { transaction } doReturn tx
     }
-    private val emf = mock<EntityManagerFactory>() {
+    private val emf = mock<EntityManagerFactory> {
         on { createEntityManager() } doReturn em
     }
-    private val repo = mock<TaskSchedulerLogEntityRepository>() {
+    private val repo = mock<TaskSchedulerLogEntityRepository> {
         on { getOrInitialiseLog(any(), any(), any()) } doReturn loadedLog
     }
 

@@ -12,6 +12,6 @@ import org.osgi.service.component.annotations.Reference
 class LibrarySingletonServiceHolderFlow @Activate constructor(
     @Reference
     private val librarySingletonService: LibrarySingletonService
-): SubFlow<Int> {
+) : SubFlow<Int> {
     override fun call() = ++librarySingletonService.counter
 }

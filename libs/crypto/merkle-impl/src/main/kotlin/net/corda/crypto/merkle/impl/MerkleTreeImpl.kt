@@ -102,7 +102,6 @@ class MerkleTreeImpl(
             val zeros = nextHigherPower2(size).countLeadingZeroBits()
             return 31 - zeros
         }
-
     }
 
     private val leafHashes: List<SecureHash> by lazy(LazyThreadSafetyMode.PUBLICATION) {
@@ -192,26 +191,26 @@ class MerkleTreeImpl(
     override fun createAuditProof(leafIndices: List<Int>): MerkleProof {
         require(leafIndices.isNotEmpty()) { "Proof requires at least one leaf" }
         require(leafIndices.all { it >= 0 && it < leaves.size }) { "Leaf indices out of bounds" }
-        require(leafIndices.toSet().size == leafIndices.size) {"Duplications are not allowed."}
+        require(leafIndices.toSet().size == leafIndices.size) { "Duplications are not allowed." }
 
-        var inPath = List(leaves.size) { it in leafIndices }    // Initialize inPath from the input elements
+        var inPath = List(leaves.size) { it in leafIndices } // Initialize inPath from the input elements
         val outputHashes = mutableListOf<SecureHash>()
         var level = 0
         while (inPath.size > 1) {
-            val newInPath = mutableListOf<Boolean>()            // This will contain the next
-                                                                // level's in route element's
+            val newInPath = mutableListOf<Boolean>() // This will contain the next
+            // level's in route element's
             for (i in inPath.indices step 2) {
-                if (i <= inPath.size - 2) {                     // We still have a pair to process.
-                    newInPath += inPath[i] || inPath[i + 1]     // If any are in route, then their parent will be too
-                    if (!inPath[i] && inPath[i + 1]) {          // We need to add a hash for the "Only one" cases.
+                if (i <= inPath.size - 2) { // We still have a pair to process.
+                    newInPath += inPath[i] || inPath[i + 1] // If any are in route, then their parent will be too
+                    if (!inPath[i] && inPath[i + 1]) { // We need to add a hash for the "Only one" cases.
                         outputHashes += nodeHashes[level][i]
                     } else if (inPath[i] && !inPath[i + 1]) {
                         outputHashes += nodeHashes[level][i + 1]
                     }
                 }
             }
-            if ((inPath.size and 1) == 1) {                     // If the level has odd number of elements,
-                                                                // the last one is still to be processed.
+            if ((inPath.size and 1) == 1) { // If the level has odd number of elements,
+                // the last one is still to be processed.
                 newInPath += inPath.last()
             }
             inPath = newInPath

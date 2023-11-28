@@ -1,8 +1,5 @@
 package net.corda.libs.cpi.datamodel.entities.tests
 
-import java.time.Instant
-import java.time.temporal.ChronoUnit
-import java.util.UUID
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.cpi.datamodel.CpkFile
@@ -20,6 +17,9 @@ import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+import java.util.UUID
 
 internal object TestObject {
 
@@ -39,7 +39,7 @@ internal object TestObject {
         CpiMetadataEntity.create(
             CpiIdentifier(cpiName, cpiVersion, cpiSignerSummaryHash),
             "test-cpi-$id.cpi",
-            SecureHashImpl("SHA-256","test-cpi.cpi-$id-hash".toByteArray()),
+            SecureHashImpl("SHA-256", "test-cpi.cpi-$id-hash".toByteArray()),
             "{group-policy-json}",
             "group-id",
             "file-upload-request-id-$id",
@@ -48,9 +48,9 @@ internal object TestObject {
 
     fun createCpi(cpiId: UUID, cpks: Set<CpiCpkEntity>) =
         CpiMetadataEntity.create(
-            CpiIdentifier("test-cpi-$cpiId","1.0", SIGNER_SUMMARY_HASH),
+            CpiIdentifier("test-cpi-$cpiId", "1.0", SIGNER_SUMMARY_HASH),
             "test-cpi-$cpiId.cpi",
-            SecureHashImpl("SHA-256","test-cpi.cpi-$cpiId-hash".toByteArray()),
+            SecureHashImpl("SHA-256", "test-cpi.cpi-$cpiId-hash".toByteArray()),
             "{group-policy-json}",
             "group-id",
             "file-upload-request-id-$cpiId",
@@ -106,13 +106,18 @@ internal object TestObject {
     fun createCpkFile(
         fileChecksum: SecureHash,
         data: ByteArray
-    ) =  CpkFile(fileChecksum, data, 0)
+    ) = CpkFile(fileChecksum, data, 0)
 
     @Suppress("LongParameterList")
     fun createCpiCpkEntity(
-        cpiName: String = "test-cpi-${UUID.randomUUID()}.cpk", cpiVersion: String, cpiSignerSummaryHash: SecureHash,
-        cpkName: String, cpkVersion: String, cpkSignerSummaryHash: String,
-        cpkFileName: String, cpkFileChecksum: String
+        cpiName: String = "test-cpi-${UUID.randomUUID()}.cpk",
+        cpiVersion: String,
+        cpiSignerSummaryHash: SecureHash,
+        cpkName: String,
+        cpkVersion: String,
+        cpkSignerSummaryHash: String,
+        cpkFileName: String,
+        cpkFileChecksum: String
     ) = CpiCpkEntity(
         CpiCpkKey(cpiName, cpiVersion, cpiSignerSummaryHash.toString(), cpkFileChecksum),
         cpkFileName,
@@ -128,15 +133,18 @@ internal object TestObject {
             val cpkName = UUID.randomUUID().toString()
             val cpkId = "test-cpk-$cpkName.cpk"
             createCpiCpkEntity(
-                cpiName, cpiVersion, SIGNER_SUMMARY_HASH,
-                cpkId, "1.0", SecureHashImpl("SHA-256", "test-cpk-hash".toByteArray()).toString(),
-                "test-cpi-$id.cpk", cpkFileChecksum.toString()
+                cpiName,
+                cpiVersion,
+                SIGNER_SUMMARY_HASH,
+                cpkId,
+                "1.0",
+                SecureHashImpl("SHA-256", "test-cpk-hash".toByteArray()).toString(),
+                "test-cpi-$id.cpk",
+                cpkFileChecksum.toString()
             )
         }
         val cpi = createCpi(id, cpiName, cpiVersion, SIGNER_SUMMARY_HASH, cpkList.toSet())
 
         return Pair(cpi, cpkList)
     }
-
-
 }

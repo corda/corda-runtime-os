@@ -8,14 +8,14 @@ import org.osgi.service.component.annotations.Component
 /** Invokes methods on an implementation class from a non-exported package of another bundle. */
 @Suppress("unused")
 @Component(name = "invoke.private.impl.flow")
-class InvokePrivateImplFlow: SubFlow<String> {
+class InvokePrivateImplFlow : SubFlow<String> {
     override fun call() = WrapperFactory.create().data
 }
 
 /** Creates a class that uses a generic from a non-exported package of another bundle. */
 @Suppress("unused")
 @Component(name = "private.impl.as.generic.flow")
-class PrivateImplAsGenericFlow: SubFlow<String> {
+class PrivateImplAsGenericFlow : SubFlow<String> {
     override fun call(): String {
         val wrapper = WrapperFactory.create()
         return GenericClass(wrapper).call()

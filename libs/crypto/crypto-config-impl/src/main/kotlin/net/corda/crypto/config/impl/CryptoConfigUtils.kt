@@ -192,8 +192,6 @@ fun SmartConfig.retrying(): RetryingConfig =
         throw IllegalStateException("Failed to get $RETRYING.", e)
     }
 
-
-
 fun SmartConfig.flowBusProcessor(): CryptoBusProcessorConfig =
     try {
         CryptoBusProcessorConfig(getConfig(RETRYING))
@@ -236,7 +234,8 @@ fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any):
             )
         )
         .withValue(
-            HSM, ConfigValueFactory.fromMap(
+            HSM,
+            ConfigValueFactory.fromMap(
                 mapOf(
                     CryptoHSMConfig::retrying.name to mapOf(
                         CryptoHSMConfig.RetryConfig::maxAttempts.name to 3,
@@ -268,7 +267,6 @@ fun createDefaultCryptoConfig(wrappingKeyPassphrase: Any, wrappingKeySalt: Any):
                 ),
             )
         )
-
 
 private class ConfigurationSecretsImpl(
     private val owner: SmartConfig

@@ -27,7 +27,7 @@ interface PlatformDigestService {
      *
      * @throws [IllegalArgumentException] if the digest algorithm is not supported.
      */
-    fun hash(inputStream : InputStream, platformDigestName: DigestAlgorithmName): SecureHash
+    fun hash(inputStream: InputStream, platformDigestName: DigestAlgorithmName): SecureHash
 
     /**
      * Parses a secure hash in string form into a [SecureHash].

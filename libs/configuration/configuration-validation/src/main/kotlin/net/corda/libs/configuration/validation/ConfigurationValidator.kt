@@ -1,9 +1,9 @@
 package net.corda.libs.configuration.validation
 
 import com.typesafe.config.Config
-import java.io.InputStream
 import net.corda.libs.configuration.SmartConfig
 import net.corda.v5.base.versioning.Version
+import java.io.InputStream
 
 /**
  * Validator of configuration data against a configuration schema.
@@ -34,7 +34,7 @@ interface ConfigurationValidator {
      * @return The config returned as a SmartConfig. If [applyDefaults] is set to true, the returned config will have any empty fields set
      * to the defaults defined in the schema for this config [key]
      */
-    fun validate(key: String, version: Version, config: SmartConfig, applyDefaults: Boolean = false) : SmartConfig
+    fun validate(key: String, version: Version, config: SmartConfig, applyDefaults: Boolean = false): SmartConfig
 
     /**
      * Validate some configuration data for a given schema
@@ -54,7 +54,7 @@ interface ConfigurationValidator {
      * @return The config returned as a SmartConfig. If [applyDefaults] is set to true, the returned config will have any empty fields set
      * to the defaults defined in the schema for this config [key]
      */
-    fun validate(key: String, config: SmartConfig, schemaInput: InputStream, applyDefaults: Boolean = false) : SmartConfig
+    fun validate(key: String, config: SmartConfig, schemaInput: InputStream, applyDefaults: Boolean = false): SmartConfig
 
     /**
      * Retrieves default values from configuration schema.
@@ -67,5 +67,5 @@ interface ConfigurationValidator {
      *                                           likely to happen due to an incorrect version being provided
      * @return default values from configuration schema
      */
-    fun getDefaults(key: String, version: Version) : Config
+    fun getDefaults(key: String, version: Version): Config
 }

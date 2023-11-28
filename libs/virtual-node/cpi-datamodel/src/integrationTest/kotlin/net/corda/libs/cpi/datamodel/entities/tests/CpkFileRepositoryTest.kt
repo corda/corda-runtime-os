@@ -46,7 +46,7 @@ class CpkFileRepositoryTest {
     }
 
     @BeforeEach
-    fun clearCpkFileTable(){
+    fun clearCpkFileTable() {
         // This is required because when the tests run using Jenkins a real database is used and the data
         // is not wiped out. The tests in this class require a clean CpkFileEntity table.
         emf.transaction {
@@ -62,7 +62,7 @@ class CpkFileRepositoryTest {
     @Test
     fun `can persist cpk files and query with given cpk checksum`() {
         emf.transaction {
-            //Create CPK files
+            // Create CPK files
             val cpkFile1 = TestObject.genRandomCpkFile()
             val cpkFile2 = TestObject.genRandomCpkFile()
             val cpkFile3 = TestObject.genRandomCpkFile()
@@ -113,7 +113,7 @@ class CpkFileRepositoryTest {
     @Test
     fun `can persist cpk files and check if a cpk file exists`() {
         emf.transaction {
-            //Create CPK files
+            // Create CPK files
             val cpkFile1 = TestObject.genRandomCpkFile()
 
             // Create CPKs
@@ -138,7 +138,7 @@ class CpkFileRepositoryTest {
     fun `can persist cpk files and retrive all cpk files`() {
         emf.transaction {
             it.createQuery("delete from ${CpkFileEntity::class.simpleName}").executeUpdate()
-            //Create CPK files
+            // Create CPK files
             val cpkFile1 = TestObject.genRandomCpkFile()
             val cpkFile2 = TestObject.genRandomCpkFile()
 
@@ -173,7 +173,7 @@ class CpkFileRepositoryTest {
     @Test
     fun `all cpk files are retrieved excepted the filtered ones`() {
         emf.transaction {
-            //Create CPK files
+            // Create CPK files
             val cpkFile1 = TestObject.genRandomCpkFile()
             val cpkFile2 = TestObject.genRandomCpkFile()
             val cpkFile3 = TestObject.genRandomCpkFile()

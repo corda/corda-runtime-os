@@ -24,4 +24,3 @@ enum class TransactionIsolationLevel {
         val default = READ_COMMITTED
     }
 }
-

@@ -23,7 +23,11 @@ class SessionCounterpartyInfoResponseProcessorReceiveTest {
     @Test
     fun `receiving a SessionCounterpartyInfoResponse message with properties stores them in the session state`() {
         val inputState = buildSessionState(
-            SessionStateType.CONFIRMED, 0, mutableListOf(), 1, mutableListOf()
+            SessionStateType.CONFIRMED,
+            0,
+            mutableListOf(),
+            1,
+            mutableListOf()
         )
 
         val event = buildSessionEvent(

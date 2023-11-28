@@ -15,11 +15,11 @@ import org.mockito.kotlin.verify
 
 class SmartConfigFactoryTest {
     private val secretsServiceConfig = ConfigFactory.parseMap(mapOf(SmartConfigFactory.SECRET_SERVICE_TYPE to "duck"))
-    private val mockSecretsServiceFactory1 = mock< SecretsServiceFactory> {
+    private val mockSecretsServiceFactory1 = mock<SecretsServiceFactory> {
         on { type } doReturn ("donald")
     }
     private val mockSecretsService = mock<SecretsService>()
-    private val mockSecretsServiceFactory2 = mock< SecretsServiceFactory> {
+    private val mockSecretsServiceFactory2 = mock<SecretsServiceFactory> {
         on { type } doReturn ("duck")
         on { create(secretsServiceConfig) } doReturn (mockSecretsService)
     }
@@ -30,8 +30,10 @@ class SmartConfigFactoryTest {
         val config = ConfigFactory.parseMap(
             mapOf(
                 ConfigKeys.SECRET_KEY to mapOf(
-                "fred" to "jon"
-            )))
+                    "fred" to "jon"
+                )
+            )
+        )
         val smartConfig = cf.create(config.atKey("foo"))
         smartConfig.getString("foo")
 
@@ -52,9 +54,12 @@ class SmartConfigFactoryTest {
     fun `when createWithoutSecurityServices used masked`() {
         val cf = SmartConfigFactory.createWithoutSecurityServices()
         val config = ConfigFactory.parseMap(
-            mapOf(ConfigKeys.SECRET_KEY to mapOf(
-                "fred" to "jon"
-            )))
+            mapOf(
+                ConfigKeys.SECRET_KEY to mapOf(
+                    "fred" to "jon"
+                )
+            )
+        )
         val smartConfig = cf.create(config.atKey("foo"))
         assertThat(smartConfig.getString("foo")).isEqualTo(MaskedSecretsLookupService.MASK_VALUE)
     }

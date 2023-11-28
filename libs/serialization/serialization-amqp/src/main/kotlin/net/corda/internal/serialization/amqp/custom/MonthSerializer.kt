@@ -15,4 +15,3 @@ class MonthSerializer : BaseDirectSerializer<Month>() {
         writer.putAsString(obj.name)
     }
 }
-

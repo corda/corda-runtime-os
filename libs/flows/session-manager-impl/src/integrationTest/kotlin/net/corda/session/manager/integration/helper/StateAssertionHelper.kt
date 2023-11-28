@@ -13,13 +13,12 @@ fun SessionParty.assertAllMessagesDelivered() {
     this.assertReceivedMessagesDelivered()
 }
 
-fun SessionParty.assertLastSentSeqNum( expectedSeqNum: Int) {
+fun SessionParty.assertLastSentSeqNum(expectedSeqNum: Int) {
     assertThat(sessionState.sendEventsState?.lastProcessedSequenceNum).isEqualTo(expectedSeqNum)
 }
 
-fun SessionParty.assertLastReceivedSeqNum( expectedSeqNum: Int) {
+fun SessionParty.assertLastReceivedSeqNum(expectedSeqNum: Int) {
     assertThat(sessionState.receivedEventsState?.lastProcessedSequenceNum).isEqualTo(expectedSeqNum)
-
 }
 
 fun SessionParty.assertSentMessagesDelivered() {

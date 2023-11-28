@@ -19,8 +19,12 @@ import java.io.InputStream
     service = [ JsonValidator::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class ],
     scope = ServiceScope.PROTOTYPE
 )
-class JsonValidatorImpl: JsonValidator,
-    UsedByFlow, UsedByPersistence, UsedByVerification, SingletonSerializeAsToken {
+class JsonValidatorImpl :
+    JsonValidator,
+    UsedByFlow,
+    UsedByPersistence,
+    UsedByVerification,
+    SingletonSerializeAsToken {
 
     override fun validate(json: String, wrappedSchema: WrappedJsonSchema) {
         val errors = validateSchema(json, wrappedSchema)
@@ -32,9 +36,11 @@ class JsonValidatorImpl: JsonValidator,
     override fun canonicalize(json: String): String = JsonCanonicalizer(json).encodedString
 
     override fun parseSchema(schema: InputStream): WrappedJsonSchema =
-        WrappedJsonSchema(JsonSchemaFactory
-            .getInstance(SpecVersion.VersionFlag.V201909)
-            .getSchema(schema))
+        WrappedJsonSchema(
+            JsonSchemaFactory
+                .getInstance(SpecVersion.VersionFlag.V201909)
+                .getSchema(schema)
+        )
 
     private fun validateSchema(json: String, schemaWrapper: WrappedJsonSchema): Set<ValidationMessage> {
         val data = ObjectMapper().readTree(json)

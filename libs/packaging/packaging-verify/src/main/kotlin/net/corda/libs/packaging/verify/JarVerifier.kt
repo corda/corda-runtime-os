@@ -3,6 +3,7 @@ package net.corda.libs.packaging.verify
 import net.corda.libs.packaging.core.exception.CordappManifestException
 import net.corda.libs.packaging.core.exception.InvalidSignatureException
 import net.corda.libs.packaging.signerInfo
+import net.corda.libs.packaging.verify.SigningHelpers.isSigningRelated
 import java.io.InputStream
 import java.security.CodeSigner
 import java.security.cert.X509Certificate
@@ -10,7 +11,6 @@ import java.util.Arrays
 import java.util.jar.JarEntry
 import java.util.jar.JarInputStream
 import java.util.jar.Manifest
-import net.corda.libs.packaging.verify.SigningHelpers.isSigningRelated
 
 /**
  * Verifies JAR by performing following checks:
@@ -64,8 +64,9 @@ class JarVerifier(
                 // Code signers can be retrieved only after JarEntry has been completely verified by reading from the entry
                 // input stream until the end of the stream has been reached
                 it.closeEntry()
-                if (jarEntry.codeSigners == null)
+                if (jarEntry.codeSigners == null) {
                     throw InvalidSignatureException("File ${jarEntry.name} is not signed in package \"$jarName\"")
+                }
 
                 // All signed files should have the same signers
                 if (firstSignedEntry == null) {
@@ -73,15 +74,16 @@ class JarVerifier(
                 } else if (!Arrays.equals(firstSignedEntry.codeSigners, jarEntry.codeSigners)) {
                     throw InvalidSignatureException(
                         "Mismatch between signers ${signerInfo(firstSignedEntry)} for file ${firstSignedEntry.name}" +
-                                " and signers ${signerInfo(jarEntry)} for file ${jarEntry.name} in package \"$jarName\""
+                            " and signers ${signerInfo(jarEntry)} for file ${jarEntry.name} in package \"$jarName\""
                     )
                 }
 
                 jarEntries.add(jarEntry)
             }
 
-            if (firstSignedEntry == null)
+            if (firstSignedEntry == null) {
                 throw InvalidSignatureException("No signed files found in package \"$jarName\"")
+            }
 
             codeSigners = firstSignedEntry.codeSigners.toList()
         }
@@ -91,8 +93,9 @@ class JarVerifier(
     private fun verifyNoFilesAdded() {
         val filesInManifest = manifest!!.entries.keys
         jarEntries.forEach {
-            if (!filesInManifest.contains(it.name))
+            if (!filesInManifest.contains(it.name)) {
                 throw SecurityException("File ${it.name} not listed in manifest in package \"$jarName\"")
+            }
         }
     }
 

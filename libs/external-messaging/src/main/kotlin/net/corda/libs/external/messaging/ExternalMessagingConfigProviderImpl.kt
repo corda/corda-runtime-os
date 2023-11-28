@@ -20,7 +20,7 @@ class ExternalMessagingConfigProviderImpl(private val externalMessagingConfigDef
     }
 
     constructor(defaultConfig: SmartConfig) :
-            this(toExternalMessagingConfigDefaults(defaultConfig))
+        this(toExternalMessagingConfigDefaults(defaultConfig))
 
     override fun getDefaults(): ExternalMessagingConfigDefaults {
         return externalMessagingConfigDefaults

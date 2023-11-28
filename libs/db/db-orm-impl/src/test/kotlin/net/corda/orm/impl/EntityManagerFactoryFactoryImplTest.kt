@@ -31,14 +31,16 @@ class EntityManagerFactoryFactoryImplTest {
         on { ddlManage } doReturn DdlManage.UPDATE
         on { jdbcTimezone } doReturn "OOF"
     }
-    private val mockBuilder = mock<(p: PersistenceUnitInfo) -> EntityManagerFactoryBuilder>() {
+    private val mockBuilder = mock<(p: PersistenceUnitInfo) -> EntityManagerFactoryBuilder> {
         on { invoke(any()) } doReturn(builder)
     }
 
     @Test
     fun `when create set persistenceUnitName`() {
         EntityManagerFactoryFactoryImpl(mockBuilder).create(
-            "Unit Test", listOf(TestEntity::class.java), config
+            "Unit Test",
+            listOf(TestEntity::class.java),
+            config
         )
         verify(mockBuilder)(
             check {
@@ -50,7 +52,9 @@ class EntityManagerFactoryFactoryImplTest {
     @Test
     fun `when create set properties`() {
         EntityManagerFactoryFactoryImpl(mockBuilder).create(
-            "Unit Test", listOf(TestEntity::class.java), config
+            "Unit Test",
+            listOf(TestEntity::class.java),
+            config
         )
         verify(mockBuilder)(
             check {
@@ -67,7 +71,9 @@ class EntityManagerFactoryFactoryImplTest {
     @Test
     fun `when create set entity list`() {
         EntityManagerFactoryFactoryImpl(mockBuilder).create(
-            "Unit Test", listOf(TestEntity::class.java, AnotherTestEntity::class.java), config
+            "Unit Test",
+            listOf(TestEntity::class.java, AnotherTestEntity::class.java),
+            config
         )
         verify(mockBuilder)(
             check {
@@ -81,7 +87,9 @@ class EntityManagerFactoryFactoryImplTest {
     @Test
     fun `when create set datasource`() {
         EntityManagerFactoryFactoryImpl(mockBuilder).create(
-            "Unit Test", listOf(TestEntity::class.java), config
+            "Unit Test",
+            listOf(TestEntity::class.java),
+            config
         )
         verify(mockBuilder)(
             check {

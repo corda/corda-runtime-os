@@ -35,4 +35,3 @@ class BraveRecordTracing(tracing: Tracing) {
         return BraveBatchPublishTracing(clientId, tracer, tracingContextExtractor)
     }
 }
-

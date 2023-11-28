@@ -11,10 +11,10 @@ import net.corda.v5.crypto.SecureHash.DELIMITER
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.condition.EnabledForJreRange
-import org.junit.jupiter.api.condition.JRE.JAVA_11
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.condition.EnabledForJreRange
+import org.junit.jupiter.api.condition.JRE.JAVA_11
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import java.io.ByteArrayInputStream
@@ -46,8 +46,12 @@ class PlatformDigestServiceImplTest {
 
         @JvmStatic
         fun majorDigests() = listOf(
-            SHA2_256, SHA2_384, SHA2_512,
-            SHA3_256, SHA3_384, SHA3_512
+            SHA2_256,
+            SHA2_384,
+            SHA2_512,
+            SHA3_256,
+            SHA3_384,
+            SHA3_512
         )
 
         @JvmStatic
@@ -81,7 +85,8 @@ class PlatformDigestServiceImplTest {
         assertEquals(digestService.digestLength(algorithmName), hash.bytes.size)
         assertEquals(
             digestService.hash(message, algorithmName),
-            digestService.hash(message, algorithmName))
+            digestService.hash(message, algorithmName)
+        )
     }
 
     @Test
@@ -103,12 +108,14 @@ class PlatformDigestServiceImplTest {
         assertEquals(48, digestService.digestLength(SHA2_384))
         assertEquals(
             parseSecureHash(
-            "SHA-384:5E3DBD33BEC467F625E28D4C5DF90CAACEA722F2DBB2AE9EF9C59EF4FB0FA31A070F5911156713F6AA0FCB09186B78FF"),
+                "SHA-384:5E3DBD33BEC467F625E28D4C5DF90CAACEA722F2DBB2AE9EF9C59EF4FB0FA31A070F5911156713F6AA0FCB09186B78FF"
+            ),
             hash
         )
         assertEquals(
-    "SHA-384:5E3DBD33BEC467F625E28D4C5DF90CAACEA722F2DBB2AE9EF9C59EF4FB0FA31A070F5911156713F6AA0FCB09186B78FF",
-            hash.toString())
+            "SHA-384:5E3DBD33BEC467F625E28D4C5DF90CAACEA722F2DBB2AE9EF9C59EF4FB0FA31A070F5911156713F6AA0FCB09186B78FF",
+            hash.toString()
+        )
     }
 
     @Test
@@ -118,11 +125,16 @@ class PlatformDigestServiceImplTest {
         assertEquals(64, digestService.digestLength(SHA2_512))
         assertEquals(
             parseSecureHash(
-            "SHA-512:A0F54F81E7FC7387989E1582E83F3A9051151E380F67E0F71D5CEE266B582F4105E08E8707A554FC9D3A6B3BEA1ECA" +
-                    "8CC4E6BA1CF4DE78D8822B3EA724DE9D6C"),
-            hash)
-        assertEquals("SHA-512:A0F54F81E7FC7387989E1582E83F3A9051151E380F67E0F71D5CEE266B582F4105E08E8707A5" +
-                "54FC9D3A6B3BEA1ECA8CC4E6BA1CF4DE78D8822B3EA724DE9D6C", hash.toString())
+                "SHA-512:A0F54F81E7FC7387989E1582E83F3A9051151E380F67E0F71D5CEE266B582F4105E08E8707A554FC9D3A6B3BEA1ECA" +
+                    "8CC4E6BA1CF4DE78D8822B3EA724DE9D6C"
+            ),
+            hash
+        )
+        assertEquals(
+            "SHA-512:A0F54F81E7FC7387989E1582E83F3A9051151E380F67E0F71D5CEE266B582F4105E08E8707A5" +
+                "54FC9D3A6B3BEA1ECA8CC4E6BA1CF4DE78D8822B3EA724DE9D6C",
+            hash.toString()
+        )
     }
 
     @EnabledForJreRange(min = JAVA_11)
@@ -133,10 +145,12 @@ class PlatformDigestServiceImplTest {
         assertEquals(32, digestService.digestLength(SHA3_256))
         assertEquals(
             parseSecureHash(
-            "SHA3-256:A243D53F7273F4C92ED901A14F11B372FDF6FF69583149AFD4AFA24BF17A8880"),
+                "SHA3-256:A243D53F7273F4C92ED901A14F11B372FDF6FF69583149AFD4AFA24BF17A8880"
+            ),
             hash
         )
-        assertEquals("SHA3-256:A243D53F7273F4C92ED901A14F11B372FDF6FF69583149AFD4AFA24BF17A8880",
+        assertEquals(
+            "SHA3-256:A243D53F7273F4C92ED901A14F11B372FDF6FF69583149AFD4AFA24BF17A8880",
             hash.toString()
         )
     }
@@ -148,11 +162,14 @@ class PlatformDigestServiceImplTest {
         assertEquals(48, hash.bytes.size)
         assertEquals(48, digestService.digestLength(SHA3_384))
         assertEquals(
-            parseSecureHash("SHA3-384:AB698010362BFEDB89BCC8800F7E1410A92D83D5B80B99969A079D1FF1BC0" +
-                "7CF817998E855B6D3A56797F1182AC24307"),
+            parseSecureHash(
+                "SHA3-384:AB698010362BFEDB89BCC8800F7E1410A92D83D5B80B99969A079D1FF1BC0" +
+                    "7CF817998E855B6D3A56797F1182AC24307"
+            ),
             hash
         )
-        assertEquals("SHA3-384:AB698010362BFEDB89BCC8800F7E1410A92D83D5B80B99969A079D1FF1BC07CF817998E855" +
+        assertEquals(
+            "SHA3-384:AB698010362BFEDB89BCC8800F7E1410A92D83D5B80B99969A079D1FF1BC07CF817998E855" +
                 "B6D3A56797F1182AC24307",
             hash.toString()
         )
@@ -165,11 +182,14 @@ class PlatformDigestServiceImplTest {
         assertEquals(64, hash.bytes.size)
         assertEquals(64, digestService.digestLength(SHA3_512))
         assertEquals(
-            parseSecureHash("SHA3-512:20FDD4FAB7B85E6C9227C679588E1E62A781217C455AEC5792DA155736C2" +
-                "7CAFC5989ECC6E6D7590BDBB57F9E4C945B16DB60E2D09C4F72C8D826A34A2D03C4E"),
+            parseSecureHash(
+                "SHA3-512:20FDD4FAB7B85E6C9227C679588E1E62A781217C455AEC5792DA155736C2" +
+                    "7CAFC5989ECC6E6D7590BDBB57F9E4C945B16DB60E2D09C4F72C8D826A34A2D03C4E"
+            ),
             hash
         )
-        assertEquals("SHA3-512:20FDD4FAB7B85E6C9227C679588E1E62A781217C455AEC5792DA155736C27CAFC5989ECC6" +
+        assertEquals(
+            "SHA3-512:20FDD4FAB7B85E6C9227C679588E1E62A781217C455AEC5792DA155736C27CAFC5989ECC6" +
                 "E6D7590BDBB57F9E4C945B16DB60E2D09C4F72C8D826A34A2D03C4E",
             hash.toString()
         )
@@ -206,7 +226,8 @@ class PlatformDigestServiceImplTest {
         assertEquals(digestService.digestLength(algorithmName), hash.bytes.size)
         assertEquals(
             digestService.hash(message, algorithmName),
-            digestService.hash(message, algorithmName))
+            digestService.hash(message, algorithmName)
+        )
     }
 
     @ParameterizedTest
@@ -216,7 +237,7 @@ class PlatformDigestServiceImplTest {
     ) {
         val algorithmName = DigestAlgorithmName(digestScheme.algorithmName)
         val random = Random(17)
-        for ( i in 1..100) {
+        for (i in 1..100) {
             val len = random.nextInt(127, 277)
             val data = ByteArray(len)
             random.nextBytes(data)
@@ -237,7 +258,7 @@ class PlatformDigestServiceImplTest {
     ) {
         val algorithmName = DigestAlgorithmName(digestScheme.algorithmName)
         val random = Random(17)
-        for ( i in 1..100) {
+        for (i in 1..100) {
             val len = random.nextInt(1, 100)
             val data = ByteArray(len)
             random.nextBytes(data)
@@ -260,7 +281,7 @@ class PlatformDigestServiceImplTest {
     ) {
         val algorithmName = DigestAlgorithmName(digestScheme.algorithmName)
         val random = Random(17)
-        for ( i in 1..100) {
+        for (i in 1..100) {
             val len = random.nextInt(375, 2074)
             val data = ByteArray(len)
             random.nextBytes(data)
@@ -282,7 +303,7 @@ class PlatformDigestServiceImplTest {
     ) {
         val algorithmName = DigestAlgorithmName(digestScheme.algorithmName)
         val random = Random(17)
-        for ( i in 1..10) {
+        for (i in 1..10) {
             val len = random.nextInt(37_794, 63_987)
             val data = ByteArray(len)
             random.nextBytes(data)
@@ -304,7 +325,7 @@ class PlatformDigestServiceImplTest {
     ) {
         val algorithmName = DigestAlgorithmName(digestScheme.algorithmName)
         val random = Random(17)
-        for ( len in (DEFAULT_BUFFER_SIZE - 5)..((DEFAULT_BUFFER_SIZE + 5))) {
+        for (len in (DEFAULT_BUFFER_SIZE - 5)..((DEFAULT_BUFFER_SIZE + 5))) {
             val data = ByteArray(len)
             random.nextBytes(data)
             val stream = ByteArrayInputStream(data)
@@ -325,8 +346,8 @@ class PlatformDigestServiceImplTest {
                 return currentVersion.toFloat() >= version.versionString.toFloat()
             }
 
-            private val currentVersion: String = System.getProperty("java.specification.version") ?:
-            throw IllegalStateException("Unable to retrieve system property java.specification.version")
+            private val currentVersion: String = System.getProperty("java.specification.version")
+                ?: throw IllegalStateException("Unable to retrieve system property java.specification.version")
         }
     }
 

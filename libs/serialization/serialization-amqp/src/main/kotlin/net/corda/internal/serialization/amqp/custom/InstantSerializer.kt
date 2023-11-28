@@ -11,11 +11,11 @@ class InstantSerializer : BaseProxySerializer<Instant, InstantSerializer.Instant
     override val proxyType: Class<InstantProxy> get() = InstantProxy::class.java
     override val withInheritance: Boolean get() = false
 
-    override fun toProxy(obj: Instant): InstantProxy
-        = InstantProxy(obj.epochSecond, obj.nano)
+    override fun toProxy(obj: Instant): InstantProxy =
+        InstantProxy(obj.epochSecond, obj.nano)
 
-    override fun fromProxy(proxy: InstantProxy): Instant
-        = Instant.ofEpochSecond(proxy.epochSeconds, proxy.nanos.toLong())
+    override fun fromProxy(proxy: InstantProxy): Instant =
+        Instant.ofEpochSecond(proxy.epochSeconds, proxy.nanos.toLong())
 
     data class InstantProxy(val epochSeconds: Long, val nanos: Int)
 }

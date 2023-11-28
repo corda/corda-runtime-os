@@ -63,7 +63,6 @@ interface LifecycleCoordinatorFactory {
     }
 }
 
-
 /**
  * Create a new lifecycle coordinator.
  *
@@ -81,7 +80,6 @@ inline fun <reified T> LifecycleCoordinatorFactory.createCoordinator(
 ): LifecycleCoordinator {
     return this.createCoordinator(LifecycleCoordinatorName.forComponent<T>(), handler)
 }
-
 
 /**
  * Create a new lifecycle coordinator.
@@ -104,4 +102,3 @@ inline fun <reified T> LifecycleCoordinatorFactory.createCoordinator(
 ): LifecycleCoordinator {
     return this.createCoordinator(LifecycleCoordinatorName.forComponent<T>(), dependentComponents, handler)
 }
-

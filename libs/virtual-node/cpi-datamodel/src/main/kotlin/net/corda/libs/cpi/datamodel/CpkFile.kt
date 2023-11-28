@@ -11,12 +11,12 @@ data class CpkFile(val fileChecksum: SecureHash, val data: ByteArray) {
     // This field should only be set by the CpkFileRepository when the entity is converted to a dto
     // If the field is not set then it was not created by the CpkFileRepository.
     var version: Int = VERSION_NOT_SET
-            private set
+        private set
 
     // This constructor is internal to ensure people won't set the version field. That should only be
     // done by the CpkFileRepository.
     internal constructor(fileChecksum: SecureHash, data: ByteArray, version: Int) :
-            this(fileChecksum, data) {
+        this(fileChecksum, data) {
         this.version = version
     }
 

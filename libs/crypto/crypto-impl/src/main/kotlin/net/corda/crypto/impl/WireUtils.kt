@@ -51,7 +51,6 @@ fun Map<String, String>.toWire(): KeyValuePairList {
     )
 }
 
-
 fun KeyValuePairList.toMap(): Map<String, String> = items.toMap()
 
 fun List<KeyValuePair>.toMap(): Map<String, String> {
@@ -90,7 +89,6 @@ fun CryptoSignatureSpec.toSignatureSpec(serializer: AlgorithmParameterSpecEncodi
             .record(Duration.ofNanos(System.nanoTime() - startTime))
     }
 }
-
 
 fun SignatureSpec.toWire(serializer: AlgorithmParameterSpecEncodingService): CryptoSignatureSpec {
     val startTime = System.nanoTime()

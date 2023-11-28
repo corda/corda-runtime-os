@@ -39,11 +39,13 @@ class JavalinServerConfigTest {
 
     @BeforeAll
     fun setup() {
-        server.registerEndpoint(Endpoint(HTTPMethod.POST, path, {
-            it.status(ResponseCode.OK)
-            it.result("Flood ${it.bodyAsBytes().size}")
-            it
-        }))
+        server.registerEndpoint(
+            Endpoint(HTTPMethod.POST, path, {
+                it.status(ResponseCode.OK)
+                it.result("Flood ${it.bodyAsBytes().size}")
+                it
+            })
+        )
         server.start(port)
     }
 
@@ -78,7 +80,7 @@ class JavalinServerConfigTest {
         val request = HttpRequest.newBuilder()
             .uri(URI.create(url))
             .headers("Content-Type", "application/octet-stream")
-            .POST(HttpRequest.BodyPublishers.ofInputStream { payload.plus(Random.nextBytes(1)).inputStream() } )
+            .POST(HttpRequest.BodyPublishers.ofInputStream { payload.plus(Random.nextBytes(1)).inputStream() })
             .build()
         val response = httpClient.send(request, HttpResponse.BodyHandlers.ofString())
         assertThat(response.statusCode()).isEqualTo(ResponseCode.OK.statusCode)

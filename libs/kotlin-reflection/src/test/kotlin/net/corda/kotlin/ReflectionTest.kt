@@ -33,15 +33,17 @@ import kotlin.reflect.full.staticProperties
 class ReflectionTest {
     @ParameterizedTest(name = "{displayName} => {0}")
     @DisplayName("Basic Class")
-    @ValueSource(classes = [
-        KotlinExample::class,
-        JavaExample::class,
-        ExtraApi::class,
-        Base::class,
-        AtomicInteger::class,
-        String::class,
-        Any::class
-    ])
+    @ValueSource(
+        classes = [
+            KotlinExample::class,
+            JavaExample::class,
+            ExtraApi::class,
+            Base::class,
+            AtomicInteger::class,
+            String::class,
+            Any::class
+        ]
+    )
     fun testBasics(type: Class<*>) {
         val klass = type.kotlin
         val kotlinClass = type.kotlinClass

@@ -192,7 +192,10 @@ class RPCSubscriptionImplTest {
     @Test
     fun `rpc subscription receives bad request and correctly continues`() {
         val badRecord = CordaConsumerRecord(
-            TOPIC_PREFIX + config.topic, 0, 0, "0",
+            TOPIC_PREFIX + config.topic,
+            0,
+            0,
+            "0",
             RPCRequest(
                 "sender",
                 "0",
@@ -204,7 +207,10 @@ class RPCSubscriptionImplTest {
             0
         )
         val goodRecord = CordaConsumerRecord(
-            TOPIC_PREFIX + config.topic, 0, 2, "0",
+            TOPIC_PREFIX + config.topic,
+            0,
+            2,
+            "0",
             RPCRequest(
                 "sender",
                 "1",
@@ -260,7 +266,10 @@ class RPCSubscriptionImplTest {
                 first = false
                 listOf(
                     CordaConsumerRecord(
-                        TOPIC_PREFIX + config.topic, 0, 0, "0",
+                        TOPIC_PREFIX + config.topic,
+                        0,
+                        0,
+                        "0",
                         null, // Missing RPCRequest
                         0
                     )
@@ -297,7 +306,10 @@ class RPCSubscriptionImplTest {
                 first = false
                 listOf(
                     CordaConsumerRecord(
-                        TOPIC_PREFIX + config.topic, 0, 0, "0",
+                        TOPIC_PREFIX + config.topic,
+                        0,
+                        0,
+                        "0",
                         RPCRequest(
                             "sender",
                             "0",

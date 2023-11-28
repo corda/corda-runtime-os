@@ -7,12 +7,12 @@ import net.corda.libs.packaging.core.CpkIdentifier
 import java.util.Collections
 import java.util.TreeMap
 
-internal class CpiImpl(override val metadata: CpiMetadata, cpks : Iterable<Cpk>) : Cpi {
+internal class CpiImpl(override val metadata: CpiMetadata, cpks: Iterable<Cpk>) : Cpi {
 
-    private val cpkMap : Map<CpkIdentifier, Cpk>
+    private val cpkMap: Map<CpkIdentifier, Cpk>
 
     override val cpks: Collection<Cpk>
-    get() = Collections.unmodifiableCollection(cpkMap.values)
+        get() = Collections.unmodifiableCollection(cpkMap.values)
 
     init {
         cpkMap = cpks.asSequence().map {

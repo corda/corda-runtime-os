@@ -140,6 +140,7 @@ class EvolvabilityTests {
         val sf = testDefaultFactory()
         val resource = "EvolvabilityTests.addAdditionalParam"
         val url = EvolvabilityTests::class.java.getResource(resource)
+
         @Suppress("UNUSED_VARIABLE")
         val A = 1
 
@@ -311,6 +312,7 @@ class EvolvabilityTests {
         val sf = testDefaultFactory()
         val resource = "EvolvabilityTests.addMandatoryFieldWithAltConstructorUnAnnotated"
         val url = EvolvabilityTests::class.java.getResource(resource)
+
         @Suppress("UNUSED_VARIABLE")
         val A = 1
 
@@ -369,6 +371,7 @@ class EvolvabilityTests {
         val sf = testDefaultFactory()
         val resource = "EvolvabilityTests.addMandatoryFieldWithAltReorderedConstructorAndRemoval"
         val A = 1
+
         @Suppress("UNUSED_VARIABLE")
         val B = 100
         val C = "This is not a banana"

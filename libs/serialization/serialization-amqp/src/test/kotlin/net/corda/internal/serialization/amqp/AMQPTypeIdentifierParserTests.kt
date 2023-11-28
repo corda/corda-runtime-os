@@ -94,7 +94,9 @@ class AMQPTypeIdentifierParserTests {
     // Old tests for DeserializedParameterizedType
     @Test
     fun `test nested`() {
-        verify(" java.util.Map < java.util.Map< java.lang.String, java.lang.Integer >, java.util.Map < java.lang.Long , java.lang.String > >")
+        verify(
+            " java.util.Map < java.util.Map< java.lang.String, java.lang.Integer >, java.util.Map < java.lang.Long , java.lang.String > >"
+        )
     }
 
     @Test
@@ -114,7 +116,9 @@ class AMQPTypeIdentifierParserTests {
 
     @Test
     fun `test list of commands`() {
-        verify("java.util.List<net.corda.internal.serialization.amqp.TestCommand<net.corda.internal.serialization.amqp.TestCommand<net.corda.internal.serialization.amqp.TestCommandData>>>")
+        verify(
+            "java.util.List<net.corda.internal.serialization.amqp.TestCommand<net.corda.internal.serialization.amqp.TestCommand<net.corda.internal.serialization.amqp.TestCommandData>>>"
+        )
     }
 
     @Test

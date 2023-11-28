@@ -131,10 +131,10 @@ class SessionManagerImplTest {
                 )
             ),
         )
-        //validate only messages with a timestamp in the past are returned.
+        // validate only messages with a timestamp in the past are returned.
         val (outputState, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig, testIdentity)
         assertThat(messagesToSend.size).isEqualTo(2)
-        //validate all acks removed
+        // validate all acks removed
         assertThat(outputState.sendEventsState.undeliveredMessages.size).isEqualTo(0)
     }
 
@@ -150,14 +150,15 @@ class SessionManagerImplTest {
             instant
         )
 
-        //validate no heartbeat
+        // validate no heartbeat
         val (firstUpdatedState, messagesToSend) = sessionManager.getMessagesToSend(sessionState, instant, testSmartConfig, testIdentity)
         assertThat(messagesToSend.size).isEqualTo(0)
         assertThat(firstUpdatedState.status).isEqualTo(SessionStateType.CONFIRMED)
 
-        //Validate heartbeat
+        // Validate heartbeat
         val (secondUpdatedState, secondMessagesToSend) = sessionManager.getMessagesToSend(
-            sessionState, instant.plusMillis(sessionTimeout  + 1),
+            sessionState,
+            instant.plusMillis(sessionTimeout + 1),
             testSmartConfig,
             testIdentity
         )

@@ -1,11 +1,11 @@
 package net.corda.crypto.core
 
-import java.security.PublicKey
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.cipher.suite.sha256Bytes
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
+import java.security.PublicKey
 
 // TODO we should end up with only having helpers all of them using `DigestService`/ `PlatformDigestService`
 //  as recorded in https://r3-cev.atlassian.net/browse/CORE-10267.

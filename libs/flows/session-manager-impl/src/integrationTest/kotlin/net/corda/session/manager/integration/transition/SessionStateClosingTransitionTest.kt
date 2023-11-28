@@ -19,7 +19,7 @@ import java.time.Instant
 
 class SessionStateClosingTransitionTest {
 
-    private val messagingChunkFactory : MessagingChunkFactory = mock<MessagingChunkFactory>().apply {
+    private val messagingChunkFactory: MessagingChunkFactory = mock<MessagingChunkFactory>().apply {
         whenever(createChunkSerializerService(any())).thenReturn(mock())
     }
     private val sessionManager = SessionManagerImpl(SessionEventProcessorFactory(messagingChunkFactory), messagingChunkFactory)
@@ -105,7 +105,7 @@ class SessionStateClosingTransitionTest {
         val receivedSeqNum: Int
         val sentEvents = mutableListOf<SessionEvent>()
         val receivedEvents = mutableListOf<SessionEvent>()
-        
+
         if (initiatedClose) {
             val sessionClose = generateMessage(SessionMessageType.CLOSE, instant)
             sessionClose.sequenceNum = 2

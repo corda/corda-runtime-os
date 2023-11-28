@@ -1,11 +1,10 @@
 package net.corda.messaging.chunking
 
-import java.nio.ByteBuffer
+import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.chunking.Checksum
 import net.corda.chunking.impl.ChunkBuilderServiceImpl
-import net.corda.crypto.core.toAvro
 import net.corda.crypto.cipher.suite.PlatformDigestService
-import net.corda.avro.serialization.CordaAvroDeserializer
+import net.corda.crypto.core.toAvro
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import org.assertj.core.api.Assertions.assertThat
@@ -14,6 +13,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 
 class ChunkDeserializerServiceImplTest {
     private lateinit var valueDeserializer: CordaAvroDeserializer<String>
@@ -38,8 +38,8 @@ class ChunkDeserializerServiceImplTest {
     private lateinit var testChunk1: Chunk
     private lateinit var testChunk2: Chunk
     private lateinit var testFinalChunk: Chunk
-    private lateinit var chunkMap : MutableMap<ChunkKey, Chunk>
-    private lateinit var chunks : MutableList<Chunk>
+    private lateinit var chunkMap: MutableMap<ChunkKey, Chunk>
+    private lateinit var chunks: MutableList<Chunk>
 
     @BeforeEach
     fun setup() {
@@ -52,9 +52,9 @@ class ChunkDeserializerServiceImplTest {
         val digest = Checksum.digestForBytes(fullBytes)
         whenever(platformDigestService.hash(any<ByteArray>(), any())).thenReturn(digest)
 
-        testChunk1 = chunkBuilder.buildChunk(id, 1,  ByteBuffer.wrap(bytes1), 10)
-        testChunk2 = chunkBuilder.buildChunk(id, 2,  ByteBuffer.wrap(bytes2), 20)
-        testFinalChunk = chunkBuilder.buildFinalChunk(id, 3,  digest, 20)
+        testChunk1 = chunkBuilder.buildChunk(id, 1, ByteBuffer.wrap(bytes1), 10)
+        testChunk2 = chunkBuilder.buildChunk(id, 2, ByteBuffer.wrap(bytes2), 20)
+        testFinalChunk = chunkBuilder.buildFinalChunk(id, 3, digest, 20)
         chunks = mutableListOf(testChunk1, testChunk2, testFinalChunk)
         chunkMap = mutableMapOf(
             testChunkKey1 to testChunk1,
@@ -98,7 +98,7 @@ class ChunkDeserializerServiceImplTest {
         assertThat(result).isEqualTo(null)
     }
 
-    //assemble without keys
+    // assemble without keys
     @Test
     fun `assemble chunks fails due to value deserialization error`() {
         whenever(valueDeserializer.deserialize(any())).thenReturn(null)

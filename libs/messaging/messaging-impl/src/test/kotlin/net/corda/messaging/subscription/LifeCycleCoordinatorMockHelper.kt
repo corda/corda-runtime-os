@@ -15,12 +15,12 @@ import org.mockito.kotlin.whenever
  */
 internal class LifeCycleCoordinatorMockHelper {
     private var _lifecycleCoordinatorThrows = false
-    val lifecycleCoordinatorThrows:Boolean
+    val lifecycleCoordinatorThrows: Boolean
         get() = _lifecycleCoordinatorThrows
 
     val lifecycleCoordinator: LifecycleCoordinator = mock()
 
-    private var lifecycleCoordinatorClosed = false;
+    private var lifecycleCoordinatorClosed = false
 
     init {
         doAnswer {

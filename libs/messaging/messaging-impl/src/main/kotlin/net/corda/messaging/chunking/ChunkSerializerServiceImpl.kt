@@ -1,14 +1,11 @@
 package net.corda.messaging.chunking
 
-import java.nio.ByteBuffer
-import java.util.UUID
-import kotlin.math.ceil
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.chunking.Checksum
 import net.corda.chunking.ChunkBuilderService
 import net.corda.chunking.Constants.Companion.APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
 import net.corda.chunking.Constants.Companion.CORDA_RECORD_OVERHEAD
 import net.corda.crypto.cipher.suite.PlatformDigestService
-import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import net.corda.messagebus.api.producer.CordaProducerRecord
@@ -18,6 +15,9 @@ import net.corda.utilities.trace
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.DigestAlgorithmName
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
+import java.util.UUID
+import kotlin.math.ceil
 
 /**
  * Breaks up an object, bytes or record into chunks.
@@ -71,7 +71,9 @@ class ChunkSerializerServiceImpl(
             val newValueChunkCount = getChunkCount(newValue)
             if (oldValueChunkCount > newValueChunkCount) {
                 generateChunkKeysToClear(key, oldValueChunkCount, newValueChunkCount)
-            } else null
+            } else {
+                null
+            }
         } catch (ex: Exception) {
             logger.warn("Failed to calculate ChunkKeys to clear", ex)
             null
@@ -90,7 +92,7 @@ class ChunkSerializerServiceImpl(
         val bytes = cordaAvroSerializer.serialize(value) ?: throw CordaRuntimeException("Failed to serialize record value")
         val byteSize = bytes.size
         if (byteSize <= maxRecordSize) return 0
-        return ceil(byteSize.toDouble()/maxRecordSize).toInt() + 1
+        return ceil(byteSize.toDouble() / maxRecordSize).toInt() + 1
     }
 
     /**
@@ -103,7 +105,7 @@ class ChunkSerializerServiceImpl(
     private fun generateChunkKeysToClear(key: Any, oldValueChunkCount: Int, newValueChunkCount: Int): List<ChunkKey> {
         val serializedKey = cordaAvroSerializer.serialize(key) ?: return emptyList()
         val chunkKeys = mutableListOf<ChunkKey>()
-        for (i in oldValueChunkCount downTo  newValueChunkCount+1) {
+        for (i in oldValueChunkCount downTo newValueChunkCount + 1) {
             chunkKeys.add(ChunkKey(ByteBuffer.wrap(serializedKey), i))
         }
         return chunkKeys
@@ -121,7 +123,7 @@ class ChunkSerializerServiceImpl(
             val byteBuffer = ByteBuffer.wrap(bytes, offset, length)
             chunks.add(chunkBuilderService.buildChunk(requestId, partNumber++, byteBuffer, offset.toLong()))
         }
-        chunks.add(chunkBuilderService.buildFinalChunk(requestId, partNumber, hash, byteSize.toLong()-1))
+        chunks.add(chunkBuilderService.buildFinalChunk(requestId, partNumber, hash, byteSize.toLong() - 1))
         logger.trace { "Generating chunks for bytes size $byteSize, chunk id ${chunks.first().requestId}" }
 
         return chunks
@@ -132,7 +134,7 @@ class ChunkSerializerServiceImpl(
      * @param obj object to serialize
      * @return the serialized object as a ByteArray. Returns null if serialization fails or the object was null.
      */
-    private fun tryToSerialize(obj: Any?) : ByteArray? {
+    private fun tryToSerialize(obj: Any?): ByteArray? {
         if (obj == null) return null
         return try {
             cordaAvroSerializer.serialize(obj)

@@ -104,8 +104,8 @@ internal class CordaTransactionalDBProducerImplTest {
     fun `transactional producer sends correct entry to database`() {
         val dbAccess: DBAccess = mock()
         whenever(dbAccess.getTopicPartitionMapFor(any())).thenReturn(setOf(CordaTopicPartition(topic, 1)))
-        val writeOffsets = mock<WriteOffsets>() {
-            on{ getNextOffsetFor(any()) }.thenReturn(6)
+        val writeOffsets = mock<WriteOffsets> {
+            on { getNextOffsetFor(any()) }.thenReturn(6)
         }
         val serializer = mock<CordaAvroSerializer<Any>>()
         whenever(serializer.serialize(eq(key))).thenReturn(serializedKey)

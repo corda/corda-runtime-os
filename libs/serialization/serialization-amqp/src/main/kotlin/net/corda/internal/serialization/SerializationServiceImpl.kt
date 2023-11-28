@@ -19,9 +19,11 @@ class SerializationServiceImpl(
     override fun <T : Any> serialize(obj: T): SerializedBytes<T> {
         return try {
             @Suppress("deprecation", "removal")
-            java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
-                SerializationOutput(outputFactory).serialize(obj, context)
-            })
+            java.security.AccessController.doPrivileged(
+                PrivilegedExceptionAction {
+                    SerializationOutput(outputFactory).serialize(obj, context)
+                }
+            )
         } catch (e: PrivilegedActionException) {
             throw e.exception
         }
@@ -30,9 +32,11 @@ class SerializationServiceImpl(
     override fun <T : Any> deserialize(serializedBytes: SerializedBytes<T>, clazz: Class<T>): T {
         return try {
             @Suppress("deprecation", "removal")
-            java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
-                DeserializationInput(inputFactory).deserialize(serializedBytes.unwrap(), clazz, context)
-            })
+            java.security.AccessController.doPrivileged(
+                PrivilegedExceptionAction {
+                    DeserializationInput(inputFactory).deserialize(serializedBytes.unwrap(), clazz, context)
+                }
+            )
         } catch (e: PrivilegedActionException) {
             throw e.exception
         }
@@ -41,9 +45,11 @@ class SerializationServiceImpl(
     override fun <T : Any> deserialize(bytes: ByteArray, clazz: Class<T>): T {
         return try {
             @Suppress("deprecation", "removal")
-            java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
-                DeserializationInput(inputFactory).deserialize(bytes.sequence(), clazz, context)
-            })
+            java.security.AccessController.doPrivileged(
+                PrivilegedExceptionAction {
+                    DeserializationInput(inputFactory).deserialize(bytes.sequence(), clazz, context)
+                }
+            )
         } catch (e: PrivilegedActionException) {
             throw e.exception
         }

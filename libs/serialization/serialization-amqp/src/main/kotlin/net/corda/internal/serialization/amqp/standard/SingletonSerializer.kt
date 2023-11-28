@@ -1,15 +1,15 @@
 package net.corda.internal.serialization.amqp.standard
 
-import net.corda.internal.serialization.amqp.LocalSerializerFactory
 import net.corda.internal.serialization.amqp.AMQPSerializer
-import net.corda.internal.serialization.amqp.TypeNotation
-import net.corda.internal.serialization.amqp.RestrictedType
 import net.corda.internal.serialization.amqp.Descriptor
-import net.corda.internal.serialization.amqp.SerializationOutput
-import net.corda.internal.serialization.amqp.withDescribed
-import net.corda.internal.serialization.amqp.SerializationSchemas
-import net.corda.internal.serialization.amqp.Metadata
 import net.corda.internal.serialization.amqp.DeserializationInput
+import net.corda.internal.serialization.amqp.LocalSerializerFactory
+import net.corda.internal.serialization.amqp.Metadata
+import net.corda.internal.serialization.amqp.RestrictedType
+import net.corda.internal.serialization.amqp.SerializationOutput
+import net.corda.internal.serialization.amqp.SerializationSchemas
+import net.corda.internal.serialization.amqp.TypeNotation
+import net.corda.internal.serialization.amqp.withDescribed
 import net.corda.internal.serialization.model.LocalTypeInformation
 import net.corda.serialization.SerializationContext
 import org.apache.qpid.proton.codec.Data
@@ -41,16 +41,25 @@ class SingletonSerializer(override val type: Class<*>, val singleton: Any, facto
         output.writeTypeNotations(typeNotation)
     }
 
-    override fun writeObject(obj: Any, data: Data, type: Type, output: SerializationOutput,
-                             context: SerializationContext, debugIndent: Int
+    override fun writeObject(
+        obj: Any,
+        data: Data,
+        type: Type,
+        output: SerializationOutput,
+        context: SerializationContext,
+        debugIndent: Int
     ) {
         data.withDescribed(typeNotation.descriptor) {
             data.putBoolean(false)
         }
     }
 
-    override fun readObject(obj: Any, serializationSchemas: SerializationSchemas, metadata: Metadata,
-                            input: DeserializationInput, context: SerializationContext
+    override fun readObject(
+        obj: Any,
+        serializationSchemas: SerializationSchemas,
+        metadata: Metadata,
+        input: DeserializationInput,
+        context: SerializationContext
     ): Any {
         return singleton
     }

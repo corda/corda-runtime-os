@@ -68,7 +68,7 @@ private fun futuresContainFatalError(futures: List<CompletableFuture<Unit>>): Co
     return null
 }
 
-private inline fun onCompletedWithFatalException(future: CompletableFuture<Unit>, block:(CordaMessageAPIFatalException) -> Unit) {
+private inline fun onCompletedWithFatalException(future: CompletableFuture<Unit>, block: (CordaMessageAPIFatalException) -> Unit) {
     if (future.isCompletedExceptionally) {
         try {
             future.get() // was already completed exceptionally to get here, so no timeout required

@@ -1,18 +1,18 @@
 package net.corda.internal.serialization.amqp.standard
 
-import net.corda.internal.serialization.amqp.LocalSerializerFactory
+import net.corda.internal.serialization.amqp.AMQPNotSerializableException
 import net.corda.internal.serialization.amqp.AMQPSerializer
-import net.corda.internal.serialization.amqp.TypeNotation
-import net.corda.internal.serialization.amqp.RestrictedType
 import net.corda.internal.serialization.amqp.AMQPTypeIdentifiers
-import net.corda.internal.serialization.amqp.Descriptor
 import net.corda.internal.serialization.amqp.Choice
+import net.corda.internal.serialization.amqp.Descriptor
+import net.corda.internal.serialization.amqp.DeserializationInput
+import net.corda.internal.serialization.amqp.LocalSerializerFactory
+import net.corda.internal.serialization.amqp.Metadata
+import net.corda.internal.serialization.amqp.RestrictedType
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializationSchemas
-import net.corda.internal.serialization.amqp.Metadata
-import net.corda.internal.serialization.amqp.DeserializationInput
+import net.corda.internal.serialization.amqp.TypeNotation
 import net.corda.internal.serialization.amqp.asClass
-import net.corda.internal.serialization.amqp.AMQPNotSerializableException
 import net.corda.internal.serialization.amqp.withDescribed
 import net.corda.internal.serialization.amqp.withList
 import net.corda.serialization.SerializationContext
@@ -47,22 +47,34 @@ class EnumSerializer(declaredType: Type, declaredClass: Class<*>, factory: Local
         output.writeTypeNotations(typeNotation)
     }
 
-    override fun readObject(obj: Any, serializationSchemas: SerializationSchemas, metadata: Metadata,
-                            input: DeserializationInput, context: SerializationContext): Any {
+    override fun readObject(
+        obj: Any,
+        serializationSchemas: SerializationSchemas,
+        metadata: Metadata,
+        input: DeserializationInput,
+        context: SerializationContext
+    ): Any {
         val enumName = (obj as List<*>)[0] as String
         val enumOrd = obj[1] as Int
         val fromOrd = type.asClass().enumConstants[enumOrd] as Enum<*>?
 
         if (enumName != fromOrd?.name) {
             throw AMQPNotSerializableException(
-                    type,
-                    "Deserializing obj as enum $type with value $enumName.$enumOrd but ordinality has changed")
+                type,
+                "Deserializing obj as enum $type with value $enumName.$enumOrd but ordinality has changed"
+            )
         }
         return fromOrd
     }
 
-    override fun writeObject(obj: Any, data: Data, type: Type, output: SerializationOutput,
-                             context: SerializationContext, debugIndent: Int) {
+    override fun writeObject(
+        obj: Any,
+        data: Data,
+        type: Type,
+        output: SerializationOutput,
+        context: SerializationContext,
+        debugIndent: Int
+    ) {
         if (obj !is Enum<*>) {
             throw AMQPNotSerializableException(type, "Serializing $obj as enum when it isn't")
         }

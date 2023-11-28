@@ -37,7 +37,7 @@ class MerkleTreeFactoryTest {
         val leafData = (0 until 8).map { it.toByteArray() }
         val merkleTree = merkleTreeFactory.createTree(leafData, nonceHashDigestProvider)
 
-        val merkleProof = merkleTree.createAuditProof(listOf(1,3,5))
+        val merkleProof = merkleTree.createAuditProof(listOf(1, 3, 5))
 
         assertTrue(merkleProof.verify(merkleTree.root, nonceHashDigestProvider))
     }

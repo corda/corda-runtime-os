@@ -10,8 +10,8 @@ import org.mockito.kotlin.verify
 class PostgresEntityManagerConfigurationTest {
     @Test
     fun `set default config values`() {
-        val dataSourceFactory = mock<DataSourceFactory>() {
-            on { create(any(), any(), any(), any(), any(), any(),any(), any(), any(), any(), any(), any()) } doReturn (mock())
+        val dataSourceFactory = mock<DataSourceFactory> {
+            on { create(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } doReturn (mock())
         }
 
         PostgresDataSourceFactory(dataSourceFactory).create(

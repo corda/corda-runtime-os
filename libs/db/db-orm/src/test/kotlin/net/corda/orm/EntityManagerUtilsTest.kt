@@ -17,10 +17,10 @@ class EntityManagerUtilsTest {
 
     @Test
     fun `when transaction and commit fails call close`() {
-        val tx = mock<EntityTransaction>() {
+        val tx = mock<EntityTransaction> {
             on { commit() } doThrow RuntimeException("exception when committing")
         }
-        val em = mock<EntityManager>() {
+        val em = mock<EntityManager> {
             on { transaction } doReturn tx
         }
 
@@ -28,8 +28,7 @@ class EntityManagerUtilsTest {
             transactionExecutor(em) {
                 println("do")
             }
-        }
-        catch (e: Exception) {
+        } catch (e: Exception) {
             println("Caught $e")
         }
 
@@ -38,11 +37,11 @@ class EntityManagerUtilsTest {
 
     @Test
     fun `when transaction and rollback fails call close`() {
-        val tx = mock<EntityTransaction>() {
+        val tx = mock<EntityTransaction> {
             on { rollback() } doThrow RuntimeException("exception when rolling back")
             on { rollbackOnly } doReturn (true)
         }
-        val em = mock<EntityManager>() {
+        val em = mock<EntityManager> {
             on { transaction } doReturn tx
         }
 
@@ -50,8 +49,7 @@ class EntityManagerUtilsTest {
             transactionExecutor(em) {
                 throw RuntimeException("exception in block")
             }
-        }
-        catch (e: Exception) {
+        } catch (e: Exception) {
             println("Caught $e")
         }
 
@@ -61,7 +59,7 @@ class EntityManagerUtilsTest {
     @Test
     fun `when transaction close after commit`() {
         val tx = mock<EntityTransaction>()
-        val em = mock<EntityManager>() {
+        val em = mock<EntityManager> {
             on { transaction } doReturn tx
         }
 
@@ -75,7 +73,7 @@ class EntityManagerUtilsTest {
     @Test
     fun `when transaction call begin`() {
         val tx = mock<EntityTransaction>()
-        val em = mock<EntityManager>() {
+        val em = mock<EntityManager> {
             on { transaction } doReturn tx
         }
 
@@ -89,7 +87,7 @@ class EntityManagerUtilsTest {
     @Test
     fun `when transaction call commit`() {
         val tx = mock<EntityTransaction>()
-        val em = mock<EntityManager>() {
+        val em = mock<EntityManager> {
             on { transaction } doReturn tx
         }
 
@@ -103,7 +101,7 @@ class EntityManagerUtilsTest {
     @Test
     fun `when transaction and something goes wrong set rollback`() {
         val tx = mock<EntityTransaction>()
-        val em = mock<EntityManager>() {
+        val em = mock<EntityManager> {
             on { transaction } doReturn tx
         }
 
@@ -111,8 +109,7 @@ class EntityManagerUtilsTest {
             transactionExecutor(em) {
                 throw RuntimeException("exception in block")
             }
-        }
-        catch (e: Exception) {
+        } catch (e: Exception) {
             println("Caught $e")
         }
 
@@ -121,10 +118,10 @@ class EntityManagerUtilsTest {
 
     @Test
     fun `when transaction and set rollback roll back and don't commit`() {
-        val tx = mock<EntityTransaction>() {
+        val tx = mock<EntityTransaction> {
             on { rollbackOnly } doReturn true
         }
-        val em = mock<EntityManager>() {
+        val em = mock<EntityManager> {
             on { transaction } doReturn tx
         }
 
@@ -139,7 +136,7 @@ class EntityManagerUtilsTest {
     @Test
     fun `when transaction and something goes wrong rethrow`() {
         val tx = mock<EntityTransaction>()
-        val em = mock<EntityManager>() {
+        val em = mock<EntityManager> {
             on { transaction } doReturn tx
         }
 

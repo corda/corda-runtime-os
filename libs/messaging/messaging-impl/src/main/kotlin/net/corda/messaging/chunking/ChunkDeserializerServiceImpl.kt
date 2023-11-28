@@ -1,10 +1,10 @@
 package net.corda.messaging.chunking
 
+import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.chunking.Checksum
 import net.corda.chunking.Constants
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.core.SecureHashImpl
-import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import net.corda.messaging.api.chunking.ChunkDeserializerService
@@ -58,8 +58,10 @@ class ChunkDeserializerServiceImpl<K : Any, V : Any>(
      * @throws IllegalArgumentException when no checksum is found
      */
     private fun getCheckSumFromFinalChunk(chunks: List<Chunk>) =
-        (chunks.find { it.checksum != null }?.checksum?.bytes
-            ?: throw IllegalArgumentException(Constants.SECURE_HASH_MISSING_ERROR))
+        (
+            chunks.find { it.checksum != null }?.checksum?.bytes
+                ?: throw IllegalArgumentException(Constants.SECURE_HASH_MISSING_ERROR)
+            )
 
     /**
      * Validate that a [SecureHash] is correct for the given [receivedBytes] and [messageDigestBytes]

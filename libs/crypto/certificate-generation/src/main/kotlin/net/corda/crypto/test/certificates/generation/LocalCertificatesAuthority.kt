@@ -74,12 +74,14 @@ internal open class LocalCertificatesAuthority(
             basicConstraints
         )
         certBuilder.addExtension(
-            Extension.keyUsage, false, KeyUsage(
+            Extension.keyUsage,
+            false,
+            KeyUsage(
                 KeyUsage.digitalSignature
-                        or KeyUsage.keyEncipherment
-                        or KeyUsage.keyAgreement
-                        or KeyUsage.keyCertSign
-                        or KeyUsage.cRLSign
+                    or KeyUsage.keyEncipherment
+                    or KeyUsage.keyAgreement
+                    or KeyUsage.keyCertSign
+                    or KeyUsage.cRLSign
             )
         )
 
@@ -111,7 +113,8 @@ internal open class LocalCertificatesAuthority(
             it.load(null)
             it.setKeyEntry(
                 alias,
-                privateKeyAndCertificate.privateKey, PASSWORD.toCharArray(),
+                privateKeyAndCertificate.privateKey,
+                PASSWORD.toCharArray(),
                 arrayOf(privateKeyAndCertificate.certificate),
             )
         }

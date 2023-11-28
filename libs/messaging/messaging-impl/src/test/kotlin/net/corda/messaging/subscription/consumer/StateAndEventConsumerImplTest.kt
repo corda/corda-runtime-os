@@ -262,15 +262,21 @@ class StateAndEventConsumerImplTest {
         whenever(stateConsumer.beginningOffsets(any()))
             .thenReturn(assignedStateTopicPartitions.associateWith { 0L })
         whenever(stateConsumer.endOffsets(any()))
-            .thenReturn(mapOf(
-                CordaTopicPartition(getStateAndEventStateTopic(TOPIC), 0) to 1L,
-                CordaTopicPartition(getStateAndEventStateTopic(TOPIC), 1) to 0L,
-                CordaTopicPartition(getStateAndEventStateTopic(TOPIC), 2) to 0L
-            ))
+            .thenReturn(
+                mapOf(
+                    CordaTopicPartition(getStateAndEventStateTopic(TOPIC), 0) to 1L,
+                    CordaTopicPartition(getStateAndEventStateTopic(TOPIC), 1) to 0L,
+                    CordaTopicPartition(getStateAndEventStateTopic(TOPIC), 2) to 0L
+                )
+            )
 
         val consumer = StateAndEventConsumerImpl(
-            config, eventConsumer, stateConsumer, StateAndEventPartitionState
-                (mutableMapOf()), stateAndEventListener
+            config,
+            eventConsumer,
+            stateConsumer,
+            StateAndEventPartitionState
+            (mutableMapOf()),
+            stateAndEventListener
         )
         consumer.onPartitionsAssigned(assignedEventTopicPartitions)
         consumer.resetPollInterval()
@@ -370,8 +376,12 @@ class StateAndEventConsumerImplTest {
             .thenReturn(assignedTopicPartitionsAfterRebalance)
 
         val consumer = StateAndEventConsumerImpl(
-            config, eventConsumer, stateConsumer, StateAndEventPartitionState
-                (mutableMapOf()), stateAndEventListener
+            config,
+            eventConsumer,
+            stateConsumer,
+            StateAndEventPartitionState
+            (mutableMapOf()),
+            stateAndEventListener
         )
 
         val latch = CountDownLatch(1)

@@ -1,5 +1,7 @@
 package net.corda.libs.cpi.datamodel.entities.internal
 
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.v5.crypto.SecureHash
 import java.io.Serializable
 import java.time.Instant
 import javax.persistence.CascadeType
@@ -15,8 +17,6 @@ import javax.persistence.OneToMany
 import javax.persistence.PreUpdate
 import javax.persistence.Table
 import javax.persistence.Version
-import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.v5.crypto.SecureHash
 
 /**
  * Cpi entity

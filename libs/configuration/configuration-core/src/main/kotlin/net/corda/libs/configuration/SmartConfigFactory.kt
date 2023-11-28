@@ -22,8 +22,7 @@ interface SmartConfigFactory {
          * @param secretsServiceConfig Typesafe config object that defines which [secretsService] should be used.
          * @param secretsServiceFactories Available implementations of [SecretsServiceFactory]
          */
-        fun createWith(secretsServiceConfig: Config, secretsServiceFactories: Collection<SecretsServiceFactory>):
-                SmartConfigFactory {
+        fun createWith(secretsServiceConfig: Config, secretsServiceFactories: Collection<SecretsServiceFactory>): SmartConfigFactory {
             // select type from the config, and fall back on the EncryptionSecretsServiceFactory
             val type = secretsServiceConfig.getStringOrDefault(SECRET_SERVICE_TYPE, EncryptionSecretsServiceFactory.TYPE)
 
@@ -47,7 +46,8 @@ interface SmartConfigFactory {
                 override fun createValue(plainText: String, key: String): Config {
                     throw SecretsConfigurationException("This SmartConfigFactory does not support creating secrets.")
                 }
-            })
+            }
+        )
     }
 
     /**
@@ -66,4 +66,3 @@ interface SmartConfigFactory {
      */
     fun empty(): SmartConfig
 }
-

@@ -15,7 +15,6 @@ import java.util.UUID
 class EntityManagerFactoryFactoryIntegrationTest {
     @Test
     fun `can persist JPA entity`() {
-
         val emf = EntityManagerFactoryFactoryImpl().create(
             "cats",
             listOf(Cat::class.java, Owner::class.java),
@@ -38,7 +37,6 @@ class EntityManagerFactoryFactoryIntegrationTest {
 
     @Test
     fun `can named query`() {
-
         val emf = EntityManagerFactoryFactoryImpl().create(
             "cats",
             listOf(Cat::class.java, Owner::class.java),
@@ -70,13 +68,13 @@ class EntityManagerFactoryFactoryIntegrationTest {
     @Test
     fun `when EntityManagerFactory is closed, CloseableDataSource is closed as well`() {
         val closeableDataSourceMock = mock<CloseableDataSource>()
-        class WrappedDataSource(delegate: CloseableDataSource): CloseableDataSource by delegate {
+        class WrappedDataSource(delegate: CloseableDataSource) : CloseableDataSource by delegate {
             override fun close() {
                 closeableDataSourceMock.close()
             }
         }
         val closeableDataSource = WrappedDataSource(InMemoryDataSourceFactory().create("cats"))
-        val entityManagerConfiguration = object: EntityManagerConfiguration {
+        val entityManagerConfiguration = object : EntityManagerConfiguration {
             override val dataSource: CloseableDataSource
                 get() = closeableDataSource
         }
@@ -88,5 +86,4 @@ class EntityManagerFactoryFactoryIntegrationTest {
         emf.close()
         verify(closeableDataSourceMock).close()
     }
-
 }

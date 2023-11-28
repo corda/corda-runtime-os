@@ -3,16 +3,16 @@ package net.corda.libs.packaging.verify.internal.cpk
 import java.security.CodeSigner
 
 /** CPK dependency matched by code signers */
-internal data class CpkSignerDependency (
+internal data class CpkSignerDependency(
     override val name: String,
     override val version: String,
     val codeSigners: List<CodeSigner>
-): CpkDependency {
+) : CpkDependency {
     override fun satisfied(cpks: List<AvailableCpk>): Boolean =
         cpks.any {
             it.name == name &&
-            it.version == version &&
-            it.codeSigners.certificates() == codeSigners.certificates()
+                it.version == version &&
+                it.codeSigners.certificates() == codeSigners.certificates()
         }
 
     private fun List<CodeSigner>.certificates() =

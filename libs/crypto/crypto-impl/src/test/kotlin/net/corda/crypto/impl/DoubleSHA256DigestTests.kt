@@ -12,7 +12,7 @@ class DoubleSHA256DigestTests {
     fun `Should calculate hash for array`() {
         val service = DoubleSHA256Digest()
         val random = Random(17)
-        for ( i in 1..100) {
+        for (i in 1..100) {
             val len = random.nextInt(127, 277)
             val data = ByteArray(len)
             random.nextBytes(data)
@@ -28,7 +28,7 @@ class DoubleSHA256DigestTests {
     fun `Should calculate hash for short input streams`() {
         val service = DoubleSHA256Digest()
         val random = Random(17)
-        for ( i in 1..100) {
+        for (i in 1..100) {
             val len = random.nextInt(1, 100)
             val data = ByteArray(len)
             random.nextBytes(data)
@@ -45,7 +45,7 @@ class DoubleSHA256DigestTests {
     fun `Should calculate hash for medium sized input streams`() {
         val service = DoubleSHA256Digest()
         val random = Random(17)
-        for ( i in 1..100) {
+        for (i in 1..100) {
             val len = random.nextInt(375, 2074)
             val data = ByteArray(len)
             random.nextBytes(data)
@@ -62,7 +62,7 @@ class DoubleSHA256DigestTests {
     fun `Should calculate hash for large sized input streams`() {
         val service = DoubleSHA256Digest()
         val random = Random(17)
-        for ( i in 1..10) {
+        for (i in 1..10) {
             val len = random.nextInt(37_794, 63_987)
             val data = ByteArray(len)
             random.nextBytes(data)
@@ -79,7 +79,7 @@ class DoubleSHA256DigestTests {
     fun `Should calculate hash for input streams with sizes around buffer size`() {
         val service = DoubleSHA256Digest()
         val random = Random(17)
-        for ( len in (DoubleSHA256Digest.STREAM_BUFFER_SIZE - 5)..((DoubleSHA256Digest.STREAM_BUFFER_SIZE + 5))) {
+        for (len in (DoubleSHA256Digest.STREAM_BUFFER_SIZE - 5)..((DoubleSHA256Digest.STREAM_BUFFER_SIZE + 5))) {
             val data = ByteArray(len)
             random.nextBytes(data)
             val stream = ByteArrayInputStream(data)

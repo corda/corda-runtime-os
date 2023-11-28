@@ -86,7 +86,10 @@ class MultiSourceEventMediatorImplTest {
                 updatedState = mock(),
                 responseEvents = listOf(
                     Record(
-                        topic = "", "key", value = mock(), timestamp = 0
+                        topic = "",
+                        "key",
+                        value = mock(),
+                        timestamp = 0
                     )
                 ),
             )
@@ -254,6 +257,11 @@ class MultiSourceEventMediatorImplTest {
 
     private fun cordaConsumerRecords(key: String, event: String) =
         CordaConsumerRecord(
-            topic = "", partition = 0, offset = 0, key, event, timestamp = 0
+            topic = "",
+            partition = 0,
+            offset = 0,
+            key,
+            event,
+            timestamp = 0
         )
 }

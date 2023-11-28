@@ -89,43 +89,58 @@ class MerkleTreeProviderImplTest {
         assertTrue(
             merkleTreeProvider.createHashDigestProvider(
                 HASH_DIGEST_PROVIDER_TWEAKABLE_NAME,
-                digestAlgorithm, hashMapOf(
+                digestAlgorithm,
+                hashMapOf(
                     HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION to 0.toByteArray(),
-                    HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION to 1.toByteArray())
+                    HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION to 1.toByteArray()
+                )
             ) is TweakableHashDigestProvider
         )
         assertThrows(IllegalArgumentException::class.java) {
-            merkleTreeProvider.createHashDigestProvider(HASH_DIGEST_PROVIDER_TWEAKABLE_NAME,
+            merkleTreeProvider.createHashDigestProvider(
+                HASH_DIGEST_PROVIDER_TWEAKABLE_NAME,
                 digestAlgorithm
             )
         }
         assertThrows(IllegalArgumentException::class.java) {
-            merkleTreeProvider.createHashDigestProvider(HASH_DIGEST_PROVIDER_TWEAKABLE_NAME,
-                digestAlgorithm, hashMapOf()
+            merkleTreeProvider.createHashDigestProvider(
+                HASH_DIGEST_PROVIDER_TWEAKABLE_NAME,
+                digestAlgorithm,
+                hashMapOf()
             )
         }
         assertThrows(IllegalArgumentException::class.java) {
-            merkleTreeProvider.createHashDigestProvider(HASH_DIGEST_PROVIDER_TWEAKABLE_NAME,
-                digestAlgorithm, hashMapOf(HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION to 0.toByteArray())
+            merkleTreeProvider.createHashDigestProvider(
+                HASH_DIGEST_PROVIDER_TWEAKABLE_NAME,
+                digestAlgorithm,
+                hashMapOf(HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION to 0.toByteArray())
             )
         }
         assertThrows(IllegalArgumentException::class.java) {
-            merkleTreeProvider.createHashDigestProvider(HASH_DIGEST_PROVIDER_TWEAKABLE_NAME,
-                digestAlgorithm, hashMapOf(HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION to 1.toByteArray())
+            merkleTreeProvider.createHashDigestProvider(
+                HASH_DIGEST_PROVIDER_TWEAKABLE_NAME,
+                digestAlgorithm,
+                hashMapOf(HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION to 1.toByteArray())
             )
         }
         assertThrows(IllegalArgumentException::class.java) {
-            merkleTreeProvider.createHashDigestProvider(HASH_DIGEST_PROVIDER_TWEAKABLE_NAME,
-                digestAlgorithm, hashMapOf(
+            merkleTreeProvider.createHashDigestProvider(
+                HASH_DIGEST_PROVIDER_TWEAKABLE_NAME,
+                digestAlgorithm,
+                hashMapOf(
                     HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION to 0,
-                    HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION to 1.toByteArray())
+                    HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION to 1.toByteArray()
+                )
             )
         }
         assertThrows(IllegalArgumentException::class.java) {
-            merkleTreeProvider.createHashDigestProvider(HASH_DIGEST_PROVIDER_TWEAKABLE_NAME,
-                digestAlgorithm, hashMapOf(
+            merkleTreeProvider.createHashDigestProvider(
+                HASH_DIGEST_PROVIDER_TWEAKABLE_NAME,
+                digestAlgorithm,
+                hashMapOf(
                     HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION to 0.toByteArray(),
-                    HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION to "1")
+                    HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION to "1"
+                )
             )
         }
     }
@@ -137,7 +152,8 @@ class MerkleTreeProviderImplTest {
         assertTrue(
             merkleTreeProvider.createHashDigestProvider(
                 HASH_DIGEST_PROVIDER_NONCE_NAME,
-                digestAlgorithm, hashMapOf(HASH_DIGEST_PROVIDER_ENTROPY_OPTION to entropy)
+                digestAlgorithm,
+                hashMapOf(HASH_DIGEST_PROVIDER_ENTROPY_OPTION to entropy)
             ) is NonceHashDigestProvider
         )
 
@@ -150,13 +166,15 @@ class MerkleTreeProviderImplTest {
         assertThrows(IllegalArgumentException::class.java) {
             merkleTreeProvider.createHashDigestProvider(
                 HASH_DIGEST_PROVIDER_NONCE_NAME,
-                digestAlgorithm, hashMapOf()
+                digestAlgorithm,
+                hashMapOf()
             )
         }
         assertThrows(IllegalArgumentException::class.java) {
             merkleTreeProvider.createHashDigestProvider(
                 HASH_DIGEST_PROVIDER_NONCE_NAME,
-                digestAlgorithm, hashMapOf(HASH_DIGEST_PROVIDER_ENTROPY_OPTION to 1)
+                digestAlgorithm,
+                hashMapOf(HASH_DIGEST_PROVIDER_ENTROPY_OPTION to 1)
             )
         }
 
@@ -165,7 +183,8 @@ class MerkleTreeProviderImplTest {
             secureRandom.nextBytes(tooShortEntropy)
             merkleTreeProvider.createHashDigestProvider(
                 HASH_DIGEST_PROVIDER_NONCE_NAME,
-                digestAlgorithm, hashMapOf(HASH_DIGEST_PROVIDER_ENTROPY_OPTION to tooShortEntropy)
+                digestAlgorithm,
+                hashMapOf(HASH_DIGEST_PROVIDER_ENTROPY_OPTION to tooShortEntropy)
             )
         }
 
@@ -174,7 +193,8 @@ class MerkleTreeProviderImplTest {
             secureRandom.nextBytes(tooLongEntropy)
             merkleTreeProvider.createHashDigestProvider(
                 HASH_DIGEST_PROVIDER_NONCE_NAME,
-                digestAlgorithm, hashMapOf(HASH_DIGEST_PROVIDER_ENTROPY_OPTION to tooLongEntropy)
+                digestAlgorithm,
+                hashMapOf(HASH_DIGEST_PROVIDER_ENTROPY_OPTION to tooLongEntropy)
             )
         }
     }
@@ -182,7 +202,8 @@ class MerkleTreeProviderImplTest {
     @Test
     fun failToCreateNonExistingHashDigestProvider() {
         assertThrows(IllegalArgumentException::class.java) {
-            merkleTreeProvider.createHashDigestProvider("NonExistingProvider",
+            merkleTreeProvider.createHashDigestProvider(
+                "NonExistingProvider",
                 digestAlgorithm
             )
         }

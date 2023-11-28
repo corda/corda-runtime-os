@@ -1,4 +1,5 @@
 @file:JvmName("AMQPStreams")
+
 package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.ByteBufferInputStream
@@ -12,10 +13,12 @@ fun InputStream.asByteBuffer(): ByteBuffer {
     return if (this is ByteBufferInputStream) {
         byteBuffer // BBIS has no other state, so this is perfectly safe.
     } else {
-        ByteBuffer.wrap(serializeOutputStreamPool.run {
-            copyTo(it)
-            it.toByteArray()
-        })
+        ByteBuffer.wrap(
+            serializeOutputStreamPool.run {
+                copyTo(it)
+                it.toByteArray()
+            }
+        )
     }
 }
 

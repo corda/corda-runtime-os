@@ -13,7 +13,7 @@ import java.nio.charset.Charset
 import java.sql.Connection
 
 class DbMessageBusSetup {
-    companion object{
+    companion object {
         // At the moment it's not easy to create partitions, so default value increased to 3 until tooling is available
         // (There are multiple consumers using the same group for some topics and some stay idle if there is only 1 partition)
         const val defaultNumPartitions = 3

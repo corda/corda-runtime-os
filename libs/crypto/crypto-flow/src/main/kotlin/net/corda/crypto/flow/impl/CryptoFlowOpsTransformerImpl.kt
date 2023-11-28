@@ -2,8 +2,8 @@ package net.corda.crypto.flow.impl
 
 import net.corda.crypto.cipher.suite.AlgorithmParameterSpecEncodingService
 import net.corda.crypto.cipher.suite.KeyEncodingService
-import net.corda.crypto.core.bytes
 import net.corda.crypto.core.DigitalSignatureWithKey
+import net.corda.crypto.core.bytes
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
@@ -155,7 +155,10 @@ class CryptoFlowOpsTransformerImpl(
     ): FlowOpsRequest =
         FlowOpsRequest(
             createWireRequestContext(
-                requestingComponent, requestId, tenantId, KeyValuePairList(
+                requestingComponent,
+                requestId,
+                tenantId,
+                KeyValuePairList(
                     listOf(
                         KeyValuePair(REQUEST_OP_KEY, request::class.java.simpleName),
                         KeyValuePair(RESPONSE_TOPIC, responseTopic),
@@ -204,7 +207,7 @@ class CryptoFlowOpsTransformerImpl(
         if (response !is EXPECTED) {
             throw IllegalStateException(
                 "Unexpected response type, expected '${EXPECTED::class.java.name}'" +
-                        "but received '${response::class.java.name}'"
+                    "but received '${response::class.java.name}'"
             )
         }
         return response as EXPECTED

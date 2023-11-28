@@ -1,13 +1,13 @@
 package net.corda.libs.permissions.management.cache.impl
 
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicBoolean
 import net.corda.data.permissions.Group
 import net.corda.data.permissions.Permission
 import net.corda.data.permissions.Role
 import net.corda.data.permissions.User
-import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.libs.permissions.cache.exception.PermissionCacheException
+import net.corda.libs.permissions.management.cache.PermissionManagementCache
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * The Permission cache holds the data used in the RBAC permission system.

@@ -1,12 +1,12 @@
 package net.corda.messagebus.db.serialization
 
-import java.nio.ByteBuffer
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
+import java.nio.ByteBuffer
 
 class CordaDBAvroDeserializerImpl<T : Any>(
     private val schemaRegistry: AvroSchemaRegistry,
@@ -20,7 +20,7 @@ class CordaDBAvroDeserializerImpl<T : Any>(
     }
 
     private fun deserialize(data: ByteArray, allowChunks: Boolean = false): Any? {
-        val isChunkType  = allowChunks && isChunkType(data)
+        val isChunkType = allowChunks && isChunkType(data)
         @Suppress("unchecked_cast")
         return when {
             expectedClass == String::class.java && !isChunkType -> {
@@ -36,20 +36,19 @@ class CordaDBAvroDeserializerImpl<T : Any>(
     }
 
     @Suppress("ComplexCondition")
-    private fun deserializeAvro(data: ByteArray, allowChunks: Boolean) : Any? = try {
+    private fun deserializeAvro(data: ByteArray, allowChunks: Boolean): Any? = try {
         val dataBuffer = ByteBuffer.wrap(data)
         val clazz = schemaRegistry.getClassType(dataBuffer)
 
-        if (expectedClass == clazz
-            || expectedClass == Any::class.java
-            || (allowChunks && (clazz == Chunk::class.java || clazz == ChunkKey::class.java))
+        if (expectedClass == clazz ||
+            expectedClass == Any::class.java ||
+            (allowChunks && (clazz == Chunk::class.java || clazz == ChunkKey::class.java))
         ) {
             schemaRegistry.deserialize(dataBuffer, clazz, null)
         } else {
             val msg = "$errorMsg. Found class: ${clazz.name}, expected class: $expectedClass, AllowChunks: $allowChunks"
             throw CordaRuntimeException(msg)
         }
-
     } catch (ex: Throwable) {
         log.warn("$errorMsg. Expected class: $expectedClass, AllowChunks: $allowChunks", ex)
         // We don't want to throw back into Kafka as that would mean the entire poll (with possibly
@@ -64,7 +63,7 @@ class CordaDBAvroDeserializerImpl<T : Any>(
             val clazz = schemaRegistry.getClassType(ByteBuffer.wrap(bytes))
             clazz == Chunk::class.java || clazz == ChunkKey::class.java
         } catch (ex: Exception) {
-            //swallow exception and do not log as this will be very common for AMQP serialized byte payloads
+            // swallow exception and do not log as this will be very common for AMQP serialized byte payloads
             false
         }
     }

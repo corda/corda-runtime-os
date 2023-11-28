@@ -38,8 +38,10 @@ class LifecycleRegistryImpl : LifecycleRegistry, LifecycleRegistryCoordinatorAcc
      */
     override fun updateStatus(name: LifecycleCoordinatorName, status: LifecycleStatus, reason: String) {
         if (statuses[name] == null) {
-            logger.warn("Attempt was made to update the status of coordinator $name to $status " +
-                    "($reason) that has not been registered with the registry.")
+            logger.warn(
+                "Attempt was made to update the status of coordinator $name to $status " +
+                    "($reason) that has not been registered with the registry."
+            )
 //            throw LifecycleRegistryException(
 //                "Attempt was made to update the status of coordinator $name to $status " +
 //                        "($reason) that has not been registered with the registry."

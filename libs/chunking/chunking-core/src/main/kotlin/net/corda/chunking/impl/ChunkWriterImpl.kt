@@ -15,7 +15,6 @@ import java.nio.ByteBuffer
 import java.security.DigestInputStream
 import java.util.UUID
 
-
 /**
  * Chunks up a binary into smaller parts and passes them to the supplied callback.
  */
@@ -35,7 +34,7 @@ internal class ChunkWriterImpl(
     private var chunkWriteCallback: ChunkWriteCallback? = null
 
     // chunk size must be smaller than the max allowed message size to allow a buffer for the rest of the message.
-    //add extra overhead to avoid message bus level chunking
+    // add extra overhead to avoid message bus level chunking
     val chunkSize = maxAllowedMessageSize - APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
 
     override fun write(inputStream: InputStream): ChunkWriter.Request {

@@ -51,8 +51,9 @@ private class LinuxSecureRandomSpi : SecureRandomSpi() {
         try {
             val file = File("/dev/urandom")
             val stream = FileInputStream(file)
-            if (stream.read() == -1)
+            if (stream.read() == -1) {
                 throw RuntimeException("/dev/urandom not readable?")
+            }
             return stream
         } catch (e: Throwable) {
             throw RuntimeException(e)

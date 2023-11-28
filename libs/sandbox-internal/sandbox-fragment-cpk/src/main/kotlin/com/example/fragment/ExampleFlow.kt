@@ -8,7 +8,7 @@ import java.util.Properties
 
 @Suppress("unused")
 @Component(name = "sandbox.fragment.flow")
-class ExampleFlow @Activate constructor(): SubFlow<String> {
+class ExampleFlow @Activate constructor() : SubFlow<String> {
     private val logger = LoggerFactory.getLogger(this::class.java)
 
     init {

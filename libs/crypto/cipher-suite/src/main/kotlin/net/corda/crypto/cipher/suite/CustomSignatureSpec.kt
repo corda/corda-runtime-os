@@ -41,8 +41,8 @@ class CustomSignatureSpec(
      * objects, note that the signatureName should not contain the digest (e.g. "NONEwithECDSA").
      * @param customDigestName digest algorithm name (e.g. "SHA512")
      */
-    constructor(signatureName: String, customDigestName: DigestAlgorithmName)
-            : this(signatureName, customDigestName, null) {
+    constructor(signatureName: String, customDigestName: DigestAlgorithmName) :
+        this(signatureName, customDigestName, null) {
         require(signatureName.isNotBlank()) { "The signatureName must not be blank." }
     }
 

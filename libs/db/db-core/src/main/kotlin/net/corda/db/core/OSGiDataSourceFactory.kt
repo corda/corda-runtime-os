@@ -89,14 +89,17 @@ object OSGiDataSourceFactory {
 
         // This is the driver CLASS name.
         val refs = bundleContext.getServiceReferences(
-            DataSourceFactory::class.java, "(${DataSourceFactory.OSGI_JDBC_DRIVER_CLASS}=$driverClass)"
+            DataSourceFactory::class.java,
+            "(${DataSourceFactory.OSGI_JDBC_DRIVER_CLASS}=$driverClass)"
         )
 
         // We could also additionally use:
         // DataSourceFactory.OSGI_JDBC_DRIVER_NAME
 
         if (refs.isNullOrEmpty()) {
-            throw SQLException("No drivers for JDBC classes are loaded, have you specified -ddatabase.jdbc.directory? Or have you forgotten a pax-jdbc jar?")
+            throw SQLException(
+                "No drivers for JDBC classes are loaded, have you specified -ddatabase.jdbc.directory? Or have you forgotten a pax-jdbc jar?"
+            )
         }
 
         val dsf: DataSourceFactory = bundleContext.getService(refs.max())!!

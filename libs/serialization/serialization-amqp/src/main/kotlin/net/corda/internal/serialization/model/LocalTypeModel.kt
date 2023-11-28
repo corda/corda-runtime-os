@@ -55,7 +55,7 @@ interface LocalTypeModel {
  *
  * @param typeModelConfiguration Configuration controlling the behaviour of the [LocalTypeModel]'s type inspection.
  */
-class ConfigurableLocalTypeModel(private val typeModelConfiguration: LocalTypeModelConfiguration): LocalTypeModel {
+class ConfigurableLocalTypeModel(private val typeModelConfiguration: LocalTypeModelConfiguration) : LocalTypeModel {
 
     private val typeInformationCache = DefaultCacheProvider.createCache<TypeIdentifier, LocalTypeInformation>()
 
@@ -65,8 +65,9 @@ class ConfigurableLocalTypeModel(private val typeModelConfiguration: LocalTypeMo
      * before we've patched the cycles up.
      */
     private class BuilderLookup(
-            private val globalCache: MutableMap<TypeIdentifier, LocalTypeInformation>,
-            private val typeModelConfiguration: LocalTypeModelConfiguration) : LocalTypeLookup {
+        private val globalCache: MutableMap<TypeIdentifier, LocalTypeInformation>,
+        private val typeModelConfiguration: LocalTypeModelConfiguration
+    ) : LocalTypeLookup {
 
         private val localCache: MutableMap<TypeIdentifier, LocalTypeInformation> = mutableMapOf()
 
@@ -74,9 +75,13 @@ class ConfigurableLocalTypeModel(private val typeModelConfiguration: LocalTypeMo
          * Read from the global cache (which contains only cycle-resolved type information), falling through
          * to the local cache if the type isn't there yet.
          */
-        override fun findOrBuild(type: Type, typeIdentifier: TypeIdentifier, builder: (Boolean) -> LocalTypeInformation): LocalTypeInformation =
-                globalCache[typeIdentifier] ?:
-                localCache.getOrPut(typeIdentifier) { builder(typeModelConfiguration.isOpaque(type)) }
+        override fun findOrBuild(
+            type: Type,
+            typeIdentifier: TypeIdentifier,
+            builder: (Boolean) -> LocalTypeInformation
+        ): LocalTypeInformation =
+            globalCache[typeIdentifier]
+                ?: localCache.getOrPut(typeIdentifier) { builder(typeModelConfiguration.isOpaque(type)) }
 
         override fun isExcluded(type: Type): Boolean = typeModelConfiguration.isExcluded(type)
 

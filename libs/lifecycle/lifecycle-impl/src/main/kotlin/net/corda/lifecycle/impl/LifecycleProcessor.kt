@@ -1,7 +1,5 @@
 package net.corda.lifecycle.impl
 
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ScheduledFuture
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
@@ -18,6 +16,8 @@ import net.corda.lifecycle.registry.LifecycleRegistryException
 import net.corda.utilities.debug
 import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ScheduledFuture
 
 /**
  * Perform processing of lifecycle events.
@@ -96,7 +96,7 @@ internal class LifecycleProcessor(
                 } else {
                     logger.trace {
                         "$name Lifecycle: Did not process timer lifecycle event $event with key ${event.key} " +
-                                "as coordinator is shutdown"
+                            "as coordinator is shutdown"
                     }
                     true
                 }
@@ -124,7 +124,7 @@ internal class LifecycleProcessor(
                 } else {
                     logger.debug {
                         "$name Lifecycle: Did not update coordinator status to ${event.newStatus} as " +
-                                "the coordinator is not running"
+                            "the coordinator is not running"
                     }
                 }
                 true
@@ -244,7 +244,7 @@ internal class LifecycleProcessor(
             val errorEvent = ErrorEvent(e)
             logger.info(
                 "$name Lifecycle: An error occurred during the processing of event $event by a lifecycle " +
-                        "coordinator: ${e.message ?: "No exception message provided"}. Triggering user event handling.",
+                    "coordinator: ${e.message ?: "No exception message provided"}. Triggering user event handling.",
                 e
             )
             try {
@@ -255,7 +255,7 @@ internal class LifecycleProcessor(
             if (!errorEvent.isHandled) {
                 logger.error(
                     "$name Lifecycle: An unhandled error was encountered while processing $event in a lifecycle " +
-                            "coordinator: ${e.message ?: "No exception message provided"}. This coordinator will now shut down.",
+                        "coordinator: ${e.message ?: "No exception message provided"}. This coordinator will now shut down.",
                     e
                 )
             }
@@ -264,7 +264,7 @@ internal class LifecycleProcessor(
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun <T: Resource> addManagedResource(name: String, generator: () -> Resource): T {
+    fun <T : Resource> addManagedResource(name: String, generator: () -> Resource): T {
         return managedResources.compute(name) { _, old ->
             old?.close()
             generator.invoke()
@@ -277,7 +277,7 @@ internal class LifecycleProcessor(
 
     internal fun closeManagedResources(resources: Set<String>?) {
         managedResources.entries.removeIf { (name, resource) ->
-            if((resources == null) || (resources.contains(name))) {
+            if ((resources == null) || (resources.contains(name))) {
                 resource.close()
                 true
             } else {

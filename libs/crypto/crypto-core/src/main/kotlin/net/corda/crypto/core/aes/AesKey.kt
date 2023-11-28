@@ -3,12 +3,12 @@ package net.corda.crypto.core.aes
 import net.corda.crypto.core.Encryptor
 import net.corda.crypto.core.ManagedKey
 import net.corda.crypto.core.ManagedSecret
+import java.util.Base64
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
-import java.util.Base64
 
 /**
  * AES key wrapper (with the key length of 256) which supports wrapping/unwrapping

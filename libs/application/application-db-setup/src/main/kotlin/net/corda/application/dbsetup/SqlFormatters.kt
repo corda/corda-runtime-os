@@ -30,7 +30,7 @@ fun Any.toInsertStatement(): String {
     }
 
     return "insert into ${formatTableName(this)} (${values.joinToString { it.first }}) " +
-            "values (${values.joinToString { it.second }})"
+        "values (${values.joinToString { it.second }})"
 }
 
 private fun formatValue(value: Any?): String? {
@@ -92,8 +92,9 @@ private fun String.simpleSqlEscaping(): String {
 
 private fun extractValue(field: KProperty1<out Any?, *>, obj: Any, getId: Boolean): Any? {
     val value = field.getter.call(obj)
-    if (!getId || value == null)
+    if (!getId || value == null) {
         return value
+    }
     value::class.declaredMemberProperties.forEach { property ->
         if (property.getVarAnnotation(Id::class.java) != null) {
             property.isAccessible = true
@@ -109,9 +110,10 @@ private fun formatTableName(entity: Any): String {
 
     val schema = table.schema.let { if (it.isBlank()) "" else "$it." }
     return table.name.let { name ->
-        if (name.isBlank())
+        if (name.isBlank()) {
             "$schema${entity::class.simpleName}"
-        else
+        } else {
             "$schema$name"
+        }
     }
 }

@@ -16,9 +16,10 @@ import net.corda.v5.serialization.annotations.CordaSerializationTransformRenames
  * of a transform or a meta list of them.
  */
 data class SupportedTransform(
-        val type: Class<out Annotation>,
-        val enum: TransformTypes,
-        val getAnnotations: (Annotation) -> List<Annotation>)
+    val type: Class<out Annotation>,
+    val enum: TransformTypes,
+    val getAnnotations: (Annotation) -> List<Annotation>
+)
 
 /**
  * Extract from an annotated class the list of annotations that refer to a particular
@@ -49,28 +50,28 @@ private val singleExtract = { x: Annotation -> listOf(x) }
  * when many instances are repeated.
  */
 val supportedTransforms = listOf(
-        SupportedTransform(
-                CordaSerializationTransformEnumDefaults::class.java,
-                TransformTypes.EnumDefault,
-                wrapperExtract
-        ),
-        SupportedTransform(
-                CordaSerializationTransformEnumDefault::class.java,
-                TransformTypes.EnumDefault,
-                singleExtract
-        ),
-        SupportedTransform(
-                CordaSerializationTransformRenames::class.java,
-                TransformTypes.Rename,
-                wrapperExtract
-        ),
-        SupportedTransform(
-                CordaSerializationTransformRename::class.java,
-                TransformTypes.Rename,
-                singleExtract
-        )
-        //,SupportedTransform(
-        //        UnknownTransformAnnotation::class.java,
-        //        TransformTypes.UnknownTest,
-        //        singleExtract)
+    SupportedTransform(
+        CordaSerializationTransformEnumDefaults::class.java,
+        TransformTypes.EnumDefault,
+        wrapperExtract
+    ),
+    SupportedTransform(
+        CordaSerializationTransformEnumDefault::class.java,
+        TransformTypes.EnumDefault,
+        singleExtract
+    ),
+    SupportedTransform(
+        CordaSerializationTransformRenames::class.java,
+        TransformTypes.Rename,
+        wrapperExtract
+    ),
+    SupportedTransform(
+        CordaSerializationTransformRename::class.java,
+        TransformTypes.Rename,
+        singleExtract
+    )
+    // ,SupportedTransform(
+    //        UnknownTransformAnnotation::class.java,
+    //        TransformTypes.UnknownTest,
+    //        singleExtract)
 )

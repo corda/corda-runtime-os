@@ -40,7 +40,9 @@ abstract class KeySchemeInfo private constructor(
 class RSAKeySchemeInfo(
     provider: Provider
 ) : KeySchemeInfo(
-    provider, RSA_TEMPLATE, mapOf(
+    provider,
+    RSA_TEMPLATE,
+    mapOf(
         DigestAlgorithmName.SHA2_256 to SignatureSpecs.RSA_SHA256,
         DigestAlgorithmName.SHA2_384 to SignatureSpecs.RSA_SHA384,
         DigestAlgorithmName.SHA2_512 to SignatureSpecs.RSA_SHA512
@@ -49,9 +51,12 @@ class RSAKeySchemeInfo(
 )
 
 abstract class ECDSAKeySchemeInfo(
-    provider: Provider, template: KeySchemeTemplate
+    provider: Provider,
+    template: KeySchemeTemplate
 ) : KeySchemeInfo(
-    provider, template, mapOf(
+    provider,
+    template,
+    mapOf(
         DigestAlgorithmName.SHA2_256 to SignatureSpecs.ECDSA_SHA256,
         DigestAlgorithmName.SHA2_384 to SignatureSpecs.ECDSA_SHA384,
         DigestAlgorithmName.SHA2_512 to SignatureSpecs.ECDSA_SHA512
@@ -70,7 +75,9 @@ class ECDSAK1KeySchemeInfo(
 class EDDSAKeySchemeInfo(
     provider: Provider
 ) : KeySchemeInfo(
-    provider, EDDSA_ED25519_TEMPLATE, mapOf(
+    provider,
+    EDDSA_ED25519_TEMPLATE,
+    mapOf(
         DigestAlgorithmName("NONE") to SignatureSpecs.EDDSA_ED25519
     ),
     SignatureSpecs.EDDSA_ED25519
@@ -79,12 +86,18 @@ class EDDSAKeySchemeInfo(
 class X25519KeySchemeInfo(
     provider: Provider
 ) : KeySchemeInfo(
-    provider, X25519_TEMPLATE, emptyMap(), null)
+    provider,
+    X25519_TEMPLATE,
+    emptyMap(),
+    null
+)
 
 class SM2KeySchemeInfo(
     provider: Provider
 ) : KeySchemeInfo(
-    provider, SM2_TEMPLATE, mapOf(
+    provider,
+    SM2_TEMPLATE,
+    mapOf(
         DigestAlgorithmName("SM3") to SignatureSpecs.SM2_SM3,
         DigestAlgorithmName.SHA2_256 to SignatureSpecs.SM2_SHA256
     ),
@@ -94,7 +107,9 @@ class SM2KeySchemeInfo(
 class GOST3410GOST3411KeySchemeInfo(
     provider: Provider
 ) : KeySchemeInfo(
-    provider, GOST3410_GOST3411_TEMPLATE, mapOf(
+    provider,
+    GOST3410_GOST3411_TEMPLATE,
+    mapOf(
         DigestAlgorithmName("GOST3411") to SignatureSpecs.GOST3410_GOST3411
     ),
     SignatureSpecs.GOST3410_GOST3411
@@ -103,7 +118,9 @@ class GOST3410GOST3411KeySchemeInfo(
 class SPHINCS256KeySchemeInfo(
     provider: Provider
 ) : KeySchemeInfo(
-    provider, SPHINCS256_TEMPLATE, mapOf(
+    provider,
+    SPHINCS256_TEMPLATE,
+    mapOf(
         DigestAlgorithmName.SHA2_512 to SignatureSpecs.SPHINCS256_SHA512
     ),
     SignatureSpecs.SPHINCS256_SHA512

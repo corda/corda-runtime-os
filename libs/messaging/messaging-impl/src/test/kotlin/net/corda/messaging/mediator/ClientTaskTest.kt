@@ -40,7 +40,6 @@ class ClientTaskTest {
 
     @Test
     fun `successfully sends messages`() {
-
         val message = mock<MediatorMessage<Any>>()
         val task = ClientTask<String, StateType, EventType>(
             message,

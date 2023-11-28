@@ -1,13 +1,13 @@
 package net.corda.libs.statemanager.impl.repository.impl
 
-import net.corda.libs.statemanager.api.Operation
 import net.corda.db.schema.DbSchema.STATE_MANAGER_TABLE
 import net.corda.libs.statemanager.api.MetadataFilter
+import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.KEY_COLUMN
-import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.VALUE_COLUMN
 import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.METADATA_COLUMN
-import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.VERSION_COLUMN
 import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.MODIFIED_TIME_COLUMN
+import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.VALUE_COLUMN
+import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.VERSION_COLUMN
 
 class PostgresQueryProvider : AbstractQueryProvider() {
 
@@ -31,7 +31,7 @@ class PostgresQueryProvider : AbstractQueryProvider() {
             ) AS temp(key, value, metadata, version)
             WHERE temp.key = s.$KEY_COLUMN AND temp.version = s.$VERSION_COLUMN
             RETURNING s.$KEY_COLUMN
-        """.trimIndent()
+    """.trimIndent()
 
     override fun findStatesByMetadataMatchingAll(filters: Collection<MetadataFilter>) =
         """

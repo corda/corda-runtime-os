@@ -18,9 +18,10 @@ class PathUtilsTest {
         @JvmStatic
         private fun provideTempDir(): Stream<Arguments> {
             return Stream.of(
-                    Arguments.of(Jimfs.newFileSystem(Configuration.unix()).getPath("/tmp").also { Files.createDirectory(it) }),
-                    Arguments.of(Jimfs.newFileSystem(Configuration.windows()).getPath("C:\\tmp").also { Files.createDirectory(it) }),
-                    Arguments.of(Jimfs.newFileSystem(Configuration.osX()).getPath("/tmp").also { Files.createDirectory(it) }))
+                Arguments.of(Jimfs.newFileSystem(Configuration.unix()).getPath("/tmp").also { Files.createDirectory(it) }),
+                Arguments.of(Jimfs.newFileSystem(Configuration.windows()).getPath("C:\\tmp").also { Files.createDirectory(it) }),
+                Arguments.of(Jimfs.newFileSystem(Configuration.osX()).getPath("/tmp").also { Files.createDirectory(it) })
+            )
         }
     }
 
@@ -93,9 +94,9 @@ class PathUtilsTest {
             val dir = fs.getPath("dir").createDirectories()
             val result = source.copyToDirectory(dir)
             assertThat(result)
-                    .isRegularFile()
-                    .hasParent(dir)
-                    .hasSameBinaryContentAs(source)
+                .isRegularFile()
+                .hasParent(dir)
+                .hasSameBinaryContentAs(source)
         }
     }
 }

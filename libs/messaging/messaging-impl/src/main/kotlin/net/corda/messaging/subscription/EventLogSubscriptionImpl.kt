@@ -1,6 +1,5 @@
 package net.corda.messaging.subscription
 
-import java.util.UUID
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -31,6 +30,7 @@ import net.corda.metrics.CordaMetrics
 import net.corda.schema.Schemas.getDLQTopic
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
+import java.util.UUID
 
 /**
  * Implementation of an EventLogSubscription.
@@ -66,7 +66,7 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
     private lateinit var deadLetterRecords: MutableList<ByteArray>
 
     private val errorMsg = "Failed to read and process records from topic ${config.topic}, group ${config.group}, producerClientId " +
-            "${config.clientId}."
+        "${config.clientId}."
 
     private val processorMeter = CordaMetrics.Metric.Messaging.MessageProcessorTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.DURABLE_PATTERN_TYPE)
@@ -86,7 +86,7 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
      * @throws CordaMessageAPIFatalException if unrecoverable error occurs
      */
     override fun start() {
-        log.debug { "Starting subscription with config:\n${config}" }
+        log.debug { "Starting subscription with config:\n$config" }
         threadLooper.start()
     }
 
@@ -135,12 +135,14 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                 when (ex) {
                     is CordaMessageAPIIntermittentException -> {
                         log.warn(
-                            "$errorMsg Attempts: $attempts. Recreating consumer/producer and Retrying.", ex
+                            "$errorMsg Attempts: $attempts. Recreating consumer/producer and Retrying.",
+                            ex
                         )
                     }
                     else -> {
                         log.error(
-                            "$errorMsg Attempts: $attempts. Closing subscription.", ex
+                            "$errorMsg Attempts: $attempts. Closing subscription.",
+                            ex
                         )
                         threadLooper.updateLifecycleStatus(LifecycleStatus.ERROR, errorMsg)
                         threadLooper.stopLoop()
@@ -178,8 +180,9 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                     else -> {
                         throw CordaMessageAPIFatalException(
                             "Failed to process records from topic ${config.topic}, " +
-                                    "group ${config.group}, producerClientId ${config.clientId}. " +
-                                    "Unexpected error occurred in this transaction. Closing producer.", ex
+                                "group ${config.group}, producerClientId ${config.clientId}. " +
+                                "Unexpected error occurred in this transaction. Closing producer.",
+                            ex
                         )
                     }
                 }
@@ -199,14 +202,14 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
         if (attempts <= config.processorRetries) {
             log.warn(
                 "Failed to read and process records from topic ${config.topic}, group ${config.group}, " +
-                        "producerClientId ${config.clientId}. " +
-                        "Retrying poll and process. Attempts: $attempts."
+                    "producerClientId ${config.clientId}. " +
+                    "Retrying poll and process. Attempts: $attempts."
             )
             consumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.EARLIEST)
         } else {
             val message = "Failed to read and process records from topic ${config.topic}, group ${config.group}, " +
-                    "producerClientId ${config.clientId}. " +
-                    "Attempts: $attempts. Max reties for poll and process exceeded."
+                "producerClientId ${config.clientId}. " +
+                "Attempts: $attempts. Max reties for poll and process exceeded."
             log.warn(message, ex)
             throw CordaMessageAPIIntermittentException(message, ex)
         }
@@ -229,26 +232,34 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
         }
 
         try {
-            log.debug { "Processing records(keys: ${cordaConsumerRecords.joinToString { it.key.toString() }}, " +
-                    "size: ${cordaConsumerRecords.size})" }
+            log.debug {
+                "Processing records(keys: ${cordaConsumerRecords.joinToString { it.key.toString() }}, " +
+                    "size: ${cordaConsumerRecords.size})"
+            }
             producer.beginTransaction()
-            val outputs = processorMeter.recordCallable { processor.onNext(cordaConsumerRecords.map { it.toEventLogRecord() })
-                .toCordaProducerRecords() }!!
+            val outputs = processorMeter.recordCallable {
+                processor.onNext(cordaConsumerRecords.map { it.toEventLogRecord() })
+                    .toCordaProducerRecords()
+            }!!
             producer.sendRecords(outputs)
-            if(deadLetterRecords.isNotEmpty()) {
-                producer.sendRecords(deadLetterRecords.map {
-                    CordaProducerRecord(
-                        getDLQTopic(config.topic),
-                        UUID.randomUUID().toString(),
-                        it
-                    )
-                })
+            if (deadLetterRecords.isNotEmpty()) {
+                producer.sendRecords(
+                    deadLetterRecords.map {
+                        CordaProducerRecord(
+                            getDLQTopic(config.topic),
+                            UUID.randomUUID().toString(),
+                            it
+                        )
+                    }
+                )
                 deadLetterRecords.clear()
             }
             producer.sendAllOffsetsToTransaction(consumer)
             producer.commitTransaction()
-            log.debug { "Processing records(keys: ${cordaConsumerRecords.joinToString { it.key.toString() }}, " +
-                    "size: ${cordaConsumerRecords.size}) complete." }
+            log.debug {
+                "Processing records(keys: ${cordaConsumerRecords.joinToString { it.key.toString() }}, " +
+                    "size: ${cordaConsumerRecords.size}) complete."
+            }
         } catch (ex: Exception) {
             when (ex::class.java) {
                 in ExceptionUtils.CordaMessageAPIException -> {
@@ -257,8 +268,9 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                 else -> {
                     throw CordaMessageAPIFatalException(
                         "Failed to process records from topic ${config.topic}, " +
-                                "group ${config.group}, producerClientId ${config.clientId}. " +
-                                "Unexpected error occurred in this transaction. Closing producer.", ex
+                            "group ${config.group}, producerClientId ${config.clientId}. " +
+                            "Unexpected error occurred in this transaction. Closing producer.",
+                        ex
                     )
                 }
             }

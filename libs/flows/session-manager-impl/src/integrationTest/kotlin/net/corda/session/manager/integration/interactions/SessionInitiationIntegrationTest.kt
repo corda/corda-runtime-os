@@ -40,21 +40,21 @@ class SessionInitiationIntegrationTest {
     fun `Alice sends session data before session is confirmed`() {
         val (alice, bob) = SessionPartyFactory().createSessionParties(testSmartConfig)
 
-        //send init
+        // send init
         alice.processNewOutgoingMessage(SessionMessageType.COUNTERPARTY_INFO, sendMessages = true)
         alice.assertStatus(SessionStateType.CREATED)
 
         alice.processNewOutgoingMessage(SessionMessageType.DATA, sendMessages = true)
         alice.assertStatus(SessionStateType.CREATED)
 
-        //bob process init and confirm session
+        // bob process init and confirm session
         bob.processNextReceivedMessage(sendMessages = true)
         bob.assertStatus(SessionStateType.CONFIRMED)
 
         alice.processNextReceivedMessage(sendMessages = true)
         alice.assertStatus(SessionStateType.CONFIRMED)
 
-        //bob process data message
+        // bob process data message
         bob.processNextReceivedMessage()
         bob.assertStatus(SessionStateType.CONFIRMED)
     }
@@ -86,7 +86,7 @@ class SessionInitiationIntegrationTest {
     fun `Alice sends Init, Bob responds with error`() {
         val (alice, bob) = SessionPartyFactory().createSessionParties(testSmartConfig)
 
-        //send init
+        // send init
         alice.processNewOutgoingMessage(SessionMessageType.COUNTERPARTY_INFO, sendMessages = true)
         alice.assertStatus(SessionStateType.CREATED)
 
@@ -97,29 +97,28 @@ class SessionInitiationIntegrationTest {
         alice.processNextReceivedMessage(sendMessages = true)
         alice.processNextReceivedMessage(sendMessages = true)
         alice.assertStatus(SessionStateType.ERROR)
-
     }
 
     @Test
     fun `Alice initiates session with Bob, then sends error and receives ack for init`() {
         val (alice, bob) = SessionPartyFactory().createSessionParties(testSmartConfig)
 
-        //send init
+        // send init
         alice.processNewOutgoingMessage(SessionMessageType.COUNTERPARTY_INFO, sendMessages = true)
         alice.assertStatus(SessionStateType.CREATED)
 
         alice.processNewOutgoingMessage(SessionMessageType.ERROR, sendMessages = true)
         alice.assertStatus(SessionStateType.ERROR)
 
-        //bob process init and confirm session
+        // bob process init and confirm session
         bob.processNextReceivedMessage(sendMessages = true)
         bob.assertStatus(SessionStateType.CONFIRMED)
 
-        //alice receive ack for session init and send error back
+        // alice receive ack for session init and send error back
         alice.processNextReceivedMessage(sendMessages = true)
         alice.assertStatus(SessionStateType.ERROR)
 
-        //bob process error
+        // bob process error
         bob.processNextReceivedMessage()
         bob.assertStatus(SessionStateType.ERROR)
     }

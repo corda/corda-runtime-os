@@ -15,6 +15,7 @@ import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -23,7 +24,6 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import java.security.PublicKey
 import java.time.Instant
-import org.junit.jupiter.api.assertThrows
 
 class GroupParametersNotaryUpdaterTest {
     private companion object {
@@ -179,12 +179,14 @@ class GroupParametersNotaryUpdaterTest {
         val notaryKey = MemberNotaryKey(publicKey, mock(), mock())
         val notaryDetails = MemberNotaryDetails(notaryAx500Name, "incorrect.plugin.type", emptySet(), listOf(notaryKey))
 
-        val ex = assertThrows<InvalidGroupParametersUpdateException> { notaryUpdater.updateExistingNotaryService(
-            currentGroupParameters,
-            notaryDetails,
-            5,
-            setOf(1, 3)
-        )}
+        val ex = assertThrows<InvalidGroupParametersUpdateException> {
+            notaryUpdater.updateExistingNotaryService(
+                currentGroupParameters,
+                notaryDetails,
+                5,
+                setOf(1, 3)
+            )
+        }
         assertThat(ex).hasMessageContaining("protocols do not match")
     }
 
@@ -201,12 +203,14 @@ class GroupParametersNotaryUpdaterTest {
         val notaryKey = MemberNotaryKey(publicKey, mock(), mock())
         val notaryDetails = MemberNotaryDetails(notaryAx500Name, NOTARY_PROTOCOL_A, emptySet(), listOf(notaryKey))
 
-        val ex = assertThrows<InvalidGroupParametersUpdateException> { notaryUpdater.updateExistingNotaryService(
-            currentGroupParameters,
-            notaryDetails,
-            5,
-            setOf(1, 3)
-        )}
+        val ex = assertThrows<InvalidGroupParametersUpdateException> {
+            notaryUpdater.updateExistingNotaryService(
+                currentGroupParameters,
+                notaryDetails,
+                5,
+                setOf(1, 3)
+            )
+        }
         assertThat(ex).hasMessageContaining("versions are missing")
     }
 
@@ -253,7 +257,7 @@ class GroupParametersNotaryUpdaterTest {
     @Test
     fun `if we remove the first notary service from group parameters with three services, the services are numbered contiguously`() {
         val currentGroupParameters = originalGroupParameters.toMutableMap()
-        for(notaryService in 0 until 3) {
+        for (notaryService in 0 until 3) {
             currentGroupParameters[String.format(NOTARY_SERVICE_KEYS_KEY, notaryService, 0)] = notaryKeys[notaryService]
             currentGroupParameters[String.format(NOTARY_SERVICE_NAME_KEY, notaryService)] = notaryServices[notaryService]
             currentGroupParameters[String.format(NOTARY_SERVICE_PROTOCOL_KEY, notaryService)] = notaryProtocols[notaryService]
@@ -280,7 +284,7 @@ class GroupParametersNotaryUpdaterTest {
     @Test
     fun `if we remove the second notary service from group parameters with three services, the services are numbered contiguously`() {
         val currentGroupParameters = originalGroupParameters.toMutableMap()
-        for(notaryService in 0 until 3) {
+        for (notaryService in 0 until 3) {
             currentGroupParameters[String.format(NOTARY_SERVICE_KEYS_KEY, notaryService, 0)] = notaryKeys[notaryService]
             currentGroupParameters[String.format(NOTARY_SERVICE_NAME_KEY, notaryService)] = notaryServices[notaryService]
             currentGroupParameters[String.format(NOTARY_SERVICE_PROTOCOL_KEY, notaryService)] = notaryProtocols[notaryService]
@@ -356,12 +360,14 @@ class GroupParametersNotaryUpdaterTest {
         val otherNotary1 = MemberNotaryDetails(notaryBx500Name, NOTARY_PROTOCOL_A, setOf(1), listOf(notaryKey))
         val otherNotary2 = MemberNotaryDetails(notaryCx500Name, NOTARY_PROTOCOL_A, setOf(1), listOf(notaryKey))
 
-        val ex = assertThrows<InvalidGroupParametersUpdateException> { notaryUpdater.removeNotaryFromExistingNotaryService(
-            currentGroupParameters,
-            notaryToRemove,
-            5,
-            listOf(otherNotary1, otherNotary2),
-        )}
+        val ex = assertThrows<InvalidGroupParametersUpdateException> {
+            notaryUpdater.removeNotaryFromExistingNotaryService(
+                currentGroupParameters,
+                notaryToRemove,
+                5,
+                listOf(otherNotary1, otherNotary2),
+            )
+        }
         assertThat(ex).hasMessageContaining("protocols do not match")
     }
 
@@ -380,12 +386,14 @@ class GroupParametersNotaryUpdaterTest {
         val otherNotary1 = MemberNotaryDetails(notaryBx500Name, NOTARY_PROTOCOL_A, setOf(1), listOf(notaryKey))
         val otherNotary2 = MemberNotaryDetails(notaryCx500Name, NOTARY_PROTOCOL_A, setOf(1), listOf(notaryKey))
 
-        val ex = assertThrows<InvalidGroupParametersUpdateException> { notaryUpdater.removeNotaryFromExistingNotaryService(
-            currentGroupParameters,
-            notaryToRemove,
-            5,
-            listOf(otherNotary1, otherNotary2),
-        )}
+        val ex = assertThrows<InvalidGroupParametersUpdateException> {
+            notaryUpdater.removeNotaryFromExistingNotaryService(
+                currentGroupParameters,
+                notaryToRemove,
+                5,
+                listOf(otherNotary1, otherNotary2),
+            )
+        }
         assertThat(ex).hasMessageContaining("versions are missing.")
     }
 }

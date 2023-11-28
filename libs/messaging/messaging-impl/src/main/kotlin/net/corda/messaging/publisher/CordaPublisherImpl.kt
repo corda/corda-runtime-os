@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit
 /**
  * Publisher will use a [CordaProducer] to communicate with the message bus. Failed producers are closed and recreated.
  * Records are sent via transactions if the producer configured to be transactional.
- * 
+ *
  * Record values are serialized to [ByteBuffer] using [net.corda.schema.registry.AvroSchemaRegistry].
  * Record keys are serialized using whatever serializer has been configured for the message bus.
  * Producer will automatically attempt resends based on the config.
@@ -50,15 +50,18 @@ internal class CordaPublisherImpl(
 
     private var cordaProducer = cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig)
 
-    // Support for publishing records in batches, saving on the Kafka round trip. 
+    // Support for publishing records in batches, saving on the Kafka round trip.
     private data class Batch(val records: List<Record<*, *>>, val future: CompletableFuture<Unit>)
     private val queue = ArrayBlockingQueue<Batch>(QUEUE_SIZE)
+
     // We use a limited queue executor to ensure we only ever queue one new request if we are currently processing
     // an existing request. It is OK to discard the second request trying to join the queue, as processing of every request
     // will involve queue draining anyway.
     private val executor = ThreadPoolExecutor(
-        1, 1,
-        0L, TimeUnit.MILLISECONDS,
+        1,
+        1,
+        0L,
+        TimeUnit.MILLISECONDS,
         LinkedBlockingQueue(1),
         ThreadFactoryBuilder()
             .setUncaughtExceptionHandler(::handleUncaughtException)
@@ -67,7 +70,7 @@ internal class CordaPublisherImpl(
             .build(),
         ThreadPoolExecutor.DiscardPolicy()
     )
-    
+
     /**
      * Publish a record.
      * Records are published via transactions if an [ResolvedPublisherConfig.transactional] is set.
@@ -91,7 +94,6 @@ internal class CordaPublisherImpl(
     }
 
     override fun publishToPartition(records: List<Pair<Int, Record<*, *>>>): List<CompletableFuture<Unit>> {
-
         val cordaRecords = records.map { Pair(it.first, it.second.toCordaProducerRecord()) }
         val futures = mutableListOf<CompletableFuture<Unit>>()
         if (config.transactional) {
@@ -111,7 +113,7 @@ internal class CordaPublisherImpl(
         }
         val batchFuture = CompletableFuture<Unit>()
         queue.put(Batch(records, batchFuture))
-        
+
         // Post publishing asynchronously and release a caller thread as soon as possible
         executor.execute {
             val batches = ArrayList<Batch>(QUEUE_SIZE)
@@ -219,7 +221,10 @@ internal class CordaPublisherImpl(
                 is CordaMessageAPIProducerRequiresReset -> {
                     logErrorAndSetFuture(
                         "Producer clientId ${config.clientId}, transactional ${config.transactional}, " +
-                                "failed to send, resetting producer", ex, future, false
+                            "failed to send, resetting producer",
+                        ex,
+                        future,
+                        false
                     )
                     resetProducer()
                 }
@@ -227,14 +232,20 @@ internal class CordaPublisherImpl(
                 is CordaMessageAPIIntermittentException -> {
                     logErrorAndSetFuture(
                         "Producer clientId ${config.clientId}, transactional ${config.transactional}, " +
-                                "failed to send", ex, future, false
+                            "failed to send",
+                        ex,
+                        future,
+                        false
                     )
                 }
 
                 else -> {
                     logErrorAndSetFuture(
                         "Producer clientId ${config.clientId}, transactional ${config.transactional}, " +
-                                "failed to send", ex, future, true
+                            "failed to send",
+                        ex,
+                        future,
+                        true
                     )
                 }
             }
@@ -247,10 +258,10 @@ internal class CordaPublisherImpl(
      */
     private fun setFutureFromResponse(exception: Exception?, future: CompletableFuture<Unit>, topic: String) {
         val message = "Producer clientId ${config.clientId}, transactional ${config.transactional}, " +
-                "for topic $topic failed to send"
+            "for topic $topic failed to send"
         when (exception) {
             null -> {
-                //transaction operation can still fail at commit stage  so do not set to true until it is committed
+                // transaction operation can still fail at commit stage  so do not set to true until it is committed
                 if (!config.transactional) {
                     future.complete(Unit)
                 } else {
@@ -315,7 +326,6 @@ internal class CordaPublisherImpl(
         try {
             cordaProducer.close()
         } catch (ex: Exception) {
-
             log.warn("CordaPublisherImpl failed to close producer safely. ClientId: ${config.clientId}", ex)
         }
     }

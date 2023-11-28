@@ -12,7 +12,6 @@ interface JpaEntitiesSet {
                     get() = name
                 override val classes: Set<Class<*>>
                     get() = classes
-
             }
         }
     }
@@ -20,4 +19,3 @@ interface JpaEntitiesSet {
     val persistenceUnitName: String
     val classes: Set<Class<*>>
 }
-

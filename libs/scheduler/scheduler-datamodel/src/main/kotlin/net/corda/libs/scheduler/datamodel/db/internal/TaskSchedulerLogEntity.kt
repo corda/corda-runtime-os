@@ -18,16 +18,16 @@ const val TASK_SCHEDULER_LOG_QUERY_PARAM_NAME = "name"
 @NamedQuery(
     name = TASK_SCHEDULER_LOG_UPDATE_QUERY_NAME,
     query = "UPDATE TaskSchedulerLogEntity s" +
-            " SET s.schedulerId = :$TASK_SCHEDULER_LOG_QUERY_PARAM_SCHEDULER_ID," +
-            " s.lastScheduled = CURRENT_TIMESTAMP" +
-            " WHERE s.name = :$TASK_SCHEDULER_LOG_QUERY_PARAM_NAME"
+        " SET s.schedulerId = :$TASK_SCHEDULER_LOG_QUERY_PARAM_SCHEDULER_ID," +
+        " s.lastScheduled = CURRENT_TIMESTAMP" +
+        " WHERE s.name = :$TASK_SCHEDULER_LOG_QUERY_PARAM_NAME"
 )
 @NamedQuery(
     name = TASK_SCHEDULER_LOG_GET_QUERY_NAME,
     query = "SELECT new net.corda.libs.scheduler.datamodel.db.internal." +
-            "TaskSchedulerLogEntity(s.name, s.schedulerId, s.lastScheduled, CURRENT_TIMESTAMP)" +
-            "FROM TaskSchedulerLogEntity s " +
-            "WHERE s.name = :$TASK_SCHEDULER_LOG_QUERY_PARAM_NAME"
+        "TaskSchedulerLogEntity(s.name, s.schedulerId, s.lastScheduled, CURRENT_TIMESTAMP)" +
+        "FROM TaskSchedulerLogEntity s " +
+        "WHERE s.name = :$TASK_SCHEDULER_LOG_QUERY_PARAM_NAME"
 )
 internal class TaskSchedulerLogEntity(
     @Id
@@ -64,4 +64,3 @@ internal class TaskSchedulerLogEntity(
         return name.hashCode()
     }
 }
-

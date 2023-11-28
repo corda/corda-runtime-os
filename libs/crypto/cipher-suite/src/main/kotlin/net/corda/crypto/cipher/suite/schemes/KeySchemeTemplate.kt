@@ -64,4 +64,3 @@ data class KeySchemeTemplate(
         capabilities = capabilities
     )
 }
-

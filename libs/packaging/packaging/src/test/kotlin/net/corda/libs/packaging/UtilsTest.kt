@@ -56,7 +56,6 @@ class UtilsTest {
         }
     }
 
-
     @Test
     fun `certSummaryHash takes X500 names of each signing certificate hashes them, sorts hashes and hashes over them`() {
         val aliceCert = mockCert(aliceX500Name)

@@ -2,12 +2,6 @@ package net.corda.chunking
 
 import com.google.common.jimfs.Configuration
 import com.google.common.jimfs.Jimfs
-import java.nio.ByteBuffer
-import java.nio.file.FileSystem
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.StandardOpenOption
-import java.util.UUID
 import net.corda.chunking.Constants.Companion.APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
 import net.corda.chunking.Constants.Companion.CHUNK_FILENAME_KEY
 import net.corda.chunking.Constants.Companion.MB
@@ -19,6 +13,12 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.nio.ByteBuffer
+import java.nio.file.FileSystem
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardOpenOption
+import java.util.UUID
 
 class ChunkReadingTest {
     private lateinit var fs: FileSystem
@@ -153,7 +153,7 @@ class ChunkReadingTest {
     @Test
     fun `can read overlapping files with out of order chunks`() {
         val chunks = mutableListOf<Chunk>()
-        val chunkSize = 32 + APP_LEVEL_CHUNK_MESSAGE_OVERHEAD //bytes
+        val chunkSize = 32 + APP_LEVEL_CHUNK_MESSAGE_OVERHEAD // bytes
         val writer = ChunkWriterImpl(chunkSize, chunkBuilderService).apply {
             onChunk(chunks::add)
         }
@@ -252,7 +252,7 @@ class ChunkReadingTest {
         // Should never get a zero sized file and just the terminating chunk, but who knows?
         val path = createEmptyFile(0)
         val chunks = mutableListOf<Chunk>()
-        val chunkSize = 32 + APP_LEVEL_CHUNK_MESSAGE_OVERHEAD //bytes
+        val chunkSize = 32 + APP_LEVEL_CHUNK_MESSAGE_OVERHEAD // bytes
         val writer = ChunkWriterImpl(chunkSize, chunkBuilderService).apply {
             onChunk(chunks::add)
         }

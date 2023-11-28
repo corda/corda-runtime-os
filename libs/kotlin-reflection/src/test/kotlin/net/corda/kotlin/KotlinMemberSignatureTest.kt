@@ -28,6 +28,7 @@ class KotlinMemberSignatureTest {
     @ArgumentsSource(MethodProvider::class)
     fun testInterfaceForClass(method: Method) {
         val api = method.toSignature()
+
         @Suppress("SpreadOperator")
         val impl = ExampleImpl::class.java.getMethod(api.name, *api.parameterTypes).toSignature()
         assertAll(

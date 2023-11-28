@@ -1,4 +1,5 @@
 @file:JvmName("KotlinCommon")
+
 package net.corda.kotlin.reflect.impl
 
 import net.corda.kotlin.reflect.types.KFunctionInternal
@@ -88,8 +89,9 @@ fun KPropertyInternal<*>.acceptIncompleteAccessors(accessors: MutableList<KFunct
                 setter.toFunction()?.let(accessors::add)
             }
         }
-    } else if (this is KPropertyAccessorInternal<*>
-            && (getter.isAbstract && !getter.javaMethod.isForInterface)) {
+    } else if (this is KPropertyAccessorInternal<*> &&
+        (getter.isAbstract && !getter.javaMethod.isForInterface)
+    ) {
         getter.toFunction()?.let(accessors::add)
     }
 }

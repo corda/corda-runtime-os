@@ -25,7 +25,6 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.*
 
-
 fun CompositeKeyProviderImpl.createFromKeys(vararg keys: PublicKey, threshold: Int? = 1) =
     createFromKeys(keys.toList(), threshold)
 
@@ -90,7 +89,6 @@ fun createDevCertificate(
     )
     return v3CertGen.build(contentSigner).toJca()
 }
-
 
 fun getDevSigner(privateKey: PrivateKey, signatureAlgorithm: AlgorithmIdentifier): ContentSigner {
     return object : ContentSigner {

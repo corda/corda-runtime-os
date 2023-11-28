@@ -62,7 +62,7 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
     }
 
     override fun start() {
-        log.debug { "Starting subscription with config:\n${config}" }
+        log.debug { "Starting subscription with config:\n$config" }
         threadLooper.start()
     }
 
@@ -173,7 +173,8 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
 
                     else -> {
                         throw CordaMessageAPIFatalException(
-                            "Failed to process records from topic ${config.topic}, group ${config.group}.", ex
+                            "Failed to process records from topic ${config.topic}, group ${config.group}.",
+                            ex
                         )
                     }
                 }

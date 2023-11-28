@@ -17,7 +17,7 @@ class CertificateValidatorTest {
         val certificateFactory: CertificateFactory = CertificateFactory.getInstance(certificateFactoryType)
     }
 
-    private val aliceX500Name =  MemberX500Name.parse("CN=Alice, O=R3 Test, L=London, C=GB")
+    private val aliceX500Name = MemberX500Name.parse("CN=Alice, O=R3 Test, L=London, C=GB")
     private val aliceCert = Certificates.aliceKeyStorePem.readText()
     private val alicePublicKey = certificateFactory.generateCertificate(
         ByteArrayInputStream(Certificates.aliceKeyStorePem.readBytes())
@@ -28,7 +28,7 @@ class CertificateValidatorTest {
     private val trustStore = listOf(Certificates.truststoreCertificatePem.readText())
     private val trustStoreWithRevocation = listOf(Certificates.truststoreCertificatePem.readText())
     private val wrongTrustStore = listOf(Certificates.c4TruststoreCertificatePem.readText())
-    private val revokedResponse =  RevocationCheckResponse(Revoked("The certificate was revoked.", 0))
+    private val revokedResponse = RevocationCheckResponse(Revoked("The certificate was revoked.", 0))
 
     @Test
     fun `valid certificate passes validation`() {

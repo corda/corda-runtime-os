@@ -40,7 +40,6 @@ import org.apache.kafka.common.errors.WakeupException
 import org.slf4j.LoggerFactory
 import java.time.Duration
 
-
 /**
  * Wrapper for a Kafka Consumer.
  */
@@ -119,7 +118,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 if (bufferedRecords.isNotEmpty()) {
                     log.trace {
                         "Taking  ${bufferedRecords.size} buffered records from partition $partition and adding them to the polled records" +
-                                " of size ${records.size}"
+                            " of size ${records.size}"
                     }
                 }
                 recordsToReturn.addAll(parseRecords(partition, bufferedRecords.plus(records)))
@@ -174,7 +173,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         polledRecords: List<ConsumerRecord<Any, Any>>
     ): List<CordaConsumerRecord<K, V>> {
         val completeRecords = mutableListOf<CordaConsumerRecord<K, V>>()
-        //only stores current chunks for this partition on this poll
+        // only stores current chunks for this partition on this poll
         val currentChunks = mutableMapOf<String, ChunksRead>()
 
         polledRecords.forEach { consumerRecord ->
@@ -218,7 +217,7 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
     ): CordaConsumerRecord<K, V>? {
         val chunksRead = addChunkToMap(currentChunks, chunkKey, chunk, consumerRecord.offset())
 
-        //chunk ordering is guaranteed as chunks are always committed via transactions
+        // chunk ordering is guaranteed as chunks are always committed via transactions
         return if (chunk.checksum != null) {
             log.trace { "Found checksum for chunkId ${chunk.requestId} " }
             currentChunks.remove(chunk.requestId)
@@ -326,7 +325,8 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                     }
                     else -> {
                         logErrorAndThrowFatalException(
-                            "Unexpected error attempting to commitSync offsets .", ex
+                            "Unexpected error attempting to commitSync offsets .",
+                            ex
                         )
                     }
                 }
@@ -358,7 +358,8 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                     else -> {
                         logErrorAndThrowFatalException(
                             "Unexpected error attempting to commitSync offsets " +
-                                    "for record $event.", ex
+                                "for record $event.",
+                            ex
                         )
                     }
                 }
@@ -427,7 +428,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
         }
     }
 
-
     override fun getPartitions(topic: String): List<CordaTopicPartition> {
         val listOfPartitions: List<PartitionInfo> = try {
             consumer.partitionsFor(config.topicPrefix + topic)
@@ -447,10 +447,10 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
                 }
             }
         }
-        // Safeguard, should never happen in newer versions of Kafka
+            // Safeguard, should never happen in newer versions of Kafka
             ?: logWarningAndThrowIntermittentException(
                 "Partitions for topic $topic are null. " +
-                        "Kafka may not have completed startup."
+                    "Kafka may not have completed startup."
             )
 
         return listOfPartitions.map {
@@ -641,7 +641,6 @@ class CordaKafkaConsumerImpl<K : Any, V : Any>(
             }
         }
     }
-
 
     override fun endOffsets(
         partitions: Collection<CordaTopicPartition>,

@@ -21,9 +21,9 @@ class DigestServiceImpl : PlatformDigestService {
     override fun hash(inputStream: InputStream, platformDigestName: DigestAlgorithmName): SecureHash {
         val messageDigest = MessageDigest.getInstance(platformDigestName.name)
         val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-        while(true) {
+        while (true) {
             val read = inputStream.read(buffer)
-            if(read <= 0) break
+            if (read <= 0) break
             messageDigest.update(buffer, 0, read)
         }
         return SecureHashImpl(platformDigestName.name, messageDigest.digest())

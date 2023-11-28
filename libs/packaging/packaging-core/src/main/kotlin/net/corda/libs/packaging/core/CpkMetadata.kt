@@ -17,7 +17,6 @@ import java.util.stream.Collectors
 import net.corda.data.crypto.SecureHash as AvroSecureHash
 import net.corda.data.packaging.CpkMetadata as CpkMetadataAvro
 
-
 /**
  * Represents a CPK file in the cluster
  *
@@ -78,24 +77,24 @@ data class CpkMetadata(
     // TODO - should we do these conversions back/forth or could this just be a proxy to the AVRO object itself?
     fun toAvro(): CpkMetadataAvro {
         return CpkMetadataAvro.newBuilder()
-                .setId(cpkId.toAvro())
-                .setManifest(manifest.toAvro())
-                .setMainBundle(mainBundle)
-                .setLibraries(libraries)
-                .setCorDappManifest(cordappManifest.toAvro())
-                .setType(type.toAvro())
-                .setHash(AvroSecureHash(fileChecksum.algorithm, ByteBuffer.wrap(fileChecksum.bytes)))
-                .setCorDappCertificates(
-                    cordappCertificates.stream()
-                        .map(Certificate::getEncoded)
-                        .map(ByteBuffer::wrap)
-                        .collect(
-                            Collectors.toUnmodifiableList()
-                        )
-                )
-                .setTimestamp(timestamp)
-                .setExternalChannelsConfig(externalChannelsConfig)
-                .build()
+            .setId(cpkId.toAvro())
+            .setManifest(manifest.toAvro())
+            .setMainBundle(mainBundle)
+            .setLibraries(libraries)
+            .setCorDappManifest(cordappManifest.toAvro())
+            .setType(type.toAvro())
+            .setHash(AvroSecureHash(fileChecksum.algorithm, ByteBuffer.wrap(fileChecksum.bytes)))
+            .setCorDappCertificates(
+                cordappCertificates.stream()
+                    .map(Certificate::getEncoded)
+                    .map(ByteBuffer::wrap)
+                    .collect(
+                        Collectors.toUnmodifiableList()
+                    )
+            )
+            .setTimestamp(timestamp)
+            .setExternalChannelsConfig(externalChannelsConfig)
+            .build()
     }
 
     fun toJsonAvro(): String {

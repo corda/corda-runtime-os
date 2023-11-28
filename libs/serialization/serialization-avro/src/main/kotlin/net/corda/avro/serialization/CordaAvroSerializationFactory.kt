@@ -1,6 +1,5 @@
 package net.corda.avro.serialization
 
-
 /**
  * Defines the interface for message bus deserialization. The underlying mechanism may differ.
  */

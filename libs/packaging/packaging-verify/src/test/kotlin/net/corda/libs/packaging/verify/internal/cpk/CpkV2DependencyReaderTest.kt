@@ -40,14 +40,16 @@ class CpkV2DependencyReaderTest {
 
         val expectedDependencies = listOf(
             CpkHashDependency(
-            "net.acme.contract",
-            "1.0.0",
-            hash("qlnYKfLKj931q+pA2BX5N+PlTlcrZbk7XCFq5llOfWs=", "SHA-256")),
+                "net.acme.contract",
+                "1.0.0",
+                hash("qlnYKfLKj931q+pA2BX5N+PlTlcrZbk7XCFq5llOfWs=", "SHA-256")
+            ),
 
             CpkSignerDependency(
-            "com.example.helloworld.hello-world-cpk-one",
-            "2.0.0",
-                codeSigners)
+                "com.example.helloworld.hello-world-cpk-one",
+                "2.0.0",
+                codeSigners
+            )
         )
 
         assertEquals(expectedDependencies, dependencies)
@@ -125,7 +127,11 @@ class CpkV2DependencyReaderTest {
         }
         assertNotNull(exception.cause)
         assertNotNull(exception.cause!!.message)
-        assertTrue(exception.cause!!.message!!.contains("[\$.dependencies[0].verifySameSignerAsMe: does not" +
-                " have a value in the enumeration [true]"))
+        assertTrue(
+            exception.cause!!.message!!.contains(
+                "[\$.dependencies[0].verifySameSignerAsMe: does not" +
+                    " have a value in the enumeration [true]"
+            )
+        )
     }
 }

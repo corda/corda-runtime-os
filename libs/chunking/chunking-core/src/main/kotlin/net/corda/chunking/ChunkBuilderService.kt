@@ -1,9 +1,9 @@
 package net.corda.chunking
 
-import java.nio.ByteBuffer
 import net.corda.data.KeyValuePairList
 import net.corda.data.chunking.Chunk
 import net.corda.v5.crypto.SecureHash
+import java.nio.ByteBuffer
 
 /**
  * Utility service to build chunks
@@ -26,7 +26,7 @@ interface ChunkBuilderService {
         checksum: SecureHash,
         offset: Long,
         properties: KeyValuePairList? = null
-    ) : Chunk
+    ): Chunk
 
     /**
      * Build a chunk object to wrap some bytes that need to be sent in chunks
@@ -42,5 +42,5 @@ interface ChunkBuilderService {
         byteBuffer: ByteBuffer,
         offset: Long,
         properties: KeyValuePairList? = null
-    ) : Chunk
+    ): Chunk
 }

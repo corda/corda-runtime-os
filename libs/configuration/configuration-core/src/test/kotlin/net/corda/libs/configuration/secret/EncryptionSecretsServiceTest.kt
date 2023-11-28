@@ -32,11 +32,13 @@ class EncryptionSecretsServiceTest {
     @Test
     fun `when ConfigValue not secret section throw`() {
         val service = EncryptionSecretsServiceImpl(passphrase, salt, encryptorMock, decryptorMock)
-        val config = ConfigFactory.parseString("""
+        val config = ConfigFactory.parseString(
+            """
         root {
             "encryptedSecret":"encrypted_secret1",
         }   
-    """.trimIndent())
+            """.trimIndent()
+        )
 
         assertThrows<SecretsConfigurationException> {
             service.getValue(config.getConfig("root"))
@@ -46,10 +48,12 @@ class EncryptionSecretsServiceTest {
     @Test
     fun `when secret section empty throw`() {
         val service = EncryptionSecretsServiceImpl(passphrase, salt, encryptorMock, decryptorMock)
-        val config = ConfigFactory.parseString("""
+        val config = ConfigFactory.parseString(
+            """
         root.${ConfigKeys.SECRET_KEY} {
         }     
-    """.trimIndent())
+            """.trimIndent()
+        )
 
         assertThrows<SecretsConfigurationException> {
             service.getValue(config.getConfig("root"))
@@ -60,11 +64,13 @@ class EncryptionSecretsServiceTest {
     @ValueSource(strings = ["", " "])
     fun `when encryptedSecret empty or blank throw`(encryptedSecretValue: String) {
         val service = EncryptionSecretsServiceImpl(passphrase, salt, encryptorMock, decryptorMock)
-        val config = ConfigFactory.parseString("""
+        val config = ConfigFactory.parseString(
+            """
         root.${ConfigKeys.SECRET_KEY} {
             "encryptedSecret":"$encryptedSecretValue",
         }   
-    """.trimIndent())
+            """.trimIndent()
+        )
 
         assertThrows<SecretsConfigurationException> {
             service.getValue(config.getConfig("root"))
@@ -74,11 +80,13 @@ class EncryptionSecretsServiceTest {
     @Test
     fun `when encryptedSecret missing throw`() {
         val service = EncryptionSecretsServiceImpl(passphrase, salt, encryptorMock, decryptorMock)
-        val config = ConfigFactory.parseString("""
+        val config = ConfigFactory.parseString(
+            """
         root.${ConfigKeys.SECRET_KEY} {
             "foo": "bar"
         }     
-    """.trimIndent())
+            """.trimIndent()
+        )
 
         assertThrows<SecretsConfigurationException> {
             service.getValue(config.getConfig("root"))
@@ -116,7 +124,7 @@ class EncryptionSecretsServiceTest {
 
     @Test
     fun `when createValue create correct paths`() {
-        val service = EncryptionSecretsServiceImpl(passphrase, salt, encryptorMock, decryptorMock )
+        val service = EncryptionSecretsServiceImpl(passphrase, salt, encryptorMock, decryptorMock)
 
         val secretConfig1 = service.createValue("secret1", "test").atKey("root")
 
@@ -139,11 +147,13 @@ class EncryptionSecretsServiceTest {
     @Test
     fun `well known key`() {
         val service = EncryptionSecretsServiceImpl("soup", "fish")
-        val config = ConfigFactory.parseString("""
+        val config = ConfigFactory.parseString(
+            """
         configSecret {
             "encryptedSecret":"iUUaENwGC+z0PnVjvYHIZz3AACs0mUz2OpIjCg4ZKcCImvsdacgdX+gy8xAIkoR8BAW3vJ3aXenUmNJLbWdrdDPXc8EfWSbL",
         }   
-    """.trimIndent())
-        assertThat( service.getValue(config)).isEqualTo("C8DMac5wpGagNSuruAjY/6wbKOLtVL66QAuaN5emA/I=")
+            """.trimIndent()
+        )
+        assertThat(service.getValue(config)).isEqualTo("C8DMac5wpGagNSuruAjY/6wbKOLtVL66QAuaN5emA/I=")
     }
 }

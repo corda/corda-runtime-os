@@ -92,6 +92,7 @@ class EnumToStringFallbackTest {
 
     @CordaSerializable
     data class WorkingContainer(val value: Working)
+
     @CordaSerializable
     data class BrokenContainer(val value: Broken)
 }

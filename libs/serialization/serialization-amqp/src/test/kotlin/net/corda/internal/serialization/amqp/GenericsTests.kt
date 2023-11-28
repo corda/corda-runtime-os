@@ -95,8 +95,10 @@ class GenericsTests {
     fun doWeIgnoreMultipleParams() {
         @CordaSerializable
         data class G1<out T>(val a: T)
+
         @CordaSerializable
         data class G2<out T>(val a: T)
+
         @CordaSerializable
         data class Wrapper<out T>(val a: Int, val b: G1<T>, val c: G2<T>)
 
@@ -112,6 +114,7 @@ class GenericsTests {
     fun nestedSerializationOfGenerics() {
         @CordaSerializable
         data class G<out T>(val a: T)
+
         @CordaSerializable
         data class Wrapper<out T>(val a: Int, val b: G<T>)
 
@@ -143,6 +146,7 @@ class GenericsTests {
     fun nestedGenericsReferencesByteArrayViaSerializedBytes() {
         @CordaSerializable
         data class G(val a: Int)
+
         @CordaSerializable
         data class Wrapper<T : Any>(val a: Int, val b: SerializedBytes<T>)
 
@@ -168,12 +172,16 @@ class GenericsTests {
     fun nestedSerializationInMultipleContextsDoesntColideGenericTypes() {
         @CordaSerializable
         data class InnerA(val a_a: Int)
+
         @CordaSerializable
         data class InnerB(val a_b: Int)
+
         @CordaSerializable
         data class InnerC(val a_c: String)
+
         @CordaSerializable
         data class Container<T>(val b: T)
+
         @CordaSerializable
         data class Wrapper<T : Any>(val c: Container<T>)
 
@@ -204,8 +212,10 @@ class GenericsTests {
     fun nestedSerializationWhereGenericDoesntImpactFingerprint() {
         @CordaSerializable
         data class Inner(val a: Int)
+
         @CordaSerializable
         data class Container<T : Any>(val b: Inner)
+
         @CordaSerializable
         data class Wrapper<T : Any>(val c: Container<T>)
 
@@ -313,6 +323,7 @@ class GenericsTests {
 
     @CordaSerializable
     data class StateAndString(val state: TestTransactionState<*>, val ref: String)
+
     @CordaSerializable
     data class GenericStateAndString<out T : TestContractState>(val state: TestTransactionState<T>, val ref: String)
 
@@ -402,8 +413,10 @@ class GenericsTests {
         @CordaSerializable
         open class BaseState(val a: Int)
         class DState(a: Int) : BaseState(a)
+
         @CordaSerializable
         data class LTransactionState<out T : BaseState> constructor(val data: T)
+
         @CordaSerializable
         data class StateWrapper<out T : BaseState>(val state: LTransactionState<T>)
 
@@ -430,6 +443,7 @@ class GenericsTests {
 
         @CordaSerializable
         data class LTransactionState<out T1 : BaseState, out T2 : BaseState> (val data: T1, val context: T2)
+
         @CordaSerializable
         data class StateWrapper<out T1 : BaseState, out T2 : BaseState>(val state: LTransactionState<T1, T2>)
 
@@ -451,13 +465,16 @@ class GenericsTests {
     @Test
     fun nestedMultiGenericsNoBound() {
         open class BaseState(val a: Int)
+
         @CordaSerializable
         class DState(a: Int) : BaseState(a)
+
         @CordaSerializable
         class EState(a: Int, val msg: String) : BaseState(a)
 
         @CordaSerializable
         data class LTransactionState<out T1, out T2> (val data: T1, val context: T2)
+
         @CordaSerializable
         data class StateWrapper<out T1, out T2>(val state: LTransactionState<T1, T2>)
 
@@ -483,6 +500,7 @@ class GenericsTests {
         val factory2 = testDefaultFactory()
 
         open class BaseState<T1, T2>(open val a: T1, open val b: T2)
+
         @CordaSerializable
         class DState<T1, T2>(a: T1, b: T2) : BaseState<T1, T2>(a, b)
 
@@ -514,6 +532,7 @@ class GenericsTests {
         open class Bound(val a: Int)
 
         open class BaseState<out T1 : Bound>(open val a: T1)
+
         @CordaSerializable
         class DState<out T1 : Bound>(a: T1) : BaseState<T1>(a)
 
@@ -533,6 +552,7 @@ class GenericsTests {
 
         @CordaSerializable
         data class LTransactionState<T1, T2, T3 : BaseState<T1, T2>, out T4 : BaseState<T1, T2>> (val data: T3, val context: T4)
+
         @CordaSerializable
         data class StateWrapper<T1, T2, T3 : BaseState<T1, T2>, out T4 : BaseState<T1, T2>>(val state: LTransactionState<T1, T2, T3, T4>)
 

@@ -19,7 +19,7 @@ const val SHORT_KEY_ID_LENGTH = 12
 /**
  * Returns the short id of a [PublicKey] (i.e. the first 12 characters of an SHA-256 hash of [PublicKey.getEncoded]).
  */
-fun PublicKey.publicKeyId(): String  {
+fun PublicKey.publicKeyId(): String {
     val fullKeyIdHex = ByteArrays.toHexString(sha256Bytes())
     return fullKeyIdHex.substring(0, SHORT_KEY_ID_LENGTH)
 }

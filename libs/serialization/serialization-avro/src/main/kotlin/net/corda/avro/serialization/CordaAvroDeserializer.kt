@@ -11,5 +11,4 @@ interface CordaAvroDeserializer<T> {
      * @return the object represented by `data` or `null` if unsuccessful
      */
     fun deserialize(data: ByteArray): T?
-
 }

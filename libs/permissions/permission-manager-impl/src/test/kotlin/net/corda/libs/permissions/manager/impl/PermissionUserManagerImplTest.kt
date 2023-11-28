@@ -1,28 +1,35 @@
 package net.corda.libs.permissions.manager.impl
 
 import com.typesafe.config.ConfigValueFactory
-import java.lang.IllegalArgumentException
 import net.corda.data.permissions.ChangeDetails
 import net.corda.data.permissions.Property
 import net.corda.data.permissions.RoleAssociation
 import net.corda.data.permissions.User
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
+import net.corda.data.permissions.management.user.AddRoleToUserRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
+import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.libs.permissions.manager.exception.UnexpectedPermissionResponseException
+import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
+import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
+import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.permissions.password.PasswordHash
 import net.corda.permissions.password.PasswordService
+import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.concurrent.getOrThrow
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
@@ -30,18 +37,11 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.lang.IllegalArgumentException
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
-import net.corda.data.permissions.management.user.AddRoleToUserRequest
-import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
-import net.corda.libs.permissions.management.cache.PermissionManagementCache
-import net.corda.libs.permissions.validation.cache.PermissionValidationCache
-import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
-import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
-import net.corda.schema.configuration.ConfigKeys
-import org.junit.jupiter.api.assertThrows
 import java.util.concurrent.atomic.AtomicReference
 
 class PermissionUserManagerImplTest {
@@ -57,32 +57,58 @@ class PermissionUserManagerImplTest {
     private val passwordExpiry = Instant.now()
     private val parentGroup = "some-parent-group"
 
-    private val createUserRequestDto = CreateUserRequestDto(requestedBy = requestUserName, loginName = "loginname123", fullName = fullName,
-        enabled = true, initialPassword = "mypassword", passwordExpiry = passwordExpiry, parentGroup = parentGroup)
-    private val createUserRequestDtoWithoutPassword = CreateUserRequestDto(requestedBy = requestUserName, loginName = "loginname123",
-        fullName = fullName, enabled = true, initialPassword = null, passwordExpiry = null, parentGroup = parentGroup)
+    private val createUserRequestDto = CreateUserRequestDto(
+        requestedBy = requestUserName,
+        loginName = "loginname123",
+        fullName = fullName,
+        enabled = true,
+        initialPassword = "mypassword",
+        passwordExpiry = passwordExpiry,
+        parentGroup = parentGroup
+    )
+    private val createUserRequestDtoWithoutPassword = CreateUserRequestDto(
+        requestedBy = requestUserName,
+        loginName = "loginname123",
+        fullName = fullName,
+        enabled = true,
+        initialPassword = null,
+        passwordExpiry = null,
+        parentGroup = parentGroup
+    )
 
     private val userCreationTime = Instant.now()
     private val getUserRequestDto = GetUserRequestDto(requestedBy = requestUserName, loginName = "loginname123")
-    private val userProperty = Property(UUID.randomUUID().toString(), 0, ChangeDetails(userCreationTime), "email",
-        "a@b.com")
+    private val userProperty = Property(
+        UUID.randomUUID().toString(),
+        0,
+        ChangeDetails(userCreationTime),
+        "email",
+        "a@b.com"
+    )
 
-    private val avroUser = User(UUID.randomUUID().toString(), 0, ChangeDetails(userCreationTime), "user-login1", fullName, true,
+    private val avroUser = User(
+        UUID.randomUUID().toString(), 0, ChangeDetails(userCreationTime), "user-login1", fullName, true,
         "temp-hashed-password", "temporary-salt", userCreationTime, false, parentGroup, listOf(userProperty),
-        listOf(RoleAssociation(ChangeDetails(userCreationTime), "roleId1")))
+        listOf(RoleAssociation(ChangeDetails(userCreationTime), "roleId1"))
+    )
 
-    private val avroUserWithoutPassword = User(UUID.randomUUID().toString(), 0, ChangeDetails(userCreationTime),
+    private val avroUserWithoutPassword = User(
+        UUID.randomUUID().toString(), 0, ChangeDetails(userCreationTime),
         "user-login2", fullName, true, null, null, null,
-        true, parentGroup, listOf(userProperty), listOf(RoleAssociation(ChangeDetails(userCreationTime), "roleId1")))
+        true, parentGroup, listOf(userProperty), listOf(RoleAssociation(ChangeDetails(userCreationTime), "roleId1"))
+    )
 
     private val permissionManagementResponse = PermissionManagementResponse(avroUser)
     private val permissionManagementResponseWithoutPassword = PermissionManagementResponse(avroUserWithoutPassword)
     private val config = mock<SmartConfig>()
 
     private val manager = PermissionUserManagerImpl(
-            config, rpcSender, permissionManagementCacheRef,
-            AtomicReference(permissionValidationCache), passwordService
-        )
+        config,
+        rpcSender,
+        permissionManagementCacheRef,
+        AtomicReference(permissionValidationCache),
+        passwordService
+    )
 
     private val defaultTimeout = Duration.ofSeconds(30)
 
@@ -215,8 +241,13 @@ class PermissionUserManagerImplTest {
         whenever(passwordService.saltAndHash(eq("mypassword"))).thenReturn(PasswordHash("randomSalt", "hashedPass"))
         whenever(future.getOrThrow(Duration.ofMillis(12345L))).thenReturn(permissionManagementResponse)
 
-        val manager = PermissionUserManagerImpl(config, rpcSender, permissionManagementCacheRef,
-            AtomicReference(permissionValidationCache), passwordService)
+        val manager = PermissionUserManagerImpl(
+            config,
+            rpcSender,
+            permissionManagementCacheRef,
+            AtomicReference(permissionValidationCache),
+            passwordService
+        )
 
         val result = manager.createUser(createUserRequestDto)
 
@@ -267,9 +298,11 @@ class PermissionUserManagerImplTest {
 
     @Test
     fun `remove role from user sends rpc request and converts result to response dto`() {
-        val avroUser = User(UUID.randomUUID().toString(), 0, ChangeDetails(userCreationTime), "user-login1", fullName, true,
+        val avroUser = User(
+            UUID.randomUUID().toString(), 0, ChangeDetails(userCreationTime), "user-login1", fullName, true,
             "temp-hashed-password", "temporary-salt", userCreationTime, false, parentGroup, listOf(userProperty),
-            emptyList())
+            emptyList()
+        )
         val permissionManagementResponse = PermissionManagementResponse(avroUser)
 
         val future = mock<CompletableFuture<PermissionManagementResponse>>()
@@ -308,5 +341,4 @@ class PermissionUserManagerImplTest {
 
         assertEquals("Invalid user.", e.message)
     }
-
 }

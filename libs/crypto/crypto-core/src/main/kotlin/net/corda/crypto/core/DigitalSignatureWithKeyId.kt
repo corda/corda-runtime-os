@@ -7,6 +7,6 @@ import net.corda.v5.crypto.SecureHash
 class DigitalSignatureWithKeyId(
     private val by: SecureHash,
     bytes: ByteArray
-    ) : DigitalSignature.WithKeyId, OpaqueBytes(bytes) {
+) : DigitalSignature.WithKeyId, OpaqueBytes(bytes) {
     override fun getBy() = by
 }

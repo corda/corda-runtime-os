@@ -59,9 +59,12 @@ data class SerializationContextImpl @JvmOverloads constructor(
         return copy(customSerializers = customSerializers?.union(serializers) ?: serializers)
     }
 
-    override fun withPreferredSerializationVersion(magic: SerializationMagic) = copy(preferredSerializationVersion = magic)
+    override fun withPreferredSerializationVersion(magic: SerializationMagic) =
+        copy(preferredSerializationVersion = magic)
+
     override fun withEncoding(encoding: SerializationEncoding?) = copy(encoding = encoding)
-    override fun withEncodingAllowList(encodingAllowList: EncodingAllowList) = copy(encodingAllowList = encodingAllowList)
+    override fun withEncodingAllowList(encodingAllowList: EncodingAllowList) =
+        copy(encodingAllowList = encodingAllowList)
 }
 
 open class SerializationFactoryImpl(
@@ -79,13 +82,17 @@ open class SerializationFactoryImpl(
 
     private val creator: List<StackTraceElement> = Exception().stackTrace.asList()
 
-    private val registeredSchemes: MutableCollection<SerializationScheme> = Collections.synchronizedCollection(mutableListOf())
+    private val registeredSchemes: MutableCollection<SerializationScheme> =
+        Collections.synchronizedCollection(mutableListOf())
 
     private val logger = LoggerFactory.getLogger(javaClass)
 
     private fun ByteBuffer.copyBytes(): ByteArray = ByteArray(remaining()).also { get(it) }
 
-    private fun schemeFor(byteSequence: ByteSequence, target: SerializationContext.UseCase): Pair<SerializationScheme, CordaSerializationMagic> {
+    private fun schemeFor(
+        byteSequence: ByteSequence,
+        target: SerializationContext.UseCase
+    ): Pair<SerializationScheme, CordaSerializationMagic> {
         // truncate sequence to at most magicSize, and make sure it's a copy to avoid holding onto large ByteArrays
         val magic = CordaSerializationMagic(byteSequence.slice(0, magicSize).copyBytes())
         val lookupKey = magic to target
@@ -97,12 +104,12 @@ open class SerializationFactoryImpl(
                 } ?: run {
                     logger.warn(
                         "Cannot find serialization scheme for: [$lookupKey, " +
-                                "${if (magic == amqpMagic) "AMQP" else "UNKNOWN MAGIC"}] registeredSchemes are: $registeredSchemes"
+                            "${if (magic == amqpMagic) "AMQP" else "UNKNOWN MAGIC"}] registeredSchemes are: $registeredSchemes"
                     )
                     throw UnsupportedOperationException("Serialization scheme $lookupKey not supported.")
                 }
             }
-        ) to magic
+            ) to magic
     }
 
     @Throws(NotSerializableException::class)
@@ -143,6 +150,7 @@ open class SerializationFactoryImpl(
 
 interface SerializationScheme {
     fun canDeserializeVersion(magic: CordaSerializationMagic, target: SerializationContext.UseCase): Boolean
+
     @Throws(NotSerializableException::class)
     fun <T : Any> deserialize(byteSequence: ByteSequence, clazz: Class<T>, context: SerializationContext): T
 

@@ -16,7 +16,7 @@ import java.util.jar.Manifest
 /**
  * Verifies CPB format 2.0
  */
-class CpbV2Verifier(jarReader: JarReader): CpbVerifier {
+class CpbV2Verifier(jarReader: JarReader) : CpbVerifier {
     private val name = jarReader.jarName
     private val manifest: Manifest = jarReader.manifest
     private val cpkVerifiers: List<CpkV2Verifier>
@@ -26,7 +26,8 @@ class CpbV2Verifier(jarReader: JarReader): CpbVerifier {
         val (cpkVerifiers, cpkHashCalculators) = jarReader.entries.filter(::isCpk).map {
             Pair(
                 CpkV2Verifier(JarReader("$name/${it.name}", it.createInputStream(), jarReader.trustedCerts)),
-                FileHashCalculator(it::createInputStream))
+                FileHashCalculator(it::createInputStream)
+            )
         }.unzip()
         this.cpkVerifiers = cpkVerifiers
         this.cpkHashCalculators = cpkHashCalculators
@@ -35,12 +36,12 @@ class CpbV2Verifier(jarReader: JarReader): CpbVerifier {
     private fun isCpk(entry: JarReader.Entry): Boolean {
         return entry.name.let {
             it.indexOf('/') == -1 &&
-            it.endsWith(".jar", ignoreCase = true)
+                it.endsWith(".jar", ignoreCase = true)
         }
     }
 
     private fun verifyManifest() {
-        with (manifest) {
+        with(manifest) {
             requireAttributeValueIn(CPB_FORMAT_ATTRIBUTE, "2.0")
             requireAttribute(CPB_NAME_ATTRIBUTE)
             requireAttribute(CPB_VERSION_ATTRIBUTE)
@@ -49,12 +50,14 @@ class CpbV2Verifier(jarReader: JarReader): CpbVerifier {
 
     private fun verifyCpkDependencies() {
         val availableCpks = cpkVerifiers.zip(cpkHashCalculators).map { (cpk, cpkHashCalculator) ->
-            AvailableCpk(cpk.bundleName(), cpk.bundleVersion(), cpkHashCalculator, cpk.codeSigners) }
+            AvailableCpk(cpk.bundleName(), cpk.bundleVersion(), cpkHashCalculator, cpk.codeSigners)
+        }
 
         // Multiple versions of the same CorDapp not allowed
         val nonUniqueNames = availableCpks.map { it.name }.let { names -> names - names.toSet() }.toSet()
-        if (nonUniqueNames.isNotEmpty())
+        if (nonUniqueNames.isNotEmpty()) {
             throw PackagingException("CorDapp(s) $nonUniqueNames appear more than once in CPB \"$name\"")
+        }
 
         // Check that all dependencies are satisfied
         cpkVerifiers.forEach { cpk ->
@@ -65,8 +68,9 @@ class CpbV2Verifier(jarReader: JarReader): CpbVerifier {
     }
 
     private fun verifyCpks() {
-        if (cpkVerifiers.isEmpty())
+        if (cpkVerifiers.isEmpty()) {
             throw PackagingException("No CPK found in CPB \"$name\"")
+        }
 
         cpkVerifiers.forEach { it.verify() }
 

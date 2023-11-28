@@ -10,6 +10,7 @@ import org.mockito.kotlin.mock
 class CordaSecurityProviderTests {
     companion object {
         lateinit var keyEncodingService: KeyEncodingService
+
         @BeforeAll
         @JvmStatic
         fun setup() {

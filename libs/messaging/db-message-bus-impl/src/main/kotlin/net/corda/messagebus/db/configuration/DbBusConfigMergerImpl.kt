@@ -23,7 +23,6 @@ class DbBusConfigMergerImpl : BusConfigMerger {
             .withValue(INSTANCE_ID, fromAnyRef(bootConfig.getString(INSTANCE_ID)))
             .withValue(TOPIC_PREFIX, fromAnyRef(bootConfig.getStringOrDefault(TOPIC_PREFIX, "")))
             .withValue(MAX_ALLOWED_MSG_SIZE, fromAnyRef(bootConfig.getLong(BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE)))
-
             // Cluster Database
             .withValue(Bus.BUS_TYPE, fromAnyRef("DATABASE"))
             .withValue(Bus.DB_USER, fromAnyRef(bootConfig.getStringOrDefault(BootConfig.BOOT_JDBC_USER, "")))

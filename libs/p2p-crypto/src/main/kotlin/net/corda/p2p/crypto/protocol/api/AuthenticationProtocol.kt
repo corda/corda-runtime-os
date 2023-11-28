@@ -1,8 +1,11 @@
 package net.corda.p2p.crypto.protocol.api
 
+import net.corda.crypto.utils.PemCertificate
 import net.corda.data.p2p.crypto.InitiatorHelloMessage
 import net.corda.data.p2p.crypto.ProtocolMode
 import net.corda.data.p2p.crypto.ResponderHelloMessage
+import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
+import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.CIPHER_ALGO
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.CIPHER_KEY_SIZE_BYTES
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.CIPHER_NONCE_SIZE_BYTES
@@ -24,6 +27,7 @@ import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RESPONDER_SESSI
 import net.corda.p2p.crypto.util.convertToBCDigest
 import net.corda.p2p.crypto.util.generateKey
 import net.corda.p2p.crypto.util.hash
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SignatureSpec
 import org.bouncycastle.crypto.generators.HKDFBytesGenerator
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -41,10 +45,6 @@ import javax.crypto.KeyAgreement
 import javax.crypto.Mac
 import javax.crypto.SecretKey
 import javax.crypto.spec.SecretKeySpec
-import net.corda.crypto.utils.PemCertificate
-import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
-import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
-import net.corda.v5.base.types.MemberX500Name
 
 /**
  * A base, abstract class containing the core utilities for the session authentication protocol.
@@ -53,9 +53,13 @@ import net.corda.v5.base.types.MemberX500Name
  *
  * For the detailed spec of the authentication protocol, refer to the corresponding design document.
  */
-abstract class AuthenticationProtocol(private val certificateValidatorFactory: (revocationCheckMode: RevocationCheckMode,
-                                       pemTrustStore: List<PemCertificate>,
-                                       checkRevocation: (RevocationCheckRequest) -> RevocationCheckResponse) -> CertificateValidator){
+abstract class AuthenticationProtocol(
+    private val certificateValidatorFactory: (
+        revocationCheckMode: RevocationCheckMode,
+        pemTrustStore: List<PemCertificate>,
+        checkRevocation: (RevocationCheckRequest) -> RevocationCheckResponse
+    ) -> CertificateValidator
+) {
     protected var myPrivateDHKey: PrivateKey? = null
     protected var myPublicDHKey: ByteArray? = null
     protected var peerPublicDHKey: PublicKey? = null
@@ -88,44 +92,90 @@ abstract class AuthenticationProtocol(private val certificateValidatorFactory: (
     }
 
     fun generateHandshakeSecrets(inputKeyMaterial: ByteArray, initiatorHelloToResponderHello: ByteArray): SharedHandshakeSecrets {
-        val initiatorEncryptionKeyBytes = hkdfGenerator.generateKey(initiatorHelloToResponderHello, inputKeyMaterial,
-                                                                    INITIATOR_HANDSHAKE_ENCRYPTION_KEY_INFO, CIPHER_KEY_SIZE_BYTES)
+        val initiatorEncryptionKeyBytes = hkdfGenerator.generateKey(
+            initiatorHelloToResponderHello,
+            inputKeyMaterial,
+            INITIATOR_HANDSHAKE_ENCRYPTION_KEY_INFO,
+            CIPHER_KEY_SIZE_BYTES
+        )
         val initiatorEncryptionKey = SecretKeySpec(initiatorEncryptionKeyBytes, CIPHER_ALGO)
 
-        val responderEncryptionKeyBytes = hkdfGenerator.generateKey(initiatorHelloToResponderHello, inputKeyMaterial,
-                                                                    RESPONDER_HANDSHAKE_ENCRYPTION_KEY_INFO, CIPHER_KEY_SIZE_BYTES)
+        val responderEncryptionKeyBytes = hkdfGenerator.generateKey(
+            initiatorHelloToResponderHello,
+            inputKeyMaterial,
+            RESPONDER_HANDSHAKE_ENCRYPTION_KEY_INFO,
+            CIPHER_KEY_SIZE_BYTES
+        )
         val responderEncryptionKey = SecretKeySpec(responderEncryptionKeyBytes, CIPHER_ALGO)
 
-        val initiatorNonce = hkdfGenerator.generateKey(initiatorHelloToResponderHello, inputKeyMaterial,
-                                                                    INITIATOR_HANDSHAKE_ENCRYPTION_NONCE_INFO, CIPHER_NONCE_SIZE_BYTES)
-        val responderNonce = hkdfGenerator.generateKey(initiatorHelloToResponderHello, inputKeyMaterial,
-                                                                    RESPONDER_HANDSHAKE_ENCRYPTION_NONCE_INFO, CIPHER_NONCE_SIZE_BYTES)
+        val initiatorNonce = hkdfGenerator.generateKey(
+            initiatorHelloToResponderHello,
+            inputKeyMaterial,
+            INITIATOR_HANDSHAKE_ENCRYPTION_NONCE_INFO,
+            CIPHER_NONCE_SIZE_BYTES
+        )
+        val responderNonce = hkdfGenerator.generateKey(
+            initiatorHelloToResponderHello,
+            inputKeyMaterial,
+            RESPONDER_HANDSHAKE_ENCRYPTION_NONCE_INFO,
+            CIPHER_NONCE_SIZE_BYTES
+        )
 
-        val initiatorMacKeyBytes = hkdfGenerator.generateKey(initiatorHelloToResponderHello, inputKeyMaterial,
-                                                                    INITIATOR_HANDSHAKE_MAC_KEY_INFO, HMAC_KEY_SIZE_BYTES)
+        val initiatorMacKeyBytes = hkdfGenerator.generateKey(
+            initiatorHelloToResponderHello,
+            inputKeyMaterial,
+            INITIATOR_HANDSHAKE_MAC_KEY_INFO,
+            HMAC_KEY_SIZE_BYTES
+        )
         val initiatorMacKey = SecretKeySpec(initiatorMacKeyBytes, HMAC_ALGO)
 
-        val responderMackKeyBytes = hkdfGenerator.generateKey(initiatorHelloToResponderHello, inputKeyMaterial,
-                                                                    RESPONDER_HANDSHAKE_MAC_KEY_INFO, HMAC_KEY_SIZE_BYTES)
+        val responderMackKeyBytes = hkdfGenerator.generateKey(
+            initiatorHelloToResponderHello,
+            inputKeyMaterial,
+            RESPONDER_HANDSHAKE_MAC_KEY_INFO,
+            HMAC_KEY_SIZE_BYTES
+        )
         val responderMacKey = SecretKeySpec(responderMackKeyBytes, HMAC_ALGO)
 
-        return SharedHandshakeSecrets(initiatorMacKey, responderMacKey,
-                                      initiatorEncryptionKey, responderEncryptionKey, initiatorNonce, responderNonce)
+        return SharedHandshakeSecrets(
+            initiatorMacKey,
+            responderMacKey,
+            initiatorEncryptionKey,
+            responderEncryptionKey,
+            initiatorNonce,
+            responderNonce
+        )
     }
 
     fun generateSessionSecrets(inputKeyMaterial: ByteArray, initiatorHelloToResponderFinished: ByteArray): SharedSessionSecrets {
-        val initiatorEncryptionKeyBytes = hkdfGenerator.generateKey(initiatorHelloToResponderFinished, inputKeyMaterial,
-                                                                    INITIATOR_SESSION_ENCRYPTION_KEY_INFO, CIPHER_KEY_SIZE_BYTES)
+        val initiatorEncryptionKeyBytes = hkdfGenerator.generateKey(
+            initiatorHelloToResponderFinished,
+            inputKeyMaterial,
+            INITIATOR_SESSION_ENCRYPTION_KEY_INFO,
+            CIPHER_KEY_SIZE_BYTES
+        )
         val initiatorEncryptionKey = SecretKeySpec(initiatorEncryptionKeyBytes, CIPHER_ALGO)
 
-        val responderEncryptionKeyBytes = hkdfGenerator.generateKey(initiatorHelloToResponderFinished, inputKeyMaterial,
-                                                                    RESPONDER_SESSION_ENCRYPTION_KEY_INFO, CIPHER_KEY_SIZE_BYTES)
+        val responderEncryptionKeyBytes = hkdfGenerator.generateKey(
+            initiatorHelloToResponderFinished,
+            inputKeyMaterial,
+            RESPONDER_SESSION_ENCRYPTION_KEY_INFO,
+            CIPHER_KEY_SIZE_BYTES
+        )
         val responderEncryptionKey = SecretKeySpec(responderEncryptionKeyBytes, CIPHER_ALGO)
 
-        val initiatorNonce = hkdfGenerator.generateKey(initiatorHelloToResponderFinished, inputKeyMaterial,
-                                                                    INITIATOR_SESSION_NONCE_INFO, CIPHER_NONCE_SIZE_BYTES)
-        val responderNonce = hkdfGenerator.generateKey(initiatorHelloToResponderFinished, inputKeyMaterial,
-                                                                    RESPONDER_SESSION_NONCE_INFO, CIPHER_NONCE_SIZE_BYTES)
+        val initiatorNonce = hkdfGenerator.generateKey(
+            initiatorHelloToResponderFinished,
+            inputKeyMaterial,
+            INITIATOR_SESSION_NONCE_INFO,
+            CIPHER_NONCE_SIZE_BYTES
+        )
+        val responderNonce = hkdfGenerator.generateKey(
+            initiatorHelloToResponderFinished,
+            inputKeyMaterial,
+            RESPONDER_SESSION_NONCE_INFO,
+            CIPHER_NONCE_SIZE_BYTES
+        )
 
         return SharedSessionSecrets(initiatorEncryptionKey, responderEncryptionKey, initiatorNonce, responderNonce)
     }
@@ -162,12 +212,14 @@ abstract class AuthenticationProtocol(private val certificateValidatorFactory: (
      * @property responderEncryptionKey used for authenticated encryption on handshake messages by responder.
      *
      */
-    data class SharedHandshakeSecrets(val initiatorAuthKey: SecretKey,
-                                      val responderAuthKey: SecretKey,
-                                      val initiatorEncryptionKey: SecretKey,
-                                      val responderEncryptionKey: SecretKey,
-                                      val initiatorNonce: ByteArray,
-                                      val responderNonce: ByteArray) {
+    data class SharedHandshakeSecrets(
+        val initiatorAuthKey: SecretKey,
+        val responderAuthKey: SecretKey,
+        val initiatorEncryptionKey: SecretKey,
+        val responderEncryptionKey: SecretKey,
+        val initiatorNonce: ByteArray,
+        val responderNonce: ByteArray
+    ) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (javaClass != other?.javaClass) return false
@@ -199,10 +251,12 @@ abstract class AuthenticationProtocol(private val certificateValidatorFactory: (
      * @property initiatorEncryptionKey used for authentication encryption on session messages by us.
      * @property responderEncryptionKey used for authenticated encryption on session messages by peer.
      */
-    data class SharedSessionSecrets(val initiatorEncryptionKey: SecretKey,
-                                    val responderEncryptionKey: SecretKey,
-                                    val initiatorNonce: ByteArray,
-                                    val responderNonce: ByteArray) {
+    data class SharedSessionSecrets(
+        val initiatorEncryptionKey: SecretKey,
+        val responderEncryptionKey: SecretKey,
+        val initiatorNonce: ByteArray,
+        val responderNonce: ByteArray
+    ) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (javaClass != other?.javaClass) return false
@@ -232,4 +286,3 @@ abstract class AuthenticationProtocol(private val certificateValidatorFactory: (
 }
 
 internal fun Long.toByteArray(): ByteArray = ByteBuffer.allocate(Long.SIZE_BYTES).putLong(this).array()
-

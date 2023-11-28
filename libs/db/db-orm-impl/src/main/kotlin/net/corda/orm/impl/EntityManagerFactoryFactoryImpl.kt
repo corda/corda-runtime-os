@@ -4,6 +4,7 @@ import net.corda.db.core.CloseableDataSource
 import net.corda.orm.DdlManage
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.EntityManagerFactoryFactory
+import net.corda.utilities.debug
 import org.hibernate.cfg.AvailableSettings
 import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl
 import org.hibernate.jpa.boot.internal.PersistenceUnitInfoDescriptor
@@ -12,7 +13,6 @@ import org.osgi.service.component.annotations.Component
 import org.slf4j.LoggerFactory
 import javax.persistence.EntityManagerFactory
 import javax.persistence.spi.PersistenceUnitInfo
-import net.corda.utilities.debug
 
 /**
  * Hibernate implementation of [EntityManagerFactoryFactory]
@@ -22,9 +22,9 @@ import net.corda.utilities.debug
 @Component(service = [EntityManagerFactoryFactory::class])
 class EntityManagerFactoryFactoryImpl(
     private val entityManagerFactoryBuilderFactory:
-        (p: PersistenceUnitInfo) -> EntityManagerFactoryBuilder = { p ->
-            EntityManagerFactoryBuilderImpl(PersistenceUnitInfoDescriptor(p), emptyMap<Any, Any>())
-        }
+    (p: PersistenceUnitInfo) -> EntityManagerFactoryBuilder = { p ->
+        EntityManagerFactoryBuilderImpl(PersistenceUnitInfoDescriptor(p), emptyMap<Any, Any>())
+    }
 ) : EntityManagerFactoryFactory {
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -36,7 +36,7 @@ class EntityManagerFactoryFactoryImpl(
     private class EntityManagerFactoryWrapper(
         private val delegate: EntityManagerFactory,
         private val dataSource: CloseableDataSource
-    ): EntityManagerFactory by delegate {
+    ) : EntityManagerFactory by delegate {
 
         override fun close() {
             delegate.close()
@@ -65,7 +65,6 @@ class EntityManagerFactoryFactoryImpl(
         )
     }
 
-
     override fun create(
         persistenceUnitName: String,
         entities: List<String>,
@@ -84,7 +83,7 @@ class EntityManagerFactoryFactoryImpl(
             //
             // TODO - statistics integration isn't working in OSGi.
             // https://r3-cev.atlassian.net/browse/CORE-7168
-            //"hibernate.generate_statistics" to true.toString(),
+            // "hibernate.generate_statistics" to true.toString(),
             "javax.persistence.validation.mode" to "none"
         ).toProperties()
         props[AvailableSettings.CLASSLOADERS] = classLoaders

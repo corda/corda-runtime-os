@@ -76,8 +76,10 @@ class SplitApiTest {
     @DisplayName("Member Functions")
     @ArgumentsSource(SplitClassProvider::class)
     fun testMemberFunctions(klazz: KClass<*>) {
-        assumeTrue(klazz != JavaSplitChild::class,
-            "Kotlin Reflection includes spurious member function JavaSplitChild.getThirdApi()")
+        assumeTrue(
+            klazz != JavaSplitChild::class,
+            "Kotlin Reflection includes spurious member function JavaSplitChild.getThirdApi()"
+        )
         val kotlinFunctions = klazz.memberFunctions
         val cordaFunctions = klazz.kotlinClass.memberFunctions
         assertThatIterable(cordaFunctions)

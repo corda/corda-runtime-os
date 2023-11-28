@@ -1,10 +1,5 @@
 package net.corda.sandbox.internal
 
-import java.util.Collections.unmodifiableSortedMap
-import java.util.SortedMap
-import java.util.TreeMap
-import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
@@ -18,6 +13,11 @@ import net.corda.sandbox.internal.utilities.BundleUtils
 import org.osgi.framework.Bundle
 import org.osgi.framework.Constants.SYSTEM_BUNDLE_ID
 import org.slf4j.LoggerFactory
+import java.util.Collections.unmodifiableSortedMap
+import java.util.SortedMap
+import java.util.TreeMap
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * An implementation of the [SandboxGroup] interface.
@@ -59,9 +59,11 @@ internal class SandboxGroupImpl(
     private val staticTagCache = ConcurrentHashMap<Class<*>, String>()
     private val evolvableTagCache = ConcurrentHashMap<Class<*>, String>()
 
-    override val metadata: SortedMap<Bundle, CpkMetadata> = unmodifiableSortedMap(cpkSandboxes.associateTo(TreeMap()) { cpk ->
-        cpk.mainBundle to cpk.cpkMetadata
-    })
+    override val metadata: SortedMap<Bundle, CpkMetadata> = unmodifiableSortedMap(
+        cpkSandboxes.associateTo(TreeMap()) { cpk ->
+            cpk.mainBundle to cpk.cpkMetadata
+        }
+    )
 
     override fun loadClassFromPublicBundles(className: String): Class<*>? {
         val clazz = publicClassCache[className] ?: run {
@@ -91,20 +93,22 @@ internal class SandboxGroupImpl(
 
     override fun loadClassFromMainBundles(className: String): Class<*> {
         val suppressed = mutableListOf<Exception>()
-        return (sandboxClassCache[className] ?: run {
-            val sandboxClass = cpkSandboxes.mapNotNullTo(linkedSetOf()) { sandbox ->
-                try {
-                    sandbox.loadClassFromMainBundle(className)
-                } catch (e: SandboxException) {
-                    suppressed += e
-                    null
-                }
-            }.singleOrNull() ?: NotFound::class.java
-            sandboxClassCache.putIfAbsent(className, sandboxClass) ?: sandboxClass
-        }).takeUnless { clazz ->
+        return (
+            sandboxClassCache[className] ?: run {
+                val sandboxClass = cpkSandboxes.mapNotNullTo(linkedSetOf()) { sandbox ->
+                    try {
+                        sandbox.loadClassFromMainBundle(className)
+                    } catch (e: SandboxException) {
+                        suppressed += e
+                        null
+                    }
+                }.singleOrNull() ?: NotFound::class.java
+                sandboxClassCache.putIfAbsent(className, sandboxClass) ?: sandboxClass
+            }
+            ).takeUnless { clazz ->
             clazz === NotFound::class.java
         } ?: throw SandboxException("Class $className was not found in any sandbox in the sandbox group.")
-                .withSuppressed(suppressed)
+            .withSuppressed(suppressed)
     }
 
     override fun <T : Any> loadClassFromMainBundles(className: String, type: Class<T>): Class<out T> {
@@ -149,8 +153,10 @@ internal class SandboxGroupImpl(
                     is EvolvableTag -> {
                         cpkSandboxes.find {
                             it.cpkMetadata.cpkId.signerSummaryHash == classTag.cpkSignerSummaryHash &&
-                                    (it.cpkMetadata.cpkId.name == classTag.cordaCpkCordappName || // CPK given names match or
-                                            it.mainBundle.symbolicName == classTag.classBundleName) // symbolic names of class bundle match
+                                (
+                                    it.cpkMetadata.cpkId.name == classTag.cordaCpkCordappName || // CPK given names match or
+                                        it.mainBundle.symbolicName == classTag.classBundleName
+                                    ) // symbolic names of class bundle match
                         }?.let { Pair(it, it.mainBundle.symbolicName) } // only load evolvable classes from the main bundle
                     }
                 } ?: throw SandboxException(

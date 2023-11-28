@@ -16,7 +16,6 @@ fun ByteArray.hmac(secret: ByteArray, algorithm: String): ByteArray {
     return mac.doFinal(this)
 }
 
-
 /**
  * Calculates HMAC using provided secret and algorithm for provided input stream.
  */

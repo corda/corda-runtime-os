@@ -26,11 +26,17 @@ class WorkspacePathProvider(
     private val dirResolver: (String, Array<out String>) -> Path = { first, more -> Paths.get(first, *more) }
 ) : PathProvider {
     private companion object {
-        private val WORKSPACE_DIR_PERMISSIONS = asFileAttribute(setOf(
-            OWNER_READ, OWNER_WRITE, OWNER_EXECUTE,
-            GROUP_READ, GROUP_EXECUTE,
-            OTHERS_READ, OTHERS_EXECUTE
-        ))
+        private val WORKSPACE_DIR_PERMISSIONS = asFileAttribute(
+            setOf(
+                OWNER_READ,
+                OWNER_WRITE,
+                OWNER_EXECUTE,
+                GROUP_READ,
+                GROUP_EXECUTE,
+                OTHERS_READ,
+                OTHERS_EXECUTE
+            )
+        )
     }
 
     override fun getOrCreate(config: SmartConfig, vararg dirPath: String): Path {

@@ -30,7 +30,6 @@ class CpiLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
         cpiLocation: String?,
         verifySignature: Boolean,
     ): Cpi {
-
         // Calculate file hash
         val hash = calculateHash(byteArray)
 

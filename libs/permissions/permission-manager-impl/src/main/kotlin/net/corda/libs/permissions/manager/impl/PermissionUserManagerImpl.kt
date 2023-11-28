@@ -8,7 +8,6 @@ import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
-import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.libs.permissions.manager.PermissionUserManager
 import net.corda.libs.permissions.manager.impl.SmartConfigUtil.getEndpointTimeout
 import net.corda.libs.permissions.manager.impl.converter.convertToResponseDto
@@ -19,6 +18,7 @@ import net.corda.libs.permissions.manager.request.GetUserRequestDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
 import net.corda.libs.permissions.manager.response.UserPermissionSummaryResponseDto
 import net.corda.libs.permissions.manager.response.UserResponseDto
+import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.permissions.password.PasswordService
 import java.util.concurrent.atomic.AtomicReference
@@ -102,7 +102,6 @@ class PermissionUserManagerImpl(
     }
 
     override fun getPermissionSummary(permissionSummaryRequestDto: GetPermissionSummaryRequestDto): UserPermissionSummaryResponseDto? {
-
         val permissionValidationCache = checkNotNull(permissionValidationCacheRef.get()) {
             "Permission validation cache is null."
         }

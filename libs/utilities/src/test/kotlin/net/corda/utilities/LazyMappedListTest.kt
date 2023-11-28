@@ -43,7 +43,6 @@ class LazyMappedListTest {
         assertThrows<Exception>("Uncatchable!") {
             lazyList.eagerDeserialise { _, _ -> -999 }
         }
-
     }
 
     @Test

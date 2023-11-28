@@ -80,14 +80,11 @@ internal class MemberOverrideMap<V> : MutableMap<MemberSignature, V> {
         return removeLookup(key)?.let(members::remove)
     }
 
-    override fun containsKey(key: MemberSignature): Boolean
-        = members.containsKey(key)
+    override fun containsKey(key: MemberSignature): Boolean = members.containsKey(key)
 
-    override fun containsValue(value: V): Boolean
-        = members.containsValue(value)
+    override fun containsValue(value: V): Boolean = members.containsValue(value)
 
-    override fun isEmpty(): Boolean
-        = members.isEmpty()
+    override fun isEmpty(): Boolean = members.isEmpty()
 
     override fun clear() {
         members.clear()
@@ -112,7 +109,7 @@ internal class MemberOverrideMap<V> : MutableMap<MemberSignature, V> {
      * The key set for a [MutableMap] is "live", i.e. removing any
      * key should also remove its corresponding value from the map.
      */
-    private inner class MemberKeySet(private val memberKeys: MutableSet<MemberSignature>): MutableSet<MemberSignature> {
+    private inner class MemberKeySet(private val memberKeys: MutableSet<MemberSignature>) : MutableSet<MemberSignature> {
         override val size: Int
             get() = memberKeys.size
 
@@ -128,18 +125,15 @@ internal class MemberOverrideMap<V> : MutableMap<MemberSignature, V> {
             return result
         }
 
-        override fun iterator(): MutableIterator<MemberSignature>
-            = MemberKeyIterator(memberKeys.iterator())
+        override fun iterator(): MutableIterator<MemberSignature> = MemberKeyIterator(memberKeys.iterator())
 
         override fun isEmpty(): Boolean = memberKeys.isEmpty()
 
         override fun clear() = this@MemberOverrideMap.clear()
 
-        override fun contains(element: MemberSignature): Boolean
-            = memberKeys.contains(element)
+        override fun contains(element: MemberSignature): Boolean = memberKeys.contains(element)
 
-        override fun containsAll(elements: Collection<MemberSignature>): Boolean
-            = memberKeys.containsAll(elements)
+        override fun containsAll(elements: Collection<MemberSignature>): Boolean = memberKeys.containsAll(elements)
 
         override fun retainAll(elements: Collection<MemberSignature>): Boolean {
             var result = false
@@ -153,11 +147,13 @@ internal class MemberOverrideMap<V> : MutableMap<MemberSignature, V> {
             return result
         }
 
-        override fun add(element: MemberSignature): Boolean
-            = throw UnsupportedOperationException("MemberOverrideMap.keys.add() is not supported.")
+        override fun add(element: MemberSignature): Boolean = throw UnsupportedOperationException(
+            "MemberOverrideMap.keys.add() is not supported."
+        )
 
-        override fun addAll(elements: Collection<MemberSignature>): Boolean
-            = throw UnsupportedOperationException("MemberOverrideMap.keys.addAll() is not supported.")
+        override fun addAll(elements: Collection<MemberSignature>): Boolean = throw UnsupportedOperationException(
+            "MemberOverrideMap.keys.addAll() is not supported."
+        )
     }
 
     private inner class MemberKeyIterator(
@@ -192,14 +188,11 @@ internal class MemberOverrideMap<V> : MutableMap<MemberSignature, V> {
         override fun isEmpty(): Boolean = memberEntries.isEmpty()
         override fun clear() = this@MemberOverrideMap.clear()
 
-        override fun iterator(): MutableIterator<MutableEntry<MemberSignature, V>>
-            = MemberEntryIterator(memberEntries.iterator())
+        override fun iterator(): MutableIterator<MutableEntry<MemberSignature, V>> = MemberEntryIterator(memberEntries.iterator())
 
-        override fun contains(element: MutableEntry<MemberSignature, V>): Boolean
-            = memberEntries.contains(element)
+        override fun contains(element: MutableEntry<MemberSignature, V>): Boolean = memberEntries.contains(element)
 
-        override fun containsAll(elements: Collection<MutableEntry<MemberSignature, V>>): Boolean
-            = memberEntries.containsAll(elements)
+        override fun containsAll(elements: Collection<MutableEntry<MemberSignature, V>>): Boolean = memberEntries.containsAll(elements)
 
         override fun remove(element: MutableEntry<MemberSignature, V>): Boolean {
             return this@MemberOverrideMap.remove(element.key) != null
@@ -225,15 +218,17 @@ internal class MemberOverrideMap<V> : MutableMap<MemberSignature, V> {
             return result
         }
 
-        override fun add(element: MutableEntry<MemberSignature, V>): Boolean
-            = throw UnsupportedOperationException("MemberOverrideMap.entries.add() is not supported.")
+        override fun add(element: MutableEntry<MemberSignature, V>): Boolean = throw UnsupportedOperationException(
+            "MemberOverrideMap.entries.add() is not supported."
+        )
 
-        override fun addAll(elements: Collection<MutableEntry<MemberSignature, V>>): Boolean
-            = throw UnsupportedOperationException("MemberOverrideMap.entries.addAll() is not supported.")
+        override fun addAll(elements: Collection<MutableEntry<MemberSignature, V>>): Boolean = throw UnsupportedOperationException(
+            "MemberOverrideMap.entries.addAll() is not supported."
+        )
     }
 
     private inner class MemberEntryIterator<V>(
-        private val entryIterator : MutableIterator<MutableEntry<MemberSignature, V>>
+        private val entryIterator: MutableIterator<MutableEntry<MemberSignature, V>>
     ) : MutableIterator<MutableEntry<MemberSignature, V>> {
         private var currentValue: MutableEntry<MemberSignature, V>? = null
 
@@ -252,14 +247,13 @@ internal class MemberOverrideMap<V> : MutableMap<MemberSignature, V> {
     }
 
     private class MemberEntry<V>(
-        private val entry : MutableEntry<MemberSignature, V>
+        private val entry: MutableEntry<MemberSignature, V>
     ) : MutableEntry<MemberSignature, V> {
         override val key: MemberSignature
             get() = entry.key
         override val value: V
             get() = entry.value
 
-        override fun setValue(newValue: V): V
-            = throw UnsupportedOperationException("MemberOverrideMap.Entry.setValue() is not supported.")
+        override fun setValue(newValue: V): V = throw UnsupportedOperationException("MemberOverrideMap.Entry.setValue() is not supported.")
     }
 }

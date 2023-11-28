@@ -32,4 +32,3 @@ interface PubSubProcessor<K : Any, V : Any> {
     val keyClass: Class<K>
     val valueClass: Class<V>
 }
-

@@ -1,6 +1,5 @@
 package net.corda.messaging.config
 
-import java.time.Duration
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
@@ -12,6 +11,7 @@ import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_RET
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
 import net.corda.schema.configuration.MessagingConfig.Subscription.SUBSCRIBE_RETRIES
 import net.corda.schema.configuration.MessagingConfig.Subscription.THREAD_STOP_TIMEOUT
+import java.time.Duration
 
 /**
  * Class to resolve subscription configuration for the messaging layer.

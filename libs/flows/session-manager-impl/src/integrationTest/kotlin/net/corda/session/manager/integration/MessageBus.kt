@@ -8,7 +8,7 @@ class MessageBus : BusInteractions {
 
     private val inboundMessages: LinkedList<SessionEvent> = LinkedList<SessionEvent>()
 
-    override fun getNextInboundMessage(isInitiating: Boolean) : SessionEvent? {
+    override fun getNextInboundMessage(isInitiating: Boolean): SessionEvent? {
         return inboundMessages.poll()
     }
 
@@ -22,7 +22,7 @@ class MessageBus : BusInteractions {
         return inboundMessages.size
     }
 
-    override fun getInboundMessage(position: Int) : SessionEvent {
+    override fun getInboundMessage(position: Int): SessionEvent {
         return inboundMessages.removeAt(position)
     }
 

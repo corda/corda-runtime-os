@@ -53,7 +53,6 @@ interface FlowProtocolStore {
      * @throws FlowFatalException if there are no protocols supported for this initiating flow
      */
     fun protocolsForInitiator(initiator: String, context: FlowEventContext<*>): Pair<String, List<Int>>
-
 }
 
 /**

@@ -25,6 +25,6 @@ class SingletonSerializeAsTokenSerializer(
         val token = (kryo.readClassAndObject(input) as? String)
             ?: throw CordaKryoException("Attempt to deserialize a tokenized type: ${type.name}, but no token found.")
         return serializableInstances[token]
-                ?: throw CordaKryoException("No instance of type ${type.simpleName} found in ${this::class.java.simpleName}.")
+            ?: throw CordaKryoException("No instance of type ${type.simpleName} found in ${this::class.java.simpleName}.")
     }
 }

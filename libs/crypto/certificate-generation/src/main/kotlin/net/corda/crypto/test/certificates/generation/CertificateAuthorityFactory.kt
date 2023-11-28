@@ -37,7 +37,9 @@ object CertificateAuthorityFactory {
         validDuration: Duration = Duration.ofDays(30),
     ): FileSystemCertificatesAuthority {
         return FileSystemCertificatesAuthorityImpl.loadOrGenerate(
-            keysFactoryDefinitions, validDuration, home
+            keysFactoryDefinitions,
+            validDuration,
+            home
         )
     }
 

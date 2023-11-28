@@ -71,8 +71,12 @@ class KryoCheckpointSerializerBuilderImpl(
 
     override fun build(): KryoCheckpointSerializer {
         val publicKeySerializers = listOf(
-            PublicKey::class.java, EdDSAPublicKey::class.java, CompositeKey::class.java,
-            BCECPublicKey::class.java, BCRSAPublicKey::class.java, BCSphincs256PublicKey::class.java
+            PublicKey::class.java,
+            EdDSAPublicKey::class.java,
+            CompositeKey::class.java,
+            BCECPublicKey::class.java,
+            BCRSAPublicKey::class.java,
+            BCSphincs256PublicKey::class.java
         ).associateWith { PublicKeySerializer(keyEncodingService) }
 
         val otherCustomSerializers = mapOf(

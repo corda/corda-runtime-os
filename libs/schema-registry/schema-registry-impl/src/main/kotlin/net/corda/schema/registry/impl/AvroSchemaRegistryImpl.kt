@@ -152,6 +152,7 @@ class AvroSchemaRegistryImpl(
             val encoder: (T) -> ByteArray = { obj ->
                 ByteArrayOutputStream().use { bytes ->
                     val binaryEncoder = EncoderFactory.get().binaryEncoder(bytes, null)
+
                     @Suppress("unchecked_cast")
                     val writer = SpecificDatumWriter(obj::class.java) as SpecificDatumWriter<T>
                     writer.write(obj, binaryEncoder)
@@ -173,7 +174,10 @@ class AvroSchemaRegistryImpl(
     }
 
     override fun <T : Any> addSchema(
-        schema: Schema, clazz: Class<T>, encoder: (T) -> ByteArray, decoder: (ByteArray, Schema, T?) -> T
+        schema: Schema,
+        clazz: Class<T>,
+        encoder: (T) -> ByteArray,
+        decoder: (ByteArray, Schema, T?) -> T
     ) = addSchemaLocal(schema, clazz, encoder, decoder)
 
     override fun addSchemaOnly(
@@ -181,7 +185,10 @@ class AvroSchemaRegistryImpl(
     ) = addSchemaLocal<Any>(schema, null, null, null)
 
     private fun <T : Any> addSchemaLocal(
-        schema: Schema, clazz: Class<T>?, encoder: ((T) -> ByteArray)?, decoder: ((ByteArray, Schema, T?) -> T)?
+        schema: Schema,
+        clazz: Class<T>?,
+        encoder: ((T) -> ByteArray)?,
+        decoder: ((ByteArray, Schema, T?) -> T)?
     ) {
         log.debug { "Adding Schema: ${schema.fullName} for class $clazz" }
         // Quick exit before we do the heavy fingerprint operation
@@ -211,7 +218,8 @@ class AvroSchemaRegistryImpl(
                 }
 
                 recordDataByFingerprint.putIfAbsent(
-                    fingerprint, RecordData(encoder, decoder, clazz)
+                    fingerprint,
+                    RecordData(encoder, decoder, clazz)
                 )
             }
         }
@@ -220,6 +228,7 @@ class AvroSchemaRegistryImpl(
     override fun <T : Any> serialize(obj: T): ByteBuffer {
         log.trace("Serializing obj (${obj::class.java.name}): $obj")
         val fingerprint = getFingerprint(obj::class.java)
+
         @Suppress("unchecked_cast")
         val encoder: (T) -> ByteArray = getEncoder(obj::class.java) as (T) -> ByteArray
         val payload = try {
@@ -245,39 +254,44 @@ class AvroSchemaRegistryImpl(
     override fun <T : Any> deserialize(bytes: ByteBuffer, offset: Int, length: Int, clazz: Class<T>, reusable: T?): T {
         log.trace("Deserializing from: ${toHexString(bytes.array())}")
         @Suppress("deprecation", "removal")
-        return java.security.AccessController.doPrivileged(PrivilegedAction {
-            val envelope = decodeAvroEnvelope(bytes.array())
-            if (envelope.magic != MAGIC) {
-                throw CordaRuntimeException("Incorrect Header detected.  Cannot deserialize message.")
-            }
+        return java.security.AccessController.doPrivileged(
+            PrivilegedAction {
+                val envelope = decodeAvroEnvelope(bytes.array())
+                if (envelope.magic != MAGIC) {
+                    throw CordaRuntimeException("Incorrect Header detected.  Cannot deserialize message.")
+                }
 
-            val writerSchema = getSchema(envelope.fingerprint)
+                val writerSchema = getSchema(envelope.fingerprint)
 
-            @Suppress("unchecked_cast")
-            val specificDecoder: (ByteArray, Schema, T?) -> T = getDecoder(clazz) as (ByteArray, Schema, T?) -> T
-            val flags = Options.from(envelope.flags)
-            val payload = if (flags.compressed) {
-                unzipPayload(envelope.payload)
-            } else {
-                envelope.payload
+                @Suppress("unchecked_cast")
+                val specificDecoder: (ByteArray, Schema, T?) -> T = getDecoder(clazz) as (ByteArray, Schema, T?) -> T
+                val flags = Options.from(envelope.flags)
+                val payload = if (flags.compressed) {
+                    unzipPayload(envelope.payload)
+                } else {
+                    envelope.payload
+                }
+                specificDecoder.invoke(payload.array(), writerSchema, reusable)
             }
-            specificDecoder.invoke(payload.array(), writerSchema, reusable)
-        })
+        )
     }
 
     override fun getClassType(bytes: ByteBuffer): Class<*> {
         @Suppress("deprecation", "removal")
-        return java.security.AccessController.doPrivileged(PrivilegedAction {
-            val envelope = decodeAvroEnvelope(bytes.array())
-            clazzByFingerprint[envelope.fingerprint]
-                ?: throw CordaRuntimeException("Could not find class for fingerprint: ${envelope.fingerprint}")
-        })
+        return java.security.AccessController.doPrivileged(
+            PrivilegedAction {
+                val envelope = decodeAvroEnvelope(bytes.array())
+                clazzByFingerprint[envelope.fingerprint]
+                    ?: throw CordaRuntimeException("Could not find class for fingerprint: ${envelope.fingerprint}")
+            }
+        )
     }
 
     private fun AvroEnvelope.encode(): ByteArray {
         log.trace("Encoding envelope $this")
         return ByteArrayOutputStream().use {
             val binaryEncoder = EncoderFactory.get().binaryEncoder(it, null)
+
             @Suppress("unchecked_cast")
             val envelopeWriter = SpecificDatumWriter(this::class.java) as SpecificDatumWriter<AvroEnvelope>
             EncoderFactory.get().binaryEncoder(it, binaryEncoder)

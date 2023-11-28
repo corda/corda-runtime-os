@@ -69,7 +69,7 @@ class DigestServiceImpl @Activate constructor(
                 val hexString = parseSecureHashHexString(algoNameAndHexString)
                 require(digestHexStringLength == hexString.length) {
                     "Digest algorithm's: \"$digestName\" required hex string length: $digestHexStringLength " +
-                            "is not met by hex string: \"$hexString\""
+                        "is not met by hex string: \"$hexString\""
                 }
                 SecureHashImpl(digestName, ByteArrays.parseAsHex(hexString))
             } ?: throw e
@@ -94,10 +94,12 @@ class DigestServiceImpl @Activate constructor(
 
     override fun supportedDigestAlgorithms(): Set<DigestAlgorithmName> {
         return platformDigestService.supportedDigestAlgorithms() +
-                (customFactoriesProvider?.let {
+            (
+                customFactoriesProvider?.let {
                     it.getAllDigestAlgorithmNames().map { algorithmName ->
                         DigestAlgorithmName(algorithmName)
                     }
-                } ?: setOf())
+                } ?: setOf()
+                )
     }
 }

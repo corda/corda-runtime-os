@@ -14,5 +14,5 @@ interface BusConfigMerger {
      * @param messagingConfig messaging config take from the topic. Can be null on boot for initial connection to kafka.
      * @return Messaging config with boot config values merged into it.
      */
-    fun getMessagingConfig(bootConfig: SmartConfig, messagingConfig: SmartConfig?) : SmartConfig
+    fun getMessagingConfig(bootConfig: SmartConfig, messagingConfig: SmartConfig?): SmartConfig
 }

@@ -188,7 +188,9 @@ class LocalTypeModelTests {
             assertThat("No unique deserialization constructor can be identified")
                 .isEqualTo(typeInformation.reason)
             @Suppress("MaxLineLength")
-            assertThat("Either annotate a constructor for this type with @ConstructorForDeserialization, or provide a custom serializer for it")
+            assertThat(
+                "Either annotate a constructor for this type with @ConstructorForDeserialization, or provide a custom serializer for it"
+            )
                 .isEqualTo(typeInformation.remedy)
         }
     }

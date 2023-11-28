@@ -11,7 +11,7 @@ import net.corda.utilities.concurrent.SecManagerForkJoinPool
 /**
  * Caffeine [CacheFactory] that uses [SecManagerForkJoinPool].
  */
-class CacheFactoryImpl: CacheFactory {
+class CacheFactoryImpl : CacheFactory {
     override fun <K, V> build(name: String, caffeine: Caffeine<in K, in V>): Cache<K, V> {
         val cache: Cache<K, V> = caffeine
             .executor(SecManagerForkJoinPool.pool)

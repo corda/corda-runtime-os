@@ -17,5 +17,5 @@ interface MediatorConsumerFactoryFactory {
         topicName: String,
         groupName: String,
         messageBusConfig: SmartConfig,
-    ) : MediatorConsumerFactory
+    ): MediatorConsumerFactory
 }

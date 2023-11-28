@@ -1,4 +1,5 @@
 @file:JvmName("Helpers")
+
 package net.corda.kotlin
 
 import net.corda.kotlin.reflect.kotlinJavaField
@@ -29,11 +30,11 @@ fun compareKotlinCallables(call1: KCallable<*>, call2: KCallable<*>): Int {
     }
 }
 
-fun compareKotlinFunctions(func1: KFunction<*>, func2: KFunction<*>)
-    = KFunctionComparator().compare(func1, func2)
+fun compareKotlinFunctions(func1: KFunction<*>, func2: KFunction<*>) =
+    KFunctionComparator().compare(func1, func2)
 
-fun compareKotlinProperties(prop1: KProperty<*>, prop2: KProperty<*>)
-    = KPropertyComparator().compare(prop1, prop2)
+fun compareKotlinProperties(prop1: KProperty<*>, prop2: KProperty<*>) =
+    KPropertyComparator().compare(prop1, prop2)
 
 private open class KCallableComparator<T : KCallable<*>> : Comparator<T> {
     override fun compare(call1: T, call2: T): Int {
@@ -112,14 +113,17 @@ private open class KCallableComparator<T : KCallable<*>> : Comparator<T> {
                 // type for such objects will currently still be wrong.
             }
         }
-        assertAll(message, tests.map { test ->
-            Executable {
-                try {
-                    assertEquals(test.second.apply(expected), test.second.apply(actual), test.first)
-                } catch(_: kotlin.reflect.jvm.internal.KotlinReflectionInternalError) {
+        assertAll(
+            message,
+            tests.map { test ->
+                Executable {
+                    try {
+                        assertEquals(test.second.apply(expected), test.second.apply(actual), test.first)
+                    } catch (_: kotlin.reflect.jvm.internal.KotlinReflectionInternalError) {
+                    }
                 }
             }
-        })
+        )
     }
 }
 
@@ -163,19 +167,23 @@ private class KFunctionComparator : KCallableComparator<KFunction<*>>() {
     override fun compare(call1: KFunction<*>, call2: KFunction<*>): Int {
         val result = super.compare(call1, call2)
         if (result == 0) {
-            assertCallablesEqual(call1, call2, mutableListOf(
-                "javaMethod" to Function(KFunction<*>::kotlinJavaMethod),
-                // Kotlin Reflection gets these wrong for member extensions in Java.
-                //"isAbstract" to Function(KFunction<*>::isAbstract),
-                //"isOpen" to Function(KFunction<*>::isOpen)
-                "isFinal" to Function(KFunction<*>::isFinal),
-                "isSuspend" to Function(KFunction<*>::isSuspend),
-                "isExternal" to Function(KFunction<*>::isExternal),
-                "isInfix" to Function(KFunction<*>::isInfix),
-                "isInline" to Function(KFunction<*>::isInline),
-                "isOperator" to Function(KFunction<*>::isOperator),
-                "visibility" to Function(KFunction<*>::visibility)
-            ))
+            assertCallablesEqual(
+                call1,
+                call2,
+                mutableListOf(
+                    "javaMethod" to Function(KFunction<*>::kotlinJavaMethod),
+                    // Kotlin Reflection gets these wrong for member extensions in Java.
+                    // "isAbstract" to Function(KFunction<*>::isAbstract),
+                    // "isOpen" to Function(KFunction<*>::isOpen)
+                    "isFinal" to Function(KFunction<*>::isFinal),
+                    "isSuspend" to Function(KFunction<*>::isSuspend),
+                    "isExternal" to Function(KFunction<*>::isExternal),
+                    "isInfix" to Function(KFunction<*>::isInfix),
+                    "isInline" to Function(KFunction<*>::isInline),
+                    "isOperator" to Function(KFunction<*>::isOperator),
+                    "visibility" to Function(KFunction<*>::visibility)
+                )
+            )
         }
         return result
     }

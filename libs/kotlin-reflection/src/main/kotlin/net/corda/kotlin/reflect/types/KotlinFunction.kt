@@ -1,12 +1,5 @@
 package net.corda.kotlin.reflect.types
 
-import java.lang.reflect.Method
-import java.util.Objects
-import kotlin.contracts.ExperimentalContracts
-import kotlin.reflect.KParameter
-import kotlin.reflect.KType
-import kotlin.reflect.KTypeParameter
-import kotlin.reflect.KVisibility
 import kotlinx.metadata.KmFunction
 import kotlinx.metadata.isExternal
 import kotlinx.metadata.isInfix
@@ -18,6 +11,13 @@ import kotlinx.metadata.jvm.lambdaClassOriginName
 import kotlinx.metadata.jvm.signature
 import kotlinx.metadata.modality
 import kotlinx.metadata.visibility
+import java.lang.reflect.Method
+import java.util.Objects
+import kotlin.contracts.ExperimentalContracts
+import kotlin.reflect.KParameter
+import kotlin.reflect.KType
+import kotlin.reflect.KTypeParameter
+import kotlin.reflect.KVisibility
 
 class KotlinFunction<V> private constructor(
     private val kmFunction: KmFunction,
@@ -62,7 +62,7 @@ class KotlinFunction<V> private constructor(
         get() = javaMethod?.createParameters(instanceClass, isExtension, kmFunction.valueParameters) ?: emptyList()
     override val returnType: KType
         get() = javaMethod?.returnType?.createKType(kmFunction.returnType.isNullable)
-                    ?: KotlinType(kmFunction.returnType)
+            ?: KotlinType(kmFunction.returnType)
     override val typeParameters: List<KTypeParameter>
         get() = kmFunction.typeParameters.map(::KotlinTypeParameter)
 
@@ -93,8 +93,8 @@ class KotlinFunction<V> private constructor(
         return KotlinFunction(newFunc, signature, javaMethod, instanceClass, isExtension)
     }
 
-    override fun withJavaMethod(method: Method)
-        = KotlinFunction<V>(kmFunction, method.toSignature(), method, instanceClass, isExtension)
+    override fun withJavaMethod(method: Method) =
+        KotlinFunction<V>(kmFunction, method.toSignature(), method, instanceClass, isExtension)
 
     override fun call(vararg args: Any?): V {
         TODO("Not yet implemented")

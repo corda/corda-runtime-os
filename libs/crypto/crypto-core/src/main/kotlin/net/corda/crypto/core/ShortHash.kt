@@ -24,7 +24,7 @@ class ShortHash private constructor(val value: String) {
          *
          * @throws [ShortHashException] if the string is not hexadecimal, or short than [LENGTH].
          */
-        fun of(hexString : String) : ShortHash {
+        fun of(hexString: String): ShortHash {
             if (hexString.length < LENGTH) {
                 throw ShortHashException("Hex string has length of ${hexString.length} but should be at least $LENGTH characters")
             }
@@ -42,10 +42,12 @@ class ShortHash private constructor(val value: String) {
          *
          * @throws [ShortHashException] if the string is not hexadecimal or has length different from [LENGTH].
          */
-        fun parse(hexString: String) : ShortHash {
+        fun parse(hexString: String): ShortHash {
             if (hexString.length != LENGTH) {
-                throw ShortHashException("Hex string has length of ${hexString.length} " +
-                        "but should be $LENGTH characters")
+                throw ShortHashException(
+                    "Hex string has length of ${hexString.length} " +
+                        "but should be $LENGTH characters"
+                )
             }
 
             return of(hexString)

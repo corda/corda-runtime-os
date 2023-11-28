@@ -20,11 +20,11 @@ import java.util.zip.ZipInputStream
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ZipTweakerTest {
 
-    private lateinit var testDir : Path
-    private lateinit var workflowCPKPath : URL
+    private lateinit var testDir: Path
+    private lateinit var workflowCPKPath: URL
 
     @BeforeAll
-    fun setup(@TempDir junitTestDir : Path) {
+    fun setup(@TempDir junitTestDir: Path) {
         testDir = junitTestDir
         workflowCPKPath = URI(System.getProperty("com.r3.corda.packaging.test.workflow.cpk")).toURL()
     }
@@ -60,16 +60,16 @@ class ZipTweakerTest {
             }
         }
         val unsignedJarEntries = ZipInputStream(cpk.getMainBundle()).use { zipInputStream ->
-                generateSequence { zipInputStream.nextEntry }.map {
-                    it.name to let {
-                        val md = MessageDigest.getInstance(algo)
-                        DigestInputStream(zipInputStream, md).copyTo(OutputStream.nullOutputStream())
-                        SecureHashImpl(algo, md.digest())
-                    }
-                }.filter {
-                    !it.first.uppercase().endsWith(".SF")
-                }.associate { it }
-            }
+            generateSequence { zipInputStream.nextEntry }.map {
+                it.name to let {
+                    val md = MessageDigest.getInstance(algo)
+                    DigestInputStream(zipInputStream, md).copyTo(OutputStream.nullOutputStream())
+                    SecureHashImpl(algo, md.digest())
+                }
+            }.filter {
+                !it.first.uppercase().endsWith(".SF")
+            }.associate { it }
+        }
 
         Assertions.assertEquals(originalEntries, unsignedJarEntries)
     }

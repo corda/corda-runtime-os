@@ -153,7 +153,6 @@ class CpkDbChangeLogEntityTest {
         }
     }
 
-
     private fun cpkDbChangeLogAudit(changeLog: CpkDbChangeLog): CpkDbChangeLogAudit {
         return cpkDbChangeLogAudit {
             fileChecksum(changeLog.id.cpkFileChecksum)

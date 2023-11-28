@@ -10,6 +10,5 @@ interface SchedulerLog {
      * @param taskName name of the task to retrieve the scheduler for
      * @param schedulerId id of this scheduler process
      */
-    fun getLastTriggerAndLock(taskName: String, schedulerId: String) : SchedulerLock
+    fun getLastTriggerAndLock(taskName: String, schedulerId: String): SchedulerLock
 }
-

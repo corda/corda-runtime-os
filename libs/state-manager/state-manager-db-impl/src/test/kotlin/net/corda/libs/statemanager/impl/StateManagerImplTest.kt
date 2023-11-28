@@ -71,10 +71,12 @@ class StateManagerImplTest {
     @Test
     fun updateReturnsEmptyMapWhenOptimisticLockingCheckSucceedsForAllStates() {
         whenever(stateRepository.update(any(), any()))
-            .thenReturn(StateRepository.StateUpdateSummary(
-                listOf(apiStateTwo.key, apiStateTwo.key, apiStateThree.key),
-                emptyList()
-            ))
+            .thenReturn(
+                StateRepository.StateUpdateSummary(
+                    listOf(apiStateTwo.key, apiStateTwo.key, apiStateThree.key),
+                    emptyList()
+                )
+            )
 
         val result = stateManager.update(listOf(apiStateOne, apiStateTwo, apiStateThree))
         assertThat(result).isEmpty()
@@ -87,10 +89,12 @@ class StateManagerImplTest {
         val persistedStateTwo = persistentStateTwo.newVersion()
         whenever(stateRepository.get(any(), any())).thenReturn(listOf(persistedStateTwo))
         whenever(stateRepository.update(any(), any()))
-            .thenReturn(StateRepository.StateUpdateSummary(
-                listOf(apiStateTwo.key, apiStateThree.key),
-                listOf(apiStateTwo.key)
-            ))
+            .thenReturn(
+                StateRepository.StateUpdateSummary(
+                    listOf(apiStateTwo.key, apiStateThree.key),
+                    listOf(apiStateTwo.key)
+                )
+            )
 
         val result = stateManager.update(listOf(apiStateOne, apiStateTwo, apiStateThree))
         assertThat(result).containsExactly(entry(persistedStateTwo.key, persistedStateTwo.toState()))

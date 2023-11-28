@@ -40,4 +40,3 @@ class DurationTest {
         serializeDeserializeAssert(Duration.ofDays(1))
     }
 }
-

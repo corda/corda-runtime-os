@@ -1,8 +1,8 @@
 package net.corda.kotlin.reflect.types
 
 import kotlin.reflect.KParameter
-import kotlin.reflect.KParameter.Kind.INSTANCE
 import kotlin.reflect.KParameter.Kind.EXTENSION_RECEIVER
+import kotlin.reflect.KParameter.Kind.INSTANCE
 import kotlin.reflect.KType
 
 @Suppress("LongParameterList")

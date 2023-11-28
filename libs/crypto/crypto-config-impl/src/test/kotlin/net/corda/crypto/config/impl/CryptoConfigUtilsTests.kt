@@ -28,7 +28,7 @@ class CryptoConfigUtilsTests {
                     """
             ${EncryptionSecretsServiceFactory.SECRET_PASSPHRASE_KEY}=key
             ${EncryptionSecretsServiceFactory.SECRET_SALT_KEY}=salt
-        """.trimIndent()
+                    """.trimIndent()
                 ),
                 listOf(EncryptionSecretsServiceFactory())
             )
@@ -120,7 +120,8 @@ class CryptoConfigUtilsTests {
     @Test
     fun `Should be able to get signing service config`() {
         val config = createDefaultCryptoConfig(
-            "master-passphrase", "master-salt"
+            "master-passphrase",
+            "master-salt"
         ).signingService()
         assertEquals(60, config.cache.expireAfterAccessMins)
         assertEquals(10000, config.cache.maximumSize)
@@ -255,9 +256,13 @@ class CryptoConfigUtilsTests {
 
     @Test
     fun `Should get bootstrap HSM id`() {
-        val config = configFactory.create(ConfigFactory.parseMap(createCryptoBootstrapParamsMap(
-            "hsm-id-1"
-        )))
+        val config = configFactory.create(
+            ConfigFactory.parseMap(
+                createCryptoBootstrapParamsMap(
+                    "hsm-id-1"
+                )
+            )
+        )
         val id = config.bootstrapHsmId()
         assertThat(id).isEqualTo("hsm-id-1")
     }

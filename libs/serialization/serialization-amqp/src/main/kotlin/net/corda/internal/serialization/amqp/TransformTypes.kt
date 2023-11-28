@@ -1,9 +1,9 @@
 package net.corda.internal.serialization.amqp
 
+import net.corda.internal.serialization.NotSerializableWithReasonException
 import net.corda.v5.serialization.annotations.CordaSerializationTransformEnumDefault
 import net.corda.v5.serialization.annotations.CordaSerializationTransformEnumDefaults
 import net.corda.v5.serialization.annotations.CordaSerializationTransformRename
-import net.corda.internal.serialization.NotSerializableWithReasonException
 import org.apache.qpid.proton.amqp.DescribedType
 import org.apache.qpid.proton.codec.DescribedTypeConstructor
 
@@ -39,10 +39,10 @@ enum class TransformTypes(val build: (Annotation) -> Transform) : DescribedType 
     // Transform used to test the unknown handler, leave this at as the final constant, uncomment
     // when regenerating test cases - if Java had a pre-processor this would be much neater
     //
-    //,UnknownTest({ a -> UnknownTestTransform((a as UnknownTransformAnnotation).a, a.b, a.c)}) {
+    // ,UnknownTest({ a -> UnknownTestTransform((a as UnknownTransformAnnotation).a, a.b, a.c)}) {
     //    override fun getDescriptor(): Any = DESCRIPTOR
     //    override fun getDescribed(): Any = ordinal
-    //}
+    // }
     ;
 
     companion object : DescribedTypeConstructor<TransformTypes> {

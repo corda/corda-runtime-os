@@ -29,4 +29,3 @@ class KeyGenerationSpec(
         return "$keyScheme,alias=$alias,masterKeyAlias=$wrappingKeyAlias"
     }
 }
-

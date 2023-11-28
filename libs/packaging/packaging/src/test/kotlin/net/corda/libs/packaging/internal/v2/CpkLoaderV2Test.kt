@@ -36,11 +36,12 @@ class CpkLoaderV2Test {
                         "META-INF/privatelib/library1.jar",
                         "META-INF/privatelib/library2.jar",
                         "META-INF/privatelib/library3.jar"
-                    ), cpk.metadata.libraries
+                    ),
+                    cpk.metadata.libraries
                 )
             },
             { assertEquals(CPK_FORMAT_VERSION2_MAINBUNDLE_PLACEHOLDER, cpk.metadata.mainBundle) },
-            { assertEquals( TestUtils.EXTERNAL_CHANNELS_CONFIG_FILE_CONTENT, cpk.metadata.externalChannelsConfig) }
+            { assertEquals(TestUtils.EXTERNAL_CHANNELS_CONFIG_FILE_CONTENT, cpk.metadata.externalChannelsConfig) }
         )
     }
 }

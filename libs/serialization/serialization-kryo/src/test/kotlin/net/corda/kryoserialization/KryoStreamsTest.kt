@@ -26,12 +26,15 @@ class KryoStreamsTest {
     }
 
     @Test
-	fun `substitute output works`() {
-        assertArrayEquals(byteArrayOf(100, -101), kryoOutput {
-            write(100)
-            substitute(KryoStreamsTest::NegOutputStream)
-            write(101)
-        })
+    fun `substitute output works`() {
+        assertArrayEquals(
+            byteArrayOf(100, -101),
+            kryoOutput {
+                write(100)
+                substitute(KryoStreamsTest::NegOutputStream)
+                write(101)
+            }
+        )
     }
 
     @Test
@@ -71,11 +74,14 @@ class KryoStreamsTest {
         val getBuf = stream.declaredField<ByteArray>(ByteArrayOutputStream::class, "buf")::value
         assertEquals(3, getBuf().size)
         repeat(2) {
-            assertSame(BufferOverflowException::class.java, catchThrowable {
-                stream.alsoAsByteBuffer(9) {
-                    it.put("0123456789".toByteArray())
-                }
-            }.javaClass)
+            assertSame(
+                BufferOverflowException::class.java,
+                catchThrowable {
+                    stream.alsoAsByteBuffer(9) {
+                        it.put("0123456789".toByteArray())
+                    }
+                }.javaClass
+            )
             assertEquals(3 + 9, getBuf().size)
         }
         // This time make too much space:

@@ -29,10 +29,12 @@ internal data class EvolvableTagImplV1(
         /** Deserialises an [EvolvableTagImplV1] class tag. */
         @Suppress("ThrowsCount")
         fun deserialise(classTagEntries: List<String>): EvolvableTagImplV1 {
-            if (classTagEntries.size != ENTRIES_LENGTH) throw SandboxException(
-                "Serialised evolvable class tag contained ${classTagEntries.size} entries, whereas $ENTRIES_LENGTH " +
+            if (classTagEntries.size != ENTRIES_LENGTH) {
+                throw SandboxException(
+                    "Serialised evolvable class tag contained ${classTagEntries.size} entries, whereas $ENTRIES_LENGTH " +
                         "entries were expected. The entries were $classTagEntries."
-            )
+                )
+            }
 
             val classType = classTypeFromString(classTagEntries[CLASS_TYPE_IDX])
 
@@ -41,7 +43,8 @@ internal data class EvolvableTagImplV1(
                 parseSecureHash(cpkSignerSummaryHashString)
             } catch (e: IllegalArgumentException) {
                 throw SandboxException(
-                    "Couldn't parse hash $cpkSignerSummaryHashString in serialised evolvable class tag.", e
+                    "Couldn't parse hash $cpkSignerSummaryHashString in serialised evolvable class tag.",
+                    e
                 )
             }
 

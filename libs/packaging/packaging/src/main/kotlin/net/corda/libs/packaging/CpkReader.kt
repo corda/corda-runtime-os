@@ -19,7 +19,6 @@ object CpkReader {
         verifySignature: Boolean = jarSignatureVerificationEnabledByDefault(),
         cpkFileName: String? = null
     ): Cpk {
-
         // Read input stream, so we can process it through different classes that will consume the stream
         val buffer = inputStream.readAllBytes()
 

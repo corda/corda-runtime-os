@@ -18,7 +18,7 @@ import org.osgi.service.component.annotations.ReferenceCardinality
 )
 class OsgiCordaAddonResolver @Activate constructor(
     private val componentContext: ComponentContext
-)    : CordaAddonResolver {
+) : CordaAddonResolver {
 
     companion object {
         const val ADDONS_SERVICE_NAME = "CordaAddon"

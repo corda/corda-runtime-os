@@ -15,7 +15,7 @@ interface ChunkSerializerService {
      * @return Returns the object broken up into chunks. Returns an empty list if the object was too small to be chunked or failed to be
      * serialized.
      */
-    fun generateChunks(anyObject: Any) : List<Chunk>
+    fun generateChunks(anyObject: Any): List<Chunk>
 
     /**
      * Take a messaging [CordaProducerRecord] and divide it into chunks.
@@ -24,8 +24,7 @@ interface ChunkSerializerService {
      * @return Returns the record broken up into chunks. Returns an empty list if the object was too small to be chunked or failed to be
      * serialized.
      */
-    fun generateChunkedRecords(producerRecord: CordaProducerRecord<*, *>) : List<CordaProducerRecord<*, *>>
-
+    fun generateChunkedRecords(producerRecord: CordaProducerRecord<*, *>): List<CordaProducerRecord<*, *>>
 
     /**
      * Serialize [oldValue] and [newValue] and create ChunkKeys for the objects. If the [newValue] is smaller than the [oldValue]
@@ -35,5 +34,5 @@ interface ChunkSerializerService {
      * @return Returns the ChunkKeys that should be cleared from the bus as part of the update from [oldValue] to [newValue]. Returns
      * null if there is no ChunkKeys that need to be cleared.
      */
-    fun getChunkKeysToClear(key: Any, oldValue: Any?, newValue: Any?) : List<ChunkKey>?
+    fun getChunkKeysToClear(key: Any, oldValue: Any?, newValue: Any?): List<ChunkKey>?
 }

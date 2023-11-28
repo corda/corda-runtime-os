@@ -16,10 +16,11 @@ import java.lang.reflect.WildcardType
 import java.util.IdentityHashMap
 
 data class BytesAndSchemas<T : Any>(
-        val obj: SerializedBytes<T>,
-        val schema: Schema,
-        val transformsSchema: TransformsSchema,
-        val metadata: Metadata)
+    val obj: SerializedBytes<T>,
+    val schema: Schema,
+    val transformsSchema: TransformsSchema,
+    val metadata: Metadata
+)
 
 /**
  * Main entry point for serializing an object to AMQP.
@@ -87,22 +88,24 @@ open class SerializationOutput(
                 writeMetadata(metadata, this)
             }
         }
-        return SerializedBytesImpl(byteArrayOutput {
-            var stream: OutputStream = it
-            try {
-                amqpMagic.writeTo(stream)
-                val encoding = context.encoding
-                if (encoding != null) {
-                    SectionId.ENCODING.writeTo(stream)
-                    (encoding as CordaSerializationEncoding).writeTo(stream)
-                    stream = encoding.compress(stream)
+        return SerializedBytesImpl(
+            byteArrayOutput {
+                var stream: OutputStream = it
+                try {
+                    amqpMagic.writeTo(stream)
+                    val encoding = context.encoding
+                    if (encoding != null) {
+                        SectionId.ENCODING.writeTo(stream)
+                        (encoding as CordaSerializationEncoding).writeTo(stream)
+                        stream = encoding.compress(stream)
+                    }
+                    SectionId.DATA_AND_STOP.writeTo(stream)
+                    stream.alsoAsByteBuffer(data.encodedSize().toInt(), data::encode)
+                } finally {
+                    stream.close()
                 }
-                SectionId.DATA_AND_STOP.writeTo(stream)
-                stream.alsoAsByteBuffer(data.encodedSize().toInt(), data::encode)
-            } finally {
-                stream.close()
             }
-        })
+        )
     }
 
     internal fun writeObject(obj: Any, data: Data, context: SerializationContext) {
@@ -121,7 +124,13 @@ open class SerializationOutput(
         if (obj == null) {
             data.putNull()
         } else {
-            writeObject(obj, data, if (type == TypeIdentifier.UnknownType.getLocalType(context.currentSandboxGroup())) obj.javaClass else type, context, debugIndent)
+            writeObject(
+                obj,
+                data,
+                if (type == TypeIdentifier.UnknownType.getLocalType(context.currentSandboxGroup())) obj.javaClass else type,
+                context,
+                debugIndent
+            )
         }
     }
 
@@ -148,7 +157,6 @@ open class SerializationOutput(
             putTypeToMetadata(serializer.type, context)
         }
 
-
         val retrievedRefCount = if (context.objectReferencesEnabled) {
             objectHistory[obj]
         } else {
@@ -174,10 +182,13 @@ open class SerializationOutput(
 
     internal open fun requireSerializer(type: Type, context: SerializationContext) {
         if (type != Object::class.java && type.typeName != "?") {
-            val resolvedType = when(type) {
+            val resolvedType = when (type) {
                 is WildcardType ->
-                    if (type.upperBounds.size == 1) type.upperBounds[0]
-                    else throw NotSerializableException("Cannot obtain upper bound for type $type")
+                    if (type.upperBounds.size == 1) {
+                        type.upperBounds[0]
+                    } else {
+                        throw NotSerializableException("Cannot obtain upper bound for type $type")
+                    }
                 else -> type
             }
 
@@ -190,4 +201,3 @@ open class SerializationOutput(
         }
     }
 }
-

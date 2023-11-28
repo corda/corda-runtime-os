@@ -1,6 +1,5 @@
 package net.corda.messagebus.db.producer
 
-import java.util.UUID
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messagebus.api.consumer.CordaConsumer
@@ -19,6 +18,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.utilities.serialization.wrapWithNullErrorHandling
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.UUID
 import kotlin.math.abs
 
 @Suppress("TooManyFunctions")
@@ -57,13 +57,15 @@ class CordaTransactionalDBProducerImpl(
 
     override fun sendRecords(records: List<CordaProducerRecord<*, *>>) {
         verifyInTransaction()
-        sendRecordsToPartitions(records.map {
-            // Determine the partition
-            val topic = it.topic
-            val numberOfPartitions = dbAccess.getTopicPartitionMapFor(topic).size
-            val partition = getPartition(it.key, numberOfPartitions)
-            Pair(partition, it)
-        })
+        sendRecordsToPartitions(
+            records.map {
+                // Determine the partition
+                val topic = it.topic
+                val numberOfPartitions = dbAccess.getTopicPartitionMapFor(topic).size
+                val partition = getPartition(it.key, numberOfPartitions)
+                Pair(partition, it)
+            }
+        )
     }
 
     override fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>) {

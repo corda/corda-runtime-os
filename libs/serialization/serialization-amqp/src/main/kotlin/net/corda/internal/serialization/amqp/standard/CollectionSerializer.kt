@@ -1,20 +1,20 @@
 package net.corda.internal.serialization.amqp.standard
 
-import net.corda.internal.serialization.amqp.LocalSerializerFactory
-import net.corda.internal.serialization.amqp.AMQPSerializer
 import net.corda.internal.serialization.amqp.AMQPNotSerializableException
-import net.corda.internal.serialization.amqp.TypeNotation
-import net.corda.internal.serialization.amqp.RestrictedType
+import net.corda.internal.serialization.amqp.AMQPSerializer
 import net.corda.internal.serialization.amqp.AMQPTypeIdentifiers
 import net.corda.internal.serialization.amqp.Descriptor
-import net.corda.internal.serialization.amqp.resolveTypeVariables
+import net.corda.internal.serialization.amqp.DeserializationInput
+import net.corda.internal.serialization.amqp.LocalSerializerFactory
+import net.corda.internal.serialization.amqp.Metadata
+import net.corda.internal.serialization.amqp.RestrictedType
 import net.corda.internal.serialization.amqp.SerializationOutput
+import net.corda.internal.serialization.amqp.SerializationSchemas
+import net.corda.internal.serialization.amqp.TypeNotation
+import net.corda.internal.serialization.amqp.ifThrowsAppend
+import net.corda.internal.serialization.amqp.resolveTypeVariables
 import net.corda.internal.serialization.amqp.withDescribed
 import net.corda.internal.serialization.amqp.withList
-import net.corda.internal.serialization.amqp.SerializationSchemas
-import net.corda.internal.serialization.amqp.Metadata
-import net.corda.internal.serialization.amqp.DeserializationInput
-import net.corda.internal.serialization.amqp.ifThrowsAppend
 import net.corda.internal.serialization.model.LocalTypeInformation
 import net.corda.internal.serialization.model.TypeIdentifier
 import net.corda.sandbox.SandboxGroup
@@ -42,15 +42,16 @@ class CollectionSerializer(private val declaredType: ParameterizedType, factory:
 
     companion object {
         // NB: Order matters in this map, the most specific classes should be listed at the end
-        private val supportedTypes: Map<Class<out Collection<*>>, (List<*>) -> Collection<*>> = Collections.unmodifiableMap(
-            linkedMapOf(
-                Collection::class.java to Collections::unmodifiableCollection,
-                List::class.java to Collections::unmodifiableList,
-                Set::class.java to { list -> Collections.unmodifiableSet(LinkedHashSet(list)) },
-                SortedSet::class.java to { list -> Collections.unmodifiableSortedSet(TreeSet(list)) },
-                NavigableSet::class.java to { list -> Collections.unmodifiableNavigableSet(TreeSet(list)) }
+        private val supportedTypes: Map<Class<out Collection<*>>, (List<*>) -> Collection<*>> =
+            Collections.unmodifiableMap(
+                linkedMapOf(
+                    Collection::class.java to Collections::unmodifiableCollection,
+                    List::class.java to Collections::unmodifiableList,
+                    Set::class.java to { list -> Collections.unmodifiableSet(LinkedHashSet(list)) },
+                    SortedSet::class.java to { list -> Collections.unmodifiableSortedSet(TreeSet(list)) },
+                    NavigableSet::class.java to { list -> Collections.unmodifiableNavigableSet(TreeSet(list)) }
+                )
             )
-        )
 
         private val supportedTypeIdentifiers = supportedTypes.keys.mapTo(LinkedHashSet(), TypeIdentifier::forClass)
 
@@ -58,9 +59,13 @@ class CollectionSerializer(private val declaredType: ParameterizedType, factory:
          * Replace erased collection types with parameterised types with wildcard type parameters, so that they are represented
          * appropriately in the AMQP schema.
          */
-        fun resolveDeclared(declaredTypeInformation: LocalTypeInformation.ACollection, sandboxGroup: SandboxGroup): LocalTypeInformation.ACollection {
-            if (declaredTypeInformation.typeIdentifier.erased in supportedTypeIdentifiers)
+        fun resolveDeclared(
+            declaredTypeInformation: LocalTypeInformation.ACollection,
+            sandboxGroup: SandboxGroup
+        ): LocalTypeInformation.ACollection {
+            if (declaredTypeInformation.typeIdentifier.erased in supportedTypeIdentifiers) {
                 return reparameterise(declaredTypeInformation, sandboxGroup)
+            }
 
             throw NotSerializableException(
                 "Cannot derive collection type for declared type: " +
@@ -73,8 +78,9 @@ class CollectionSerializer(private val declaredType: ParameterizedType, factory:
             declaredTypeInformation: LocalTypeInformation.ACollection,
             sandboxGroup: SandboxGroup
         ): LocalTypeInformation.ACollection {
-            if (declaredTypeInformation.typeIdentifier.erased in supportedTypeIdentifiers)
+            if (declaredTypeInformation.typeIdentifier.erased in supportedTypeIdentifiers) {
                 return reparameterise(declaredTypeInformation, sandboxGroup)
+            }
 
             val collectionClass = findMostSuitableCollectionType(actualClass)
             val erasedInformation = LocalTypeInformation.ACollection(
@@ -84,12 +90,19 @@ class CollectionSerializer(private val declaredType: ParameterizedType, factory:
             )
 
             return when (declaredTypeInformation.typeIdentifier) {
-                is TypeIdentifier.Parameterised -> erasedInformation.withElementType(declaredTypeInformation.elementType, sandboxGroup)
+                is TypeIdentifier.Parameterised -> erasedInformation.withElementType(
+                    declaredTypeInformation.elementType,
+                    sandboxGroup
+                )
+
                 else -> erasedInformation.withElementType(LocalTypeInformation.Unknown, sandboxGroup)
             }
         }
 
-        private fun reparameterise(typeInformation: LocalTypeInformation.ACollection, sandboxGroup: SandboxGroup): LocalTypeInformation.ACollection =
+        private fun reparameterise(
+            typeInformation: LocalTypeInformation.ACollection,
+            sandboxGroup: SandboxGroup
+        ): LocalTypeInformation.ACollection =
             when (typeInformation.typeIdentifier) {
                 is TypeIdentifier.Parameterised -> typeInformation
                 is TypeIdentifier.Erased -> typeInformation.withElementType(LocalTypeInformation.Unknown, sandboxGroup)
@@ -113,16 +126,25 @@ class CollectionSerializer(private val declaredType: ParameterizedType, factory:
 
     private val concreteBuilder: (List<*>) -> Collection<*> = findConcreteType(declaredType.rawType as Class<*>)
 
-    private val typeNotation: TypeNotation = RestrictedType(AMQPTypeIdentifiers.nameForType(declaredType), null, emptyList(), "list", Descriptor(typeDescriptor), emptyList())
+    private val typeNotation: TypeNotation =
+        RestrictedType(
+            AMQPTypeIdentifiers.nameForType(declaredType),
+            null,
+            emptyList(),
+            "list",
+            Descriptor(typeDescriptor),
+            emptyList()
+        )
 
     private val outboundType = resolveTypeVariables(declaredType.actualTypeArguments[0], null, factory.sandboxGroup)
     private val inboundType = declaredType.actualTypeArguments[0]
 
-    override fun writeClassInfo(output: SerializationOutput, context: SerializationContext) = ifThrowsAppend(declaredType::getTypeName) {
-        if (output.writeTypeNotations(typeNotation)) {
-            output.requireSerializer(outboundType, context)
+    override fun writeClassInfo(output: SerializationOutput, context: SerializationContext) =
+        ifThrowsAppend(declaredType::getTypeName) {
+            if (output.writeTypeNotations(typeNotation)) {
+                output.requireSerializer(outboundType, context)
+            }
         }
-    }
 
     override fun writeObject(
         obj: Any,

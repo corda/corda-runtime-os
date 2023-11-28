@@ -30,17 +30,19 @@ class SmartConfigImpl(
     override val factory: SmartConfigFactory,
     private val secretsLookupService: SecretsLookupService,
 ) : SmartConfig {
-    companion object{
+    companion object {
         fun empty(): SmartConfig = SmartConfigFactory.createWithoutSecurityServices()
             .create(ConfigFactory.empty())
         private val maskedSecretsLookupService = MaskedSecretsLookupService()
     }
 
     override fun equals(other: Any?): Boolean {
-        if(other is SmartConfigImpl)
+        if (other is SmartConfigImpl) {
             return typeSafeConfig == other.typeSafeConfig
-        if(other is Config)
+        }
+        if (other is Config) {
             return typeSafeConfig == other
+        }
         return false
     }
 
@@ -56,8 +58,9 @@ class SmartConfigImpl(
     }
 
     override fun toSafeConfig(): SmartConfig {
-        if(secretsLookupService is MaskedSecretsLookupService)
+        if (secretsLookupService is MaskedSecretsLookupService) {
             return this
+        }
         return SmartConfigImpl(typeSafeConfig, factory, maskedSecretsLookupService)
     }
 
@@ -85,7 +88,8 @@ class SmartConfigImpl(
         SmartConfigImpl(
             typeSafeConfig.resolveWith(SmartConfigImpl(source, factory, secretsLookupService), options),
             factory,
-            secretsLookupService)
+            secretsLookupService
+        )
 
     override fun checkValid(reference: Config, vararg restrictToPaths: String) {
         // checkvalid casts to SimpleConfig, so validating the underlying config here should be ok
@@ -117,8 +121,9 @@ class SmartConfigImpl(
     override fun getDouble(path: String?): Double = typeSafeConfig.getDouble(path)
 
     override fun getString(path: String): String {
-        if (isSecret(path))
+        if (isSecret(path)) {
             return secretsLookupService.getValue(typeSafeConfig.getConfig(path))
+        }
         return typeSafeConfig.getString(path)
     }
 
@@ -132,8 +137,9 @@ class SmartConfigImpl(
         SmartConfigImpl(typeSafeConfig.getConfig(path), factory, secretsLookupService)
 
     override fun getAnyRef(path: String): Any {
-        if (isSecret(path))
+        if (isSecret(path)) {
             return secretsLookupService.getValue(typeSafeConfig.getConfig(path))
+        }
         return typeSafeConfig.getAnyRef(path)
     }
 
@@ -220,4 +226,3 @@ class SmartConfigImpl(
     override fun withValue(path: String?, value: ConfigValue?): SmartConfig =
         SmartConfigImpl(typeSafeConfig.withValue(path, value), factory, secretsLookupService)
 }
-

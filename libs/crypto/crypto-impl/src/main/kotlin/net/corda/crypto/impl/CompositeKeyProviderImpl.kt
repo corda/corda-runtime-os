@@ -13,5 +13,4 @@ CompositeKeyProviderImpl : CompositeKeyProvider, SingletonSerializeAsToken {
 
     override fun create(keys: List<CompositeKeyNodeAndWeight>, threshold: Int?): PublicKey =
         CompositeKeyImpl.create(keys, threshold)
-
 }

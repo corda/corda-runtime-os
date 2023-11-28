@@ -13,7 +13,7 @@ import kotlin.test.assertEquals
 class TypeIdentifierTests {
 
     @Test
-	fun `primitive types and arrays`() {
+    fun `primitive types and arrays`() {
         assertIdentified(Int::class.javaPrimitiveType!!, "int")
         assertIdentified<Int>("Integer")
         assertIdentified<IntArray>("int[]")
@@ -21,13 +21,13 @@ class TypeIdentifierTests {
     }
 
     @Test
-	fun `erased and unerased`() {
+    fun `erased and unerased`() {
         assertIdentified(List::class.java, "List (erased)")
         assertIdentified<List<Int>>("List<Integer>")
     }
 
     @Test
-	fun `nested parameterised`() {
+    fun `nested parameterised`() {
         assertIdentified<List<List<Int>>>("List<List<Integer>>")
     }
 
@@ -35,20 +35,21 @@ class TypeIdentifierTests {
         val array: Array<out List<T>>
     }
 
-    class HasStringArray(override val array: Array<out List<String>>): HasArray<String>
+    class HasStringArray(override val array: Array<out List<String>>) : HasArray<String>
 
     @Test
-	fun `resolved against an owning type`() {
+    fun `resolved against an owning type`() {
         val fieldType = HasArray::class.java.getDeclaredMethod("getArray").genericReturnType
         assertIdentified(fieldType, "List<*>[]")
 
         assertEquals(
-                "List<String>[]",
-                TypeIdentifier.forGenericType(fieldType, HasStringArray::class.java).prettyPrint())
+            "List<String>[]",
+            TypeIdentifier.forGenericType(fieldType, HasStringArray::class.java).prettyPrint()
+        )
     }
 
     @Test
-	fun `roundtrip`() {
+    fun `roundtrip`() {
         assertRoundtrips(Int::class.javaPrimitiveType!!)
         assertRoundtrips<Int>()
         assertRoundtrips<IntArray>()
@@ -61,10 +62,10 @@ class TypeIdentifierTests {
     }
 
     private fun assertIdentified(type: Type, expected: String) =
-            assertEquals(expected, TypeIdentifier.forGenericType(type).prettyPrint())
+        assertEquals(expected, TypeIdentifier.forGenericType(type).prettyPrint())
 
     private inline fun <reified T> assertIdentified(expected: String) =
-            assertEquals(expected, TypeIdentifier.forGenericType(typeOf<T>()).prettyPrint())
+        assertEquals(expected, TypeIdentifier.forGenericType(typeOf<T>()).prettyPrint())
 
     private inline fun <reified T> typeOf() = object : TypeToken<T>() {}.type
 

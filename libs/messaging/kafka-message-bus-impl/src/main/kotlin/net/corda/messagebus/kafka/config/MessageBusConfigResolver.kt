@@ -64,13 +64,13 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
             .withFallback(defaults)
             .resolve()
 
-        logger.debug {"Resolved kafka configuration: ${resolvedConfig.toSafeConfig().root().render()}" }
+        logger.debug { "Resolved kafka configuration: ${resolvedConfig.toSafeConfig().root().render()}" }
 
         // Trim down to just the Kafka config for the specified role.
         val roleConfig = resolvedConfig.getConfig("roles.$rolePath")
         val properties = roleConfig.toKafkaProperties()
 
-        logger.debug {"Kafka properties for role $rolePath: $properties" }
+        logger.debug { "Kafka properties for role $rolePath: $properties" }
 
         return properties
     }
@@ -85,7 +85,7 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
      * @return Resolved kafka properties
      */
     fun resolve(messageBusConfig: SmartConfig, adminConfig: AdminConfig): Properties {
-        return  resolve(messageBusConfig, "admin.admin", adminConfig.toSmartConfig())
+        return resolve(messageBusConfig, "admin.admin", adminConfig.toSmartConfig())
     }
 
     /**
@@ -120,7 +120,7 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
      */
     fun resolve(messageBusConfig: SmartConfig, producerConfig: ProducerConfig): Pair<ResolvedProducerConfig, Properties> {
         val kafkaProperties = resolve(messageBusConfig, producerConfig.role.configPath, producerConfig.toSmartConfig())
-        //enforce the partitioner to be our custom partitioner for producers only
+        // enforce the partitioner to be our custom partitioner for producers only
         kafkaProperties[PARTITIONER_CLASS_CONFIG] = KafkaProducerPartitioner::class.java
 
         return ResolvedProducerConfig(
@@ -169,7 +169,7 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
         )
     }
 
-    private fun ConsumerConfig.addGroupPrefix(prefix: String) : ConsumerConfig {
+    private fun ConsumerConfig.addGroupPrefix(prefix: String): ConsumerConfig {
         return this.copy(group = prefix + this.group)
     }
 

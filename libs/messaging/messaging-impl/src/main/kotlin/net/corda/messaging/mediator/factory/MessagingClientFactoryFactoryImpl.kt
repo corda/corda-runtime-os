@@ -20,7 +20,7 @@ class MessagingClientFactoryFactoryImpl @Activate constructor(
     private val cordaSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = PlatformDigestService::class)
     private val platformDigestService: PlatformDigestService
-): MessagingClientFactoryFactory {
+) : MessagingClientFactoryFactory {
     override fun createMessageBusClientFactory(
         id: String,
         messageBusConfig: SmartConfig,

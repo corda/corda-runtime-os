@@ -17,10 +17,10 @@ private val comparators = mapOf<Class<*>, BiPredicate<Any, Any>>(
             val leftMgf = left.mgfParameters as MGF1ParameterSpec
             val rightMgf = right.mgfParameters as MGF1ParameterSpec
             left.digestAlgorithm.equals(right.digestAlgorithm, true) &&
-                    left.mgfAlgorithm.equals(right.mgfAlgorithm, true) &&
-                    left.saltLength == right.saltLength &&
-                    left.trailerField == right.trailerField &&
-                    leftMgf.digestAlgorithm.equals(rightMgf.digestAlgorithm, true)
+                left.mgfAlgorithm.equals(right.mgfAlgorithm, true) &&
+                left.saltLength == right.saltLength &&
+                left.trailerField == right.trailerField &&
+                leftMgf.digestAlgorithm.equals(rightMgf.digestAlgorithm, true)
         }
     }
 )
@@ -34,16 +34,16 @@ private val comparators = mapOf<Class<*>, BiPredicate<Any, Any>>(
 fun SignatureSpec?.equal(right: SignatureSpec?): Boolean =
     if (this == null) {
         right == null
-    } else if(right == null) {
+    } else if (right == null) {
         false
-    } else if( this === right) {
+    } else if (this === right) {
         true
-    } else if (this::class.java != right::class.java ) {
+    } else if (this::class.java != right::class.java) {
         false
-    } else if(!signatureName.equals(right.signatureName, true)) {
+    } else if (!signatureName.equals(right.signatureName, true)) {
         false
     } else {
-        when(this) {
+        when (this) {
             is CustomSignatureSpec -> {
                 right as CustomSignatureSpec
                 customDigestName == right.customDigestName && params.paramsAreEqual(right.params)
@@ -59,7 +59,7 @@ fun SignatureSpec?.equal(right: SignatureSpec?): Boolean =
 private fun Any?.paramsAreEqual(right: Any?): Boolean =
     if (this == null) {
         right == null
-    } else if(right == null) {
+    } else if (right == null) {
         false
     } else if (this::class.java != right::class.java) {
         false

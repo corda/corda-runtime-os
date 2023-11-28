@@ -11,5 +11,8 @@ import net.corda.rest.JsonObject
  * @property schemaVersion Schema version of the configuration.
  */
 data class UpdateConfigParameters(
-    val section: String, val version: Int, val config: JsonObject, val schemaVersion: ConfigSchemaVersion
+    val section: String,
+    val version: Int,
+    val config: JsonObject,
+    val schemaVersion: ConfigSchemaVersion
 )

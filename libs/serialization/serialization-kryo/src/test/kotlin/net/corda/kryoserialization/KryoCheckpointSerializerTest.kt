@@ -63,7 +63,7 @@ class KryoCheckpointSerializerTest {
         val error = assertThrows<UnsupportedOperationException> { serializer.serialize(tester) }
         assertThat(error.message).isEqualTo(
             "net.corda.kryoserialization.NonSerializableTestClass, " +
-                    "has been marked as a non-serializable type is should never be serialised into a checkpoint."
+                "has been marked as a non-serializable type is should never be serialised into a checkpoint."
         )
     }
 
@@ -84,8 +84,10 @@ class KryoCheckpointSerializerTest {
 
         assertThatThrownBy { serializer.serialize(FlowStackItem()) }
             .isInstanceOf(UnsupportedOperationException::class.java)
-            .hasMessage("${FlowStackItem::class.java.canonicalName} is an avro generated class and should never be " +
-                    "serialised into a checkpoint.")
+            .hasMessage(
+                "${FlowStackItem::class.java.canonicalName} is an avro generated class and should never be " +
+                    "serialised into a checkpoint."
+            )
     }
 
     @Test
@@ -304,7 +306,6 @@ class KryoCheckpointSerializerTest {
     private data class TestClassWithIterator<C, I>(val list: C, val iterator: I)
 
     private fun runTestWithCollection(collection: MutableCollection<Int>) {
-
         val sandboxGroup = mockSandboxGroup()
         val serializer = KryoCheckpointSerializer(
             DefaultKryoCustomizer.customize(
@@ -335,7 +336,6 @@ class KryoCheckpointSerializerTest {
     }
 
     private fun runTestWithCollection(collection: MutableMap<Int, Int>) {
-
         val sandboxGroup = mockSandboxGroup()
         val serializer = KryoCheckpointSerializer(
             DefaultKryoCustomizer.customize(

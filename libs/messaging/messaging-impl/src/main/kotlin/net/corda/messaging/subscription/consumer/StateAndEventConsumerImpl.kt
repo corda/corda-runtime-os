@@ -33,10 +33,10 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 ) : StateAndEventConsumer<K, S, E>, Resource {
 
     companion object {
-        //short timeout for poll of paused partitions when waiting for processor to finish
+        // short timeout for poll of paused partitions when waiting for processor to finish
         private val PAUSED_POLL_TIMEOUT = Duration.ofMillis(100)
 
-        //short timeout for state polling to not starve the event poller
+        // short timeout for state polling to not starve the event poller
         private val STATE_POLL_TIMEOUT = Duration.ofMillis(100)
 
         // Event poll timeout
@@ -45,7 +45,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         private const val STATE_TOPIC_SUFFIX = ".state"
     }
 
-    //single threaded executor per state and event consumer
+    // single threaded executor per state and event consumer
     private val executor = Executors.newSingleThreadScheduledExecutor { runnable ->
         val thread = Thread(runnable)
         thread.isDaemon = true
@@ -115,7 +115,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         // now on the pattern will rely on the in-memory state.
         log.info(
             "$partitions are now in sync. Resuming event feed. " +
-                    "Current in sync: $inSyncPartitions, current to be synced: $partitionsToSync"
+                "Current in sync: $inSyncPartitions, current to be synced: $partitionsToSync"
         )
         updateStateConsumerAssignment(partitions, StatePartitionOperation.REMOVE)
 
@@ -133,7 +133,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     override fun onPartitionsRevoked(partitions: Set<CordaTopicPartition>) {
         log.info(
             "Removing partitions: $partitions. " +
-                    "Current in sync: $inSyncPartitions, current to be synced: $partitionsToSync"
+                "Current in sync: $inSyncPartitions, current to be synced: $partitionsToSync"
         )
         // Remove any assignments and clear state from tracked partitions.
         updateStateConsumerAssignment(partitions, StatePartitionOperation.REMOVE)
@@ -161,7 +161,6 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         log.debug { "Assigning partitions $newAssignment to the state consumer" }
         stateConsumer.assign(newAssignment)
     }
-
 
     override fun getInMemoryStateValue(key: K): S? {
         currentStates.forEach {
@@ -232,7 +231,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                         // been synced yet.
                         log.warn(
                             "${it.size} events on keys ${it.joinToString { it.key.toString() }} " +
-                                    "were returned from non-synced partitions."
+                                "were returned from non-synced partitions."
                         )
                     }
                 }
@@ -246,7 +245,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                         // been synced yet.
                         log.warn(
                             "${it.size} events on keys ${it.joinToString { it.key.toString() }} " +
-                                    "were returned from non-synced partitions."
+                                "were returned from non-synced partitions."
                         )
                     }
                 }
@@ -265,7 +264,8 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     override fun waitForFunctionToFinish(function: () -> Any, maxTimeout: Long, timeoutErrorMessage: String): CompletableFuture<Any> {
         val future: CompletableFuture<Any> = CompletableFuture.supplyAsync(
             function,
-            wrapWithTracingExecutor(executor))
+            wrapWithTracingExecutor(executor)
+        )
         future.tryGetResult(getInitialConsumerTimeout())
 
         if (!future.isDone) {
@@ -299,8 +299,10 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         partitionState.dirty = false
         eventConsumer.poll(PAUSED_POLL_TIMEOUT).forEach { event ->
             // Should not happen, the warning is left in place for easier troubleshooting in case it does.
-            log.warn("Polling from paused eventConsumer has lost event with key: ${event.key}, this will likely " +
-                    "cause execution problems for events with this id")
+            log.warn(
+                "Polling from paused eventConsumer has lost event with key: ${event.key}, this will likely " +
+                    "cause execution problems for events with this id"
+            )
         }
 
         // Rebalance occurred: give up, nothing can be assumed at this point.
@@ -371,10 +373,12 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                 val key = entry.key
                 val value = entry.value
                 val stateTopic = getStateAndEventStateTopic(config.topic)
-                //will never be null, created on assignment in rebalance listener
+                // will never be null, created on assignment in rebalance listener
                 val currentStatesByPartition = currentStates[partitionId]
-                    ?: throw CordaMessageAPIFatalException("Current State map for " +
-                           "group ${config.group} on topic $stateTopic[$partitionId] is null.")
+                    ?: throw CordaMessageAPIFatalException(
+                        "Current State map for " +
+                            "group ${config.group} on topic $stateTopic[$partitionId] is null."
+                    )
                 updatedStatesByKey[key] = value
                 if (value != null) {
                     currentStatesByPartition[key] = Pair(clock.instant().toEpochMilli(), value)
@@ -405,7 +409,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
                 stateConsumer.poll(PAUSED_POLL_TIMEOUT).forEach { state ->
                     log.warn(
                         "Polling from paused stateConsumer has lost state with key: ${state.key}, this will likely cause " +
-                                "execution problems for states with this id"
+                            "execution problems for states with this id"
                     )
                 }
             }
@@ -442,7 +446,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         return currentStates[partitionId]?.map { state -> Pair(state.key, state.value.second) }?.toMap() ?: mapOf()
     }
 
-    private fun CordaTopicPartition.toStatePartition() : CordaTopicPartition {
+    private fun CordaTopicPartition.toStatePartition(): CordaTopicPartition {
         return CordaTopicPartition(getStateAndEventStateTopic(this.topic), this.partition)
     }
 }

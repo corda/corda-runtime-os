@@ -15,14 +15,16 @@ import java.util.Arrays
 import java.util.jar.Manifest
 
 internal fun Manifest.requireAttribute(name: String) {
-    if (mainAttributes.getValue(name) == null)
+    if (mainAttributes.getValue(name) == null) {
         throw CordappManifestException("Manifest is missing required attribute \"$name\"")
+    }
 }
 
 internal fun Manifest.requireAttributeValueIn(name: String, vararg values: String?) {
-    with (mainAttributes.getValue(name)) {
-        if (this !in values)
+    with(mainAttributes.getValue(name)) {
+        if (this !in values) {
             throw CordappManifestException("Manifest has invalid attribute \"$name\" value \"$this\"")
+        }
     }
 }
 
@@ -34,9 +36,9 @@ internal fun Manifest.requireAttributeValueIn(name: String, vararg values: Strin
  * @return the resulting [SecureHash]
  */
 internal inline fun hash(
-    algorithm : DigestAlgorithmName = DigestAlgorithmName.SHA2_256,
-    withDigestAction : (MessageDigest) -> Unit
-) : SecureHash {
+    algorithm: DigestAlgorithmName = DigestAlgorithmName.SHA2_256,
+    withDigestAction: (MessageDigest) -> Unit
+): SecureHash {
     val md = MessageDigest.getInstance(algorithm.name)
     withDigestAction(md)
     return SecureHashImpl(algorithm.name, md.digest())
@@ -44,9 +46,10 @@ internal inline fun hash(
 
 internal val secureHashComparator = Comparator.nullsFirst(
     Comparator.comparing(SecureHash::getAlgorithm)
-        .then { h1, h2 -> Arrays.compare(h1?.bytes, h2?.bytes) })
+        .then { h1, h2 -> Arrays.compare(h1?.bytes, h2?.bytes) }
+)
 
-internal fun Sequence<SecureHash>.sortedSequenceHash() : SecureHash {
+internal fun Sequence<SecureHash>.sortedSequenceHash(): SecureHash {
     return hash {
         this.sortedWith(secureHashComparator)
             .map(SecureHash::toString)
@@ -55,7 +58,7 @@ internal fun Sequence<SecureHash>.sortedSequenceHash() : SecureHash {
     }
 }
 
-internal fun Sequence<Certificate>.certSequenceHash() : SecureHash =
+internal fun Sequence<Certificate>.certSequenceHash(): SecureHash =
     map { it.publicKey.encoded.hash() }.sortedSequenceHash()
 
 internal fun List<CodeSigner>.codeSignersHash() =
@@ -71,8 +74,9 @@ internal fun hash(inputStream: InputStream, algorithm: String): SecureHash {
 }
 
 internal fun <T> List<T>.firstOrThrow(noElementsException: Exception): T {
-    if (isEmpty())
+    if (isEmpty()) {
         throw noElementsException
+    }
     return this[0]
 }
 

@@ -35,8 +35,8 @@ internal inline fun <T> ifThrowsAppend(strToAppendFn: () -> String, block: () ->
 }
 
 class AMQPNoTypeNotSerializableException(
-        msg: String,
-        mitigation: String = msg
+    msg: String,
+    mitigation: String = msg
 ) : AMQPNotSerializableException(Class::class.java, msg, mitigation, mutableListOf("Unknown"))
 
 /**
@@ -54,19 +54,19 @@ class AMQPNoTypeNotSerializableException(
  * updated by the [ifThrowsAppend] function used within this library.
  */
 open class AMQPNotSerializableException(
-        val type: Type,
-        val msg: String,
-        val mitigation: String = msg,
-        val classHierarchy : MutableList<String> = mutableListOf(type.typeName)
+    val type: Type,
+    val msg: String,
+    val mitigation: String = msg,
+    val classHierarchy: MutableList<String> = mutableListOf(type.typeName)
 ) : NotSerializableException(msg) {
     @Suppress("Unused")
     constructor(type: Type) : this (type, "type=${type.typeName} is not serializable")
 
     @VisibleForTesting
-    fun errorMessage(direction: String) : String {
+    fun errorMessage(direction: String): String {
         return "Serialization failed direction=\"$direction\", type=\"${type.typeName}\", " +
-                "msg=\"$msg\", " +
-                "ClassChain=\"${classHierarchy.asReversed().joinToString(" -> ")}\""
+            "msg=\"$msg\", " +
+            "ClassChain=\"${classHierarchy.asReversed().joinToString(" -> ")}\""
     }
 
     fun log(direction: String, logger: Logger) {
@@ -79,6 +79,7 @@ open class AMQPNotSerializableException(
 }
 
 class SyntheticParameterException(type: Type) : AMQPNotSerializableException(
-        type,
-        "Type '${type.typeName} has synthetic "
-        + "fields and is likely a nested inner class. This is not support by the Corda AMQP serialization framework")
+    type,
+    "Type '${type.typeName} has synthetic " +
+        "fields and is likely a nested inner class. This is not support by the Corda AMQP serialization framework"
+)

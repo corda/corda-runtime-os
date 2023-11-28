@@ -24,12 +24,14 @@ class MI5Factory : SecretsServiceFactory {
         return MI5(secretsServiceConfig.getString("spy"))
     }
 
-    class MI5(private val spy: String): SecretsService {
+    class MI5(private val spy: String) : SecretsService {
         override fun createValue(plainText: String, @Suppress("UNUSED_PARAMETER") key: String): Config {
-            return ConfigFactory.parseMap(mapOf(
-                "configSecret.code" to spy,
-                "configSecret.name" to plainText
-            ))
+            return ConfigFactory.parseMap(
+                mapOf(
+                    "configSecret.code" to spy,
+                    "configSecret.name" to plainText
+                )
+            )
         }
 
         override fun getValue(secretConfig: Config): String {
@@ -52,7 +54,8 @@ class SmartConfigFactoryAndSecretsServiceFactoryResolverTest {
         assertThat(secretsServiceFactoryResolver.findAll().map { it.javaClass.name })
             .containsExactlyInAnyOrder(
                 MI5Factory::class.java.name,
-                EncryptionSecretsServiceFactory::class.java.name)
+                EncryptionSecretsServiceFactory::class.java.name
+            )
     }
 
     @Test
@@ -62,7 +65,8 @@ class SmartConfigFactoryAndSecretsServiceFactoryResolverTest {
             EncryptionSecretsServiceFactory.SECRET_PASSPHRASE_KEY to "pass"
         )
         val configFactory = SmartConfigFactory.createWith(
-            ConfigFactory.parseMap(secretsConfig), secretsServiceFactoryResolver.findAll()
+            ConfigFactory.parseMap(secretsConfig),
+            secretsServiceFactoryResolver.findAll()
         )
         val secretConfig = configFactory.makeSecret("hello", "test")
 
@@ -80,7 +84,8 @@ class SmartConfigFactoryAndSecretsServiceFactoryResolverTest {
     fun `when config supplies type MI5, use dummy secrets service`() {
         val secretsConfig = mapOf(SmartConfigFactory.SECRET_SERVICE_TYPE to "MI5", "spy" to "007")
         val configFactory = SmartConfigFactory.createWith(
-            ConfigFactory.parseMap(secretsConfig), secretsServiceFactoryResolver.findAll()
+            ConfigFactory.parseMap(secretsConfig),
+            secretsServiceFactoryResolver.findAll()
         )
         val secretConfig = configFactory.makeSecret("bond", "james")
 

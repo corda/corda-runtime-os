@@ -11,10 +11,10 @@ import com.esotericsoftware.kryo.io.Output
  * the methods add() and addAll() were not properly implemented (Take look at the
  * public interface Map<K, V> method to see that it does not support these operations).
  */
-internal object LinkedEntrySetSerializer : Serializer<Set<Map.Entry<*,*>>>() {
+internal object LinkedEntrySetSerializer : Serializer<Set<Map.Entry<*, *>>>() {
 
     // Create a dummy object to get the LinkedHashMap$LinkedEntrySet from it
-    val serializedType: Class<out Set<Map.Entry<*,*>>> = linkedMapOf(Any() to Any(), Any() to Any()).entries::class.java
+    val serializedType: Class<out Set<Map.Entry<*, *>>> = linkedMapOf(Any() to Any(), Any() to Any()).entries::class.java
     override fun write(kryo: Kryo, output: Output?, obj: Set<Map.Entry<*, *>>) {
         // HashSet is already supported
         kryo.writeClassAndObject(output, obj.toList())
@@ -26,7 +26,7 @@ internal object LinkedEntrySetSerializer : Serializer<Set<Map.Entry<*,*>>>() {
         The exception is if the cast lies within variance bounds: https://kotlinlang.org/docs/generics.html#variance
          */
         @Suppress("UNCHECKED_CAST")
-        val deserializedList = kryo.readClassAndObject(input) as List<Map.Entry<*,*>>
+        val deserializedList = kryo.readClassAndObject(input) as List<Map.Entry<*, *>>
 
         // Grant that the return is a LinkedEntrySet
         val collectionMap = deserializedList.associateBy({ it.key }, { it.value }) as Map<*, *>

@@ -8,9 +8,9 @@ class MemberSignature(
     val parameterTypes: Array<Class<*>>
 ) {
     fun isAssignableFrom(signature: MemberSignature): Boolean {
-        return name == signature.name
-            && returnType.isAssignableFrom(signature.returnType)
-            && parameterTypes.contentEquals(signature.parameterTypes)
+        return name == signature.name &&
+            returnType.isAssignableFrom(signature.returnType) &&
+            parameterTypes.contentEquals(signature.parameterTypes)
     }
 
     override fun hashCode(): Int {
@@ -21,9 +21,9 @@ class MemberSignature(
         return when {
             this === other -> true
             other !is MemberSignature -> false
-            else -> parameterTypes.contentEquals(other.parameterTypes)
-                    && returnType === other.returnType
-                    && name == other.name
+            else -> parameterTypes.contentEquals(other.parameterTypes) &&
+                returnType === other.returnType &&
+                name == other.name
         }
     }
 

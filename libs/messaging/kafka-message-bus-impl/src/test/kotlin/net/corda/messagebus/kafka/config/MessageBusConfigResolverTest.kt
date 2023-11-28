@@ -269,10 +269,10 @@ class MessageBusConfigResolverTest {
     }
 
     @Test
-    fun `resolve config for admin`(){
+    fun `resolve config for admin`() {
         val messageBusConfig = loadTestConfig(TEST_CONFIG)
         val resolver = MessageBusConfigResolver(smartConfigFactory)
-        val  properties = resolver.resolve(messageBusConfig, AdminConfig(CLIENT_ID))
+        val properties = resolver.resolve(messageBusConfig, AdminConfig(CLIENT_ID))
 
         val expectedProperties = getExpectedProducerProperties(
             mapOf(

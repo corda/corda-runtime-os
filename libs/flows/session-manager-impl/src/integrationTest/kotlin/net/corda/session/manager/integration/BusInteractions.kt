@@ -8,7 +8,7 @@ interface BusInteractions {
      * Get the next message on the bus
      * @param isInitiating property to help toggle session ids
      */
-    fun getNextInboundMessage(isInitiating: Boolean) : SessionEvent?
+    fun getNextInboundMessage(isInitiating: Boolean): SessionEvent?
 
     /**
      * Duplicate the message at the [position] in the inbound queue
@@ -19,12 +19,12 @@ interface BusInteractions {
     /**
      * Get the number of messages currently on the inbound message bus
      */
-    fun getInboundMessageSize() : Int
+    fun getInboundMessageSize(): Int
 
     /**
      * Get a specific session event from the bus by [position]
      */
-    fun getInboundMessage(position: Int) : SessionEvent
+    fun getInboundMessage(position: Int): SessionEvent
 
     /**
      * Remove the next message from the inbound messages

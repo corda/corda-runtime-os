@@ -1,5 +1,6 @@
 package net.corda.kotlin.reflect.types
 
+import kotlinx.metadata.jvm.JvmFieldSignature
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.util.Objects
@@ -9,9 +10,8 @@ import kotlin.reflect.KType
 import kotlin.reflect.KTypeParameter
 import kotlin.reflect.KVisibility
 import kotlin.reflect.full.starProjectedType
-import kotlinx.metadata.jvm.JvmFieldSignature
 
-open class JavaStaticProperty<V>(final override val javaField: Field): KProperty0<V>, KPropertyInternal<V> {
+open class JavaStaticProperty<V>(final override val javaField: Field) : KProperty0<V>, KPropertyInternal<V> {
     override val annotations: List<Annotation>
         get() = TODO("JavaStaticProperty.annotations: Not yet implemented")
     override val isAbstract: Boolean
@@ -49,7 +49,8 @@ open class JavaStaticProperty<V>(final override val javaField: Field): KProperty
 
     @Suppress("LeakingThis")
     final override val getter: KProperty0.Getter<V> = Getter(
-        name = "<get-${javaField.name}>", property = this
+        name = "<get-${javaField.name}>",
+        property = this
     )
 
     override fun get(): V {

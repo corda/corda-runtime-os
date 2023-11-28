@@ -24,7 +24,6 @@ class AesEncryptor(
                 pool.offer(cipher)
             }
         }
-
     }
 
     /**

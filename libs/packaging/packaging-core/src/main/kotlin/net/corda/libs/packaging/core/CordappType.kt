@@ -7,8 +7,8 @@ enum class CordappType {
     CONTRACT,
     WORKFLOW;
 
-    companion object{
-        fun fromAvro(other: net.corda.data.packaging.CorDappType) : CordappType = when (other) {
+    companion object {
+        fun fromAvro(other: net.corda.data.packaging.CorDappType): CordappType = when (other) {
             net.corda.data.packaging.CorDappType.CONTRACT -> CONTRACT
             net.corda.data.packaging.CorDappType.WORKFLOW -> WORKFLOW
         }
@@ -18,5 +18,4 @@ enum class CordappType {
         CONTRACT -> net.corda.data.packaging.CorDappType.CONTRACT
         WORKFLOW -> net.corda.data.packaging.CorDappType.WORKFLOW
     }
-
 }

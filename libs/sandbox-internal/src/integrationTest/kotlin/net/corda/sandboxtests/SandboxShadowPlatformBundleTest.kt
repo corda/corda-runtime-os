@@ -1,6 +1,5 @@
 package net.corda.sandboxtests
 
-import java.nio.file.Path
 import net.corda.sandbox.SandboxException
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
@@ -19,6 +18,7 @@ import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
+import java.nio.file.Path
 
 @Suppress("FunctionName")
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)

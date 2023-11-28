@@ -12,7 +12,7 @@ import org.mockito.kotlin.verify
 
 class SmartConfigFactoryImplTest {
     private val secretsLookupService = mock<SecretsLookupService>()
-    private val secretsCreateService = mock<SecretsCreateService>() {
+    private val secretsCreateService = mock<SecretsCreateService> {
         on { createValue(any(), any()) }.doReturn(mock())
     }
     private val config = ConfigFactory.parseString("foo=bar")

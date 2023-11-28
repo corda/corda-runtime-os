@@ -26,8 +26,8 @@ internal class IsolatingResolverBundleHook(private val sandboxService: SandboxCo
     // they do not have visibility of one another.
     override fun filterSingletonCollisions(singleton: BundleCapability, collisionCandidates: MutableCollection<BundleCapability>) {
         collisionCandidates.removeIf { candidate ->
-            !sandboxService.hasVisibility(singleton.revision.bundle, candidate.revision.bundle)
-                    && !sandboxService.hasVisibility(candidate.revision.bundle, singleton.revision.bundle)
+            !sandboxService.hasVisibility(singleton.revision.bundle, candidate.revision.bundle) &&
+                !sandboxService.hasVisibility(candidate.revision.bundle, singleton.revision.bundle)
         }
     }
 
@@ -59,7 +59,8 @@ internal class IsolatingResolverBundleHook(private val sandboxService: SandboxCo
 
 /** A [ResolverHookFactory] implementation for creating [IsolatingResolverBundleHook]s. */
 internal class IsolatingResolverBundleHookFactory(
-        private val sandboxManagerService: SandboxContextService) : ResolverHookFactory {
+    private val sandboxManagerService: SandboxContextService
+) : ResolverHookFactory {
 
     /** Returns an [IsolatingResolverBundleHook]. */
     override fun begin(triggers: Collection<BundleRevision>): ResolverHook {

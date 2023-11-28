@@ -1,6 +1,5 @@
 package net.corda.messagebus.kafka.serialization
 
-import java.nio.ByteBuffer
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
@@ -11,6 +10,7 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 
 class CordaAvroSerializerImplTest {
 
@@ -67,5 +67,4 @@ class CordaAvroSerializerImplTest {
         assertThrows<CordaRuntimeException> { onErrorSerializer.serialize(topic, data) }
         assertTrue(hasRan)
     }
-
 }

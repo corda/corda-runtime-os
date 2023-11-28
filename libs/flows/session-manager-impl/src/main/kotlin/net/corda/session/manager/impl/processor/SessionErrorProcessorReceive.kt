@@ -32,13 +32,13 @@ class SessionErrorProcessorReceive(
 
         return if (sessionState == null) {
             val errorMessage = "Received SessionError on key $key for sessionId which had null state: $sessionId. " +
-                    "Error message received was: $exceptionEnvelope"
+                "Error message received was: $exceptionEnvelope"
             logger.debug { errorMessage }
             generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, "SessionData-NullSessionState", instant)
         } else {
             logger.warn(
                 "Session Error received on sessionId $sessionId. " +
-                        "Updating status from ${sessionState.status} to ${SessionStateType.ERROR}. Error message: $exceptionEnvelope"
+                    "Updating status from ${sessionState.status} to ${SessionStateType.ERROR}. Error message: $exceptionEnvelope"
             )
             sessionState.apply {
                 status = SessionStateType.ERROR

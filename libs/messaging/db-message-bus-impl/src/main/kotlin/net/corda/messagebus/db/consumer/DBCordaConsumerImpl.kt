@@ -35,17 +35,19 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
     companion object {
         /** Minimal period between checking for new records in database */
         private val MIN_POLL_PERIOD = Duration.ofMillis(100)
+
         /** Time of the last check for new records in database */
         @Volatile
         private var lastPollTime: Instant = Instant.MIN
+
         /** Offset positions retrieved with the last check for new records in database */
         private val lastOffsetPositions = mutableMapOf<CordaTopicPartition, Long>()
+
         /** Lock for updating [lastPollTime] and [lastOffsetPositions] */
         private val pollLock = ReentrantLock()
     }
 
     enum class SubscriptionType { NONE, ASSIGNED, SUBSCRIBED }
-
 
     // Also used by the consumer group
     internal val clientId = consumerConfig.clientId

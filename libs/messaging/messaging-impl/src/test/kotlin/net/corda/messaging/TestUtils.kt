@@ -37,7 +37,7 @@ internal fun createResolvedSubscriptionConfig(type: SubscriptionType): ResolvedS
  * Assigned to [partition] and [topic]
  * @return List of ConsumerRecord
  */
-fun generateMockCordaConsumerRecordList(numberOfRecords: Long, topic: String, partition: Int) : List<CordaConsumerRecord<String, String>> {
+fun generateMockCordaConsumerRecordList(numberOfRecords: Long, topic: String, partition: Int): List<CordaConsumerRecord<String, String>> {
     val records = mutableListOf<CordaConsumerRecord<String, String>>()
     for (i in 0 until numberOfRecords) {
         val record = CordaConsumerRecord(topic, partition, i, "key$i", "value$i", i)
@@ -45,4 +45,3 @@ fun generateMockCordaConsumerRecordList(numberOfRecords: Long, topic: String, pa
     }
     return records
 }
-

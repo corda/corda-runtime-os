@@ -37,7 +37,11 @@ class SessionErrorProcessorSendTest {
             contextSessionProps = emptyKeyValuePairList()
         )
         val inputState = buildSessionState(
-            SessionStateType.CONFIRMED, 0, mutableListOf(), 0, mutableListOf()
+            SessionStateType.CONFIRMED,
+            0,
+            mutableListOf(),
+            0,
+            mutableListOf()
         )
 
         val sessionState = SessionErrorProcessorSend("Key", inputState, sessionEvent, ExceptionEnvelope(), Instant.now()).execute()

@@ -12,4 +12,4 @@ interface Encryptor {
     /**
      * Decrypts the given byte array.
      */
-    fun decrypt(cipherText: ByteArray): ByteArray}
+    fun decrypt(cipherText: ByteArray): ByteArray }

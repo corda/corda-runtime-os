@@ -51,10 +51,10 @@ fun signData(
 
 fun CipherSchemeMetadata.inferSignatureSpecOrCreateDefault(publicKey: PublicKey, digest: DigestAlgorithmName): SignatureSpec {
     val inferred = inferSignatureSpec(publicKey, digest)
-    if(inferred != null) {
+    if (inferred != null) {
         return inferred
     }
-    return when(val codeName = findKeyScheme(publicKey).codeName) {
+    return when (val codeName = findKeyScheme(publicKey).codeName) {
         RSA_CODE_NAME -> SignatureSpecs.RSA_SHA256
         ECDSA_SECP256R1_CODE_NAME, ECDSA_SECP256K1_CODE_NAME -> SignatureSpecs.ECDSA_SHA256
         EDDSA_ED25519_CODE_NAME -> SignatureSpecs.EDDSA_ED25519
@@ -64,4 +64,3 @@ fun CipherSchemeMetadata.inferSignatureSpecOrCreateDefault(publicKey: PublicKey,
         else -> throw IllegalArgumentException("Cannot get default signature spec for $codeName")
     }
 }
-

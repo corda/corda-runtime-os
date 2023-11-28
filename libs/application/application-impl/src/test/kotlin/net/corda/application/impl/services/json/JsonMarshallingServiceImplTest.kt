@@ -112,29 +112,35 @@ class JsonMarshallingServiceImplTest {
         )
 
         val json = JsonMarshallingServiceImpl().format(dto)
-        assertThat(json).isEqualTo("""
+        assertThat(json).isEqualTo(
+            """
             {
               "name": "n1",
               "quantity": 1
             }
-        """.filter { !it.isWhitespace() })
+        """.filter { !it.isWhitespace() }
+        )
     }
 
     @Test
     fun `Can deserialize object from json string`() {
-        val dto = JsonMarshallingServiceImpl().parse("""
+        val dto = JsonMarshallingServiceImpl().parse(
+            """
             {
               "name": "n1",
               "quantity": 1
             }
-        """.filter { !it.isWhitespace() },SimpleDto::class.java)
+        """.filter { !it.isWhitespace() },
+            SimpleDto::class.java
+        )
         assertThat(dto.name).isEqualTo("n1")
         assertThat(dto.quantity).isEqualTo(1)
     }
 
     @Test
     fun `Can deserialize list from json string`() {
-        val dtoList = JsonMarshallingServiceImpl().parseList("""
+        val dtoList = JsonMarshallingServiceImpl().parseList(
+            """
             [
               {
                 "name": "n1",
@@ -145,7 +151,9 @@ class JsonMarshallingServiceImplTest {
                 "quantity": 2
               }
             ]
-        """.filter { !it.isWhitespace() },
+        """.filter {
+                !it.isWhitespace()
+            },
             SimpleDto::class.java
         )
         assertThat(dtoList).hasSize(2)
@@ -158,7 +166,8 @@ class JsonMarshallingServiceImplTest {
 
     @Test
     fun `can deserialize map from json string`() {
-        val dtoMap = JsonMarshallingServiceImpl().parseMap("""
+        val dtoMap = JsonMarshallingServiceImpl().parseMap(
+            """
             {
               "100": {
                 "name": "n1",
@@ -173,7 +182,7 @@ class JsonMarshallingServiceImplTest {
                 "quantity": 3
               }
             }
-        """.trimIndent(),
+            """.trimIndent(),
             Int::class.java,
             SimpleDto::class.java
         )
@@ -182,7 +191,7 @@ class JsonMarshallingServiceImplTest {
         assertThat(dtoMap[100]).isEqualTo(SimpleDto("n1", 1))
         assertThat(dtoMap[200]).isEqualTo(SimpleDto("n2", 2))
         assertThat(dtoMap[300]).isEqualTo(SimpleDto("n3", 3))
-        assertThrows<UnsupportedOperationException> { (dtoMap as MutableMap<*,*>).clear() }
+        assertThrows<UnsupportedOperationException> { (dtoMap as MutableMap<*, *>).clear() }
     }
 
     @Test
@@ -200,11 +209,13 @@ class JsonMarshallingServiceImplTest {
             name = "n1",
             quantity = 1
         )
-        assertThat(jms.format(dto)).isEqualTo("""
+        assertThat(jms.format(dto)).isEqualTo(
+            """
             {
               "$TEST_FIELD": "$TEST_VALUE"
             }
-        """.filter { !it.isWhitespace() })
+        """.filter { !it.isWhitespace() }
+        )
     }
 
     @Test
@@ -218,11 +229,14 @@ class JsonMarshallingServiceImplTest {
         val jms = JsonMarshallingServiceImpl()
         jms.setDeserializer(instance as JsonDeserializer<*>, extractSerializingType(instance))
 
-        val dto = jms.parse("""
+        val dto = jms.parse(
+            """
             {
               "$TEST_FIELD": "$TEST_VALUE"
             }
-        """.filter { !it.isWhitespace() }, SimpleDto::class.java)
+        """.filter { !it.isWhitespace() },
+            SimpleDto::class.java
+        )
 
         assertThat(dto.name).isEqualTo(TEST_VALUE)
         assertThat(dto.quantity).isEqualTo(42)
@@ -259,12 +273,17 @@ class JsonMarshallingServiceImplTest {
         val dtoToSerialize = ComplexDto(name = "name-test", field = NestedField(contents = "anything"))
         val serializedJson = jms.format(dtoToSerialize)
 
-        assertEquals("""
+        assertEquals(
+            """
             {
               "name": "name-test",
               "field": "anything-written-nested-field"
             }
-        """.filter { !it.isWhitespace() }, serializedJson)
+        """.filter {
+                !it.isWhitespace()
+            },
+            serializedJson
+        )
 
         val dto = jms.parse(serializedJson, ComplexDto::class.java)
         assertEquals("name-test", dto.name)

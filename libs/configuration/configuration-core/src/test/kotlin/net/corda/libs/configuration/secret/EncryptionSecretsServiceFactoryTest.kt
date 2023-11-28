@@ -31,10 +31,14 @@ class EncryptionSecretsServiceFactoryTest {
     @ValueSource(strings = ["", " "])
     fun `when create and salt is blank throw`(salt: String) {
         assertThrows<SecretsConfigurationException> {
-            EncryptionSecretsServiceFactory().create(ConfigFactory.parseMap(mapOf(
-                EncryptionSecretsServiceFactory.SECRET_SALT_KEY to salt,
-                EncryptionSecretsServiceFactory.SECRET_PASSPHRASE_KEY to "pass"
-            )))
+            EncryptionSecretsServiceFactory().create(
+                ConfigFactory.parseMap(
+                    mapOf(
+                        EncryptionSecretsServiceFactory.SECRET_SALT_KEY to salt,
+                        EncryptionSecretsServiceFactory.SECRET_PASSPHRASE_KEY to "pass"
+                    )
+                )
+            )
         }
     }
 
@@ -42,10 +46,14 @@ class EncryptionSecretsServiceFactoryTest {
     @ValueSource(strings = ["", " "])
     fun `when create and passphrase is blank throw`(passphrase: String) {
         assertThrows<SecretsConfigurationException> {
-            EncryptionSecretsServiceFactory().create(ConfigFactory.parseMap(mapOf(
-                EncryptionSecretsServiceFactory.SECRET_SALT_KEY to "salt",
-                EncryptionSecretsServiceFactory.SECRET_PASSPHRASE_KEY to passphrase
-            )))
+            EncryptionSecretsServiceFactory().create(
+                ConfigFactory.parseMap(
+                    mapOf(
+                        EncryptionSecretsServiceFactory.SECRET_SALT_KEY to "salt",
+                        EncryptionSecretsServiceFactory.SECRET_PASSPHRASE_KEY to passphrase
+                    )
+                )
+            )
         }
     }
 }

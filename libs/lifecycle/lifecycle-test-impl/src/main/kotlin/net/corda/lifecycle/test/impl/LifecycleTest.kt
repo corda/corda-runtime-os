@@ -269,7 +269,6 @@ class LifecycleTest<T : Lifecycle>(
         coordinatorName: LifecycleCoordinatorName,
         config: Map<String, SmartConfig>
     ) {
-
         val coordinator = registry.getCoordinator(coordinatorName)
         // assert that the config contains exactly the keys from required keys set
         // during registration

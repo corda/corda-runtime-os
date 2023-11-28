@@ -11,7 +11,7 @@ import org.osgi.framework.hooks.service.FindHook
  * We only allow a bundle to find services in bundles it has visibility of.
  */
 internal class IsolatingFindServiceHook(
-        private val sandboxService: SandboxContextService
+    private val sandboxService: SandboxContextService
 ) : FindHook {
 
     override fun find(
@@ -19,8 +19,8 @@ internal class IsolatingFindServiceHook(
         name: String?,
         filter: String?,
         allServices: Boolean,
-        references: MutableCollection<ServiceReference<*>>) {
-
+        references: MutableCollection<ServiceReference<*>>
+    ) {
         references.removeIf { reference ->
             !sandboxService.hasVisibility(context.bundle, reference.bundle)
         }

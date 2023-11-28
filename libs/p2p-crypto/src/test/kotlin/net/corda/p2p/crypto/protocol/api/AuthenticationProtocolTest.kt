@@ -101,16 +101,18 @@ class AuthenticationProtocolTest {
     }
 
     @Suppress("LongParameterList")
-    private fun executeProtocol(partyASessionKey: KeyPair,
-                                partyBSessionKey: KeyPair,
-                                signature: Signature,
-                                signatureSpec: SignatureSpec,
-                                partyACertificate: List<PemCertificate>? = null,
-                                partyBCertificate: List<PemCertificate>? = null,
-                                duplicateInvocations: Boolean = false,
-                                certificateCheckMode: CertificateCheckMode = CertificateCheckMode.NoCertificate,
-                                certificateValidatorInitiator: CertificateValidator? = null,
-                                certificateValidatorResponder: CertificateValidator? = null,) {
+    private fun executeProtocol(
+        partyASessionKey: KeyPair,
+        partyBSessionKey: KeyPair,
+        signature: Signature,
+        signatureSpec: SignatureSpec,
+        partyACertificate: List<PemCertificate>? = null,
+        partyBCertificate: List<PemCertificate>? = null,
+        duplicateInvocations: Boolean = false,
+        certificateCheckMode: CertificateCheckMode = CertificateCheckMode.NoCertificate,
+        certificateValidatorInitiator: CertificateValidator? = null,
+        certificateValidatorResponder: CertificateValidator? = null,
+    ) {
         val protocolInitiator = if (certificateValidatorInitiator != null) {
             AuthenticationProtocolInitiator(
                 sessionId,

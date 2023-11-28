@@ -1,7 +1,7 @@
 package net.corda.sandboxgroupcontext
 
-import java.util.concurrent.CompletableFuture
 import net.corda.sandbox.SandboxGroup
+import java.util.concurrent.CompletableFuture
 
 /**
  * A context object that is essentially a decorated [SandboxGroup].  It should contain everything required to

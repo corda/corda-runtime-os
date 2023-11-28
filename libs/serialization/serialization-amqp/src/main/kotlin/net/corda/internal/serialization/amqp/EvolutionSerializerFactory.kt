@@ -24,8 +24,9 @@ interface EvolutionSerializerFactory {
      * Will return null if no evolution is necessary, because the schemas are compatible.
      */
     fun getEvolutionSerializer(
-            remote: RemoteTypeInformation,
-            local: LocalTypeInformation): AMQPSerializer<Any>?
+        remote: RemoteTypeInformation,
+        local: LocalTypeInformation
+    ): AMQPSerializer<Any>?
 
     /**
      * A mapping between Java object types and their equivalent Java primitive types.
@@ -35,40 +36,49 @@ interface EvolutionSerializerFactory {
     val primitiveTypes: Map<Class<*>, Class<*>>
 }
 
-class EvolutionSerializationException(remoteTypeInformation: RemoteTypeInformation, reason: String)
-    : NotSerializableException(
+class EvolutionSerializationException(remoteTypeInformation: RemoteTypeInformation, reason: String) :
+    NotSerializableException(
         """
         Cannot construct evolution serializer for remote type ${remoteTypeInformation.typeIdentifier.name}: $reason
 
         Full type information:
         ${remoteTypeInformation.prettyPrint(false)}
         """.trimIndent()
-)
+    )
 
 class DefaultEvolutionSerializerFactory(
-        private val localSerializerFactory: LocalSerializerFactory,
-        private val mustPreserveDataWhenEvolving: Boolean,
-        override val primitiveTypes: Map<Class<*>, Class<*>>,
-        private val baseTypes: BaseLocalTypes
-): EvolutionSerializerFactory {
+    private val localSerializerFactory: LocalSerializerFactory,
+    private val mustPreserveDataWhenEvolving: Boolean,
+    override val primitiveTypes: Map<Class<*>, Class<*>>,
+    private val baseTypes: BaseLocalTypes
+) : EvolutionSerializerFactory {
     // Invert the "primitive -> boxed primitive" mapping.
-    private val primitiveBoxedTypes: Map<Class<*>, Class<*>>
-        = primitiveTypes.entries.associateBy(Map.Entry<Class<*>,Class<*>>::value, Map.Entry<Class<*>,Class<*>>::key)
+    private val primitiveBoxedTypes: Map<Class<*>, Class<*>> =
+        primitiveTypes.entries.associateBy(Map.Entry<Class<*>, Class<*>>::value, Map.Entry<Class<*>, Class<*>>::key)
 
-    override fun getEvolutionSerializer(remote: RemoteTypeInformation,
-                                        local: LocalTypeInformation): AMQPSerializer<Any>? =
-            when(remote) {
-                is RemoteTypeInformation.Composable ->
-                    if (local is LocalTypeInformation.Composable) remote.getEvolutionSerializer(local)
-                    else null
-                is RemoteTypeInformation.AnEnum ->
-                    if (local is LocalTypeInformation.AnEnum) remote.getEvolutionSerializer(local)
-                    else null
-                else -> null
-            }
-    
+    override fun getEvolutionSerializer(
+        remote: RemoteTypeInformation,
+        local: LocalTypeInformation
+    ): AMQPSerializer<Any>? =
+        when (remote) {
+            is RemoteTypeInformation.Composable ->
+                if (local is LocalTypeInformation.Composable) {
+                    remote.getEvolutionSerializer(local)
+                } else {
+                    null
+                }
+            is RemoteTypeInformation.AnEnum ->
+                if (local is LocalTypeInformation.AnEnum) {
+                    remote.getEvolutionSerializer(local)
+                } else {
+                    null
+                }
+            else -> null
+        }
+
     private fun RemoteTypeInformation.Composable.getEvolutionSerializer(
-            localTypeInformation: LocalTypeInformation.Composable): AMQPSerializer<Any>? {
+        localTypeInformation: LocalTypeInformation.Composable
+    ): AMQPSerializer<Any>? {
         // The no-op case: although the fingerprints don't match for some reason, we have compatible signatures.
         // This might happen because of inconsistent type erasure, changes to the behaviour of the fingerprinter,
         // or changes to the type itself - such as adding an interface - that do not change its serialisation/deserialisation
@@ -90,7 +100,7 @@ class DefaultEvolutionSerializerFactory(
     }
 
     private fun RemoteTypeInformation.Composable.propertyNamesMatch(localTypeInformation: LocalTypeInformation.Composable): Boolean =
-            properties.keys == localTypeInformation.properties.keys
+        properties.keys == localTypeInformation.properties.keys
 
     private fun RemoteTypeInformation.Composable.validateCompatibility(localTypeInformation: LocalTypeInformation.Composable) {
         properties.asSequence().zip(localTypeInformation.properties.values.asSequence()).forEach { (remote, localProperty) ->
@@ -99,17 +109,25 @@ class DefaultEvolutionSerializerFactory(
             val remoteClass = remoteProperty.type.typeIdentifier.getLocalType(localSerializerFactory.sandboxGroup).asClass()
 
             if (!localClass.isAssignableFrom(remoteClass) && remoteClass != primitiveTypes[localClass]) {
-                throw EvolutionSerializationException(this,
-                        "Local type $localClass of property $name is not assignable from remote type $remoteClass")
+                throw EvolutionSerializationException(
+                    this,
+                    "Local type $localClass of property $name is not assignable from remote type $remoteClass"
+                )
             }
         }
     }
 
     // Find the evolution constructor with the highest version number whose parameters are all assignable from the
     // provided property types.
-    private fun findEvolverConstructor(constructors: List<EvolutionConstructorInformation>,
-                                       properties: Map<String, RemotePropertyInformation>): EvolutionConstructorInformation? {
-        val propertyTypes = properties.mapValues { (_, info) -> info.type.typeIdentifier.getLocalType(localSerializerFactory.sandboxGroup).asClass() }
+    private fun findEvolverConstructor(
+        constructors: List<EvolutionConstructorInformation>,
+        properties: Map<String, RemotePropertyInformation>
+    ): EvolutionConstructorInformation? {
+        val propertyTypes = properties.mapValues { (_, info) ->
+            info.type.typeIdentifier.getLocalType(
+                localSerializerFactory.sandboxGroup
+            ).asClass()
+        }
 
         // Evolver constructors are listed in ascending version order, so we just want the last that matches.
         return constructors.lastOrNull { (_, evolverProperties) ->
@@ -122,9 +140,9 @@ class DefaultEvolutionSerializerFactory(
                     // Check that we can assign the remote property value to its local equivalent.
                     // This includes assigning a primitive type to its equivalent "boxed" type.
                     val evolverPropertyType = evolverProperty.type.observedType.asClass()
-                    evolverPropertyType.isAssignableFrom(propertyType)
-                        || (propertyType.isPrimitive && evolverPropertyType.isAssignableFrom(boxed(propertyType)))
-                        || (evolverPropertyType.isPrimitive && boxed(evolverPropertyType).isAssignableFrom(propertyType))
+                    evolverPropertyType.isAssignableFrom(propertyType) ||
+                        (propertyType.isPrimitive && evolverPropertyType.isAssignableFrom(boxed(propertyType))) ||
+                        (evolverPropertyType.isPrimitive && boxed(evolverPropertyType).isAssignableFrom(propertyType))
                 }
             }
         }
@@ -141,21 +159,25 @@ class DefaultEvolutionSerializerFactory(
 
         // Check mandatory-ness of constructor-set properties.
         newProperties.forEach { propertyName ->
-            if (localProperties[propertyName]!!.mustBeProvided) throw EvolutionSerializationException(
+            if (localProperties[propertyName]!!.mustBeProvided) {
+                throw EvolutionSerializationException(
                     this,
                     "Mandatory property $propertyName of local type is not present in remote type. " +
-                    "This implies the type has not evolved in a backwards compatible way. " +
-                    "Consider making $propertyName nullable in the newer version of this type.")
+                        "This implies the type has not evolved in a backwards compatible way. " +
+                        "Consider making $propertyName nullable in the newer version of this type."
+                )
+            }
         }
     }
 
-    private val LocalPropertyInformation.mustBeProvided: Boolean get() = when(this) {
+    private val LocalPropertyInformation.mustBeProvided: Boolean get() = when (this) {
         is LocalPropertyInformation.ConstructorPairedProperty -> isMandatory
         else -> false
     }
 
     private fun RemoteTypeInformation.AnEnum.getEvolutionSerializer(
-            localTypeInformation: LocalTypeInformation.AnEnum): AMQPSerializer<Any>? {
+        localTypeInformation: LocalTypeInformation.AnEnum
+    ): AMQPSerializer<Any>? {
         if (members == localTypeInformation.members) return null
 
         val remoteTransforms = transforms
@@ -168,17 +190,26 @@ class DefaultEvolutionSerializerFactory(
 
         // We just trust our transformation rules not to contain cycles here.
         tailrec fun findLocal(remote: String): String =
-            if (remote in localOrdinals.keys) remote
-            else localTypeInformation.fallbacks[remote] ?: findLocal(rules[remote] ?: throw EvolutionSerializationException(
-                this,
-                "Cannot resolve local enum member $remote to a member of ${localOrdinals.keys} using rules $rules"
-            ))
+            if (remote in localOrdinals.keys) {
+                remote
+            } else {
+                localTypeInformation.fallbacks[remote] ?: findLocal(
+                    rules[remote] ?: throw EvolutionSerializationException(
+                        this,
+                        "Cannot resolve local enum member $remote to a member of ${localOrdinals.keys} using rules $rules"
+                    )
+                )
+            }
 
         val conversions = members.associate { it to findLocal(it) }
         val convertedOrdinals = remoteOrdinals.asSequence().map { (member, ord) -> ord to conversions[member]!! }.toMap()
 
-        if (constantsAreReordered(localOrdinals, convertedOrdinals)) throw EvolutionSerializationException(this,
-                "Constants have been reordered, additions must be appended to the end")
+        if (constantsAreReordered(localOrdinals, convertedOrdinals)) {
+            throw EvolutionSerializationException(
+                this,
+                "Constants have been reordered, additions must be appended to the end"
+            )
+        }
 
         return EnumEvolutionSerializer(localTypeInformation.observedType, localSerializerFactory, baseTypes, conversions, localOrdinals)
     }
@@ -186,7 +217,9 @@ class DefaultEvolutionSerializerFactory(
     private fun constantsAreReordered(localOrdinals: Map<String, Int>, convertedOrdinals: Map<Int, String>): Boolean =
         if (localOrdinals.size <= convertedOrdinals.size) {
             localOrdinals.any { (name, ordinal) -> convertedOrdinals[ordinal] != name }
-        } else convertedOrdinals.any { (ordinal, name) -> localOrdinals[name] != ordinal }
+        } else {
+            convertedOrdinals.any { (ordinal, name) -> localOrdinals[name] != ordinal }
+        }
 
     private fun RemoteTypeInformation.Composable.buildComposableEvolutionSerializer(
         localTypeInformation: LocalTypeInformation.Composable,

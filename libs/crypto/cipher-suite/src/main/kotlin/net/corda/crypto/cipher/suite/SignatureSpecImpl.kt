@@ -9,7 +9,7 @@ import net.corda.v5.crypto.SignatureSpec
 @CordaSerializable
 class SignatureSpecImpl(
     private val signatureName: String
-) : SignatureSpec  {
+) : SignatureSpec {
     /**
      * The signature-scheme name as required to create [java.security.Signature] objects
      * (for example, `SHA256withECDSA`). Construct a signature spec.

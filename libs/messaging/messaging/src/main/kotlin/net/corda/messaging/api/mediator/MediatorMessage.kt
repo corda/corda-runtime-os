@@ -5,7 +5,7 @@ package net.corda.messaging.api.mediator
  * @property payload the payload of the message.
  * @property properties an additional properties map.
  */
-data class MediatorMessage<T: Any>(
+data class MediatorMessage<T : Any>(
     val payload: T?,
     val properties: MutableMap<String, Any> = mutableMapOf()
 ) {
@@ -26,7 +26,7 @@ data class MediatorMessage<T: Any>(
      * @return The property associated with the given key.
      * @throws NoSuchElementException if no property with the given key exists.
      */
-    fun getProperty(key: String) : Any {
+    fun getProperty(key: String): Any {
         return getPropertyOrNull(key) ?: throw NoSuchElementException("No property found with the key: '$key'")
     }
 
@@ -39,7 +39,7 @@ data class MediatorMessage<T: Any>(
      * @throws ClassCastException if the property cannot be cast to the specified type.
      */
     @JvmName("getPropertyTyped")
-    inline fun <reified T> getProperty(key: String) : T {
+    inline fun <reified T> getProperty(key: String): T {
         return (getProperty(key) as? T)
             ?: throw ClassCastException("Property '$key' could not be cast to type: '${T::class.java}'.")
     }
@@ -50,7 +50,7 @@ data class MediatorMessage<T: Any>(
      * @param key The key of the property to retrieve.
      * @return The property associated with the given key, or null if not found.
      */
-    fun getPropertyOrNull(key: String) : Any? {
+    fun getPropertyOrNull(key: String): Any? {
         return properties[key]
     }
 
@@ -62,7 +62,7 @@ data class MediatorMessage<T: Any>(
      * @throws ClassCastException if the property cannot be cast to the specified type.
      */
     @JvmName("getPropertyOrNullTyped")
-    inline fun <reified T> getPropertyOrNull(key: String) : T? {
+    inline fun <reified T> getPropertyOrNull(key: String): T? {
         val value = properties[key] ?: return null
         return (value as? T)
             ?: throw ClassCastException(

@@ -13,20 +13,20 @@ import org.slf4j.Logger
 open class InternalUtilsTest {
 
     @Test
-	fun `indexOfOrThrow returns index of the given item`() {
+    fun `indexOfOrThrow returns index of the given item`() {
         val collection = listOf(1, 2)
         assertEquals(collection.indexOfOrThrow(1), 0)
         assertEquals(collection.indexOfOrThrow(2), 1)
     }
 
     @Test
-	fun `indexOfOrThrow throws if the given item is not found`() {
+    fun `indexOfOrThrow throws if the given item is not found`() {
         val collection = listOf(1)
         assertThrows<IllegalArgumentException> { collection.indexOfOrThrow(2) }
     }
 
     @Test
-	fun kotlinObjectInstance() {
+    fun kotlinObjectInstance() {
         assertThat(PublicObject::class.java.kotlinObjectInstance).isSameAs(PublicObject)
         assertThat(PrivateObject::class.java.kotlinObjectInstance).isSameAs(PrivateObject)
         assertThat(ProtectedObject::class.java.kotlinObjectInstance).isSameAs(ProtectedObject)
@@ -34,7 +34,7 @@ open class InternalUtilsTest {
     }
 
     @Test
-	fun `warnOnce works, but the backing cache grows only to a maximum size`() {
+    fun `warnOnce works, but the backing cache grows only to a maximum size`() {
         val maxSize = 100
 
         val logger = mock<Logger>()
@@ -43,7 +43,7 @@ open class InternalUtilsTest {
         logger.warnOnce("b")
 
         // This should cause the eviction of "a".
-        for(i in 1..maxSize) { logger.warnOnce("$i") }
+        for (i in 1..maxSize) { logger.warnOnce("$i") }
         logger.warnOnce("a")
 
         // "a" should be logged twice because it was evicted.

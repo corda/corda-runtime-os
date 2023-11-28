@@ -1,6 +1,5 @@
 package net.corda.messaging.utils
 
-import java.net.http.HttpResponse
 import net.corda.messaging.api.exception.CordaHTTPClientErrorException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -8,6 +7,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.whenever
+import java.net.http.HttpResponse
 
 class HTTPRetryExecutorTest {
     private lateinit var retryConfig: HTTPRetryConfig

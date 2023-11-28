@@ -82,7 +82,6 @@ class AnonymousClassTest {
         override val type: Class<TestInterface> get() = TestInterface::class.java
         override val withInheritance: Boolean get() = true
 
-
         override fun readObject(reader: InternalDirectSerializer.ReadObject): TestInterface {
             return testAnonymousClassFromInterface
         }

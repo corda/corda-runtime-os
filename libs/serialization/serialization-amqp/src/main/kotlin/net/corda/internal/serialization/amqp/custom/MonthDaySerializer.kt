@@ -11,11 +11,11 @@ class MonthDaySerializer : BaseProxySerializer<MonthDay, MonthDaySerializer.Mont
     override val proxyType: Class<MonthDayProxy> get() = MonthDayProxy::class.java
     override val withInheritance: Boolean get() = false
 
-    override fun toProxy(obj: MonthDay): MonthDayProxy
-        = MonthDayProxy(obj.monthValue.toByte(), obj.dayOfMonth.toByte())
+    override fun toProxy(obj: MonthDay): MonthDayProxy =
+        MonthDayProxy(obj.monthValue.toByte(), obj.dayOfMonth.toByte())
 
-    override fun fromProxy(proxy: MonthDayProxy): MonthDay
-        = MonthDay.of(proxy.month.toInt(), proxy.day.toInt())
+    override fun fromProxy(proxy: MonthDayProxy): MonthDay =
+        MonthDay.of(proxy.month.toInt(), proxy.day.toInt())
 
     data class MonthDayProxy(val month: Byte, val day: Byte)
 }

@@ -8,7 +8,7 @@ import net.corda.tracing.BatchRecordTracer
 class BraveBatchRecordTracer(
     private val operationName: String,
     private val recordTracing: BraveRecordTracing,
-    private val recordInjector: TraceContext.Injector<MutableList<Pair<String,String>>>
+    private val recordInjector: TraceContext.Injector<MutableList<Pair<String, String>>>
 ) : BatchRecordTracer {
 
     private val spanMap = mutableMapOf<String, Span>()
@@ -25,7 +25,7 @@ class BraveBatchRecordTracer(
         } ?: outputRecord
     }
 
-    override fun completeSpanFor(correlationId: String, outputRecord: Record<*, *>) : Record<*, *> {
+    override fun completeSpanFor(correlationId: String, outputRecord: Record<*, *>): Record<*, *> {
         return spanMap[correlationId]?.let {
             val updatedRecord = addTraceContextToRecord(outputRecord, it)
             it.finish()

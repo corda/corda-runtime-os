@@ -87,9 +87,9 @@ class CipherSchemeMetadataImpl : CipherSchemeMetadata, SingletonSerializeAsToken
     override val digests: List<DigestScheme> = metadataProvider.providers.values
         .flatMap { it.services }
         .filter {
-            it.type.equals(MESSAGE_DIGEST_TYPE, true)
-                    && !CipherSchemeMetadata.BANNED_DIGESTS.contains(it.algorithm)
-                    && DIGEST_CANDIDATES.contains(it.algorithm)
+            it.type.equals(MESSAGE_DIGEST_TYPE, true) &&
+                !CipherSchemeMetadata.BANNED_DIGESTS.contains(it.algorithm) &&
+                DIGEST_CANDIDATES.contains(it.algorithm)
         }
         .map { DigestScheme(algorithmName = it.algorithm, providerName = it.provider.name) }
         .distinctBy { it.algorithmName }

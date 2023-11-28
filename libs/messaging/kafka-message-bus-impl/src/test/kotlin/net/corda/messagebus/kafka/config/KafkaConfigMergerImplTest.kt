@@ -22,7 +22,7 @@ class KafkaConfigMergerImplTest {
     }
 
     @Test
-    fun `empty messaging config can be merged with boot config`(){
+    fun `empty messaging config can be merged with boot config`() {
         val bootConfig = loadTestConfig()
         val messagingConfig = smartConfigFactory.create(ConfigFactory.empty())
 
@@ -31,11 +31,15 @@ class KafkaConfigMergerImplTest {
     }
 
     @Test
-    fun `existing messaging config can be merged with boot config with boot config taking precendence`(){
+    fun `existing messaging config can be merged with boot config with boot config taking precendence`() {
         val bootConfig = loadTestConfig()
-        val messagingConfig = smartConfigFactory.create(ConfigFactory.parseMap(mapOf(
-            "kafka.bus.busType" to "UNKNOWN"
-        )))
+        val messagingConfig = smartConfigFactory.create(
+            ConfigFactory.parseMap(
+                mapOf(
+                    "kafka.bus.busType" to "UNKNOWN"
+                )
+            )
+        )
 
         val result = merger.getMessagingConfig(bootConfig, messagingConfig)
         assertResultingConfig(result)

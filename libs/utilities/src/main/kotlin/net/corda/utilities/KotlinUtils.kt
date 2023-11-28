@@ -1,4 +1,5 @@
 @file:JvmName("KotlinUtils")
+
 package net.corda.utilities
 
 import net.corda.v5.base.types.LayeredPropertyMap

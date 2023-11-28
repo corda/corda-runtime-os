@@ -35,7 +35,7 @@ class ConfigSecretHelper {
     // and "foo" returns []
     //
     // (except the second half of the pairs are actually JsonNode instances)
-    private fun getFieldValues(node: JsonNode): List<Pair<String, JsonNode>> = when(node) {
+    private fun getFieldValues(node: JsonNode): List<Pair<String, JsonNode>> = when (node) {
         is ObjectNode -> node.fields().asSequence().toList().map { it.key to it.value }
         is ArrayNode -> node.toList().withIndex().map { it.index.toString() to it.value }
         else -> emptyList()
@@ -50,7 +50,7 @@ class ConfigSecretHelper {
     ): MutableMap<String, JsonNode> {
         val newPath = if (nodePath == "") nodeName else "$nodePath.$nodeName"
         getFieldValues(node).forEach { (fieldName, fieldNode) ->
-            if ( fieldName == ConfigKeys.SECRET_KEY) {
+            if (fieldName == ConfigKeys.SECRET_KEY) {
                 secrets[newPath] = node
                 (parentNode as ObjectNode).remove(nodeName)
                 parentNode.set(nodeName, TMP_SECRET_NODE)

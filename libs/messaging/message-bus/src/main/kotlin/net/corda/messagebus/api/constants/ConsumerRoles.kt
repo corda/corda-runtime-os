@@ -7,12 +7,12 @@ package net.corda.messagebus.api.constants
  * bus implementations.
  */
 enum class ConsumerRoles(val configPath: String) {
-    PUBSUB ("pubsub.consumer"),
-    COMPACTED ("compacted.consumer"),
-    DURABLE ("durable.consumer"),
-    SAE_STATE ("stateAndEvent.stateConsumer"),
-    SAE_EVENT ("stateAndEvent.eventConsumer"),
-    EVENT_LOG ("eventLog.consumer"),
-    RPC_SENDER ("rpcSender.consumer"),
+    PUBSUB("pubsub.consumer"),
+    COMPACTED("compacted.consumer"),
+    DURABLE("durable.consumer"),
+    SAE_STATE("stateAndEvent.stateConsumer"),
+    SAE_EVENT("stateAndEvent.eventConsumer"),
+    EVENT_LOG("eventLog.consumer"),
+    RPC_SENDER("rpcSender.consumer"),
     RPC_RESPONDER("rpcResponder.consumer")
 }

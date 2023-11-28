@@ -13,7 +13,6 @@ import net.corda.utilities.trace
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
-
 /**
  * Handle receipt of a [SessionClose] event.
  * If the message is a duplicate send an Ack back as it may be from a resend.
@@ -47,10 +46,10 @@ class SessionCloseProcessorReceive(
             val undeliveredReceivedMessages = receivedEventsState.undeliveredMessages
             val sessionCloseOnQueue = undeliveredReceivedMessages.any { it.payload is SessionClose }
             if (sessionCloseOnQueue || sessionState.status == SessionStateType.CLOSED) {
-                //duplicate
+                // duplicate
                 logger.debug {
                     "Received duplicate SessionClose on key $key and sessionId $sessionId with seqNum of $seqNum " +
-                            "when last processed seqNum was $lastProcessedSeqNum. Current SessionState: $sessionState"
+                        "when last processed seqNum was $lastProcessedSeqNum. Current SessionState: $sessionState"
                 }
                 sessionState
             } else {
@@ -59,8 +58,10 @@ class SessionCloseProcessorReceive(
                     lastProcessedSequenceNum = recalcHighWatermark(undeliveredMessages, lastProcessedSeqNum)
                 }
 
-                logger.trace { "receivedEventsState lastProcessedSequenceNum after update: ${sessionState.receivedEventsState
-                    .lastProcessedSequenceNum}, ${sessionState.receivedEventsState}" }
+                logger.trace {
+                    "receivedEventsState lastProcessedSequenceNum after update: ${sessionState.receivedEventsState
+                        .lastProcessedSequenceNum}, ${sessionState.receivedEventsState}"
+                }
                 processCloseReceivedAndGetState(sessionState)
             }
         }
@@ -85,7 +86,7 @@ class SessionCloseProcessorReceive(
         }
         else -> {
             val errorMessage = "Received SessionClose on key $key and sessionId $sessionId when session status was " +
-                    "${sessionState.status}. SessionState: $sessionState"
+                "${sessionState.status}. SessionState: $sessionState"
             logAndGenerateErrorResult(errorMessage, sessionState, "SessionClose-InvalidStatus")
         }
     }
@@ -100,7 +101,6 @@ class SessionCloseProcessorReceive(
             status = SessionStateType.ERROR
             sendEventsState.undeliveredMessages =
                 sendEventsState.undeliveredMessages.plus(generateErrorEvent(sessionState, sessionEvent, errorMessage, errorType, instant))
-
         }
     }
 }

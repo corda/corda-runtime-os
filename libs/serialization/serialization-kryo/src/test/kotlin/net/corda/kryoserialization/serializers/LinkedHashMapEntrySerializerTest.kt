@@ -14,8 +14,10 @@ class LinkedHashMapEntrySerializerTest {
         val output = Output(1024)
         val iterator = (0..1000).associateWith { "$it" }.iterator()
         val index = 100
-        repeat(index) { iterator.next(); }
-        val entry = iterator.next();
+        repeat(index) {
+            iterator.next()
+        }
+        val entry = iterator.next()
         LinkedHashMapEntrySerializer.write(kryo, output, entry)
         val tested = LinkedHashMapEntrySerializer.read(kryo, Input(output.buffer), entry.javaClass)
 

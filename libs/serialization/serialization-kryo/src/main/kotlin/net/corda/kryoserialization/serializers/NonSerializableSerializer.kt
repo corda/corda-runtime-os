@@ -9,7 +9,7 @@ import net.corda.serialization.checkpoint.NonSerializable
 internal object NonSerializableSerializer : Serializer<NonSerializable>() {
     override fun write(kryo: Kryo, output: Output, nonSerializable: NonSerializable) {
         val message = "${nonSerializable.javaClass.name}, has been marked as a non-serializable type is should never" +
-                " be serialised into a checkpoint."
+            " be serialised into a checkpoint."
         throw UnsupportedOperationException(message)
     }
 

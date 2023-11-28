@@ -45,7 +45,7 @@ class EvolutionSerializerFactoryTests {
     data class C(val a: Int)
 
     @Test
-	fun preservesDataWhenFlagSet() {
+    fun preservesDataWhenFlagSet() {
         val resource = "${javaClass.simpleName}.${testName()}"
 
         val withNullResource = "${resource}_with_null"

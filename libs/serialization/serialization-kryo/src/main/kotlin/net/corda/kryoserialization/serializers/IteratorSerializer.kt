@@ -25,8 +25,7 @@ internal class IteratorSerializer(type: Class<*>, private val serializer: Serial
         return fixIterator(iterator)
     }
 
-    private fun fixIterator(iterator: Iterator<*>) : Iterator<*> {
-
+    private fun fixIterator(iterator: Iterator<*>): Iterator<*> {
         // Set expectedModCount of iterator
         val iterableInstance = iterableReferenceField?.get(iterator) ?: return iterator
         val modCountValue = modCountField?.getInt(iterableInstance) ?: return iterator
@@ -48,5 +47,3 @@ internal class IteratorSerializer(type: Class<*>, private val serializer: Serial
         }
     }
 }
-
-

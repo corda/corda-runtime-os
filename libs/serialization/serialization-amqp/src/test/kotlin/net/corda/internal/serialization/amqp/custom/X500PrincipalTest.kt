@@ -9,6 +9,7 @@ class X500PrincipalTest {
     fun empty() {
         serializeDeserializeAssert(X500Principal(""))
     }
+
     @Test
     fun withName() {
         serializeDeserializeAssert(X500Principal("O=PartyA, L=London, C=GB"))

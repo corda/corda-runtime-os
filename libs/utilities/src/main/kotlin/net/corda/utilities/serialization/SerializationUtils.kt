@@ -30,7 +30,6 @@ inline fun <reified T : Any> SerializationService.deserialize(bytes: ByteArray):
     return this.deserialize(bytes, T::class.java)
 }
 
-
 /**
  * Wrap with null error handling
  *

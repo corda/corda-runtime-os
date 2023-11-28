@@ -1,11 +1,6 @@
 package net.corda.messaging.publisher
 
 import com.typesafe.config.ConfigFactory
-import java.nio.ByteBuffer
-import java.time.Duration
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CyclicBarrier
-import java.util.concurrent.ExecutionException
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.constants.ProducerRoles
@@ -37,6 +32,11 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
+import java.time.Duration
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CyclicBarrier
+import java.util.concurrent.ExecutionException
 
 class CordaPublisherImplTest {
     private lateinit var publisherConfig: ResolvedPublisherConfig

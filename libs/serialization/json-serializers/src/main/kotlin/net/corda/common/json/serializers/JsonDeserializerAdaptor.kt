@@ -13,8 +13,8 @@ import net.corda.v5.application.marshalling.json.JsonDeserializer
  * Because JsonSerializers are created at runtime dynamically, no compile time type information can be referenced in
  * this class in the form of generics. Instead, all type information is supplied only via a Class<*> object.
  */
-class JsonDeserializerAdaptor(private val jsonDeserializer: JsonDeserializer<*>, val deserializingType: Class<*>)
-: StdDeserializer<Any>(deserializingType) {
+class JsonDeserializerAdaptor(private val jsonDeserializer: JsonDeserializer<*>, val deserializingType: Class<*>) :
+    StdDeserializer<Any>(deserializingType) {
     /**
      * Note to maintainers. StdDeserializer<Any> requires we return an Any. The wrapper Corda deserializer returns a
      * specific type, but that is of course always a subclass of Any, so this works fine. Jackson casts the object you

@@ -24,7 +24,7 @@ class AuthenticatedEncryptionSessionTest {
 
     private val sessionId = UUID.randomUUID().toString()
     private val groupId = "some-group-id"
-    private val aliceX500Name =  MemberX500Name.parse("CN=alice, OU=MyUnit, O=MyOrg, L=London, S=London, C=GB")
+    private val aliceX500Name = MemberX500Name.parse("CN=alice, OU=MyUnit, O=MyOrg, L=London, S=London, C=GB")
 
     // party A
     private val partyAMaxMessageSize = 1_000_000
@@ -118,11 +118,13 @@ class AuthenticatedEncryptionSessionTest {
             val encryptionResult = authenticatedSessionOnA.encryptData(payload)
             val initiatorMsg = AuthenticatedEncryptedDataMessage(
                 encryptionResult.header,
-                ByteBuffer.wrap(encryptionResult.encryptedPayload), ByteBuffer.wrap(encryptionResult.authTag)
+                ByteBuffer.wrap(encryptionResult.encryptedPayload),
+                ByteBuffer.wrap(encryptionResult.authTag)
             )
 
             val decryptedPayload = authenticatedSessionOnB.decryptData(
-                initiatorMsg.header, initiatorMsg.encryptedPayload.array(),
+                initiatorMsg.header,
+                initiatorMsg.encryptedPayload.array(),
                 initiatorMsg.authTag.array()
             )
             assertTrue(decryptedPayload.contentEquals(payload))
@@ -134,11 +136,13 @@ class AuthenticatedEncryptionSessionTest {
             val encryptionResult = authenticatedSessionOnB.encryptData(payload)
             val responderMsg = AuthenticatedEncryptedDataMessage(
                 encryptionResult.header,
-                ByteBuffer.wrap(encryptionResult.encryptedPayload), ByteBuffer.wrap(encryptionResult.authTag)
+                ByteBuffer.wrap(encryptionResult.encryptedPayload),
+                ByteBuffer.wrap(encryptionResult.authTag)
             )
 
             val decryptedPayload = authenticatedSessionOnA.decryptData(
-                responderMsg.header, responderMsg.encryptedPayload.array(),
+                responderMsg.header,
+                responderMsg.encryptedPayload.array(),
                 responderMsg.authTag.array()
             )
             assertTrue(decryptedPayload.contentEquals(payload))
@@ -210,7 +214,8 @@ class AuthenticatedEncryptionSessionTest {
         val initiatorMsg =
             AuthenticatedDataMessage(
                 encryptionResult.header,
-                ByteBuffer.wrap(encryptionResult.encryptedPayload), ByteBuffer.wrap(encryptionResult.authTag)
+                ByteBuffer.wrap(encryptionResult.encryptedPayload),
+                ByteBuffer.wrap(encryptionResult.authTag)
             )
 
         Assertions.assertThatThrownBy {

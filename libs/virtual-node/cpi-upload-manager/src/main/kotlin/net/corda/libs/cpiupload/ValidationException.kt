@@ -6,4 +6,4 @@ package net.corda.libs.cpiupload
  * This exception is passed via a kafka envelope message and then
  * "checked" in the rpc ops layer when received.
  */
-class ValidationException(message: String,  val requestId: String?, ex:Exception?=null) : Exception(message, ex)
+class ValidationException(message: String, val requestId: String?, ex: Exception? = null) : Exception(message, ex)

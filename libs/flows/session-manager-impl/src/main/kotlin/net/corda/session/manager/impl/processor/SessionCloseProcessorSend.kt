@@ -61,8 +61,8 @@ class SessionCloseProcessorSend(
         sessionState: SessionState
     ): SessionState {
         val errorMessage = "Tried to send SessionClose on key $key and sessionId $sessionId, session status is " +
-                "${sessionState.status}, however there are still received events that have not been processed. " +
-                "Current SessionState: $sessionState."
+            "${sessionState.status}, however there are still received events that have not been processed. " +
+            "Current SessionState: $sessionState."
         return logAndGenerateErrorResult(errorMessage, sessionState, "SessionClose-SessionMismatch")
     }
 
@@ -70,7 +70,7 @@ class SessionCloseProcessorSend(
         sessionState: SessionState
     ): SessionState {
         val errorMessage = "Tried to send SessionClose on key $key for sessionId ${sessionState.sessionId} " +
-                "with status of : ${sessionState.status}"
+            "with status of : ${sessionState.status}"
         logger.warn(errorMessage)
         return sessionState.apply {
             status = SessionStateType.ERROR
@@ -83,7 +83,7 @@ class SessionCloseProcessorSend(
     private fun getResultByCurrentState(
         sessionState: SessionState,
         nextSeqNum: Int,
-    ) : SessionState {
+    ): SessionState {
         val sessionId = sessionState.sessionId
         val requireClose = sessionState.requireClose
         return if (isInitiatedIdentity(sessionId) && sessionState.status !in listOf(SessionStateType.ERROR, SessionStateType.CLOSED)) {
@@ -91,7 +91,7 @@ class SessionCloseProcessorSend(
                 sessionState.apply {
                     logger.trace {
                         "Sending SessionClose and setting status to CLOSED. nextSeqNum: $nextSeqNum, adding this event to send " +
-                                "${sessionEvent.sequenceNum}, $sessionId"
+                            "${sessionEvent.sequenceNum}, $sessionId"
                     }
                     status = SessionStateType.CLOSED
                     sendEventsState.lastProcessedSequenceNum = nextSeqNum
@@ -107,9 +107,9 @@ class SessionCloseProcessorSend(
             val status = sessionState.status
             val errorMessage =
                 "Tried to send SessionClose. " +
-                        "Check party is initiated: ${isInitiatedIdentity(sessionId)}" +
-                        "Check status is not ERROR or CLOSED, status is: $status." +
-                        "Key: $key SessionId: $sessionId current SessionState: $sessionState."
+                    "Check party is initiated: ${isInitiatedIdentity(sessionId)}" +
+                    "Check status is not ERROR or CLOSED, status is: $status." +
+                    "Key: $key SessionId: $sessionId current SessionState: $sessionState."
             logAndGenerateErrorResult(errorMessage, sessionState, "SessionClose-InvalidStatus")
         }
     }

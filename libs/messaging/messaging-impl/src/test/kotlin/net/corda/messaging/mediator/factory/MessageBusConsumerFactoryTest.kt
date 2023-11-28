@@ -21,7 +21,12 @@ class MessageBusConsumerFactoryTest {
     @BeforeEach
     fun beforeEach() {
         doReturn(cordaConsumer).`when`(cordaConsumerBuilder).createConsumer(
-            any(), any(), any<Class<Any>>(), any<Class<Any>>(), any(), anyOrNull()
+            any(),
+            any(),
+            any<Class<Any>>(),
+            any<Class<Any>>(),
+            any(),
+            anyOrNull()
         )
         messageBusConsumerFactory = MessageBusConsumerFactory(
             "topic",

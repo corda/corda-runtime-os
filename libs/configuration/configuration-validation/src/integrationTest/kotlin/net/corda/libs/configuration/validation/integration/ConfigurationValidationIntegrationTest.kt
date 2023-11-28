@@ -79,18 +79,20 @@ class ConfigurationValidationIntegrationTest {
 
     // Verifies that a default config can be generated from the schema for each section.
     @ParameterizedTest(name = "verify that a sensible default is created for config section: {0}")
-    @ValueSource(strings = [
-        MESSAGING_CONFIG,
-        DB_CONFIG,
-        FLOW_CONFIG,
-        P2P_LINK_MANAGER_CONFIG,
-        P2P_GATEWAY_CONFIG,
-        REST_CONFIG,
-        SANDBOX_CONFIG,
-        RECONCILIATION_CONFIG,
-        SECRETS_CONFIG,
-        MEMBERSHIP_CONFIG
-    ])
+    @ValueSource(
+        strings = [
+            MESSAGING_CONFIG,
+            DB_CONFIG,
+            FLOW_CONFIG,
+            P2P_LINK_MANAGER_CONFIG,
+            P2P_GATEWAY_CONFIG,
+            REST_CONFIG,
+            SANDBOX_CONFIG,
+            RECONCILIATION_CONFIG,
+            SECRETS_CONFIG,
+            MEMBERSHIP_CONFIG
+        ]
+    )
     fun `verify that a sensible default is created when an empty config is provided`(section: String) {
         val validator = configurationValidatorFactory.createConfigValidator()
         val outputConfig = validator.getDefaults(section, VERSION)

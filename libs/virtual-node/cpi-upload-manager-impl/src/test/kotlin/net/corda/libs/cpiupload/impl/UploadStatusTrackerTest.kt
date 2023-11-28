@@ -7,7 +7,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.util.UUID
 
-
 internal class UploadStatusTrackerTest {
     @Test
     fun `upload tracker returns null unknown request`() {
@@ -72,7 +71,7 @@ internal class UploadStatusTrackerTest {
         tracker.add(UploadStatusKey(requestId, 1), UploadStatus(false, "", null, null))
         tracker.add(UploadStatusKey(requestId, 2), UploadStatus(false, "", null, null))
         tracker.add(UploadStatusKey(requestId, 3), UploadStatus(false, "", null, ExceptionEnvelope("", "")))
-        assertThat(tracker.status(requestId)!!.exception). isNotNull
+        assertThat(tracker.status(requestId)!!.exception).isNotNull
     }
 
     @Test

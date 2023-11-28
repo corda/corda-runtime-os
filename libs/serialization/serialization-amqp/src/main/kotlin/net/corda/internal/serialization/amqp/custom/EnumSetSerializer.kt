@@ -12,8 +12,7 @@ class EnumSetSerializer : BaseProxySerializer<EnumSet<*>, EnumSetSerializer.Enum
     override val proxyType: Class<EnumSetProxy> get() = EnumSetProxy::class.java
     override val withInheritance: Boolean get() = true
 
-    override fun toProxy(obj: EnumSet<*>): EnumSetProxy
-        = EnumSetProxy(elementType(obj), obj.toList())
+    override fun toProxy(obj: EnumSet<*>): EnumSetProxy = EnumSetProxy(elementType(obj), obj.toList())
 
     private fun elementType(set: EnumSet<*>): Class<*> {
         return if (set.isEmpty()) {

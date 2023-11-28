@@ -14,8 +14,6 @@ class OpaqueBytesSubSequenceSerializer : BaseProxySerializer<OpaqueBytesSubSeque
     override val proxyType: Class<OpaqueBytes> get() = OpaqueBytes::class.java
     override val withInheritance: Boolean get() = true
 
-    override fun toProxy(obj: OpaqueBytesSubSequence): OpaqueBytes
-        = OpaqueBytes(obj.copyBytes())
-    override fun fromProxy(proxy: OpaqueBytes): OpaqueBytesSubSequence
-        = OpaqueBytesSubSequence(proxy.getBytes(), proxy.offset, proxy.size)
+    override fun toProxy(obj: OpaqueBytesSubSequence): OpaqueBytes = OpaqueBytes(obj.copyBytes())
+    override fun fromProxy(proxy: OpaqueBytes): OpaqueBytesSubSequence = OpaqueBytesSubSequence(proxy.getBytes(), proxy.offset, proxy.size)
 }

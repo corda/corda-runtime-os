@@ -69,7 +69,6 @@ class ConsumerGroup(
                 getInternalPartitionListFor(consumer).clear()
                 repartition(topic)
             }
-
         }
     }
 

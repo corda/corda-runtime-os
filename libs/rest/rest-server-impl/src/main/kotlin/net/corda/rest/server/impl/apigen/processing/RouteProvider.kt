@@ -72,17 +72,17 @@ internal class JavalinRouteProviderImpl(
                         RouteInfo(basePath, resource.path, apiVersion, endpoint)
                     }
                 }
-
         }.also { log.trace { "Map resources to routes by http method completed." } }
     }
 
-    private fun combineResourceAndEndpointApiVersions(resourceVersions: Set<RestApiVersion>,
-                                                      endpointVersions: Set<RestApiVersion>): Set<RestApiVersion> {
+    private fun combineResourceAndEndpointApiVersions(
+        resourceVersions: Set<RestApiVersion>,
+        endpointVersions: Set<RestApiVersion>
+    ): Set<RestApiVersion> {
         // Returns a simple intersection, however in the future additional criteria might be necessary such as
         // global cut-off version
         return resourceVersions.intersect(endpointVersions)
     }
-
 }
 
 internal enum class ParameterType {
@@ -117,8 +117,8 @@ internal class RouteInfo(
     private val methodInvoker = when {
         endpoint.invocationMethod.method.isFiniteDurableStreamsMethod() ->
             FiniteDurableStreamsMethodInvoker(endpoint.invocationMethod)
-        endpoint.invocationMethod.method.returnsDurableCursorBuilder()
-                && !endpoint.invocationMethod.method.isFiniteDurableStreamsMethod() ->
+        endpoint.invocationMethod.method.returnsDurableCursorBuilder() &&
+            !endpoint.invocationMethod.method.isFiniteDurableStreamsMethod() ->
             DurableStreamsMethodInvoker(endpoint.invocationMethod)
         else -> DefaultMethodInvoker(endpoint.invocationMethod)
     }
@@ -128,11 +128,11 @@ internal class RouteInfo(
         log.trace { "Invoke delegated method \"${endpoint.invocationMethod.method.name}\" with args size: ${args.size}." }
         try {
             return methodInvoker.invoke(*args)
-                    .also {
-                        log.trace {
-                            "Invoke delegated method \"${endpoint.invocationMethod.method.name}\" with args size: ${args.size} completed."
-                        }
+                .also {
+                    log.trace {
+                        "Invoke delegated method \"${endpoint.invocationMethod.method.name}\" with args size: ${args.size} completed."
                     }
+                }
         } catch (e: InvocationTargetException) {
             e.cause?.let { throw it } ?: throw e
         }
@@ -140,7 +140,7 @@ internal class RouteInfo(
 
     private fun generateFullPath(resourcePath: String, endpointPath: String?): String {
         val combinedPath =
-            joinResourceAndEndpointPaths("/${basePath}/${apiVersion.versionPath}/${resourcePath}", endpointPath)
+            joinResourceAndEndpointPaths("/$basePath/${apiVersion.versionPath}/$resourcePath", endpointPath)
         return combinedPath.lowercase().also {
             log.trace { "Full path $it generated." }
         }
@@ -176,7 +176,11 @@ internal class RouteInfo(
         return { wsConfig ->
             try {
                 val adaptor = WebSocketRouteAdaptor(
-                    this, restAuthProvider, credentialResolver, webSocketCloserService, webSocketIdleTimeoutMs
+                    this,
+                    restAuthProvider,
+                    credentialResolver,
+                    webSocketCloserService,
+                    webSocketIdleTimeoutMs
                 )
                 wsConfig.onMessage(adaptor)
                 wsConfig.onClose(adaptor)

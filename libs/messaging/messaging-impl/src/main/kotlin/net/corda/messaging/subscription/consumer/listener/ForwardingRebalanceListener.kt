@@ -15,7 +15,7 @@ class ForwardingRebalanceListener(
     private val partitionAssignmentListener: PartitionAssignmentListener
 ) : LoggingConsumerRebalanceListener(clientId) {
 
-    override val log: Logger = LoggerFactory.getLogger("${this.javaClass.name}-${clientId}")
+    override val log: Logger = LoggerFactory.getLogger("${this.javaClass.name}-$clientId")
 
     override fun onPartitionsRevoked(partitions: Collection<CordaTopicPartition>) {
         super.onPartitionsRevoked(partitions)

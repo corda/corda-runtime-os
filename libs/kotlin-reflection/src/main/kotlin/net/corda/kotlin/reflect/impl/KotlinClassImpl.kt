@@ -1,6 +1,16 @@
 @file:JvmName("KotlinClassUtils")
+
 package net.corda.kotlin.reflect.impl
 
+import kotlinx.metadata.KmClass
+import kotlinx.metadata.KmPackage
+import kotlinx.metadata.jvm.KotlinClassMetadata
+import net.corda.kotlin.reflect.KotlinClass
+import net.corda.kotlin.reflect.types.KFunctionInternal
+import net.corda.kotlin.reflect.types.KPropertyInternal
+import net.corda.kotlin.reflect.types.MemberSignature
+import net.corda.kotlin.reflect.types.jvmSuperClasses
+import net.corda.kotlin.reflect.types.toSignature
 import java.lang.reflect.Method
 import java.util.Collections.unmodifiableMap
 import kotlin.LazyThreadSafetyMode.PUBLICATION
@@ -29,15 +39,6 @@ import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.full.staticFunctions
 import kotlin.reflect.full.staticProperties
 import kotlin.reflect.full.superclasses
-import kotlinx.metadata.KmClass
-import kotlinx.metadata.KmPackage
-import kotlinx.metadata.jvm.KotlinClassMetadata
-import net.corda.kotlin.reflect.KotlinClass
-import net.corda.kotlin.reflect.types.KFunctionInternal
-import net.corda.kotlin.reflect.types.KPropertyInternal
-import net.corda.kotlin.reflect.types.MemberSignature
-import net.corda.kotlin.reflect.types.jvmSuperClasses
-import net.corda.kotlin.reflect.types.toSignature
 
 sealed class KotlinClassImpl<T : Any>(
     @JvmField protected val clazz: Class<T>,
@@ -73,8 +74,8 @@ sealed class KotlinClassImpl<T : Any>(
     final override val allSuperKotlinClasses: List<KotlinClassImpl<*>>
         @Suppress("unchecked_cast")
         get() = klazz.allSuperclasses
-                    .mapNotNullTo(mutableListOf(), kClassPool::get)
-                    .also { (it as MutableList<KotlinClassImpl<Any>>).sort() }
+            .mapNotNullTo(mutableListOf(), kClassPool::get)
+            .also { (it as MutableList<KotlinClassImpl<Any>>).sort() }
 
     final override fun compareTo(other: KotlinClassImpl<T>): Int {
         return when {
@@ -111,13 +112,13 @@ sealed class KotlinClassImpl<T : Any>(
         get() = emptyList()
     protected open val allDeclaredMembers: Collection<KCallable<*>>
         get() = (
-            declaredMemberKProps
-                + declaredMemberExtensionKProps
-                + declaredStaticKProps
-                + declaredMemberKFuncs
-                + declaredMemberExtensionKFuncs
-                + declaredStaticKFuncs
-        )
+            declaredMemberKProps +
+                declaredMemberExtensionKProps +
+                declaredStaticKProps +
+                declaredMemberKFuncs +
+                declaredMemberExtensionKFuncs +
+                declaredStaticKFuncs
+            )
 
     protected abstract val memberKProps: Collection<KProperty1<T, *>>
     protected abstract val memberKFuncs: Collection<KFunction<*>>
@@ -125,13 +126,13 @@ sealed class KotlinClassImpl<T : Any>(
     protected abstract val memberExtensionKFuncs: Collection<KFunction<*>>
     protected open val allMembers: Collection<KCallable<*>>
         get() = (
-            memberKProps
-                + memberExtensionKProps
-                + allStaticProperties
-                + memberKFuncs
-                + memberExtensionKFuncs
-                + allStaticFunctions
-        )
+            memberKProps +
+                memberExtensionKProps +
+                allStaticProperties +
+                memberKFuncs +
+                memberExtensionKFuncs +
+                allStaticFunctions
+            )
 
     protected open val allStaticProperties: Collection<KProperty0<*>>
         get() = emptyList()
@@ -140,10 +141,10 @@ sealed class KotlinClassImpl<T : Any>(
 
     protected open val allFunctions: Collection<KFunction<*>>
         get() = (
-            memberKFuncs
-                + memberExtensionKFuncs
-                + allStaticFunctions
-        )
+            memberKFuncs +
+                memberExtensionKFuncs +
+                allStaticFunctions
+            )
 
     override val declaredMemberProperties: Collection<KProperty1<T, *>>
         get() = declaredMemberKProps.unmodifiable
@@ -269,7 +270,7 @@ sealed class KotlinClassImpl<T : Any>(
         clazz: Class<T>,
         klazz: KClass<T>,
         kClassPool: KClassPool
-    ): KotlinClassImpl<T>(clazz, klazz, kClassPool) {
+    ) : KotlinClassImpl<T>(clazz, klazz, kClassPool) {
         private val jMembers by lazy(PUBLICATION) {
             JavaMembers(clazz, allSuperKotlinClasses)
         }
@@ -310,7 +311,7 @@ sealed class KotlinClassImpl<T : Any>(
         clazz: Class<T>,
         klazz: KClass<T>,
         kClassPool: KClassPool
-    ): KotlinClassImpl<T>(clazz, klazz, kClassPool) {
+    ) : KotlinClassImpl<T>(clazz, klazz, kClassPool) {
         override val declaredMemberKProps: Collection<KProperty1<T, *>>
             get() = klazz.declaredMemberProperties
         override val declaredMemberKFuncs: Collection<KFunction<*>>

@@ -64,17 +64,17 @@ sealed class TypeIdentifier {
     /**
      * Obtain a nicely-formatted representation of the identified type, for help with debugging.
      */
-    fun prettyPrint(simplifyClassNames: Boolean = true): String = when(this) {
-            is UnknownType -> "?"
-            is TopType -> "*"
-            is Unparameterised -> name.simplifyClassNameIfRequired(simplifyClassNames)
-            is Erased -> "${name.simplifyClassNameIfRequired(simplifyClassNames)} (erased)"
-            is ArrayOf -> "${componentType.prettyPrint(simplifyClassNames)}[]"
-            is Parameterised ->
-                name.simplifyClassNameIfRequired(simplifyClassNames) + parameters.joinToString(", ", "<", ">") {
-                    it.prettyPrint(simplifyClassNames)
-                }
-        }
+    fun prettyPrint(simplifyClassNames: Boolean = true): String = when (this) {
+        is UnknownType -> "?"
+        is TopType -> "*"
+        is Unparameterised -> name.simplifyClassNameIfRequired(simplifyClassNames)
+        is Erased -> "${name.simplifyClassNameIfRequired(simplifyClassNames)} (erased)"
+        is ArrayOf -> "${componentType.prettyPrint(simplifyClassNames)}[]"
+        is Parameterised ->
+            name.simplifyClassNameIfRequired(simplifyClassNames) + parameters.joinToString(", ", "<", ">") {
+                it.prettyPrint(simplifyClassNames)
+            }
+    }
 
     private fun String.simplifyClassNameIfRequired(simplifyClassNames: Boolean): String =
         if (simplifyClassNames) split(".", "$").last() else this
@@ -105,15 +105,16 @@ sealed class TypeIdentifier {
          * by methods defined in the interface.
          */
         fun forGenericType(type: Type, resolutionContext: Type = type): TypeIdentifier =
-            when(type) {
+            when (type) {
                 is ParameterizedType -> Parameterised(
-                        (type.rawType as Class<*>).name,
-                        type.ownerType?.let { forGenericType(it) },
-                        type.actualTypeArguments.map {
-                            val resolved = it.resolveAgainst(resolutionContext)
-                            // Avoid cycles, e.g. Enum<E> where E resolves to Enum<E>
-                            if (resolved == type) UnknownType else forGenericType(resolved)
-                        })
+                    (type.rawType as Class<*>).name,
+                    type.ownerType?.let { forGenericType(it) },
+                    type.actualTypeArguments.map {
+                        val resolved = it.resolveAgainst(resolutionContext)
+                        // Avoid cycles, e.g. Enum<E> where E resolves to Enum<E>
+                        if (resolved == type) UnknownType else forGenericType(resolved)
+                    }
+                )
                 is Class<*> -> forClass(type)
                 is GenericArrayType -> ArrayOf(forGenericType(type.genericComponentType.resolveAgainst(resolutionContext)))
                 is WildcardType -> type.upperBound.let { if (it == type) UnknownType else forGenericType(it) }
@@ -154,14 +155,15 @@ sealed class TypeIdentifier {
 
         companion object {
             private val primitives = listOf(
-                    Byte::class,
-                    Boolean:: class,
-                    Char::class,
-                    Int::class,
-                    Short::class,
-                    Long::class,
-                    Float::class,
-                    Double::class).associate {
+                Byte::class,
+                Boolean::class,
+                Char::class,
+                Int::class,
+                Short::class,
+                Long::class,
+                Float::class,
+                Double::class
+            ).associate {
                 it.javaPrimitiveType!!.name to it.javaPrimitiveType
             }
         }
@@ -192,9 +194,11 @@ sealed class TypeIdentifier {
 
         override fun toString() = "Erased($name)"
         fun toParameterized(parameters: List<TypeIdentifier>): TypeIdentifier {
-            if (parameters.size != erasedParameterCount) throw IncompatibleTypeIdentifierException(
+            if (parameters.size != erasedParameterCount) {
+                throw IncompatibleTypeIdentifierException(
                     "Erased type $name takes $erasedParameterCount parameters, but ${parameters.size} supplied"
-            )
+                )
+            }
             return Parameterised(name, null, parameters)
         }
     }
@@ -203,7 +207,7 @@ sealed class TypeIdentifier {
         override fun getGenericComponentType(): Type = componentType
         override fun toString() = "$componentType[]"
         override fun equals(other: Any?): Boolean =
-                other is GenericArrayType && componentType == other.genericComponentType
+            other is GenericArrayType && componentType == other.genericComponentType
         override fun hashCode(): Int = Objects.hashCode(componentType)
     }
 
@@ -239,7 +243,11 @@ sealed class TypeIdentifier {
      *
      * @param parameters [TypeIdentifier]s for each of the resolved type parameter values of this type.
      */
-    data class Parameterised(override val name: String, val owner: TypeIdentifier?, val parameters: List<TypeIdentifier>) : TypeIdentifier() {
+    data class Parameterised(
+        override val name: String,
+        val owner: TypeIdentifier?,
+        val parameters: List<TypeIdentifier>
+    ) : TypeIdentifier() {
         /**
          * Get the type-erased equivalent of this type.
          */
@@ -251,26 +259,30 @@ sealed class TypeIdentifier {
 
             if (rawType.typeParameters.size != parameters.size) {
                 throw IncompatibleTypeIdentifierException(
-                        "Class $rawType expects ${rawType.typeParameters.size} type arguments, " +
-                                "but type ${this.prettyPrint(false)} has ${parameters.size}")
+                    "Class $rawType expects ${rawType.typeParameters.size} type arguments, " +
+                        "but type ${this.prettyPrint(false)} has ${parameters.size}"
+                )
             }
             return ReconstitutedParameterizedType(
-                    rawType,
-                    owner?.getLocalType(sandboxGroup),
-                    parameters.map { it.getLocalType(sandboxGroup) }.toTypedArray())
+                rawType,
+                owner?.getLocalType(sandboxGroup),
+                parameters.map { it.getLocalType(sandboxGroup) }.toTypedArray()
+            )
         }
 
         override fun getLocalType(sandboxGroup: SandboxGroup, metadata: Metadata): Type {
             val rawType = loadTypeFromMetadata(sandboxGroup, metadata)
             if (rawType.typeParameters.size != parameters.size) {
                 throw IncompatibleTypeIdentifierException(
-                        "Class $rawType expects ${rawType.typeParameters.size} type arguments, " +
-                                "but type ${this.prettyPrint(false)} has ${parameters.size}")
+                    "Class $rawType expects ${rawType.typeParameters.size} type arguments, " +
+                        "but type ${this.prettyPrint(false)} has ${parameters.size}"
+                )
             }
             return ReconstitutedParameterizedType(
-                    rawType,
-                    owner?.getLocalType(sandboxGroup, metadata),
-                    parameters.map { it.getLocalType(sandboxGroup, metadata) }.toTypedArray())
+                rawType,
+                owner?.getLocalType(sandboxGroup, metadata),
+                parameters.map { it.getLocalType(sandboxGroup, metadata) }.toTypedArray()
+            )
         }
 
         override fun toString() = "Parameterised(${prettyPrint()})"
@@ -319,25 +331,27 @@ private val Type.upperBound: Type
         // Ignore types that we have created ourselves
         is ReconstitutedParameterizedType -> this
         is ParameterizedType -> ReconstitutedParameterizedType(
-                rawType,
-                ownerType,
-                actualTypeArguments.map { it.upperBound }.toTypedArray())
+            rawType,
+            ownerType,
+            actualTypeArguments.map { it.upperBound }.toTypedArray()
+        )
         else -> this
     }
 
 private class ReconstitutedParameterizedType(
-        private val _rawType: Type,
-        private val _ownerType: Type?,
-        private val _actualTypeArguments: Array<Type>) : ParameterizedType {
+    private val _rawType: Type,
+    private val _ownerType: Type?,
+    private val _actualTypeArguments: Array<Type>
+) : ParameterizedType {
     override fun getRawType(): Type = _rawType
     override fun getOwnerType(): Type? = _ownerType
     override fun getActualTypeArguments(): Array<Type> = _actualTypeArguments
     override fun toString(): String = TypeIdentifier.forGenericType(this).prettyPrint(false)
     override fun equals(other: Any?): Boolean =
-            other is ParameterizedType &&
-                    other.rawType == rawType &&
-                    other.ownerType == ownerType &&
-                    Arrays.equals(other.actualTypeArguments, actualTypeArguments)
+        other is ParameterizedType &&
+            other.rawType == rawType &&
+            other.ownerType == ownerType &&
+            Arrays.equals(other.actualTypeArguments, actualTypeArguments)
     override fun hashCode(): Int =
-            actualTypeArguments.contentHashCode() xor Objects.hashCode(ownerType) xor Objects.hashCode(rawType)
+        actualTypeArguments.contentHashCode() xor Objects.hashCode(ownerType) xor Objects.hashCode(rawType)
 }

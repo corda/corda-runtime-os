@@ -220,18 +220,18 @@ class MurmurHash3Test {
 
     @Test
     fun `MurmurHash3 returns back expected hashes using strings`() {
-        testString("", 0, 0) //empty string with zero seed should give zero
+        testString("", 0, 0) // empty string with zero seed should give zero
         testString("", 1, 0x514E28B7)
-        testString("", 0xffffffffL.toInt(), 0x81F16F39L.toInt()) //make sure seed value is handled unsigned
-        testString("\u0000".repeat(4), 0, 0x2362F9DE) //make sure we handle embedded nulls
+        testString("", 0xffffffffL.toInt(), 0x81F16F39L.toInt()) // make sure seed value is handled unsigned
+        testString("\u0000".repeat(4), 0, 0x2362F9DE) // make sure we handle embedded nulls
 
-        testString("aaaa", 0x9747b28cL.toInt(), 0x5A97808A) //one full chunk
-        testString("aaa", 0x9747b28cL.toInt(), 0x283E0130) //three characters
-        testString("aa", 0x9747b28cL.toInt(), 0x5D211726) //two characters
-        testString("a", 0x9747b28cL.toInt(), 0x7FA09EA6) //one character
+        testString("aaaa", 0x9747b28cL.toInt(), 0x5A97808A) // one full chunk
+        testString("aaa", 0x9747b28cL.toInt(), 0x283E0130) // three characters
+        testString("aa", 0x9747b28cL.toInt(), 0x5D211726) // two characters
+        testString("a", 0x9747b28cL.toInt(), 0x7FA09EA6) // one character
 
-        //Endian order within the chunks
-        testString("abcd", 0x9747b28cL.toInt(), 0xF0478627L.toInt()) //one full chunk
+        // Endian order within the chunks
+        testString("abcd", 0x9747b28cL.toInt(), 0xF0478627L.toInt()) // one full chunk
         testString("abc", 0x9747b28cL.toInt(), 0xC84A62DDL.toInt())
         testString("ab", 0x9747b28cL.toInt(), 0x74875592)
         testString("a", 0x9747b28cL.toInt(), 0x7FA09EA6)
@@ -240,7 +240,7 @@ class MurmurHash3Test {
 
         testString("ππππππππ", 0x9747b28cL.toInt(), 0xD58063C1L.toInt())
 
-        //String of 256 characters
+        // String of 256 characters
         testString("a".repeat(256), 0x9747b28cL.toInt(), 0x37405BDC)
     }
 

@@ -145,7 +145,7 @@ interface LifecycleCoordinator : Lifecycle, AutoCloseable {
      * @param generator the lambda for creating the resource
      * @return The newly created resource
      */
-    fun <T: Resource> createManagedResource(name: String, generator: () -> T): T
+    fun <T : Resource> createManagedResource(name: String, generator: () -> T): T
 
     /**
      * Retrieve (by [name]) a managed resource from this coordinator.  The resource will have been
@@ -157,7 +157,7 @@ interface LifecycleCoordinator : Lifecycle, AutoCloseable {
      *
      * @return the resource associated by [name] or null if not available
      */
-    fun <T: Resource> getManagedResource(name: String) : T?
+    fun <T : Resource> getManagedResource(name: String): T?
 
     /**
      * Closes _only_ the given resources.  If no resources are provided (i.e. [resources] is null)

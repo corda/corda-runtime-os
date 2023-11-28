@@ -1,8 +1,8 @@
 package net.corda.libs.configuration.validation.impl
 
 import net.corda.libs.configuration.validation.ConfigurationSchemaFetchException
-import net.corda.schema.configuration.provider.ConfigSchemaException
 import net.corda.schema.common.provider.SchemaProvider
+import net.corda.schema.configuration.provider.ConfigSchemaException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows

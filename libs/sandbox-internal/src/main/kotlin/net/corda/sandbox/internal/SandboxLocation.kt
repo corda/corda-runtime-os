@@ -13,7 +13,7 @@ data class SandboxLocation(val securityDomain: String, val id: UUID, val source:
             if (components.size != 3) {
                 throw SandboxException(
                     "Sandbox bundle location had incorrect format: $string. Expected " +
-                            "\"{security-domain}/{sandbox-id}/{sandbox-source}\"."
+                        "\"{security-domain}/{sandbox-id}/{sandbox-source}\"."
                 )
             }
 

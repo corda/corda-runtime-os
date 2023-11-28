@@ -11,9 +11,11 @@ import java.util.TreeSet
 object CpkDependencyResolver {
 
     @Suppress("NestedBlockDepth", "ComplexMethod", "ThrowsCount")
-    fun resolveDependencies(roots: Iterable<CpkIdentifier>,
-                            availableIds: NavigableMap<CpkIdentifier, NavigableSet<CpkIdentifier>>,
-                            useSignatures : Boolean): NavigableSet<CpkIdentifier> {
+    fun resolveDependencies(
+        roots: Iterable<CpkIdentifier>,
+        availableIds: NavigableMap<CpkIdentifier, NavigableSet<CpkIdentifier>>,
+        useSignatures: Boolean
+    ): NavigableSet<CpkIdentifier> {
         val stack = ArrayList<CpkIdentifier>()
         stack.addAll(roots)
         val resolvedSet: NavigableSet<CpkIdentifier> = TreeSet()
@@ -22,10 +24,12 @@ object CpkDependencyResolver {
             val cpkIdentifier = stack.removeAt(stack.size - 1)
             val dependencyAlreadyResolved = resolvedSet.tailSet(cpkIdentifier).any { it.name == cpkIdentifier.name }
             if (!dependencyAlreadyResolved) {
-                //All CPKs with the required symbolic name and version greater or equal are valid candidates
+                // All CPKs with the required symbolic name and version greater or equal are valid candidates
                 val cpkCandidates = availableIds.tailMap(cpkIdentifier).asSequence()
-                    .filter { it.key.name == cpkIdentifier.name
-                            && (!useSignatures || cpkIdentifier.signerSummaryHash == it.key.signerSummaryHash) }
+                    .filter {
+                        it.key.name == cpkIdentifier.name &&
+                            (!useSignatures || cpkIdentifier.signerSummaryHash == it.key.signerSummaryHash)
+                    }
                     .toList()
                 when {
                     cpkCandidates.isNotEmpty() -> {
@@ -35,15 +39,17 @@ object CpkDependencyResolver {
                         if (VersionComparator.cmp(resolvedVersion, cpkIdentifier.version) < 0) {
                             throw DependencyResolutionException(
                                 "Version '${cpkIdentifier.name}' of CPK '${cpkIdentifier.name}' was required," +
-                                        " but the highest available version is '$resolvedVersion'")
+                                    " but the highest available version is '$resolvedVersion'"
+                            )
                         }
                         /** Raise an error if there are multiple CPKs with the same name and version that satisfy the
                          *  signature requirements */
                         val ambiguousCandidates = cpkCandidates.filter { it.key.version == resolvedVersion }
-                        if(ambiguousCandidates.size > 1) {
+                        if (ambiguousCandidates.size > 1) {
                             throw DependencyResolutionException(
                                 "CPK $cpkIdentifier, required by ${requesterMap[cpkIdentifier.name]}, " +
-                                        "is ambiguous as it can be provided by multiple candidates: ${ambiguousCandidates.map { it.key }}")
+                                    "is ambiguous as it can be provided by multiple candidates: ${ambiguousCandidates.map { it.key }}"
+                            )
                         }
                         resolvedSet.add(resolvedCandidate.key)
                         resolvedCandidate.value.forEach { dependency ->
@@ -52,7 +58,8 @@ object CpkDependencyResolver {
                         }
                     }
                     else -> throw DependencyResolutionException(
-                        "CPK $cpkIdentifier, required by ${requesterMap[cpkIdentifier.name]}, was not found")
+                        "CPK $cpkIdentifier, required by ${requesterMap[cpkIdentifier.name]}, was not found"
+                    )
                 }
             }
         }

@@ -18,7 +18,7 @@ open class CryptoRetryingExecutor(
     }
 
     init {
-        logger.debug  { "Using ${strategy::class.java.name} retry strategy." }
+        logger.debug { "Using ${strategy::class.java.name} retry strategy." }
     }
 
     /**
@@ -56,7 +56,7 @@ open class CryptoRetryingExecutor(
                     throw CryptoRetryException("Failed to execute on attempt=$attempt", e)
                 } else {
                     attempt++
-                    if(op.isEmpty()) {
+                    if (op.isEmpty()) {
                         op = UUID.randomUUID().toString()
                     }
                     logger.warn(

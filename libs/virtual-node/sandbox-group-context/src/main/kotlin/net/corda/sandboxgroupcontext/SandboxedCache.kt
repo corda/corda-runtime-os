@@ -31,5 +31,4 @@ interface SandboxedCache {
      * @param virtualNodeContext The [VirtualNodeContext] of the keys to remove from the cache.
      */
     fun remove(virtualNodeContext: VirtualNodeContext)
-
 }

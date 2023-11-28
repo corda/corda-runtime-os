@@ -51,7 +51,7 @@ class PlatformDigestServiceImpl @Activate constructor(
         val hexString = parseSecureHashHexString(algoNameAndHexString)
         require(digestHexStringLength == hexString.length) {
             "Digest algorithm's: \"$digestName\" required hex string length: $digestHexStringLength " +
-                    "is not met by hex string: \"$hexString\""
+                "is not met by hex string: \"$hexString\""
         }
         return SecureHashImpl(digestName, ByteArrays.parseAsHex(hexString))
     }
@@ -114,11 +114,11 @@ class PlatformDigestServiceImpl @Activate constructor(
             override fun getDigestLength() = messageDigest.digestLength
 
             override fun digest(bytes: ByteArray): ByteArray = messageDigest.digest(bytes)
-            override fun digest(inputStream : InputStream): ByteArray {
+            override fun digest(inputStream: InputStream): ByteArray {
                 val buffer = ByteArray(STREAM_BUFFER_SIZE)
-                while(true) {
+                while (true) {
                     val read = inputStream.read(buffer)
-                    if(read <= 0) break
+                    if (read <= 0) break
                     messageDigest.update(buffer, 0, read)
                 }
                 return messageDigest.digest()

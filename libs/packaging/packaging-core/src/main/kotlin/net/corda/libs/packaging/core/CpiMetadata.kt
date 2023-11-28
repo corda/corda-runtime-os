@@ -13,7 +13,8 @@ data class CpiMetadata(
     val cpksMetadata: Collection<CpkMetadata>,
     val groupPolicy: String?,
     val version: Int = -1,
-    val timestamp: Instant) {
+    val timestamp: Instant
+) {
     companion object {
         fun fromAvro(other: CpiMetadataAvro) = CpiMetadata(
             CpiIdentifier.fromAvro(other.id),

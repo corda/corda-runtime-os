@@ -51,7 +51,6 @@ class CordaAvroSerializerImpl<T : Any>(
         }
     }
 
-
     override fun serialize(topic: String?, data: T?): ByteArray? {
         return when (data) {
             null -> null

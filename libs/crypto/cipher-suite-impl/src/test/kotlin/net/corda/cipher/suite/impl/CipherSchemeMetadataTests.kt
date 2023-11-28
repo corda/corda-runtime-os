@@ -1,24 +1,5 @@
 package net.corda.cipher.suite.impl
 
-import java.io.ByteArrayOutputStream
-import java.io.OutputStream
-import java.math.BigInteger
-import java.security.KeyPair
-import java.security.KeyStore
-import java.security.PublicKey
-import java.security.cert.CertificateFactory
-import java.security.cert.X509Certificate
-import java.security.spec.AlgorithmParameterSpec
-import java.security.spec.MGF1ParameterSpec
-import java.security.spec.PSSParameterSpec
-import java.time.Duration
-import java.time.Instant
-import java.time.temporal.ChronoUnit
-import java.util.Date
-import java.util.UUID
-import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
-import kotlin.test.assertNotNull
 import net.corda.cipher.suite.impl.infra.generateKeyPair
 import net.corda.cipher.suite.impl.infra.inferSignatureSpecOrCreateDefault
 import net.corda.cipher.suite.impl.infra.signData
@@ -68,6 +49,25 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.kotlin.mock
+import java.io.ByteArrayOutputStream
+import java.io.OutputStream
+import java.math.BigInteger
+import java.security.KeyPair
+import java.security.KeyStore
+import java.security.PublicKey
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
+import java.security.spec.AlgorithmParameterSpec
+import java.security.spec.MGF1ParameterSpec
+import java.security.spec.PSSParameterSpec
+import java.time.Duration
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+import java.util.Date
+import java.util.UUID
+import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
 
 class CipherSchemeMetadataTests {
     companion object {
@@ -250,13 +250,15 @@ class CipherSchemeMetadataTests {
                 listOf(
                     CompositeKeyNodeAndWeight(alicePublicKey, 2),
                     CompositeKeyNodeAndWeight(bobPublicKey, 1)
-                ), threshold = 2
+                ),
+                threshold = 2
             )
             CompositeKeyProviderImpl().create(
                 listOf(
                     CompositeKeyNodeAndWeight(aliceAndBob, 3),
                     CompositeKeyNodeAndWeight(charliePublicKey, 2)
-                ), 3
+                ),
+                3
             )
         } else {
             generateKeyPair(schemeMetadata, scheme.codeName).public
@@ -551,7 +553,6 @@ class CipherSchemeMetadataTests {
         )
     }
 
-
     @Test
     fun `Should fail gracefully with an invalid PEM file`() {
         assertThrows<IllegalArgumentException> {
@@ -599,7 +600,6 @@ nOEL3FPCmO4TaDct7E0=
         assertThat(x.algorithm == "RSA")
         assertThat(x.publicKeyId() == "CD1A6C6486B1")
     }
-
 
     @Test
     fun `Should fail to decode PEM content with malformed Base 64`() {
@@ -679,13 +679,15 @@ nOEL3FPCmO4TaDct7E0=
             listOf(
                 CompositeKeyNodeAndWeight(alicePublicKey, 1),
                 CompositeKeyNodeAndWeight(bobPublicKey, 2)
-            ), 2
+            ),
+            2
         )
         val aliceAndBobOrCharlie = CompositeKeyProviderImpl().create(
             listOf(
                 CompositeKeyNodeAndWeight(aliceAndBob, 1),
                 CompositeKeyNodeAndWeight(charliePublicKey, 1)
-            ), 1
+            ),
+            1
         )
         val encoded = schemeMetadata.encodeAsByteArray(aliceAndBobOrCharlie)
         val decoded = schemeMetadata.decodePublicKey(encoded)
@@ -706,13 +708,15 @@ nOEL3FPCmO4TaDct7E0=
             listOf(
                 CompositeKeyNodeAndWeight(alicePublicKey, 1),
                 CompositeKeyNodeAndWeight(bobPublicKey, 1)
-            ), null
+            ),
+            null
         )
         val aliceAndBobOrCharlie = CompositeKeyProviderImpl().create(
             listOf(
                 CompositeKeyNodeAndWeight(aliceAndBob, 1),
                 CompositeKeyNodeAndWeight(charliePublicKey, 1)
-            ), 1
+            ),
+            1
         )
         val encoded = schemeMetadata.encodeAsString(aliceAndBobOrCharlie)
         val decoded = schemeMetadata.decodePublicKey(encoded)
@@ -734,13 +738,15 @@ nOEL3FPCmO4TaDct7E0=
             listOf(
                 CompositeKeyNodeAndWeight(alicePublicKey, 2),
                 CompositeKeyNodeAndWeight(bobPublicKey, 1)
-            ), 2
+            ),
+            2
         )
         val aliceAndBobOrCharlie = CompositeKeyProviderImpl().create(
             listOf(
                 CompositeKeyNodeAndWeight(aliceAndBob, 3),
                 CompositeKeyNodeAndWeight(charliePublicKey, 2)
-            ), 3
+            ),
+            3
         )
         val encoded = schemeMetadata.encodeAsByteArray(aliceAndBobOrCharlie)
         val decoded = schemeMetadata.decodePublicKey(encoded)
@@ -761,13 +767,15 @@ nOEL3FPCmO4TaDct7E0=
             listOf(
                 CompositeKeyNodeAndWeight(alicePublicKey, 2),
                 CompositeKeyNodeAndWeight(bobPublicKey, 1)
-            ), 2
+            ),
+            2
         )
         val aliceAndBobOrCharlie = CompositeKeyProviderImpl().create(
             listOf(
                 CompositeKeyNodeAndWeight(aliceAndBob, 3),
                 CompositeKeyNodeAndWeight(charliePublicKey, 2)
-            ), 3
+            ),
+            3
         )
         val encoded = schemeMetadata.encodeAsString(aliceAndBobOrCharlie)
         val decoded = schemeMetadata.decodePublicKey(encoded)
@@ -790,13 +798,15 @@ nOEL3FPCmO4TaDct7E0=
             listOf(
                 CompositeKeyNodeAndWeight(alicePublicKey, 2),
                 CompositeKeyNodeAndWeight(bobPublicKey, 1)
-            ), 2
+            ),
+            2
         )
         val aliceAndBobOrCharlie = CompositeKeyProviderImpl().create(
             listOf(
                 CompositeKeyNodeAndWeight(aliceAndBob, 3),
                 CompositeKeyNodeAndWeight(charliePublicKey, 2)
-            ), 3
+            ),
+            3
         )
         val subjectAlias = newAlias()
         val pwdArray = "password".toCharArray()
@@ -808,7 +818,8 @@ nOEL3FPCmO4TaDct7E0=
             schemeMetadata.inferSignatureSpecOrCreateDefault(caKeyPair.public, DigestAlgorithmName.SHA2_256)
         val jksFile = ByteArrayOutputStream().use {
             keyStoreSave.setCertificateEntry(
-                subjectAlias, createDevCertificate(
+                subjectAlias,
+                createDevCertificate(
                     issuer = X500Name("CN=ISSUER, O=o, L=L, ST=il, C=c"),
                     signer = object : ContentSigner {
                         private val sigAlgID: AlgorithmIdentifier = DefaultSignatureOIDMap.inferSignatureOID(
@@ -891,7 +902,8 @@ nOEL3FPCmO4TaDct7E0=
             keyVector.add(DERSequence(childrenVector))
             return SubjectPublicKeyInfo(
                 AlgorithmIdentifier(
-                    PKCSObjectIdentifiers.RC2_CBC, null
+                    PKCSObjectIdentifiers.RC2_CBC,
+                    null
                 ),
                 DERSequence(keyVector)
             ).encoded

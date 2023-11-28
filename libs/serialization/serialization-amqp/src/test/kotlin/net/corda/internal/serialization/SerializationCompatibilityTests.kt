@@ -14,7 +14,7 @@ class SerializationCompatibilityTests {
     class StableFingerprintTest
 
     @Test
-	fun `fingerprint is stable`() {
+    fun `fingerprint is stable`() {
         val factory = testDefaultFactoryNoEvolution()
         assertThat(factory.get(StableFingerprintTest::class.java).typeDescriptor.toString()).isEqualTo("net.corda:zbvSPLDAvP9+Hlml5i3ZOw==")
     }

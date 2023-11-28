@@ -29,4 +29,3 @@ class CpiLoaderV2Test {
         )
     }
 }
-

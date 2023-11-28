@@ -5,11 +5,13 @@ import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import java.util.concurrent.CountDownLatch
 
-class StubEventLogProcessor<K: Any, V: Any>(private val invocationLatch: CountDownLatch,
-                                            private val eventsLatch: CountDownLatch,
-                                            private val exception: Exception? = null,
-                                            override val keyClass: Class<K>,
-                                            override val valueClass: Class<V>): EventLogProcessor<K, V> {
+class StubEventLogProcessor<K : Any, V : Any>(
+    private val invocationLatch: CountDownLatch,
+    private val eventsLatch: CountDownLatch,
+    private val exception: Exception? = null,
+    override val keyClass: Class<K>,
+    override val valueClass: Class<V>
+) : EventLogProcessor<K, V> {
 
     override fun onNext(events: List<EventLogRecord<K, V>>): List<Record<*, *>> {
         invocationLatch.countDown()
@@ -21,5 +23,4 @@ class StubEventLogProcessor<K: Any, V: Any>(private val invocationLatch: CountDo
 
         return emptyList()
     }
-
 }

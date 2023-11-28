@@ -8,7 +8,7 @@ class SchedulerLogImpl(
     private val logEntityRepository: TaskSchedulerLogEntityRepository = TaskSchedulerLogEntityRepository()
 ) : SchedulerLog {
 
-    override fun getLastTriggerAndLock(taskName: String, schedulerId: String) : SchedulerLock {
+    override fun getLastTriggerAndLock(taskName: String, schedulerId: String): SchedulerLock {
         return SchedulerLockImpl(taskName, schedulerId, emf.createEntityManager(), logEntityRepository)
     }
 }

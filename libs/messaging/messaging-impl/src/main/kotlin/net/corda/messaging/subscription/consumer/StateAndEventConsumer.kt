@@ -88,7 +88,7 @@ interface StateAndEventConsumer<K : Any, S : Any, E : Any> : AutoCloseable {
      * @throws RebalanceInProgressException if a rebalance occurs during poll while waiting for the function to finish.
      */
     @Throws(RebalanceInProgressException::class)
-    fun waitForFunctionToFinish(function: () -> Any, maxTimeout: Long, timeoutErrorMessage: String) : CompletableFuture<Any>
+    fun waitForFunctionToFinish(function: () -> Any, maxTimeout: Long, timeoutErrorMessage: String): CompletableFuture<Any>
 
     /**
      * Direct access to [eventConsumer] and [stateConsumer].

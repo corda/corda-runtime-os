@@ -25,13 +25,15 @@ import kotlin.experimental.xor
  * This class is thread-safe, which means multiple threads can try to encrypt & decrypt data concurrently using the same session.
  */
 @Suppress("LongParameterList")
-class AuthenticatedEncryptionSession(override val sessionId: String,
-                                     nextSequenceNo: Long,
-                                     private val outboundSecretKey: SecretKey,
-                                     private val outboundNonce: ByteArray,
-                                     private val inboundSecretKey: SecretKey,
-                                     private val inboundNonce: ByteArray,
-                                     val maxMessageSize: Int): Session {
+class AuthenticatedEncryptionSession(
+    override val sessionId: String,
+    nextSequenceNo: Long,
+    private val outboundSecretKey: SecretKey,
+    private val outboundNonce: ByteArray,
+    private val inboundSecretKey: SecretKey,
+    private val inboundNonce: ByteArray,
+    val maxMessageSize: Int
+) : Session {
 
     private val provider = BouncyCastleProvider.PROVIDER_NAME
     private val encryptionCipher = Cipher.getInstance(CIPHER_ALGO, provider)
@@ -43,8 +45,13 @@ class AuthenticatedEncryptionSession(override val sessionId: String,
             throw MessageTooLargeError(payload.size, maxMessageSize)
         }
 
-        val commonHeader = CommonHeader(MessageType.DATA, ProtocolConstants.PROTOCOL_VERSION, sessionId,
-                                        sequenceNo.getAndIncrement(), Instant.now().toEpochMilli())
+        val commonHeader = CommonHeader(
+            MessageType.DATA,
+            ProtocolConstants.PROTOCOL_VERSION,
+            sessionId,
+            sequenceNo.getAndIncrement(),
+            Instant.now().toEpochMilli()
+        )
 
         val nonce = xor(outboundNonce, commonHeader.sequenceNo.toByteArray())
         val (encryptedData, authTag) =
@@ -61,7 +68,7 @@ class AuthenticatedEncryptionSession(override val sessionId: String,
         val plaintext = try {
             decryptionCipher.decrypt(header.toByteBuffer().array(), authTag, nonce, encryptedPayload, inboundSecretKey)
         } catch (e: Exception) {
-            when(e) {
+            when (e) {
                 is AEADBadTagException -> throw DecryptionFailedError("Decryption failed due to bad authentication tag.", e)
                 is BadPaddingException -> throw DecryptionFailedError("Decryption failed due to bad padding.", e)
                 is IllegalBlockSizeException -> throw DecryptionFailedError("Decryption failed due to bad block size", e)
@@ -85,7 +92,6 @@ class AuthenticatedEncryptionSession(override val sessionId: String,
         return initialisationVector.zip(paddedSeqNo).map { (first, second) -> first xor second }
             .toList().toByteArray()
     }
-
 }
 
 data class EncryptionResult(val header: CommonHeader, val authTag: ByteArray, val encryptedPayload: ByteArray) {
@@ -108,7 +114,6 @@ data class EncryptionResult(val header: CommonHeader, val authTag: ByteArray, va
         result = 31 * result + encryptedPayload.contentHashCode()
         return result
     }
-
 }
 
-class DecryptionFailedError(msg: String, cause: Throwable): CordaRuntimeException(msg, cause)
+class DecryptionFailedError(msg: String, cause: Throwable) : CordaRuntimeException(msg, cause)

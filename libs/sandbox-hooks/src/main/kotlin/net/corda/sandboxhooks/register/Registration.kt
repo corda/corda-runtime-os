@@ -43,7 +43,7 @@ class Registration @Activate constructor(
             registerService(org.osgi.framework.hooks.service.FindHook::class.java, IsolatingFindServiceHook(sandboxService), null)
             registerService(CollisionHook::class.java, IsolatingCollisionBundleHook(sandboxService), null)
             registerService(EventHook::class.java, IsolatingEventHook(sandboxService), null)
-            registerService(org.osgi.framework.hooks.bundle.FindHook::class.java, IsolatingFindBundleHook(sandboxService),  null)
+            registerService(org.osgi.framework.hooks.bundle.FindHook::class.java, IsolatingFindBundleHook(sandboxService), null)
             registerService(ResolverHookFactory::class.java, IsolatingResolverBundleHookFactory(sandboxService), null)
         }
     }

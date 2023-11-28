@@ -1,19 +1,19 @@
 package net.corda.internal.serialization.amqp.standard
 
 import net.corda.internal.serialization.amqp.AMQPSerializer
-import net.corda.internal.serialization.amqp.SerializerFor
-import net.corda.internal.serialization.amqp.Descriptor
-import net.corda.internal.serialization.amqp.SerializationOutput
-import net.corda.internal.serialization.amqp.withDescribed
 import net.corda.internal.serialization.amqp.AMQPTypeIdentifiers
 import net.corda.internal.serialization.amqp.DESCRIPTOR_DOMAIN
-import net.corda.internal.serialization.amqp.TypeNotation
-import net.corda.internal.serialization.amqp.RestrictedType
-import net.corda.internal.serialization.amqp.SerializationSchemas
-import net.corda.internal.serialization.amqp.Metadata
+import net.corda.internal.serialization.amqp.Descriptor
 import net.corda.internal.serialization.amqp.DeserializationInput
-import net.corda.internal.serialization.amqp.typeDescriptorFor
+import net.corda.internal.serialization.amqp.Metadata
+import net.corda.internal.serialization.amqp.RestrictedType
+import net.corda.internal.serialization.amqp.SerializationOutput
+import net.corda.internal.serialization.amqp.SerializationSchemas
 import net.corda.internal.serialization.amqp.SerializerFactory
+import net.corda.internal.serialization.amqp.SerializerFor
+import net.corda.internal.serialization.amqp.TypeNotation
+import net.corda.internal.serialization.amqp.typeDescriptorFor
+import net.corda.internal.serialization.amqp.withDescribed
 import net.corda.internal.serialization.amqp.withList
 import net.corda.internal.serialization.model.FingerprintWriter
 import net.corda.serialization.InternalCustomSerializer
@@ -177,7 +177,7 @@ abstract class CustomSerializer<T : Any> : AMQPSerializer<T>, SerializerFor {
 
     private class ReadDataObject(private val obj: Any) : InternalDirectSerializer.ReadObject {
         override fun getAsBytes(): ByteArray = (obj as Binary).array
-        override fun <T: Any> getAs(type: Class<T>): T = type.cast(obj)
+        override fun <T : Any> getAs(type: Class<T>): T = type.cast(obj)
     }
 
     /**

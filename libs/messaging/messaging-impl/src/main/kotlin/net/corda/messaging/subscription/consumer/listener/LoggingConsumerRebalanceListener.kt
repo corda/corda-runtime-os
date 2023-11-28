@@ -10,7 +10,7 @@ open class LoggingConsumerRebalanceListener(clientId: String) : CordaConsumerReb
     /**
      * In derived classes, override the [log] with the more specific log name for that class.
      */
-    open val log: Logger = LoggerFactory.getLogger("${this.javaClass.name}-${clientId}")
+    open val log: Logger = LoggerFactory.getLogger("${this.javaClass.name}-$clientId")
 
     /**
      * When a [partitions] are revoked write to the log.

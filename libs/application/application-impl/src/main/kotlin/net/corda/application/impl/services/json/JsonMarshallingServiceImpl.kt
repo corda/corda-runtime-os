@@ -39,8 +39,13 @@ import java.util.Collections.unmodifiableMap
     service = [ JsonMarshallingService::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class ],
     scope = PROTOTYPE
 )
-class JsonMarshallingServiceImpl : JsonMarshallingService,
-    UsedByFlow, UsedByPersistence, UsedByVerification, SingletonSerializeAsToken, SerializationCustomizer {
+class JsonMarshallingServiceImpl :
+    JsonMarshallingService,
+    UsedByFlow,
+    UsedByPersistence,
+    UsedByVerification,
+    SingletonSerializeAsToken,
+    SerializationCustomizer {
     private companion object {
         private const val INITIAL_SIZE = 16
         private const val MAX_SIZE = 200
@@ -67,9 +72,11 @@ class JsonMarshallingServiceImpl : JsonMarshallingService,
     override fun format(data: Any): String {
         return try {
             @Suppress("deprecation", "removal")
-            java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
-                mapper.writeValueAsString(data)
-            })
+            java.security.AccessController.doPrivileged(
+                PrivilegedExceptionAction {
+                    mapper.writeValueAsString(data)
+                }
+            )
         } catch (e: PrivilegedActionException) {
             throw e.exception
         }
@@ -78,9 +85,11 @@ class JsonMarshallingServiceImpl : JsonMarshallingService,
     override fun <T> parse(input: String, clazz: Class<T>): T {
         return try {
             @Suppress("deprecation", "removal")
-            java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
-                mapper.readValue(input, clazz)
-            })
+            java.security.AccessController.doPrivileged(
+                PrivilegedExceptionAction {
+                    mapper.readValue(input, clazz)
+                }
+            )
         } catch (e: PrivilegedActionException) {
             throw e.exception
         }
@@ -89,11 +98,16 @@ class JsonMarshallingServiceImpl : JsonMarshallingService,
     override fun <T> parseList(input: String, clazz: Class<T>): List<T> {
         return try {
             @Suppress("deprecation", "removal")
-            java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
-                unmodifiableList(mapper.readValue(
-                    input, mapper.typeFactory.constructCollectionType(List::class.java, clazz)
-                ))
-            })
+            java.security.AccessController.doPrivileged(
+                PrivilegedExceptionAction {
+                    unmodifiableList(
+                        mapper.readValue(
+                            input,
+                            mapper.typeFactory.constructCollectionType(List::class.java, clazz)
+                        )
+                    )
+                }
+            )
         } catch (e: PrivilegedActionException) {
             throw e.exception
         }
@@ -102,11 +116,16 @@ class JsonMarshallingServiceImpl : JsonMarshallingService,
     override fun <K, V> parseMap(input: String, keyClass: Class<K>, valueClass: Class<V>): Map<K, V> {
         return try {
             @Suppress("deprecation", "removal")
-            java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
-                unmodifiableMap(mapper.readValue(
-                    input, mapper.typeFactory.constructMapType(LinkedHashMap::class.java, keyClass, valueClass)
-                ))
-            })
+            java.security.AccessController.doPrivileged(
+                PrivilegedExceptionAction {
+                    unmodifiableMap(
+                        mapper.readValue(
+                            input,
+                            mapper.typeFactory.constructMapType(LinkedHashMap::class.java, keyClass, valueClass)
+                        )
+                    )
+                }
+            )
         } catch (e: PrivilegedActionException) {
             throw e.exception
         }

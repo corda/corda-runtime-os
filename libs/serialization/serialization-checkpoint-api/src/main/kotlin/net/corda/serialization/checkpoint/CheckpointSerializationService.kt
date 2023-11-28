@@ -25,5 +25,3 @@ interface CheckpointSerializationService {
      */
     fun <T : Any> deserialize(bytes: ByteArray, clazz: Class<T>): T
 }
-
-

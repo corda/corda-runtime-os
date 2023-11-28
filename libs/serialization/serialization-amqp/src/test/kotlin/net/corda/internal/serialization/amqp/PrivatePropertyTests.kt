@@ -26,7 +26,7 @@ class PrivatePropertyTests {
     val typeModel = ConfigurableLocalTypeModel(LocalTypeModelConfigurationImpl(factory))
 
     @Test
-	fun testWithOnePrivateProperty() {
+    fun testWithOnePrivateProperty() {
         @CordaSerializable
         data class C(private val b: String) {
             fun getB() = b
@@ -38,7 +38,7 @@ class PrivatePropertyTests {
     }
 
     @Test
-	fun testWithOnePrivatePropertyBoolean() {
+    fun testWithOnePrivatePropertyBoolean() {
         @CordaSerializable
         data class C(private val b: Boolean) {
             fun getB() = b
@@ -50,7 +50,7 @@ class PrivatePropertyTests {
     }
 
     @Test
-	fun testWithOnePrivatePropertyNullableNotNull() {
+    fun testWithOnePrivatePropertyNullableNotNull() {
         @CordaSerializable
         data class C(private val b: String?) {
             fun getB() = b
@@ -62,7 +62,7 @@ class PrivatePropertyTests {
     }
 
     @Test
-	fun testWithOnePrivatePropertyNullableNull() {
+    fun testWithOnePrivatePropertyNullableNull() {
         @CordaSerializable
         data class C(private val b: String?) {
             fun getB() = b
@@ -74,7 +74,7 @@ class PrivatePropertyTests {
     }
 
     @Test
-	fun testWithOnePublicOnePrivateProperty() {
+    fun testWithOnePublicOnePrivateProperty() {
         @CordaSerializable
         data class C(val a: Int, private val b: Int) {
             fun getB() = b
@@ -86,11 +86,11 @@ class PrivatePropertyTests {
     }
 
     @Test
-	fun testWithInheritance() {
+    fun testWithInheritance() {
         open class B(val a: String, val b: String)
 
         @CordaSerializable
-        class D (a: String, b: String) : B (a, b) {
+        class D(a: String, b: String) : B(a, b) {
             override fun equals(other: Any?): Boolean = when (other) {
                 is D -> other.a == a && other.b == b
                 else -> false
@@ -104,7 +104,7 @@ class PrivatePropertyTests {
     }
 
     @Test
-	fun testMultiArgSetter() {
+    fun testMultiArgSetter() {
         @Suppress("UNUSED")
         @CordaSerializable
         data class C(private var a: Int, var b: Int) {
@@ -124,7 +124,7 @@ class PrivatePropertyTests {
     }
 
     @Test
-	fun testBadTypeArgSetter() {
+    fun testBadTypeArgSetter() {
         @Suppress("UNUSED")
         data class C(private var a: Int, val b: Int) {
             @ConstructorForDeserialization
@@ -138,12 +138,13 @@ class PrivatePropertyTests {
         Assertions.assertThatThrownBy {
             SerializationOutput(factory).serialize(c1)
         }.isInstanceOf(NotSerializableException::class.java).hasMessageContaining(
-                "Defined setter for parameter a takes parameter of type class java.lang.String " +
-                        "yet underlying type is int")
+            "Defined setter for parameter a takes parameter of type class java.lang.String " +
+                "yet underlying type is int"
+        )
     }
 
     @Test
-	fun testWithOnePublicOnePrivateProperty2() {
+    fun testWithOnePublicOnePrivateProperty2() {
         @CordaSerializable
         data class C(val a: Int, private val b: Int) {
             fun getB() = b
@@ -163,7 +164,7 @@ class PrivatePropertyTests {
     }
 
     @Test
-	fun testGetterMakesAPublicReader() {
+    fun testGetterMakesAPublicReader() {
         @CordaSerializable
         data class C(val a: Int, private val b: Int) {
             @Suppress("UNUSED")
@@ -185,11 +186,12 @@ class PrivatePropertyTests {
 
     @Suppress("UNCHECKED_CAST")
     @Test
-	fun testNested() {
+    fun testNested() {
         @CordaSerializable
         data class Inner(private val a: Int) {
             fun getA() = a
         }
+
         @CordaSerializable
         data class Outer(private val i: Inner) {
             fun getI() = i
@@ -212,8 +214,8 @@ class PrivatePropertyTests {
     //
     @Suppress("UNCHECKED_CAST")
     @Test
-	fun allCapsProprtyNotPrivate() {
-        data class C (val CCC: String)
+    fun allCapsProprtyNotPrivate() {
+        data class C(val CCC: String)
         val typeInformation = typeModel.inspect(C::class.java)
 
         assertThat(typeInformation is LocalTypeInformation.Composable).isTrue()

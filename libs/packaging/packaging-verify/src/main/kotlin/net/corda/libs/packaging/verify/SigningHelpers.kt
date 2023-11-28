@@ -8,21 +8,25 @@ object SigningHelpers {
     fun isSigningRelated(jarEntry: JarEntry): Boolean {
         val name = jarEntry.name
         var uppercaseName = name.uppercase()
-        if (!uppercaseName.startsWith("META-INF/"))
+        if (!uppercaseName.startsWith("META-INF/")) {
             return false
+        }
 
         // Discard "META-INF/" prefix
         uppercaseName = uppercaseName.substring(9)
-        if (uppercaseName.indexOf('/') != -1)
+        if (uppercaseName.indexOf('/') != -1) {
             return false
+        }
 
-        if (isBlockOrSF(uppercaseName) || (uppercaseName == "MANIFEST.MF"))
+        if (isBlockOrSF(uppercaseName) || (uppercaseName == "MANIFEST.MF")) {
             return true
+        }
 
         if (uppercaseName.startsWith("SIG-")) {
             extension(uppercaseName)?.let {
-                if (!extensionValid(it))
+                if (!extensionValid(it)) {
                     return false
+                }
             }
             return true // no extension is OK
         }
@@ -48,9 +52,11 @@ object SigningHelpers {
 
     /** Checks whether file is a signing file or signing block file */
     private fun isBlockOrSF(s: String): Boolean {
-        return (s.endsWith(".SF")
-                || s.endsWith(".DSA")
-                || s.endsWith(".RSA")
-                || s.endsWith(".EC"))
+        return (
+            s.endsWith(".SF") ||
+                s.endsWith(".DSA") ||
+                s.endsWith(".RSA") ||
+                s.endsWith(".EC")
+            )
     }
 }

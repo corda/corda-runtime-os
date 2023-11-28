@@ -19,7 +19,7 @@ import java.time.Instant
 
 class SessionStateConfirmedTransitionTest {
 
-    private val messagingChunkFactory : MessagingChunkFactory = mock<MessagingChunkFactory>().apply {
+    private val messagingChunkFactory: MessagingChunkFactory = mock<MessagingChunkFactory>().apply {
         whenever(createChunkSerializerService(any())).thenReturn(mock())
     }
     private val sessionManager = SessionManagerImpl(SessionEventProcessorFactory(messagingChunkFactory), messagingChunkFactory)

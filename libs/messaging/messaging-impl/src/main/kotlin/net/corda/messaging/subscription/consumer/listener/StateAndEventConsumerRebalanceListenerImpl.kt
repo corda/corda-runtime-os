@@ -28,7 +28,7 @@ internal class StateAndEventConsumerRebalanceListenerImpl<K : Any, S : Any, E : 
      *  keeps up
      */
     override fun onPartitionsAssigned(partitions: Collection<CordaTopicPartition>) {
-        val partitionIds = partitions.map{ it.partition }.joinToString(",")
+        val partitionIds = partitions.map { it.partition }.joinToString(",")
         log.info("Partitions assigned: $partitionIds.")
         stateAndEventConsumer.onPartitionsAssigned(partitions.toSet())
 
@@ -59,7 +59,6 @@ internal class StateAndEventConsumerRebalanceListenerImpl<K : Any, S : Any, E : 
         stateAndEventConsumer.onPartitionsRevoked(partitions.toSet())
         val removedPartitionIds = partitions.map { it.partition }
         for (partitionId in removedPartitionIds) {
-
             stateAndEventListener?.onPartitionLost(getStatesForPartition(partitionId))
 
             currentStates[partitionId]?.let { partitionStates ->
@@ -69,7 +68,6 @@ internal class StateAndEventConsumerRebalanceListenerImpl<K : Any, S : Any, E : 
 
         partitionState.dirty = true
     }
-
 
     override fun close() {
         stateAndEventListener?.let { listener ->

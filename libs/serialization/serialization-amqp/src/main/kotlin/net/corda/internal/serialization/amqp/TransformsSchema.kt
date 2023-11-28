@@ -139,7 +139,8 @@ class EnumDefaultSchemaTransform(val old: String, val new: String) : Transform()
     override fun params() = "old=${old.esc()} new=${new.esc()}"
 
     override fun equals(other: Any?) = (
-            (other is EnumDefaultSchemaTransform && other.new == new && other.old == old) || super.equals(other))
+        (other is EnumDefaultSchemaTransform && other.new == new && other.old == old) || super.equals(other)
+        )
 
     override fun hashCode() = (17 * new.hashCode()) + old.hashCode()
 
@@ -177,7 +178,8 @@ class RenameSchemaTransform(val from: String, val to: String) : Transform() {
     override fun params() = "from=${from.esc()} to=${to.esc()}"
 
     override fun equals(other: Any?) = (
-            (other is RenameSchemaTransform && other.from == from && other.to == to) || super.equals(other))
+        (other is RenameSchemaTransform && other.from == from && other.to == to) || super.equals(other)
+        )
 
     override fun hashCode() = (11 * from.hashCode()) + to.hashCode()
 
@@ -211,7 +213,8 @@ object TransformsAnnotationProcessor {
             result.processAnnotations(
                 type,
                 supportedTransform.enum,
-                supportedTransform.getAnnotations(annotationContainer))
+                supportedTransform.getAnnotations(annotationContainer)
+            )
         }
         return result
     }
@@ -230,13 +233,13 @@ object TransformsAnnotationProcessor {
             when {
                 transforms == null -> mutableListOf(transform)
                 transform in transforms -> throw AMQPNotSerializableException(
-                        type,
-                        "Repeated unique transformation annotation of type ${transform.name}")
+                    type,
+                    "Repeated unique transformation annotation of type ${transform.name}"
+                )
                 else -> transforms.apply { this += transform }
             }
         }
     }
-
 }
 
 /**
@@ -262,17 +265,18 @@ data class TransformsSchema(val types: Map<String, EnumMap<TransformTypes, Mutab
          */
         fun build(schema: Schema, sf: LocalSerializerFactory, metadata: Metadata): TransformsSchema {
             val transformsMap = schema.types.asSequence().mapNotNull { type ->
-                val localTypeInformation = if(metadata.containsKey(type.name)) {
+                val localTypeInformation = if (metadata.containsKey(type.name)) {
                     sf.getTypeInformation(metadata, type.name)
-                } else{
+                } else {
                     sf.getTypeInformation(type.name)
                 }
                 if (localTypeInformation is LocalTypeInformation.AnEnum) {
                     localTypeInformation.transforms.source.let {
                         if (it.isEmpty()) null else type.name to it
                     }
+                } else {
+                    null
                 }
-                else null
             }.toMap()
             return TransformsSchema(transformsMap)
         }
@@ -292,11 +296,11 @@ data class TransformsSchema(val types: Map<String, EnumMap<TransformTypes, Mutab
             }
 
             val map = describedType.described as? Map<*, *>
-                    ?: throw NotSerializableException("Transform schema must be encoded as a map")
+                ?: throw NotSerializableException("Transform schema must be encoded as a map")
 
             map.forEach { type ->
                 val fingerprint = type.key as? String
-                        ?: throw NotSerializableException("Fingerprint must be encoded as a string")
+                    ?: throw NotSerializableException("Fingerprint must be encoded as a string")
 
                 rtn[fingerprint] = EnumMap<TransformTypes, MutableList<Transform>>(TransformTypes::class.java)
 
@@ -306,8 +310,10 @@ data class TransformsSchema(val types: Map<String, EnumMap<TransformTypes, Mutab
                     rtn[fingerprint]!![transform] = mutableListOf()
                     (transforms as List<*>).forEach {
                         rtn[fingerprint]!![TransformTypes.newInstance(transformType)]?.add(Transform.newInstance(it))
-                                ?: throw NotSerializableException("De-serialization error with transform for class "
-                                        + "${type.key} ${transform.name}")
+                            ?: throw NotSerializableException(
+                                "De-serialization error with transform for class " +
+                                    "${type.key} ${transform.name}"
+                            )
                     }
                 }
             }
@@ -323,7 +329,8 @@ data class TransformsSchema(val types: Map<String, EnumMap<TransformTypes, Mutab
     @Suppress("NAME_SHADOWING")
     override fun toString(): String {
         data class Indent(val indent: String) {
-            @Suppress("UNUSED") constructor(i: Indent) : this("  ${i.indent}")
+            @Suppress("UNUSED")
+            constructor(i: Indent) : this("  ${i.indent}")
 
             override fun toString() = indent
         }

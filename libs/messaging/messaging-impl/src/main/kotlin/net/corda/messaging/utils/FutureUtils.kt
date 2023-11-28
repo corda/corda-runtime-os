@@ -36,7 +36,7 @@ private fun handleFutureException(ex: Exception, future: CompletableFuture<*>, c
             return null
         }
         is ExecutionException -> {
-            //get the cause exception thrown if available
+            // get the cause exception thrown if available
             throw ex.cause ?: throw CordaMessageAPIIntermittentException("Future failed to execute", ex)
         }
         else -> {

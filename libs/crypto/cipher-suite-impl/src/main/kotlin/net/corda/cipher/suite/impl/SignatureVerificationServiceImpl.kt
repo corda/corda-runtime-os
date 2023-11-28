@@ -35,7 +35,10 @@ class SignatureVerificationServiceImpl @Activate constructor(
     @Reference(service = DigestService::class)
     private val hashingService: DigestService
 ) : SignatureVerificationService,
-    UsedByFlow, UsedByPersistence, UsedByVerification, SingletonSerializeAsToken {
+    UsedByFlow,
+    UsedByPersistence,
+    UsedByVerification,
+    SingletonSerializeAsToken {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -75,7 +78,7 @@ class SignatureVerificationServiceImpl @Activate constructor(
         val signatureSpec = schemeMetadata.inferSignatureSpec(publicKey, digest)
         require(signatureSpec != null) {
             "Failed to infer the signature spec for key=${publicKey.publicKeyId()} " +
-                    " (${schemeMetadata.findKeyScheme(publicKey).codeName}:${digest.name})"
+                " (${schemeMetadata.findKeyScheme(publicKey).codeName}:${digest.name})"
         }
         val result = try {
             !isValid(originalData, signatureData, publicKey, schemeMetadata.findKeyScheme(publicKey), signatureSpec)
@@ -113,7 +116,7 @@ class SignatureVerificationServiceImpl @Activate constructor(
         val signatureSpec = schemeMetadata.inferSignatureSpec(publicKey, digest)
         require(signatureSpec != null) {
             "Failed to infer the signature spec for key=${publicKey.publicKeyId()} " +
-                    " (${schemeMetadata.findKeyScheme(publicKey).codeName}:${digest.name})"
+                " (${schemeMetadata.findKeyScheme(publicKey).codeName}:${digest.name})"
         }
         return isValid(originalData, signatureData, publicKey, schemeMetadata.findKeyScheme(publicKey), signatureSpec)
     }

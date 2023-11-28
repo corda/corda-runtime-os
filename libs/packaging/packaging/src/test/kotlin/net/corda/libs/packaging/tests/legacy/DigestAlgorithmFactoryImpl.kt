@@ -31,12 +31,12 @@ sealed class DigestAlgorithmFactoryImpl : DigestAlgorithmFactory {
             override fun digest(bytes: ByteArray): ByteArray = messageDigest.digest(bytes)
             override fun digest(inputStream: InputStream): ByteArray {
                 val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                while(true) {
+                while (true) {
                     val read = inputStream.read(buffer)
-                    if(read <= 0) break
+                    if (read <= 0) break
                     messageDigest.update(buffer, 0, read)
                 }
-                return  messageDigest.digest()
+                return messageDigest.digest()
             }
         }
     }

@@ -50,7 +50,6 @@ class StateManagerHelperTest {
 
     @Test
     fun `successfully creates new state`() {
-
         val persistedState: State? = null
         val newState = StateAndEventProcessor.State(
             StateType(1),
@@ -63,7 +62,9 @@ class StateManagerHelperTest {
         )
 
         val state = stateManagerHelper.createOrUpdateState(
-            TEST_KEY, persistedState, newState
+            TEST_KEY,
+            persistedState,
+            newState
         )
 
         assertNotNull(state)
@@ -93,7 +94,9 @@ class StateManagerHelperTest {
         )
 
         val state = stateManagerHelper.createOrUpdateState(
-            TEST_KEY, persistedState, updatedState
+            TEST_KEY,
+            persistedState,
+            updatedState
         )
 
         assertNotNull(state)
@@ -119,7 +122,11 @@ class StateManagerHelperTest {
         stateManagerHelper.persistStates(
             states.map { (persistedState, updatedState) ->
                 val task = ProcessorTask<String, StateType, EventType>(
-                    updatedState.key, persistedState, mock(), mock(), mock()
+                    updatedState.key,
+                    persistedState,
+                    mock(),
+                    mock(),
+                    mock()
                 )
                 ProcessorTask.Result(task, mock(), updatedState)
             }

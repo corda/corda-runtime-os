@@ -46,18 +46,26 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     private var clients = listOf<MessagingClient>()
     private lateinit var messageRouter: MessageRouter
     private val mediatorComponentFactory = MediatorComponentFactory(
-        config.messageProcessor, config.consumerFactories, config.clientFactories, config.messageRouterFactory
+        config.messageProcessor,
+        config.consumerFactories,
+        config.clientFactories,
+        config.messageRouterFactory
     )
     private val metrics = EventMediatorMetrics(config.name)
     private val stateManagerHelper = StateManagerHelper<K, S, E>(
-        stateManager, stateSerializer, stateDeserializer
+        stateManager,
+        stateSerializer,
+        stateDeserializer
     )
     private val taskManagerHelper = TaskManagerHelper(
-        taskManager, stateManagerHelper, metrics
+        taskManager,
+        stateManagerHelper,
+        metrics
     )
     private val uniqueId = UUID.randomUUID().toString()
     private val lifecycleCoordinatorName = LifecycleCoordinatorName(
-        "MultiSourceEventMediator--${config.name}", uniqueId
+        "MultiSourceEventMediator--${config.name}",
+        uniqueId
     )
     private val lifecycleCoordinator =
         lifecycleCoordinatorFactory.createCoordinator(lifecycleCoordinatorName) { _, _ -> }
@@ -67,6 +75,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 
     private val stopped = AtomicBoolean(false)
     private val running = AtomicBoolean(false)
+
     // TODO This timeout was set with CORE-17768 (changing configuration value would affect other messaging patterns)
     //  This should be reverted to use configuration value once event mediator polling is refactored (planned for 5.2)
     private val pollTimeout = Duration.ofMillis(50)
@@ -119,7 +128,8 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                                 attempts++
                                 log.warn(
                                     "Multi-source event mediator ${config.name} failed to process records, " +
-                                            "Retrying poll and process. Attempts: $attempts.")
+                                        "Retrying poll and process. Attempts: $attempts."
+                                )
                                 consumer?.resetEventOffsetPosition()
                             }
                             else -> {
@@ -247,9 +257,9 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         groupId: String,
         original: State?,
         processed: State?,
-        toCreate : MutableMap<String, State?>,
-        toUpdate : MutableMap<String, State?>,
-        toDelete : MutableMap<String, State?>
+        toCreate: MutableMap<String, State?>,
+        toUpdate: MutableMap<String, State?>,
+        toDelete: MutableMap<String, State?>
     ) {
         // New state
         if (original == null && processed != null) {

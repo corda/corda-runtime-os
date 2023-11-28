@@ -13,7 +13,10 @@ internal class FileSystemCertificatesAuthorityImpl(
     private val home: File,
     firstSerialNumber: Long,
 ) : LocalCertificatesAuthority(
-    keysFactoryDefinitions, validDuration, defaultPrivateKeyAndCertificate, firstSerialNumber
+    keysFactoryDefinitions,
+    validDuration,
+    defaultPrivateKeyAndCertificate,
+    firstSerialNumber
 ),
     FileSystemCertificatesAuthority {
     companion object {

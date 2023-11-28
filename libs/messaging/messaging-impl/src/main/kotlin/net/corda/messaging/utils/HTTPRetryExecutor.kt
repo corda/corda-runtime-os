@@ -1,12 +1,12 @@
 package net.corda.messaging.utils
 
-import java.net.http.HttpResponse
 import net.corda.messaging.api.exception.CordaHTTPClientErrorException
 import net.corda.messaging.api.exception.CordaHTTPServerErrorException
 import net.corda.utilities.trace
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.net.http.HttpResponse
 
 class HTTPRetryExecutor {
     companion object {

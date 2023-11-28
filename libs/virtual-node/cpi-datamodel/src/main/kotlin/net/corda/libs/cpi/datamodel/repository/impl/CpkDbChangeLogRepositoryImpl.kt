@@ -1,6 +1,5 @@
 package net.corda.libs.cpi.datamodel.repository.impl
 
-import javax.persistence.EntityManager
 import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.cpi.datamodel.CpkDbChangeLog
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogIdentifier
@@ -9,8 +8,9 @@ import net.corda.libs.cpi.datamodel.entities.internal.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.entities.internal.CpkDbChangeLogKey
 import net.corda.libs.cpi.datamodel.repository.CpkDbChangeLogRepository
 import net.corda.libs.packaging.core.CpiIdentifier
+import javax.persistence.EntityManager
 
-internal class CpkDbChangeLogRepositoryImpl: CpkDbChangeLogRepository {
+internal class CpkDbChangeLogRepositoryImpl : CpkDbChangeLogRepository {
     override fun put(em: EntityManager, cpkDbChangeLog: CpkDbChangeLog) {
         em.persist(cpkDbChangeLog.toEntity())
     }
@@ -26,7 +26,7 @@ internal class CpkDbChangeLogRepositoryImpl: CpkDbChangeLogRepository {
         return cpkFileChecksums.chunked(100).map { batch ->
             em.createQuery(
                 "FROM ${CpkDbChangeLogEntity::class.simpleName}" +
-                        " WHERE id.cpkFileChecksum IN :cpkFileChecksums",
+                    " WHERE id.cpkFileChecksum IN :cpkFileChecksums",
                 CpkDbChangeLogEntity::class.java
             ).setParameter("cpkFileChecksums", batch)
                 .resultList.map { it.toDto() }
@@ -44,14 +44,14 @@ internal class CpkDbChangeLogRepositoryImpl: CpkDbChangeLogRepository {
     override fun findByCpiId(em: EntityManager, cpiIdentifier: CpiIdentifier): List<CpkDbChangeLog> {
         return em.createQuery(
             "SELECT changelog " +
-                    "FROM ${CpkDbChangeLogEntity::class.simpleName} AS changelog INNER JOIN " +
-                    "${CpiCpkEntity::class.simpleName} AS cpiCpk " +
-                    "ON changelog.id.cpkFileChecksum = cpiCpk.id.cpkFileChecksum " +
-                    "WHERE cpiCpk.id.cpiName = :name AND " +
-                    "      cpiCpk.id.cpiVersion = :version AND " +
-                    "      cpiCpk.id.cpiSignerSummaryHash = :signerSummaryHash AND " +
-                    "      changelog.isDeleted = FALSE " +
-                    "ORDER BY changelog.insertTimestamp DESC",
+                "FROM ${CpkDbChangeLogEntity::class.simpleName} AS changelog INNER JOIN " +
+                "${CpiCpkEntity::class.simpleName} AS cpiCpk " +
+                "ON changelog.id.cpkFileChecksum = cpiCpk.id.cpkFileChecksum " +
+                "WHERE cpiCpk.id.cpiName = :name AND " +
+                "      cpiCpk.id.cpiVersion = :version AND " +
+                "      cpiCpk.id.cpiSignerSummaryHash = :signerSummaryHash AND " +
+                "      changelog.isDeleted = FALSE " +
+                "ORDER BY changelog.insertTimestamp DESC",
             CpkDbChangeLogEntity::class.java
         )
             .setParameter("name", cpiIdentifier.name)
@@ -76,7 +76,6 @@ internal class CpkDbChangeLogRepositoryImpl: CpkDbChangeLogRepository {
     private fun CpkDbChangeLogIdentifier.toEntity() =
         CpkDbChangeLogKey(cpkFileChecksum.toString(), filePath)
 
-
     /**
      * Converts an entity to a data transport object.
      */
@@ -88,5 +87,4 @@ internal class CpkDbChangeLogRepositoryImpl: CpkDbChangeLogRepository {
      */
     private fun CpkDbChangeLogKey.toDto() =
         CpkDbChangeLogIdentifier(parseSecureHash(cpkFileChecksum), filePath)
-
 }

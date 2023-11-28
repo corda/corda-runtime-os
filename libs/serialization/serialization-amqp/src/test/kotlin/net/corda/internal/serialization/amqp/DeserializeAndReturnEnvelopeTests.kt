@@ -1,11 +1,11 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.internal.serialization.amqp.testutils.deserializeAndReturnEnvelope
 import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryNoEvolution
 import net.corda.internal.serialization.amqp.testutils.testName
+import net.corda.v5.base.annotations.CordaSerializable
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.util.concurrent.TimeUnit
@@ -22,7 +22,7 @@ class DeserializeAndReturnEnvelopeTests {
     val factory = testDefaultFactoryNoEvolution()
 
     @Test
-	fun oneType() {
+    fun oneType() {
         @CordaSerializable
         data class A(val a: Int, val b: String)
 
@@ -37,9 +37,10 @@ class DeserializeAndReturnEnvelopeTests {
     }
 
     @Test
-	fun twoTypes() {
+    fun twoTypes() {
         @CordaSerializable
         data class A(val a: Int, val b: String)
+
         @CordaSerializable
         data class B(val a: A, val b: Float)
 
@@ -55,7 +56,7 @@ class DeserializeAndReturnEnvelopeTests {
     }
 
     @Test
-	fun unannotatedInterfaceIsNotInSchema() {
+    fun unannotatedInterfaceIsNotInSchema() {
         @CordaSerializable
         data class Foo(val bar: Int) : Comparable<Foo> {
             override fun compareTo(other: Foo): Int = bar.compareTo(other.bar)

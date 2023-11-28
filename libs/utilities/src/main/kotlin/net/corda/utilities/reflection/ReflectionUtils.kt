@@ -74,6 +74,7 @@ val KClass<*>.packageName: String get() = java.packageName_
 
 // re-defined to prevent clash with Java 9 Class.packageName: https://docs.oracle.com/javase/9/docs/api/java/lang/Class.html#getPackageName--
 val Class<*>.packageName_: String get() = requireNotNull(this.packageNameOrNull) { "$this not defined inside a package" }
+
 // This intentionally does not go via `package` as that code path is slow and contended and just ends up doing this.
 val Class<*>.packageNameOrNull: String?
     get() {

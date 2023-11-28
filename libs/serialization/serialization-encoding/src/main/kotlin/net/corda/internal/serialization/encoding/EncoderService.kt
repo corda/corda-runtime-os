@@ -8,5 +8,5 @@ package net.corda.internal.serialization.encoding
  *    ServiceLoader<EncoderService> loader = ServiceLoader.load(EncoderService.class);
  */
 interface EncoderService {
-    fun get(encoderType: EncoderType) : Encoder
+    fun get(encoderType: EncoderType): Encoder
 }

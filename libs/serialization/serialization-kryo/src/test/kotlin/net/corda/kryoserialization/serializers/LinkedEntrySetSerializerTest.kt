@@ -37,14 +37,17 @@ class LinkedEntrySetSerializerTest {
 
     @Test
     fun `LinkedEntrySet serializer grants elements order`() {
-        val map = LinkedHashMap<Any,Any?>()
-        val randomValues = arrayOf("a","b","c", 1,2,3,null);
+        val map = LinkedHashMap<Any, Any?>()
+        val randomValues = arrayOf("a", "b", "c", 1, 2, 3, null)
 
         repeat(500) {
             val r = (0 until randomValues.size).random()
-            val r2 = (0 until randomValues.size-1).random()
-            if (it%2==0) map[it] = randomValues[r]
-            else map[randomValues[r2]!!] = randomValues[r]
+            val r2 = (0 until randomValues.size - 1).random()
+            if (it % 2 == 0) {
+                map[it] = randomValues[r]
+            } else {
+                map[randomValues[r2]!!] = randomValues[r]
+            }
         }
 
         val entries = map.entries

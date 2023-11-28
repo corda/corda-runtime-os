@@ -70,9 +70,14 @@ class CpiEntitiesIntegrationTest {
         )
         val cpiCpk =
             TestObject.createCpiCpkEntity(
-                "test-cpi-$cpiId", "1.0", TestObject.SIGNER_SUMMARY_HASH,
-                cpkId, "1.2.3", cpkSignerSummaryHash,
-                "test-cpk", cpkData.fileChecksum,
+                "test-cpi-$cpiId",
+                "1.0",
+                TestObject.SIGNER_SUMMARY_HASH,
+                cpkId,
+                "1.2.3",
+                cpkSignerSummaryHash,
+                "test-cpk",
+                cpkData.fileChecksum,
             )
         val cpi = TestObject.createCpi(cpiId, setOf(cpiCpk))
 
@@ -102,9 +107,14 @@ class CpiEntitiesIntegrationTest {
         )
         val cpiCpk =
             TestObject.createCpiCpkEntity(
-                "test-cpi-$cpiId", "1.0", TestObject.SIGNER_SUMMARY_HASH,
-                cpkId, "1.2.3", TestObject.genRandomChecksum().toString(),
-                "test-cpk", cpkData.fileChecksum
+                "test-cpi-$cpiId",
+                "1.0",
+                TestObject.SIGNER_SUMMARY_HASH,
+                cpkId,
+                "1.2.3",
+                TestObject.genRandomChecksum().toString(),
+                "test-cpk",
+                cpkData.fileChecksum
             )
         val cpi = TestObject.createCpi(cpiId, setOf(cpiCpk))
 
@@ -167,9 +177,11 @@ class CpiEntitiesIntegrationTest {
             }
 
         // assert the added one has been fetched eagerly.
-        assertThat(loadedCpi.cpks.singleOrNull {
-            it.metadata.cpkFileChecksum == cpkMetadataEntity2.cpkFileChecksum
-        }).isNotNull
+        assertThat(
+            loadedCpi.cpks.singleOrNull {
+                it.metadata.cpkFileChecksum == cpkMetadataEntity2.cpkFileChecksum
+            }
+        ).isNotNull
     }
 
     @Test
@@ -185,9 +197,14 @@ class CpiEntitiesIntegrationTest {
         )
         val cpiCpk1 =
             TestObject.createCpiCpkEntity(
-                "test-cpi-$cpiId", "1.0", TestObject.SIGNER_SUMMARY_HASH,
-                cpkId, cpkVer, cpkSignerSummaryHash,
-                "test-cpk1", cpkData.fileChecksum,
+                "test-cpi-$cpiId",
+                "1.0",
+                TestObject.SIGNER_SUMMARY_HASH,
+                cpkId,
+                cpkVer,
+                cpkSignerSummaryHash,
+                "test-cpk1",
+                cpkData.fileChecksum,
             )
         val cpi1 = TestObject.createCpi(cpiId, setOf(cpiCpk1))
 
@@ -208,9 +225,14 @@ class CpiEntitiesIntegrationTest {
         )
         val cpiCpk2 =
             TestObject.createCpiCpkEntity(
-                "test-cpi-$cpiId", "1.0", TestObject.SIGNER_SUMMARY_HASH,
-                cpk2Id, cpk2Ver, cpk2SignerSummaryHash,
-                "test-cpk2", cpkData2.fileChecksum,
+                "test-cpi-$cpiId",
+                "1.0",
+                TestObject.SIGNER_SUMMARY_HASH,
+                cpk2Id,
+                cpk2Ver,
+                cpk2SignerSummaryHash,
+                "test-cpk2",
+                cpkData2.fileChecksum,
             )
         val cpi2 = TestObject.createCpi(cpiId, setOf(cpiCpk1, cpiCpk2))
         emf.transaction {
@@ -220,11 +242,11 @@ class CpiEntitiesIntegrationTest {
         }
 
         val loadedCpi = emf.createEntityManager().use {
-                it.find(
-                    CpiMetadataEntity::class.java,
-                    CpiMetadataEntityKey(cpi2.name, cpi2.version, cpi2.signerSummaryHash)
-                )
-            }
+            it.find(
+                CpiMetadataEntity::class.java,
+                CpiMetadataEntityKey(cpi2.name, cpi2.version, cpi2.signerSummaryHash)
+            )
+        }
 
         assertThat(loadedCpi.cpks.size).isEqualTo(2)
     }
@@ -289,9 +311,14 @@ class CpiEntitiesIntegrationTest {
                 val cpkSignerSummaryHash = TestObject.genRandomChecksum().toString()
                 val cpkMetadataEntity =
                     TestObject.createCpiCpkEntity(
-                        "test-cpi-$cpiId", "1.0", TestObject.SIGNER_SUMMARY_HASH,
-                        cpkName, cpkVersion, cpkSignerSummaryHash,
-                        "test-cpk.cpk$it", TestObject.genRandomChecksum().toString(),
+                        "test-cpi-$cpiId",
+                        "1.0",
+                        TestObject.SIGNER_SUMMARY_HASH,
+                        cpkName,
+                        cpkVersion,
+                        cpkSignerSummaryHash,
+                        "test-cpk.cpk$it",
+                        TestObject.genRandomChecksum().toString(),
                     )
                 val cpkData = CpkFileEntity(
                     cpkMetadataEntity.id.cpkFileChecksum,
@@ -338,8 +365,7 @@ class CpiEntitiesIntegrationTest {
         println("**** [END] findAllCpiMetadata query as stream ****")
     }
 
-    private fun insertCpkChecksums(cpkChecksums: List<SecureHash>, emFactory: EntityManagerFactory):
-            List<CpkFileEntity> {
+    private fun insertCpkChecksums(cpkChecksums: List<SecureHash>, emFactory: EntityManagerFactory): List<CpkFileEntity> {
         val cpkFileEntity = mutableListOf<CpkFileEntity>()
         emFactory.transaction { em ->
             cpkChecksums.forEach {

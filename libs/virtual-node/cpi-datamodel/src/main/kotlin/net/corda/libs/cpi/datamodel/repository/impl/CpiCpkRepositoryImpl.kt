@@ -1,14 +1,14 @@
 package net.corda.libs.cpi.datamodel.repository.impl
 
-import javax.persistence.EntityManager
 import net.corda.crypto.core.parseSecureHash
 import net.corda.libs.cpi.datamodel.CpiCpkIdentifier
 import net.corda.libs.cpi.datamodel.CpiCpkMetadata
 import net.corda.libs.cpi.datamodel.entities.internal.CpiCpkEntity
 import net.corda.libs.cpi.datamodel.entities.internal.CpiCpkKey
 import net.corda.libs.cpi.datamodel.repository.CpiCpkRepository
+import javax.persistence.EntityManager
 
-internal class CpiCpkRepositoryImpl: CpiCpkRepository {
+internal class CpiCpkRepositoryImpl : CpiCpkRepository {
     override fun exist(em: EntityManager, cpiCpkId: CpiCpkIdentifier): Boolean {
         return em.find(
             CpiCpkEntity::class.java,

@@ -9,6 +9,7 @@ interface SecretsServiceFactory {
      * something that is descriptive and easy to pass in as configuration values.
      */
     val type: String
+
     /**
      * Create and instance of [SecretsService] using the provided configuration
      * or return null if a service of this type cannot be created using the given configuration.
@@ -18,4 +19,3 @@ interface SecretsServiceFactory {
      */
     fun create(secretsServiceConfig: Config): SecretsService
 }
-

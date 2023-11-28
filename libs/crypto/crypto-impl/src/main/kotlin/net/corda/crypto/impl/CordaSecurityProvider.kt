@@ -88,4 +88,3 @@ class CordaSecurityProvider(
         override fun newInstance(constructorParameter: Any?): Any = CompositeKeyFactory(keyEncoder)
     }
 }
-

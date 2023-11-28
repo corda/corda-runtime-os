@@ -24,8 +24,7 @@ data class UniquenessCheckRequestInternal constructor(
 ) {
     companion object {
         fun create(externalRequest: UniquenessCheckRequestAvro): UniquenessCheckRequestInternal {
-
-            with (externalRequest) {
+            with(externalRequest) {
                 require(numOutputStates >= 0) { "Number of output states cannot be less than 0." }
 
                 val duplicateInputs = inputStates.groupingBy { it }.eachCount().filter { it.value > 1 }
@@ -40,7 +39,7 @@ data class UniquenessCheckRequestInternal constructor(
 
                 require(intersection.isEmpty()) {
                     "A state cannot be both an input and a reference input in the same request. Offending " +
-                            "states: $intersection"
+                        "states: $intersection"
                 }
 
                 return UniquenessCheckRequestInternal(

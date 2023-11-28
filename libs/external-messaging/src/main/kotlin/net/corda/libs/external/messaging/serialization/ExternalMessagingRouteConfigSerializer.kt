@@ -7,4 +7,3 @@ interface ExternalMessagingRouteConfigSerializer {
 
     fun deserialize(routeConfiguration: String): RouteConfiguration
 }
-

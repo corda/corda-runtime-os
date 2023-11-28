@@ -68,9 +68,13 @@ class ConfigEntityManagerIntegrationTest {
     @Test
     fun `can persist and read back config entities`() {
         val config = ConfigEntity(
-            "${random.nextInt()}", "a=b", 54321, 0,
+            "${random.nextInt()}",
+            "a=b",
+            54321,
+            0,
             // truncating to millis as on windows builds the micros are lost after fetching the data from Postgres
-            Instant.now().truncatedTo(ChronoUnit.MILLIS), "actor"
+            Instant.now().truncatedTo(ChronoUnit.MILLIS),
+            "actor"
         )
 
         entityManagerFactory.createEntityManager().transaction { em ->
@@ -86,9 +90,13 @@ class ConfigEntityManagerIntegrationTest {
     @Test
     fun `can persist and read back config audit entities`() {
         val config = ConfigEntity(
-            "${random.nextInt()}", "a=b", 98765, 0,
+            "${random.nextInt()}",
+            "a=b",
+            98765,
+            0,
             // truncating to millis as on windows builds the micros are lost after fetching the data from Postgres
-            Instant.now().truncatedTo(ChronoUnit.MILLIS), "joel"
+            Instant.now().truncatedTo(ChronoUnit.MILLIS),
+            "joel"
         )
         val configAudit = ConfigAuditEntity(config)
 

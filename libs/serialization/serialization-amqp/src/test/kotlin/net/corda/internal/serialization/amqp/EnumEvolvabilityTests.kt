@@ -382,8 +382,10 @@ class EnumEvolvabilityTests {
     fun multiEnums() {
         @CordaSerializable
         data class A(val a: E1, val b: E2)
+
         @CordaSerializable
         data class B(val a: E3, val b: A, val c: E1)
+
         @CordaSerializable
         data class C(val a: B, val b: E2, val c: E3)
 
@@ -425,6 +427,7 @@ class EnumEvolvabilityTests {
     fun testCache() {
         @CordaSerializable
         data class C2(val annotatedEnum: AnnotatedEnumOnce)
+
         @CordaSerializable
         data class C1(val annotatedEnum: AnnotatedEnumOnce)
 

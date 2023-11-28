@@ -25,7 +25,6 @@ class TestLifecycleCoordinatorFactoryImpl(
         dependentComponents: DependentComponents?,
         handler: LifecycleEventHandler
     ): LifecycleCoordinator {
-
         this.dependentComponents = dependentComponents
 
         return factory.createCoordinator(
@@ -35,5 +34,4 @@ class TestLifecycleCoordinatorFactoryImpl(
             handler
         )
     }
-
 }

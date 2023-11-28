@@ -19,10 +19,10 @@ import java.time.Instant
  * @param timestamp Timestamp indicating when the CPK was uploaded.
  */
 data class CpkMetadata(
-    val id : CpkIdentifier,
-    val mainBundle : String,
-    val libraries : List<String>,
-    val type : String,
+    val id: CpkIdentifier,
+    val mainBundle: String,
+    val libraries: List<String>,
+    val type: String,
     val hash: String,
     val timestamp: Instant
 )

@@ -1,3 +1,3 @@
 package net.corda.libs.configuration.secret
 
-interface SecretsService: SecretsCreateService, SecretsLookupService
+interface SecretsService : SecretsCreateService, SecretsLookupService

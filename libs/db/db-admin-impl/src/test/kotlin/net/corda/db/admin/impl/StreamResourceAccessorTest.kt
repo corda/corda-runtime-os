@@ -20,16 +20,18 @@ class StreamResourceAccessorTest {
         on { fetch(any()) } doReturn(mock())
     }
     private val classLoaderResourceAccessor = mock<ResourceAccessor>
-    {
-        on { getAll(anyOrNull()) } doReturn(mock())
-    }
+        {
+            on { getAll(anyOrNull()) } doReturn(mock())
+        }
     private val sra = StreamResourceAccessor(
-        "master.xml", dbChange, classLoaderResourceAccessor
+        "master.xml",
+        dbChange,
+        classLoaderResourceAccessor
     )
 
     @Test
     fun `when getAll with master changelog return composite`() {
-        val result = sra.getAll( "master.xml")
+        val result = sra.getAll("master.xml")
 
         assertThat(result.size).isEqualTo(1)
         assertThat(result[0].uri.path).isEqualTo("master.xml")
@@ -73,7 +75,7 @@ class StreamResourceAccessorTest {
     }
 
     @Test
-    fun `resolveSibling test`(){
+    fun `resolveSibling test`() {
         val sibling = sra.getAll("jon.xml").single().resolveSibling("another.xml")
         assertThat(sibling.path).isEqualTo("another.xml")
     }

@@ -1,24 +1,24 @@
 package net.corda.internal.serialization.amqp.standard
 
-import net.corda.internal.serialization.amqp.SerializerFactory
-import net.corda.internal.serialization.amqp.AMQPSerializer
-import net.corda.internal.serialization.amqp.SerializerFor
 import net.corda.internal.serialization.amqp.AMQPNotSerializableException
-import net.corda.internal.serialization.amqp.typeDescriptorFor
+import net.corda.internal.serialization.amqp.AMQPSerializer
 import net.corda.internal.serialization.amqp.Descriptor
+import net.corda.internal.serialization.amqp.DeserializationInput
+import net.corda.internal.serialization.amqp.Metadata
 import net.corda.internal.serialization.amqp.SerializationOutput
+import net.corda.internal.serialization.amqp.SerializationSchemas
+import net.corda.internal.serialization.amqp.SerializerFactory
+import net.corda.internal.serialization.amqp.SerializerFor
+import net.corda.internal.serialization.amqp.asClass
+import net.corda.internal.serialization.amqp.typeDescriptorFor
 import net.corda.internal.serialization.amqp.withDescribed
 import net.corda.internal.serialization.amqp.withList
-import net.corda.internal.serialization.amqp.SerializationSchemas
-import net.corda.internal.serialization.amqp.Metadata
-import net.corda.internal.serialization.amqp.DeserializationInput
-import net.corda.internal.serialization.amqp.asClass
 import net.corda.serialization.SerializationContext
 import net.corda.v5.serialization.SerializationCustomSerializer
 import org.apache.qpid.proton.amqp.Symbol
 import org.apache.qpid.proton.codec.Data
-import java.lang.reflect.Type
 import java.lang.reflect.ParameterizedType
+import java.lang.reflect.Type
 
 /**
  * Index into the types list of the parent type of the serializer object, should be the
@@ -76,7 +76,8 @@ class CorDappCustomSerializer(
         if (types.size != 2) {
             throw AMQPNotSerializableException(
                 CorDappCustomSerializer::class.java,
-                "Unable to determine serializer parent types")
+                "Unable to determine serializer parent types"
+            )
         }
 
         type = types[CORDAPP_TYPE]
@@ -92,8 +93,13 @@ class CorDappCustomSerializer(
 
     val descriptor: Descriptor = Descriptor(typeDescriptor)
 
-    override fun writeObject(obj: Any, data: Data, type: Type, output: SerializationOutput,
-                             context: SerializationContext, debugIndent: Int
+    override fun writeObject(
+        obj: Any,
+        data: Data,
+        type: Type,
+        output: SerializationOutput,
+        context: SerializationContext,
+        debugIndent: Int
     ) {
         @Suppress("unchecked_cast")
         val proxy = (serializer as SerializationCustomSerializer<Any, Any>).toProxy(obj)
@@ -107,8 +113,12 @@ class CorDappCustomSerializer(
         }
     }
 
-    override fun readObject(obj: Any, serializationSchemas: SerializationSchemas, metadata: Metadata,
-                            input: DeserializationInput, context: SerializationContext
+    override fun readObject(
+        obj: Any,
+        serializationSchemas: SerializationSchemas,
+        metadata: Metadata,
+        input: DeserializationInput,
+        context: SerializationContext
     ): Any {
         val proxy = proxySerializer.readObject(obj, serializationSchemas, metadata, input, context)
         @Suppress("unchecked_cast")

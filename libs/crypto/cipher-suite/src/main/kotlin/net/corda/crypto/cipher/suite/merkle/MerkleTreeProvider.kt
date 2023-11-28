@@ -1,8 +1,8 @@
 package net.corda.crypto.cipher.suite.merkle
 
-import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.crypto.merkle.MerkleTreeHashDigest
@@ -24,7 +24,7 @@ interface MerkleTreeProvider {
     fun createTree(
         leaves: List<ByteArray>,
         digestProvider: MerkleTreeHashDigestProvider
-    ) : MerkleTree
+    ): MerkleTree
 
     /**
      * Creates a [MerkleTreeHashDigest].
@@ -40,5 +40,5 @@ interface MerkleTreeProvider {
         merkleTreeHashDigestProviderName: String,
         digestAlgorithmName: DigestAlgorithmName,
         options: Map<String, Any> = emptyMap(),
-    ) : MerkleTreeHashDigestProvider
+    ): MerkleTreeHashDigestProvider
 }

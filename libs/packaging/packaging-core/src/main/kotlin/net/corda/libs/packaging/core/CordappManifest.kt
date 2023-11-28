@@ -205,4 +205,3 @@ data class CordappManifest(
             attributes
         )
 }
-

@@ -40,7 +40,6 @@ internal class MessageBusConfigResolver(private val smartConfigFactory: SmartCon
         private const val GROUP_PATH = "group"
         private const val CLIENT_ID_PATH = "clientId"
         private const val INSTANCE_ID_PATH = "instanceId"
-
     }
 
     private val defaults = getResourceConfig(DEFAULT_CONFIG_FILE)

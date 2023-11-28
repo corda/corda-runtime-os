@@ -34,7 +34,8 @@ data class Envelope(val obj: Any?, val schema: Schema, val transformsSchema: Tra
             val describedType = data.`object` as DescribedType
             if (describedType.descriptor != DESCRIPTOR) {
                 throw AMQPNoTypeNotSerializableException(
-                        "Unexpected descriptor ${describedType.descriptor}, should be $DESCRIPTOR.")
+                    "Unexpected descriptor ${describedType.descriptor}, should be $DESCRIPTOR."
+                )
             }
             val list = describedType.described as List<*>
 
@@ -43,7 +44,8 @@ data class Envelope(val obj: Any?, val schema: Schema, val transformsSchema: Tra
                 ENVELOPE_SIMPLE -> TransformsSchema.newInstance(null)
                 ENVELOPE_WITH_TRANSFORMS, ENVELOPE_WITH_METADATA -> TransformsSchema.newInstance(list[TRANSFORMS_SCHEMA_IDX])
                 else -> throw AMQPNoTypeNotSerializableException(
-                        "Malformed list, bad length of ${list.size} (should be 2, 3 or 4)")
+                    "Malformed list, bad length of ${list.size} (should be 2, 3 or 4)"
+                )
             }
 
             // We need to cope with objects serialised without metadata element in the envelope
@@ -51,7 +53,8 @@ data class Envelope(val obj: Any?, val schema: Schema, val transformsSchema: Tra
                 ENVELOPE_SIMPLE, ENVELOPE_WITH_TRANSFORMS -> Metadata()
                 ENVELOPE_WITH_METADATA -> Metadata.get(list[METADATA_IDX]!!)
                 else -> throw AMQPNoTypeNotSerializableException(
-                        "Malformed list, bad length of ${list.size} (should be 2, 3 or 4)")
+                    "Malformed list, bad length of ${list.size} (should be 2, 3 or 4)"
+                )
             }
             return newInstance(listOf(list[BLOB_IDX], Schema.get(list[SCHEMA_IDX]!!), transformSchema, metadata))
         }
@@ -67,7 +70,8 @@ data class Envelope(val obj: Any?, val schema: Schema, val transformsSchema: Tra
                 ENVELOPE_SIMPLE -> TransformsSchema.newInstance(null)
                 ENVELOPE_WITH_TRANSFORMS, ENVELOPE_WITH_METADATA -> list[TRANSFORMS_SCHEMA_IDX] as TransformsSchema
                 else -> throw AMQPNoTypeNotSerializableException(
-                        "Malformed list, bad length of ${list.size} (should be 2, 3 or 4)")
+                    "Malformed list, bad length of ${list.size} (should be 2, 3 or 4)"
+                )
             }
 
             // We need to cope with objects serialised without metadata element in the envelope
@@ -75,7 +79,8 @@ data class Envelope(val obj: Any?, val schema: Schema, val transformsSchema: Tra
                 ENVELOPE_SIMPLE, ENVELOPE_WITH_TRANSFORMS -> Metadata()
                 ENVELOPE_WITH_METADATA -> list[METADATA_IDX] as Metadata
                 else -> throw AMQPNoTypeNotSerializableException(
-                        "Malformed list, bad length of ${list.size} (should be 2, 3 or 4)")
+                    "Malformed list, bad length of ${list.size} (should be 2, 3 or 4)"
+                )
             }
             return Envelope(list[BLOB_IDX], list[SCHEMA_IDX] as Schema, transformSchema, metadata)
         }

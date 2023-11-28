@@ -16,7 +16,8 @@ interface TracingService : AutoCloseable {
 
     fun nextSpan(
         operationName: String,
-        headers: List<Pair<String, String>>): TraceContext
+        headers: List<Pair<String, String>>
+    ): TraceContext
 
     fun getOrCreateBatchPublishTracing(clientId: String): BatchPublishTracing
 

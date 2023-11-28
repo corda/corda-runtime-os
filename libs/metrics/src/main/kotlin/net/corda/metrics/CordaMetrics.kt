@@ -20,7 +20,6 @@ import java.util.function.ToDoubleFunction
 import java.util.function.ToLongFunction
 import io.micrometer.core.instrument.Tag as micrometerTag
 
-
 object CordaMetrics {
     sealed class Metric<T : Meter>(
         val metricsName: String,
@@ -84,14 +83,12 @@ object CordaMetrics {
          */
         object FlowEventPipelineExecutionTime : Metric<Timer>("flow.event.pipeline.execution.time", CordaMetrics::timer)
 
-
         /**
          * Metric for the time the fiber is running between two suspension points.
          *
          * Number of fiber execution events processed can be inferred from the count of events recorded for this metric.
          */
         object FlowEventFiberExecutionTime : Metric<Timer>("flow.event.fiber.execution.time", CordaMetrics::timer)
-
 
         /**
          * Metric for the total time spent in the pipeline code across the execution time of a flow or subFlow.
@@ -102,7 +99,6 @@ object CordaMetrics {
          * Metric for the total time spent executing user code across the execution time of a flow or subFlow.
          */
         object FlowFiberExecutionTime : Metric<Timer>("flow.fiber.execution.time", CordaMetrics::timer)
-
 
         /**
          * Metric for total time taken waiting to awake from a suspension
@@ -168,12 +164,12 @@ object CordaMetrics {
          *
          * The number of messages received by sessions.
          */
-        object FlowSessionMessagesReceivedCount: Metric<Counter>("flow.session.messages.received.count", Metrics::counter)
+        object FlowSessionMessagesReceivedCount : Metric<Counter>("flow.session.messages.received.count", Metrics::counter)
 
         /**
          * The number of messages sent by sessions.
          */
-        object FlowSessionMessagesSentCount: Metric<Counter>("flow.session.messages.sent.count", Metrics::counter)
+        object FlowSessionMessagesSentCount : Metric<Counter>("flow.session.messages.sent.count", Metrics::counter)
 
         /**
          * P2P Metrics
@@ -215,37 +211,37 @@ object CordaMetrics {
         /**
          * Number of outbound peer-to-peer sessions.
          */
-        class OutboundSessionCount(computation: Supplier<Number>): ComputedValue<Nothing>("p2p.session.outbound", computation)
+        class OutboundSessionCount(computation: Supplier<Number>) : ComputedValue<Nothing>("p2p.session.outbound", computation)
 
         /**
          * Number of inbound peer-to-peer sessions.
          */
-        class InboundSessionCount(computation: Supplier<Number>): ComputedValue<Nothing>("p2p.session.inbound", computation)
+        class InboundSessionCount(computation: Supplier<Number>) : ComputedValue<Nothing>("p2p.session.inbound", computation)
 
         /**
          * Time it took for an inbound request to the p2p gateway to be processed.
          */
-        object InboundGatewayRequestLatency: Metric<Timer>("p2p.gateway.inbound.request.time", CordaMetrics::timer)
+        object InboundGatewayRequestLatency : Metric<Timer>("p2p.gateway.inbound.request.time", CordaMetrics::timer)
 
         /**
          * Time it took for an outbound request from the p2p gateway to be processed.
          */
-        object OutboundGatewayRequestLatency: Metric<Timer>("p2p.gateway.outbound.request.time", CordaMetrics::timer)
+        object OutboundGatewayRequestLatency : Metric<Timer>("p2p.gateway.outbound.request.time", CordaMetrics::timer)
 
         /**
          * Number of inbound connections established.
          */
-        object InboundGatewayConnections: Metric<Counter>("p2p.gateway.inbound.tls.connections", Metrics::counter)
+        object InboundGatewayConnections : Metric<Counter>("p2p.gateway.inbound.tls.connections", Metrics::counter)
 
         /**
          * Number of outbound connections established.
          */
-        object OutboundGatewayConnections: Metric<Counter>("p2p.gateway.outbound.tls.connections", Metrics::counter)
+        object OutboundGatewayConnections : Metric<Counter>("p2p.gateway.outbound.tls.connections", Metrics::counter)
 
         /**
          * Time it took for gateway to process certificate revocation checks.
          */
-        object GatewayRevocationChecksLatency: Metric<Timer>("p2p.gateway.cert.revocation.check.time", CordaMetrics::timer)
+        object GatewayRevocationChecksLatency : Metric<Timer>("p2p.gateway.cert.revocation.check.time", CordaMetrics::timer)
 
         /**
          * The time taken from requesting a uniqueness check to a response being received from the perspective of
@@ -289,7 +285,8 @@ object CordaMetrics {
          * (both read and write) carried out within a session context.
          */
         object UniquenessBackingStoreSessionExecutionTime : Metric<Timer>(
-            "uniqueness.backingstore.session.execution.time", CordaMetrics::timer
+            "uniqueness.backingstore.session.execution.time",
+            CordaMetrics::timer
         )
 
         /**
@@ -299,7 +296,8 @@ object CordaMetrics {
          * of all retry attempts.
          */
         object UniquenessBackingStoreTransactionExecutionTime : Metric<Timer>(
-            "uniqueness.backingstore.transaction.execution.time", CordaMetrics::timer
+            "uniqueness.backingstore.transaction.execution.time",
+            CordaMetrics::timer
         )
 
         /**
@@ -307,7 +305,8 @@ object CordaMetrics {
          * regardless of whether an expected or unexpected error is raised, and is incremented on each retry.
          */
         object UniquenessBackingStoreTransactionErrorCount : Metric<Counter>(
-            "uniqueness.backingstore.transaction.error.count", Metrics::counter
+            "uniqueness.backingstore.transaction.error.count",
+            Metrics::counter
         )
 
         /**
@@ -316,7 +315,8 @@ object CordaMetrics {
          * is not updated.
          */
         object UniquenessBackingStoreTransactionAttempts : Metric<DistributionSummary>(
-            "uniqueness.backingstore.transaction.attempts", Metrics::summary
+            "uniqueness.backingstore.transaction.attempts",
+            Metrics::summary
         )
 
         /**
@@ -329,8 +329,7 @@ object CordaMetrics {
         /**
          * The time taken by the backing store to perform a single read operation from the database.
          */
-        object UniquenessBackingStoreDbReadTime: Metric<Timer>("uniqueness.backingstore.db.read.time", CordaMetrics::timer)
-
+        object UniquenessBackingStoreDbReadTime : Metric<Timer>("uniqueness.backingstore.db.read.time", CordaMetrics::timer)
 
         object TokenSelectionExecutionTime : Metric<Timer>("token.selection.execution.time", CordaMetrics::timer)
         object TokenSelectionDbExecutionTime : Metric<Timer>("token.selection.db.execution.time", CordaMetrics::timer)
@@ -342,53 +341,52 @@ object CordaMetrics {
             /**
              * The time taken by crypto flow operations.
              */
-            object FlowOpsProcessorExecutionTime: Metric<Timer>("$PREFIX.flow.processor.execution.time", CordaMetrics::timer)
+            object FlowOpsProcessorExecutionTime : Metric<Timer>("$PREFIX.flow.processor.execution.time", CordaMetrics::timer)
 
             /**
              * The time taken by crypto operations invoked by RPC message pattern requests.
              */
-            object OpsProcessorExecutionTime: Metric<Timer>("$PREFIX.processor.execution.time", CordaMetrics::timer)
+            object OpsProcessorExecutionTime : Metric<Timer>("$PREFIX.processor.execution.time", CordaMetrics::timer)
 
             /**
              * The time taken for wrapping key creation in crypto operations.
              */
-            object WrappingKeyCreationTimer: Metric<Timer>("$PREFIX.wrapping.key.creation.time", CordaMetrics::timer)
+            object WrappingKeyCreationTimer : Metric<Timer>("$PREFIX.wrapping.key.creation.time", CordaMetrics::timer)
 
             /**
              * The time taken to create entity manager factories.
              */
-            object EntityManagerFactoryCreationTimer: Metric<Timer>("entity.manager.factory.creation.time", CordaMetrics::timer)
+            object EntityManagerFactoryCreationTimer : Metric<Timer>("entity.manager.factory.creation.time", CordaMetrics::timer)
 
             /**
              * The time taken for crypto signing.
              */
-            object SignTimer: Metric<Timer>("$PREFIX.sign.time", CordaMetrics::timer)
+            object SignTimer : Metric<Timer>("$PREFIX.sign.time", CordaMetrics::timer)
 
             /**
              * The time taken for crypto signing key lookup.
              */
-            object SigningKeyLookupTimer: Metric<Timer>("$PREFIX.signing.key.lookup.time", CordaMetrics::timer)
+            object SigningKeyLookupTimer : Metric<Timer>("$PREFIX.signing.key.lookup.time", CordaMetrics::timer)
 
             /**
              * The time taken to get crypto signing repository instances.
              */
-            object SigningRepositoryGetInstanceTimer: Metric<Timer>("$PREFIX.signing.repository.get.instance.time", CordaMetrics::timer)
+            object SigningRepositoryGetInstanceTimer : Metric<Timer>("$PREFIX.signing.repository.get.instance.time", CordaMetrics::timer)
 
             /**
              * The time taken for crypto service sign operation.
              */
-            object GetOwnedKeyRecordTimer: Metric<Timer>("$PREFIX.get.owned.key.record.time", CordaMetrics::timer)
+            object GetOwnedKeyRecordTimer : Metric<Timer>("$PREFIX.get.owned.key.record.time", CordaMetrics::timer)
 
             /**
              * The time taken for crypto cipher scheme operations.
              */
-            object CipherSchemeTimer: Metric<Timer>("$PREFIX.cipher.scheme.time", CordaMetrics::timer)
+            object CipherSchemeTimer : Metric<Timer>("$PREFIX.cipher.scheme.time", CordaMetrics::timer)
 
             /**
              * The time taken for crypto signature spec operations.
              */
-            object SignatureSpecTimer: Metric<Timer>("$PREFIX.signature.spec.time", CordaMetrics::timer)
-
+            object SignatureSpecTimer : Metric<Timer>("$PREFIX.signature.spec.time", CordaMetrics::timer)
         }
 
         object Membership {
@@ -397,7 +395,7 @@ object CordaMetrics {
             /**
              * Time taken for a membership persistence transaction to complete.
              */
-            object PersistenceTransactionExecutionTime: Metric<Timer>(
+            object PersistenceTransactionExecutionTime : Metric<Timer>(
                 "$PREFIX.persistence.transaction.time",
                 CordaMetrics::timer
             )
@@ -405,7 +403,7 @@ object CordaMetrics {
             /**
              * Total time taken for a membership persistence handler to execute.
              */
-            object PersistenceHandlerExecutionTime: Metric<Timer>(
+            object PersistenceHandlerExecutionTime : Metric<Timer>(
                 "$PREFIX.persistence.handler.time",
                 CordaMetrics::timer
             )
@@ -413,7 +411,7 @@ object CordaMetrics {
             /**
              * Time taken by each stage of network registration.
              */
-            object RegistrationHandlerExecutionTime: Metric<Timer>(
+            object RegistrationHandlerExecutionTime : Metric<Timer>(
                 "$PREFIX.registration.handler.time",
                 CordaMetrics::timer
             )
@@ -421,7 +419,7 @@ object CordaMetrics {
             /**
              * Time taken by each membership actions handler (e.g. distribute network data).
              */
-            object ActionsHandlerExecutionTime: Metric<Timer>(
+            object ActionsHandlerExecutionTime : Metric<Timer>(
                 "$PREFIX.actions.handler.time",
                 CordaMetrics::timer
             )
@@ -429,7 +427,7 @@ object CordaMetrics {
             /**
              * Time taken to execute each stage of network synchronisation between members and the MGM.
              */
-            object SyncHandlerExecutionTime: Metric<Timer>(
+            object SyncHandlerExecutionTime : Metric<Timer>(
                 "$PREFIX.sync.handler.time",
                 CordaMetrics::timer
             )
@@ -437,7 +435,7 @@ object CordaMetrics {
             /**
              * Metric to capture the changes in group size.
              */
-            class MemberListCacheSize<T : List<*>>(list: T?): ComputedValue<T>(
+            class MemberListCacheSize<T : List<*>>(list: T?) : ComputedValue<T>(
                 "$PREFIX.memberlist.cache.size",
                 list,
                 Collection<*>::doubleSize
@@ -447,7 +445,7 @@ object CordaMetrics {
         /**
          * The time taken by crypto operations from the flow side.
          */
-        object CryptoOperationsFlowTime: Metric<Timer>("flow.crypto.time", CordaMetrics::timer)
+        object CryptoOperationsFlowTime : Metric<Timer>("flow.crypto.time", CordaMetrics::timer)
 
         object Ledger {
 
@@ -459,7 +457,7 @@ object CordaMetrics {
             /**
              * The time taken by verification processor to verify a ledger transaction.
              */
-            object TransactionVerificationTime: Metric<Timer>("ledger.verification.time", CordaMetrics::timer)
+            object TransactionVerificationTime : Metric<Timer>("ledger.verification.time", CordaMetrics::timer)
 
             /**
              * The time taken by contract verification when verifying a transaction.
@@ -487,7 +485,7 @@ object CordaMetrics {
             /**
              * The time taken by ledger persistence processor to perform persistence operation.
              */
-            object PersistenceExecutionTime: Metric<Timer>("ledger.persistence.time", CordaMetrics::timer)
+            object PersistenceExecutionTime : Metric<Timer>("ledger.persistence.time", CordaMetrics::timer)
 
             /**
              * The length of resolved backchains when performing backchain resolution.
@@ -531,8 +529,8 @@ object CordaMetrics {
         /**
          * A [Gauge] metric that computes its value using a lambda.
          */
-        sealed class ComputedValue<T> private constructor(name: String, meter: (String, Iterable<micrometerTag>) -> Gauge)
-            : Metric<Gauge>(name, meter) {
+        sealed class ComputedValue<T> private constructor(name: String, meter: (String, Iterable<micrometerTag>) -> Gauge) :
+            Metric<Gauge>(name, meter) {
 
             /**
              * Creates a [Gauge] for the value of [computation]. The [MeterRegistry] will hold
@@ -567,7 +565,7 @@ object CordaMetrics {
                 description: String,
                 path: Path,
                 computation: ToLongFunction<File>
-            ): Metric<Gauge>(name, meter = { n, tags ->
+            ) : Metric<Gauge>(name, meter = { n, tags ->
                 if (path.fileSystem == FileSystems.getDefault()) {
                     val file = path.toFile()
                     Gauge.builder(n, file) { f -> computation.applyAsLong(f).toDouble() }
@@ -582,8 +580,8 @@ object CordaMetrics {
                 }
             })
 
-            inner class TotalSpace: Value("${name}.disk.total", "Total space for path", path, File::getTotalSpace)
-            inner class UsableSpace: Value("${name}.disk.free", "Usable space for path", path, File::getUsableSpace)
+            inner class TotalSpace : Value("$name.disk.total", "Total space for path", path, File::getTotalSpace)
+            inner class UsableSpace : Value("$name.disk.free", "Usable space for path", path, File::getUsableSpace)
 
             fun metrics(): List<Metric<Gauge>> {
                 return listOf(TotalSpace(), UsableSpace())
@@ -592,12 +590,12 @@ object CordaMetrics {
             /**
              * Disk space used to store CPKs and their chunks.
              */
-            class Cpks(path: Path): DiskSpace("cpks", path)
+            class Cpks(path: Path) : DiskSpace("cpks", path)
 
             /**
              * Disk space used to unpack CPKs.
              */
-            class UnpackedCpks(path: Path): DiskSpace("cpks.unpacked", path)
+            class UnpackedCpks(path: Path) : DiskSpace("cpks.unpacked", path)
         }
 
         object Db {
@@ -675,7 +673,6 @@ object CordaMetrics {
              * Record the size of HTTP RPC responses
              */
             object HTTPRPCResponseSize : Metric<DistributionSummary>("rpc.http.response.size", Metrics::summary)
-
         }
 
         object TaskManager {

@@ -14,6 +14,7 @@ interface SchedulerLock : AutoCloseable {
      * Id of the scheduler taking the lock.
      */
     val schedulerId: String
+
     /**
      * Returns the time, in seconds, since the last time this task has been triggered
      */

@@ -20,7 +20,7 @@ class ProtocolModeNegotiation {
          * Protocol modes that are considered more secure are preferred to less secure modes, when both are supported.
          */
         private fun getPreference(mode: ProtocolMode): Int {
-            return when(mode) {
+            return when (mode) {
                 ProtocolMode.AUTHENTICATION_ONLY -> 1
                 ProtocolMode.AUTHENTICATED_ENCRYPTION -> 2
             }

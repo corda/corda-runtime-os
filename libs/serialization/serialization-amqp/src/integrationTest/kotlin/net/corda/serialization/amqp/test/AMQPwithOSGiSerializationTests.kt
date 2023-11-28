@@ -87,8 +87,8 @@ class AMQPwithOSGiSerializationTests {
 
     @Throws(NotSerializableException::class)
     inline fun <reified T : Any> DeserializationInput.deserializeAndReturnEnvelope(
-            bytes: SerializedBytes<T>,
-            serializationContext: SerializationContext
+        bytes: SerializedBytes<T>,
+        serializationContext: SerializationContext
     ): ObjectAndEnvelope<T> = deserializeAndReturnEnvelope(bytes, T::class.java, serializationContext)
 
     @Test
@@ -124,7 +124,9 @@ class AMQPwithOSGiSerializationTests {
             val transferClass = sandboxGroup.loadClassFromMainBundles("com.r3.corda.testing.bundle4.Transfer")
 
             val transferInstance = transferClass.getConstructor(
-                obligationInstance.javaClass, documentInstance.javaClass, containerInstance.javaClass
+                obligationInstance.javaClass,
+                documentInstance.javaClass,
+                containerInstance.javaClass
             ).newInstance(obligationInstance, documentInstance, containerInstance)
 
             val serialised = SerializationOutput(factory1).serialize(transferInstance, testSerializationContext)
@@ -303,8 +305,11 @@ class AMQPwithOSGiSerializationTests {
             val exception = assertThrows<IllegalCustomSerializerException> {
                 factory.registerExternal(serializer, factory)
             }
-            assertEquals("Custom serializer com.r3.corda.testing.bundle.VersionSerializer to serialize " +
-                    "non-custom-serializable type class com.r3.corda.testing.bundle.VersionSerializer", exception.message)
+            assertEquals(
+                "Custom serializer com.r3.corda.testing.bundle.VersionSerializer to serialize " +
+                    "non-custom-serializable type class com.r3.corda.testing.bundle.VersionSerializer",
+                exception.message
+            )
 
             // JDK type custom serializer
             val factory1 = testDefaultFactory(sandboxGroup)
@@ -316,8 +321,11 @@ class AMQPwithOSGiSerializationTests {
             val exception1 = assertThrows<IllegalCustomSerializerException> {
                 factory1.registerExternal(serializer1, factory1)
             }
-            assertEquals("Custom serializer com.r3.corda.testing.bundle.ThreadSerializer to serialize " +
-                    "non-custom-serializable type class com.r3.corda.testing.bundle.ThreadSerializer", exception1.message)
+            assertEquals(
+                "Custom serializer com.r3.corda.testing.bundle.ThreadSerializer to serialize " +
+                    "non-custom-serializable type class com.r3.corda.testing.bundle.ThreadSerializer",
+                exception1.message
+            )
 
             // CordaSerializable annotated Corda platform type custom serializer
             val factory2 = testDefaultFactory(sandboxGroup)
@@ -329,8 +337,11 @@ class AMQPwithOSGiSerializationTests {
             val exception2 = assertThrows<IllegalCustomSerializerException> {
                 factory2.registerExternal(serializer2, factory2)
             }
-            assertEquals("Custom serializer com.r3.corda.testing.bundle.MemberX500NameSerializer to serialize " +
-                    "non-custom-serializable type class com.r3.corda.testing.bundle.MemberX500NameSerializer", exception2.message)
+            assertEquals(
+                "Custom serializer com.r3.corda.testing.bundle.MemberX500NameSerializer to serialize " +
+                    "non-custom-serializable type class com.r3.corda.testing.bundle.MemberX500NameSerializer",
+                exception2.message
+            )
         } finally {
             sandboxFactory.unloadSandboxGroup(sandboxGroup)
         }
@@ -400,12 +411,10 @@ class AMQPwithOSGiSerializationTests {
             val deserialize = DeserializationInput(factory).deserialize(serializedBytes, context)
 
             assertEquals(testObject, deserialize)
-
         } finally {
             sandboxFactory.unloadSandboxGroup(sandboxGroup)
         }
     }
-
 
     // Based on writeTestResource from AMQPTestUtils.kt which is not available as an OSGi exported package
     @Suppress("unused")
@@ -413,8 +422,8 @@ class AMQPwithOSGiSerializationTests {
         // Change to the full path of the repository to regenerate resources
         val projectRootDir = "/full-path-to-repo-dir"
         val dir =
-            projectRootDir / "libs" / "serialization" / "serialization-amqp"/"src"/"integrationTest"/"resources" /
-                    javaClass.packageName_.replace('.', File.separatorChar)
+            projectRootDir / "libs" / "serialization" / "serialization-amqp" / "src" / "integrationTest" / "resources" /
+                javaClass.packageName_.replace('.', File.separatorChar)
         bytes.open().copyTo(dir / testResourceName, StandardCopyOption.REPLACE_EXISTING)
     }
 
@@ -500,14 +509,16 @@ class AMQPwithOSGiSerializationTests {
         // Build original state and serialize
         val originalSandboxGroup =
             sandboxFactory.loadSandboxGroup(
-            "META-INF/TestSerializableEvolutionDifferentOriginal-workflows.cpb")
+                "META-INF/TestSerializableEvolutionDifferentOriginal-workflows.cpb"
+            )
         val serializedBytes = try {
             val originalFactory = testDefaultFactory(originalSandboxGroup)
             val originalContext = testSerializationContext.withSandboxGroup(originalSandboxGroup)
 
             val originalStateClass =
                 originalSandboxGroup.loadClassFromMainBundles(
-                    "com.r3.corda.testing.bundle.evolution.different.SerializableStateForDifferentCpk")
+                    "com.r3.corda.testing.bundle.evolution.different.SerializableStateForDifferentCpk"
+                )
             val originalStateInstance =
                 originalStateClass.getConstructor(UUID::class.java).newInstance(UUID.randomUUID())
             SerializationOutput(originalFactory).serialize(originalStateInstance, originalContext)
@@ -518,7 +529,8 @@ class AMQPwithOSGiSerializationTests {
         // Test with replacement CPK
         val replacementSandboxGroup =
             sandboxFactory.loadSandboxGroup(
-                "META-INF/TestSerializableEvolutionDifferentReplacement-workflows.cpb")
+                "META-INF/TestSerializableEvolutionDifferentReplacement-workflows.cpb"
+            )
         try {
             val replacementFactory = testDefaultFactory(replacementSandboxGroup)
             val replacementContext = testSerializationContext.withSandboxGroup(replacementSandboxGroup)

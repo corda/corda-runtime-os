@@ -12,4 +12,3 @@ interface StartupBanner {
      */
     fun get(name: String, version: String): String
 }
-

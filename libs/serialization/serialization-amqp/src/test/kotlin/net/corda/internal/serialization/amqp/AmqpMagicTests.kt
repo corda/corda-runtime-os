@@ -16,7 +16,6 @@ class AmqpMagicTests {
 
     @Test
     fun throwsExceptionWhenMagicDifferent() {
-
         // Prepare some correct serialisation input
         val factory = testDefaultFactoryNoEvolution()
         val serializedBytes = SerializationOutput(factory).serialize("")

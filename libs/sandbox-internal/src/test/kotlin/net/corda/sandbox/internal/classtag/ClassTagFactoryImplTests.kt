@@ -98,7 +98,10 @@ class ClassTagFactoryImplTests {
         val classTag = classTagFactory.deserialise(serialisedTag)
 
         val expectedClassTag = EvolvableTagImplV1(
-            ClassType.NonBundleClass, PLACEHOLDER_STRING, PLACEHOLDER_STRING, PLACEHOLDER_HASH
+            ClassType.NonBundleClass,
+            PLACEHOLDER_STRING,
+            PLACEHOLDER_STRING,
+            PLACEHOLDER_HASH
         )
         assertEquals(expectedClassTag, classTag)
     }
@@ -142,7 +145,7 @@ class ClassTagFactoryImplTests {
     fun `throws if asked to deserialise less than two entries`() {
         val insufficientEntriesPattern = Regex(
             "Serialised class tag only contained .* entries, whereas the minimum length is 2. The entries " +
-                    "were .*\\."
+                "were .*\\."
         )
 
         val zeroEntries = ""
@@ -202,7 +205,7 @@ class ClassTagFactoryImplTests {
     fun `throws if asked to deserialise a static tag with not exactly five entries`() {
         val insufficientEntriesPattern = Regex(
             "Serialised static class tag contained .* entries, whereas .* entries were expected. The entries " +
-                    "were .*\\."
+                "were .*\\."
         )
 
         val fourEntries = generateSerialisedTag(ClassTagV1.STATIC_IDENTIFIER, 4)
@@ -218,7 +221,7 @@ class ClassTagFactoryImplTests {
     fun `throws if asked to deserialise an evolvable tag with not exactly six entries`() {
         val insufficientEntriesPattern = Regex(
             "Serialised evolvable class tag contained .* entries, whereas .* entries were expected. The " +
-                    "entries were .*\\."
+                "entries were .*\\."
         )
 
         val fiveEntries = generateSerialisedTag(ClassTagV1.EVOLVABLE_IDENTIFIER, 5)

@@ -77,7 +77,6 @@ class SandboxServiceImplTests {
         notStartableBundles: Collection<String> = emptySet(),
         notUninstallableBundles: Collection<String> = emptySet()
     ) = mock<BundleUtils>().apply {
-
         whenever(getServiceRuntimeComponentBundle()).thenReturn(scrBundle)
         whenever(allBundles).thenReturn(listOf(frameworkBundle, scrBundle))
         whenever(resolveBundles(any())).thenReturn(true)
@@ -122,9 +121,11 @@ class SandboxServiceImplTests {
         assertEquals(2, sandboxes.size)
 
         val sandboxesRetrievedFromSandboxGroup =
-            cpks.map { cpk -> sandboxGroup.cpkSandboxes.find { sandbox ->
-                sandbox.cpkMetadata.fileChecksum == cpk.metadata.fileChecksum
-            } }
+            cpks.map { cpk ->
+                sandboxGroup.cpkSandboxes.find { sandbox ->
+                    sandbox.cpkMetadata.fileChecksum == cpk.metadata.fileChecksum
+                }
+            }
         assertEquals(sandboxes.toSet(), sandboxesRetrievedFromSandboxGroup.toSet())
     }
 
@@ -574,8 +575,8 @@ private data class CpkAndContents(
                 whenever(bundleVersion).thenAnswer { "${random.nextInt()}" }
             },
             type = CpkType.UNKNOWN,
-            fileChecksum = cpkChecksum ?:
-                SecureHashImpl(HASH_ALGORITHM, MessageDigest.getInstance(HASH_ALGORITHM).digest(cpkBytes.toByteArray())),
+            fileChecksum = cpkChecksum
+                ?: SecureHashImpl(HASH_ALGORITHM, MessageDigest.getInstance(HASH_ALGORITHM).digest(cpkBytes.toByteArray())),
             cordappCertificates = emptySet(),
             timestamp = Instant.now(),
             null

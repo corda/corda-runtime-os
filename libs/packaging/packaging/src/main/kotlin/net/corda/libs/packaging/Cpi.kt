@@ -13,9 +13,8 @@ interface Cpi {
         val fileExtensions = listOf(".cpb", ".cpi")
     }
 
-    val metadata : CpiMetadata
-    val cpks : Collection<Cpk>
+    val metadata: CpiMetadata
+    val cpks: Collection<Cpk>
 
-    fun getCpkById(id : CpkIdentifier) : Cpk?
+    fun getCpkById(id: CpkIdentifier): Cpk?
 }
-

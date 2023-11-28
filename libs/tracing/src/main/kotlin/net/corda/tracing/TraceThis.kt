@@ -55,7 +55,7 @@ fun addTraceContextToRecord(it: CordaProducerRecord<*, *>): CordaProducerRecord<
 }
 
 fun traceSend(
-    headers: List<Pair<String,String>>,
+    headers: List<Pair<String, String>>,
     operationName: String
 ): TraceContext {
     return TracingState.currentTraceService.nextSpan(operationName, headers)

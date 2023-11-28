@@ -39,7 +39,7 @@ class LifecycleCoordinatorFactoryImpl @Activate constructor(
         if (batchSize <= 0) {
             throw LifecycleException(
                 "Failed to create a lifecycle coordinator with name $name as the batch size is less" +
-                        " than 1. (Provided batch size was $batchSize)"
+                    " than 1. (Provided batch size was $batchSize)"
             )
         }
 

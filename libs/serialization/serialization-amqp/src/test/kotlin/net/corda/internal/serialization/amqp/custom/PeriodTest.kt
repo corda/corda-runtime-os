@@ -9,14 +9,17 @@ class PeriodTest {
     fun zero() {
         serializeDeserializeAssert(Period.ZERO)
     }
+
     @Test
     fun oneThousandYears() {
         serializeDeserializeAssert(Period.ofYears(1000))
     }
+
     @Test
     fun oneDay() {
         serializeDeserializeAssert(Period.ofDays(1))
     }
+
     @Test
     fun oneWeek() {
         serializeDeserializeAssert(Period.ofWeeks(1))

@@ -20,7 +20,7 @@ internal class CpiUploadManagerFactoryImplTest {
     fun `upload manager creation starts pub and sub`() {
         val factory = CpiUploadManagerFactoryImpl()
         val subscription: CompactedSubscription<UploadStatusKey, UploadStatus> = mock()
-        val config = mock<SmartConfig>() {
+        val config = mock<SmartConfig> {
             on { getInt(MessagingConfig.MAX_ALLOWED_MSG_SIZE) }.doReturn(123)
         }
         val publisher = mock<Publisher>()

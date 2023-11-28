@@ -40,7 +40,6 @@ class ClassloaderChangeLogTest {
         )
     }
 
-
     @Test
     fun `when changeLogList return all master and fetched without duplicates`() {
         val cl = ClassloaderChangeLog(changelogFiles)
@@ -76,7 +75,6 @@ class ClassloaderChangeLogTest {
         assertThat(cl.fetch("classloader://foo/migration/test/fred.txt").bufferedReader().use { it.readText() })
             .isEqualTo("freddy")
     }
-
 
     @Test
     fun `when fetch full name with classloader with single slash return resources as stream`() {

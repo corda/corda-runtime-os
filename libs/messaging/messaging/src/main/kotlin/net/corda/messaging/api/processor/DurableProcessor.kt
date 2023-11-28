@@ -24,7 +24,7 @@ interface DurableProcessor<K : Any, V : Any> {
      * NOTE: The returned events will be published and the processed events will be consumed atomically as a
      * single transaction.
      */
-    fun onNext(events: List<Record<K, V>>) : List<Record<*, *>>
+    fun onNext(events: List<Record<K, V>>): List<Record<*, *>>
 
     /**
      * [keyClass] and [valueClass] to easily get the class types the processor operates on.
@@ -34,4 +34,3 @@ interface DurableProcessor<K : Any, V : Any> {
     val keyClass: Class<K>
     val valueClass: Class<V>
 }
-

@@ -14,7 +14,7 @@ import org.osgi.service.component.annotations.Reference
 class MediatorConsumerFactoryFactoryImpl @Activate constructor(
     @Reference(service = CordaConsumerBuilder::class)
     private val cordaConsumerBuilder: CordaConsumerBuilder,
-): MediatorConsumerFactoryFactory {
+) : MediatorConsumerFactoryFactory {
     override fun createMessageBusConsumerFactory(
         topicName: String,
         groupName: String,

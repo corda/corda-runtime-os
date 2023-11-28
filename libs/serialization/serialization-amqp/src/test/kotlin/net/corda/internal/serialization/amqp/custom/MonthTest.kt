@@ -9,14 +9,14 @@ class MonthTest {
 
     companion object {
         @JvmStatic
-        fun everyMonth() : List<Month> {
+        fun everyMonth(): List<Month> {
             return Month.values().toList()
         }
     }
 
     @ParameterizedTest
     @MethodSource("everyMonth")
-    fun everyDayOfWeek(month : Month) {
+    fun everyDayOfWeek(month: Month) {
         ReusableSerialiseDeserializeAssert.serializeDeserializeAssert(month)
     }
 }

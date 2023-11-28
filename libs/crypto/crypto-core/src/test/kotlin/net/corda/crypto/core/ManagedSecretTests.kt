@@ -120,6 +120,7 @@ class ManagedSecretTests {
             assertEquals(it, secret.secret.size)
         }
     }
+
     @Test
     fun `Should return hash code of the secret key`() {
         val secret = ManagedSecret.generate()

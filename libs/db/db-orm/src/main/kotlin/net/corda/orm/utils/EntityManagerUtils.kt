@@ -23,7 +23,6 @@ inline fun <R> EntityManagerFactory.use(block: (EntityManagerFactory) -> R): R {
     }
 }
 
-
 /**
  * Executes the [block] and closes the [EntityManager].
  *

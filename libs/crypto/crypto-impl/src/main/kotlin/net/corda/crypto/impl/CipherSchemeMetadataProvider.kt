@@ -1,11 +1,5 @@
 package net.corda.crypto.impl
 
-import java.io.StringWriter
-import java.security.Provider
-import java.security.PublicKey
-import java.security.SecureRandom
-import java.security.spec.X509EncodedKeySpec
-import java.time.Duration
 import net.corda.crypto.cipher.suite.KeyEncodingService
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
@@ -25,6 +19,12 @@ import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider
 import org.bouncycastle.util.encoders.Base64
 import org.bouncycastle.util.io.pem.PemObject
+import java.io.StringWriter
+import java.security.Provider
+import java.security.PublicKey
+import java.security.SecureRandom
+import java.security.spec.X509EncodedKeySpec
+import java.time.Duration
 
 private val PEM_BEGIN = "-----BEGIN "
 private val PEM_HEADER_TERMINATOR = "-----"
@@ -151,7 +151,6 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
         algorithmMap[normaliseAlgorithmIdentifier(algorithm)]
             ?: throw IllegalArgumentException("Unrecognised algorithm: ${algorithm.algorithm.id}, with parameters=${algorithm.parameters}")
 
-
     // We don't use lambdas here because of the difficulties that causes with Quasar,
     // e.g. a lambda can't be marked as @Suspendable and cannot have checked exceptions, so
     // makes the instrumentation analysis harder. We don't want to get suspended while doing a timing
@@ -165,7 +164,6 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
     }
 
     override fun decodePublicKey(encodedKey: ByteArray): PublicKey {
-
         try {
             val startTime = System.nanoTime()
             val subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(encodedKey)
@@ -245,11 +243,11 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
     @Suppress("ThrowsCount")
     private fun parsePemPublicKeyContent(pem: String): ByteArray {
         // we no longer use Bouncy Castle PemReader since it required use of StringReader/BufferReader, which has
-        // locking, and that may not be safe from flow execution due to our use of Quasar Fibers. 
+        // locking, and that may not be safe from flow execution due to our use of Quasar Fibers.
         // Therefore we implement our own logic below to parse PEM files. This is simply a question of decoding base64,
         // so not a cryptographic algorithm; we call from to Bouncy Castle to interpret the ASN.1 content.
 
-        // This is not the full PEM spec; we do not support headers or multiple sections  
+        // This is not the full PEM spec; we do not support headers or multiple sections
         val lines = pem.split('\n').map { it.trim() }
         val header =
             lines.withIndex()

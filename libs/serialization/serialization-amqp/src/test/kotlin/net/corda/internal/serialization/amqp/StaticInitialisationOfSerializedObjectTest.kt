@@ -47,7 +47,7 @@ class StaticInitialisationOfSerializedObjectTest {
 
     @Disabled("Suppressing this, as it depends on obtaining internal access to serialiser cache")
     @Test
-	fun kotlinObjectWithCompanionObject() {
+    fun kotlinObjectWithCompanionObject() {
         data class D(val c: C)
 
         val sf = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
@@ -71,7 +71,7 @@ class StaticInitialisationOfSerializedObjectTest {
     }
 
     @Test
-	fun deserializeTest() {
+    fun deserializeTest() {
         data class D(val c: C2)
 
         val resource = "StaticInitialisationOfSerializedObjectTest.deserializeTest"

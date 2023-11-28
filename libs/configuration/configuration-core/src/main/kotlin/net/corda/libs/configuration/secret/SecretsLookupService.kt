@@ -15,4 +15,3 @@ interface SecretsLookupService {
      */
     fun getValue(secretConfig: Config): String
 }
-

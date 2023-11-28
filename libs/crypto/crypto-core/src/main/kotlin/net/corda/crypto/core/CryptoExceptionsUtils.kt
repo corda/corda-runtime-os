@@ -17,7 +17,7 @@ val RETRYABLE_EXCEPTIONS = setOf(
 
 fun Throwable.isRecoverable(): Boolean =
     when (this) {
-        // AbstractComponentNotReadyException is thrown when lifecycle is goes away from up on an abstract component, 
+        // AbstractComponentNotReadyException is thrown when lifecycle is goes away from up on an abstract component,
         // e.g. due to a transient or permanent error; we retry since it may come up later, and if it stays down
         // long enough we will get restarted and this code may have more luck in the new process
         is AbstractComponentNotReadyException -> true

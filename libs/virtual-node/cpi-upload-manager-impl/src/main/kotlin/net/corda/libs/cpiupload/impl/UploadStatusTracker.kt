@@ -42,7 +42,7 @@ class UploadStatusTracker {
 
     fun clear() = statusById.clear()
 
-    fun remove(requestId: RequestId /* = kotlin.String */) = statusById.remove(requestId)
+    fun remove(requestId: RequestId) = statusById.remove(requestId)
 
     /** Add an upload status for a given request */
     fun add(key: UploadStatusKey, value: UploadStatus) =

@@ -77,7 +77,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     private lateinit var deadLetterRecords: MutableList<ByteArray>
 
     private val errorMsg = "Failed to read and process records from topic $eventTopic, group ${config.group}, " +
-            "producerClientId ${config.clientId}."
+        "producerClientId ${config.clientId}."
 
     private val processorMeter = CordaMetrics.Metric.Messaging.MessageProcessorTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
@@ -89,7 +89,6 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.STATE_AND_EVENT_PATTERN_TYPE)
         .withTag(CordaMetrics.Tag.MessagePatternClientId, config.clientId)
         .build()
-
 
     /**
      * Is the subscription running.
@@ -150,19 +149,20 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     stateAndEventConsumerTmp.pollAndUpdateStates(true)
                     processBatchOfEvents()
                 }
-
             } catch (ex: Exception) {
                 when (ex) {
                     is CordaMessageAPIIntermittentException -> {
                         log.warn(
                             "$errorMsg Attempts: $attempts. Recreating " +
-                                    "consumer/producer and Retrying.", ex
+                                "consumer/producer and Retrying.",
+                            ex
                         )
                     }
 
                     else -> {
                         log.error(
-                            "$errorMsg Attempts: $attempts. Closing subscription.", ex
+                            "$errorMsg Attempts: $attempts. Closing subscription.",
+                            ex
                         )
                         threadLooper.updateLifecycleStatus(LifecycleStatus.ERROR, errorMsg)
                         threadLooper.stopLoop()
@@ -207,8 +207,9 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     else -> {
                         throw CordaMessageAPIFatalException(
                             "Failed to process records from topic $eventTopic, group ${config.group}, " +
-                                    "producerClientId ${config.clientId}. " +
-                                    "Fatal error occurred.", ex
+                                "producerClientId ${config.clientId}. " +
+                                "Fatal error occurred.",
+                            ex
                         )
                     }
                 }
@@ -241,8 +242,11 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                 }
             }
         } catch (ex: StateAndEventConsumer.RebalanceInProgressException) {
-            log.warn ("Abandoning processing of events(keys: ${events.joinToString { it.key.toString() }}, " +
-                    "size: ${events.size}) due to rebalance", ex)
+            log.warn(
+                "Abandoning processing of events(keys: ${events.joinToString { it.key.toString() }}, " +
+                    "size: ${events.size}) due to rebalance",
+                ex
+            )
             return true
         }
 
@@ -250,13 +254,15 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             producer.beginTransaction()
             producer.sendRecords(outputRecords.toCordaProducerRecords())
             if (deadLetterRecords.isNotEmpty()) {
-                producer.sendRecords(deadLetterRecords.map {
-                    CordaProducerRecord(
-                        getDLQTopic(eventTopic),
-                        UUID.randomUUID().toString(),
-                        it
-                    )
-                })
+                producer.sendRecords(
+                    deadLetterRecords.map {
+                        CordaProducerRecord(
+                            getDLQTopic(eventTopic),
+                            UUID.randomUUID().toString(),
+                            it
+                        )
+                    }
+                )
                 deadLetterRecords.clear()
             }
             producer.sendRecordOffsetsToTransaction(eventConsumer, events)
@@ -280,12 +286,11 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         val thisEventUpdates = getUpdatesForEvent(state, event)
         val updatedState = thisEventUpdates?.updatedState?.value
 
-
         when {
             thisEventUpdates == null -> {
                 log.warn(
                     "Sending state and event on key ${event.key} for topic ${event.topic} to dead letter queue. " +
-                            "Processor failed to complete."
+                        "Processor failed to complete."
                 )
                 generateChunkKeyCleanupRecords(key, state, null, outputRecords)
                 outputRecords.add(generateDeadLetterRecord(event, state))
@@ -296,7 +301,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             thisEventUpdates.markForDLQ -> {
                 log.warn(
                     "Sending state and event on key ${event.key} for topic ${event.topic} to dead letter queue. " +
-                            "Processor marked event for the dead letter queue"
+                        "Processor marked event for the dead letter queue"
                 )
                 generateChunkKeyCleanupRecords(key, state, null, outputRecords)
                 outputRecords.add(generateDeadLetterRecord(event, state))
@@ -336,7 +341,8 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     State(state, metadata = null),
                     event.toRecord()
                 )
-            }, config.processorTimeout.toMillis(),
+            },
+            config.processorTimeout.toMillis(),
             "Failed to finish within the time limit for state: $state and event: $event"
         )
         @Suppress("unchecked_cast")
@@ -351,7 +357,8 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         val eventBytes =
             if (eventValue != null) ByteBuffer.wrap(cordaAvroSerializer.serialize(eventValue)) else null
         return Record(
-            getDLQTopic(eventTopic), event.key,
+            getDLQTopic(eventTopic),
+            event.key,
             StateAndEventDeadLetterRecord(clock.instant(), keyBytes, stateBytes, eventBytes)
         )
     }
@@ -369,14 +376,14 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
         if (attempts <= config.processorRetries) {
             log.warn(
                 "Failed to process record from topic $eventTopic, group ${config.group}, " +
-                        "producerClientId ${config.clientId}. " +
-                        "Retrying poll and process. Attempts: $attempts."
+                    "producerClientId ${config.clientId}. " +
+                    "Retrying poll and process. Attempts: $attempts."
             )
             stateAndEventConsumer.resetEventOffsetPosition()
         } else {
             val message = "Failed to process records from topic $eventTopic, group ${config.group}, " +
-                    "producerClientId ${config.clientId}. " +
-                    "Attempts: $attempts. Max reties exceeded."
+                "producerClientId ${config.clientId}. " +
+                "Attempts: $attempts. Max reties exceeded."
             log.warn(message, ex)
             throw CordaMessageAPIIntermittentException(message, ex)
         }

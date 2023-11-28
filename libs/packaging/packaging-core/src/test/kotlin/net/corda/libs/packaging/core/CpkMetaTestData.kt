@@ -19,11 +19,13 @@ object CpkMetaTestData {
     )
     val cpkId = CpkIdentifier(
         "SomeName",
-        "1.0", SecureHashImpl(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes))
+        "1.0",
+        SecureHashImpl(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes))
     )
     val cpkDependencyId = CpkIdentifier(
         "SomeName 2",
-        "1.0", SecureHashImpl(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes))
+        "1.0",
+        SecureHashImpl(DigestAlgorithmName.SHA2_256.name, ByteArray(32).also(random::nextBytes))
     )
     val cpkType = CpkType.CORDA_API
     val cpkFormatVersion = CpkFormatVersion(2, 3)

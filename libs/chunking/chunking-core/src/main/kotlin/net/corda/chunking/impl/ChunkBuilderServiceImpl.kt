@@ -1,12 +1,12 @@
 package net.corda.chunking.impl
 
-import java.nio.ByteBuffer
 import net.corda.chunking.ChunkBuilderService
 import net.corda.crypto.core.toAvro
 import net.corda.data.KeyValuePairList
 import net.corda.data.chunking.Chunk
 import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Component
+import java.nio.ByteBuffer
 
 @Component(service = [ChunkBuilderService::class])
 class ChunkBuilderServiceImpl : ChunkBuilderService {
@@ -39,5 +39,4 @@ class ChunkBuilderServiceImpl : ChunkBuilderService {
         .setChecksum(null)
         .setOffset(offset)
         .build()
-
 }

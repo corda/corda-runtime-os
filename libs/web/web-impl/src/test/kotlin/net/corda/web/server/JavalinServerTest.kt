@@ -91,7 +91,7 @@ class JavalinServerTest {
     fun `register endpoints when the server is started`() {
         val endpoint = Endpoint(HTTPMethod.GET, "/url", webHandler)
         javalinServer.registerEndpoint(endpoint)
-        //check it hasn't been registered yet
+        // check it hasn't been registered yet
         verify(javalinMock, never()).get(eq("/url"), any())
         // but it's in the collection
         assertThat(javalinServer.endpoints).contains(endpoint)

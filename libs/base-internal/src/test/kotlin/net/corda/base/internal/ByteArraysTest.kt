@@ -27,7 +27,8 @@ class ByteArraysTest {
         fun check(expected: ByteArray, actual: ByteBuffer) {
             assertEquals(ByteBuffer.wrap(expected), actual)
             assertSame(ReadOnlyBufferException::class.java, catchThrowable { actual.array() }.javaClass)
-            assertSame(array,
+            assertSame(
+                array,
                 ByteBuffer::class.java
                     .getDeclaredField("hb")
                     .apply { isAccessible = true }

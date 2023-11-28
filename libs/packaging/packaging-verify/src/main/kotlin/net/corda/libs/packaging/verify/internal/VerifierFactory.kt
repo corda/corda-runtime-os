@@ -46,7 +46,10 @@ object VerifierFactory {
 
     /** Creates CPB verifier for format specified in the Manifest of the package */
     fun createCpbVerifier(
-        name: String, inputStream: InputStream, trustedCerts: Collection<X509Certificate1>): CpbVerifier {
+        name: String,
+        inputStream: InputStream,
+        trustedCerts: Collection<X509Certificate1>
+    ): CpbVerifier {
         val jarReader = JarReader(name, inputStream, trustedCerts)
         val format = jarReader.manifest.mainAttributes.getValue(CPB_FORMAT_ATTRIBUTE)
         return createCpbVerifier(format, jarReader)
@@ -54,7 +57,11 @@ object VerifierFactory {
 
     /** Creates CPB verifier for specified format */
     fun createCpbVerifier(
-        format: String?, name: String, inputStream: InputStream, trustedCerts: Collection<X509Certificate1>): CpbVerifier {
+        format: String?,
+        name: String,
+        inputStream: InputStream,
+        trustedCerts: Collection<X509Certificate1>
+    ): CpbVerifier {
         val jarReader = JarReader(name, inputStream, trustedCerts)
         return createCpbVerifier(format, jarReader)
     }
@@ -76,7 +83,11 @@ object VerifierFactory {
 
     /** Creates CPI verifier for specified format */
     fun createCpiVerifier(
-        format: String?, name: String, inputStream: InputStream, trustedCerts: Collection<X509Certificate1>): CpiVerifier {
+        format: String?,
+        name: String,
+        inputStream: InputStream,
+        trustedCerts: Collection<X509Certificate1>
+    ): CpiVerifier {
         val jarReader = JarReader(name, inputStream, trustedCerts)
         return createCpiVerifier(format, jarReader)
     }

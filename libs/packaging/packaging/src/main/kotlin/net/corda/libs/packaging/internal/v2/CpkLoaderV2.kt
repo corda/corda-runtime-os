@@ -108,7 +108,6 @@ class CpkLoaderV2(
         readCpkMetadata(source)
 
     private fun readCpkMetadata(cpkBytes: ByteArray): CpkMetadata {
-
         val (manifest, cpkEntries) = JarInputStream(cpkBytes.inputStream(), true).use {
             val manifest = it.manifest ?: throw CordappManifestException("manifest must not be null")
             val jarEntries = readJar(it).toList()

@@ -13,7 +13,6 @@ class LifecycleRegistryTests {
     fun `when empty componentWithStatus returns empty`() {
         val registry = object : LifecycleRegistry {
             override fun componentStatus(): Map<LifecycleCoordinatorName, CoordinatorStatus> = emptyMap()
-
         }
 
         assertThat(registry.componentWithStatus(listOf(LifecycleStatus.UP))).isEmpty()
@@ -27,7 +26,6 @@ class LifecycleRegistryTests {
                     superman to CoordinatorStatus(superman, LifecycleStatus.UP, "foo"),
                     batman to CoordinatorStatus(batman, LifecycleStatus.DOWN, "foo"),
                 )
-
         }
 
         assertThat(registry.componentWithStatus(listOf(LifecycleStatus.UP))).contains(superman)
@@ -41,7 +39,6 @@ class LifecycleRegistryTests {
                     superman to CoordinatorStatus(superman, LifecycleStatus.UP, "foo"),
                     batman to CoordinatorStatus(batman, LifecycleStatus.UP, "foo"),
                 )
-
         }
 
         assertThat(registry.componentWithStatus(listOf(LifecycleStatus.UP)))
@@ -56,7 +53,6 @@ class LifecycleRegistryTests {
                     superman to CoordinatorStatus(superman, LifecycleStatus.UP, "foo"),
                     batman to CoordinatorStatus(batman, LifecycleStatus.DOWN, "foo"),
                 )
-
         }
 
         assertThat(registry.componentWithStatus(listOf(LifecycleStatus.UP, LifecycleStatus.DOWN)))
@@ -71,7 +67,6 @@ class LifecycleRegistryTests {
                     superman to CoordinatorStatus(superman, LifecycleStatus.UP, "foo"),
                     batman to CoordinatorStatus(batman, LifecycleStatus.UP, "foo"),
                 )
-
         }
 
         assertThat(registry.componentWithStatus(listOf(LifecycleStatus.DOWN))).isEmpty()

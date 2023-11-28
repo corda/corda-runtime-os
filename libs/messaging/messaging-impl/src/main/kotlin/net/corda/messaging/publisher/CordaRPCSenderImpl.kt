@@ -71,7 +71,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
         .build()
 
     private val errorMsg = "Failed to read records from topic ${config.topic}"
-    private val noPartitionsErrorMsg = "No partitions assigned for topic ${responseTopic}, can not proceed"
+    private val noPartitionsErrorMsg = "No partitions assigned for topic $responseTopic, can not proceed"
 
     val isRunning: Boolean
         get() = threadLooper.isRunning
@@ -150,7 +150,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
 
                     else -> {
                         throw CordaMessageAPIFatalException(
-                            "Failed to process records from topic ${responseTopic}.",
+                            "Failed to process records from topic $responseTopic.",
                             ex
                         )
                     }
@@ -192,8 +192,10 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                                         message = response.errorMessage
                                     )
                                 )
-                                log.warn("Response for request $correlationKey received at ${rpcResponse.sendTime} failed. " +
-                                        "Cause:${response.errorType}. Message: ${response.errorMessage}")
+                                log.warn(
+                                    "Response for request $correlationKey received at ${rpcResponse.sendTime} failed. " +
+                                        "Cause:${response.errorType}. Message: ${response.errorMessage}"
+                                )
                             }
 
                             ResponseStatus.CANCELLED -> {
@@ -204,9 +206,9 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                     } else {
                         log.debug {
                             "Response for request $correlationKey was received at ${rpcResponse.sendTime}. " +
-                                    "There is no future assigned for $correlationKey meaning that this request was either orphaned " +
-                                    "during a repartition event or the client dropped their future. " +
-                                    "The response status for it was $responseStatus"
+                                "There is no future assigned for $correlationKey meaning that this request was either orphaned " +
+                                "during a repartition event or the client dropped their future. " +
+                                "The response status for it was $responseStatus"
                         }
                     }
                 }
@@ -227,7 +229,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                 serializer.serialize(req)
             } catch (ex: Exception) {
                 val message = "Serializing request $req resulted in an exception. " +
-                        "Verify that the fields of the request are populated correctly."
+                    "Verify that the fields of the request are populated correctly."
                 future.completeExceptionally(CordaRPCAPISenderException(message, ex))
                 log.error(message, ex)
 

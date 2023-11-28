@@ -1,4 +1,5 @@
 @file:JvmName("SerializationAPI")
+
 package net.corda.serialization
 
 import net.corda.base.internal.ByteSequence
@@ -21,4 +22,3 @@ data class ObjectWithCompatibleContext<out T : Any>(val obj: T, val context: Ser
 enum class ContextPropertyKeys {
     SERIALIZERS
 }
-

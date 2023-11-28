@@ -3,7 +3,6 @@ package net.corda.messagebus.api.consumer
 import net.corda.messagebus.api.CordaTopicPartition
 import java.time.Duration
 
-
 /**
  * CordaConsumers connect to and receive messages from the message bus.
  */

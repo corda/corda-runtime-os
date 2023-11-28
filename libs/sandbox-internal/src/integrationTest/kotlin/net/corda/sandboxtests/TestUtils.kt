@@ -22,7 +22,7 @@ internal fun <T : Any> runFlow(group: SandboxGroup, className: String): T {
 }
 
 /** Loads the [Function] with [className] from the sandbox [group], and applies it with [argument]. */
-internal fun <U: Any, T: Any> applyFunction(group: SandboxGroup, className: String, argument: U): T {
+internal fun <U : Any, T : Any> applyFunction(group: SandboxGroup, className: String, argument: U): T {
     val functionClass = group.loadClassFromMainBundles(className, Function::class.java)
 
     val context = FrameworkUtil.getBundle(functionClass).bundleContext
@@ -37,6 +37,7 @@ internal fun <U: Any, T: Any> applyFunction(group: SandboxGroup, className: Stri
 /** Indicates whether the [sandboxGroup] contains the [bundle]. */
 internal fun sandboxGroupContainsBundle(sandboxGroup: SandboxGroup, bundle: Bundle): Boolean {
     val sandboxesMethod = sandboxGroup::class.java.getMethod("getCpkSandboxes")
+
     @Suppress("UNCHECKED_CAST")
     val sandboxes = sandboxesMethod.invoke(sandboxGroup) as Collection<Any>
     return sandboxes.any { sandbox -> sandboxContainsBundle(sandbox, bundle) }

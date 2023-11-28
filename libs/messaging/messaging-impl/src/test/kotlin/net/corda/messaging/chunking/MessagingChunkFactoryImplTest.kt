@@ -1,10 +1,10 @@
 package net.corda.messaging.chunking
 
-import net.corda.chunking.ChunkBuilderService
-import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.chunking.ChunkBuilderService
+import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.messaging.api.chunking.MessagingChunkFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach

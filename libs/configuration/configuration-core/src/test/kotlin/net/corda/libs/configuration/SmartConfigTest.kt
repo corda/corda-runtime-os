@@ -36,7 +36,7 @@ class SmartConfigTest {
         },
         test_array: [{prime:2},{prime:3},{prime:5}]
         test_int_array: [2,3,5]
-        """.trimIndent()
+    """.trimIndent()
     val config = ConfigFactory.parseString(configString).resolve()
 
     val fallbackConfig = ConfigFactory.parseString(
@@ -47,12 +47,12 @@ class SmartConfigTest {
         """.trimIndent()
     )
 
-    val secretsLookupService = mock<SecretsLookupService>() {
-        on { getValue(config.getConfig("fred"))} doReturn "secret"
-        on { getValue(fallbackConfig.getConfig("jon"))} doReturn "fallback-secret"
+    val secretsLookupService = mock<SecretsLookupService> {
+        on { getValue(config.getConfig("fred")) } doReturn "secret"
+        on { getValue(fallbackConfig.getConfig("jon")) } doReturn "fallback-secret"
     }
     val smartConfigFactory = mock<SmartConfigFactory>()
-    val smartConfig : SmartConfig = SmartConfigImpl(config, smartConfigFactory, secretsLookupService)
+    val smartConfig: SmartConfig = SmartConfigImpl(config, smartConfigFactory, secretsLookupService)
 
     @Test
     fun `isSecret true when property set`() {
@@ -123,15 +123,17 @@ class SmartConfigTest {
     @Test
     fun `resolveWith still works`() {
         val sub = "\${fred}"
-        val config = ConfigFactory.parseString("""
+        val config = ConfigFactory.parseString(
+            """
         bob: $sub
-        """.trimIndent())
+            """.trimIndent()
+        )
         val resolveWithConf = ConfigFactory.parseString(
             """
         fred.configSecret {
             token: secure-fred
         },
-        """.trimIndent()
+            """.trimIndent()
         )
 
         val smartConf = SmartConfigImpl(config, smartConfigFactory, secretsLookupService).resolveWith(resolveWithConf)
@@ -200,7 +202,7 @@ class SmartConfigTest {
 
     @Test
     fun `getObject still works`() {
-        assertThat(smartConfig.getObject("test_object").keys).containsAll(listOf("a","c"))
+        assertThat(smartConfig.getObject("test_object").keys).containsAll(listOf("a", "c"))
     }
 
     @Test
@@ -318,7 +320,6 @@ class SmartConfigTest {
         assertThat(c.getString("jon")).isEqualTo("fallback-secret")
     }
 
-
     @Test
     fun `getObjectList works`() {
         val r = smartConfig.getObjectList("test_array")
@@ -344,7 +345,6 @@ class SmartConfigTest {
         assertThat(r[0].getInt("prime")).isEqualTo(2)
         assertThat(r[0]).isInstanceOf(SmartConfig::class.java)
     }
-
 
     enum class Snack {
         DONUTS,

@@ -9,5 +9,5 @@ data class UniquenessCheckStateRefImpl(
 ) : UniquenessCheckStateRef {
     override fun getTxHash() = txHash
     override fun getStateIndex() = stateIndex
-    override fun toString() = "${txHash}:${stateIndex}"
+    override fun toString() = "$txHash:$stateIndex"
 }

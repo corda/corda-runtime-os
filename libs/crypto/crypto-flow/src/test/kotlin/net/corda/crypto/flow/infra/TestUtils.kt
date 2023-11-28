@@ -9,7 +9,7 @@ fun assertThatIsBetween(actual: Instant, before: Instant, after: Instant) {
         .isLessThanOrEqualTo(after.toEpochMilli())
 }
 
-inline fun <reified RESULT: Any> act(block: () -> RESULT?): ActResult<RESULT> {
+inline fun <reified RESULT : Any> act(block: () -> RESULT?): ActResult<RESULT> {
     val before = Instant.now()
     val result = block()
     val after = Instant.now()

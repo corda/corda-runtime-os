@@ -30,6 +30,7 @@ class SessionDataProcessorSendTest {
         chunkSerializer = mock()
         chunkSerializerService = mock()
     }
+
     @Test
     fun `Send data when in state ERROR`() {
         val sessionEvent = buildSessionEvent(
@@ -41,11 +42,21 @@ class SessionDataProcessorSendTest {
         )
 
         val inputState = buildSessionState(
-            SessionStateType.ERROR, 0, mutableListOf(), 0, mutableListOf()
+            SessionStateType.ERROR,
+            0,
+            mutableListOf(),
+            0,
+            mutableListOf()
         )
 
-        val result = SessionDataProcessorSend("key", inputState, sessionEvent, Instant.now(), chunkSerializerService, 
-            payload).execute()
+        val result = SessionDataProcessorSend(
+            "key",
+            inputState,
+            sessionEvent,
+            Instant.now(),
+            chunkSerializerService,
+            payload
+        ).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.ERROR)
         assertThat(result.sendEventsState.undeliveredMessages).isEmpty()
@@ -62,17 +73,26 @@ class SessionDataProcessorSendTest {
         )
 
         val inputState = buildSessionState(
-            SessionStateType.CLOSING, 0, mutableListOf(), 0, mutableListOf()
+            SessionStateType.CLOSING,
+            0,
+            mutableListOf(),
+            0,
+            mutableListOf()
         )
 
-        val result = SessionDataProcessorSend("key", inputState, sessionEvent, Instant.now(), chunkSerializerService, 
-            payload).execute()
+        val result = SessionDataProcessorSend(
+            "key",
+            inputState,
+            sessionEvent,
+            Instant.now(),
+            chunkSerializerService,
+            payload
+        ).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.ERROR)
         assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
         assertThat(result.sendEventsState.undeliveredMessages.first().payload::class.java).isEqualTo(SessionError::class.java)
     }
-
 
     @Test
     fun `Send data when in state CREATED results in send`() {
@@ -84,17 +104,28 @@ class SessionDataProcessorSendTest {
             contextSessionProps = emptyKeyValuePairList()
         )
         val inputState = buildSessionState(
-            SessionStateType.CREATED, 0, mutableListOf(), 0, mutableListOf()
+            SessionStateType.CREATED,
+            0,
+            mutableListOf(),
+            0,
+            mutableListOf()
         )
 
-        val result = SessionDataProcessorSend("key", inputState, sessionEvent, Instant.now(), chunkSerializerService, 
-            payload).execute()
+        val result = SessionDataProcessorSend(
+            "key",
+            inputState,
+            sessionEvent,
+            Instant.now(),
+            chunkSerializerService,
+            payload
+        ).execute()
         assertThat(result).isNotNull
         assertThat(result.status).isEqualTo(SessionStateType.CREATED)
         assertThat(result.sendEventsState.undeliveredMessages.size).isEqualTo(1)
         val sessionEventOutput = result.sendEventsState.undeliveredMessages.first()
         assertThat(sessionEventOutput.sequenceNum).isNotNull
-        assertThat(sessionEventOutput.payload).isEqualTo(sessionEvent.payload)    }
+        assertThat(sessionEventOutput.payload).isEqualTo(sessionEvent.payload)
+    }
 
     @Test
     fun `Send data when state is CONFIRMED`() {
@@ -106,7 +137,11 @@ class SessionDataProcessorSendTest {
             contextSessionProps = emptyKeyValuePairList()
         )
         val inputState = buildSessionState(
-            SessionStateType.CONFIRMED, 0, mutableListOf(), 0, mutableListOf()
+            SessionStateType.CONFIRMED,
+            0,
+            mutableListOf(),
+            0,
+            mutableListOf()
         )
 
         val result = SessionDataProcessorSend("key", inputState, sessionEvent, Instant.now(), chunkSerializerService, payload).execute()
@@ -128,7 +163,11 @@ class SessionDataProcessorSendTest {
             contextSessionProps = emptyKeyValuePairList()
         )
         val inputState = buildSessionState(
-            SessionStateType.CONFIRMED, 0, mutableListOf(), 0, mutableListOf()
+            SessionStateType.CONFIRMED,
+            0,
+            mutableListOf(),
+            0,
+            mutableListOf()
         )
 
         whenever(chunkSerializerService.generateChunks(any())).thenReturn(listOf(Chunk(), Chunk(), Chunk()))

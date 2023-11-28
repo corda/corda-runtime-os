@@ -1,6 +1,5 @@
 package net.corda.tracing.brave
 
-
 import zipkin2.Span
 import zipkin2.reporter.Reporter
 

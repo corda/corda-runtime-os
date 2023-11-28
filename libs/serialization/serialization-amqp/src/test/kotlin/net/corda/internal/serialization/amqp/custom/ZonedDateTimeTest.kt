@@ -26,5 +26,4 @@ class ZonedDateTimeTest {
     fun year3000EveryZoneId(zoneId: ZoneId) {
         serializeDeserializeAssert(ZonedDateTime.of(3000, 1, 1, 0, 0, 0, 0, zoneId))
     }
-
 }

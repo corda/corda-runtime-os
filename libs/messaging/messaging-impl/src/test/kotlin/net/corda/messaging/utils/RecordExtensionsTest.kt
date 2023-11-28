@@ -7,12 +7,12 @@ import org.junit.jupiter.api.Test
 class RecordExtensionsTest {
 
     @Test
-    fun `toCordaProducerRecord maps all fields`(){
+    fun `toCordaProducerRecord maps all fields`() {
         val record = Record(
             topic = "topic",
             key = "key",
             value = "value",
-            headers =  listOf("a" to "b")
+            headers = listOf("a" to "b")
         )
 
         val result = record.toCordaProducerRecord()

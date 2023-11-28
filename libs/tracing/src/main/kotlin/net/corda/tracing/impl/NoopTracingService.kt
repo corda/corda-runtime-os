@@ -21,7 +21,7 @@ class NoopTracingService : TracingService {
         }
 
         override fun markInScope(): AutoCloseable {
-            return AutoCloseable {  }
+            return AutoCloseable { }
         }
 
         override fun errorAndFinish(e: Exception) {

@@ -5,7 +5,7 @@ import com.typesafe.config.ConfigObject
 import com.typesafe.config.ConfigOrigin
 import com.typesafe.config.ConfigValue
 
-interface SmartConfigObject: ConfigObject {
+interface SmartConfigObject : ConfigObject {
     /**
      * Returns an instance of [SmartConfigObject] that never reveals secrets.
      */
@@ -33,4 +33,3 @@ interface SmartConfigObject: ConfigObject {
 
     override fun get(key: String?): SmartConfigValue?
 }
-

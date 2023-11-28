@@ -18,14 +18,14 @@ import java.util.Collections.unmodifiableList
 data class UniquenessCheckErrorInputStateConflictImpl(
     private val conflictingStates: List<UniquenessCheckStateDetails>
 ) : UniquenessCheckErrorInputStateConflict {
-    override fun getConflictingStates() : List<UniquenessCheckStateDetails> =
+    override fun getConflictingStates(): List<UniquenessCheckStateDetails> =
         unmodifiableList(listOf(conflictingStates.first()))
 }
 
 data class UniquenessCheckErrorInputStateUnknownImpl(
     private val unknownStates: List<UniquenessCheckStateRef>
 ) : UniquenessCheckErrorInputStateUnknown {
-    override fun getUnknownStates() : List<UniquenessCheckStateRef> =
+    override fun getUnknownStates(): List<UniquenessCheckStateRef> =
         unmodifiableList(listOf(unknownStates.first()))
 }
 

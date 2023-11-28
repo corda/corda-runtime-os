@@ -14,10 +14,33 @@ class SessionPartyFactory {
         val aliceMessageBus = MessageBus()
         val bobMessageBus = MessageBus()
 
-        val alice = SessionParty(aliceMessageBus, bobMessageBus, config, buildSessionState(SessionStateType.CREATED, 0, emptyList(), 0,
-            emptyList()), isInitiating = true)
-        val bob = SessionParty(bobMessageBus, aliceMessageBus, config, buildSessionState(SessionStateType.CONFIRMED, 0, emptyList(), 0,
-            emptyList(), sessionId = "ssesionId$INITIATED_SESSION_ID_SUFFIX"), isInitiating = false)
+        val alice = SessionParty(
+            aliceMessageBus,
+            bobMessageBus,
+            config,
+            buildSessionState(
+                SessionStateType.CREATED,
+                0,
+                emptyList(),
+                0,
+                emptyList()
+            ),
+            isInitiating = true
+        )
+        val bob = SessionParty(
+            bobMessageBus,
+            aliceMessageBus,
+            config,
+            buildSessionState(
+                SessionStateType.CONFIRMED,
+                0,
+                emptyList(),
+                0,
+                emptyList(),
+                sessionId = "ssesionId$INITIATED_SESSION_ID_SUFFIX"
+            ),
+            isInitiating = false
+        )
 
         return Pair(alice, bob)
     }

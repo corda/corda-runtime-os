@@ -19,7 +19,7 @@ import net.corda.flow.state.FlowCheckpoint
  * @param RESUME The type the flow will resume with after being called by [ExternalEventExecutor]. [RESUME]
  * __cannot be an Avro object__.
  */
-interface ExternalEventFactory<PARAMETERS : Any, RESPONSE: Any, RESUME> {
+interface ExternalEventFactory<PARAMETERS : Any, RESPONSE : Any, RESUME> {
 
     /**
      * The [RESPONSE] type that the factory receives from the external processor.

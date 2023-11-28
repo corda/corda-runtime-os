@@ -1,7 +1,8 @@
 package net.corda.rest.server.impl.apigen.processing
 
 import io.swagger.v3.oas.models.media.ArraySchema
-import java.io.InputStream
+import net.corda.rest.JsonObject
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.server.impl.apigen.models.Endpoint
 import net.corda.rest.server.impl.apigen.models.EndpointMethod
 import net.corda.rest.server.impl.apigen.models.EndpointParameter
@@ -20,20 +21,19 @@ import net.corda.rest.server.impl.apigen.processing.openapi.toOperation
 import net.corda.rest.server.impl.apigen.processing.openapi.toRequestBody
 import net.corda.rest.server.impl.apigen.processing.openapi.toValidMethodName
 import net.corda.rest.server.impl.utils.getHealthCheckApiTestResource
+import net.corda.rest.test.TestFileUploadAPI
 import net.corda.rest.test.TestHealthCheckAPI
 import net.corda.rest.test.TestHealthCheckAPIImpl
 import net.corda.rest.tools.HttpPathUtils.joinResourceAndEndpointPaths
 import net.corda.rest.tools.HttpPathUtils.toOpenApiPath
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.io.InputStream
 import kotlin.reflect.jvm.javaMethod
-import net.corda.rest.JsonObject
-import net.corda.rest.annotations.RestApiVersion
-import net.corda.rest.test.TestFileUploadAPI
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertNotNull
 
 class ResourceToOpenApiSpecMapperTest {
 
@@ -176,7 +176,6 @@ class ResourceToOpenApiSpecMapperTest {
         val resource = getHealthCheckApiTestResource()
         val openAPI = listOf(resource).toOpenAPI(SchemaModelContextHolder(), RestApiVersion.C5_0)
         with(openAPI) {
-
             val tag = tags.single()
             assertEquals("HealthCheckAPI", tag.name)
             assertEquals("Health Check", tag.description)
@@ -189,7 +188,6 @@ class ResourceToOpenApiSpecMapperTest {
             paths.values.flatMap { listOfNotNull(it.get, it.post) }.forEach {
                 assertEquals("HealthCheckAPI", it.tags.single())
             }
-
 
             assertTrue(components.schemas.containsKey("PingPongData"))
 
@@ -225,7 +223,9 @@ class ResourceToOpenApiSpecMapperTest {
                 )
             ),
             responseBody = ResponseBody(
-                description = "", type = List::class.java, parameterizedTypes = listOf(
+                description = "",
+                type = List::class.java,
+                parameterizedTypes = listOf(
                     GenericParameterizedType(Double::class.java)
                 )
             ),
@@ -239,7 +239,6 @@ class ResourceToOpenApiSpecMapperTest {
             assertEquals("array", type)
             assertEquals("number", items.type)
             assertEquals("double", items.format)
-
         }
     }
 
@@ -252,8 +251,10 @@ class ResourceToOpenApiSpecMapperTest {
             path = "plusOne",
             parameters = emptyList(),
             responseBody = ResponseBody(description = "", type = Void.TYPE, parameterizedTypes = emptyList()),
-            invocationMethod = InvocationMethod(method = TestHealthCheckAPI::voidResponse.javaMethod!!,
-                instance = TestHealthCheckAPIImpl()),
+            invocationMethod = InvocationMethod(
+                method = TestHealthCheckAPI::voidResponse.javaMethod!!,
+                instance = TestHealthCheckAPIImpl()
+            ),
             apiVersions = setOf(RestApiVersion.C5_0)
         )
 
@@ -274,8 +275,10 @@ class ResourceToOpenApiSpecMapperTest {
             path = "plusOne",
             parameters = emptyList(),
             responseBody = ResponseBody(description = "", type = Void::class.java, parameterizedTypes = emptyList()),
-            invocationMethod = InvocationMethod(method = TestHealthCheckAPI::voidResponse.javaMethod!!,
-                instance = TestHealthCheckAPIImpl()),
+            invocationMethod = InvocationMethod(
+                method = TestHealthCheckAPI::voidResponse.javaMethod!!,
+                instance = TestHealthCheckAPIImpl()
+            ),
             apiVersions = setOf(RestApiVersion.C5_0)
         )
 
@@ -296,14 +299,18 @@ class ResourceToOpenApiSpecMapperTest {
             path = "plusOne",
             parameters = emptyList(),
             responseBody = ResponseBody(description = "", type = Void::class.java, parameterizedTypes = emptyList()),
-            invocationMethod = InvocationMethod(method = TestHealthCheckAPI::voidResponse.javaMethod!!,
-                instance = TestHealthCheckAPIImpl()),
+            invocationMethod = InvocationMethod(
+                method = TestHealthCheckAPI::voidResponse.javaMethod!!,
+                instance = TestHealthCheckAPIImpl()
+            ),
             apiVersions = setOf(RestApiVersion.C5_0)
         )
 
         val schemaModelProvider = DefaultSchemaModelProvider(SchemaModelContextHolder())
         val operation = endpoint.toOperation(
-            joinResourceAndEndpointPaths("HealthCheckAPI", endpoint.path).toOpenApiPath(), schemaModelProvider)
+            joinResourceAndEndpointPaths("HealthCheckAPI", endpoint.path).toOpenApiPath(),
+            schemaModelProvider
+        )
         assertEquals("post_healthcheckapi_plusone", operation.operationId)
     }
 
@@ -334,7 +341,9 @@ class ResourceToOpenApiSpecMapperTest {
                 )
             ),
             responseBody = ResponseBody(
-                description = "", type = String::class.java, parameterizedTypes = emptyList()
+                description = "",
+                type = String::class.java,
+                parameterizedTypes = emptyList()
             ),
             invocationMethod = InvocationMethod(method = TestFileUploadAPI::upload.javaMethod!!, instance = TestHealthCheckAPIImpl()),
             apiVersions = setOf(RestApiVersion.C5_0)
@@ -390,7 +399,9 @@ class ResourceToOpenApiSpecMapperTest {
                 )
             ),
             responseBody = ResponseBody(
-                description = "", type = String::class.java, parameterizedTypes = emptyList()
+                description = "",
+                type = String::class.java,
+                parameterizedTypes = emptyList()
             ),
             invocationMethod = InvocationMethod(
                 method = TestFileUploadAPI::uploadWithName.javaMethod!!,
@@ -447,7 +458,9 @@ class ResourceToOpenApiSpecMapperTest {
         assertEquals(null, openApiQueryParameter.schema.type)
         assertEquals(null, openApiQueryParameter.schema.format)
         assertEquals("Can be any value - string, number, boolean, array or object.", openApiQueryParameter.schema.description)
-        assertEquals("{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
-            openApiQueryParameter.schema.example)
+        assertEquals(
+            "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
+            openApiQueryParameter.schema.example
+        )
     }
 }

@@ -18,9 +18,9 @@ class PSSParameterSpecSerializer : AlgorithmParameterSpecSerializer<PSSParameter
         val mgfParameters = (params.mgfParameters as MGF1ParameterSpec).digestAlgorithm.toByteArray()
         val buffer = ByteBuffer.allocate(
             4 + digestAlgorithm.size +
-                    4 + mgfParameters.size +
-                    4 +
-                    4
+                4 + mgfParameters.size +
+                4 +
+                4
         )
         buffer.putInt(digestAlgorithm.size)
         buffer.put(digestAlgorithm)

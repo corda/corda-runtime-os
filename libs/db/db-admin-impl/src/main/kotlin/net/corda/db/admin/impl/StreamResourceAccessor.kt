@@ -67,7 +67,7 @@ class StreamResourceAccessor(
         log.info("Creating composite master changelog XML file $masterChangeLogFileName with: ${dbChange.masterChangeLogFiles}")
         // dynamically create the master file by combining the specified.
         ByteArrayOutputStream().use {
-            val xmlWriter = XMLOutputFactory.newInstance().createXMLStreamWriter(it,"UTF-8")
+            val xmlWriter = XMLOutputFactory.newInstance().createXMLStreamWriter(it, "UTF-8")
             xmlWriter.writeStartDocument("UTF-8", "1.0")
             xmlWriter.writeStartElement(LiquibaseXmlConstants.DB_CHANGE_LOG_ROOT_ELEMENT)
             xmlWriter.writeDefaultNamespace(LiquibaseXmlConstants.DB_CHANGE_LOG_NS)
@@ -87,7 +87,7 @@ class StreamResourceAccessor(
             xmlWriter.writeEndElement()
             xmlWriter.flush()
 
-            if(log.isDebugEnabled) {
+            if (log.isDebugEnabled) {
                 val transformer = transformerFactory.newTransformer()
                 transformer.setOutputProperty(OutputKeys.INDENT, "yes")
                 transformer.setOutputProperty(OutputKeys.STANDALONE, "yes")
@@ -102,7 +102,9 @@ class StreamResourceAccessor(
                     masterChangeLogFileName,
                     URI(masterChangeLogFileName),
                     ByteArrayInputStream(it.toByteArray()),
-                    dbChange))
+                    dbChange
+                )
+            )
         }
     }
 
@@ -119,8 +121,9 @@ class StreamResourceAccessor(
 
         // if we are accessing the specific path masterChangeLogFileName, we synthesise an XML file
         // which causes Liquibase to include all the changelogs we know about.
-        if (masterChangeLogFileName == path)
+        if (masterChangeLogFileName == path) {
             return createCompositeMasterChangeLog()
+        }
 
         if (path.contains("www.liquibase.org")) {
             // NOTE: this is needed for fetching the XML schemas

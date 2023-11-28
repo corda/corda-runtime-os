@@ -19,7 +19,7 @@ class WeakValueHashMapTest {
         var future = CompletableFuture<String>()
         val futureToRemove = CompletableFuture<String>()
 
-        //test base functionality
+        // test base functionality
         map["future"] = future
         map["remove"] = futureToRemove
         Assertions.assertEquals(future, map["future"])
@@ -29,16 +29,15 @@ class WeakValueHashMapTest {
         Assertions.assertEquals(1, map.size)
         Assertions.assertFalse(map.isEmpty())
 
-        //test garbage collection
+        // test garbage collection
         future.complete("completed")
-        //new assignment so we orphan the old future
+        // new assignment so we orphan the old future
         future = CompletableFuture<String>()
         future.complete("completed yet again")
         System.gc()
         eventually(waitBetween = 10.millis, waitBefore = 0.millis, duration = 5.seconds) {
             Assertions.assertTrue(map.isEmpty())
         }
-
     }
 
     @Test

@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 
-
 class SerializationUtilsTest {
 
     @Test
@@ -21,7 +20,7 @@ class SerializationUtilsTest {
         val ex = assertThrows<TestException>(message = "Failed - Throws") {
             wrapWithNullErrorHandling(onErrorOrNull = {
                 throw TestException("Failed - Throws", it)
-            }){
+            }) {
                 throw CordaRuntimeException("This is the Cause")
             }
         }
@@ -35,10 +34,10 @@ class SerializationUtilsTest {
                 "return value",
                 wrapWithNullErrorHandling({ throw CordaRuntimeException("never will be thrown") }) {
                     "return value"
-                })
+                }
+            )
         }
     }
-
 }
 
 class TestException(message: String, cause: Exception) : Exception(message, cause)

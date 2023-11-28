@@ -139,6 +139,7 @@ class EnumTests {
     fun multiEnum() {
         @CordaSerializable
         data class Support(val top: Bras, val day: DayOfWeek)
+
         @CordaSerializable
         data class WeeklySupport(val tops: List<Support>)
 

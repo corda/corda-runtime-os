@@ -24,7 +24,6 @@ const val CRYPTO_KEY_TYPE = "keyType"
  */
 const val CRYPTO_KEY_TYPE_WRAPPING = "wrapping"
 
-
 /**
  * Standard [CryptoService] context value defining that the delete operation is performed for the key pair. Used
  * together with the [CRYPTO_KEY_TYPE].

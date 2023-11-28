@@ -18,4 +18,3 @@ class ClassSerializer(
         output.writeString(sandboxGroup.getStaticTag(clazz))
     }
 }
-

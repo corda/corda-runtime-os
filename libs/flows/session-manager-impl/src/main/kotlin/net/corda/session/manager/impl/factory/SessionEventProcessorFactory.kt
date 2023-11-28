@@ -42,11 +42,13 @@ class SessionEventProcessorFactory @Activate constructor(
      * [instant] is provided for timestamps
      */
     fun createEventReceivedProcessor(key: Any, sessionEvent: SessionEvent, sessionState: SessionState?, instant: Instant):
-            SessionEventProcessor {
+        SessionEventProcessor {
         val messageDirection = sessionEvent.messageDirection
         if (messageDirection != MessageDirection.INBOUND) {
-            throw SessionManagerException("MessageDirection $messageDirection must be set to ${MessageDirection.INBOUND}" +
-                    " for factory method createReceivedEventProcessor()")
+            throw SessionManagerException(
+                "MessageDirection $messageDirection must be set to ${MessageDirection.INBOUND}" +
+                    " for factory method createReceivedEventProcessor()"
+            )
         }
         return when (val payload = sessionEvent.payload) {
             is SessionData -> SessionDataProcessorReceive(key, sessionState, sessionEvent, instant)
@@ -77,8 +79,10 @@ class SessionEventProcessorFactory @Activate constructor(
         val messageDirection = sessionEvent.messageDirection
 
         if (messageDirection != MessageDirection.OUTBOUND) {
-            throw SessionManagerException("MessageDirection $messageDirection must be set to ${MessageDirection.OUTBOUND} " +
-                    "for factory method createEventToSendProcessor()")
+            throw SessionManagerException(
+                "MessageDirection $messageDirection must be set to ${MessageDirection.OUTBOUND} " +
+                    "for factory method createEventToSendProcessor()"
+            )
         }
         return when (val payload = sessionEvent.payload) {
             is SessionData -> {

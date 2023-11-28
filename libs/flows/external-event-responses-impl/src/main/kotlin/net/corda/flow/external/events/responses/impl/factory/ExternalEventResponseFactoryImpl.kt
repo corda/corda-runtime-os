@@ -44,7 +44,8 @@ class ExternalEventResponseFactoryImpl(
         return success(
             flowExternalEventContext.requestId,
             flowExternalEventContext.flowId,
-            payload)
+            payload
+        )
     }
 
     override fun transientError(
@@ -54,7 +55,8 @@ class ExternalEventResponseFactoryImpl(
         return transientError(
             flowExternalEventContext,
             ExceptionEnvelope(
-                throwable::class.java.name, throwable.message ?: "No exception message provided"
+                throwable::class.java.name,
+                throwable.message ?: "No exception message provided"
             )
         )
     }
@@ -73,7 +75,8 @@ class ExternalEventResponseFactoryImpl(
         return platformError(
             flowExternalEventContext,
             ExceptionEnvelope(
-                throwable::class.java.name, throwable.message ?: "No exception message provided."
+                throwable::class.java.name,
+                throwable.message ?: "No exception message provided."
             )
         )
     }
@@ -92,7 +95,8 @@ class ExternalEventResponseFactoryImpl(
         return fatalError(
             flowExternalEventContext,
             ExceptionEnvelope(
-                throwable::class.java.name, throwable.message ?: "No exception message provided."
+                throwable::class.java.name,
+                throwable.message ?: "No exception message provided."
             )
         )
     }

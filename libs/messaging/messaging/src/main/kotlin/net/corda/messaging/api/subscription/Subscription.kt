@@ -15,6 +15,7 @@ interface SubscriptionBase : Resource {
      */
     fun start()
 }
+
 /**
  * A subscription that can be used to manage the life cycle of consumption of event records from a topic.
  * Records are key/value pairs represented by [K] and [V], respectively, and are analogous to a kafka record.
@@ -100,4 +101,3 @@ interface CompactedSubscription<K : Any, V : Any> : Subscription<K, V> {
      */
     fun getValue(key: K): V?
 }
-

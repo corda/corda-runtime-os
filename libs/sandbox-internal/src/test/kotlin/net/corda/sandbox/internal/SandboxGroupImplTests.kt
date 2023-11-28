@@ -17,14 +17,14 @@ import net.corda.sandbox.internal.sandbox.CpkSandboxImpl
 import net.corda.sandbox.internal.sandbox.SandboxImpl
 import net.corda.sandbox.internal.utilities.BundleUtils
 import net.corda.v5.crypto.SecureHash
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import org.osgi.framework.Bundle
 import java.util.UUID.randomUUID
 
@@ -67,13 +67,16 @@ class SandboxGroupImplTests {
         whenever(loadClassFromSystemBundle(DoesNotExist::class.java.name)).thenThrow(ClassNotFoundException())
     }
 
-
     private val cpkSandbox =
         CpkSandboxImpl(randomUUID(), mockCpkMeta(), mockCpkMainBundle, setOf(mockCpkLibraryBundle))
     private val publicSandbox = SandboxImpl(randomUUID(), setOf(mockPublicBundle), setOf(mockPublicLibraryBundle))
 
     private val sandboxGroupImpl = SandboxGroupImpl(
-        randomUUID(), setOf(cpkSandbox), setOf(publicSandbox), DummyClassTagFactory(cpkSandbox.cpkMetadata), mockBundleUtils
+        randomUUID(),
+        setOf(cpkSandbox),
+        setOf(publicSandbox),
+        DummyClassTagFactory(cpkSandbox.cpkMetadata),
+        mockBundleUtils
     )
 
     @Test

@@ -30,7 +30,7 @@ class ConfigSecretHelperTest {
        }
     """.trimIndent()
 
-    private val input2= """
+    private val input2 = """
        {
             "testString": "hello",
             "testReference": {
@@ -47,7 +47,6 @@ class ConfigSecretHelperTest {
            }
        }
     """.trimIndent()
-
 
     private val helper = ConfigSecretHelper()
 
@@ -66,7 +65,6 @@ class ConfigSecretHelperTest {
         assertThat(inputNode["testReference"]["hidden"][ConfigKeys.SECRET_KEY]).isEqualTo(secretsNode)
         assertThat(inputNode["testString"].textValue()).isEqualTo("hello")
     }
-
 
     @Test
     fun `test secrets including array`() {

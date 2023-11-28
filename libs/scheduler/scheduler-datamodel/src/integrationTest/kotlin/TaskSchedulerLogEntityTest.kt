@@ -153,12 +153,11 @@ class TaskSchedulerLogEntityTest {
             try {
                 it.persist(log)
                 it.flush()
-            }
-            catch (e: PersistenceException) {
+            } catch (e: PersistenceException) {
                 // NOTE: this is not great, but we must be able to detect a constraint violation in case
                 //  of a race condition, however, the JPA exception type doesn't give us enough info, so we check
                 //  the hibernate generated message.
-                if(e.message?.contains("ConstraintViolationException") == true) {
+                if (e.message?.contains("ConstraintViolationException") == true) {
                     it.find(
                         TaskSchedulerLogEntity::class.java,
                         taskId

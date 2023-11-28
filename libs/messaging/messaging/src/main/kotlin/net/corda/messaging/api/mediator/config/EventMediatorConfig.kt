@@ -26,7 +26,7 @@ import java.time.Duration
  * @property threadName Name (prefix) for task manager threads.
  * @property stateManager State manager.
  */
-data class EventMediatorConfig<K: Any, S: Any, E: Any>(
+data class EventMediatorConfig<K : Any, S : Any, E : Any>(
     val name: String,
     val messagingConfig: SmartConfig,
     val consumerFactories: Collection<MediatorConsumerFactory>,

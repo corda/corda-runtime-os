@@ -57,7 +57,6 @@ class ProcessorTaskTest {
 
     @Test
     fun `successfully processes events`() {
-
         val persistedState: State? = null
         val eventIds = (1..3).toList()
         val inputEvents = eventIds.map { id -> EventType("inputEvent$id") }
@@ -74,7 +73,8 @@ class ProcessorTaskTest {
         val result = task.call()
 
         verify(processor, times(inputEventRecords.size)).onNext(
-            stateCaptor.capture(), eventCaptor.capture()
+            stateCaptor.capture(),
+            eventCaptor.capture()
         )
         val capturedInputStates = stateCaptor.allValues
         val expectedInputStates = listOf(

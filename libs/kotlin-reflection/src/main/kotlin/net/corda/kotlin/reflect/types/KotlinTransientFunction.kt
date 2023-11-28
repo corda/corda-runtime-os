@@ -1,16 +1,16 @@
 package net.corda.kotlin.reflect.types
 
+import kotlinx.metadata.KmPropertyAccessorAttributes
+import kotlinx.metadata.isExternal
+import kotlinx.metadata.isInline
+import kotlinx.metadata.modality
+import kotlinx.metadata.visibility
 import java.lang.reflect.Method
 import java.util.Objects
 import kotlin.reflect.KParameter
 import kotlin.reflect.KType
 import kotlin.reflect.KTypeParameter
 import kotlin.reflect.KVisibility
-import kotlinx.metadata.KmPropertyAccessorAttributes
-import kotlinx.metadata.isExternal
-import kotlinx.metadata.isInline
-import kotlinx.metadata.modality
-import kotlinx.metadata.visibility
 
 @Suppress("LongParameterList")
 class KotlinTransientFunction<V>(

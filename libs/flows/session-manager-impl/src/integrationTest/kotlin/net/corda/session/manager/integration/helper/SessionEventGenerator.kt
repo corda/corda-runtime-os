@@ -33,7 +33,7 @@ fun generateMessage(
 }
 
 fun generateCounterpartyInfoRQ(instant: Instant, messageDirection: MessageDirection = MessageDirection.OUTBOUND, sessionId: String):
-        SessionEvent {
+    SessionEvent {
     val sessionInit = SessionInit.newBuilder()
         .setCpiId("cpiId")
         .setFlowId(null)
@@ -65,6 +65,12 @@ fun generateClose(instant: Instant, messageDirection: MessageDirection, sessionI
 }
 
 fun generateSessionEvent(payload: Any, instant: Instant, messageDirection: MessageDirection, sessionId: String): SessionEvent {
-    return buildSessionEvent(messageDirection, sessionId, null, payload, instant,
-        contextSessionProps = keyValuePairListOf(mapOf(Constants.FLOW_SESSION_REQUIRE_CLOSE to true.toString())))
+    return buildSessionEvent(
+        messageDirection,
+        sessionId,
+        null,
+        payload,
+        instant,
+        contextSessionProps = keyValuePairListOf(mapOf(Constants.FLOW_SESSION_REQUIRE_CLOSE to true.toString()))
+    )
 }

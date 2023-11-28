@@ -39,7 +39,11 @@ class SessionErrorProcessorReceiveTest {
         )
 
         val inputState = buildSessionState(
-            SessionStateType.CONFIRMED, 0, mutableListOf(), 0, mutableListOf()
+            SessionStateType.CONFIRMED,
+            0,
+            mutableListOf(),
+            0,
+            mutableListOf()
         )
 
         val sessionState = SessionErrorProcessorReceive("Key", inputState, sessionEvent, ExceptionEnvelope(), Instant.now())

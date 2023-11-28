@@ -47,9 +47,16 @@ class SessionEventProcessorFactoryTest {
     fun testCreateEventReceivedProcessorOutboundMessage() {
         assertThrows<SessionManagerException> {
             sessionEventProcessorFactory.createEventReceivedProcessor(
-                "key", buildSessionEvent(
-                    MessageDirection.OUTBOUND, "sessionId", 1, SessionData(), contextSessionProps = emptyKeyValuePairList()
-                ), null, Instant.now()
+                "key",
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND,
+                    "sessionId",
+                    1,
+                    SessionData(),
+                    contextSessionProps = emptyKeyValuePairList()
+                ),
+                null,
+                Instant.now()
             )
         }
     }
@@ -96,9 +103,16 @@ class SessionEventProcessorFactoryTest {
     @Test
     fun testInboundErrorMessage() {
         val processor = sessionEventProcessorFactory.createEventReceivedProcessor(
-            "key", buildSessionEvent(
-                MessageDirection.INBOUND, "sessionId", 1, SessionError(ExceptionEnvelope()), contextSessionProps = emptyKeyValuePairList()
-            ), null, Instant.now()
+            "key",
+            buildSessionEvent(
+                MessageDirection.INBOUND,
+                "sessionId",
+                1,
+                SessionError(ExceptionEnvelope()),
+                contextSessionProps = emptyKeyValuePairList()
+            ),
+            null,
+            Instant.now()
         )
 
         assertThat(processor::class.java).isEqualTo(SessionErrorProcessorReceive::class.java)
@@ -107,9 +121,17 @@ class SessionEventProcessorFactoryTest {
     @Test
     fun testOutboundErrorMessage() {
         val processor = sessionEventProcessorFactory.createEventToSendProcessor(
-            "key", buildSessionEvent(
-                MessageDirection.OUTBOUND, "sessionId", 1, SessionError(ExceptionEnvelope()), contextSessionProps = emptyKeyValuePairList()
-            ), sessionState, Instant.now(), maxMsgSize
+            "key",
+            buildSessionEvent(
+                MessageDirection.OUTBOUND,
+                "sessionId",
+                1,
+                SessionError(ExceptionEnvelope()),
+                contextSessionProps = emptyKeyValuePairList()
+            ),
+            sessionState,
+            Instant.now(),
+            maxMsgSize
         )
 
         assertThat(processor::class.java).isEqualTo(SessionErrorProcessorSend::class.java)

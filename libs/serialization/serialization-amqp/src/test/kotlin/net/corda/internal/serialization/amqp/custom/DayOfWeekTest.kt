@@ -9,15 +9,14 @@ class DayOfWeekTest {
 
     companion object {
         @JvmStatic
-        fun everyDay() : List<DayOfWeek> {
+        fun everyDay(): List<DayOfWeek> {
             return DayOfWeek.values().toList()
         }
     }
 
     @ParameterizedTest
     @MethodSource("everyDay")
-    fun everyDayOfWeek(day : DayOfWeek) {
+    fun everyDayOfWeek(day: DayOfWeek) {
         ReusableSerialiseDeserializeAssert.serializeDeserializeAssert(day)
     }
 }
-

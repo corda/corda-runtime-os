@@ -27,19 +27,21 @@ import javax.naming.ldap.LdapName
 
 internal val secureHashComparator = Comparator.nullsFirst(
     Comparator.comparing(SecureHash::getAlgorithm)
-        .then { h1, h2 -> Arrays.compare(h1?.bytes, h2?.bytes) })
+        .then { h1, h2 -> Arrays.compare(h1?.bytes, h2?.bytes) }
+)
 
 /**
  * Compute the [SecureHash] of a [ByteArray] using the specified [DigestAlgorithmName]
  */
-fun ByteArray.hash(algo : DigestAlgorithmName = DigestAlgorithmName.SHA2_256) : SecureHash {
+fun ByteArray.hash(algo: DigestAlgorithmName = DigestAlgorithmName.SHA2_256): SecureHash {
     val md = MessageDigest.getInstance(algo.name)
     md.update(this)
     return SecureHashImpl(algo.name, md.digest())
 }
 
-fun InputStream.hash(algo : DigestAlgorithmName = DigestAlgorithmName.SHA2_256,
-                     buffer: ByteArray = ByteArray(DEFAULT_BUFFER_SIZE)
+fun InputStream.hash(
+    algo: DigestAlgorithmName = DigestAlgorithmName.SHA2_256,
+    buffer: ByteArray = ByteArray(DEFAULT_BUFFER_SIZE)
 ): SecureHash {
     val md = MessageDigest.getInstance(algo.name)
     DigestInputStream(this, md).use {
@@ -87,13 +89,16 @@ fun setReadOnly(file: Path) {
  * [MessageDigest.update] with the data that needs to be hashed
  * @return the resulting [SecureHash]
  */
-internal inline fun hash(algorithm : DigestAlgorithmName = DigestAlgorithmName.SHA2_256, withDigestAction : (MessageDigest) -> Unit) : SecureHash {
+internal inline fun hash(
+    algorithm: DigestAlgorithmName = DigestAlgorithmName.SHA2_256,
+    withDigestAction: (MessageDigest) -> Unit
+): SecureHash {
     val md = MessageDigest.getInstance(algorithm.name)
     withDigestAction(md)
     return SecureHashImpl(algorithm.name, md.digest())
 }
 
-internal fun Sequence<SecureHash>.summaryHash() : SecureHash? {
+internal fun Sequence<SecureHash>.summaryHash(): SecureHash? {
     var counter = 0
     return hash {
         this.onEach { ++counter }
@@ -125,7 +130,7 @@ private fun LdapName.filterSupportedAttributes(): String {
 
     val sorted = includedAttributes.sortedWith { rdn1, rdn2 ->
         X500_NAME_SUPPORTED_ATTRIBUTES.indexOf(rdn1.type) -
-                X500_NAME_SUPPORTED_ATTRIBUTES.indexOf(rdn2.type)
+            X500_NAME_SUPPORTED_ATTRIBUTES.indexOf(rdn2.type)
     }
 
     return LdapName(sorted).toString()

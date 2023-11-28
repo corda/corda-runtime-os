@@ -14,7 +14,7 @@ interface MessagingChunkFactory {
      * @param onError error handling to execute if it fails to reassemble the chunks. takes the fully reassembled byte array
      * @return ConsumerChunkDeserializerService
      */
-    fun <K: Any, V: Any> createConsumerChunkDeserializerService(
+    fun <K : Any, V : Any> createConsumerChunkDeserializerService(
         keyDeserializer: CordaAvroDeserializer<K>,
         valueDeserializer: CordaAvroDeserializer<V>,
         onError: (ByteArray) -> Unit,
@@ -26,9 +26,9 @@ interface MessagingChunkFactory {
      * @param onError error handling to execute if it fails to reassemble the chunks. takes the fully reassembled byte array
      * @return ChunkDeserializerService
      */
-    fun <V: Any> createChunkDeserializerService(
+    fun <V : Any> createChunkDeserializerService(
         expectedType: Class<V>,
-        onError: (ByteArray) -> Unit = {_ ->}
+        onError: (ByteArray) -> Unit = { _ -> }
     ): ChunkDeserializerService<V>
 
     /**

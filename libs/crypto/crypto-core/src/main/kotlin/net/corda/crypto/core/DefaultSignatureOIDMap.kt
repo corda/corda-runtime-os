@@ -47,7 +47,8 @@ object DefaultSignatureOIDMap {
     )
 
     val GOST3410_GOST3411 = AlgorithmIdentifier(
-        CryptoProObjectIdentifiers.gostR3410_94, DLSequence(
+        CryptoProObjectIdentifiers.gostR3410_94,
+        DLSequence(
             arrayOf(
                 CryptoProObjectIdentifiers.gostR3410_94_CryptoPro_A,
                 CryptoProObjectIdentifiers.gostR3411_94_CryptoProParamSet
@@ -80,21 +81,24 @@ object DefaultSignatureOIDMap {
     val SHA512_RSA = AlgorithmIdentifier(PKCSObjectIdentifiers.sha512WithRSAEncryption, null)
 
     val SHA256_RSASSA_PSS = AlgorithmIdentifier(
-        PKCSObjectIdentifiers.id_RSASSA_PSS, createPSSParams(
+        PKCSObjectIdentifiers.id_RSASSA_PSS,
+        createPSSParams(
             hashAlgId = AlgorithmIdentifier(NISTObjectIdentifiers.id_sha256, DERNull.INSTANCE),
             saltSize = 32
         )
     )
 
     val SHA384_RSASSA_PSS = AlgorithmIdentifier(
-        PKCSObjectIdentifiers.id_RSASSA_PSS, createPSSParams(
+        PKCSObjectIdentifiers.id_RSASSA_PSS,
+        createPSSParams(
             hashAlgId = AlgorithmIdentifier(NISTObjectIdentifiers.id_sha384, DERNull.INSTANCE),
             saltSize = 48
         )
     )
 
     val SHA512_RSASSA_PSS = AlgorithmIdentifier(
-        PKCSObjectIdentifiers.id_RSASSA_PSS, createPSSParams(
+        PKCSObjectIdentifiers.id_RSASSA_PSS,
+        createPSSParams(
             hashAlgId = AlgorithmIdentifier(NISTObjectIdentifiers.id_sha512, DERNull.INSTANCE),
             saltSize = 64
         )

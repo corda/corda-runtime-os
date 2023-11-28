@@ -1,4 +1,5 @@
 @file:JvmName("AMQPSerializationScheme")
+
 package net.corda.internal.serialization
 
 import net.corda.base.internal.ByteSequence
@@ -47,20 +48,22 @@ import net.corda.internal.serialization.amqp.custom.ZoneIdSerializer
 import net.corda.internal.serialization.amqp.custom.ZonedDateTimeSerializer
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
-import net.corda.utilities.toSynchronised
 import net.corda.utilities.VisibleForTesting
+import net.corda.utilities.toSynchronised
 import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.v5.serialization.SerializedBytes
 import java.util.Collections
 
-data class SerializationFactoryCacheKey(val sandboxGroup: SandboxGroup?,
-                                        val preventDataLoss: Boolean,
-                                        val customSerializers: Set<SerializationCustomSerializer<*, *>>?)
+data class SerializationFactoryCacheKey(
+    val sandboxGroup: SandboxGroup?,
+    val preventDataLoss: Boolean,
+    val customSerializers: Set<SerializationCustomSerializer<*, *>>?
+)
 
 abstract class AbstractAMQPSerializationScheme private constructor(
-        private val cordappCustomSerializers: Set<SerializationCustomSerializer<*, *>>,
-        maybeNotConcurrentSerializerFactoriesForContexts: MutableMap<SerializationFactoryCacheKey, SerializerFactory>,
-        val sff: SerializerFactoryFactory = createSerializerFactoryFactory()
+    private val cordappCustomSerializers: Set<SerializationCustomSerializer<*, *>>,
+    maybeNotConcurrentSerializerFactoriesForContexts: MutableMap<SerializationFactoryCacheKey, SerializerFactory>,
+    val sff: SerializerFactoryFactory = createSerializerFactoryFactory()
 ) : SerializationScheme {
     constructor() : this(
         emptySet<SerializationCustomSerializer<*, *>>(),
@@ -72,12 +75,13 @@ abstract class AbstractAMQPSerializationScheme private constructor(
 
     // This is a bit gross but a broader check for ConcurrentMap is not allowed inside DJVM.
     private val serializerFactoriesForContexts: MutableMap<SerializationFactoryCacheKey, SerializerFactory> =
-            if (maybeNotConcurrentSerializerFactoriesForContexts is
-                            AccessOrderLinkedHashMap<SerializationFactoryCacheKey, SerializerFactory>) {
-                Collections.synchronizedMap(maybeNotConcurrentSerializerFactoriesForContexts)
-            } else {
-                maybeNotConcurrentSerializerFactoriesForContexts
-            }
+        if (maybeNotConcurrentSerializerFactoriesForContexts is
+            AccessOrderLinkedHashMap<SerializationFactoryCacheKey, SerializerFactory>
+        ) {
+            Collections.synchronizedMap(maybeNotConcurrentSerializerFactoriesForContexts)
+        } else {
+            maybeNotConcurrentSerializerFactoriesForContexts
+        }
 
     private fun registerCustomSerializers(context: SerializationContext, factory: SerializerFactory) {
         registerCustomSerializers(factory)

@@ -8,5 +8,5 @@ import java.util.UUID
  */
 @CordaSerializable
 // Uncomment this version of the class when rebuilding test resources
-//data class SerializableStateToOlderVersion(val id: UUID, val removedField: String)
-data class SerializableStateToOlderVersion(val id:UUID)
+// data class SerializableStateToOlderVersion(val id: UUID, val removedField: String)
+data class SerializableStateToOlderVersion(val id: UUID)

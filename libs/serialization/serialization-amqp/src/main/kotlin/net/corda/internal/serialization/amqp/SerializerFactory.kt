@@ -18,14 +18,14 @@ data class SerializationSchemas(val schema: Schema, val transforms: TransformsSc
 interface SerializerFactory : LocalSerializerFactory, RemoteSerializerFactory, CustomSerializerRegistry
 
 class ComposedSerializerFactory(
-        private val localSerializerFactory: LocalSerializerFactory,
-        private val remoteSerializerFactory: RemoteSerializerFactory,
-        private val customSerializerRegistry: CachingCustomSerializerRegistry
+    private val localSerializerFactory: LocalSerializerFactory,
+    private val remoteSerializerFactory: RemoteSerializerFactory,
+    private val customSerializerRegistry: CachingCustomSerializerRegistry
 ) : SerializerFactory,
-        LocalSerializerFactory by localSerializerFactory,
-        RemoteSerializerFactory by remoteSerializerFactory,
-        CustomSerializerRegistry by customSerializerRegistry {
+    LocalSerializerFactory by localSerializerFactory,
+    RemoteSerializerFactory by remoteSerializerFactory,
+    CustomSerializerRegistry by customSerializerRegistry {
 
-        override val customSerializerNames: List<String>
-            get() = customSerializerRegistry.customSerializerNames
-    }
+    override val customSerializerNames: List<String>
+        get() = customSerializerRegistry.customSerializerNames
+}

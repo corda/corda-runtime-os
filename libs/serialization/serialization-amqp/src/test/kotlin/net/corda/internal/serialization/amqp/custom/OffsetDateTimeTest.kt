@@ -14,6 +14,7 @@ class OffsetDateTimeTest {
     fun min() {
         serializeDeserializeAssert(OffsetDateTime.MIN)
     }
+
     @Test
     fun max() {
         serializeDeserializeAssert(OffsetDateTime.MAX)

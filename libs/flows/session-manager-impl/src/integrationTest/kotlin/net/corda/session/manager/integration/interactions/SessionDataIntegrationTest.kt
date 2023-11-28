@@ -49,9 +49,9 @@ class SessionDataIntegrationTest {
         alice.randomShuffleInboundMessages()
         bob.randomShuffleInboundMessages()
 
-        //process data messages
+        // process data messages
         alice.processAllReceivedMessages(sendMessages = true)
-        //process data messages and acks
+        // process data messages and acks
         bob.processAllReceivedMessages(sendMessages = true)
 
         alice.assertAllMessagesDelivered()
@@ -88,9 +88,9 @@ class SessionDataIntegrationTest {
         alice.reverseInboundMessages()
         bob.reverseInboundMessages()
 
-        //process data messages
+        // process data messages
         alice.processAllReceivedMessages(sendMessages = true)
-        //process data messages and acks
+        // process data messages and acks
         bob.processAllReceivedMessages(sendMessages = true)
 
         alice.assertAllMessagesDelivered()
@@ -106,19 +106,19 @@ class SessionDataIntegrationTest {
     fun `Out of order data with duplicate data`() {
         val (alice, bob) = initiateNewSession(testSmartConfig)
 
-        //alice send 2 data
+        // alice send 2 data
         alice.apply {
             processNewOutgoingMessage(SessionMessageType.DATA, sendMessages = true)
             processNewOutgoingMessage(SessionMessageType.DATA, sendMessages = true)
         }
 
-        //bob receive data out of order and send 1 ack back
+        // bob receive data out of order and send 1 ack back
         bob.processNextReceivedMessage()
 
-        //duplicate data message
+        // duplicate data message
         bob.duplicateMessage(0)
 
-        //bob receive duplicate data message
+        // bob receive duplicate data message
         bob.processAllReceivedMessages()
 
         alice.assertLastSentSeqNum(2)
@@ -132,14 +132,14 @@ class SessionDataIntegrationTest {
         val (alice, bob) = initiateNewSession(testSmartConfig)
 
         val instant = Instant.now()
-        //alice send data
+        // alice send data
         alice.processNewOutgoingMessage(SessionMessageType.DATA, sendMessages = true, instant)
-        //bob send error
+        // bob send error
         bob.processNewOutgoingMessage(SessionMessageType.ERROR, sendMessages = true, instant)
-        //bob process data and send back ack
+        // bob process data and send back ack
         bob.processNextReceivedMessage(sendMessages = true)
 
-        //alice receives error and then ack
+        // alice receives error and then ack
         alice.processAllReceivedMessages()
 
         alice.assertStatus(SessionStateType.ERROR)

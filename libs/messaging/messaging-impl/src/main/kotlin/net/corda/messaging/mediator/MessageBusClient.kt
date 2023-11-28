@@ -28,7 +28,8 @@ class MessageBusClient(
             producer.close()
         } catch (ex: Exception) {
             log.info(
-                "Failed to close message bus messaging client [$id] safely.", ex
+                "Failed to close message bus messaging client [$id] safely.",
+                ex
             )
         }
     }

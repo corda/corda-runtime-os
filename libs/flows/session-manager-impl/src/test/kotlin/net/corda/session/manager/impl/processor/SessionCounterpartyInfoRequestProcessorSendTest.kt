@@ -13,7 +13,7 @@ import java.time.Instant
 class SessionCounterpartyInfoRequestProcessorSendTest {
 
     private fun createCounterpartyInfoRQ() =
-        SessionCounterpartyInfoRequest(SessionInit("flow", "flowId1", emptyKeyValuePairList(),  emptyKeyValuePairList()))
+        SessionCounterpartyInfoRequest(SessionInit("flow", "flowId1", emptyKeyValuePairList(), emptyKeyValuePairList()))
 
     @Test
     fun `Send session CounterpartyInfoRQ`() {
@@ -25,7 +25,7 @@ class SessionCounterpartyInfoRequestProcessorSendTest {
             contextSessionProps = emptyKeyValuePairList()
         )
 
-        val sessionState = buildSessionState(SessionStateType.CREATED, 0, emptyList(), 0 , emptyList())
+        val sessionState = buildSessionState(SessionStateType.CREATED, 0, emptyList(), 0, emptyList())
         val sessionInitProcessor = SessionCounterpartyInfoRequestProcessorSend(sessionState, sessionCounterpartyInfoRequest, Instant.now())
 
         val updatedSessionState = sessionInitProcessor.execute()

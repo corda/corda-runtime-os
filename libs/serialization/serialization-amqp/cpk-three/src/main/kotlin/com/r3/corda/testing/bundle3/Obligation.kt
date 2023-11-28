@@ -13,11 +13,9 @@ class Obligation(val amount: Cash) {
      * Both have the same fully qualified class name.
      */
     override fun toString(): String {
-
         val document = Document("This is some string", 1)
 
         return "with (amount: ${amount.amount}, " +
-                "content: ${document.content}, version: ${document.version}"
-
+            "content: ${document.content}, version: ${document.version}"
     }
 }

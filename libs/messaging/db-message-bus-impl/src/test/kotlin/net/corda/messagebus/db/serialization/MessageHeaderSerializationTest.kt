@@ -35,7 +35,8 @@ class MessageHeaderSerializationTest {
                  "value":"value2a"
              }
         ]
-}""".trimMargin()
+}
+        """.trimMargin()
 
         val result = MessageHeaderSerializerImpl().deserialize(json)
 

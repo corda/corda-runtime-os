@@ -168,7 +168,7 @@ internal class AvroSchemaRegistryImplTest {
                     "\"namespace\":\"net.corda.data.test\"," +
                     "\"fields\":[{\"name\":\"flags\",\"type\":\"int\"}]}"
             )
-        
+
         assertDoesNotThrow { registry.addSchemaOnly(unknownClassTypeSchema) }
     }
 
@@ -239,7 +239,8 @@ internal class AvroSchemaRegistryImplTest {
     @Test
     fun `can add schema to registry`() {
         val registry = AvroSchemaRegistryImpl()
-        val newSchema = Schema.Parser().parse("""
+        val newSchema = Schema.Parser().parse(
+            """
             {
                "type" : "record",
                "namespace" : "foo",
@@ -249,7 +250,8 @@ internal class AvroSchemaRegistryImplTest {
                   { "name" : "CoolFactor" , "type" : "int" }
                ]
             }
-        """.trimIndent())
+            """.trimIndent()
+        )
         val newSchemaFingerprint = Fingerprint(SchemaNormalization.parsingFingerprint("SHA-256", newSchema))
 
         registry.initialiseSchemas(avroGeneratedMessages)
@@ -278,7 +280,8 @@ internal class AvroSchemaRegistryImplTest {
     fun `containsSchema returns false if schema does not exist`() {
         val registry = AvroSchemaRegistryImpl()
 
-        val newSchema = Schema.Parser().parse("""
+        val newSchema = Schema.Parser().parse(
+            """
             {
                "type" : "record",
                "namespace" : "foo",
@@ -288,7 +291,8 @@ internal class AvroSchemaRegistryImplTest {
                   { "name" : "CoolFactor" , "type" : "int" }
                ]
             }
-        """.trimIndent())
+            """.trimIndent()
+        )
         val newSchemaFingerprint = Fingerprint(SchemaNormalization.parsingFingerprint("SHA-256", newSchema))
 
         assertThat(registry.containsSchema(newSchemaFingerprint)).isFalse

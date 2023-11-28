@@ -152,7 +152,7 @@ class VersionComparator : Comparator<String?> {
             }
         }
 
-        //<editor-fold desc="skip functions">
+        // <editor-fold desc="skip functions">
         /**
          * Skip digits or letters in a string, and return the indexes
          * of where we've skipped to, and also whether `str1` is a number.
@@ -236,7 +236,7 @@ class VersionComparator : Comparator<String?> {
             }
             return idx
         }
-        //</editor-fold>
+        // </editor-fold>
 
         /**
          * [String.compareTo] returns negative, 0, or positive, and we need to clamp it to -1, 0, 1
@@ -245,9 +245,13 @@ class VersionComparator : Comparator<String?> {
          */
         private fun String.clampedCompareTo(other: String): Int {
             val compareTo = this.compareTo(other)
-            return if (compareTo > 0) 1
-            else if (compareTo < 0) -1
-            else 0
+            return if (compareTo > 0) {
+                1
+            } else if (compareTo < 0) {
+                -1
+            } else {
+                0
+            }
         }
 
         @JvmStatic

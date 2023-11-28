@@ -1,4 +1,4 @@
-package net.corda.messagebus.api.consumer;
+package net.corda.messagebus.api.consumer
 
 /**
  * Backup strategy for topic reset when no previous position on the message bus exists.

@@ -30,14 +30,14 @@ import java.security.PrivateKey
 class IllegalCustomSerializerException
 private constructor(customSerializerQualifiedName: String?, clazz: Class<*>, cause: Exception?) : Exception(
     "Custom serializer $customSerializerQualifiedName " +
-            "to serialize non-custom-serializable type $clazz",
+        "to serialize non-custom-serializable type $clazz",
     cause
 ) {
     constructor(customSerializer: AMQPSerializer<*>, clazz: Class<*>) :
-            this(customSerializer::class.qualifiedName, clazz, null)
+        this(customSerializer::class.qualifiedName, clazz, null)
 
     constructor(customSerializer: SerializationCustomSerializer<*, *>, clazz: Class<*>, cause: Exception) :
-            this(customSerializer::class.qualifiedName, clazz, cause)
+        this(customSerializer::class.qualifiedName, clazz, cause)
 }
 
 /**
@@ -45,8 +45,10 @@ private constructor(customSerializerQualifiedName: String?, clazz: Class<*>, cau
  * to override already-defined behaviour.
  */
 class DuplicateCustomSerializerException(serializers: List<AMQPSerializer<*>>, clazz: Class<*>) :
-        Exception("Multiple custom serializers " + serializers.map { it::class.qualifiedName } +
-                " registered to serialize type $clazz")
+    Exception(
+        "Multiple custom serializers " + serializers.map { it::class.qualifiedName } +
+            " registered to serialize type $clazz"
+    )
 
 interface CustomSerializerRegistry {
 
@@ -100,9 +102,9 @@ interface CustomSerializerRegistry {
 }
 
 class CachingCustomSerializerRegistry(
-        private val descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
-        private val allowedFor: Set<Class<*>>,
-        private val sandboxGroup: SandboxGroup
+    private val descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
+    private val allowedFor: Set<Class<*>>,
+    private val sandboxGroup: SandboxGroup
 ) : CustomSerializerRegistry {
     constructor(
         descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
@@ -115,8 +117,11 @@ class CachingCustomSerializerRegistry(
 
     override val customSerializerNames: List<String>
         get() = customSerializers.map { serializer ->
-            if (serializer is CorDappCustomSerializer) serializer.toString()
-            else "$serializer - Classloader: ${serializer::class.java.classLoader}"
+            if (serializer is CorDappCustomSerializer) {
+                serializer.toString()
+            } else {
+                "$serializer - Classloader: ${serializer::class.java.classLoader}"
+            }
         }
 
     private data class CustomSerializerIdentifier(val actualTypeIdentifier: TypeIdentifier, val declaredTypeIdentifier: TypeIdentifier)
@@ -132,7 +137,8 @@ class CachingCustomSerializerRegistry(
         data class CustomSerializerFound(override val serializerIfFound: AMQPSerializer<Any>) : CustomSerializerLookupResult()
     }
 
-    private val customSerializersCache: MutableMap<CustomSerializerIdentifier, CustomSerializerLookupResult> = DefaultCacheProvider.createCache()
+    private val customSerializersCache: MutableMap<CustomSerializerIdentifier, CustomSerializerLookupResult> =
+        DefaultCacheProvider.createCache()
     private val customSerializers: MutableList<SerializerFor> = mutableListOf()
 
     override fun register(customSerializer: CustomSerializer<out Any>) {
@@ -141,11 +147,13 @@ class CachingCustomSerializerRegistry(
     }
 
     override fun register(serializer: InternalCustomSerializer<out Any>, factory: SerializerFactory) {
-        register(when(serializer) {
-            is InternalProxySerializer<out Any, out Any> -> CustomSerializer.Proxy(serializer, factory)
-            is InternalDirectSerializer<out Any> -> CustomSerializer.Direct(serializer)
-            else -> throw UnsupportedOperationException("Unknown custom serializer $serializer")
-        })
+        register(
+            when (serializer) {
+                is InternalProxySerializer<out Any, out Any> -> CustomSerializer.Proxy(serializer, factory)
+                is InternalDirectSerializer<out Any> -> CustomSerializer.Direct(serializer)
+                else -> throw UnsupportedOperationException("Unknown custom serializer $serializer")
+            }
+        )
     }
 
     override fun registerExternal(serializer: SerializationCustomSerializer<*, *>, factory: SerializerFactory) {
@@ -181,15 +189,15 @@ class CachingCustomSerializerRegistry(
     private fun checkActiveCache(type: Type) {
         if (customSerializersCache.isNotEmpty()) {
             val message = "Attempting to register custom serializer $type in an active cache. " +
-                    "All serializers must be registered before the cache comes into use."
+                "All serializers must be registered before the cache comes into use."
             logger.warn(message)
             throw AMQPNotSerializableException(type, message)
         }
     }
 
     private fun <T> registerCustomSerializer(customSerializer: T)
-        where T: AMQPSerializer<Any>,
-              T: SerializerFor {
+    where T : AMQPSerializer<Any>,
+          T : SerializerFor {
         checkActiveCache(customSerializer.type)
 
         val descriptor = customSerializer.typeDescriptor.toString()
@@ -206,13 +214,17 @@ class CachingCustomSerializerRegistry(
 
     override fun findCustomSerializer(clazz: Class<*>, declaredType: Type): AMQPSerializer<Any>? {
         val typeIdentifier = CustomSerializerIdentifier(
-                TypeIdentifier.forClass(clazz),
-                TypeIdentifier.forGenericType(declaredType))
+            TypeIdentifier.forClass(clazz),
+            TypeIdentifier.forGenericType(declaredType)
+        )
 
         return customSerializersCache.getOrPut(typeIdentifier) {
-                val customSerializer = doFindCustomSerializer(clazz, declaredType)
-                if (customSerializer == null) CustomSerializerLookupResult.None
-                else CustomSerializerLookupResult.CustomSerializerFound(customSerializer)
+            val customSerializer = doFindCustomSerializer(clazz, declaredType)
+            if (customSerializer == null) {
+                CustomSerializerLookupResult.None
+            } else {
+                CustomSerializerLookupResult.CustomSerializerFound(customSerializer)
+            }
         }.serializerIfFound
     }
 
@@ -223,9 +235,11 @@ class CachingCustomSerializerRegistry(
         val declaredSerializers = customSerializers.mapNotNull { customSerializer ->
             when {
                 !customSerializer.isSerializerFor(clazz) -> null
-                (declaredSuperClass == null
-                        || !customSerializer.isSerializerFor(declaredSuperClass)
-                        || !customSerializer.revealSubclassesInSchema) -> {
+                (
+                    declaredSuperClass == null ||
+                        !customSerializer.isSerializerFor(declaredSuperClass) ||
+                        !customSerializer.revealSubclassesInSchema
+                    ) -> {
                     logger.debug { "action=\"Using custom serializer\", class=${clazz.typeName}, declaredType=${declaredType.typeName}" }
 
                     @Suppress("unchecked_cast")

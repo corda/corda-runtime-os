@@ -2,7 +2,7 @@ package net.corda.serialization.checkpoint
 
 import net.corda.base.internal.ByteSequence
 
-//Implemented in other modules
+// Implemented in other modules
 interface CheckpointInternalCustomSerializer<OBJ> {
     val type: Class<OBJ>
 
@@ -10,7 +10,7 @@ interface CheckpointInternalCustomSerializer<OBJ> {
     fun read(input: CheckpointInput, type: Class<out OBJ>): OBJ
 }
 
-//Implemented in this Module used in other modules which implement KryoSerializer
+// Implemented in this Module used in other modules which implement KryoSerializer
 interface CheckpointInput {
     fun readClassAndObject(): Any
     fun readBytesWithLength(): ByteArray
@@ -19,7 +19,7 @@ interface CheckpointInput {
     fun readBytes(size: Int): ByteArray
 }
 
-//Implemented in this Module used in other modules which implement KryoSerializer
+// Implemented in this Module used in other modules which implement KryoSerializer
 interface CheckpointOutput {
     fun writeClassAndObject(obj: Any)
     fun writeBytesWithLength(encoded: ByteArray)

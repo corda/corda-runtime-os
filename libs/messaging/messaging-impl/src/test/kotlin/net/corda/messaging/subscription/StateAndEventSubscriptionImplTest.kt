@@ -1,10 +1,5 @@
 package net.corda.messaging.subscription
 
-import java.time.Duration
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
 import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.messagebus.api.CordaTopicPartition
@@ -41,6 +36,11 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.time.Duration
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 class StateAndEventSubscriptionImplTest {
 
@@ -102,7 +102,6 @@ class StateAndEventSubscriptionImplTest {
 
         val mockConsumerRecords = generateMockCordaConsumerRecordList(iterations, TOPIC, 0)
         var eventsPaused = false
-
 
         doAnswer { eventsPaused = true }.whenever(eventConsumer).pause(any())
         doAnswer { eventsPaused = false }.whenever(eventConsumer).resume(any())
@@ -285,7 +284,6 @@ class StateAndEventSubscriptionImplTest {
         verify(producer, times(5)).sendRecordOffsetsToTransaction(any(), any())
         verify(producer, times(5)).commitTransaction()
         verify(chunkSerializerService, times(5)).getChunkKeysToClear(any(), anyOrNull(), anyOrNull())
-
     }
 
     @Test
@@ -406,7 +404,7 @@ class StateAndEventSubscriptionImplTest {
             }
         }.whenever(stateAndEventConsumer).pollEvents()
 
-        //null response from waitForFunctionToFinish indicates slow function exceeded timeout
+        // null response from waitForFunctionToFinish indicates slow function exceeded timeout
         doAnswer {
             CompletableFuture.completedFuture(null)
         }.whenever(stateAndEventConsumer).waitForFunctionToFinish(any(), any(), any())
@@ -505,9 +503,11 @@ class StateAndEventSubscriptionImplTest {
         )
         verify(builder, times(1)).createProducer(any(), anyOrNull())
         verify(producer, times(1)).beginTransaction()
-        verify(producer, times(1)).sendRecords(argThat { list: List<CordaProducerRecord<*, *>> ->
-            list.contains(CordaProducerRecord("Topic", "Key", "Value"))
-        })
+        verify(producer, times(1)).sendRecords(
+            argThat { list: List<CordaProducerRecord<*, *>> ->
+                list.contains(CordaProducerRecord("Topic", "Key", "Value"))
+            }
+        )
         verify(producer, times(1)).sendRecordOffsetsToTransaction(any(), any())
         verify(producer, times(1)).commitTransaction()
         verify(chunkSerializerService, times(1)).getChunkKeysToClear(any(), anyOrNull(), anyOrNull())

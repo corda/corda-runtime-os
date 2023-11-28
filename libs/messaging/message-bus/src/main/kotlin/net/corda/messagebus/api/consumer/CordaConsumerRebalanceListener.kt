@@ -32,7 +32,7 @@ interface CordaConsumerRebalanceListener {
      * @param partitions The list of partitions that are now assigned to the consumer (previously owned partitions will
      *                   NOT be included, i.e. this list will only include newly added partitions)
      */
-    fun onPartitionsAssigned(partitions: Collection<CordaTopicPartition>);
+    fun onPartitionsAssigned(partitions: Collection<CordaTopicPartition>)
 
     /**
      * This method will not be called during normal execution as the owned partitions would

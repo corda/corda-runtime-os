@@ -11,11 +11,11 @@ class LocalDateSerializer : BaseProxySerializer<LocalDate, LocalDateSerializer.L
     override val proxyType: Class<LocalDateProxy> get() = LocalDateProxy::class.java
     override val withInheritance: Boolean get() = false
 
-    override fun toProxy(obj: LocalDate): LocalDateProxy
-        = LocalDateProxy(obj.year, obj.monthValue.toByte(), obj.dayOfMonth.toByte())
+    override fun toProxy(obj: LocalDate): LocalDateProxy =
+        LocalDateProxy(obj.year, obj.monthValue.toByte(), obj.dayOfMonth.toByte())
 
-    override fun fromProxy(proxy: LocalDateProxy): LocalDate
-        = LocalDate.of(proxy.year, proxy.month.toInt(), proxy.day.toInt())
+    override fun fromProxy(proxy: LocalDateProxy): LocalDate =
+        LocalDate.of(proxy.year, proxy.month.toInt(), proxy.day.toInt())
 
     data class LocalDateProxy(val year: Int, val month: Byte, val day: Byte)
 }

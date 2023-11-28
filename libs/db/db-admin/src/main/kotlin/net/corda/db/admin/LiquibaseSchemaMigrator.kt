@@ -78,4 +78,3 @@ interface LiquibaseSchemaMigrator {
      */
     fun listUnrunChangeSets(datasource: Connection, dbChange: DbChange): List<String>
 }
-

@@ -79,8 +79,11 @@ class CpbV2VerifierTest {
         val exception = assertThrows<CertPathValidatorException> {
             verify(cpb, setOf(CA1))
         }
-        assertEquals("Error validating code signer's certificate path, X.509 name: CN=Corda Dev Root CA,OU=R3," +
-                "O=Corda,L=Dublin,C=IE. Path does not chain with any of the trust anchors", exception.message)
+        assertEquals(
+            "Error validating code signer's certificate path, X.509 name: CN=Corda Dev Root CA,OU=R3," +
+                "O=Corda,L=Dublin,C=IE. Path does not chain with any of the trust anchors",
+            exception.message
+        )
     }
 
     @Test
@@ -239,7 +242,8 @@ class CpbV2VerifierTest {
                 TestCpkV2Builder()
                     .name("dependency-1.1.0.0.jar")
                     .bundleName("dependency.cpk")
-                    .bundleVersion("1.1.0.0"))
+                    .bundleVersion("1.1.0.0")
+            )
             .signers(ALICE)
             .build()
 
@@ -262,7 +266,8 @@ class CpbV2VerifierTest {
                     .name("dependency-1.0.0.0.jar")
                     .bundleName("dependency.cpk")
                     .bundleVersion("1.0.0.0")
-                    .signers(BOB))
+                    .signers(BOB)
+            )
             .signers(ALICE)
             .build()
 
@@ -284,11 +289,13 @@ class CpbV2VerifierTest {
                             "dependency.cpk",
                             "1.0.0.0",
                             SecureHashImpl("SHA-256", base64ToBytes("qlnYKfLKj931q+pA2BX5N+PlTlcrZbk7XCFq5llOfWs="))
-                        )),
+                        )
+                    ),
                 TestCpkV2Builder()
                     .name("dependency-1.0.0.0.jar")
                     .bundleName("dependency.cpk")
-                    .bundleVersion("1.0.0.0"))
+                    .bundleVersion("1.0.0.0")
+            )
             .signers(ALICE)
             .build()
 
@@ -322,8 +329,10 @@ class CpbV2VerifierTest {
                     .bundleName("test.cpk")
                     .bundleVersion("2.0.0.0")
                     .dependencies(
-                        TestUtils.Dependency("dependency.cpk", "1.0.0.0", dependencyCpkHash))
-                    .signers(ALICE))
+                        TestUtils.Dependency("dependency.cpk", "1.0.0.0", dependencyCpkHash)
+                    )
+                    .signers(ALICE)
+            )
             .build()
             .apply { addFile("dependency-1.0.0.0.jar", dependencyCpk) }
             .signedBy(ALICE)

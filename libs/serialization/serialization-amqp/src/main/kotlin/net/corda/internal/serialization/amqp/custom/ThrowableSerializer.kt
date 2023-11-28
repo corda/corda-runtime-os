@@ -114,4 +114,3 @@ class ThrowableSerializer(
         val additionalProperties: Map<String, Any?>
     )
 }
-

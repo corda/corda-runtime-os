@@ -17,7 +17,7 @@ class SmartConfigValueTest {
                 token: secure-fred
             },
         }
-        """.trimIndent()
+    """.trimIndent()
     val config = ConfigFactory.parseString(configString)
     val otherConfig = ConfigFactory.parseString(
         """
@@ -27,13 +27,15 @@ class SmartConfigValueTest {
         """.trimIndent()
     )
 
-    val secretsLookupService = mock<SecretsLookupService>() {
-        on { getValue(
-            argThat {
-                this != otherConfig.getConfig("jon")
-            }
-        )} doReturn "secret"
-        on { getValue(otherConfig.getConfig("jon"))} doReturn "other-secret"
+    val secretsLookupService = mock<SecretsLookupService> {
+        on {
+            getValue(
+                argThat {
+                    this != otherConfig.getConfig("jon")
+                }
+            )
+        } doReturn "secret"
+        on { getValue(otherConfig.getConfig("jon")) } doReturn "other-secret"
     }
     val smartConfigFactory = mock<SmartConfigFactory>()
     val configValue: SmartConfigValue =

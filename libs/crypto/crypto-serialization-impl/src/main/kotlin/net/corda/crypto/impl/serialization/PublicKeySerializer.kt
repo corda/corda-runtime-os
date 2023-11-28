@@ -21,9 +21,9 @@ class PublicKeySerializer @Activate constructor(
     override val type: Class<PublicKey> get() = PublicKey::class.java
     override val withInheritance: Boolean get() = true
 
-    override fun writeObject(obj: PublicKey, writer: WriteObject)
-        = writer.putAsBytes(keyEncodingService.encodeAsByteArray(obj))
+    override fun writeObject(obj: PublicKey, writer: WriteObject) =
+        writer.putAsBytes(keyEncodingService.encodeAsByteArray(obj))
 
-    override fun readObject(reader: ReadObject): PublicKey
-        = keyEncodingService.decodePublicKey(reader.getAsBytes())
+    override fun readObject(reader: ReadObject): PublicKey =
+        keyEncodingService.decodePublicKey(reader.getAsBytes())
 }

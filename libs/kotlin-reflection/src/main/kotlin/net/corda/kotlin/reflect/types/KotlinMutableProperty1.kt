@@ -1,5 +1,13 @@
 package net.corda.kotlin.reflect.types
 
+import kotlinx.metadata.KmProperty
+import kotlinx.metadata.KmPropertyAccessorAttributes
+import kotlinx.metadata.isExternal
+import kotlinx.metadata.isInline
+import kotlinx.metadata.jvm.getterSignature
+import kotlinx.metadata.jvm.setterSignature
+import kotlinx.metadata.modality
+import kotlinx.metadata.visibility
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.util.Objects
@@ -9,14 +17,6 @@ import kotlin.reflect.KType
 import kotlin.reflect.KTypeParameter
 import kotlin.reflect.KVisibility
 import kotlin.reflect.full.starProjectedType
-import kotlinx.metadata.KmProperty
-import kotlinx.metadata.KmPropertyAccessorAttributes
-import kotlinx.metadata.isExternal
-import kotlinx.metadata.isInline
-import kotlinx.metadata.jvm.getterSignature
-import kotlinx.metadata.jvm.setterSignature
-import kotlinx.metadata.modality
-import kotlinx.metadata.visibility
 
 @Suppress("LongParameterList", "MaxLineLength")
 class KotlinMutableProperty1<T, V> private constructor(
@@ -27,7 +27,15 @@ class KotlinMutableProperty1<T, V> private constructor(
     javaGetter: Method?,
     override val javaSetter: Method?,
     instanceClass: Class<*>
-) : KotlinProperty1<T, V>(kmProperty, getterSignature, javaField, javaGetter, instanceClass), KMutableProperty1<T, V>, KMutablePropertyAccessorInternal<V> {
+) : KotlinProperty1<T, V>(
+    kmProperty,
+    getterSignature,
+    javaField,
+    javaGetter,
+    instanceClass
+),
+    KMutableProperty1<T, V>,
+    KMutablePropertyAccessorInternal<V> {
     constructor(kmProperty: KmProperty, declaringClass: Class<*>) : this(
         kmProperty = kmProperty,
         getterSignature = kmProperty.getterSignature?.toSignature(declaringClass.classLoader),
@@ -101,17 +109,18 @@ class KotlinMutableProperty1<T, V> private constructor(
     )
 
     override fun set(receiver: T, value: V) {
-       javaSetter!!.invoke(receiver, value)
+        javaSetter!!.invoke(receiver, value)
     }
 
     override fun equals(other: Any?): Boolean {
         return when {
             other === this -> true
-            other !is KotlinMutableProperty1<*,*> || other::class != this::class -> false
-            else -> name == other.name
-                    && javaField == other.javaField
-                    && javaGetter == other.javaGetter
-                    && javaSetter == other.javaSetter
+            other !is KotlinMutableProperty1<*, *> || other::class != this::class -> false
+            else ->
+                name == other.name &&
+                    javaField == other.javaField &&
+                    javaGetter == other.javaGetter &&
+                    javaSetter == other.javaSetter
         }
     }
 

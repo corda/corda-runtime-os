@@ -10,7 +10,7 @@ class PubSubConsumerRebalanceListener<K : Any, V : Any>(
     val consumer: CordaConsumer<K, V>
 ) : LoggingConsumerRebalanceListener(clientId) {
 
-    override val log: Logger = LoggerFactory.getLogger("${this.javaClass.name}-${clientId}")
+    override val log: Logger = LoggerFactory.getLogger("${this.javaClass.name}-$clientId")
 
     /**
      * When assigned [partitions] set the consumer offset to the end of the partition.

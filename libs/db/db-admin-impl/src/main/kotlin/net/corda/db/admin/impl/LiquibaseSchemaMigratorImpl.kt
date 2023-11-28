@@ -110,8 +110,10 @@ class LiquibaseSchemaMigratorImpl(
                 database
             )
 
-            log.info("Updating ${database.databaseProductName} ${database.databaseProductVersion} " +
-                    "DB Schema for ${database.connection.catalog}")
+            log.info(
+                "Updating ${database.databaseProductName} ${database.databaseProductVersion} " +
+                    "DB Schema for ${database.connection.catalog}"
+            )
             if (null == sql) {
                 lb.update(tag, Contexts())
             } else {

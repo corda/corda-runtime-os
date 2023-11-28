@@ -36,4 +36,3 @@ internal class CpkImpl(
             getResourceAsStream(metadata.mainBundle)
         }
 }
-

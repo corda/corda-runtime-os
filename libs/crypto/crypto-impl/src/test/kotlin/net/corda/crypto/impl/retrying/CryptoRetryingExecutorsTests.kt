@@ -65,12 +65,20 @@ class CryptoRetryingExecutorsTests {
             PersistenceException("error", PessimisticLockException()),
             PersistenceException("error", java.sql.SQLTransientException()),
             PersistenceException("error", java.sql.SQLTimeoutException()),
-            PersistenceException("error", org.hibernate.exception.LockAcquisitionException(
-                "error", java.sql.SQLException()
-            )),
-            PersistenceException("error", org.hibernate.exception.LockTimeoutException(
-                "error", java.sql.SQLException()
-            ))
+            PersistenceException(
+                "error",
+                org.hibernate.exception.LockAcquisitionException(
+                    "error",
+                    java.sql.SQLException()
+                )
+            ),
+            PersistenceException(
+                "error",
+                org.hibernate.exception.LockTimeoutException(
+                    "error",
+                    java.sql.SQLException()
+                )
+            )
         )
     }
 
@@ -146,7 +154,8 @@ class CryptoRetryingExecutorsTests {
         var called = 0
         assertThrows<CryptoException> {
             CryptoRetryingExecutorWithTimeout(
-                logger, BackoffStrategy.createBackoff(3, listOf(100L)),
+                logger,
+                BackoffStrategy.createBackoff(3, listOf(100L)),
                 defaultRetryTimeout
             ).executeWithRetry {
                 called++

@@ -166,7 +166,6 @@ class DBAccess(
             val recordTransaction = entityManager.find(TransactionRecordEntry::class.java, transactionId)
             recordTransaction.state = state
         }
-
     }
 
     fun writeRecords(records: List<TopicRecordEntry>) {
@@ -206,7 +205,7 @@ class DBAccess(
 
     private fun findOffsetToReadUntil(entityManager: EntityManager, topicPartition: CordaTopicPartition): Long {
         return entityManager.createQuery(
-                """
+            """
                      select t from topic_record t 
                      join transaction_record tr on t.${TopicRecordEntry::transactionId.name} 
                            = tr.${TransactionRecordEntry::transactionId.name}
@@ -214,7 +213,7 @@ class DBAccess(
                      and t.${TopicRecordEntry::partition.name} = '${topicPartition.partition}'
                      and tr.${TransactionRecordEntry::state.name} = ${TransactionState.PENDING.ordinal}
                      order by t.${TopicRecordEntry::recordOffset.name}
-                    """.trimIndent(),
+            """.trimIndent(),
             TopicRecordEntry::class.java
         ).setMaxResults(1).resultList.firstOrNull()?.recordOffset ?: Long.MAX_VALUE
     }
@@ -232,7 +231,7 @@ class DBAccess(
                      and tr.${TransactionRecordEntry::state.name} = ${TransactionState.COMMITTED.ordinal}
                      and t.${TopicRecordEntry::recordOffset.name} < ${findOffsetToReadUntil(entityManager, it)}
                      order by t.${TopicRecordEntry::recordOffset.name} desc
-                """.trimIndent(),
+                    """.trimIndent(),
                     TopicRecordEntry::class.java
                 ).setMaxResults(1).resultList.firstOrNull()?.recordOffset ?: 0L
             }
@@ -250,14 +249,15 @@ class DBAccess(
                  from topic_record
                  group by ${TopicRecordEntry::topic.name}, ${TopicRecordEntry::partition.name}
                 """.trimIndent(),
-                Tuple::class.java)
-            .resultList
-            .associate { r ->
-                val topic = r.get(0) as String
-                val partition = (r.get(1) as Number).toInt()
-                val recordOffset = (r.get(2) as Number).toLong()
-                CordaTopicPartition(topic, partition) to recordOffset
-            }
+                Tuple::class.java
+            )
+                .resultList
+                .associate { r ->
+                    val topic = r.get(0) as String
+                    val partition = (r.get(1) as Number).toInt()
+                    val recordOffset = (r.get(2) as Number).toLong()
+                    CordaTopicPartition(topic, partition) to recordOffset
+                }
         }
     }
 
@@ -273,7 +273,7 @@ class DBAccess(
                      and t.${TopicRecordEntry::partition.name} = '${it.partition}'
                      and tr.${TransactionRecordEntry::state.name} = ${TransactionState.COMMITTED.ordinal}
                      order by t.${TopicRecordEntry::recordOffset.name} 
-                """.trimIndent(),
+                    """.trimIndent(),
                     TopicRecordEntry::class.java
                 ).setMaxResults(1).resultList.firstOrNull()?.recordOffset
                     ?: 0L // This needs to follow auto.offset.reset

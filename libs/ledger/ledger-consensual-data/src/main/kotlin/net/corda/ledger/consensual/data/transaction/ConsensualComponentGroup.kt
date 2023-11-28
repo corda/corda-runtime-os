@@ -19,7 +19,8 @@ import java.time.Instant
 
 enum class ConsensualComponentGroup {
     METADATA, // needs to be in sync with
-              // [net.corda.ledger.common.impl.transaction.WireTransactionImplKt.ALL_LEDGER_METADATA_COMPONENT_GROUP_ID]
+
+    // [net.corda.ledger.common.impl.transaction.WireTransactionImplKt.ALL_LEDGER_METADATA_COMPONENT_GROUP_ID]
     TIMESTAMP,
     SIGNATORIES,
     OUTPUT_STATES,

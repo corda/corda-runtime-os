@@ -85,7 +85,8 @@ internal class ChunkReaderImpl(private val destDir: Path) : ChunkReader {
             chunksCombinedCallback!!.onChunksCombined(
                 path,
                 actualChecksum,
-                chunk.properties?.fromAvro())
+                chunk.properties?.fromAvro()
+            )
 
             // Since all the chunks been received and consumer notified, it is safe to get rid of entry in a map.
             chunksSoFar.remove(chunk.requestId)

@@ -134,7 +134,6 @@ class CompositeKeyImpl(val threshold: Int, childrenUnsorted: List<CompositeKeyNo
         return sum
     }
 
-
     /**
      * Takes single [PublicKey] and checks if [CompositeKey] requirements hold for that key.
      */
@@ -215,4 +214,3 @@ class CompositeKeyImpl(val threshold: Int, childrenUnsorted: List<CompositeKeyNo
      */
     override fun toString() = "(${children.joinToString()})"
 }
-

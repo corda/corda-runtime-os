@@ -16,4 +16,3 @@ class CertPathTest {
         serializeDeserializeAssert(certPath)
     }
 }
-

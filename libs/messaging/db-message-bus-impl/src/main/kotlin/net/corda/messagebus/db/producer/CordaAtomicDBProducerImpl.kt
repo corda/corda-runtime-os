@@ -40,13 +40,15 @@ class CordaAtomicDBProducerImpl(
     }
 
     override fun sendRecords(records: List<CordaProducerRecord<*, *>>) {
-        sendRecordsToPartitions(records.map {
-            // Determine the partition
-            val topic = it.topic
-            val numberOfPartitions = dbAccess.getTopicPartitionMapFor(topic).size
-            val partition = getPartition(it.key, numberOfPartitions)
-            Pair(partition, it)
-        })
+        sendRecordsToPartitions(
+            records.map {
+                // Determine the partition
+                val topic = it.topic
+                val numberOfPartitions = dbAccess.getTopicPartitionMapFor(topic).size
+                val partition = getPartition(it.key, numberOfPartitions)
+                Pair(partition, it)
+            }
+        )
     }
 
     override fun sendRecordsToPartitions(recordsWithPartitions: List<Pair<Int, CordaProducerRecord<*, *>>>) {
@@ -128,5 +130,4 @@ class CordaAtomicDBProducerImpl(
         require(numberOfPartitions > 0)
         return abs(key.hashCode() % numberOfPartitions)
     }
-
 }

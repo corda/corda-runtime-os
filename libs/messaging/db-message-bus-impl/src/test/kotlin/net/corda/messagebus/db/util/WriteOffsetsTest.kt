@@ -20,7 +20,7 @@ internal class WriteOffsetsTest {
                     CordaTopicPartition(topic1, 0) to 5L,
                     CordaTopicPartition(topic1, 1) to 0L,
                     CordaTopicPartition(topic1, 2) to 2L,
-                    //CordaTopicPartition(topic2, 0) to 0L, // Deliberately left out
+                    // CordaTopicPartition(topic2, 0) to 0L, // Deliberately left out
                 )
             )
         }

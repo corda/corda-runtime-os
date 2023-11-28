@@ -1,5 +1,16 @@
 package net.corda.kotlin.reflect.types
 
+import kotlinx.metadata.KmProperty
+import kotlinx.metadata.KmPropertyAccessorAttributes
+import kotlinx.metadata.isConst
+import kotlinx.metadata.isExternal
+import kotlinx.metadata.isInline
+import kotlinx.metadata.isLateinit
+import kotlinx.metadata.jvm.JvmFieldSignature
+import kotlinx.metadata.jvm.fieldSignature
+import kotlinx.metadata.jvm.getterSignature
+import kotlinx.metadata.modality
+import kotlinx.metadata.visibility
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.util.Collections.unmodifiableList
@@ -12,17 +23,6 @@ import kotlin.reflect.KType
 import kotlin.reflect.KTypeParameter
 import kotlin.reflect.KVisibility
 import kotlin.reflect.full.starProjectedType
-import kotlinx.metadata.KmProperty
-import kotlinx.metadata.KmPropertyAccessorAttributes
-import kotlinx.metadata.isConst
-import kotlinx.metadata.isExternal
-import kotlinx.metadata.isInline
-import kotlinx.metadata.isLateinit
-import kotlinx.metadata.jvm.JvmFieldSignature
-import kotlinx.metadata.jvm.fieldSignature
-import kotlinx.metadata.jvm.getterSignature
-import kotlinx.metadata.modality
-import kotlinx.metadata.visibility
 
 @Suppress("LongParameterList")
 open class KotlinProperty2<D, E, V> protected constructor(
@@ -63,24 +63,26 @@ open class KotlinProperty2<D, E, V> protected constructor(
     override val name: String
         get() = kmProperty.name
     override val parameters: List<KParameter>
-        get() = unmodifiableList(listOf(
-            KotlinParameter(
-                name = null,
-                type = instanceClass.createKType(isNullable = false),
-                index = 0,
-                kind = INSTANCE,
-                isVararg = false,
-                isOptional = false
-            ),
-            KotlinParameter(
-                name = null,
-                type = javaGetter?.receiverType ?: Any::class.starProjectedType,
-                index = 1,
-                kind = EXTENSION_RECEIVER,
-                isVararg = false,
-                isOptional = false
+        get() = unmodifiableList(
+            listOf(
+                KotlinParameter(
+                    name = null,
+                    type = instanceClass.createKType(isNullable = false),
+                    index = 0,
+                    kind = INSTANCE,
+                    isVararg = false,
+                    isOptional = false
+                ),
+                KotlinParameter(
+                    name = null,
+                    type = javaGetter?.receiverType ?: Any::class.starProjectedType,
+                    index = 1,
+                    kind = EXTENSION_RECEIVER,
+                    isVararg = false,
+                    isOptional = false
+                )
             )
-        ))
+        )
     override val returnType: KType
         get() = KotlinType(kmProperty.returnType)
     override val typeParameters: List<KTypeParameter>
@@ -148,10 +150,11 @@ open class KotlinProperty2<D, E, V> protected constructor(
     override fun equals(other: Any?): Boolean {
         return when {
             other === this -> true
-            other !is KotlinProperty2<*,*,*> || other::class != this::class -> false
-            else -> name == other.name
-                    && javaField == other.javaField
-                    && javaGetter == other.javaGetter
+            other !is KotlinProperty2<*, *, *> || other::class != this::class -> false
+            else ->
+                name == other.name &&
+                    javaField == other.javaField &&
+                    javaGetter == other.javaGetter
         }
     }
 

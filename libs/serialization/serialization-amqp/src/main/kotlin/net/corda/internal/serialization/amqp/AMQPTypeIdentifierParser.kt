@@ -18,7 +18,7 @@ import java.util.UUID
 /**
  * Thrown if the type string parser enters an illegal state.
  */
-class IllegalTypeNameParserStateException(message: String): NotSerializableException(message)
+class IllegalTypeNameParserStateException(message: String) : NotSerializableException(message)
 
 /**
  * Provides a state machine which knows how to parse AMQP type strings into [TypeIdentifier]s.
@@ -37,8 +37,8 @@ object AMQPTypeIdentifierParser {
     fun parse(typeString: String, sandboxGroup: SandboxGroup): TypeIdentifier {
         validate(typeString)
         return typeString.fold<ParseState>(ParseState.ParsingRawType(null)) { state, c ->
-                    state.accept(c, sandboxGroup)
-                }.getTypeIdentifier()
+            state.accept(c, sandboxGroup)
+        }.getTypeIdentifier()
     }
 
     // Make sure our inputs aren't designed to blow things up.
@@ -52,9 +52,12 @@ object AMQPTypeIdentifierParser {
 
         for (c in typeString) {
             if (c.isWhitespace() || c.isJavaIdentifierPart() || c.isJavaIdentifierStart() ||
-                    c == '.' || c == ',' || c == '?' || c == '*') continue
+                c == '.' || c == ',' || c == '?' || c == '*'
+            ) {
+                continue
+            }
 
-            when(c) {
+            when (c) {
                 '<' -> maxTypeParamDepth = (++typeParamdepth).coerceAtLeast(maxTypeParamDepth)
                 '>' -> typeParamdepth--
                 '[' -> {
@@ -66,11 +69,13 @@ object AMQPTypeIdentifierParser {
             }
             wasArray = c == ']'
         }
-        if (maxTypeParamDepth >= MAX_TYPE_PARAM_DEPTH)
+        if (maxTypeParamDepth >= MAX_TYPE_PARAM_DEPTH) {
             throw IllegalTypeNameParserStateException("Nested depth of type parameters exceeds maximum of $MAX_TYPE_PARAM_DEPTH")
+        }
 
-        if (maxArrayDepth >= MAX_ARRAY_DEPTH)
+        if (maxArrayDepth >= MAX_ARRAY_DEPTH) {
             throw IllegalTypeNameParserStateException("Nested depth of arrays exceeds maximum of $MAX_ARRAY_DEPTH")
+        }
     }
 
     private sealed class ParseState {
@@ -80,7 +85,7 @@ object AMQPTypeIdentifierParser {
 
         fun unexpected(c: Char): ParseState = throw IllegalTypeNameParserStateException("Unexpected character: '$c'")
         fun notInParameterList(c: Char): ParseState =
-                throw IllegalTypeNameParserStateException("'$c' encountered, but not parsing type parameter list")
+            throw IllegalTypeNameParserStateException("'$c' encountered, but not parsing type parameter list")
 
         /**
          * We are parsing a raw type name, either at the top level or as part of a list of type parameters.
@@ -88,8 +93,11 @@ object AMQPTypeIdentifierParser {
         data class ParsingRawType(override val parent: ParsingParameterList?, val buffer: StringBuilder = StringBuilder()) : ParseState() {
             override fun accept(c: Char, sandboxGroup: SandboxGroup) = when (c) {
                 ',' ->
-                    if (parent == null) notInParameterList(c)
-                    else ParsingRawType(parent.addParameter(getTypeIdentifier()))
+                    if (parent == null) {
+                        notInParameterList(c)
+                    } else {
+                        ParsingRawType(parent.addParameter(getTypeIdentifier()))
+                    }
                 '[' -> ParsingArray(getTypeIdentifier(), parent)
                 ']' -> unexpected(c)
                 '<' -> ParsingRawType(ParsingParameterList(getTypeName(), parent))
@@ -99,8 +107,9 @@ object AMQPTypeIdentifierParser {
 
             private fun getTypeName(): String {
                 val typeName = buffer.toString().trim()
-                if (typeName.contains(' '))
+                if (typeName.contains(' ')) {
                     throw IllegalTypeNameParserStateException("Illegal whitespace in type name $typeName")
+                }
                 return typeName
             }
 
@@ -118,18 +127,26 @@ object AMQPTypeIdentifierParser {
          * We are parsing a parameter list, and expect either to start a new parameter, add array-ness to the last
          * parameter we have, or end the list.
          */
-        data class ParsingParameterList(val typeName: String, override val parent: ParsingParameterList?, val parameters: List<TypeIdentifier> = emptyList()) : ParseState() {
+        data class ParsingParameterList(
+            val typeName: String,
+            override val parent: ParsingParameterList?,
+            val parameters: List<TypeIdentifier> = emptyList()
+        ) : ParseState() {
             override fun accept(c: Char, sandboxGroup: SandboxGroup) = when (c) {
                 ' ' -> this
                 ',' -> ParsingRawType(this)
                 '[' ->
-                    if (parameters.isEmpty()) unexpected(c)
-                    else ParsingArray(
+                    if (parameters.isEmpty()) {
+                        unexpected(c)
+                    } else {
+                        ParsingArray(
                             // Start adding array-ness to the last parameter we have.
                             parameters[parameters.lastIndex],
                             // Take a copy of this state, dropping the last parameter which will be added back on
                             // when array parsing completes.
-                            copy(parameters = parameters.subList(0, parameters.lastIndex)))
+                            copy(parameters = parameters.subList(0, parameters.lastIndex))
+                        )
+                    }
                 '>' -> parent?.addParameter(getTypeIdentifier()) ?: Complete(getTypeIdentifier())
                 else -> unexpected(c)
             }
@@ -153,7 +170,7 @@ object AMQPTypeIdentifierParser {
             override fun getTypeIdentifier() = TypeIdentifier.ArrayOf(componentType)
 
             private fun forcePrimitive(componentType: TypeIdentifier, sandboxGroup: SandboxGroup): TypeIdentifier =
-                    TypeIdentifier.forClass(Primitives.unwrap(componentType.getLocalType(sandboxGroup).asClass()))
+                TypeIdentifier.forClass(Primitives.unwrap(componentType.getLocalType(sandboxGroup).asClass()))
         }
 
         /**
@@ -172,26 +189,27 @@ object AMQPTypeIdentifierParser {
     }
 
     private val simplified = mapOf(
-            "string" to String::class,
-            "boolean" to Boolean::class,
-            "byte" to Byte::class,
-            "char" to Char::class,
-            "int" to Int::class,
-            "short" to Short::class,
-            "long" to Long::class,
-            "double" to Double::class,
-            "float" to Float::class,
-            "ubyte" to UnsignedByte::class,
-            "uint" to UnsignedInteger::class,
-            "ushort" to UnsignedShort::class,
-            "ulong" to UnsignedLong::class,
-            "decimal32" to Decimal32::class,
-            "decimal64" to Decimal64::class,
-            "decimal128" to Decimal128::class,
-            "binary" to ByteArray::class,
-            "timestamp" to Date::class,
-            "uuid" to UUID::class,
-            "symbol" to Symbol::class).mapValues { (_, v) ->
+        "string" to String::class,
+        "boolean" to Boolean::class,
+        "byte" to Byte::class,
+        "char" to Char::class,
+        "int" to Int::class,
+        "short" to Short::class,
+        "long" to Long::class,
+        "double" to Double::class,
+        "float" to Float::class,
+        "ubyte" to UnsignedByte::class,
+        "uint" to UnsignedInteger::class,
+        "ushort" to UnsignedShort::class,
+        "ulong" to UnsignedLong::class,
+        "decimal32" to Decimal32::class,
+        "decimal64" to Decimal64::class,
+        "decimal128" to Decimal128::class,
+        "binary" to ByteArray::class,
+        "timestamp" to Date::class,
+        "uuid" to UUID::class,
+        "symbol" to Symbol::class
+    ).mapValues { (_, v) ->
         TypeIdentifier.forClass(v.javaObjectType)
     }
 }

@@ -16,7 +16,7 @@ import org.mockito.kotlin.verify
 class SecretEncryptionUtilTest {
     // encryptor unfortunately doesn't have an interface, so creating a real one, but only once.
     private val encryptor = AesKey.derive("p", "s").encryptor
-    private val encryptorFactoryMock = mock<(p: String, s: String) -> Encryptor>() {
+    private val encryptorFactoryMock = mock<(p: String, s: String) -> Encryptor> {
         on { invoke(any(), any()) } doReturn (encryptor)
     }
 
@@ -86,5 +86,4 @@ class SecretEncryptionUtilTest {
             util.decrypt("foo", "salt", passphrase)
         }
     }
-
 }

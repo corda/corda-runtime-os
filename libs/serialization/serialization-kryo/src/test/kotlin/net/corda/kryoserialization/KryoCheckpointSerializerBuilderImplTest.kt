@@ -64,13 +64,16 @@ class KryoCheckpointSerializerBuilderImplTest {
     }
 
     @ParameterizedTest
-    @ValueSource(classes = [
-        PublicKey::class, BCEdDSAPublicKey::class, CompositeKey::class,
-        BCECPublicKey::class, BCRSAPublicKey::class, BCSphincs256PublicKey::class
-    ])
+    @ValueSource(
+        classes = [
+            PublicKey::class, BCEdDSAPublicKey::class, CompositeKey::class,
+            BCECPublicKey::class, BCRSAPublicKey::class, BCSphincs256PublicKey::class
+        ]
+    )
     fun `serializers of public keys cannot be added`(type: Class<*>) {
         val builder: CheckpointSerializerBuilder = KryoCheckpointSerializerBuilderImpl(
-            mock(), mockSandboxGroup(emptySet())
+            mock(),
+            mockSandboxGroup(emptySet())
         )
 
         assertThatExceptionOfType(CordaKryoException::class.java).isThrownBy {
@@ -79,13 +82,16 @@ class KryoCheckpointSerializerBuilderImplTest {
     }
 
     @ParameterizedTest
-    @ValueSource(classes = [
-        PrivateKey::class, BCEdDSAPrivateKey::class, BCECPrivateKey::class,
-        BCRSAPrivateCrtKey::class, BCSphincs256PrivateKey::class
-    ])
+    @ValueSource(
+        classes = [
+            PrivateKey::class, BCEdDSAPrivateKey::class, BCECPrivateKey::class,
+            BCRSAPrivateCrtKey::class, BCSphincs256PrivateKey::class
+        ]
+    )
     fun `serializers of private keys cannot be added`(type: Class<*>) {
         val builder: CheckpointSerializerBuilder = KryoCheckpointSerializerBuilderImpl(
-            mock(), mockSandboxGroup(emptySet())
+            mock(),
+            mockSandboxGroup(emptySet())
         )
 
         assertThatExceptionOfType(CordaKryoException::class.java).isThrownBy {

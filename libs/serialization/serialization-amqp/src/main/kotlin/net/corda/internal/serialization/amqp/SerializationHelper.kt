@@ -59,16 +59,19 @@ fun resolveTypeVariables(actualType: Type, contextType: Type?, sandboxGroup: San
             TypeIdentifier.UnknownType.getLocalType(sandboxGroup)
         } else if (bounds.size == 1) {
             resolveTypeVariables(bounds[0], contextType, sandboxGroup)
-        } else throw AMQPNotSerializableException(
+        } else {
+            throw AMQPNotSerializableException(
                 actualType,
-                "Got bounded type $actualType but only support single bound.")
+                "Got bounded type $actualType but only support single bound."
+            )
+        }
     } else {
         resolvedType
     }
 }
 
 internal fun Type.asClass(): Class<*> {
-    return when(this) {
+    return when (this) {
         is Class<*> -> this
         is ParameterizedType -> this.rawType.asClass()
         is GenericArrayType -> this.genericComponentType.asClass().arrayClass()
@@ -81,7 +84,7 @@ internal fun Type.asClass(): Class<*> {
 }
 
 internal fun Type.asArray(sandboxGroup: SandboxGroup): Type? {
-    return when(this) {
+    return when (this) {
         is Class<*>,
         is ParameterizedType -> TypeIdentifier.ArrayOf(TypeIdentifier.forGenericType(this)).getLocalType(sandboxGroup)
         else -> null
@@ -99,8 +102,8 @@ internal fun Type.componentType(): Type {
 
 internal fun Class<*>.asParameterizedType(sandboxGroup: SandboxGroup): ParameterizedType =
     TypeIdentifier.Erased(this.name, this.typeParameters.size)
-            .toParameterized(this.typeParameters.map(TypeIdentifier::forGenericType))
-            .getLocalType(sandboxGroup) as ParameterizedType
+        .toParameterized(this.typeParameters.map(TypeIdentifier::forGenericType))
+        .getLocalType(sandboxGroup) as ParameterizedType
 
 internal fun Type.asParameterizedType(sandboxGroup: SandboxGroup): ParameterizedType {
     return when (this) {
@@ -129,7 +132,8 @@ fun requireCordaSerializable(type: Type) {
     if (!hasCordaSerializable(type.asClass()) && type.asClass() != java.lang.Comparable::class.java) {
         throw AMQPNotSerializableException(
             type,
-            "Class \"$type\" is not annotated with @CordaSerializable.")
+            "Class \"$type\" is not annotated with @CordaSerializable."
+        )
     }
 }
 
@@ -138,9 +142,9 @@ fun requireCordaSerializable(type: Type) {
  * classes or interfaces.
  */
 fun hasCordaSerializable(type: Class<*>): Boolean {
-    return type.isAnnotationPresent(CordaSerializable::class.java)
-            || type.interfaces.any(::hasCordaSerializable)
-            || (type.superclass != null && hasCordaSerializable(type.superclass))
+    return type.isAnnotationPresent(CordaSerializable::class.java) ||
+        type.interfaces.any(::hasCordaSerializable) ||
+        (type.superclass != null && hasCordaSerializable(type.superclass))
 }
 
 fun SerializationContext.currentSandboxGroup(): SandboxGroup = sandboxGroup as? SandboxGroup

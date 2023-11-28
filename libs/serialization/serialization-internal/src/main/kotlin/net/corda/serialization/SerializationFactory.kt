@@ -26,7 +26,9 @@ interface SerializationFactory {
      * @return deserialized object along with [SerializationContext] to identify encoding used.
      */
     fun <T : Any> deserializeWithCompatibleContext(
-        byteSequence: ByteSequence, clazz: Class<T>, context: SerializationContext
+        byteSequence: ByteSequence,
+        clazz: Class<T>,
+        context: SerializationContext
     ): ObjectWithCompatibleContext<T>
 
     /**

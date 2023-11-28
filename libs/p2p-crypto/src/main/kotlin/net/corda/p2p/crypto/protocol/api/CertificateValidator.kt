@@ -37,19 +37,21 @@ class CertificateValidator(
 
     fun validate(pemCertificateChain: List<String>, expectedX500Name: MemberX500Name, expectedPublicKey: PublicKey) {
         val certificateChain = try {
-            certificateFactory.generateCertPath(pemCertificateChain.map { pemCertificate ->
-                ByteArrayInputStream(pemCertificate.toByteArray()).use {
-                    certificateFactory.generateCertificate(it)
+            certificateFactory.generateCertPath(
+                pemCertificateChain.map { pemCertificate ->
+                    ByteArrayInputStream(pemCertificate.toByteArray()).use {
+                        certificateFactory.generateCertificate(it)
+                    }
                 }
-            })
+            )
         } catch (except: CertificateException) {
             throw InvalidPeerCertificate("Error parsing the certificate from a pem file: \n" + except.message)
         }
-        //By convention, the certificates in a CertPath object of type X.509 are ordered starting with the target certificate
-        //and ending with a certificate issued by the trust anchor. So we check the subjectX500Principal of the first certificate
-        //matches the x500Name of the peer's identity.
-        val x509LeafCert = (certificateChain.certificates.firstOrNull() as? X509Certificate) ?:
-            throw InvalidPeerCertificate("Leaf session certificate is not an X509 certificate.")
+        // By convention, the certificates in a CertPath object of type X.509 are ordered starting with the target certificate
+        // and ending with a certificate issued by the trust anchor. So we check the subjectX500Principal of the first certificate
+        // matches the x500Name of the peer's identity.
+        val x509LeafCert = (certificateChain.certificates.firstOrNull() as? X509Certificate)
+            ?: throw InvalidPeerCertificate("Leaf session certificate is not an X509 certificate.")
 
         validateX500NameMatches(x509LeafCert, expectedX500Name)
         validateKeyUsage(x509LeafCert)
@@ -88,15 +90,17 @@ class CertificateValidator(
 
     private fun validateKeyUsage(certificate: X509Certificate) {
         if (!certificate.keyUsage[digitalSignatureBit]) {
-            throw InvalidPeerCertificate("The key usages extension of the session certificate does not contain " +
-                "'Digital Signature', as expected.", certificate
+            throw InvalidPeerCertificate(
+                "The key usages extension of the session certificate does not contain " +
+                    "'Digital Signature', as expected.",
+                certificate
             )
         }
     }
 
     private fun validateRevocation(certificateChain: CertPath, pemCertificates: List<String>, trustStore: List<String>) {
         val revocationMode = when (revocationCheckMode) {
-            RevocationCheckMode.OFF -> return //No check to do
+            RevocationCheckMode.OFF -> return // No check to do
             RevocationCheckMode.HARD_FAIL -> RevocationMode.HARD_FAIL
             RevocationCheckMode.SOFT_FAIL -> RevocationMode.SOFT_FAIL
         }

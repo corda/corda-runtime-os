@@ -176,12 +176,13 @@ class DeserializationInput(
         if (obj is DescribedType && ReferencedObject.DESCRIPTOR == obj.descriptor) {
             // It must be a reference to an instance that has already been read, cheaply and quickly returning it by reference.
             val objectIndex = (obj.described as UnsignedInteger).toInt()
-            if (objectIndex >= objectHistory.size)
+            if (objectIndex >= objectHistory.size) {
                 throw AMQPNotSerializableException(
                     type,
                     "Retrieval of existing reference failed. Requested index $objectIndex " +
                         "is outside of the bounds for the list of size: ${objectHistory.size}"
                 )
+            }
 
             val objectRetrieved = objectHistory[objectIndex]
             if (!objectRetrieved::class.java.isSubClassOf(type.asClass())) {
@@ -199,8 +200,8 @@ class DeserializationInput(
                     // Look up serializer in factory by descriptor
                     val serializer = serializerFactory.get(obj.descriptor.toString(), serializationSchemas, metadata, sandboxGroup)
                     if (type != TypeIdentifier.UnknownType.getLocalType(sandboxGroup) && serializer.type != type && with(serializer.type) {
-                        !isSubClassOf(type) && !materiallyEquivalentTo(type)
-                    }
+                            !isSubClassOf(type) && !materiallyEquivalentTo(type)
+                        }
                     ) {
                         throw AMQPNotSerializableException(
                             type,

@@ -1,17 +1,17 @@
 package net.corda.libs.cpiupload.endpoints.v1
 
-import net.corda.rest.RestResource
 import net.corda.rest.HttpFileUpload
-import net.corda.rest.annotations.HttpGET
-import net.corda.rest.annotations.RestPathParameter
-import net.corda.rest.annotations.HttpPOST
+import net.corda.rest.RestResource
 import net.corda.rest.annotations.ClientRequestBodyParameter
+import net.corda.rest.annotations.HttpGET
+import net.corda.rest.annotations.HttpPOST
 import net.corda.rest.annotations.HttpRestResource
+import net.corda.rest.annotations.RestPathParameter
 
 @HttpRestResource(
     name = "CPI API",
     description = "The CPI API consists of a number of endpoints used to manage Corda Package Installer (CPI) " +
-            "files in the Corda cluster.",
+        "files in the Corda cluster.",
     path = "cpi"
 )
 interface CpiUploadRestResource : RestResource {
@@ -30,7 +30,7 @@ interface CpiUploadRestResource : RestResource {
     @HttpPOST(
         title = "CPI upload",
         description = "This method uses the POST method to upload a Corda Package Installer (CPI) file to the " +
-                "Corda cluster.",
+            "Corda cluster.",
         responseDescription = "The ID for the CPI upload request"
     )
     fun cpi(
@@ -38,7 +38,8 @@ interface CpiUploadRestResource : RestResource {
             description = "The CPI file to be uploaded.",
             required = true
         )
-        upload: HttpFileUpload): CpiUploadResponse
+        upload: HttpFileUpload
+    ): CpiUploadResponse
 
     /**
      * Status of the CPI Upload Request
@@ -58,7 +59,8 @@ interface CpiUploadRestResource : RestResource {
         path = "status/{id}",
         title = "CPI upload status",
         description = "The status endpoint uses the GET method to return status information for the CPI upload with the " +
-                "given request ID.")
+            "given request ID."
+    )
     fun status(
         @RestPathParameter(
             description = "The ID returned from the CPI upload request."

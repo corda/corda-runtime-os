@@ -93,6 +93,4 @@ class VersionPartsTests {
         Assertions.assertEquals("", parts.version)
         Assertions.assertEquals("0", parts.release)
     }
-
-
 }

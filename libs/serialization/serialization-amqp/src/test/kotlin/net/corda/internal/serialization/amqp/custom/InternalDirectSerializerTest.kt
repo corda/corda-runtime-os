@@ -61,16 +61,16 @@ class InternalDirectSerializerTest {
         factory.register(serializer, factory)
     }
 
-    private fun <T: Any> serializeAndReturnSchema(obj: T): BytesAndSchemas<T> {
+    private fun <T : Any> serializeAndReturnSchema(obj: T): BytesAndSchemas<T> {
         return SerializationOutput(factory).serializeAndReturnSchema(obj, testSerializationContext)
     }
 
-    private fun <T: Any> findCustomSerializer(obj: T): AMQPSerializer<Any> {
+    private fun <T : Any> findCustomSerializer(obj: T): AMQPSerializer<Any> {
         return factory.findCustomSerializer(obj::class.java, obj::class.java)
             ?: fail("No custom serializer found")
     }
 
-    private fun <T: Any> assertSerializeAndDeserialize(input: T) {
+    private fun <T : Any> assertSerializeAndDeserialize(input: T) {
         val bytes = SerializationOutput(factory).serialize(input, testSerializationContext)
         val output = DeserializationInput(factory).deserialize(bytes.unwrap(), Any::class.java, testSerializationContext)
         assertEquals(input, output)

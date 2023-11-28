@@ -3,7 +3,7 @@ package net.corda.internal.serialization.amqp.custom
 import net.corda.serialization.BaseDirectSerializer
 import net.corda.serialization.InternalDirectSerializer
 
-class UnitSerializer: BaseDirectSerializer<Unit>() {
+class UnitSerializer : BaseDirectSerializer<Unit>() {
     override val type: Class<Unit> get() = Unit::class.java
     override val withInheritance: Boolean get() = false
 

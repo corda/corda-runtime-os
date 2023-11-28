@@ -1,12 +1,6 @@
 package net.corda.chunking
 
 import com.google.common.jimfs.Jimfs
-import java.nio.ByteBuffer
-import java.nio.file.FileSystem
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.StandardOpenOption
-import java.util.UUID
 import net.corda.chunking.Constants.Companion.APP_LEVEL_CHUNK_MESSAGE_OVERHEAD
 import net.corda.chunking.Constants.Companion.CHUNK_FILENAME_KEY
 import net.corda.chunking.Constants.Companion.KB
@@ -18,6 +12,12 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.nio.ByteBuffer
+import java.nio.file.FileSystem
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardOpenOption
+import java.util.UUID
 
 class ChunkWritingTest {
     private lateinit var fs: FileSystem
@@ -80,8 +80,9 @@ class ChunkWritingTest {
         val writer = ChunkWriterFactory.create(1 * MB, properties)
         writer.apply {
             this.onChunk { chunk ->
-                assertThat(chunk.properties.items.find
-                { it.key == CHUNK_FILENAME_KEY }?.value
+                assertThat(
+                    chunk.properties.items.find
+                        { it.key == CHUNK_FILENAME_KEY }?.value
                 ).isEqualTo(fileName)
             }
         }

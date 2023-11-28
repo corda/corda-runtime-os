@@ -1,7 +1,5 @@
 package net.corda.sandbox.internal.utilities
 
-import java.util.Collections.unmodifiableMap
-import java.util.Collections.unmodifiableSet
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
 import org.osgi.framework.Constants.SYSTEM_BUNDLE_ID
@@ -14,6 +12,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.runtime.ServiceComponentRuntime
+import java.util.Collections.unmodifiableMap
+import java.util.Collections.unmodifiableSet
 
 /** Handles bundle operations for the `SandboxCreationService` and the `SandboxContextService`. */
 @Component(service = [BundleUtils::class])
@@ -26,24 +26,28 @@ internal class BundleUtils @Activate constructor(
     private val arrayType = "\\[++(([BCDFIJSZ])|L([^;]++);)".toRegex()
 
     /** Determine which packages the system bundle exports by examining its capabilities. */
-    private val systemPackageNames = unmodifiableSet(systemBundle.adapt(BundleWiring::class.java)
-        .getCapabilities(PACKAGE_NAMESPACE)
-        .mapNotNull { capability ->
-            capability.attributes[PACKAGE_NAMESPACE].toString()
-        }.filterNotTo(linkedSetOf()) { packageName ->
-            packageName.startsWith("java.")
-        })
+    private val systemPackageNames = unmodifiableSet(
+        systemBundle.adapt(BundleWiring::class.java)
+            .getCapabilities(PACKAGE_NAMESPACE)
+            .mapNotNull { capability ->
+                capability.attributes[PACKAGE_NAMESPACE].toString()
+            }.filterNotTo(linkedSetOf()) { packageName ->
+                packageName.startsWith("java.")
+            }
+    )
 
-    private val primitiveTypes = unmodifiableMap(setOf(
-        Long::class.java,
-        Int::class.java,
-        Short::class.java,
-        Byte::class.java,
-        Char::class.java,
-        Boolean::class.java,
-        Double::class.java,
-        Float::class.java
-    ).associateBy(Class<*>::getName))
+    private val primitiveTypes = unmodifiableMap(
+        setOf(
+            Long::class.java,
+            Int::class.java,
+            Short::class.java,
+            Byte::class.java,
+            Char::class.java,
+            Boolean::class.java,
+            Double::class.java,
+            Float::class.java
+        ).associateBy(Class<*>::getName)
+    )
 
     private val primitiveTypeNames = unmodifiableSet(setOf("B", "C", "D", "F", "I", "J", "S", "Z"))
 

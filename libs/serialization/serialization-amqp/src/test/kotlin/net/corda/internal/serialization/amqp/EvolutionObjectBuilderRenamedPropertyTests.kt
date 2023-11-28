@@ -93,7 +93,6 @@ class EvolutionObjectBuilderRenamedPropertyTests {
 
     @Test
     fun step1ToStep3() {
-
         // The next two commented lines are how the serialized data is generated. To regenerate the data, uncomment these along
         // with the correct version of the class and rerun the test. This will generate a new file in the project resources.
 

@@ -19,7 +19,7 @@ class FutureTrackerTest {
     private lateinit var future: CompletableFuture<String>
 
     @BeforeEach
-    fun before(){
+    fun before() {
         tracker = FutureTracker()
         future = CompletableFuture()
     }
@@ -87,7 +87,7 @@ class FutureTrackerTest {
         tracker.addFuture("test", future, 0)
 
         future.complete("It's done")
-        //reassign to orphan the completed future
+        // reassign to orphan the completed future
         future = CompletableFuture()
         System.gc()
 
@@ -98,7 +98,7 @@ class FutureTrackerTest {
         tracker.addFuture("test", future, 0)
         Assertions.assertEquals(future, tracker.getFuture("test", 0))
 
-        //reassign to replicate a dropped incomplete future
+        // reassign to replicate a dropped incomplete future
         future = CompletableFuture()
         System.gc()
 

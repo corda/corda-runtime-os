@@ -85,11 +85,13 @@ class AuthenticationProtocolFailureTest {
 
         val modifiedInitiatorHandshakeMessage = InitiatorHandshakeMessage(
             initiatorHandshakeMessage.header,
-            ByteBuffer.wrap(initiatorHandshakeMessage.encryptedData.array() + "0".toByte()), initiatorHandshakeMessage.authTag
+            ByteBuffer.wrap(initiatorHandshakeMessage.encryptedData.array() + "0".toByte()),
+            initiatorHandshakeMessage.authTag
         )
         assertThatThrownBy {
             authenticationProtocolB.validatePeerHandshakeMessage(
-                modifiedInitiatorHandshakeMessage, listOf(partyASessionKey.public to SignatureSpecs.ECDSA_SHA256)
+                modifiedInitiatorHandshakeMessage,
+                listOf(partyASessionKey.public to SignatureSpecs.ECDSA_SHA256)
             )
         }
             .isInstanceOf(InvalidHandshakeMessageException::class.java)
@@ -123,7 +125,8 @@ class AuthenticationProtocolFailureTest {
 
         assertThatThrownBy {
             authenticationProtocolB.validatePeerHandshakeMessage(
-                initiatorHandshakeMessage, listOf(partyASessionKey.public to SignatureSpecs.ECDSA_SHA256)
+                initiatorHandshakeMessage,
+                listOf(partyASessionKey.public to SignatureSpecs.ECDSA_SHA256)
             )
         }
             .isInstanceOf(InvalidHandshakeMessageException::class.java)
@@ -158,7 +161,8 @@ class AuthenticationProtocolFailureTest {
         )
         assertThatThrownBy {
             authenticationProtocolB.validatePeerHandshakeMessage(
-                initiatorHandshakeMessage, listOf(wrongPublicKey to SignatureSpecs.ECDSA_SHA256)
+                initiatorHandshakeMessage,
+                listOf(wrongPublicKey to SignatureSpecs.ECDSA_SHA256)
             )
         }
             .isInstanceOf(WrongPublicKeyHashException::class.java)
@@ -215,7 +219,9 @@ class AuthenticationProtocolFailureTest {
 
         assertThatThrownBy {
             authenticationProtocolA.validatePeerHandshakeMessage(
-                responderHandshakeMessage, aliceX500Name, listOf(partyBSessionKey.public to SignatureSpecs.ECDSA_SHA256)
+                responderHandshakeMessage,
+                aliceX500Name,
+                listOf(partyBSessionKey.public to SignatureSpecs.ECDSA_SHA256)
             )
         }
             .isInstanceOf(InvalidHandshakeMessageException::class.java)
@@ -383,10 +389,11 @@ class AuthenticationProtocolFailureTest {
 
         assertThrows<InvalidPeerCertificate> {
             authenticationProtocolA.validatePeerHandshakeMessage(
-                responderHandshakeMessage, aliceX500Name, listOf(partyBSessionKey.public to SignatureSpecs.ECDSA_SHA256)
+                responderHandshakeMessage,
+                aliceX500Name,
+                listOf(partyBSessionKey.public to SignatureSpecs.ECDSA_SHA256)
             )
         }
-
     }
 
     @Test
@@ -499,9 +506,10 @@ class AuthenticationProtocolFailureTest {
 
         assertThrows<InvalidPeerCertificate> {
             authenticationProtocolA.validatePeerHandshakeMessage(
-                responderHandshakeMessage, aliceX500Name, listOf(partyBSessionKey.public to SignatureSpecs.ECDSA_SHA256)
+                responderHandshakeMessage,
+                aliceX500Name,
+                listOf(partyBSessionKey.public to SignatureSpecs.ECDSA_SHA256)
             )
         }
-
     }
 }

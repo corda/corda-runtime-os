@@ -51,7 +51,7 @@ enum class CordaSerializationEncoding(private val encoderType: EncoderType) : Se
         private val encoderService: EncoderService by lazy(LazyThreadSafetyMode.PUBLICATION) {
             // This has to be lazy initialized or a function rather than a value due to initialization order.
             ServiceLoader.load(EncoderService::class.java, this::class.java.classLoader).toList().firstOrNull()
-                    ?: throw NullPointerException("Could not get serialization encoder service")
+                ?: throw NullPointerException("Could not get serialization encoder service")
         }
 
         /**
@@ -66,4 +66,3 @@ enum class CordaSerializationEncoding(private val encoderType: EncoderType) : Se
 }
 
 const val encodingNotPermittedFormat = "Encoding not permitted: %s"
-

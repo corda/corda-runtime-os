@@ -13,7 +13,7 @@ class SchedulerLockImpl(
 ) : SchedulerLock {
     override val secondsSinceLastScheduledTrigger: Long
     private val tx = em.transaction
-    private val log : TaskSchedulerLog
+    private val log: TaskSchedulerLog
 
     init {
         tx.begin()

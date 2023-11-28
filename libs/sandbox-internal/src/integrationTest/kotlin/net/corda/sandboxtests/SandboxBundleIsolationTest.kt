@@ -1,6 +1,5 @@
 package net.corda.sandboxtests
 
-import java.nio.file.Path
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
@@ -22,6 +21,7 @@ import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
+import java.nio.file.Path
 
 /** Tests the isolation of bundles across sandbox groups. */
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
@@ -55,7 +55,11 @@ class SandboxBundleIsolationTest {
         val bundles = runFlow<List<Bundle>>(thisGroup, BUNDLES_FLOW)
 
         val expectedBundleNames = setOf(
-            FRAMEWORK_BUNDLE_NAME, SCR_BUNDLE_NAME, CPK_ONE_BUNDLE_NAME, CPK_TWO_BUNDLE_NAME, CPK_LIBRARY_BUNDLE_NAME
+            FRAMEWORK_BUNDLE_NAME,
+            SCR_BUNDLE_NAME,
+            CPK_ONE_BUNDLE_NAME,
+            CPK_TWO_BUNDLE_NAME,
+            CPK_LIBRARY_BUNDLE_NAME
         )
 
         assertTrue(bundles.any { bundle -> sandboxGroupContainsBundle(thisGroup, bundle) })

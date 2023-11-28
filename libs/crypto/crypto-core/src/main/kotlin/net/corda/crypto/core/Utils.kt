@@ -1,7 +1,7 @@
 package net.corda.crypto.core
-import net.corda.data.crypto.SecureHash as AvroSecureHash
 import net.corda.v5.crypto.SecureHash
 import java.nio.ByteBuffer
+import net.corda.data.crypto.SecureHash as AvroSecureHash
 
 fun SecureHash.toAvro(): AvroSecureHash =
     AvroSecureHash(this.algorithm, ByteBuffer.wrap(bytes))

@@ -19,10 +19,10 @@ import java.time.Instant
  * @param timestamp Timestamp indicating when the CPI was uploaded.
  */
 data class CpiMetadata(
-    val id : CpiIdentifier,
-    val cpiFileChecksum : String,
-    val cpiFileFullChecksum : String,
-    val cpks : List<CpkMetadata>,
-    val groupPolicy : String?,
+    val id: CpiIdentifier,
+    val cpiFileChecksum: String,
+    val cpiFileFullChecksum: String,
+    val cpks: List<CpkMetadata>,
+    val groupPolicy: String?,
     val timestamp: Instant
 )

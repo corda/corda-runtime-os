@@ -11,11 +11,9 @@ class YearMonthSerializer : BaseProxySerializer<YearMonth, YearMonthSerializer.Y
     override val proxyType: Class<YearMonthProxy> get() = YearMonthProxy::class.java
     override val withInheritance: Boolean get() = false
 
-    override fun toProxy(obj: YearMonth): YearMonthProxy
-        = YearMonthProxy(obj.year, obj.monthValue.toByte())
+    override fun toProxy(obj: YearMonth): YearMonthProxy = YearMonthProxy(obj.year, obj.monthValue.toByte())
 
-    override fun fromProxy(proxy: YearMonthProxy): YearMonth
-        = YearMonth.of(proxy.year, proxy.month.toInt())
+    override fun fromProxy(proxy: YearMonthProxy): YearMonth = YearMonth.of(proxy.year, proxy.month.toInt())
 
     data class YearMonthProxy(val year: Int, val month: Byte)
 }

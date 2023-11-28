@@ -1,9 +1,9 @@
 package net.corda.messaging.chunking
 
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.chunking.ChunkBuilderService
 import net.corda.crypto.cipher.suite.PlatformDigestService
 import net.corda.crypto.core.SecureHashImpl
-import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.chunking.Chunk
 import net.corda.data.crypto.SecureHash

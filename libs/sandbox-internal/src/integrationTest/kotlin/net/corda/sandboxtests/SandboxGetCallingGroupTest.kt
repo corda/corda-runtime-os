@@ -1,6 +1,5 @@
 package net.corda.sandboxtests
 
-import java.nio.file.Path
 import net.corda.sandbox.SandboxGroup
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
@@ -19,6 +18,7 @@ import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
+import java.nio.file.Path
 
 /** Tests the ability to retrieve the calling sandbox group. */
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
@@ -47,7 +47,9 @@ class SandboxGetCallingGroupTest {
     @Test
     fun `can retrieve the calling sandbox group from within a sandbox`() {
         val callingSandboxGroup = applyFunction<Any, SandboxGroup>(
-            sandboxFactory.group1, GET_CALLING_SANDBOX_GROUP_FUNCTION, sandboxFactory.sandboxContextService
+            sandboxFactory.group1,
+            GET_CALLING_SANDBOX_GROUP_FUNCTION,
+            sandboxFactory.sandboxContextService
         )
         assertEquals(sandboxFactory.group1, callingSandboxGroup)
     }

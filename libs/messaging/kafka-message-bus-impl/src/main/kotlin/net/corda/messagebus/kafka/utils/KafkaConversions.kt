@@ -28,20 +28,21 @@ fun <K : Any, V : Any> CordaProducerRecord<K, V>.toKafkaRecord(
         this.value,
         this.headers.map {
             RecordHeader(it.first, stringSerializer.serialize(null, it.second))
-        })
+        }
+    )
 }
 
 @Suppress("UNCHECKED_CAST")
 fun <K : Any, V : Any> ConsumerRecord<Any, Any>.toCordaConsumerRecord(
     topicPrefix: String
 ): CordaConsumerRecord<K, V> {
-    return this.toCordaConsumerRecord(topicPrefix, this.key() as K,this.value() as V?)
+    return this.toCordaConsumerRecord(topicPrefix, this.key() as K, this.value() as V?)
 }
 
 fun <K : Any, V : Any> ConsumerRecord<Any, Any>.toCordaConsumerRecord(
     topicPrefix: String,
-    key:K,
-    value:V?
+    key: K,
+    value: V?
 ): CordaConsumerRecord<K, V> {
     return CordaConsumerRecord(
         this.topic().removePrefix(topicPrefix),
@@ -54,13 +55,11 @@ fun <K : Any, V : Any> ConsumerRecord<Any, Any>.toCordaConsumerRecord(
     )
 }
 
-fun List<CordaConsumerRecord<*, *>>.toKafkaRecords():
-        List<ConsumerRecord<*, *>> {
+fun List<CordaConsumerRecord<*, *>>.toKafkaRecords(): List<ConsumerRecord<*, *>> {
     return this.map { it.toKafkaRecord() }
 }
 
-fun CordaConsumerRecord<*, *>.toKafkaRecord():
-        ConsumerRecord<*, *> {
+fun CordaConsumerRecord<*, *>.toKafkaRecord(): ConsumerRecord<*, *> {
     return ConsumerRecord(
         this.topic,
         this.partition,

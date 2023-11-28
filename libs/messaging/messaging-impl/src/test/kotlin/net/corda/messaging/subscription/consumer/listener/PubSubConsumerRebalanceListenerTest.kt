@@ -11,8 +11,8 @@ import java.nio.ByteBuffer
 
 class PubSubConsumerRebalanceListenerTest {
 
-    private val consumer : CordaConsumer<String, ByteBuffer> = mock()
-    private lateinit var listener : PubSubConsumerRebalanceListener<String, ByteBuffer>
+    private val consumer: CordaConsumer<String, ByteBuffer> = mock()
+    private lateinit var listener: PubSubConsumerRebalanceListener<String, ByteBuffer>
 
     @BeforeEach
     fun beforeEach() {

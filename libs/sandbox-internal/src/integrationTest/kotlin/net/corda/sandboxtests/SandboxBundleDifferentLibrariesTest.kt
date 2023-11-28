@@ -1,6 +1,5 @@
 package net.corda.sandboxtests
 
-import java.nio.file.Path
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
@@ -17,6 +16,7 @@ import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
+import java.nio.file.Path
 
 /** Tests the ability to have different copies of the same library in different sandboxes. */
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)

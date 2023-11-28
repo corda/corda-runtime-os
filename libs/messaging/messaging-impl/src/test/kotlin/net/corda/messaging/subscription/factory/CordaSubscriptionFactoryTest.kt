@@ -72,7 +72,9 @@ class CordaSubscriptionFactoryTest {
         assertThrows<CordaMessageAPIFatalException> {
             factory.createDurableSubscription<Any, Any>(
                 SubscriptionConfig("group1", "event"),
-                mock(), config.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(null)), null
+                mock(),
+                config.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(null)),
+                null
             )
         }
     }
@@ -81,7 +83,9 @@ class CordaSubscriptionFactoryTest {
     fun createStateAndEventSub() {
         val subscriptionConfig = SubscriptionConfig("group1", "event")
         factory.createStateAndEventSubscription<Any, Any, Any>(
-            subscriptionConfig, mock(), config.withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(100000000))
+            subscriptionConfig,
+            mock(),
+            config.withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(100000000))
         )
     }
 }

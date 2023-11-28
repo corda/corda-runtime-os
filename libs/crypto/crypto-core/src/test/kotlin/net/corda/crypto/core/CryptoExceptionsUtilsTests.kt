@@ -55,13 +55,20 @@ class CryptoExceptionsUtilsTests {
             javax.persistence.PersistenceException("error", javax.persistence.PessimisticLockException()),
             javax.persistence.PersistenceException("error", java.sql.SQLTransientException()),
             javax.persistence.PersistenceException("error", java.sql.SQLTimeoutException()),
-            javax.persistence.PersistenceException("error", org.hibernate.exception.LockAcquisitionException(
-                "error", java.sql.SQLException()
-            )
+            javax.persistence.PersistenceException(
+                "error",
+                org.hibernate.exception.LockAcquisitionException(
+                    "error",
+                    java.sql.SQLException()
+                )
             ),
-            javax.persistence.PersistenceException("error", org.hibernate.exception.LockTimeoutException(
-                "error", java.sql.SQLException()
-            ))
+            javax.persistence.PersistenceException(
+                "error",
+                org.hibernate.exception.LockTimeoutException(
+                    "error",
+                    java.sql.SQLException()
+                )
+            )
         )
     }
 
@@ -69,7 +76,6 @@ class CryptoExceptionsUtilsTests {
     @MethodSource("mostCommonUnrecoverableExceptions")
     fun `isRecoverable should return false for non recoverable exceptions`(e: Throwable) {
         assertFalse(e.isRecoverable())
-
     }
 
     @ParameterizedTest

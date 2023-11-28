@@ -1,13 +1,13 @@
 package net.corda.internal.serialization.amqp.standard
 
-import net.corda.internal.serialization.amqp.LocalSerializerFactory
-import net.corda.internal.serialization.amqp.AMQPSerializer
-import net.corda.internal.serialization.amqp.SerializationSchemas
-import net.corda.internal.serialization.amqp.Metadata
-import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.AMQPNotSerializableException
-import net.corda.internal.serialization.amqp.asClass
+import net.corda.internal.serialization.amqp.AMQPSerializer
+import net.corda.internal.serialization.amqp.DeserializationInput
+import net.corda.internal.serialization.amqp.LocalSerializerFactory
+import net.corda.internal.serialization.amqp.Metadata
 import net.corda.internal.serialization.amqp.SerializationOutput
+import net.corda.internal.serialization.amqp.SerializationSchemas
+import net.corda.internal.serialization.amqp.asClass
 import net.corda.internal.serialization.model.BaseLocalTypes
 import net.corda.serialization.SerializationContext
 import org.apache.qpid.proton.codec.Data
@@ -44,16 +44,27 @@ class EnumEvolutionSerializer(
     factory: LocalSerializerFactory,
     private val baseLocalTypes: BaseLocalTypes,
     private val conversions: Map<String, String>,
-    private val ordinals: Map<String, Int>) : AMQPSerializer<Any> {
+    private val ordinals: Map<String, Int>
+) : AMQPSerializer<Any> {
     override val typeDescriptor = factory.createDescriptor(type)
 
-    override fun readObject(obj: Any, serializationSchemas: SerializationSchemas, metadata: Metadata,
-                            input: DeserializationInput, context: SerializationContext
+    override fun readObject(
+        obj: Any,
+        serializationSchemas: SerializationSchemas,
+        metadata: Metadata,
+        input: DeserializationInput,
+        context: SerializationContext
     ): Any {
         val enumName = (obj as List<*>)[0] as String
 
-        val converted = conversions[enumName] ?: throw AMQPNotSerializableException(type, "No rule to evolve enum constant $type::$enumName")
-        val ordinal = ordinals[converted] ?: throw AMQPNotSerializableException(type, "Ordinal not found for enum value $type::$converted")
+        val converted = conversions[enumName] ?: throw AMQPNotSerializableException(
+            type,
+            "No rule to evolve enum constant $type::$enumName"
+        )
+        val ordinal = ordinals[converted] ?: throw AMQPNotSerializableException(
+            type,
+            "Ordinal not found for enum value $type::$converted"
+        )
 
         return baseLocalTypes.enumConstants.apply(type.asClass())[ordinal]
     }
@@ -62,8 +73,13 @@ class EnumEvolutionSerializer(
         throw UnsupportedOperationException("It should be impossible to write an evolution serializer")
     }
 
-    override fun writeObject(obj: Any, data: Data, type: Type, output: SerializationOutput,
-                             context: SerializationContext, debugIndent: Int
+    override fun writeObject(
+        obj: Any,
+        data: Data,
+        type: Type,
+        output: SerializationOutput,
+        context: SerializationContext,
+        debugIndent: Int
     ) {
         throw UnsupportedOperationException("It should be impossible to write an evolution serializer")
     }

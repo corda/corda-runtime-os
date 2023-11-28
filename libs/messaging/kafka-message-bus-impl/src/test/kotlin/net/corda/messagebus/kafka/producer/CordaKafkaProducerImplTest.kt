@@ -287,7 +287,7 @@ class CordaKafkaProducerImplTest {
     @Test
     fun testSendRecordOffsetsToTransaction() {
         val mockConsumerRecords = generateMockConsumerRecordList(3, "TOPIC1", 0) +
-                generateMockConsumerRecordList(4, "TOPIC", 1) + generateMockConsumerRecordList(2, "TOPIC2", 0)
+            generateMockConsumerRecordList(4, "TOPIC", 1) + generateMockConsumerRecordList(2, "TOPIC2", 0)
         val mockCordaConsumerRecords = mockConsumerRecords.map {
             CordaConsumerRecord(
                 it.topic(),
@@ -442,7 +442,6 @@ class CordaKafkaProducerImplTest {
         val callback = mock<CordaProducer.Callback>()
         doThrow(CordaRuntimeException("")).whenever(producer)
             .send(eq(ProducerRecord(record.topic, record.key, record.value)), any())
-        assertDoesNotThrow {  cordaKafkaProducer.send(record, callback) }
+        assertDoesNotThrow { cordaKafkaProducer.send(record, callback) }
     }
-
 }

@@ -17,7 +17,6 @@ import java.util.UUID
 // tools/plugins/initial-config/src/main/kotlin/net/corda/cli/plugin/initialconfig/RbacConfigSqlBuilder.kt
 // See comments in PostgresDbSetup for more info
 
-
 fun buildRbacConfigSql(
     adminUser: String,
     password: String?,
@@ -85,7 +84,6 @@ fun buildRbacConfigSql(
         details = "Automated initial set-up"
     )
 
-
     output.append(user.toInsertStatement())
     output.append(";\n")
     output.append(userAudit.toInsertStatement())
@@ -110,7 +108,6 @@ fun buildRbacConfigSql(
     return output.toString()
 }
 
-
 @Suppress("LongParameterList")
 fun createUser(
     fullName: String,
@@ -118,7 +115,6 @@ fun createUser(
     timeStamp: Instant,
     password: String? = null
 ): User {
-
     // Create a hashed password if using
     val hashAndSalt = password?.let {
         val passwordService = PasswordServiceFactory().createPasswordService(SecureRandom())

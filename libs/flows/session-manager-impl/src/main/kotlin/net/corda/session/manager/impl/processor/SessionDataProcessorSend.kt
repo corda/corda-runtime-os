@@ -46,10 +46,11 @@ class SessionDataProcessorSend(
                 logger.warn(errorMessage)
                 sessionState
             }
-            SessionStateType.CREATED, SessionStateType.CONFIRMED  -> {
+            SessionStateType.CREATED, SessionStateType.CONFIRMED -> {
                 if (currentStatus == SessionStateType.CREATED ||
-                    (isInitiatedIdentity && sessionState.sendEventsState.lastProcessedSequenceNum == 0)) {
-                    //ensure first message to arrive to counterparty contains session props
+                    (isInitiatedIdentity && sessionState.sendEventsState.lastProcessedSequenceNum == 0)
+                ) {
+                    // ensure first message to arrive to counterparty contains session props
                     sessionEvent.contextSessionProperties = sessionState.sessionProperties
                 }
                 val bytes = (sessionData.payload as ByteBuffer).array()
@@ -65,10 +66,10 @@ class SessionDataProcessorSend(
                 sessionState
             }
             else -> {
-                //If the session is in states CLOSING, or CLOSED then this indicates a session mismatch as no
+                // If the session is in states CLOSING, or CLOSED then this indicates a session mismatch as no
                 // more data messages are expected to be sent. Send an error to the counterparty to inform it of the mismatch.
                 val errorMessage = "Tried to send SessionData on key $key for sessionId $sessionId when status was : $currentStatus. " +
-                        "SessionState: $sessionState"
+                    "SessionState: $sessionState"
                 logger.warn(errorMessage)
                 sessionState.apply {
                     status = SessionStateType.ERROR
@@ -82,7 +83,6 @@ class SessionDataProcessorSend(
                                 instant
                             )
                         )
-
                 }
             }
         }
@@ -104,7 +104,7 @@ class SessionDataProcessorSend(
      * @param chunk the chunk to generate a data message for
      * @return SessionData event with chunk payload
      */
-    private fun generateChunkedDataEvent(chunk: Chunk) : SessionEvent {
+    private fun generateChunkedDataEvent(chunk: Chunk): SessionEvent {
         val copy = SessionEvent.newBuilder(sessionEvent).build()
         (copy.payload as SessionData).payload = chunk
         return copy

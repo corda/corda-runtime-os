@@ -22,14 +22,14 @@ import net.corda.libs.packaging.verify.internal.requireAttributeValueIn
 /**
  * Verifies CPK format 2.0
  */
-class CpkV2Verifier(jarReader: JarReader): CpkVerifier {
+class CpkV2Verifier(jarReader: JarReader) : CpkVerifier {
     val name = jarReader.jarName
     private val manifest = jarReader.manifest
     val codeSigners = jarReader.codeSigners
     internal val dependencies: List<CpkDependency>
 
     init {
-        val dependenciesEntry = jarReader.entries.filter{ it.name == CPK_DEPENDENCIES_FILE_ENTRY_V2 }
+        val dependenciesEntry = jarReader.entries.filter { it.name == CPK_DEPENDENCIES_FILE_ENTRY_V2 }
             .firstOrThrow(PackagingException("$CPK_DEPENDENCIES_FILE_ENTRY_V2 not found in CPK main bundle \"$name\""))
         dependencies = CpkV2DependenciesReader.readDependencies(name, dependenciesEntry.createInputStream(), codeSigners)
     }
@@ -38,7 +38,7 @@ class CpkV2Verifier(jarReader: JarReader): CpkVerifier {
     fun bundleVersion(): String = manifest.mainAttributes.getValue(CPK_BUNDLE_VERSION_ATTRIBUTE)
 
     private fun verifyManifest() {
-        with (manifest) {
+        with(manifest) {
             requireAttributeValueIn(CPK_FORMAT_ATTRIBUTE, "2.0")
             requireAttribute(CPK_BUNDLE_NAME_ATTRIBUTE)
             requireAttribute(CPK_BUNDLE_VERSION_ATTRIBUTE)
@@ -52,7 +52,8 @@ class CpkV2Verifier(jarReader: JarReader): CpkVerifier {
                 requireAttribute(CONTRACT_VERSION_ATTRIBUTE)
             } else {
                 throw CordappManifestException(
-                    "One of attributes \"$WORKFLOW_NAME_ATTRIBUTE\", \"$CONTRACT_NAME_ATTRIBUTE\" has to be set.")
+                    "One of attributes \"$WORKFLOW_NAME_ATTRIBUTE\", \"$CONTRACT_NAME_ATTRIBUTE\" has to be set."
+                )
             }
         }
     }

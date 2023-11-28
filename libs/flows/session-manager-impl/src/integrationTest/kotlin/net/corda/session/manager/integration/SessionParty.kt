@@ -19,7 +19,7 @@ import java.time.Instant
 /**
  * Helper class to encapsulate a party involved in a session and the message bus in which it sends and receives session events.
  */
-class SessionParty (
+class SessionParty(
     private val inboundMessages: MessageBus,
     private val outboundMessages: MessageBus,
     private val testConfig: SmartConfig,
@@ -27,7 +27,7 @@ class SessionParty (
     private val isInitiating: Boolean
 ) : SessionInteractions, BusInteractions by inboundMessages {
 
-    private val messagingChunkFactory : MessagingChunkFactory = mock<MessagingChunkFactory>().apply {
+    private val messagingChunkFactory: MessagingChunkFactory = mock<MessagingChunkFactory>().apply {
         whenever(createChunkSerializerService(any())).thenReturn(mock())
     }
     private val sessionManager = SessionManagerImpl(SessionEventProcessorFactory(messagingChunkFactory), messagingChunkFactory)

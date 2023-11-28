@@ -16,10 +16,10 @@ import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
 import java.security.KeyStore
 import java.security.KeyStoreException
+import java.security.cert.CertPathValidatorException
 import java.security.cert.Certificate
 import java.security.cert.CertificateException
 import java.security.cert.CertificateFactory
-import java.security.cert.CertPathValidatorException
 import java.security.cert.PKIXRevocationChecker
 import java.security.cert.X509Certificate
 import java.util.LinkedList
@@ -50,7 +50,7 @@ fun convertToKeyStore(certificateFactory: CertificateFactory, pemCertificates: C
     }
 }
 
-fun X509Certificate.distributionPoints() : Set<String> {
+fun X509Certificate.distributionPoints(): Set<String> {
     val logger = LoggerFactory.getLogger("net.corda.crypto.utils.CertificateUtils")
 
     logger.debug("Checking CRLDPs for $subjectX500Principal")
@@ -79,16 +79,16 @@ fun X509Certificate.distributionPoints() : Set<String> {
         it.type == DistributionPointName.FULL_NAME
     }
     val generalNames = dpNames.flatMap { GeneralNames.getInstance(it.name).names.asList() }
-    return generalNames.filter { it.tagNo == GeneralName.uniformResourceIdentifier}.map {
+    return generalNames.filter { it.tagNo == GeneralName.uniformResourceIdentifier }.map {
         ASN1IA5String.getInstance(it.name).string
     }.toSet()
 }
 
 fun X509Certificate.toBc() = X509CertificateHolder(encoded)
 
-fun X509Certificate.distributionPointsToString() : String {
+fun X509Certificate.distributionPointsToString(): String {
     return with(distributionPoints()) {
-        if(isEmpty()) {
+        if (isEmpty()) {
             "NO CRLDP ext"
         } else {
             sorted().joinToString()

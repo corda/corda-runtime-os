@@ -1,6 +1,5 @@
 package net.corda.libs.external.messaging
 
-interface ExternalMessagingConfigProvider
-{
+interface ExternalMessagingConfigProvider {
     fun getDefaults(): ExternalMessagingConfigDefaults
 }

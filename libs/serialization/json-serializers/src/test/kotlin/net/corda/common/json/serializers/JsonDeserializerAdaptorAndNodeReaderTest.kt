@@ -21,7 +21,7 @@ class JsonDeserializerAdaptorAndNodeReaderTest {
      * class can be completely empty. The test deserializer will parse and validate the result as it goes directly.
      */
     @Suppress("EmptyClassBlock")
-    private class TestClass {}
+    private class TestClass
 
     private data class DefaultDeserializable(
         val field1: String = "",
@@ -49,7 +49,9 @@ class JsonDeserializerAdaptorAndNodeReaderTest {
               "binary1": "YmluYXJ5MS1kYXRh",
               "null1": null
             }
-        """.filter { !it.isWhitespace() }
+        """.filter {
+        !it.isWhitespace()
+    }
 
     private class TestDeserializer : JsonDeserializer<TestClass> {
         override fun deserialize(jsonRoot: JsonNodeReader): TestClass {

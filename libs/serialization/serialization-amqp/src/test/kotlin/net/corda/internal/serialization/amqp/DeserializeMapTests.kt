@@ -93,7 +93,8 @@ class DeserializeMapTests {
         Assertions.assertThatThrownBy { TestSerializationOutput(VERBOSE, sf).serialize(c) }
             .isInstanceOf(NotSerializableException::class.java)
             .hasMessageContaining(
-                "Class \"java.util.Dictionary<java.lang.String, java.lang.Integer>\" is not annotated with @CordaSerializable")
+                "Class \"java.util.Dictionary<java.lang.String, java.lang.Integer>\" is not annotated with @CordaSerializable"
+            )
     }
 
     @Test
@@ -110,7 +111,8 @@ class DeserializeMapTests {
         Assertions.assertThatThrownBy { TestSerializationOutput(VERBOSE, sf).serialize(c) }
             .isInstanceOf(IllegalArgumentException::class.java)
             .hasMessageContaining(
-                "Unable to serialise deprecated type class java.util.Hashtable. Suggested fix: prefer java.util.map implementations")
+                "Unable to serialise deprecated type class java.util.Hashtable. Suggested fix: prefer java.util.map implementations"
+            )
     }
 
     @Test
@@ -124,7 +126,8 @@ class DeserializeMapTests {
         Assertions.assertThatThrownBy { TestSerializationOutput(VERBOSE, sf).serialize(c) }
             .isInstanceOf(IllegalArgumentException::class.java)
             .hasMessageContaining(
-                "Map type class java.util.HashMap is unstable under iteration. Suggested fix: use java.util.LinkedHashMap instead.")
+                "Map type class java.util.HashMap is unstable under iteration. Suggested fix: use java.util.LinkedHashMap instead."
+            )
     }
 
     @Test
@@ -137,7 +140,8 @@ class DeserializeMapTests {
         Assertions.assertThatThrownBy { TestSerializationOutput(VERBOSE, sf).serialize(c) }
             .isInstanceOf(IllegalArgumentException::class.java)
             .hasMessageContaining(
-                "Weak references with map types not supported. Suggested fix: use java.util.LinkedHashMap instead.")
+                "Weak references with map types not supported. Suggested fix: use java.util.LinkedHashMap instead."
+            )
     }
 
     @Test

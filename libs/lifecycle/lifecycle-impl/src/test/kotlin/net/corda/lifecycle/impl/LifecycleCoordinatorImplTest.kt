@@ -1,10 +1,5 @@
 package net.corda.lifecycle.impl
 
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.TimeUnit
-import kotlin.random.Random
 import net.corda.lifecycle.CustomEvent
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.ErrorEvent
@@ -38,6 +33,11 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
+import kotlin.random.Random
 
 // These tests create simple lifecycle coordinator, provide an event handler to do some processing of events, and then
 // deliver some series of events to the coordinator to process. There are some subtleties to keep in mind when adding to
@@ -81,7 +81,7 @@ internal class LifecycleCoordinatorImplTest {
         val n = BATCH_SIZE * 2
         val startLatch = CountDownLatch(1)
         val countDownLatch =
-            CountDownLatch(n)  // Used to test all posted events are processed when coordinator stopped.
+            CountDownLatch(n) // Used to test all posted events are processed when coordinator stopped.
         val stopLatch = CountDownLatch(1)
         var eventsProcessed = 0
         var unexpectedEventCount = 0
@@ -120,7 +120,7 @@ internal class LifecycleCoordinatorImplTest {
         val n = BATCH_SIZE * 2
         val startLatch = CountDownLatch(1)
         val countDownLatch =
-            CountDownLatch(n)  // Used to test all posted events are processed when coordinator stopped.
+            CountDownLatch(n) // Used to test all posted events are processed when coordinator stopped.
         val stopLatch = CountDownLatch(1)
         var unexpectedEventCount = 0
         createCoordinator { event: LifecycleEvent, _: LifecycleCoordinator ->
@@ -133,7 +133,6 @@ internal class LifecycleCoordinatorImplTest {
                 }
                 is StopEvent -> {
                     stopLatch.countDown()
-
                 }
                 else -> {
                     unexpectedEventCount++
@@ -383,7 +382,6 @@ internal class LifecycleCoordinatorImplTest {
         assertEquals(NUM_LOOPS + 1, exceptionCount)
         assertEquals(0, unexpectedExceptionCount)
     }
-
 
     @Test
     fun postUnhandledErrorEvent() {
@@ -1169,14 +1167,14 @@ internal class LifecycleCoordinatorImplTest {
         val receivedCustomEvents = mutableListOf<CustomEvent>()
 
         val trackedCoordinator = createCoordinator { event, _ ->
-            when(event) {
+            when (event) {
                 is StartEvent -> {
                     startLatch.countDown()
                 }
             }
         }
         val trackingCoordinator = createCoordinator { event, _ ->
-            when(event) {
+            when (event) {
                 is CustomEvent -> {
                     receivedCustomEvents.add(event)
                 }
@@ -1370,6 +1368,7 @@ internal class LifecycleCoordinatorImplTest {
 
     // Should go in the test but that is hard to specify as a KProperty
     private val dependency = mock<LifecycleCoordinator>()
+
     @Test
     fun `coordinator calls start and stop on dependency`() {
         val registry = mock<LifecycleRegistryCoordinatorAccess>().also {

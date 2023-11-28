@@ -198,7 +198,7 @@ class CordaKafkaProducerImpl(
         partition: Int? = null
     ) {
         if (!transactional) {
-            //set the call back and throw the exception. This mimics what the kafka client does
+            // set the call back and throw the exception. This mimics what the kafka client does
             val exceptionThrown = CordaMessageAPIFatalException(asyncChunkErrorMessage)
             callback?.onCompletion(exceptionThrown)
             throw exceptionThrown
@@ -207,7 +207,7 @@ class CordaKafkaProducerImpl(
         recordChunksCountPerTopic(cordaProducerRecords)
 
         cordaProducerRecords.forEach {
-            //note callback is only applicable to async calls which are not allowed
+            // note callback is only applicable to async calls which are not allowed
             producer.send(it.toKafkaRecord(topicPrefix, partition))
         }
     }
@@ -222,7 +222,6 @@ class CordaKafkaProducerImpl(
                     .build()
                     .record(count.toDouble())
             }
-
     }
 
     override fun beginTransaction() {
@@ -313,7 +312,8 @@ class CordaKafkaProducerImpl(
         } catch (ex: Exception) {
             log.info(
                 "CordaKafkaProducer failed to close producer safely. This can be observed when there are " +
-                        "no reachable brokers. ClientId: ${config.clientId}", ex
+                    "no reachable brokers. ClientId: ${config.clientId}",
+                ex
             )
         } finally {
             (producerMetricsBinder as? AutoCloseable)?.close()

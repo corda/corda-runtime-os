@@ -107,7 +107,7 @@ class RoundTripTests {
     @Test
     fun inheritedCalculatedFunction() {
         @CordaSerializable
-        class C: I {
+        class C : I {
             var i: Int = 0
             override val squared get() = i * i
         }
@@ -147,14 +147,16 @@ class RoundTripTests {
     fun canSerializeClassesWithUntypedProperties() {
         val data = MembershipState<Any>(mapOf("foo" to "bar"))
         val transactionState = TestTransactionState(
-                data,
-                TestAttachmentConstraint()
+            data,
+            TestAttachmentConstraint()
         )
         val ref = "fooBar"
-        val instance = OnMembershipChanged(TestStateAndRef(
+        val instance = OnMembershipChanged(
+            TestStateAndRef(
                 transactionState,
                 ref
-        ))
+            )
+        )
 
         val factory = testDefaultFactoryNoEvolution()
         val bytes = SerializationOutput(factory).serialize(instance)
@@ -179,10 +181,11 @@ class RoundTripTests {
         DeserializationInput(factory).deserialize(bytes)
 
         assertEquals(
-                """
+            """
                 C (erased)(t: *): I2<*>
                   t: *
-                """.trimIndent(),
-                factory.getTypeInformation(instance::class.java).prettyPrint())
+            """.trimIndent(),
+            factory.getTypeInformation(instance::class.java).prettyPrint()
+        )
     }
 }

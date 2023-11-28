@@ -25,7 +25,7 @@ interface CordaConsumerBuilder {
         messageBusConfig: SmartConfig,
         kClazz: Class<K>,
         vClazz: Class<V>,
-        onSerializationError: (ByteArray) -> Unit = {_ ->},
+        onSerializationError: (ByteArray) -> Unit = { _ -> },
         listener: CordaConsumerRebalanceListener? = null
-    ) : CordaConsumer<K, V>
+    ): CordaConsumer<K, V>
 }

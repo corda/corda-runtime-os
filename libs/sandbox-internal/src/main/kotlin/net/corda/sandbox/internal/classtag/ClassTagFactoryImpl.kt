@@ -45,7 +45,10 @@ internal class ClassTagFactoryImpl : ClassTagFactory {
                 val cordaCpkCordappName = cpkSandbox.cpkMetadata.cpkId.name
                 val signerSummaryHash = cpkSandbox.cpkMetadata.cpkId.signerSummaryHash
                 EvolvableTagImplV1(
-                    ClassType.CpkSandboxClass, bundleName, cordaCpkCordappName, signerSummaryHash
+                    ClassType.CpkSandboxClass,
+                    bundleName,
+                    cordaCpkCordappName,
+                    signerSummaryHash
                 )
             }
         }.serialise()
@@ -53,10 +56,12 @@ internal class ClassTagFactoryImpl : ClassTagFactory {
 
     override fun deserialise(serialisedClassTag: String): ClassTag {
         val entries = serialisedClassTag.split(CLASS_TAG_DELIMITER)
-        if (entries.size < 2) throw SandboxException(
-            "Serialised class tag only contained ${entries.size} entries, whereas the minimum length is 2. The " +
+        if (entries.size < 2) {
+            throw SandboxException(
+                "Serialised class tag only contained ${entries.size} entries, whereas the minimum length is 2. The " +
                     "entries were $entries."
-        )
+            )
+        }
 
         val type = entries[CLASS_TAG_IDENTIFIER_IDX]
 

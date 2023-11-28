@@ -78,19 +78,22 @@ object CpkDocumentReader {
             if (dependencyNameElements.length != 1) {
                 // Should already have been validated by schema.
                 val msg = fileLocationAppender(
-                    "The entry at index ${el.index} of the CPK dependencies did not specify its name correctly.")
+                    "The entry at index ${el.index} of the CPK dependencies did not specify its name correctly."
+                )
                 throw DependencyMetadataException(msg)
             }
             if (dependencyVersionElements.length != 1) {
                 // Should already have been validated by schema.
                 val msg = fileLocationAppender(
-                    "The entry at index ${el.index} of the CPK dependencies file did not specify its version correctly.")
+                    "The entry at index ${el.index} of the CPK dependencies file did not specify its version correctly."
+                )
                 throw DependencyMetadataException(msg)
             }
             if (dependencySignersElements.length != 1) {
                 // Should already have been validated by schema.
                 val msg = fileLocationAppender(
-                    "The entry at index ${el.index} of the CPK dependencies file did not specify its signers correctly.")
+                    "The entry at index ${el.index} of the CPK dependencies file did not specify its signers correctly."
+                )
                 throw DependencyMetadataException(msg)
             }
 
@@ -103,19 +106,19 @@ object CpkDocumentReader {
                         // Should already have been validated by schema.
                         val msg = fileLocationAppender(
                             "The entry at index ${el.index} of the CPK dependencies file" +
-                                    " did not specify an algorithm for its signer's public key hash."
+                                " did not specify an algorithm for its signer's public key hash."
                         )
                         throw DependencyMetadataException(msg)
                     }
                     val hashData = Base64.getDecoder().decode(signer.textContent)
                     SecureHashImpl(algorithm, hashData)
-                }.summaryHash() ?:
-                if (signers.getElementsByTagName(DEPENDENCY_SAME_SIGNER_TAG).length == 1) {
-                    // Use this until we can determine this CPK's own certificates.
-                    SAME_SIGNER_PLACEHOLDER
-                } else {
-                    throw IllegalStateException("No \"$DEPENDENCY_SIGNER_TAG\" or \"$DEPENDENCY_SAME_SIGNER_TAG\" elements found")
-                }
+                }.summaryHash()
+                    ?: if (signers.getElementsByTagName(DEPENDENCY_SAME_SIGNER_TAG).length == 1) {
+                        // Use this until we can determine this CPK's own certificates.
+                        SAME_SIGNER_PLACEHOLDER
+                    } else {
+                        throw IllegalStateException("No \"$DEPENDENCY_SIGNER_TAG\" or \"$DEPENDENCY_SAME_SIGNER_TAG\" elements found")
+                    }
             CpkIdentifier(
                 dependencyNameElements.item(0).textContent,
                 dependencyVersionElements.item(0).textContent,
@@ -126,7 +129,8 @@ object CpkDocumentReader {
                     1 -> CpkType.parse(dependencyTypeElements.item(0).textContent) != CpkType.CORDA_API
                     else -> {
                         val msg = fileLocationAppender(
-                            "The entry at index ${el.index} of the CPK dependencies file has multiple types")
+                            "The entry at index ${el.index} of the CPK dependencies file has multiple types"
+                        )
                         throw DependencyMetadataException(msg)
                     }
                 }
@@ -164,12 +168,14 @@ object CpkDocumentReader {
             if (libraryFilenameElements.length != 1) {
                 val msg = fileLocationAppender(
                     "The entry at index ${el.index} of the $CPK_DEPENDENCY_CONSTRAINTS_FILE_ENTRY requires " +
-                    "a single $LIBRARY_FILENAME_TAG")
+                        "a single $LIBRARY_FILENAME_TAG"
+                )
                 throw LibraryMetadataException(msg)
             }
             if (libraryHashElements.length != 1) {
                 val msg = fileLocationAppender(
-                    "The entry at index ${el.index} of the $CPK_DEPENDENCY_CONSTRAINTS_FILE_ENTRY requires a single $LIBRARY_HASH_TAG")
+                    "The entry at index ${el.index} of the $CPK_DEPENDENCY_CONSTRAINTS_FILE_ENTRY requires a single $LIBRARY_HASH_TAG"
+                )
                 throw LibraryMetadataException(msg)
             }
             libraryFilenameElements.item(0).textContent to libraryHashElements.item(0).let {
@@ -178,7 +184,7 @@ object CpkDocumentReader {
                     throw LibraryMetadataException(
                         fileLocationAppender(
                             "Expected ${DigestAlgorithmName.SHA2_256.name} in $CPK_DEPENDENCY_CONSTRAINTS_FILE_ENTRY," +
-                                    " got '$algorithmName' instead"
+                                " got '$algorithmName' instead"
                         )
                     )
                 }
@@ -188,7 +194,8 @@ object CpkDocumentReader {
             result.put("$CPK_LIB_FOLDER/${pair.first}", pair.second)?.let {
                 throw LibraryMetadataException(
                     fileLocationAppender(
-                        "Found duplicate entry for library ${pair.first} of the $CPK_DEPENDENCY_CONSTRAINTS_FILE_ENTRY")
+                        "Found duplicate entry for library ${pair.first} of the $CPK_DEPENDENCY_CONSTRAINTS_FILE_ENTRY"
+                    )
                 )
             }
         }
@@ -209,14 +216,20 @@ object CpkDocumentReader {
         override fun warning(ex: SAXParseException) {
             logger.warn(
                 "Problem at (line {}, column {}) parsing CPK dependencies for {}: {}",
-                ex.lineNumber, ex.columnNumber, jarName, ex.message
+                ex.lineNumber,
+                ex.columnNumber,
+                jarName,
+                ex.message
             )
         }
 
         override fun error(ex: SAXParseException) {
             logger.error(
                 "Error at (line {}, column {}) parsing CPK dependencies for {}: {}",
-                ex.lineNumber, ex.columnNumber, jarName, ex.message
+                ex.lineNumber,
+                ex.columnNumber,
+                jarName,
+                ex.message
             )
             throw DependencyMetadataException(ex.message ?: "", ex)
         }
@@ -224,7 +237,10 @@ object CpkDocumentReader {
         override fun fatalError(ex: SAXParseException) {
             logger.error(
                 "Fatal error at (line {}, column {}) parsing CPK dependencies for {}: {}",
-                ex.lineNumber, ex.columnNumber, jarName, ex.message
+                ex.lineNumber,
+                ex.columnNumber,
+                jarName,
+                ex.message
             )
             throw ex
         }

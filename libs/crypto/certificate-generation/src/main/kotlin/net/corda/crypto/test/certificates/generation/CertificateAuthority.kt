@@ -15,6 +15,7 @@ interface CertificateAuthority {
          */
         const val PASSWORD = "password"
     }
+
     /**
      * Return the CA certificate.
      */

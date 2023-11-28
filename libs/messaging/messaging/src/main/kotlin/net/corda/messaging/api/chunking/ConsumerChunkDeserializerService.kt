@@ -6,7 +6,7 @@ import net.corda.data.chunking.ChunkKey
 /**
  * Service to handle assembling chunks into their original values.
  */
-interface ConsumerChunkDeserializerService<K : Any, V: Any> : ChunkDeserializerService<V> {
+interface ConsumerChunkDeserializerService<K : Any, V : Any> : ChunkDeserializerService<V> {
 
     /**
      * Take a list of [Chunk]s mapped by [ChunkKey]s, validate the checksum and deserialize the bytes.

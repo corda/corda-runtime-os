@@ -8,11 +8,9 @@ class X500PrincipalSerializer : BaseProxySerializer<X500Principal, X500Principal
     override val proxyType: Class<X500PrincipalProxy> get() = X500PrincipalProxy::class.java
     override val withInheritance: Boolean get() = false
 
-    override fun toProxy(obj: X500Principal): X500PrincipalProxy
-        = X500PrincipalProxy(name = obj.name)
+    override fun toProxy(obj: X500Principal): X500PrincipalProxy = X500PrincipalProxy(name = obj.name)
 
-    override fun fromProxy(proxy: X500PrincipalProxy): X500Principal
-        = X500Principal(proxy.name)
+    override fun fromProxy(proxy: X500PrincipalProxy): X500Principal = X500Principal(proxy.name)
 
     data class X500PrincipalProxy(val name: String)
 }

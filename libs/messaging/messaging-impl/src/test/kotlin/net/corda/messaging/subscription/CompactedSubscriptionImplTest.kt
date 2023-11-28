@@ -92,7 +92,9 @@ class CompactedSubscriptionImplTest {
             when (snapshotErrorToThrow) {
                 SnapshotErrorToThrow.NONE -> snapshotMap.putAll(currentData)
                 SnapshotErrorToThrow.FATAL -> throw CordaMessageAPIFatalException("Abandon Ship!")
-                SnapshotErrorToThrow.UNEXPECTED_THROWABLE -> @Suppress("TooGenericExceptionThrown") throw Throwable()
+                SnapshotErrorToThrow.UNEXPECTED_THROWABLE ->
+                    @Suppress("TooGenericExceptionThrown")
+                    throw Throwable()
             }
         }
 

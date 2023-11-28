@@ -66,10 +66,10 @@ class ConfigEntityFactory(
         connectionName: String
     ): String {
         return "{\"database\":{" +
-                "\"jdbc\":" +
-                "{\"url\":\"$jdbcUrl\"}," +
-                "\"pass\":${createSecureConfig(password, "$connectionName-database-password")}," +
-                "\"user\":\"$username\"}}"
+            "\"jdbc\":" +
+            "{\"url\":\"$jdbcUrl\"}," +
+            "\"pass\":${createSecureConfig(password, "$connectionName-database-password")}," +
+            "\"user\":\"$username\"}}"
     }
 
     private fun createSecureConfig(value: String, key: String): String {

@@ -1,6 +1,5 @@
 package net.corda.messaging.mediator.factory
 
-
 import net.corda.messaging.api.mediator.MediatorConsumer
 import net.corda.messaging.api.mediator.MessageRouter
 import net.corda.messaging.api.mediator.MessagingClient
@@ -30,7 +29,8 @@ class MediatorComponentFactoryTest {
     private lateinit var mediatorComponentFactory: MediatorComponentFactory<String, String, String>
     private val messageProcessor = object : StateAndEventProcessor<String, String, String> {
         override fun onNext(
-            state: State<String>?, event: Record<String, String>
+            state: State<String>?,
+            event: Record<String, String>
         ): StateAndEventProcessor.Response<String> {
             TODO("Not yet implemented")
         }
@@ -38,7 +38,6 @@ class MediatorComponentFactoryTest {
         override val keyClass get() = String::class.java
         override val stateValueClass get() = String::class.java
         override val eventValueClass get() = String::class.java
-
     }
     private val consumerFactories = listOf(
         mock<MediatorConsumerFactory>(),

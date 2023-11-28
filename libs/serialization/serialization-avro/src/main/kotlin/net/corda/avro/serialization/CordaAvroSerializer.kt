@@ -12,5 +12,4 @@ interface CordaAvroSerializer<T> {
      * @return The serialized byte stream for transfer across the message bus or null if unsuccessful.
      */
     fun serialize(data: T): ByteArray?
-
 }

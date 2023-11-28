@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [JpaEntitiesRegistry::class])
 class JpaEntitiesRegistryImpl : JpaEntitiesRegistry {
-    private val fullSet = ConcurrentHashMap<String,JpaEntitiesSet>()
+    private val fullSet = ConcurrentHashMap<String, JpaEntitiesSet>()
 
     override val all: Set<JpaEntitiesSet>
         get() = fullSet.values.toSet()
@@ -17,6 +17,7 @@ class JpaEntitiesRegistryImpl : JpaEntitiesRegistry {
     override fun register(persistenceUnitName: String, jpeEntities: Set<Class<*>>) {
         fullSet[persistenceUnitName] = JpaEntitiesSet.create(
             persistenceUnitName,
-            jpeEntities.toSet() + (fullSet[persistenceUnitName]?.classes ?: emptySet()))
+            jpeEntities.toSet() + (fullSet[persistenceUnitName]?.classes ?: emptySet())
+        )
     }
 }

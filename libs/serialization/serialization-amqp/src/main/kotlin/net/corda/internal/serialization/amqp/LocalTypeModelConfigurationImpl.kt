@@ -20,37 +20,37 @@ class LocalTypeModelConfigurationImpl(
     private val customSerializerRegistry: CustomSerializerRegistry,
     override val baseTypes: BaseLocalTypes
 ) : LocalTypeModelConfiguration {
-    constructor(customSerializerRegistry: CustomSerializerRegistry)
-        : this(customSerializerRegistry, DEFAULT_BASE_TYPES)
+    constructor(customSerializerRegistry: CustomSerializerRegistry) :
+        this(customSerializerRegistry, DEFAULT_BASE_TYPES)
 
     override fun isExcluded(type: Type): Boolean = !hasCordaSerializable(type.asClass())
     override fun isOpaque(type: Type): Boolean = Primitives.unwrap(type.asClass()) in opaqueTypes ||
-            customSerializerRegistry.findCustomSerializer(type.asClass(), type) != null
+        customSerializerRegistry.findCustomSerializer(type.asClass(), type) != null
 }
 
 // Copied from SerializerFactory so that we can have equivalent behaviour, for now.
 private val opaqueTypes = setOf(
-        Character::class.java,
-        Char::class.java,
-        Boolean::class.java,
-        Byte::class.java,
-        UnsignedByte::class.java,
-        Short::class.java,
-        UnsignedShort::class.java,
-        Int::class.java,
-        UnsignedInteger::class.java,
-        Long::class.java,
-        UnsignedLong::class.java,
-        Float::class.java,
-        Double::class.java,
-        Decimal32::class.java,
-        Decimal64::class.java,
-        Decimal128::class.java,
-        Date::class.java,
-        UUID::class.java,
-        ByteArray::class.java,
-        String::class.java,
-        Symbol::class.java
+    Character::class.java,
+    Char::class.java,
+    Boolean::class.java,
+    Byte::class.java,
+    UnsignedByte::class.java,
+    Short::class.java,
+    UnsignedShort::class.java,
+    Int::class.java,
+    UnsignedInteger::class.java,
+    Long::class.java,
+    UnsignedLong::class.java,
+    Float::class.java,
+    Double::class.java,
+    Decimal32::class.java,
+    Decimal64::class.java,
+    Decimal128::class.java,
+    Date::class.java,
+    UUID::class.java,
+    ByteArray::class.java,
+    String::class.java,
+    Symbol::class.java
 )
 
 @Suppress("unchecked_cast")

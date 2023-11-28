@@ -11,4 +11,4 @@ class NotSerializableDetailedException(classname: String?, val reason: String) :
 
 // This exception is thrown when serialization isn't possible but at the point the exception
 // is thrown the classname isn't known. It's caught and rethrown as a [NotSerializableDetailedException]
-class NotSerializableWithReasonException(message: String?): IOException(message)
+class NotSerializableWithReasonException(message: String?) : IOException(message)

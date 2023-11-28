@@ -50,10 +50,12 @@ class CordappManifestTests {
 
     @Test
     fun `provides defaults for minimum and target platform version`() {
-        val manifest = CordappManifest.fromManifest(TestUtils.createDummyContractCordappManifest(
+        val manifest = CordappManifest.fromManifest(
+            TestUtils.createDummyContractCordappManifest(
                 minPlatformVersion = null,
                 targetPlatformVersion = null
-        ))
+            )
+        )
 
         assertEquals(CordappManifest.DEFAULT_MIN_PLATFORM_VERSION, manifest.minPlatformVersion)
         assertEquals(CordappManifest.DEFAULT_MIN_PLATFORM_VERSION, manifest.targetPlatformVersion)

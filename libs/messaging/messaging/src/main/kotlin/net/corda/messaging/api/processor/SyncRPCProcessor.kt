@@ -14,7 +14,7 @@ interface SyncRPCProcessor<REQUEST, RESPONSE> {
      *
      * @return the result of the processing of the type RESPONSE
      */
-    fun process(request: REQUEST) : RESPONSE?
+    fun process(request: REQUEST): RESPONSE?
 
     val requestClass: Class<REQUEST>
     val responseClass: Class<RESPONSE>

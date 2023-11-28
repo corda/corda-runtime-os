@@ -11,8 +11,8 @@ import kotlin.reflect.KTypeParameter
 import kotlin.reflect.KVisibility
 import kotlin.reflect.full.starProjectedType
 
-class JavaMutableStaticProperty<V>(javaField: Field)
-    : JavaStaticProperty<V>(javaField), KMutableProperty0<V>, KMutablePropertyInternal<V> {
+class JavaMutableStaticProperty<V>(javaField: Field) :
+    JavaStaticProperty<V>(javaField), KMutableProperty0<V>, KMutablePropertyInternal<V> {
 
     override fun toString(): String {
         return "var $name: $javaField"
@@ -28,7 +28,8 @@ class JavaMutableStaticProperty<V>(javaField: Field)
     override fun withJavaField(field: Field) = JavaMutableStaticProperty<V>(javaField)
 
     override val setter: KMutableProperty0.Setter<V> = Setter(
-        name = "<set-${javaField.name}>", property = this
+        name = "<set-${javaField.name}>",
+        property = this
     )
 
     override fun set(value: V) {
@@ -59,14 +60,16 @@ class JavaMutableStaticProperty<V>(javaField: Field)
         override val annotations: List<Annotation>
             get() = TODO("JavaMutableStaticProperty.Setter.annotations: Not yet implemented")
         override val parameters: List<KParameter>
-            get() = singletonList(KotlinParameter(
-                name = null,
-                type = property.javaField.type.createKType(isNullable = false),
-                index = 0,
-                kind = VALUE,
-                isVararg = false,
-                isOptional = false
-            ))
+            get() = singletonList(
+                KotlinParameter(
+                    name = null,
+                    type = property.javaField.type.createKType(isNullable = false),
+                    index = 0,
+                    kind = VALUE,
+                    isVararg = false,
+                    isOptional = false
+                )
+            )
         override val returnType: KType
             get() = Unit::class.starProjectedType
         override val typeParameters: List<KTypeParameter>

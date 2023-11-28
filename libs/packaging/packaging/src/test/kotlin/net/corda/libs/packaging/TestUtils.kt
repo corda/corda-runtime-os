@@ -31,31 +31,35 @@ internal object TestUtils {
     /** Creates a dummy [Manifest] containing the Contract CorDapp-specific values provided. */
     @Suppress("LongParameterList")
     internal fun createDummyContractCordappManifest(
-            bundleSymbolicName: String? = MANIFEST_DUMMY_BUNDLE_SYMBOLIC_NAME,
-            bundleVersion: String? = MANIFEST_DUMMY_BUNDLE_VERSION,
-            minPlatformVersion: String? = MANIFEST_DUMMY_MIN_PLATFORM_VERSION,
-            targetPlatformVersion: String? = MANIFEST_DUMMY_TARGET_PLATFORM_VERSION,
-            contractShortName: String? = MANIFEST_CONTRACT_SHORT_NAME,
-            contractVendor: String? = MANIFEST_CONTRACT_VENDOR,
-            contractVersionId: String? = MANIFEST_CONTRACT_VERSION_ID.toString(),
-            contractLicence: String? = MANIFEST_CONTRACT_LICENCE,
-            contracts: String? = MANIFEST_DUMMY_CONTRACTS,
-            flows: String? = MANIFEST_DUMMY_FLOWS
+        bundleSymbolicName: String? = MANIFEST_DUMMY_BUNDLE_SYMBOLIC_NAME,
+        bundleVersion: String? = MANIFEST_DUMMY_BUNDLE_VERSION,
+        minPlatformVersion: String? = MANIFEST_DUMMY_MIN_PLATFORM_VERSION,
+        targetPlatformVersion: String? = MANIFEST_DUMMY_TARGET_PLATFORM_VERSION,
+        contractShortName: String? = MANIFEST_CONTRACT_SHORT_NAME,
+        contractVendor: String? = MANIFEST_CONTRACT_VENDOR,
+        contractVersionId: String? = MANIFEST_CONTRACT_VERSION_ID.toString(),
+        contractLicence: String? = MANIFEST_CONTRACT_LICENCE,
+        contracts: String? = MANIFEST_DUMMY_CONTRACTS,
+        flows: String? = MANIFEST_DUMMY_FLOWS
     ): Manifest {
-        val manifestHeaders = listOf(BUNDLE_SYMBOLICNAME, BUNDLE_VERSION,
-                CordappManifest.MIN_PLATFORM_VERSION,
-                CordappManifest.TARGET_PLATFORM_VERSION,
-                CordappManifest.CORDAPP_CONTRACT_NAME,
-                CordappManifest.CORDAPP_CONTRACT_VENDOR,
-                CordappManifest.CORDAPP_CONTRACT_VERSION,
-                CordappManifest.CORDAPP_CONTRACT_LICENCE,
-                CordappManifest.CORDAPP_CONTRACTS,
-                CordappManifest.CORDAPP_FLOWS)
-        val manifestValues = listOf(bundleSymbolicName, bundleVersion, minPlatformVersion, targetPlatformVersion,
-                contractShortName, contractVendor, contractVersionId, contractLicence, contracts, flows)
+        val manifestHeaders = listOf(
+            BUNDLE_SYMBOLICNAME, BUNDLE_VERSION,
+            CordappManifest.MIN_PLATFORM_VERSION,
+            CordappManifest.TARGET_PLATFORM_VERSION,
+            CordappManifest.CORDAPP_CONTRACT_NAME,
+            CordappManifest.CORDAPP_CONTRACT_VENDOR,
+            CordappManifest.CORDAPP_CONTRACT_VERSION,
+            CordappManifest.CORDAPP_CONTRACT_LICENCE,
+            CordappManifest.CORDAPP_CONTRACTS,
+            CordappManifest.CORDAPP_FLOWS
+        )
+        val manifestValues = listOf(
+            bundleSymbolicName, bundleVersion, minPlatformVersion, targetPlatformVersion,
+            contractShortName, contractVendor, contractVersionId, contractLicence, contracts, flows
+        )
         val manifestHeadersAndValues = manifestHeaders
-                .zip(manifestValues)
-                .filter { (_, value) -> value != null }
+            .zip(manifestValues)
+            .filter { (_, value) -> value != null }
 
         val manifestString = manifestHeadersAndValues.joinToString("\n", postfix = "\n") { (header, value) ->
             "$header: $value"
@@ -78,7 +82,8 @@ internal object TestUtils {
         contracts: String? = MANIFEST_DUMMY_CONTRACTS,
         flows: String? = MANIFEST_DUMMY_FLOWS
     ): Manifest {
-        val manifestHeaders = listOf(BUNDLE_SYMBOLICNAME, BUNDLE_VERSION,
+        val manifestHeaders = listOf(
+            BUNDLE_SYMBOLICNAME, BUNDLE_VERSION,
             CordappManifest.MIN_PLATFORM_VERSION,
             CordappManifest.TARGET_PLATFORM_VERSION,
             CordappManifest.CORDAPP_WORKFLOW_NAME,
@@ -86,9 +91,12 @@ internal object TestUtils {
             CordappManifest.CORDAPP_WORKFLOW_VERSION,
             CordappManifest.CORDAPP_WORKFLOW_LICENCE,
             CordappManifest.CORDAPP_CONTRACTS,
-            CordappManifest.CORDAPP_FLOWS)
-        val manifestValues = listOf(bundleSymbolicName, bundleVersion, minPlatformVersion, targetPlatformVersion,
-            workflowShortName, workflowVendor, workflowVersionId, workflowLicence, contracts, flows)
+            CordappManifest.CORDAPP_FLOWS
+        )
+        val manifestValues = listOf(
+            bundleSymbolicName, bundleVersion, minPlatformVersion, targetPlatformVersion,
+            workflowShortName, workflowVendor, workflowVersionId, workflowLicence, contracts, flows
+        )
         val manifestHeadersAndValues = manifestHeaders
             .zip(manifestValues)
             .filter { (_, value) -> value != null }
@@ -108,7 +116,7 @@ internal object TestUtils {
 
             val sorted = includedAttributes.sortedWith { rdn1, rdn2 ->
                 X500_NAME_SUPPORTED_ATTRIBUTES.indexOf(rdn1.type) -
-                        X500_NAME_SUPPORTED_ATTRIBUTES.indexOf(rdn2.type)
+                    X500_NAME_SUPPORTED_ATTRIBUTES.indexOf(rdn2.type)
             }
             LdapName(sorted)
         }.toString()

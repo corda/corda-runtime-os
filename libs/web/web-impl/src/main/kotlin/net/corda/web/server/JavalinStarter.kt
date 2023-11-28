@@ -60,14 +60,14 @@ object JavalinStarter {
                             host?.let {
                                 server.start(it, port)
                                 it
-                            }?:server.start(port)
+                            } ?: server.start(port)
                         }
                     }
                 } else {
                     host?.let {
                         server.start(it, port)
                         it
-                    }?:server.start(port)
+                    } ?: server.start(port)
                 }
                 logger.trace { "Starting the $name Javalin server completed." }
             } catch (e: Exception) {

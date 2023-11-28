@@ -27,10 +27,10 @@ interface AvroSchemaRegistry {
      * @param encoder Defines the encoding process from object to serialized byte array.
      * @param decoder Defines the decoding process from serialized byte array to object.
      */
-    fun <T: Any> addSchema(
+    fun <T : Any> addSchema(
         schema: Schema,
         clazz: Class<T>,
-        encoder: (T)-> ByteArray,
+        encoder: (T) -> ByteArray,
         decoder: (ByteArray, Schema, T?) -> T
     )
 
@@ -53,7 +53,7 @@ interface AvroSchemaRegistry {
      * @param obj the object to be serialized.
      * @return a buffer of the serialized bytes.
      */
-    fun <T: Any> serialize(obj: T) : ByteBuffer
+    fun <T : Any> serialize(obj: T): ByteBuffer
 
     /**
      * Deserialize the [bytes] into the expected object
@@ -64,7 +64,7 @@ interface AvroSchemaRegistry {
      * an object of type [clazz] will be created.
      * @return the deserialized object encoded in [bytes].
      */
-    fun <T: Any> deserialize(bytes: ByteBuffer, clazz: Class<T>, reusable: T?): T
+    fun <T : Any> deserialize(bytes: ByteBuffer, clazz: Class<T>, reusable: T?): T
 
     /**
      * Deserialize the [bytes] into the expected object
@@ -77,7 +77,7 @@ interface AvroSchemaRegistry {
      * an object of type [clazz] will be created.
      * @return the deserialized object encoded in [bytes].
      */
-    fun <T: Any> deserialize(bytes: ByteBuffer, offset: Int, length: Int, clazz: Class<T>, reusable: T?): T
+    fun <T : Any> deserialize(bytes: ByteBuffer, offset: Int, length: Int, clazz: Class<T>, reusable: T?): T
 
     /**
      * Inspects the buffer to determine the class type contained in the envelope.
@@ -85,7 +85,7 @@ interface AvroSchemaRegistry {
      * @param bytes a buffer of a serialized object.
      * @return the class type of the object encoded in [bytes].
      */
-    fun getClassType(bytes: ByteBuffer) : Class<*>
+    fun getClassType(bytes: ByteBuffer): Class<*>
 
     /**
      * @return true if the Registry has a schema with the given [Fingerprint].
@@ -101,11 +101,11 @@ interface AvroSchemaRegistry {
 /**
  * Extension function to simplify development in Kotlin.
  */
-inline fun <reified T: Any> AvroSchemaRegistry.deserialize(bytes: ByteBuffer, reusable: T? = null): T =
+inline fun <reified T : Any> AvroSchemaRegistry.deserialize(bytes: ByteBuffer, reusable: T? = null): T =
     deserialize(bytes, T::class.java, reusable)
 
 /**
  * Extension function to simplify development in Kotlin.
  */
-inline fun <reified T: Any> AvroSchemaRegistry.deserialize(bytes: ByteBuffer, offset:Int, length: Int, reusable: T? = null): T =
+inline fun <reified T : Any> AvroSchemaRegistry.deserialize(bytes: ByteBuffer, offset: Int, length: Int, reusable: T? = null): T =
     deserialize(bytes, offset, length, T::class.java, reusable)

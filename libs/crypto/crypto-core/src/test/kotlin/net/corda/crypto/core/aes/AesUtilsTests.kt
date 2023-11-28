@@ -51,7 +51,7 @@ class AesUtilsTests {
     @Test
     fun `Should generate same HMAC(SHA256) for the short length stream data`() {
         val random = Random(Instant.now().toEpochMilli())
-        for ( i in 1..100) {
+        for (i in 1..100) {
             val data = random.nextBytes(i)
             val secret = ManagedSecret.generate()
             val stream = ByteArrayInputStream(data)
@@ -66,7 +66,7 @@ class AesUtilsTests {
     @Test
     fun `Should generate same HMAC(SHA256) for the medium length stream data`() {
         val random = Random(Instant.now().toEpochMilli())
-        for ( i in 1..100) {
+        for (i in 1..100) {
             val len = random.nextInt(375, 2074)
             val data = random.nextBytes(len)
             val secret = ManagedSecret.generate()
@@ -82,7 +82,7 @@ class AesUtilsTests {
     @Test
     fun `Should generate same HMAC(SHA256) for the large length stream data`() {
         val random = Random(Instant.now().toEpochMilli())
-        for ( i in 1..100) {
+        for (i in 1..100) {
             val len = random.nextInt(37_794, 63_987)
             val data = random.nextBytes(len)
             val secret = ManagedSecret.generate()
@@ -136,7 +136,7 @@ class AesUtilsTests {
     @Test
     fun `Should generate same HMAC(SHA512) for the short length stream data`() {
         val random = Random(Instant.now().toEpochMilli())
-        for ( i in 1..100) {
+        for (i in 1..100) {
             val data = random.nextBytes(i)
             val secret = ManagedSecret.generate()
             val stream = ByteArrayInputStream(data)
@@ -151,7 +151,7 @@ class AesUtilsTests {
     @Test
     fun `Should generate same HMAC(SHA512) for the medium length stream data`() {
         val random = Random(Instant.now().toEpochMilli())
-        for ( i in 1..100) {
+        for (i in 1..100) {
             val len = random.nextInt(375, 2074)
             val data = random.nextBytes(len)
             val secret = ManagedSecret.generate()
@@ -167,7 +167,7 @@ class AesUtilsTests {
     @Test
     fun `Should generate same HMAC(SHA512) for the large length stream data`() {
         val random = Random(Instant.now().toEpochMilli())
-        for ( i in 1..100) {
+        for (i in 1..100) {
             val len = random.nextInt(37_794, 63_987)
             val data = random.nextBytes(len)
             val secret = ManagedSecret.generate()

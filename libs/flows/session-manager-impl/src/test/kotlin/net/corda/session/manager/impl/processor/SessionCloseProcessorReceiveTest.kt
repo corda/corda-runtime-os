@@ -38,7 +38,11 @@ class SessionCloseProcessorReceiveTest {
             contextSessionProps = emptyKeyValuePairList()
         )
         val inputState = buildSessionState(
-            SessionStateType.CLOSING, 2, mutableListOf(sessionEvent), 0, mutableListOf()
+            SessionStateType.CLOSING,
+            2,
+            mutableListOf(sessionEvent),
+            0,
+            mutableListOf()
         )
 
         val result = SessionCloseProcessorReceive("key", inputState, sessionEvent, Instant.now()).execute()
@@ -57,7 +61,11 @@ class SessionCloseProcessorReceiveTest {
             contextSessionProps = emptyKeyValuePairList()
         )
         val inputState = buildSessionState(
-            SessionStateType.ERROR, 0, mutableListOf(), 0, mutableListOf()
+            SessionStateType.ERROR,
+            0,
+            mutableListOf(),
+            0,
+            mutableListOf()
         )
 
         val result = SessionCloseProcessorReceive("key", inputState, sessionEvent, Instant.now()).execute()
@@ -77,7 +85,11 @@ class SessionCloseProcessorReceiveTest {
             contextSessionProps = emptyKeyValuePairList()
         )
         val inputState = buildSessionState(
-            SessionStateType.CONFIRMED, 0, mutableListOf(), 0, mutableListOf()
+            SessionStateType.CONFIRMED,
+            0,
+            mutableListOf(),
+            0,
+            mutableListOf()
         )
 
         val result = SessionCloseProcessorReceive("key", inputState, sessionEvent, Instant.now()).execute()
@@ -96,7 +108,11 @@ class SessionCloseProcessorReceiveTest {
             contextSessionProps = emptyKeyValuePairList()
         )
         val inputState = buildSessionState(
-            SessionStateType.CREATED, 0, mutableListOf(), 0, mutableListOf()
+            SessionStateType.CREATED,
+            0,
+            mutableListOf(),
+            0,
+            mutableListOf()
         )
 
         val result = SessionCloseProcessorReceive("key", inputState, sessionEvent, Instant.now()).execute()
@@ -115,7 +131,11 @@ class SessionCloseProcessorReceiveTest {
             contextSessionProps = emptyKeyValuePairList()
         )
         val inputState = buildSessionState(
-            SessionStateType.CLOSING, 0, mutableListOf(), 0, mutableListOf()
+            SessionStateType.CLOSING,
+            0,
+            mutableListOf(),
+            0,
+            mutableListOf()
         )
 
         val result = SessionCloseProcessorReceive("key", inputState, sessionEvent, Instant.now()).execute()
@@ -134,12 +154,19 @@ class SessionCloseProcessorReceiveTest {
             contextSessionProps = emptyKeyValuePairList()
         )
         val inputState = buildSessionState(
-            SessionStateType.CLOSING, 0, mutableListOf(), 0, mutableListOf(buildSessionEvent(
-                MessageDirection.OUTBOUND,
-                "sessionId-test2", 2,
-                SessionClose(),
-                contextSessionProps = emptyKeyValuePairList()
-            ))
+            SessionStateType.CLOSING,
+            0,
+            mutableListOf(),
+            0,
+            mutableListOf(
+                buildSessionEvent(
+                    MessageDirection.OUTBOUND,
+                    "sessionId-test2",
+                    2,
+                    SessionClose(),
+                    contextSessionProps = emptyKeyValuePairList()
+                )
+            )
         )
 
         val result = SessionCloseProcessorReceive("key", inputState, sessionEvent, Instant.now()).execute()

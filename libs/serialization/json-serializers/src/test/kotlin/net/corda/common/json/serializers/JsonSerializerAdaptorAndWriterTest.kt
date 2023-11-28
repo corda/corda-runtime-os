@@ -18,7 +18,7 @@ class JsonSerializerAdaptorAndWriterTest {
      * can be completely empty. The serializer will generate mock data itself.
      */
     @Suppress("EmptyClassBlock")
-    private class TestClass {}
+    private class TestClass
 
     companion object {
         // Create a static instance of TestClass only so we can assert the reference is the same in the custom serializer
@@ -88,7 +88,9 @@ class JsonSerializerAdaptorAndWriterTest {
               "raw3": 1234,
               "raw4": 1234
             }
-        """.filter { !it.isWhitespace() }
+        """.filter {
+            !it.isWhitespace()
+        }
     }
 
     private data class DefaultSerializable(val contents: String = "contents")
@@ -100,12 +102,12 @@ class JsonSerializerAdaptorAndWriterTest {
     private class TestSerializer : JsonSerializer<TestClass> {
         override fun serialize(item: TestClass, jsonWriter: JsonWriter) {
             assertSame(testClassInstance, item)
-            jsonWriter.writeStartObject();
+            jsonWriter.writeStartObject()
             jsonWriter.writeFieldName("string1")
             jsonWriter.writeString("XXstring-value1XX".toCharArray(), 2, 13)
             jsonWriter.writeFieldName("string2")
             jsonWriter.writeString("string-value2")
-            jsonWriter.writeStringField("string3", "string-value3");
+            jsonWriter.writeStringField("string3", "string-value3")
 
             jsonWriter.writeFieldName("number1")
             jsonWriter.writeNumber(BigDecimal(1))
@@ -132,7 +134,7 @@ class JsonSerializerAdaptorAndWriterTest {
             jsonWriter.writeObjectField("object2", DefaultSerializable())
             jsonWriter.writeObjectFieldStart("object3")
             jsonWriter.writeStringField("inside-object-3", "inside-object3-value")
-            jsonWriter.writeEndObject();
+            jsonWriter.writeEndObject()
 
             jsonWriter.writeFieldName("boolean1")
             jsonWriter.writeBoolean(true)
@@ -195,7 +197,7 @@ class JsonSerializerAdaptorAndWriterTest {
             jsonWriter.writeFieldName("raw4")
             jsonWriter.writeRawValue("XX1234XX", 2, 4)
 
-            jsonWriter.writeEndObject();
+            jsonWriter.writeEndObject()
         }
     }
 

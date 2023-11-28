@@ -40,5 +40,4 @@ internal object InputStreamSerializer : Serializer<InputStream>() {
         }
         return flattened.inputStream()
     }
-
 }

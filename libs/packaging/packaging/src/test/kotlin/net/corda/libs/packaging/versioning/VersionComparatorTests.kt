@@ -44,7 +44,11 @@ class VersionComparatorTests {
     )
     fun `test version edge cases`(version1: String?, version2: String?, expectedOutcome: Int) {
         Assertions.assertEquals(expectedOutcome, cmp(version1, version2), "when checking with \"$version1\", \"$version2\"")
-        Assertions.assertEquals(oppositeOutcome(expectedOutcome), cmp(version2, version1), "when checking with \"$version1\", \"$version2\"")
+        Assertions.assertEquals(
+            oppositeOutcome(expectedOutcome),
+            cmp(version2, version1),
+            "when checking with \"$version1\", \"$version2\""
+        )
     }
 
     private class TestCaseProvider : ArgumentsProvider {
@@ -109,7 +113,11 @@ class VersionComparatorTests {
     )
     fun `test version with epochs`(version1: String?, version2: String?, expectedOutcome: Int) {
         Assertions.assertEquals(expectedOutcome, cmp(version1, version2), "when checking with \"$version1\", \"$version2\"")
-        Assertions.assertEquals(oppositeOutcome(expectedOutcome), cmp(version2, version1), "when checking with \"$version1\", \"$version2\"")
+        Assertions.assertEquals(
+            oppositeOutcome(expectedOutcome),
+            cmp(version2, version1),
+            "when checking with \"$version1\", \"$version2\""
+        )
     }
 
     private class ReleaseTestCaseProvider : ArgumentsProvider {
@@ -140,7 +148,11 @@ class VersionComparatorTests {
     )
     fun `test version with release`(version1: String?, version2: String?, expectedOutcome: Int) {
         Assertions.assertEquals(expectedOutcome, cmp(version1, version2), "when checking with \"$version1\", \"$version2\"")
-        Assertions.assertEquals(oppositeOutcome(expectedOutcome), cmp(version2, version1), "when checking with \"$version1\", \"$version2\"")
+        Assertions.assertEquals(
+            oppositeOutcome(expectedOutcome),
+            cmp(version2, version1),
+            "when checking with \"$version1\", \"$version2\""
+        )
     }
 
     /**

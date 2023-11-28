@@ -406,7 +406,15 @@ subprojects {
         if(file("$projectDir/detekt-baseline.xml").exists()){
             baseline = file("$projectDir/detekt-baseline.xml")
         }
-        config.setFrom(files("$rootDir/detekt-config.yml"))
+
+        var configFiles = files("$rootDir/detekt-config.yml")
+        //if (it.project.getProperties().getOrDefault('cordaEnableFormatting', false) == true) {
+        if (it.project.path.contains("libs")) {
+            configFiles += "$rootDir/detekt-formatting.yaml"
+            autoCorrect = true
+        }
+        config.setFrom(configFiles)
+
         parallel = true
         reports {
             xml{

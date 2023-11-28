@@ -103,17 +103,20 @@ fun Path.deleteIfExists(): Boolean = Files.deleteIfExists(this)
 /** Deletes this path (if it exists) and if it's a directory, all its child paths recursively. */
 fun Path.deleteRecursively() {
     if (!exists()) return
-    Files.walkFileTree(this, object : SimpleFileVisitor<Path>() {
-        override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
-            file.delete()
-            return FileVisitResult.CONTINUE
-        }
+    Files.walkFileTree(
+        this,
+        object : SimpleFileVisitor<Path>() {
+            override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
+                file.delete()
+                return FileVisitResult.CONTINUE
+            }
 
-        override fun postVisitDirectory(dir: Path, exception: IOException?): FileVisitResult {
-            dir.delete()
-            return FileVisitResult.CONTINUE
+            override fun postVisitDirectory(dir: Path, exception: IOException?): FileVisitResult {
+                dir.delete()
+                return FileVisitResult.CONTINUE
+            }
         }
-    })
+    )
 }
 
 /** @see Files.newOutputStream */

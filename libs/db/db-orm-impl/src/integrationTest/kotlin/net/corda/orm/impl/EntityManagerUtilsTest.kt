@@ -16,7 +16,6 @@ class EntityManagerUtilsTest {
 
     @Test
     fun `can persist JPA entities using EntityManagerFactory#transaction`() {
-
         createEntityManagerFactory().use { emf ->
 
             val owner = Owner(UUID.randomUUID(), "Fred", 25)
@@ -34,7 +33,6 @@ class EntityManagerUtilsTest {
 
     @Test
     fun `can persist JPA entities using EntityManagerFactory#use`() {
-
         createEntityManagerFactory().use { emf ->
 
             val owner = Owner(UUID.randomUUID(), "Fred", 25)
@@ -54,7 +52,6 @@ class EntityManagerUtilsTest {
 
     @Test
     fun `can persist JPA entities using EntityManager#transaction`() {
-
         createEntityManagerFactory().use { emf ->
 
             val owner = Owner(UUID.randomUUID(), "Fred", 25)
@@ -73,7 +70,6 @@ class EntityManagerUtilsTest {
 
     @Test
     fun `can persist JPA entities using EntityManager#use`() {
-
         createEntityManagerFactory().use { emf ->
 
             val owner = Owner(UUID.randomUUID(), "Fred", 25)
@@ -94,7 +90,6 @@ class EntityManagerUtilsTest {
 
     @Test
     fun `can load JPA entities using EntityManagerFactory#transaction`() {
-
         createEntityManagerFactory().use { emf ->
 
             val owner = Owner(UUID.randomUUID(), "Fred", 25)
@@ -135,7 +130,6 @@ class EntityManagerUtilsTest {
 
     @Test
     fun `can load JPA entities using EntityManager#transaction`() {
-
         createEntityManagerFactory().use { emf ->
 
             val owner = Owner(UUID.randomUUID(), "Fred", 25)
@@ -158,7 +152,6 @@ class EntityManagerUtilsTest {
 
     @Test
     fun `can load JPA entities using EntityManager#use`() {
-
         createEntityManagerFactory().use { emf ->
 
             val owner = Owner(UUID.randomUUID(), "Fred", 25)
@@ -181,7 +174,6 @@ class EntityManagerUtilsTest {
 
     @Test
     fun `can't read resultList outside of use block`() {
-
         createEntityManagerFactory().use { emf ->
 
             val owner = Owner(UUID.randomUUID(), "Fred", 25)
@@ -204,7 +196,6 @@ class EntityManagerUtilsTest {
 
     @Test
     fun `can't read resultList outside of transaction block`() {
-
         createEntityManagerFactory().use { emf ->
 
             val owner = Owner(UUID.randomUUID(), "Fred", 25)

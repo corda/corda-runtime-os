@@ -14,4 +14,3 @@ data class UpdateConfigResponse(
     val schemaVersion: ConfigSchemaVersion,
     val version: Int
 )
-

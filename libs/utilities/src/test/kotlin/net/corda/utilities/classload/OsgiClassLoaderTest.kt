@@ -1,7 +1,5 @@
 package net.corda.utilities.classload
 
-import java.net.URL
-import java.util.Collections.enumeration
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
@@ -11,6 +9,8 @@ import org.mockito.kotlin.whenever
 import org.osgi.framework.Bundle
 import org.osgi.framework.wiring.BundleRevision
 import org.osgi.framework.wiring.BundleRevision.TYPE_FRAGMENT
+import java.net.URL
+import java.util.Collections.enumeration
 
 class OsgiClassLoaderTest {
     private companion object {

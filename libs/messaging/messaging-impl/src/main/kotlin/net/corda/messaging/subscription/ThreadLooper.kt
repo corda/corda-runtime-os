@@ -119,7 +119,7 @@ class ThreadLooper(
         private fun doStopLoopAndClearThread(): Thread = thread.let {
             _loopStopped = true
             thread = null
-            it// return original Thread
+            it // return original Thread
         } ?: throw IllegalStateException("Clearing state, thread was null on non-stopped ThreadLooper")
     }
 

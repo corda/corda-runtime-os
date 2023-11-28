@@ -60,4 +60,4 @@ data class TopicRecordEntryKey(
     var topic: String,
     var partition: Int,
     var recordOffset: Long,
-): Serializable
+) : Serializable

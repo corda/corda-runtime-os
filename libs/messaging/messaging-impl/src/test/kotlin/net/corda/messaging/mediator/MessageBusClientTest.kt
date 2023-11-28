@@ -32,7 +32,6 @@ class MessageBusClientTest {
     )
     private val message: MediatorMessage<Any> = MediatorMessage("value", messageProps)
 
-
     @BeforeEach
     fun setup() {
         cordaProducer = mock()

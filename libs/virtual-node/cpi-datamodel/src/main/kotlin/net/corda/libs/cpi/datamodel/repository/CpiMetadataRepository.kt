@@ -1,12 +1,12 @@
 package net.corda.libs.cpi.datamodel.repository
 
-import java.util.stream.Stream
-import javax.persistence.EntityManager
-import javax.persistence.LockModeType
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.v5.crypto.SecureHash
+import java.util.stream.Stream
+import javax.persistence.EntityManager
+import javax.persistence.LockModeType
 
 interface CpiMetadataRepository {
 
@@ -42,14 +42,15 @@ interface CpiMetadataRepository {
     fun exist(em: EntityManager, cpiId: CpiIdentifier, lockMode: LockModeType): Boolean
 
     @Suppress("LongParameterList")
-    fun put(em: EntityManager,
-            cpiId: CpiIdentifier,
-            cpiFileName: String,
-            fileChecksum: SecureHash,
-            groupId: String,
-            groupPolicy: String,
-            fileUploadRequestId: String,
-            cpks: Collection<Cpk>
+    fun put(
+        em: EntityManager,
+        cpiId: CpiIdentifier,
+        cpiFileName: String,
+        fileChecksum: SecureHash,
+        groupId: String,
+        groupPolicy: String,
+        fileUploadRequestId: String,
+        cpks: Collection<Cpk>
     )
 
     @Suppress("LongParameterList")

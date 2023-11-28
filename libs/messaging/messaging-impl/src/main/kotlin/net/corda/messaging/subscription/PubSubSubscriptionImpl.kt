@@ -47,7 +47,7 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
         ThreadLooper(log, config, lifecycleCoordinatorFactory, "pubsub processing thread", ::runConsumeLoop)
 
     private val errorMsg = "PubSubConsumer failed to create and subscribe consumer for group ${config.group}, " +
-            "topic ${config.topic}."
+        "topic ${config.topic}."
 
     private val processorMeter = CordaMetrics.Metric.Messaging.MessageProcessorTime.builder()
         .withTag(CordaMetrics.Tag.MessagePatternType, MetricsConstants.PUB_SUB_PATTERN_TYPE)
@@ -99,17 +99,20 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
                 attempts = 0
             } catch (ex: CordaMessageAPIIntermittentException) {
                 log.warn(
-                    "$errorMsg Attempts: $attempts. Retrying.", ex
+                    "$errorMsg Attempts: $attempts. Retrying.",
+                    ex
                 )
             } catch (ex: CordaMessageAPIFatalException) {
                 log.error(
-                    "$errorMsg Fatal error occurred. Closing subscription.", ex
+                    "$errorMsg Fatal error occurred. Closing subscription.",
+                    ex
                 )
                 threadLooper.updateLifecycleStatus(LifecycleStatus.ERROR, errorMsg)
                 threadLooper.stopLoop()
             } catch (ex: Exception) {
                 log.error(
-                    "$errorMsg Attempts: $attempts. Unexpected error occurred. Closing subscription.", ex
+                    "$errorMsg Attempts: $attempts. Unexpected error occurred. Closing subscription.",
+                    ex
                 )
                 threadLooper.updateLifecycleStatus(LifecycleStatus.ERROR, errorMsg)
                 threadLooper.stopLoop()
@@ -136,7 +139,8 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
                 if (attempts <= config.processorRetries) {
                     log.warn(
                         "PubSubConsumer from group ${config.group} failed to read records from topic ${config.topic}." +
-                            " Attempts: $attempts.")
+                            " Attempts: $attempts."
+                    )
                 } else {
                     val message =
                         "PubSubConsumer from group ${config.group} failed to read records from topic ${config.topic}." +

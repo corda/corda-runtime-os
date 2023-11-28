@@ -25,7 +25,7 @@ class MerkleTreeFactoryImpl @Activate constructor(
             is MerkleTreeHashDigestProvider -> merkleTreeProvider.createTree(leaves, digest)
             else -> throw CordaRuntimeException(
                 "An instance of ${MerkleTreeHashDigestProvider::class.java.name} is required when creating a Merkle tree, but received " +
-                        "${digest.javaClass.name} instead"
+                    "${digest.javaClass.name} instead"
             )
         }
     }

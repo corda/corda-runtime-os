@@ -4,7 +4,7 @@ package net.corda.web.api
  * The WebServer interface represents a web server that can handle HTTP requests and responses.
  * It provides methods to start and stop the server, register and remove endpoints, and get the server's port.
  */
-interface WebServer{
+interface WebServer {
 
     /**
      * Port the server will listen on

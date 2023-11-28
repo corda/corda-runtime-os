@@ -1,16 +1,16 @@
 package net.corda.libs.configuration.endpoints.v1
 
-import net.corda.rest.RestResource
-import net.corda.rest.annotations.HttpGET
-import net.corda.rest.annotations.HttpPUT
-import net.corda.rest.annotations.RestPathParameter
-import net.corda.rest.annotations.ClientRequestBodyParameter
-import net.corda.rest.annotations.HttpRestResource
-import net.corda.rest.exception.ResourceNotFoundException
-import net.corda.rest.response.ResponseEntity
 import net.corda.libs.configuration.endpoints.v1.types.GetConfigResponse
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse
+import net.corda.rest.RestResource
+import net.corda.rest.annotations.ClientRequestBodyParameter
+import net.corda.rest.annotations.HttpGET
+import net.corda.rest.annotations.HttpPUT
+import net.corda.rest.annotations.HttpRestResource
+import net.corda.rest.annotations.RestPathParameter
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.response.ResponseEntity
 
 /** Rest operations for cluster configuration management. */
 @HttpRestResource(
@@ -40,14 +40,16 @@ interface ConfigRestResource : RestResource {
                 for which no configuration has yet been stored."""
     )
     fun updateConfig(
-        @ClientRequestBodyParameter(description = """
+        @ClientRequestBodyParameter(
+            description = """
             Details of the updated configuration. Includes:
             - `section`: the section of the configuration to be updated.
             - `config`: the updated configuration in JSON or HOCON format.
             - `schemaVersion`: the schema version of the configuration.
             - `version`: the version number used for optimistic locking. The request fails if this version does not 
                 match the version stored in the database for the corresponding section or -1 if this is a new section 
-                for which no configuration has yet been stored.""")
+                for which no configuration has yet been stored."""
+        )
         request: UpdateConfigParameters
     ): ResponseEntity<UpdateConfigResponse>
 
@@ -60,7 +62,7 @@ interface ConfigRestResource : RestResource {
         path = "{section}",
         title = "Get Configuration.",
         description = "This method returns the 'active' configuration for the given section, " +
-                "in both the 'raw' format and with defaults applied.",
+            "in both the 'raw' format and with defaults applied.",
         responseDescription = "The configuration for the given section"
     )
     fun get(

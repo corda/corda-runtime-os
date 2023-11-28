@@ -9,14 +9,17 @@ class LocalTimeTest {
     fun min() {
         serializeDeserializeAssert(LocalTime.MIN)
     }
+
     @Test
     fun max() {
         serializeDeserializeAssert(LocalTime.MAX)
     }
+
     @Test
     fun noon() {
         serializeDeserializeAssert(LocalTime.NOON)
     }
+
     @Test
     fun midnight() {
         serializeDeserializeAssert(LocalTime.MIDNIGHT)

@@ -1,5 +1,6 @@
 package net.corda.kotlin.reflect.types
 
+import kotlinx.metadata.jvm.JvmFieldSignature
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.util.Collections.singletonList
@@ -11,13 +12,12 @@ import kotlin.reflect.KType
 import kotlin.reflect.KTypeParameter
 import kotlin.reflect.KVisibility
 import kotlin.reflect.full.starProjectedType
-import kotlinx.metadata.jvm.JvmFieldSignature
 
 open class JavaProperty<T, V>(
     final override val javaField: Field,
     @JvmField
     protected val instanceClass: Class<*>
-): KProperty1<T, V>, KPropertyInternal<V> {
+) : KProperty1<T, V>, KPropertyInternal<V> {
     override val annotations: List<Annotation>
         get() = TODO("JavaProperty.annotations: Not yet implemented")
     override val isAbstract: Boolean
@@ -53,8 +53,7 @@ open class JavaProperty<T, V>(
     override val visibility: KVisibility?
         get() = getVisibility(javaField)
 
-    override fun asPropertyFor(instanceClass: Class<*>)
-        = JavaProperty<T, V>(javaField, instanceClass)
+    override fun asPropertyFor(instanceClass: Class<*>) = JavaProperty<T, V>(javaField, instanceClass)
 
     override val fieldSignature: JvmFieldSignature = javaField.jvmSignature
     override fun withJavaField(field: Field) = JavaProperty<T, V>(field, instanceClass)
@@ -65,7 +64,8 @@ open class JavaProperty<T, V>(
 
     @Suppress("LeakingThis")
     final override val getter: KProperty1.Getter<T, V> = Getter(
-        name = "<get-${javaField.name}>", property = this
+        name = "<get-${javaField.name}>",
+        property = this
     )
 
     override fun get(receiver: T): V {
@@ -91,7 +91,7 @@ open class JavaProperty<T, V>(
     override fun equals(other: Any?): Boolean {
         return when {
             other === this -> true
-            other !is JavaProperty<*,*> || other::class != this::class -> false
+            other !is JavaProperty<*, *> || other::class != this::class -> false
             else -> name == other.name && javaField == other.javaField
         }
     }

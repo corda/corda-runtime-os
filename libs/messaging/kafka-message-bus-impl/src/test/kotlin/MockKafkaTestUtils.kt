@@ -1,7 +1,5 @@
 package net.corda.messaging.kafka.subscription
 
-import java.nio.ByteBuffer
-import java.util.UUID
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.ChunkKey
 import net.corda.data.crypto.SecureHash
@@ -10,13 +8,14 @@ import org.apache.kafka.clients.consumer.ConsumerRecords
 import org.apache.kafka.clients.consumer.MockConsumer
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.apache.kafka.common.TopicPartition
+import java.nio.ByteBuffer
+import java.util.UUID
 
 fun createMockConsumerAndAddRecords(
     topic: String,
     numberOfRecords: Long,
     offsetResetStrategy: OffsetResetStrategy,
-):
-        Pair<MockConsumer<Any, Any>, TopicPartition> {
+): Pair<MockConsumer<Any, Any>, TopicPartition> {
     val topicPartition = TopicPartition(topic, 1)
     val partitions = mutableListOf(topicPartition)
     val partitionsBeginningMap = mutableMapOf<TopicPartition, Long>()
@@ -72,8 +71,10 @@ fun generateMockConsumerRecords(numberOfRecords: Long, topic: String, partition:
  * Generate ConsumerRecords for a list of records for a given [topic] and [partition]
  * @return ConsumerRecords
  */
-fun generateConsumerRecords(records: List<ConsumerRecord<Any, Any>>, topic: String, partition: Int): ConsumerRecords<Any,
-        Any> {
+fun generateConsumerRecords(records: List<ConsumerRecord<Any, Any>>, topic: String, partition: Int): ConsumerRecords<
+    Any,
+    Any
+    > {
     val topicPartition = TopicPartition(topic, partition)
     return ConsumerRecords(mutableMapOf(Pair(topicPartition, records)))
 }
@@ -92,8 +93,7 @@ fun generateMockChunkedConsumerRecordsList(
     partition: Int,
     startOffset: Long = 0,
     buildFinalChunk: Boolean = true,
-):
-        List<ConsumerRecord<Any, Any>> {
+): List<ConsumerRecord<Any, Any>> {
     val records = mutableListOf<ConsumerRecord<Any, Any>>()
     val id = UUID.randomUUID().toString()
     for (i in 1 until numberOfRecords - 1) {
@@ -101,12 +101,21 @@ fun generateMockChunkedConsumerRecordsList(
         records.add(record as ConsumerRecord<Any, Any>)
     }
     if (buildFinalChunk) {
-        records.add(ConsumerRecord(topic, partition, numberOfRecords, buildChunkKey(id, numberOfRecords), buildFinalChunk(id,
-            numberOfRecords)) as ConsumerRecord<Any, Any>)
+        records.add(
+            ConsumerRecord(
+                topic,
+                partition,
+                numberOfRecords,
+                buildChunkKey(id, numberOfRecords),
+                buildFinalChunk(
+                    id,
+                    numberOfRecords
+                )
+            ) as ConsumerRecord<Any, Any>
+        )
     }
     return records
 }
-
 
 fun generateChunkedCleanupRecords(
     numberOfRecords: Long,
@@ -152,4 +161,3 @@ fun buildChunkKey(id: String, partNumber: Long): ChunkKey {
         .setPartNumber(partNumber.toInt())
         .build()
 }
-

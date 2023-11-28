@@ -9,9 +9,9 @@ import net.corda.serialization.checkpoint.CheckpointInput
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.serialization.checkpoint.CheckpointOutput
 
-class KryoCheckpointSerializerAdapter<OBJ>(val checkpointSerializer : CheckpointInternalCustomSerializer<OBJ>) {
+class KryoCheckpointSerializerAdapter<OBJ>(val checkpointSerializer: CheckpointInternalCustomSerializer<OBJ>) {
 
-    private inner class KryoCheckpointOutput(val kryo: Kryo, val output: Output): CheckpointOutput {
+    private inner class KryoCheckpointOutput(val kryo: Kryo, val output: Output) : CheckpointOutput {
         override fun writeClassAndObject(obj: Any) {
             kryo.writeClassAndObject(output, obj)
         }
@@ -33,7 +33,7 @@ class KryoCheckpointSerializerAdapter<OBJ>(val checkpointSerializer : Checkpoint
         }
     }
 
-    private inner class KryoCheckpointInput(val kryo: Kryo, val input: Input): CheckpointInput {
+    private inner class KryoCheckpointInput(val kryo: Kryo, val input: Input) : CheckpointInput {
         override fun readClassAndObject(): Any {
             return kryo.readClassAndObject(input)
         }

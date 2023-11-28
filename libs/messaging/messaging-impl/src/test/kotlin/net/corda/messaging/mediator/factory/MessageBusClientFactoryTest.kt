@@ -21,7 +21,9 @@ class MessageBusClientFactoryTest {
     @BeforeEach
     fun beforeEach() {
         doReturn(cordaProducer).`when`(cordaProducerBuilder).createProducer(
-            any(), any(), anyOrNull()
+            any(),
+            any(),
+            anyOrNull()
         )
         messageBusClientFactory = MessageBusClientFactory(
             "MessageBusClient1",

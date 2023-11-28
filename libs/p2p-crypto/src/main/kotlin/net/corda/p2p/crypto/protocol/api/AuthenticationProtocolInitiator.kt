@@ -12,6 +12,8 @@ import net.corda.data.p2p.crypto.internal.InitiatorEncryptedExtensions
 import net.corda.data.p2p.crypto.internal.InitiatorHandshakeIdentity
 import net.corda.data.p2p.crypto.internal.InitiatorHandshakePayload
 import net.corda.data.p2p.crypto.internal.ResponderHandshakePayload
+import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
+import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.INITIATOR_SIG_PAD
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.MIN_PACKET_SIZE
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.PROTOCOL_VERSION
@@ -30,8 +32,6 @@ import java.security.PublicKey
 import java.security.spec.X509EncodedKeySpec
 import java.time.Instant
 import javax.crypto.AEADBadTagException
-import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
-import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
 
 /**
  * The initiator side of the session authentication protocol.
@@ -60,15 +60,17 @@ class AuthenticationProtocolInitiator(
     private val ourPublicKey: PublicKey,
     private val groupId: String,
     private val certificateCheckMode: CertificateCheckMode,
-    certificateValidatorFactory: (revocationCheckMode: RevocationCheckMode,
-                                  pemTrustStore: List<PemCertificate>,
-                                  checkRevocation: (RevocationCheckRequest) -> RevocationCheckResponse) -> CertificateValidator =
-    { revocationCheckMode, pemTrustStore, checkRevocation -> CertificateValidator(revocationCheckMode, pemTrustStore, checkRevocation) }
-): AuthenticationProtocol(certificateValidatorFactory) {
+    certificateValidatorFactory: (
+        revocationCheckMode: RevocationCheckMode,
+        pemTrustStore: List<PemCertificate>,
+        checkRevocation: (RevocationCheckRequest) -> RevocationCheckResponse
+    ) -> CertificateValidator =
+        { revocationCheckMode, pemTrustStore, checkRevocation -> CertificateValidator(revocationCheckMode, pemTrustStore, checkRevocation) }
+) : AuthenticationProtocol(certificateValidatorFactory) {
 
     init {
         require(supportedModes.isNotEmpty()) { "At least one supported mode must be provided." }
-        require(ourMaxMessageSize >= MIN_PACKET_SIZE ) { "max message size needs to be at least $MIN_PACKET_SIZE bytes." }
+        require(ourMaxMessageSize >= MIN_PACKET_SIZE) { "max message size needs to be at least $MIN_PACKET_SIZE bytes." }
     }
 
     private var step = Step.INIT
@@ -103,7 +105,7 @@ class AuthenticationProtocolInitiator(
         return transition(Step.SENT_MY_DH_KEY, Step.RECEIVED_PEER_DH_KEY, {}) {
             responderHelloMessage = responderHelloMsg
             initiatorHelloToResponderHelloBytes = initiatorHelloMessage!!.toByteBuffer().array() +
-                    responderHelloMessage!!.toByteBuffer().array()
+                responderHelloMessage!!.toByteBuffer().array()
             peerPublicDHKey = ephemeralKeyFactory.generatePublic(X509EncodedKeySpec(responderHelloMsg.responderPublicKey.array()))
             sharedDHSecret = keyAgreement.perform(myPrivateDHKey!!, peerPublicDHKey!!)
         }
@@ -123,12 +125,19 @@ class AuthenticationProtocolInitiator(
      *
      * @param signingFn a callback function that will be invoked for performing signing (with the stable identity key).
      */
-    fun generateOurHandshakeMessage(theirPublicKey: PublicKey,
-                                    ourCertificates: List<PemCertificate>?,
-                                    signingFn: (ByteArray) -> ByteArray): InitiatorHandshakeMessage {
+    fun generateOurHandshakeMessage(
+        theirPublicKey: PublicKey,
+        ourCertificates: List<PemCertificate>?,
+        signingFn: (ByteArray) -> ByteArray
+    ): InitiatorHandshakeMessage {
         return transition(Step.GENERATED_HANDSHAKE_SECRETS, Step.SENT_HANDSHAKE_MESSAGE, { initiatorHandshakeMessage!! }) {
-            val initiatorRecordHeader = CommonHeader(MessageType.INITIATOR_HANDSHAKE, PROTOCOL_VERSION,
-                sessionId, 1, Instant.now().toEpochMilli())
+            val initiatorRecordHeader = CommonHeader(
+                MessageType.INITIATOR_HANDSHAKE,
+                PROTOCOL_VERSION,
+                sessionId,
+                1,
+                Instant.now().toEpochMilli()
+            )
             val initiatorRecordHeaderBytes = initiatorRecordHeader.toByteBuffer().array()
             val responderPublicKeyHash = ByteBuffer.wrap(hash(theirPublicKey))
             val initiatorHandshakePayload = InitiatorHandshakePayload(
@@ -140,27 +149,40 @@ class AuthenticationProtocolInitiator(
 
             // calculate signature
             val initiatorHelloToInitiatorPublicKeyHash = initiatorHelloToResponderHelloBytes!! +
-                    initiatorHandshakePayload.toByteBuffer().array()
-            initiatorHandshakePayload.initiatorPartyVerify = ByteBuffer.wrap(signingFn(INITIATOR_SIG_PAD.toByteArray(Charsets.UTF_8) +
-                    messageDigest.hash(initiatorHelloToInitiatorPublicKeyHash)))
+                initiatorHandshakePayload.toByteBuffer().array()
+            initiatorHandshakePayload.initiatorPartyVerify = ByteBuffer.wrap(
+                signingFn(
+                    INITIATOR_SIG_PAD.toByteArray(Charsets.UTF_8) +
+                        messageDigest.hash(initiatorHelloToInitiatorPublicKeyHash)
+                )
+            )
 
             // calculate MAC
             val initiatorHelloToInitiatorPartyVerify = initiatorHelloToResponderHelloBytes!! +
-                    initiatorHandshakePayload.toByteBuffer().array()
-            initiatorHandshakePayload.initiatorFinished = ByteBuffer.wrap(hmac.calculateMac(sharedHandshakeSecrets!!.initiatorAuthKey,
-                messageDigest.hash(initiatorHelloToInitiatorPartyVerify)))
+                initiatorHandshakePayload.toByteBuffer().array()
+            initiatorHandshakePayload.initiatorFinished = ByteBuffer.wrap(
+                hmac.calculateMac(
+                    sharedHandshakeSecrets!!.initiatorAuthKey,
+                    messageDigest.hash(initiatorHelloToInitiatorPartyVerify)
+                )
+            )
             initiatorHandshakePayloadBytes = initiatorHandshakePayload.toByteBuffer().array()
 
             // encrypt payload
             val nonce = sharedHandshakeSecrets!!.initiatorNonce
-            val (initiatorEncryptedData, initiatorTag) = aesCipher.encryptWithAssociatedData(initiatorRecordHeaderBytes,
-                nonce, initiatorHandshakePayloadBytes!!, sharedHandshakeSecrets!!.initiatorEncryptionKey)
-            initiatorHandshakeMessage = InitiatorHandshakeMessage(initiatorRecordHeader,
-                ByteBuffer.wrap(initiatorEncryptedData), ByteBuffer.wrap(initiatorTag))
+            val (initiatorEncryptedData, initiatorTag) = aesCipher.encryptWithAssociatedData(
+                initiatorRecordHeaderBytes,
+                nonce,
+                initiatorHandshakePayloadBytes!!,
+                sharedHandshakeSecrets!!.initiatorEncryptionKey
+            )
+            initiatorHandshakeMessage = InitiatorHandshakeMessage(
+                initiatorRecordHeader,
+                ByteBuffer.wrap(initiatorEncryptedData), ByteBuffer.wrap(initiatorTag)
+            )
             initiatorHandshakeMessage!!
         }
     }
-
 
     /**
      * @throws InvalidHandshakeResponderKeyHash if the responder sent a key hash that does not match with the key we were expecting.
@@ -175,11 +197,13 @@ class AuthenticationProtocolInitiator(
         return transition(Step.SENT_HANDSHAKE_MESSAGE, Step.RECEIVED_HANDSHAKE_MESSAGE, {}) {
             val responderRecordHeader = responderHandshakeMessage.header.toByteBuffer().array()
             try {
-                responderHandshakePayloadBytes = aesCipher.decrypt(responderRecordHeader,
+                responderHandshakePayloadBytes = aesCipher.decrypt(
+                    responderRecordHeader,
                     responderHandshakeMessage.authTag.array(),
                     sharedHandshakeSecrets!!.responderNonce,
                     responderHandshakeMessage.encryptedData.array(),
-                    sharedHandshakeSecrets!!.responderEncryptionKey)
+                    sharedHandshakeSecrets!!.responderEncryptionKey
+                )
             } catch (e: AEADBadTagException) {
                 throw InvalidHandshakeMessageException()
             }
@@ -199,10 +223,12 @@ class AuthenticationProtocolInitiator(
 
             // validate signature
             val initiatorHelloToResponderParty = initiatorHelloToResponderHelloBytes!! + initiatorHandshakePayloadBytes!! +
-                    responderHandshakePayloadIncomplete.toByteBuffer().array()
-            val signatureWasValid = getSignature(theirSignatureSpec).verify(theirPublicKey,
+                responderHandshakePayloadIncomplete.toByteBuffer().array()
+            val signatureWasValid = getSignature(theirSignatureSpec).verify(
+                theirPublicKey,
                 RESPONDER_SIG_PAD.toByteArray(Charsets.UTF_8) + messageDigest.hash(initiatorHelloToResponderParty),
-                responderHandshakePayload.responderPartyVerify.array())
+                responderHandshakePayload.responderPartyVerify.array()
+            )
             if (!signatureWasValid) {
                 throw InvalidHandshakeMessageException()
             }
@@ -210,28 +236,36 @@ class AuthenticationProtocolInitiator(
 
             // validate MAC
             val initiatorHelloToResponderPartyVerify = initiatorHelloToResponderHelloBytes!! + initiatorHandshakePayloadBytes!! +
-                    responderHandshakePayloadIncomplete.toByteBuffer().array()
-            val calculatedResponderFinished = hmac.calculateMac(sharedHandshakeSecrets!!.responderAuthKey,
-                messageDigest.hash(initiatorHelloToResponderPartyVerify))
+                responderHandshakePayloadIncomplete.toByteBuffer().array()
+            val calculatedResponderFinished = hmac.calculateMac(
+                sharedHandshakeSecrets!!.responderAuthKey,
+                messageDigest.hash(initiatorHelloToResponderPartyVerify)
+            )
             if (!calculatedResponderFinished.contentEquals(responderHandshakePayload.responderFinished.array())) {
                 throw InvalidHandshakeMessageException()
             }
 
             responderHandshakePayload.responderEncryptedExtensions.maxMessageSize.apply {
                 if (this > ourMaxMessageSize) {
-                    throw InvalidMaxMessageSizeProposedError("Responder's proposed max message size ($this) " +
-                            "was larger than the one we proposed ($ourMaxMessageSize).")
+                    throw InvalidMaxMessageSizeProposedError(
+                        "Responder's proposed max message size ($this) " +
+                            "was larger than the one we proposed ($ourMaxMessageSize)."
+                    )
                 }
                 if (this < MIN_PACKET_SIZE) {
-                    throw InvalidMaxMessageSizeProposedError("Responder's proposed max message size ($this) " +
-                            "was smaller than the minimum allowed value ($MIN_PACKET_SIZE).")
+                    throw InvalidMaxMessageSizeProposedError(
+                        "Responder's proposed max message size ($this) " +
+                            "was smaller than the minimum allowed value ($MIN_PACKET_SIZE)."
+                    )
                 }
                 agreedMaxMessageSize = this
             }
             selectedMode = responderHandshakePayload.responderEncryptedExtensions.selectedMode
             if (!supportedModes.contains(selectedMode)) {
-                throw InvalidSelectedModeError("The mode selected by the responder ($selectedMode) " +
-                        "was not amongst the ones we proposed ($supportedModes).")
+                throw InvalidSelectedModeError(
+                    "The mode selected by the responder ($selectedMode) " +
+                        "was not amongst the ones we proposed ($supportedModes)."
+                )
             }
             validateCertificate(
                 certificateCheckMode,
@@ -254,13 +288,17 @@ class AuthenticationProtocolInitiator(
         return transition(Step.RECEIVED_HANDSHAKE_MESSAGE, Step.SESSION_ESTABLISHED, { session!! }) {
             val fullTranscript = initiatorHelloToResponderHelloBytes!! + initiatorHandshakePayloadBytes!! + responderHandshakePayloadBytes!!
             val sharedSessionSecrets = generateSessionSecrets(sharedDHSecret!!, fullTranscript)
-            session = when(selectedMode!!) {
-                ProtocolMode.AUTHENTICATION_ONLY -> AuthenticatedSession(sessionId, 2, sharedSessionSecrets.initiatorEncryptionKey,
-                    sharedSessionSecrets.responderEncryptionKey, agreedMaxMessageSize!!)
-                ProtocolMode.AUTHENTICATED_ENCRYPTION -> AuthenticatedEncryptionSession(sessionId, 2,
+            session = when (selectedMode!!) {
+                ProtocolMode.AUTHENTICATION_ONLY -> AuthenticatedSession(
+                    sessionId, 2, sharedSessionSecrets.initiatorEncryptionKey,
+                    sharedSessionSecrets.responderEncryptionKey, agreedMaxMessageSize!!
+                )
+                ProtocolMode.AUTHENTICATED_ENCRYPTION -> AuthenticatedEncryptionSession(
+                    sessionId, 2,
                     sharedSessionSecrets.initiatorEncryptionKey, sharedSessionSecrets.initiatorNonce,
                     sharedSessionSecrets.responderEncryptionKey, sharedSessionSecrets.responderNonce,
-                    agreedMaxMessageSize!!)
+                    agreedMaxMessageSize!!
+                )
             }
             session!!
         }
@@ -280,11 +318,10 @@ class AuthenticationProtocolInitiator(
         step = toStep
         return value
     }
-
 }
 
 /**
  * Thrown when the responder sends a key hash that does not match the one we requested.
  */
-class InvalidHandshakeResponderKeyHash: CordaRuntimeException("The responder sent a key hash that was different to the one we requested.")
-class InvalidSelectedModeError(msg: String): CordaRuntimeException(msg)
+class InvalidHandshakeResponderKeyHash : CordaRuntimeException("The responder sent a key hash that was different to the one we requested.")
+class InvalidSelectedModeError(msg: String) : CordaRuntimeException(msg)

@@ -58,7 +58,12 @@ class SyncRPCSubscriptionImplTest {
     )
 
     private val rpcSubscription = SyncRPCSubscriptionImpl(
-        rpcSubscriptionConfig, processor, lifecycleCoordinatorFactory, webServer, serializer, deserializer
+        rpcSubscriptionConfig,
+        processor,
+        lifecycleCoordinatorFactory,
+        webServer,
+        serializer,
+        deserializer
     )
 
     private fun randomBytes(): ByteArray {
@@ -118,7 +123,6 @@ class SyncRPCSubscriptionImplTest {
 
     @Test
     fun `when request deserialisation fails set result`() {
-
         val endpointCaptor = argumentCaptor<Endpoint>()
         doNothing().whenever(webServer).registerEndpoint(endpointCaptor.capture())
 
@@ -127,7 +131,12 @@ class SyncRPCSubscriptionImplTest {
         }
 
         SyncRPCSubscriptionImpl(
-            rpcSubscriptionConfig, processor, lifecycleCoordinatorFactory, webServer, serializer, invalidDeserializer
+            rpcSubscriptionConfig,
+            processor,
+            lifecycleCoordinatorFactory,
+            webServer,
+            serializer,
+            invalidDeserializer
         ).start()
 
         assertThat(endpointCaptor.allValues.size).isEqualTo(1)
@@ -140,17 +149,21 @@ class SyncRPCSubscriptionImplTest {
 
     @Test
     fun `when request process fails set result`() {
-
         val endpointCaptor = argumentCaptor<Endpoint>()
         doNothing().whenever(webServer).registerEndpoint(endpointCaptor.capture())
 
         val ex = Exception("Foobar")
         val invalidProcessor = mock<SyncRPCProcessor<String, String>> {
-            on { process(requestData) }  doAnswer { throw ex }
+            on { process(requestData) } doAnswer { throw ex }
         }
 
         SyncRPCSubscriptionImpl(
-            rpcSubscriptionConfig, invalidProcessor, lifecycleCoordinatorFactory, webServer, serializer, deserializer
+            rpcSubscriptionConfig,
+            invalidProcessor,
+            lifecycleCoordinatorFactory,
+            webServer,
+            serializer,
+            deserializer
         ).start()
 
         assertThat(endpointCaptor.allValues.size).isEqualTo(1)
@@ -163,7 +176,6 @@ class SyncRPCSubscriptionImplTest {
 
     @Test
     fun `when response cannot be serialised set result`() {
-
         val endpointCaptor = argumentCaptor<Endpoint>()
         doNothing().whenever(webServer).registerEndpoint(endpointCaptor.capture())
 
@@ -172,7 +184,12 @@ class SyncRPCSubscriptionImplTest {
         }
 
         SyncRPCSubscriptionImpl(
-            rpcSubscriptionConfig, processor, lifecycleCoordinatorFactory, webServer, incompleteSerialiser, deserializer
+            rpcSubscriptionConfig,
+            processor,
+            lifecycleCoordinatorFactory,
+            webServer,
+            incompleteSerialiser,
+            deserializer
         ).start()
 
         assertThat(endpointCaptor.allValues.size).isEqualTo(1)
@@ -182,5 +199,4 @@ class SyncRPCSubscriptionImplTest {
 
         verify(context).status(ResponseCode.INTERNAL_SERVER_ERROR)
     }
-
 }

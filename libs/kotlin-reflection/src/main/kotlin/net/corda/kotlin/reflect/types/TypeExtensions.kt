@@ -1,7 +1,19 @@
 @file:JvmName("TypeExtensions")
 @file:Suppress("TooManyFunctions")
+
 package net.corda.kotlin.reflect.types
 
+import kotlinx.metadata.KmFunction
+import kotlinx.metadata.KmProperty
+import kotlinx.metadata.KmValueParameter
+import kotlinx.metadata.Modality
+import kotlinx.metadata.Visibility
+import kotlinx.metadata.isNullable
+import kotlinx.metadata.isVar
+import kotlinx.metadata.jvm.JvmFieldSignature
+import kotlinx.metadata.jvm.JvmMethodSignature
+import org.objectweb.asm.Opcodes.ACC_SYNTHETIC
+import org.objectweb.asm.Type
 import java.lang.reflect.Field
 import java.lang.reflect.Member
 import java.lang.reflect.Method
@@ -28,20 +40,9 @@ import kotlin.reflect.full.starProjectedType
 import kotlin.reflect.full.withNullability
 import kotlin.reflect.jvm.javaGetter
 import kotlin.reflect.jvm.javaMethod
-import kotlinx.metadata.KmFunction
-import kotlinx.metadata.KmProperty
-import kotlinx.metadata.KmValueParameter
-import kotlinx.metadata.Modality
-import kotlinx.metadata.Visibility
-import kotlinx.metadata.isNullable
-import kotlinx.metadata.isVar
-import kotlinx.metadata.jvm.JvmFieldSignature
-import kotlinx.metadata.jvm.JvmMethodSignature
-import org.objectweb.asm.Opcodes.ACC_SYNTHETIC
-import org.objectweb.asm.Type
 
 fun getVisibility(visibility: Visibility): KVisibility? {
-    return when(visibility) {
+    return when (visibility) {
         Visibility.PUBLIC -> KVisibility.PUBLIC
         Visibility.PRIVATE -> KVisibility.PRIVATE
         Visibility.PROTECTED -> KVisibility.PROTECTED
@@ -117,8 +118,8 @@ fun isFinal(member1: Member?, member2: Member?, modality: Modality): Boolean {
 }
 
 fun isConst(field: Field): Boolean {
-    return (field.modifiers and (STATIC or FINAL)) == (STATIC or FINAL)
-            && (field.type.isPrimitive || field.type === String::class.java)
+    return (field.modifiers and (STATIC or FINAL)) == (STATIC or FINAL) &&
+        (field.type.isPrimitive || field.type === String::class.java)
 }
 
 fun isOpen(member: Member): Boolean {
@@ -133,18 +134,18 @@ fun isOpen(member: Member?, modality: Modality): Boolean {
     }
 }
 
-fun isInheritable(callable: KCallable<*>): Boolean
-        = callable.visibility != null && callable.visibility != KVisibility.PRIVATE
-fun isInheritable(member: Member): Boolean
-        = (member.modifiers and (PRIVATE or ACC_SYNTHETIC)) == 0
+fun isInheritable(callable: KCallable<*>): Boolean =
+    callable.visibility != null && callable.visibility != KVisibility.PRIVATE
+fun isInheritable(member: Member): Boolean =
+    (member.modifiers and (PRIVATE or ACC_SYNTHETIC)) == 0
 
-fun isInheritableMember(member: Member) : Boolean
-        = (member.modifiers and (STATIC or PRIVATE or ACC_SYNTHETIC)) == 0
+fun isInheritableMember(member: Member): Boolean =
+    (member.modifiers and (STATIC or PRIVATE or ACC_SYNTHETIC)) == 0
 
-fun isStatic(member: Member): Boolean
-        = (member.modifiers and (STATIC or ACC_SYNTHETIC)) == STATIC
-fun isMember(member: Member): Boolean
-        = (member.modifiers and (STATIC or ACC_SYNTHETIC)) == 0
+fun isStatic(member: Member): Boolean =
+    (member.modifiers and (STATIC or ACC_SYNTHETIC)) == STATIC
+fun isMember(member: Member): Boolean =
+    (member.modifiers and (STATIC or ACC_SYNTHETIC)) == 0
 
 fun isExtension(property: KmProperty): Boolean = property.receiverParameterType != null
 fun isExtension(function: KmFunction): Boolean = function.receiverParameterType != null
@@ -162,7 +163,7 @@ fun JvmMethodSignature.toSignature(classLoader: ClassLoader): MemberSignature {
 }
 
 private fun Type.toClass(classLoader: ClassLoader): Class<*> {
-    return when(sort) {
+    return when (sort) {
         Type.VOID -> Void.TYPE
         Type.INT -> Integer.TYPE
         Type.BOOLEAN -> java.lang.Boolean.TYPE
@@ -179,8 +180,8 @@ private fun Type.toClass(classLoader: ClassLoader): Class<*> {
     }
 }
 
-fun Method.toSignature(): MemberSignature
-    = MemberSignature(name, returnType, parameterTypes)
+fun Method.toSignature(): MemberSignature =
+    MemberSignature(name, returnType, parameterTypes)
 
 private val NO_SUCH_MEMBER = MemberSignature("", Nothing::class.java, emptyArray())
 
@@ -202,14 +203,16 @@ fun Method.createParameters(
 ): List<KParameter> {
     val kParameters = mutableListOf<KParameter>()
     if (isMember(this)) {
-        kParameters.add(KotlinParameter(
-            name = null,
-            type = instanceClass.createKType(isNullable = false),
-            index = 0,
-            kind = INSTANCE,
-            isVararg = false,
-            isOptional = false
-        ))
+        kParameters.add(
+            KotlinParameter(
+                name = null,
+                type = instanceClass.createKType(isNullable = false),
+                index = 0,
+                kind = INSTANCE,
+                isVararg = false,
+                isOptional = false
+            )
+        )
     }
     val offset = kParameters.size
     var valueIdx = kmValueParameters.size - parameterCount
@@ -299,15 +302,15 @@ val Class<*>.jvmSuperClasses: MutableList<Class<*>>
 
 val Class<*>.declaredMemberFields: MutableMap<JvmFieldSignature, Field>
     get() = declaredFields.filter(::isMember)
-                .associateByTo(HashMap(), Field::jvmSignature)
+        .associateByTo(HashMap(), Field::jvmSignature)
 
 val Class<*>.declaredMemberMethods: MutableMap<MemberSignature, Method>
     get() = declaredMethods.filter(::isMember)
-                .associateByTo(MemberOverrideMap(), Method::toSignature)
+        .associateByTo(MemberOverrideMap(), Method::toSignature)
 
 val Class<*>.memberMethods: MutableMap<MemberSignature, Method>
     get() = methods.filter(::isMember)
-                .associateByTo(MemberOverrideMap(), Method::toSignature)
+        .associateByTo(MemberOverrideMap(), Method::toSignature)
 
 internal fun <E> MutableCollection<E>.extractFirstBy(predicate: Predicate<E>): E? {
     val iter = iterator()

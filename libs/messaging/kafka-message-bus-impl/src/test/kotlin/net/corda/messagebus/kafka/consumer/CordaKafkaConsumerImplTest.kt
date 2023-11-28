@@ -88,8 +88,10 @@ class CordaKafkaConsumerImplTest {
     }
 
     private fun createConsumer(consumerParam: Consumer<Any, Any>, listenerParam: CordaConsumerRebalanceListener? = listener):
-            CordaKafkaConsumerImpl<String,
-            String> {
+        CordaKafkaConsumerImpl<
+            String,
+            String
+            > {
         return CordaKafkaConsumerImpl(
             consumerConfig,
             consumerParam,
@@ -125,11 +127,13 @@ class CordaKafkaConsumerImplTest {
     }
 
     @ParameterizedTest(name = "[{index}]: {0}")
-    @ValueSource(classes = [
-        ArithmeticException::class, AuthorizationException::class, AuthenticationException::class,
-        IllegalArgumentException::class, IllegalStateException::class,
-        FencedInstanceIdException::class, InconsistentGroupProtocolException::class,
-    ])
+    @ValueSource(
+        classes = [
+            ArithmeticException::class, AuthorizationException::class, AuthenticationException::class,
+            IllegalArgumentException::class, IllegalStateException::class,
+            FencedInstanceIdException::class, InconsistentGroupProtocolException::class,
+        ]
+    )
     fun testPollFatal(exceptionClass: Class<out Throwable>) {
         consumer = mock()
         cordaKafkaConsumer = createConsumer(consumer)
@@ -223,7 +227,6 @@ class CordaKafkaConsumerImplTest {
         verify(consumer, times(1)).commitSync(anyMap())
     }
 
-
     @Test
     fun testSubscribe() {
         consumer = mock()
@@ -249,7 +252,8 @@ class CordaKafkaConsumerImplTest {
 
         doThrow(IllegalArgumentException())
             .whenever(consumer).subscribe(
-                Mockito.anyList(), Mockito.any(ConsumerRebalanceListener::class.java)
+                Mockito.anyList(),
+                Mockito.any(ConsumerRebalanceListener::class.java)
             )
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
             cordaKafkaConsumer.subscribe(eventTopic)
@@ -262,8 +266,8 @@ class CordaKafkaConsumerImplTest {
         val offsetCommit = 5L
         commitOffsetForConsumer(offsetCommit)
 
-        //Reset fetch position to the last committed record
-        //Does not matter what reset strategy is passed here
+        // Reset fetch position to the last committed record
+        // Does not matter what reset strategy is passed here
         cordaKafkaConsumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.NONE)
 
         val positionAfterReset = consumer.position(partition)
@@ -272,7 +276,7 @@ class CordaKafkaConsumerImplTest {
 
     @Test
     fun testResetToLastCommittedPositionsStrategyLatest() {
-        //Reset fetch position to the last committed record
+        // Reset fetch position to the last committed record
         cordaKafkaConsumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.LATEST)
 
         val positionAfterReset = consumer.position(partition)
@@ -281,7 +285,7 @@ class CordaKafkaConsumerImplTest {
 
     @Test
     fun testResetToLastCommittedPositionsStrategyEarliest() {
-        //Reset fetch position to the last committed record
+        // Reset fetch position to the last committed record
         cordaKafkaConsumer.resetToLastCommittedPositions(CordaOffsetResetStrategy.EARLIEST)
 
         val positionAfterReset = consumer.position(partition)
@@ -345,13 +349,15 @@ class CordaKafkaConsumerImplTest {
         cordaKafkaConsumer = createConsumer(consumer)
 
         doThrow(IllegalStateException()).whenever(consumer).seek(
-            TopicPartition(consumerConfig.topicPrefix + "null", 0), 0
+            TopicPartition(consumerConfig.topicPrefix + "null", 0),
+            0
         )
         assertThatExceptionOfType(CordaMessageAPIFatalException::class.java).isThrownBy {
             cordaKafkaConsumer.seek(CordaTopicPartition("null", 0), 0)
         }
         verify(consumer, times(1)).seek(
-            TopicPartition(consumerConfig.topicPrefix + "null", 0), 0
+            TopicPartition(consumerConfig.topicPrefix + "null", 0),
+            0
         )
     }
 
@@ -459,8 +465,11 @@ class CordaKafkaConsumerImplTest {
         val beforeChunkedRecords = generateMockConsumerRecords(2, eventTopic, 1, 0)
         val chunkedRecords = generateMockChunkedConsumerRecordsList(3, eventTopic, 1, 2)
         val afterChunkedRecords = generateMockConsumerRecords(2, eventTopic, 1, 5)
-        val consumerRecords = generateConsumerRecords(beforeChunkedRecords.plus(chunkedRecords).plus(afterChunkedRecords),
-            eventTopic, 1)
+        val consumerRecords = generateConsumerRecords(
+            beforeChunkedRecords.plus(chunkedRecords).plus(afterChunkedRecords),
+            eventTopic,
+            1
+        )
 
         consumer = mock()
         doReturn(consumerRecords).whenever(consumer).poll(Mockito.any(Duration::class.java))
@@ -477,8 +486,11 @@ class CordaKafkaConsumerImplTest {
         val beforeChunkedRecords = generateMockConsumerRecords(2, eventTopic, 1, 0)
         val chunkedRecords = generateMockChunkedConsumerRecordsList(3, eventTopic, 1, 2)
         val afterChunkedRecords = generateMockConsumerRecords(2, eventTopic, 1, 5)
-        val consumerRecords = generateConsumerRecords(beforeChunkedRecords.plus(chunkedRecords).plus(afterChunkedRecords),
-            eventTopic, 1)
+        val consumerRecords = generateConsumerRecords(
+            beforeChunkedRecords.plus(chunkedRecords).plus(afterChunkedRecords),
+            eventTopic,
+            1
+        )
 
         consumer = mock()
         whenever(chunkDeserializerService.assembleChunks(any<Map<ChunkKey, Chunk>>())).thenReturn(null)
@@ -497,8 +509,11 @@ class CordaKafkaConsumerImplTest {
         val beforeChunkedRecords = generateMockConsumerRecords(2, eventTopic, 1, 0)
         val chunkedRecords = generateMockChunkedConsumerRecordsList(3, eventTopic, 1, 2, false)
         val afterChunkedRecords = generateMockConsumerRecords(2, eventTopic, 1, 5)
-        val consumerRecords = generateConsumerRecords(beforeChunkedRecords.plus(chunkedRecords).plus(afterChunkedRecords),
-            eventTopic, 1)
+        val consumerRecords = generateConsumerRecords(
+            beforeChunkedRecords.plus(chunkedRecords).plus(afterChunkedRecords),
+            eventTopic,
+            1
+        )
 
         consumer = mock()
         doReturn(consumerRecords).whenever(consumer).poll(Mockito.any(Duration::class.java))
@@ -515,10 +530,16 @@ class CordaKafkaConsumerImplTest {
         val beforeChunkedRecords = generateMockConsumerRecords(2, eventTopic, 1, 0)
         val chunkedRecords = generateMockChunkedConsumerRecordsList(3, eventTopic, 1, 2)
         val afterChunkedRecords = generateMockConsumerRecords(2, eventTopic, 1, 5)
-        val firstConsumerRecords = generateConsumerRecords(beforeChunkedRecords.plus(chunkedRecords.first()),
-            eventTopic, 1)
-        val secondConsumerRecords = generateConsumerRecords(chunkedRecords.minus(chunkedRecords.first()).plus(afterChunkedRecords),
-            eventTopic, 1)
+        val firstConsumerRecords = generateConsumerRecords(
+            beforeChunkedRecords.plus(chunkedRecords.first()),
+            eventTopic,
+            1
+        )
+        val secondConsumerRecords = generateConsumerRecords(
+            chunkedRecords.minus(chunkedRecords.first()).plus(afterChunkedRecords),
+            eventTopic,
+            1
+        )
 
         consumer = mock()
 
@@ -564,10 +585,16 @@ class CordaKafkaConsumerImplTest {
         val beforeChunkedRecords = generateMockConsumerRecords(2, eventTopic, 1, 0)
         val chunkedRecords = generateMockChunkedConsumerRecordsList(3, eventTopic, 1, 2)
         val afterChunkedRecords = generateMockConsumerRecords(2, eventTopic, 1, 5)
-        val firstConsumerRecords = generateConsumerRecords(beforeChunkedRecords.plus(chunkedRecords.first()),
-            eventTopic, 1)
-        val secondConsumerRecords = generateConsumerRecords(chunkedRecords.minus(chunkedRecords.first()).plus(afterChunkedRecords),
-            eventTopic, 1)
+        val firstConsumerRecords = generateConsumerRecords(
+            beforeChunkedRecords.plus(chunkedRecords.first()),
+            eventTopic,
+            1
+        )
+        val secondConsumerRecords = generateConsumerRecords(
+            chunkedRecords.minus(chunkedRecords.first()).plus(afterChunkedRecords),
+            eventTopic,
+            1
+        )
 
         consumer = mock()
 
@@ -616,7 +643,7 @@ class CordaKafkaConsumerImplTest {
             .plus(afterChunkedRecordsPartition2)
 
         val firstConsumerRecords = generateConsumerRecords(firstConsumerRecordsList, eventTopic, 1)
-        val secondConsumerRecords = generateConsumerRecords(secondConsumerRecordsList,eventTopic, 1)
+        val secondConsumerRecords = generateConsumerRecords(secondConsumerRecordsList, eventTopic, 1)
 
         consumer = mock()
 
@@ -668,11 +695,11 @@ class CordaKafkaConsumerImplTest {
         assertThat(positionBeforePoll).isEqualTo(0)
         consumer.poll(Duration.ZERO)
 
-        //get current position after poll for this partition/topic
+        // get current position after poll for this partition/topic
         val positionAfterPoll = consumer.position(partition)
         assertThat(positionAfterPoll).isEqualTo(numberOfRecords)
 
-        //Commit offset for half the records = offset of 5.
+        // Commit offset for half the records = offset of 5.
         val currentOffsets = mutableMapOf<TopicPartition, OffsetAndMetadata>()
         currentOffsets[partition] = OffsetAndMetadata(offsetCommit, "metaData")
         consumer.commitSync(currentOffsets)

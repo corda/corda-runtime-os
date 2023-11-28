@@ -33,7 +33,8 @@ class JavalinServer(
     ) : this(
         coordinatorFactory,
         ::createJavalin,
-        platformInfoProvider)
+        platformInfoProvider
+    )
 
     companion object {
         val log: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -68,29 +69,29 @@ class JavalinServer(
 
     private fun startServer(port: Int) {
         // Ensure the server can only be started once at a time.
-            log.info("Starting Worker Web Server on port: $port")
-            server = javalinFactory()
-            endpoints.forEach {
-                registerEndpointInternal(it)
-            }
+        log.info("Starting Worker Web Server on port: $port")
+        server = javalinFactory()
+        endpoints.forEach {
+            registerEndpointInternal(it)
+        }
 
-            JavalinStarter.startServer(
-                "RPC Server",
-                server!!,
-                port,
-            )
+        JavalinStarter.startServer(
+            "RPC Server",
+            server!!,
+            port,
+        )
 
-            server?.events {
-                it.handlerAdded { meta ->
-                    log.info("Handler added to webserver: $meta")
-                }
+        server?.events {
+            it.handlerAdded { meta ->
+                log.info("Handler added to webserver: $meta")
             }
-            server?.exception(NotFoundResponse::class.java) { _, ctx ->
-                log.warn("Received request on non-existing endpoint: ${ctx.req.requestURI}")
-                ctx.result("404 Not Found")
-                ctx.status(404)
-            }
-            coordinator.updateStatus(LifecycleStatus.UP)
+        }
+        server?.exception(NotFoundResponse::class.java) { _, ctx ->
+            log.warn("Received request on non-existing endpoint: ${ctx.req.requestURI}")
+            ctx.result("404 Not Found")
+            ctx.status(404)
+        }
+        coordinator.updateStatus(LifecycleStatus.UP)
     }
 
     private fun stopServer() {
@@ -119,8 +120,9 @@ class JavalinServer(
 
     override fun registerEndpoint(endpoint: Endpoint) {
         serverLock.withLock {
-            if (endpoints.any { it.path == endpoint.path && it.methodType == endpoint.methodType })
+            if (endpoints.any { it.path == endpoint.path && it.methodType == endpoint.methodType }) {
                 throw IllegalArgumentException("Endpoint with path ${endpoint.path} and method ${endpoint.methodType} already exists.")
+            }
             // register immediately when the server has been started
             if (null != server) registerEndpointInternal(endpoint)
             // record the path in case we need to register when it's already started

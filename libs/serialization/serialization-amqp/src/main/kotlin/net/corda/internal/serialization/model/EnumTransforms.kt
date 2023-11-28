@@ -5,7 +5,7 @@ import net.corda.internal.serialization.amqp.RenameSchemaTransform
 import net.corda.internal.serialization.amqp.TransformTypes
 import net.corda.internal.serialization.amqp.TransformsMap
 
-class InvalidEnumTransformsException(message: String): Exception(message)
+class InvalidEnumTransformsException(message: String) : Exception(message)
 
 /**
  * Contains all of the transforms that have been defined against an enum.
@@ -15,9 +15,10 @@ class InvalidEnumTransformsException(message: String): Exception(message)
  * @param source The [TransformsMap] from which this data was derived.
  */
 data class EnumTransforms(
-        val defaults: Map<String, String>,
-        val renames: Map<String, String>,
-        val source: TransformsMap) {
+    val defaults: Map<String, String>,
+    val renames: Map<String, String>,
+    val source: TransformsMap
+) {
 
     val size: Int get() = defaults.size + renames.size
 
@@ -27,21 +28,27 @@ data class EnumTransforms(
          */
         fun build(source: TransformsMap, constants: Map<String, Int>): EnumTransforms {
             val defaultTransforms = source[TransformTypes.EnumDefault]?.asSequence()
-                    ?.filterIsInstance<EnumDefaultSchemaTransform>()
-                    ?.toList() ?: emptyList()
+                ?.filterIsInstance<EnumDefaultSchemaTransform>()
+                ?.toList() ?: emptyList()
 
             val renameTransforms = source[TransformTypes.Rename]?.asSequence()
-                    ?.filterIsInstance<RenameSchemaTransform>()
-                    ?.toList() ?: emptyList()
+                ?.filterIsInstance<RenameSchemaTransform>()
+                ?.toList() ?: emptyList()
 
             // We have to do this validation here, because duplicate keys are discarded in EnumTransforms.
             renameTransforms.groupingBy { it.from }.eachCount().forEach { from, count ->
-                if (count > 1) throw InvalidEnumTransformsException(
-                        "There are multiple transformations from $from, which is not allowed")
+                if (count > 1) {
+                    throw InvalidEnumTransformsException(
+                        "There are multiple transformations from $from, which is not allowed"
+                    )
+                }
             }
             renameTransforms.groupingBy { it.to }.eachCount().forEach { to, count ->
-                if (count > 1) throw InvalidEnumTransformsException(
-                        "There are multiple transformations to $to, which is not allowed")
+                if (count > 1) {
+                    throw InvalidEnumTransformsException(
+                        "There are multiple transformations to $to, which is not allowed"
+                    )
+                }
             }
 
             val defaults = defaultTransforms.associate { transform -> transform.new to transform.old }
@@ -117,7 +124,8 @@ data class EnumTransforms(
         for ((chainStart, chainEnd) in chainStartsToEnds) {
             if (chainEnd !in constants) {
                 throw InvalidEnumTransformsException(
-                        "Rename chain from $chainStart to $chainEnd does not end with a known constant in ${constants.keys}")
+                    "Rename chain from $chainStart to $chainEnd does not end with a known constant in ${constants.keys}"
+                )
             }
         }
     }
@@ -130,12 +138,12 @@ data class EnumTransforms(
             requireThat(constantsBeforeRenaming.contains(new)) { "Unknown enum constant $new" }
             requireThat(constantsBeforeRenaming.contains(old)) {
                 "Enum extension defaults must be to a valid constant: $new -> $old. $old " +
-                        "doesn't exist in constant set $constantsBeforeRenaming"
+                    "doesn't exist in constant set $constantsBeforeRenaming"
             }
             requireThat(old != new) { "Enum extension $new cannot default to itself" }
             requireThat(constantsBeforeRenaming[old]!! < constantsBeforeRenaming[new]!!) {
                 "Enum extensions must default to older constants. $new[${constantsBeforeRenaming[new]}] " +
-                        "defaults to $old[${constantsBeforeRenaming[old]}] which is greater"
+                    "defaults to $old[${constantsBeforeRenaming[old]}] which is greater"
             }
         }
     }

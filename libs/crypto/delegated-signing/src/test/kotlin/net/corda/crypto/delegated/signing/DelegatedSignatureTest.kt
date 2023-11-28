@@ -100,6 +100,7 @@ class DelegatedSignatureTest {
     fun setUp() {
         Security.addProvider(SignatureTestProvider())
     }
+
     @AfterEach
     fun cleanUp() {
         Security.removeProvider(SignatureTestProvider::class.java.canonicalName)
@@ -111,7 +112,6 @@ class DelegatedSignatureTest {
         val privateKey = mock<PrivateKey>()
 
         assertThrows<IllegalArgumentException> {
-
             signature.initSign(privateKey)
         }
     }

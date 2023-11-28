@@ -67,7 +67,6 @@ class MemberInfoTest {
         private const val KEY = "12345"
         private val key = Mockito.mock(PublicKey::class.java)
 
-
         private val clock = TestClock(Instant.ofEpochSecond(100))
         private val modifiedTime = clock.instant()
         private val endpointInfoFactory: EndpointInfoFactory = mock {

@@ -81,7 +81,7 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
 
         val reporters = mutableListOf<Reporter<Span>>()
 
-        //Establish zipkin connection iff url host is provided and create respective reporter
+        // Establish zipkin connection iff url host is provided and create respective reporter
         if (zipkinHost != null) {
             val zipkinUrl = "$zipkinHost/api/v2/spans"
             val spanAsyncReporter =
@@ -166,7 +166,9 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
     }
 
     override fun <R> nextSpan(
-        operationName: String, record: EventLogRecord<*, *>, processingBlock: TraceContext.() -> R
+        operationName: String,
+        record: EventLogRecord<*, *>,
+        processingBlock: TraceContext.() -> R
     ): R {
         return recordTracing.nextSpan(record).doTrace(operationName) {
             val ctx = BraveTraceContext(tracer, this)
@@ -175,7 +177,8 @@ internal class BraveTracingService(serviceName: String, zipkinHost: String?, sam
     }
 
     override fun nextSpan(
-        operationName: String, headers: List<Pair<String, String>>
+        operationName: String,
+        headers: List<Pair<String, String>>
     ): TraceContext {
         val span = recordTracing.nextSpan(headers).name(operationName).start()
         return BraveTraceContext(tracer, span)

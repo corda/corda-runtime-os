@@ -21,7 +21,7 @@ class SerializeAndReturnSchemaTest {
     // tests rather than by itself but for those to be reliable this also needs
     // testing
     @Test
-	fun getSchema() {
+    fun getSchema() {
         @CordaSerializable
         data class C(val a: Int, val b: Int)
 

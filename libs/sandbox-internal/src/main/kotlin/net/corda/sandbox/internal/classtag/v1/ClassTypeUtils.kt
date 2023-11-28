@@ -20,7 +20,7 @@ internal fun classTypeFromString(string: String): ClassType {
 
 /** Converts [ClassType] into a [String]. */
 internal fun classTypeToString(classType: ClassType): String {
-    return when(classType) {
+    return when (classType) {
         ClassType.CpkSandboxClass -> CPK_SANDBOX_CLASS
         ClassType.PublicSandboxClass -> PUBLIC_SANDBOX_CLASS
         ClassType.NonBundleClass -> NON_BUNDLE_CLASS

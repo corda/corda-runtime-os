@@ -26,7 +26,6 @@ import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.spec.GOST3410ParameterSpec
 import org.bouncycastle.pqc.jcajce.spec.SPHINCS256KeyGenParameterSpec
 
-
 /**
  * OID of the EdDSA 25519PH Curve.
  * The OID taken from https://tools.ietf.org/html/draft-ietf-curdle-pkix-00
@@ -147,7 +146,8 @@ val GOST3410_GOST3411_TEMPLATE = KeySchemeTemplate(
     codeName = GOST3410_GOST3411_CODE_NAME,
     algorithmOIDs = listOf(
         AlgorithmIdentifier(
-            CryptoProObjectIdentifiers.gostR3410_94, DLSequence(
+            CryptoProObjectIdentifiers.gostR3410_94,
+            DLSequence(
                 arrayOf(
                     CryptoProObjectIdentifiers.gostR3410_94_CryptoPro_A,
                     CryptoProObjectIdentifiers.gostR3411_94_CryptoProParamSet

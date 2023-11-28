@@ -43,6 +43,7 @@ internal class DBCordaConsumerImplTest {
         private val serializedValue = "value".toByteArray()
         private const val serializedHeader = "{}"
         private val invalidSerializedValue = "invalid_value".toByteArray()
+
         // Null inputs to deserializer are converted to "" by the @NotNull decorator
         private val nullValue = "".toByteArray()
 
@@ -80,8 +81,8 @@ internal class DBCordaConsumerImplTest {
         startOffset: Long = 0L,
         value: ByteArray? = serializedValue,
         txState: TransactionState = TransactionState.COMMITTED,
-        count: Int = 1): List<TopicRecordEntry>
-    {
+        count: Int = 1
+    ): List<TopicRecordEntry> {
         val timestamp = Instant.parse("2022-01-01T00:00:00.00Z")
 
         return (0 until count).mapIndexed { index, _ ->
@@ -324,8 +325,8 @@ internal class DBCordaConsumerImplTest {
         val expectedRecords = listOf(
             CordaConsumerRecord(defaultTopic, 0, 0, "key", "value", timestamp.toEpochMilli()),
             CordaConsumerRecord(defaultTopic, 0, 1, "key", "value", timestamp.toEpochMilli()),
-            CordaConsumerRecord(defaultTopic, 0, 2, "key", value=null, timestamp.toEpochMilli()),
-            CordaConsumerRecord(defaultTopic, 0, 3, "key", value=null, timestamp.toEpochMilli()),
+            CordaConsumerRecord(defaultTopic, 0, 2, "key", value = null, timestamp.toEpochMilli()),
+            CordaConsumerRecord(defaultTopic, 0, 3, "key", value = null, timestamp.toEpochMilli()),
         )
 
         whenever(dbAccess.getMaxCommittedPositions(any(), any())).thenAnswer { mapOf(partition0 to 0L) }
@@ -345,8 +346,8 @@ internal class DBCordaConsumerImplTest {
         val timestamp = Instant.parse("2022-01-01T00:00:00.00Z")
 
         val recordsToReturn = getTopicRecords(startOffset = 0, count = 2) +
-                            getTopicRecords(startOffset = 2, txState = TransactionState.ABORTED, count = 2) +
-                            getTopicRecords(startOffset = 4, count = 2)
+            getTopicRecords(startOffset = 2, txState = TransactionState.ABORTED, count = 2) +
+            getTopicRecords(startOffset = 4, count = 2)
 
         val expectedRecords = listOf(
             CordaConsumerRecord(defaultTopic, 0, 0, "key", "value", timestamp.toEpochMilli()),

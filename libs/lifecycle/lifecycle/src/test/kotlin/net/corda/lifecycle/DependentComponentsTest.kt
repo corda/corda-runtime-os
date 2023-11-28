@@ -19,11 +19,11 @@ class DependentComponentsTest {
 
     val expectedDependentComponentNames = setOf(
         LifecycleCoordinatorName.forComponent<Component1>(),
-        LifecycleCoordinatorName.forComponent<Component2>())
-
+        LifecycleCoordinatorName.forComponent<Component2>()
+    )
 
     private val registrationHandle = mock<RegistrationHandle>()
-    private val coordinator = mock<LifecycleCoordinator>() {
+    private val coordinator = mock<LifecycleCoordinator> {
         on { followStatusChangesByName(any()) }.doReturn(registrationHandle)
     }
 

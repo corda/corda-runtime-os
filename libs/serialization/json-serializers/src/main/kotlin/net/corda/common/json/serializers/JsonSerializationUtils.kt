@@ -25,7 +25,7 @@ fun <T : Any> serializableClassFromJsonSerializer(jsonSerializer: T, jsonSeriali
         throw IllegalArgumentException("Unable to determine serializing type from ${clazz.canonicalName}")
     }
 
-    return when (val underlying = types.first())  {
+    return when (val underlying = types.first()) {
         is Class<*> -> underlying
         is ParameterizedType -> underlying.rawType as Class<*>
         else -> throw TypeNotPresentException(underlying.typeName, null)

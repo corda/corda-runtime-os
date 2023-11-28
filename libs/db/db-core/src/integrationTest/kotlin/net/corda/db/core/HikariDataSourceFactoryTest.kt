@@ -13,13 +13,13 @@ import kotlin.time.toJavaDuration
 class HikariDataSourceFactoryTest {
     private val dbName = "cordacluster"
     private val connectionsSQL = "SELECT " +
-            "query, " +
-            "state " +
-            "backend_start, " +
-            "query_start, " +
-            "application_name, " +
-            "client_addr " +
-            "FROM pg_stat_activity WHERE datname = '$dbName'"
+        "query, " +
+        "state " +
+        "backend_start, " +
+        "query_start, " +
+        "application_name, " +
+        "client_addr " +
+        "FROM pg_stat_activity WHERE datname = '$dbName'"
 
     private val monitorPoolDelegate = lazy {
         HikariDataSourceFactory().create(
@@ -39,12 +39,15 @@ class HikariDataSourceFactoryTest {
 
     @AfterEach
     fun tearDown() {
-        if(monitorPoolDelegate.isInitialized())
+        if (monitorPoolDelegate.isInitialized()) {
             monitorPool.close()
+        }
     }
 
-    @Disabled("This test should not be run in the pipeline. It is useful for observing Hikari behaviour for particular" +
-            " configuration settings, but it isn't a useful test for corda and will always be time bound.")
+    @Disabled(
+        "This test should not be run in the pipeline. It is useful for observing Hikari behaviour for particular" +
+            " configuration settings, but it isn't a useful test for corda and will always be time bound."
+    )
     @Suppress("ForEachOnRange")
     @Test
     fun `observe hikari remove idle connections`() {
@@ -81,12 +84,14 @@ class HikariDataSourceFactoryTest {
             val start = Instant.now()
             println("Wait for the connections to go to $minConnections")
             Thread.sleep(idleTimeout.toMillis()) // wait at least as long as idle timeout
-            while(
-                checkConnections(false) > minConnections
-                && start.plusMillis(idleTimeout.toMillis()).plusSeconds(30) > Instant.now()
+            while (
+                checkConnections(false) > minConnections &&
+                start.plusMillis(idleTimeout.toMillis()).plusSeconds(30) > Instant.now()
             ) {
-                println("Still ${checkConnections(false)} connections remaining after " +
-                        "${Duration.between(start, Instant.now()).seconds}s.")
+                println(
+                    "Still ${checkConnections(false)} connections remaining after " +
+                        "${Duration.between(start, Instant.now()).seconds}s."
+                )
                 Thread.sleep(1000)
             }
 
@@ -110,12 +115,13 @@ class HikariDataSourceFactoryTest {
             val meta = results.metaData
             var connections = 0
             while (results.next()) {
-                if(results.getString(1) == connectionsSQL)
+                if (results.getString(1) == connectionsSQL) {
                     continue
+                }
 
                 connections++
 
-                if(print) {
+                if (print) {
                     val row = (1..meta.columnCount).fold("") { s, i ->
                         "$s|${meta.getColumnName(i)}=${results.getObject(i)}"
                     }

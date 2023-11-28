@@ -21,7 +21,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.*
 
-
 /**
  * DB implementation of [TopicUtilsFactory]
  * Used to create database instances of [TopicUtils]

@@ -86,8 +86,8 @@ open class NonceHashDigestProvider(
     private val digestAlgorithmName: DigestAlgorithmName = DigestAlgorithmName.SHA2_256D,
     private val digestService: DigestService,
     val entropy: ByteArray,
-    ) : MerkleTreeHashDigestProviderWithSizeProofSupport {
-    companion object{
+) : MerkleTreeHashDigestProviderWithSizeProofSupport {
+    companion object {
         val EXPECTED_ENTROPY_LENGTH = 32
     }
     constructor(
@@ -100,12 +100,12 @@ open class NonceHashDigestProvider(
     class Verify(
         digestAlgorithmName: DigestAlgorithmName = DigestAlgorithmName.SHA2_256D,
         digestService: DigestService
-    ): NonceHashDigestProvider(digestAlgorithmName, digestService, ByteArray(0))
+    ) : NonceHashDigestProvider(digestAlgorithmName, digestService, ByteArray(0))
 
     class SizeOnlyVerify(
         private val digestAlgorithmName: DigestAlgorithmName = DigestAlgorithmName.SHA2_256D,
         private val digestService: DigestService
-    ): MerkleTreeHashDigestProvider {
+    ) : MerkleTreeHashDigestProvider {
         override fun getDigestAlgorithmName() = digestAlgorithmName
 
         override fun leafNonce(index: Int): ByteArray? = null
@@ -165,12 +165,14 @@ open class NonceHashDigestProvider(
     override fun getDigestAlgorithmName() = digestAlgorithmName
 }
 
-private fun MerkleTreeHashDigestProvider.checkMatchingAlgorithms(left: SecureHash, right: SecureHash){
+private fun MerkleTreeHashDigestProvider.checkMatchingAlgorithms(left: SecureHash, right: SecureHash) {
     require(
-    left.algorithm == digestAlgorithmName.name &&
-    left.algorithm == right.algorithm
-    ) { "Nodes should use the same digest algorithm as the Hash Digest Provider! (L: ${left.algorithm} " +
-            "R: ${right.algorithm} HDP: ${digestAlgorithmName.name})"}
+        left.algorithm == digestAlgorithmName.name &&
+            left.algorithm == right.algorithm
+    ) {
+        "Nodes should use the same digest algorithm as the Hash Digest Provider! (L: ${left.algorithm} " +
+            "R: ${right.algorithm} HDP: ${digestAlgorithmName.name})"
+    }
 }
 
 const val SERIALIZATION_SEPARATOR: Char = ':'

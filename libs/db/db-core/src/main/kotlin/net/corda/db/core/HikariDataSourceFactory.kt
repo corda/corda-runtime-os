@@ -27,8 +27,8 @@ class HikariDataSourceFactory(
     /**
      * [HikariDataSource] wrapper that makes it [CloseableDataSource]
      */
-    private class DataSourceWrapper(private val delegate: HikariDataSource)
-        : CloseableDataSource, Closeable by delegate, DataSource by delegate
+    private class DataSourceWrapper(private val delegate: HikariDataSource) :
+        CloseableDataSource, Closeable by delegate, DataSource by delegate
 
     override fun create(
         driverClass: String,
@@ -77,8 +77,9 @@ class HikariDataSourceFactory(
             conf.idleTimeout = 0
         }
         conf.maxLifetime = maxLifetime.toMillis()
-        if(Duration.ZERO != keepaliveTime)
+        if (Duration.ZERO != keepaliveTime) {
             conf.keepaliveTime = keepaliveTime.toMillis()
+        }
         conf.validationTimeout = validationTimeout.toMillis()
 
         return hikariDataSourceFactory(conf)

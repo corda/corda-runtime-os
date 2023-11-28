@@ -31,13 +31,13 @@ class SessionErrorProcessorSend(
         val sessionId = sessionEvent.sessionId
         return if (sessionState == null) {
             val errorMessage = "Tried to send SessionError on key $key for sessionId which had null state: $sessionId. " +
-                    "Error message was: $exceptionEnvelope"
+                "Error message was: $exceptionEnvelope"
             logger.warn(errorMessage)
             generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, "SessionData-NullSessionState", instant)
         } else {
             logger.debug {
                 "Sending Session Error on sessionId $sessionId. " +
-                        "Updating status from ${sessionState.status} to ${SessionStateType.ERROR}. Error message: $exceptionEnvelope"
+                    "Updating status from ${sessionState.status} to ${SessionStateType.ERROR}. Error message: $exceptionEnvelope"
             }
 
             sessionEvent.sequenceNum = null

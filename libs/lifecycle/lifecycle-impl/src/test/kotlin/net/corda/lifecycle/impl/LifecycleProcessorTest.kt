@@ -1,8 +1,5 @@
 package net.corda.lifecycle.impl
 
-import java.util.concurrent.Delayed
-import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.TimeUnit
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -31,6 +28,9 @@ import org.mockito.Mockito.verify
 import org.mockito.kotlin.any
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
+import java.util.concurrent.Delayed
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
 
 class LifecycleProcessorTest {
 
@@ -545,7 +545,7 @@ class LifecycleProcessorTest {
     }
 
     @Test
-    fun `null argument works correctly when passed to closeManagedResources`(){
+    fun `null argument works correctly when passed to closeManagedResources`() {
         val state = LifecycleStateManager(5)
         val registry = mock<LifecycleRegistryCoordinatorAccess>()
         val processor = LifecycleProcessor(NAME, state, registry, mock()) { _, _ -> }
@@ -557,7 +557,6 @@ class LifecycleProcessorTest {
 
         processor.closeManagedResources(null)
         verify(resource1).close()
-
     }
 
     @Test
@@ -579,7 +578,6 @@ class LifecycleProcessorTest {
         verify(resource2).close()
         verify(resource3, never()).close()
     }
-
 
     @Test
     fun `managed resources are closed only once`() {

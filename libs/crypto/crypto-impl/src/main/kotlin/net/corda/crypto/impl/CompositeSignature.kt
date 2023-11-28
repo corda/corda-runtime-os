@@ -25,8 +25,9 @@ class CompositeSignature : Signature(SIGNATURE_ALGORITHM) {
      */
     @Throws(SignatureException::class)
     private fun assertInitialised(): State {
-        if (signatureState == null)
+        if (signatureState == null) {
             throw SignatureException("Engine has not been initialised")
+        }
         return signatureState!!
     }
 

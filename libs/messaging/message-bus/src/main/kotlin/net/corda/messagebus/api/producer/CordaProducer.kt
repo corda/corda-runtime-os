@@ -24,7 +24,6 @@ interface CordaProducer : AutoCloseable {
      */
     fun send(record: CordaProducerRecord<*, *>, callback: Callback?)
 
-
     /**
      * Send a [record] to a specific [partition] on the bus with a [callback]
      *
