@@ -63,13 +63,13 @@ internal sealed class MemberRole {
             val protocolVersions = NOTARY_SERVICE_PROTOCOL_VERSIONS.format("([0-9]+)").toRegex().let { regex ->
                 context.filter { it.key.matches(regex) }.mapTo(mutableSetOf()) { it.value.toInt() }
             }
-            val backchainRequired = context[NOTARY_SERVICE_BACKCHAIN_REQUIRED]?.toBoolean() ?: true
+            val isBackchainRequired = context[NOTARY_SERVICE_BACKCHAIN_REQUIRED]?.toBoolean() ?: true
 
             return Notary(
                 serviceName = MemberX500Name.parse(serviceName),
                 protocol = protocol,
                 protocolVersions = protocolVersions,
-                backchainRequired =  backchainRequired
+                isBackchainRequired =  isBackchainRequired
             )
         }
     }
@@ -83,7 +83,7 @@ internal sealed class MemberRole {
         val serviceName: MemberX500Name,
         val protocol: String,
         val protocolVersions: Collection<Int>,
-        val backchainRequired: Boolean
+        val isBackchainRequired: Boolean
     ) : MemberRole() {
         override fun toMemberInfo(
             notariesKeysFactory: () -> List<KeyDetails>,
@@ -105,7 +105,7 @@ internal sealed class MemberRole {
                 "$ROLES_PREFIX.$index" to NOTARY_ROLE,
                 NOTARY_SERVICE_NAME to serviceName.toString(),
                 NOTARY_SERVICE_PROTOCOL to protocol,
-                NOTARY_SERVICE_BACKCHAIN_REQUIRED to backchainRequired.toString()
+                NOTARY_SERVICE_BACKCHAIN_REQUIRED to isBackchainRequired.toString()
             )
         }
     }

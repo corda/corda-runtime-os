@@ -97,7 +97,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
         whenever(mockNotaryLookup.notaryServices).thenReturn(listOf(notaryService))
 
         assertThatThrownBy {
-            utxoLedgerService.getPluggableNotaryClientFlow(MemberX500Name.parse("O=ExampleNotaryService2, L=London, C=GB"))
+            utxoLedgerService.getPluggableNotaryDetails(MemberX500Name.parse("O=ExampleNotaryService2, L=London, C=GB"))
         }
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessageContaining("has not been registered on the network")
@@ -140,7 +140,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
         whenever(mockFlowSandboxService.get(any(), any())).thenReturn(flowSandboxGroupContext)
 
         assertThatThrownBy {
-            utxoLedgerService.getPluggableNotaryClientFlow(notaryX500Name)
+            utxoLedgerService.getPluggableNotaryDetails(notaryX500Name)
         }
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessageContaining("is invalid because it does not inherit from")
@@ -186,7 +186,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
         whenever(mockFlowSandboxService.get(any(), any())).thenReturn(flowSandboxGroupContext)
 
         assertThatThrownBy {
-            utxoLedgerService.getPluggableNotaryClientFlow(notaryX500Name)
+            utxoLedgerService.getPluggableNotaryDetails(notaryX500Name)
         }
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessageContaining("Flow not found")
@@ -234,7 +234,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
         whenever(mockFlowSandboxService.get(any(), any())).thenReturn(flowSandboxGroupContext)
 
         assertThatThrownBy {
-            utxoLedgerService.getPluggableNotaryClientFlow(notaryX500Name)
+            utxoLedgerService.getPluggableNotaryDetails(notaryX500Name)
         }
             .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessageContaining("Protocol version not found")
@@ -279,7 +279,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
         whenever(mockFlowSandboxService.get(any(), any())).thenReturn(flowSandboxGroupContext)
 
         val result = assertDoesNotThrow {
-            utxoLedgerService.getPluggableNotaryClientFlow(notaryX500Name)
+            utxoLedgerService.getPluggableNotaryDetails(notaryX500Name)
         }
 
         assertEquals(MyClientFlow::class.java.name, result.flowClass.name)

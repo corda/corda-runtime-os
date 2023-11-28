@@ -142,7 +142,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
         }
 
         require(currentNotaryBackchainRequired) {
-            "Non-validating notary can't switch bachchain verification off."
+            "Non-validating notary can't switch backchain verification off."
         }
     }
 

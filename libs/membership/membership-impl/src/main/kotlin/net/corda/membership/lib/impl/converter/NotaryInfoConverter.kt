@@ -45,14 +45,14 @@ class NotaryInfoConverter @Activate constructor(
         val keysWithWeight = context.map.parseList(KEYS_PREFIX, PublicKey::class.java).map {
             CompositeKeyNodeAndWeight(it, 1)
         }
-        val backchainRequired = context.map[BACKCHAIN_REQUIRED]?.toBoolean() ?: true
+        val isBackchainRequired = context.map[BACKCHAIN_REQUIRED]?.toBoolean() ?: true
 
         return NotaryInfoImpl(
             name,
             protocol,
             protocolVersions,
             compositeKeyProvider.create(keysWithWeight, 1),
-            backchainRequired
+            isBackchainRequired
         )
     }
 }
@@ -62,11 +62,11 @@ private data class NotaryInfoImpl(
     private val protocol: String,
     private val protocolVersions: Collection<Int>,
     private val publicKey: PublicKey,
-    private val backchainRequired: Boolean
+    private val isBackchainRequired: Boolean
 ) : NotaryInfo {
     override fun getName() = name
     override fun getProtocol() = protocol
     override fun getProtocolVersions() = protocolVersions
     override fun getPublicKey() = publicKey
-    override fun getBackchainRequired() = backchainRequired
+    override fun isBackchainRequired() = isBackchainRequired
 }

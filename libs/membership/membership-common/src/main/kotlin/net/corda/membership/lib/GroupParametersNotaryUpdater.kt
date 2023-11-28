@@ -35,7 +35,7 @@ class GroupParametersNotaryUpdater(
         notaryDetails: MemberNotaryDetails,
     ): Pair<Int, KeyValuePairList> {
         val notaryServiceName = notaryDetails.serviceName.toString()
-        val notaryBackchainRequired = notaryDetails.backchainRequired
+        val notaryBackchainRequired = notaryDetails.isBackchainRequired
         logger.info("Adding notary to group parameters under new notary service '$notaryServiceName'.")
         requireNotNull(notaryDetails.serviceProtocol) {
             throw InvalidGroupParametersUpdateException("Cannot add notary to group parameters - notary protocol must be" +

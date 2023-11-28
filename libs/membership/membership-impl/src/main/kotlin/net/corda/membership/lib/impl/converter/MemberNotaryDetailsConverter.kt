@@ -73,7 +73,7 @@ class MemberNotaryDetailsConverter @Activate constructor(
             serviceProtocol = serviceProtocol,
             serviceProtocolVersions = serviceProtocolVersions,
             keys = keys,
-            backchainRequired = serviceBackchainRequired
+            isBackchainRequired = serviceBackchainRequired
         )
     }
 }

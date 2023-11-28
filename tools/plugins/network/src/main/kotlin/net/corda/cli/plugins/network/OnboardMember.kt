@@ -171,11 +171,11 @@ class OnboardMember : Runnable, BaseOnboard() {
             val notaryServiceName = customProperties[NOTARY_SERVICE_NAME] ?:
                 throw IllegalArgumentException("When specifying a NOTARY role, " +
                         "you also need to specify a custom property for its name under $NOTARY_SERVICE_NAME.")
-            val backchainRequired = customProperties[NOTARY_SERVICE_BACKCHAIN_REQUIRED] ?: true
+            val isBackchainRequired = customProperties[NOTARY_SERVICE_BACKCHAIN_REQUIRED] ?: true
             val notaryProtocol = customProperties[NOTARY_SERVICE_PROTOCOL] ?: "com.r3.corda.notary.plugin.nonvalidating"
             mapOf(
                 NOTARY_SERVICE_NAME to notaryServiceName,
-                NOTARY_SERVICE_BACKCHAIN_REQUIRED to "$backchainRequired",
+                NOTARY_SERVICE_BACKCHAIN_REQUIRED to "$isBackchainRequired",
                 NOTARY_SERVICE_PROTOCOL to notaryProtocol,
                 NOTARY_SERVICE_PROTOCOL_VERSIONS.format("0") to "1",
                 NOTARY_KEYS_ID.format("0") to notaryKeyId,

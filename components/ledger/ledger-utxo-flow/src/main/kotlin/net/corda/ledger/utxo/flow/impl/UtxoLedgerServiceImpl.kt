@@ -144,7 +144,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
                 UtxoFinalityFlow(
                     signedTransaction as UtxoSignedTransactionInternal,
                     sessions,
-                    getPluggableNotaryClientFlow(signedTransaction.notaryName)
+                    getPluggableNotaryDetails(signedTransaction.notaryName)
                 )
             })
         } catch (e: PrivilegedActionException) {
@@ -214,7 +214,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
     // internally.
     @VisibleForTesting
     @Suppress("ThrowsCount")
-    internal fun getPluggableNotaryClientFlow(notary: MemberX500Name): PluggableNotaryDetails {
+    internal fun getPluggableNotaryDetails(notary: MemberX500Name): PluggableNotaryDetails {
 
         val notaryInfo = notaryLookup.notaryServices.firstOrNull { it.name == notary }
             ?: throw CordaRuntimeException(
@@ -241,7 +241,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
 
         @Suppress("UNCHECKED_CAST") return PluggableNotaryDetails(
             flowClass as Class<PluggableNotaryClientFlow>,
-            notaryInfo.backchainRequired
+            notaryInfo.isBackchainRequired
         )
 
     }
