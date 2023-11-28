@@ -109,6 +109,7 @@ internal class InboundMessageProcessor(
                     val partitionsAssigned =
                         inboundAssignmentListener.getCurrentlyAssignedPartitions()
                     if (partitionsAssigned.isNotEmpty()) {
+                        logger.info("PPP Sending partitions 1 ${payload.header.sessionId}, $partitionsAssigned ")
                         listOf(
                             Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response),
                             Record(

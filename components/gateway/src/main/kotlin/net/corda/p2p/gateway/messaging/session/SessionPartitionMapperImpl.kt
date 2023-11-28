@@ -13,8 +13,10 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.data.p2p.SessionPartitions
 import net.corda.schema.Schemas.P2P.SESSION_OUT_PARTITIONS
 import net.corda.utilities.VisibleForTesting
+import org.slf4j.LoggerFactory
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.random.Random
 
 class SessionPartitionMapperImpl(
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
@@ -24,6 +26,7 @@ class SessionPartitionMapperImpl(
 
     companion object {
         private const val CONSUMER_GROUP_ID = "session_partitions_mapper"
+        private val logger = LoggerFactory.getLogger("PPP ${Random.nextLong()}")
     }
 
     private val sessionPartitionsMapping = ConcurrentHashMap<String, List<Int>>()
@@ -70,6 +73,10 @@ class SessionPartitionMapperImpl(
 
         override fun onSnapshot(currentData: Map<String, SessionPartitions>) {
             sessionPartitionsMapping.putAll(currentData.map { it.key to it.value.partitions })
+            logger.info("Got partitions:")
+            sessionPartitionsMapping.entries.forEach {(k, v) ->
+                logger.info("\t for session $k partitions: $v")
+            }
             future.complete(Unit)
         }
 
@@ -80,7 +87,9 @@ class SessionPartitionMapperImpl(
         ) {
             if (newRecord.value == null) {
                 sessionPartitionsMapping.remove(newRecord.key)
+                logger.info("No more partitions for ${newRecord.key}")
             } else {
+                logger.info("Got partitions for ${newRecord.key} - ${newRecord.value!!.partitions}")
                 sessionPartitionsMapping[newRecord.key] = newRecord.value!!.partitions
             }
         }

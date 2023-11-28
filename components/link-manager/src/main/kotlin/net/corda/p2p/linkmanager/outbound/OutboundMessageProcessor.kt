@@ -77,6 +77,7 @@ internal class OutboundMessageProcessor(
                 emptyList()
             } else {
                 state.messages.flatMap {
+                    logger.info("PPP Sending partitions 2 ${it.first}, ${partitions.toList()} ")
                     listOf(
                         Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), it.second),
                         Record(Schemas.P2P.SESSION_OUT_PARTITIONS, it.first, SessionPartitions(partitions.toList()))

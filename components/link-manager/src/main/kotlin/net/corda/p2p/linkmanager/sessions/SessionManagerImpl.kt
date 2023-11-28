@@ -421,6 +421,7 @@ internal class SessionManagerImpl(
         inboundAssignmentListener.registerCallbackForTopic { partitions ->
             val sessionIds = outboundSessionPool.getAllSessionIds() + pendingInboundSessions.keys + activeInboundSessions.keys
             val records = sessionIds.map { sessionId ->
+                logger.info("PPP Sending partitions 3 $sessionId, ${partitions.toList()} ")
                 Record(SESSION_OUT_PARTITIONS, sessionId, SessionPartitions(partitions.toList()))
             }
             if (records.isNotEmpty()) publisher.publish(records)
