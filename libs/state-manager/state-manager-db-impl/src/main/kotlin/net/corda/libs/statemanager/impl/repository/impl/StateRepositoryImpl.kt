@@ -12,6 +12,7 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
 
     private companion object {
         private const val CREATE_NUM_PARAMETERS = 4
+        private const val CREATE_RESULT_COLUMN_INDEX = 1
     }
 
     override fun create(connection: Connection, states: Collection<StateEntity>): Collection<String> {
@@ -26,7 +27,7 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
             val results = statement.resultSet
             sequence<String> {
                 while (results.next()) {
-                    yield(results.getString(1))
+                    yield(results.getString(CREATE_RESULT_COLUMN_INDEX))
                 }
             }.toList()
         }
