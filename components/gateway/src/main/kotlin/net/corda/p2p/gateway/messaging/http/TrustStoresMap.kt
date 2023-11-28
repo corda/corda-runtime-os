@@ -87,6 +87,10 @@ internal class TrustStoresMap(
         override fun hashCode() = pemCertificates.hashCode()
         override fun equals(other: Any?) =
             ((other is TrustedCertificates) && (other.pemCertificates == pemCertificates))
+
+        override fun toString(): String {
+            return "TrustedCertificates(pemCertificates: $pemCertificates)"
+        }
     }
 
     private inner class Processor : CompactedProcessor<String, GatewayTruststore> {

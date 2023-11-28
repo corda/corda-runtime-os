@@ -7,6 +7,7 @@ import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.lifecycle.Resource
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
+import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
 
 /**
@@ -27,6 +28,7 @@ internal class ConnectionManager(
     companion object {
         private const val NUM_CLIENT_WRITE_THREADS = 2
         private const val NUM_CLIENT_NETTY_THREADS = 2
+        private val logger = LoggerFactory.getLogger("QQQ")
     }
 
     private val clientPool: Cache<DestinationInfo, HttpClient> = CacheFactoryImpl().build(
@@ -34,7 +36,10 @@ internal class ConnectionManager(
         Caffeine.newBuilder()
             .maximumSize(connectionConfiguration.maxClientConnections)
             .expireAfterAccess(connectionConfiguration.connectionIdleTimeout)
-            .removalListener { _, value, _ -> value?.close() })
+            .removalListener { key, value, case ->
+                logger.info("QQQ removalListener for key:$key, case: $case")
+                value?.close()
+            })
     private var writeGroup = nioEventLoopGroupFactory(NUM_CLIENT_WRITE_THREADS)
     private var nettyGroup = nioEventLoopGroupFactory(NUM_CLIENT_NETTY_THREADS)
 
@@ -44,6 +49,7 @@ internal class ConnectionManager(
      */
     fun acquire(destinationInfo: DestinationInfo): HttpClient {
         return clientPool.get(destinationInfo) {
+            logger.info("QQQ create new client for $destinationInfo; client pool size is ${clientPool.estimatedSize()}")
             val client = HttpClient(
                 destinationInfo,
                 sslConfiguration,

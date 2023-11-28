@@ -82,6 +82,10 @@ internal class DynamicKeyStore(
             ((other is ClientKeyStore) &&
                     (other.certificates == certificates) &&
                     (other.tenantId == tenantId))
+
+        override fun toString(): String {
+            return "ClientKeyStore(certificates: $certificates, tenantId: $tenantId)"
+        }
     }
 
     fun getClientKeyStore(clientIdentity: HoldingIdentity) : ClientKeyStore?  =
