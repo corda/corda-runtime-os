@@ -8,7 +8,7 @@ import net.corda.libs.statemanager.impl.repository.StateRepository
 import java.sql.Connection
 import java.sql.Timestamp
 
-// TODO-[CORE-18029 / CORE-18030]: batch delete and create.
+// TODO-[CORE-18030]: batch create.
 class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepository {
 
     override fun create(connection: Connection, state: StateEntity) {
@@ -55,21 +55,26 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
     }
 
     override fun delete(connection: Connection, states: Collection<StateEntity>): Collection<String> {
-        val failedKeys = mutableListOf<String>()
-
-        states.forEach { state ->
-            connection.prepareStatement(queryProvider.deleteStatesByKey).use {
-                it.setString(1, state.key)
-                it.setInt(2, state.version)
-                it.executeUpdate().also { count ->
-                    if (count == 0) {
-                        failedKeys.add(state.key)
-                    }
-                }
+        return connection.prepareStatement(queryProvider.deleteStatesByKey).use { statement ->
+            // The actual state order doesn't matter, but we must ensure that the states are iterated over in the same
+            // order when examining the result as when the statements were generated.
+            val statesOrdered = states.toList()
+            statesOrdered.forEach { state ->
+                statement.setString(1, state.key)
+                statement.setInt(2, state.version)
+                statement.addBatch()
             }
+            // For the delete case, it's safe to return anything other than a row update count of 1 as failed. The state
+            // manager must check any returned failed deletes regardless to verify that the call did not request
+            // removal of a state that never existed.
+            statement.executeBatch().zip(statesOrdered).mapNotNull { (count, state) ->
+                if (count <= 0) {
+                    state.key
+                } else {
+                    null
+                }
+            }.toList()
         }
-
-        return failedKeys
     }
 
     override fun updatedBetween(connection: Connection, interval: IntervalFilter): Collection<StateEntity> =

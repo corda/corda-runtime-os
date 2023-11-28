@@ -54,6 +54,9 @@ interface StateRepository {
      * Delete states with the given keys.
      * Transaction should be controlled by the caller.
      *
+     * Note that if the underlying provider isn't sure whether the delete was successful, the repository should behave
+     * as if it failed. The state manager must double-check any failures reported by the repository.
+     *
      * @param connection The JDBC connection used to interact with the database.
      * @param states Collection of states to be deleted.
      * @return Collection of keys for states that could not be deleted due to optimistic locking check failure.

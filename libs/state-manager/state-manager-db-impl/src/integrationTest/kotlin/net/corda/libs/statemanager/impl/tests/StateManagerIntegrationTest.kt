@@ -379,6 +379,17 @@ class StateManagerIntegrationTest {
     }
 
     @Test
+    fun `delete returns empty collection of keys if the states were never present`() {
+        val statesToDelete = (1..20).map {
+            State(buildStateKey(it), "".toByteArray(), it)
+        }
+        // Double check that the states we're requesting do not exist.
+        assertThat(stateManager.get(statesToDelete.map { it.key })).isEmpty()
+        val failed = stateManager.delete(statesToDelete)
+        assertThat(failed).isEmpty()
+    }
+
+    @Test
     fun `optimistic locking prevents sequentially deleting states with mismatched versions and does not halt entire batch`() {
         val totalCount = 20
         persistStateEntities(
