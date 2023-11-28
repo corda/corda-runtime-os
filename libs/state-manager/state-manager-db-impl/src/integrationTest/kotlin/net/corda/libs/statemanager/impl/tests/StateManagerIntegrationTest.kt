@@ -34,7 +34,6 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.kotlin.mock
-import java.sql.SQLException
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
@@ -93,12 +92,12 @@ class StateManagerIntegrationTest {
             val stateEntity =
                 StateEntity(key, stateContent(i, key).toByteArray(), metadataContent(i, key), version(i, key))
 
-            connection.prepareStatement(queryProvider.createState).use {
+            connection.prepareStatement(queryProvider.createStates(1)).use {
                 it.setString(1, stateEntity.key)
                 it.setBytes(2, stateEntity.value)
                 it.setInt(3, stateEntity.version)
                 it.setString(4, stateEntity.metadata)
-                it.executeUpdate()
+                it.execute()
             }
         }
     }
@@ -206,7 +205,7 @@ class StateManagerIntegrationTest {
         val failures = stateManager.create(states)
         assertThat(failures).hasSize(failedSates)
         for (i in 1..failedSates) {
-            assertThat(failures[buildStateKey(i)]).isInstanceOf(SQLException::class.java)
+            assertThat(failures[buildStateKey(i)]).isInstanceOf(Exception::class.java)
         }
         softlyAssertPersistedStateEntities(
             (failedSates + 1..totalStates),

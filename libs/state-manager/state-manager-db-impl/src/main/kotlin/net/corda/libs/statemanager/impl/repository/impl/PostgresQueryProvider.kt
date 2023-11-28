@@ -11,11 +11,23 @@ import net.corda.libs.statemanager.impl.model.v1.StateEntity.Companion.MODIFIED_
 
 class PostgresQueryProvider : AbstractQueryProvider() {
 
-    override val createState: String
-        get() = """
-            INSERT INTO $STATE_MANAGER_TABLE
-            VALUES (?, ?, ?, CAST(? as JSONB), CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
-        """.trimIndent()
+    override fun createStates(size: Int): String = """
+        WITH data (key, value, version, metadata, modified_time) as (
+            VALUES ${List(size) { "(?, ?, ?, CAST(? AS JSONB), CURRENT_TIMESTAMP AT TIME ZONE 'UTC')" }.joinToString(",")}
+        )
+        INSERT INTO $STATE_MANAGER_TABLE
+        SELECT * FROM data d
+        WHERE NOT EXISTS (
+            SELECT 1 FROM $STATE_MANAGER_TABLE t
+            WHERE t.key = d.key
+        )
+        RETURNING $STATE_MANAGER_TABLE.$KEY_COLUMN;
+    """.trimIndent()
+
+//        get() = """
+//            INSERT INTO $STATE_MANAGER_TABLE
+//            VALUES (?, ?, ?, CAST(? as JSONB), CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+//        """.trimIndent()
 
     override fun updateStates(size: Int): String = """
             UPDATE $STATE_MANAGER_TABLE AS s 

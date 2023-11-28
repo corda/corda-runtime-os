@@ -11,13 +11,25 @@ import java.sql.Timestamp
 // TODO-[CORE-18030]: batch create.
 class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepository {
 
-    override fun create(connection: Connection, state: StateEntity) {
-        connection.prepareStatement(queryProvider.createState).use { statement ->
-            statement.setString(1, state.key)
-            statement.setBytes(2, state.value)
-            statement.setInt(3, state.version)
-            statement.setString(4, state.metadata)
-            statement.executeUpdate()
+    private companion object {
+        private const val CREATE_NUM_PARAMETERS = 4
+    }
+
+    override fun create(connection: Connection, states: Collection<StateEntity>): Collection<String> {
+        return connection.prepareStatement(queryProvider.createStates(states.size)).use { statement ->
+            states.forEachIndexed { idx, state ->
+                statement.setString(1 + (idx * CREATE_NUM_PARAMETERS), state.key)
+                statement.setBytes(2 + (idx * CREATE_NUM_PARAMETERS), state.value)
+                statement.setInt(3 + (idx * CREATE_NUM_PARAMETERS), state.version)
+                statement.setString(4 + (idx * CREATE_NUM_PARAMETERS), state.metadata)
+            }
+            statement.execute()
+            val results = statement.resultSet
+            sequence<String> {
+                while (results.next()) {
+                    yield(results.getString(1))
+                }
+            }.toList()
         }
     }
 
