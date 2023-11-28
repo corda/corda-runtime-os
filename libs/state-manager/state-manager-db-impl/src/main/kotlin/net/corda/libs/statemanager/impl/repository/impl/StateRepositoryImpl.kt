@@ -64,6 +64,9 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
                 statement.setInt(2, state.version)
                 statement.addBatch()
             }
+            // For the delete case, it's safe to return anything other than a row update count of 1 as failed. The state
+            // manager must check any returned failed deletes regardless to verify that the call did not request
+            // removal of a state that never existed.
             statement.executeBatch().zip(statesOrdered).mapNotNull { (count, state) ->
                 if (count <= 0) {
                     state.key
