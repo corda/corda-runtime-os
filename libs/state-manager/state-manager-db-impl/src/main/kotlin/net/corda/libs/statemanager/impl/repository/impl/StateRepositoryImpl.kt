@@ -8,7 +8,6 @@ import net.corda.libs.statemanager.impl.repository.StateRepository
 import java.sql.Connection
 import java.sql.Timestamp
 
-// TODO-[CORE-18030]: batch create.
 class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepository {
 
     private companion object {

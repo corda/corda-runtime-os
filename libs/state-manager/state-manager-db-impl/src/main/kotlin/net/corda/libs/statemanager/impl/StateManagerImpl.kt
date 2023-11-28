@@ -39,27 +39,11 @@ class StateManagerImpl(
         State(key, value, version, objectMapper.convertToMetadata(metadata), modifiedTime)
 
     override fun create(states: Collection<State>): Map<String, Exception> {
-//        val failures = mutableMapOf<String, Exception>()
-
         val successfulKeys = dataSource.connection.transaction { connection ->
             stateRepository.create(connection, states.map { it.toPersistentEntity() })
         }
         val failedKeys = states.map { it.key }.toSet() - successfulKeys.toSet()
         return failedKeys.associateWith { Exception("Failed to create state") }
-//        states.map {
-//            it.toPersistentEntity()
-//        }.forEach { state ->
-//            try {
-//                dataSource.connection.transaction {
-//                    stateRepository.create(it, state)
-//                }
-//            } catch (e: Exception) {
-//                logger.warn("Failed to create state with id ${state.key}", e)
-//                failures[state.key] = e
-//            }
-//        }
-//
-//        return failures
     }
 
     override fun get(keys: Collection<String>): Map<String, State> {

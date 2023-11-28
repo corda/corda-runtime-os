@@ -24,11 +24,6 @@ class PostgresQueryProvider : AbstractQueryProvider() {
         RETURNING $STATE_MANAGER_TABLE.$KEY_COLUMN;
     """.trimIndent()
 
-//        get() = """
-//            INSERT INTO $STATE_MANAGER_TABLE
-//            VALUES (?, ?, ?, CAST(? as JSONB), CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
-//        """.trimIndent()
-
     override fun updateStates(size: Int): String = """
             UPDATE $STATE_MANAGER_TABLE AS s 
             SET 
