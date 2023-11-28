@@ -155,7 +155,8 @@ fun ClusterInfo.onboardNotaryMember(
     wait: Boolean = true,
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null,
     tlsCertificateUploadedCallback: (String) -> Unit = {},
-    notaryServiceName: String = DEFAULT_NOTARY_SERVICE
+    notaryServiceName: String = DEFAULT_NOTARY_SERVICE,
+    isBackchainRequired: Boolean = true
 ) = onboardMember(
     resourceName,
     cpiName,
@@ -169,6 +170,7 @@ fun ClusterInfo.onboardNotaryMember(
         mapOf(
             "corda.roles.0" to "notary",
             "corda.notary.service.name" to MemberX500Name.parse(notaryServiceName).toString(),
+            "corda.notary.service.backchain.required" to "$isBackchainRequired",
             "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.nonvalidating",
             "corda.notary.service.flow.protocol.version.0" to "1",
             "corda.notary.keys.0.id" to notaryKeyId,
@@ -289,20 +291,22 @@ fun registerStaticMember(
     holdingIdentityShortHash: String,
     notaryServiceName: String? = null,
     customMetadata: Map<String, String> = emptyMap(),
-) = DEFAULT_CLUSTER.registerStaticMember(holdingIdentityShortHash, notaryServiceName, customMetadata)
+    isBackchainRequired: Boolean = true
+) = DEFAULT_CLUSTER.registerStaticMember(holdingIdentityShortHash, notaryServiceName, customMetadata, isBackchainRequired)
 
 val memberRegisterLock = ReentrantLock()
 fun ClusterInfo.registerStaticMember(
     holdingIdentityShortHash: String,
     notaryServiceName: String? = null,
     customMetadata: Map<String, String> = emptyMap(),
+    isBackchainRequired: Boolean = true
 ) {
     cluster {
         memberRegisterLock.withLock {
             assertWithRetry {
                 interval(1.seconds)
                 timeout(10.seconds)
-                command { registerStaticMember(holdingIdentityShortHash, notaryServiceName, customMetadata) }
+                command { registerStaticMember(holdingIdentityShortHash, notaryServiceName, customMetadata, isBackchainRequired) }
                 condition {
                     it.code == ResponseCode.OK.statusCode
                             && it.toJson()["registrationStatus"].textValue() == REGISTRATION_SUBMITTED
