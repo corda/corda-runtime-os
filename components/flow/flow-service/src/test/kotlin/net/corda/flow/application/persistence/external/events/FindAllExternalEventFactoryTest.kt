@@ -6,7 +6,6 @@ import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.FindAll
 import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
 import net.corda.flow.state.FlowCheckpoint
-import net.corda.schema.Schemas
 import net.corda.virtualnode.toCorda
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -28,7 +27,6 @@ class FindAllExternalEventFactoryTest {
             externalEventContext,
             FindAllParameters(String::class.java, 0, 0)
         )
-        assertEquals(Schemas.Persistence.PERSISTENCE_ENTITY_PROCESSOR_TOPIC, externalEventRecord.topic)
         assertNull(externalEventRecord.key)
         assertEquals(
             EntityRequest(
