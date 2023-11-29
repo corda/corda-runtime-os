@@ -399,7 +399,7 @@ class StateManagerIntegrationTest {
         val expectedFailedKeys = threadResults.map { it.assignedStateGrouping.overlappingStates }.flatten().map { it.key }
 
         // if a thread tries to update a state that was already deleted, it gets that key back as a "failed key", associated with null.
-        // if a thread tries to delete a thread that was already updated, it gets that key back as a "failed key".
+        // if a thread tries to delete a state that was already updated, it gets that key back as a "failed key".
         // we expect to see a failed key for every overlapping state, because in the race between two threads only
         // one can update or delete it.
         assertThat(allFailedUpdates + allFailedDeletes)
