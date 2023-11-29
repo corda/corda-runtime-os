@@ -28,10 +28,9 @@ interface StateManager : Lifecycle {
      * persisted and replicas of the underlying persistent storage, if any, are synced.
      *
      * @param states Collection of states to be persisted.
-     * @return Collection of keys for all those states that could not be persisted on the underlying persistent storage,
-     *          along with the actual reason for the failures.
+     * @return Collection of keys for all those states that could not be persisted on the underlying persistent storage.
      */
-    fun create(states: Collection<State>): Map<String, Exception>
+    fun create(states: Collection<State>): List<String>
 
     /**
      * Get all states referenced by [keys].

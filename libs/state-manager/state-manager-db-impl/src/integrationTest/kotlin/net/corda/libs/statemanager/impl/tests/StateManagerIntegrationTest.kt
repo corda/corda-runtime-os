@@ -205,7 +205,7 @@ class StateManagerIntegrationTest {
         val failures = stateManager.create(states)
         assertThat(failures).hasSize(failedSates)
         for (i in 1..failedSates) {
-            assertThat(failures[buildStateKey(i)]).isInstanceOf(Exception::class.java)
+            assertThat(failures).contains(buildStateKey(i))
         }
         softlyAssertPersistedStateEntities(
             (failedSates + 1..totalStates),

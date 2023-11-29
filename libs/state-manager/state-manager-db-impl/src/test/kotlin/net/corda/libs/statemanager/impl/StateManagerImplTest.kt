@@ -54,7 +54,7 @@ class StateManagerImplTest {
             .whenever(stateRepository).create(connection, listOf(persistentStateOne, persistentStateTwo))
 
         assertThat(stateManager.create(listOf(apiStateOne, apiStateTwo)))
-            .containsKey(apiStateOne.key)
+            .contains(apiStateOne.key)
         verify(stateRepository).create(connection, listOf(persistentStateOne, persistentStateTwo))
     }
 
