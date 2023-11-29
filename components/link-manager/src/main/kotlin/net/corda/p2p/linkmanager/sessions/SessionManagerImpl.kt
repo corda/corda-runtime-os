@@ -100,6 +100,7 @@ import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.metrics.CordaMetrics.NOT_APPLICABLE_TAG_VALUE
 import net.corda.p2p.crypto.protocol.api.InvalidSelectedModeError
 import net.corda.p2p.crypto.protocol.api.NoCommonModeError
+import net.corda.p2p.linkmanager.metrics.recordOutboundHeartbeatMessagesMetric
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.badGroupPolicy
 import kotlin.concurrent.read
 import kotlin.concurrent.write
@@ -1323,8 +1324,13 @@ internal class SessionManagerImpl(
                     )
                 )
             )
-            future.single().exceptionally { error ->
-                logger.warn("An exception was thrown when sending a heartbeat message.\nException:", error)
+
+            future.single().whenComplete { _, error ->
+                if (error != null) {
+                    logger.warn("An exception was thrown when sending a heartbeat message.\nException:", error)
+                } else {
+                    recordOutboundHeartbeatMessagesMetric(source, dest)
+                }
             }
         }
 

@@ -31,6 +31,7 @@ import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
+import net.corda.p2p.linkmanager.metrics.recordInboundHeartbeatMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordInboundMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordInboundSessionMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
@@ -214,7 +215,6 @@ internal class InboundMessageProcessor(
                     "of type ${innerMessage.message.javaClass} from session ${session.sessionId}"
             }
             messages.add(Record(Schemas.P2P.P2P_IN_TOPIC, innerMessage.key, AppMessage(innerMessage.message)))
-            recordInboundMessagesMetric(innerMessage.message)
             makeAckMessageForFlowMessage(innerMessage.message, session)?.let { ack -> messages.add(ack) }
             sessionManager.inboundSessionEstablished(session.sessionId)
         } else if (sessionSource != messageSource.toCorda()) {
@@ -243,9 +243,11 @@ internal class InboundMessageProcessor(
             when (val innerMessage = it.message) {
                 is HeartbeatMessage -> {
                     logger.debug { "Processing heartbeat message from session $sessionId" }
+                    recordInboundHeartbeatMessagesMetric(counterparties.counterpartyId, counterparties.ourId)
                     makeAckMessageForHeartbeatMessage(counterparties, session)?.let { ack -> messages.add(ack) }
                 }
                 is AuthenticatedMessageAndKey -> {
+                    recordInboundMessagesMetric(innerMessage.message)
                     checkIdentityBeforeProcessing(
                         counterparties,
                         innerMessage,
