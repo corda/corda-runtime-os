@@ -54,7 +54,6 @@ kotlin {
 dependencies {
     // NO CORDA DEPENDENCIES!!
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$kotlinCoroutinesVersion"
 
     smokeTestImplementation "net.corda:corda-avro-schema:$cordaApiVersion"
     // Avoid having the schema names and keys scattered across projects
