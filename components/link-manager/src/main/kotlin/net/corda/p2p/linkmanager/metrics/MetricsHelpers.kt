@@ -67,6 +67,12 @@ fun recordInboundSessionMessagesMetric() {
     recordInboundMessagesMetric(null, null, null, P2P_SUBSYSTEM, SESSION_MESSAGE_TYPE)
 }
 
+fun recordInboundHeartbeatMessagesMetric(sourceVnode: HoldingIdentity,
+                                         destinationVnode: HoldingIdentity) {
+    recordInboundMessagesMetric(sourceVnode.x500Name.toString(), destinationVnode.x500Name.toString(),
+        destinationVnode.groupId, P2P_SUBSYSTEM, HEARTBEAT_MESSAGE)
+}
+
 private fun recordInboundMessagesMetric(source: String?, dest: String?, group: String?, subsystem: String, messageType: String) {
     val builder = CordaMetrics.Metric.InboundMessageCount.builder()
     listOf(
