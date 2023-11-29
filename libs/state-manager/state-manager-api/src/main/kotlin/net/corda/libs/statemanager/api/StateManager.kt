@@ -30,7 +30,7 @@ interface StateManager : Lifecycle {
      * @param states Collection of states to be persisted.
      * @return Collection of keys for all those states that could not be persisted on the underlying persistent storage.
      */
-    fun create(states: Collection<State>): List<String>
+    fun create(states: Collection<State>): Set<String>
 
     /**
      * Get all states referenced by [keys].
