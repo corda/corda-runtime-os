@@ -16,7 +16,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 
-class UniquenessCheckRpcMessageProcessorTests {
+class UniquenessCheckMessageProcessorTests {
     private val externalEventContext = mock<ExternalEventContext>()
     private val flowEvent = mock<FlowEvent>()
     private val request = mock<UniquenessCheckRequestAvro> {
@@ -31,14 +31,13 @@ class UniquenessCheckRpcMessageProcessorTests {
         on { success(any(), any()) } doReturn (Record("batman", "mobile", flowEvent))
         on { platformError(any(), any<ExceptionEnvelope>()) } doReturn (Record("joker", "face", flowEvent))
     }
-    private val requestClass = UniquenessCheckRequestAvro::class.java
-    private val responseClass = FlowEvent::class.java
 
     @Test
     fun `when process call uniqueness checker`() {
         val processor =
-            UniquenessCheckRpcMessageProcessor(
-                uniquenessChecker, externalEventResponseFactory, requestClass, responseClass)
+            UniquenessCheckMessageProcessor(
+                uniquenessChecker, externalEventResponseFactory
+            )
         processor.process(request)
         verify(uniquenessChecker).processRequests(listOf(request))
     }
@@ -46,8 +45,9 @@ class UniquenessCheckRpcMessageProcessorTests {
     @Test
     fun `when process successfully create success response`() {
         val processor =
-            UniquenessCheckRpcMessageProcessor(
-                uniquenessChecker, externalEventResponseFactory, requestClass, responseClass)
+            UniquenessCheckMessageProcessor(
+                uniquenessChecker, externalEventResponseFactory
+            )
         processor.process(request)
         verify(externalEventResponseFactory).success(externalEventContext, response)
     }
@@ -55,8 +55,9 @@ class UniquenessCheckRpcMessageProcessorTests {
     @Test
     fun `when process successfully return event`() {
         val processor =
-            UniquenessCheckRpcMessageProcessor(
-                uniquenessChecker, externalEventResponseFactory, requestClass, responseClass)
+            UniquenessCheckMessageProcessor(
+                uniquenessChecker, externalEventResponseFactory
+            )
         val result = processor.process(request)
         assertThat(result).isEqualTo(flowEvent)
     }
@@ -74,8 +75,9 @@ class UniquenessCheckRpcMessageProcessorTests {
             on { processRequests(any()) } doReturn (mapOf(request to errorResponse))
         }
         val processor =
-            UniquenessCheckRpcMessageProcessor(
-                uniquenessChecker, externalEventResponseFactory, requestClass, responseClass)
+            UniquenessCheckMessageProcessor(
+                uniquenessChecker, externalEventResponseFactory
+            )
         processor.process(request)
         verify(externalEventResponseFactory).platformError(externalEventContext, ex)
     }

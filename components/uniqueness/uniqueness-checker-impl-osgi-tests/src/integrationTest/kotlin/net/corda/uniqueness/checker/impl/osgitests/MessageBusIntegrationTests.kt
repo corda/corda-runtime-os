@@ -280,7 +280,6 @@ class MessageBusIntegrationTests {
 
         uniquenessCheckerLifecycle = BatchedUniquenessCheckerLifecycleImpl(
             lifecycleCoordinatorFactory,
-            configurationReadService,
             subscriptionFactory,
             externalEventResponseFactory,
             backingStore,
