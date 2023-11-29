@@ -79,9 +79,11 @@ class StateManagerImpl(
                 stateRepository.update(conn, states.map { it.toPersistentEntity() })
             }
 
-            if (failedUpdates.isEmpty()) return emptyMap()
-
-            return getFailedUpdates(failedUpdates)
+            return if (failedUpdates.isEmpty()) {
+                emptyMap()
+            } else {
+                getFailedUpdates(failedUpdates)
+            }
         } catch (e: Exception) {
             logger.warn("Failed to updated batch of states - ${states.joinToString { it.key }}", e)
             throw e
