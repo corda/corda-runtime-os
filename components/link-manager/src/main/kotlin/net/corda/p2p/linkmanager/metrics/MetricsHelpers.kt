@@ -2,8 +2,54 @@ package net.corda.p2p.linkmanager.metrics
 
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.InboundUnauthenticatedMessage
+import net.corda.data.p2p.app.OutboundUnauthenticatedMessage
 import net.corda.metrics.CordaMetrics
 import net.corda.metrics.CordaMetrics.NOT_APPLICABLE_TAG_VALUE
+import net.corda.virtualnode.HoldingIdentity
+
+const val P2P_SUBSYSTEM = "p2p"
+const val SESSION_MESSAGE_TYPE = "SessionMessage"
+const val HEARTBEAT_MESSAGE = "HeartbeatMessage"
+
+fun recordOutboundMessagesMetric(message: AuthenticatedMessage) {
+    message.header.let {
+        recordOutboundMessagesMetric(it.source.x500Name, it.destination.x500Name, it.source.groupId,
+            it.subsystem, message::class.java.simpleName)
+    }
+}
+
+fun recordOutboundMessagesMetric(message: OutboundUnauthenticatedMessage) {
+    message.header.let {
+        recordOutboundMessagesMetric(it.source.x500Name, it.destination.x500Name, it.source.groupId,
+            it.subsystem, message::class.java.simpleName)
+    }
+}
+
+fun recordOutboundSessionMessagesMetric(sourceVnode: HoldingIdentity, destinationVnode: HoldingIdentity) {
+    recordOutboundMessagesMetric(sourceVnode.x500Name.toString(), destinationVnode.x500Name.toString(), sourceVnode.groupId,
+        P2P_SUBSYSTEM, SESSION_MESSAGE_TYPE)
+}
+
+fun recordOutboundHeartbeatMessagesMetric(sourceVnode: HoldingIdentity, destinationVnode: HoldingIdentity) {
+    recordOutboundMessagesMetric(sourceVnode.x500Name.toString(), destinationVnode.x500Name.toString(), sourceVnode.groupId,
+        P2P_SUBSYSTEM, HEARTBEAT_MESSAGE)
+}
+
+fun recordOutboundSessionMessagesMetric(sourceVnode: net.corda.data.identity.HoldingIdentity,
+                                        destinationVnode: net.corda.data.identity.HoldingIdentity) {
+    recordOutboundMessagesMetric(sourceVnode.x500Name, destinationVnode.x500Name, sourceVnode.groupId,
+        P2P_SUBSYSTEM, SESSION_MESSAGE_TYPE)
+}
+
+fun recordOutboundMessagesMetric(source: String, dest: String, group: String, subsystem: String, messageType: String) {
+    CordaMetrics.Metric.OutboundMessageCount.builder()
+        .withTag(CordaMetrics.Tag.SourceVirtualNode, source)
+        .withTag(CordaMetrics.Tag.DestinationVirtualNode, dest)
+        .withTag(CordaMetrics.Tag.MembershipGroup, group)
+        .withTag(CordaMetrics.Tag.MessagingSubsystem, subsystem)
+        .withTag(CordaMetrics.Tag.MessageType, messageType)
+        .build().increment()
+}
 
 fun recordInboundMessagesMetric(message: AuthenticatedMessage) {
     message.header.let {
@@ -15,6 +61,16 @@ fun recordInboundMessagesMetric(message: AuthenticatedMessage) {
 fun recordInboundMessagesMetric(message: InboundUnauthenticatedMessage) {
     recordInboundMessagesMetric(null, null, null,
         message.header.subsystem, message::class.java.simpleName)
+}
+
+fun recordInboundSessionMessagesMetric() {
+    recordInboundMessagesMetric(null, null, null, P2P_SUBSYSTEM, SESSION_MESSAGE_TYPE)
+}
+
+fun recordInboundHeartbeatMessagesMetric(sourceVnode: HoldingIdentity,
+                                         destinationVnode: HoldingIdentity) {
+    recordInboundMessagesMetric(sourceVnode.x500Name.toString(), destinationVnode.x500Name.toString(),
+        destinationVnode.groupId, P2P_SUBSYSTEM, HEARTBEAT_MESSAGE)
 }
 
 private fun recordInboundMessagesMetric(source: String?, dest: String?, group: String?, subsystem: String, messageType: String) {

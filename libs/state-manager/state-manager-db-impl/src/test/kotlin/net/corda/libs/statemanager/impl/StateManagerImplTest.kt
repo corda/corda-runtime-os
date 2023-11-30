@@ -98,6 +98,26 @@ class StateManagerImplTest {
     }
 
     @Test
+    fun `update returns null for states that failed because they were already deleted`() {
+        val persistedStateTwo = persistentStateTwo.newVersion()
+        whenever(stateRepository.get(any(), any())).thenReturn(listOf(persistedStateTwo))
+        whenever(stateRepository.update(any(), any()))
+            .thenReturn(StateRepository.StateUpdateSummary(
+                listOf(apiStateTwo.key),
+                listOf(apiStateTwo.key, apiStateThree.key)
+            ))
+
+        val result = stateManager.update(listOf(apiStateOne, apiStateTwo, apiStateThree))
+        assertThat(result).containsExactly(
+            entry(persistedStateTwo.key, persistedStateTwo.toState()),
+            entry(persistentStateThree.key, null)
+        )
+        verify(stateRepository).get(connection, listOf(apiStateTwo.key, apiStateThree.key))
+        verify(stateRepository).update(connection, listOf(persistentStateOne, persistentStateTwo, persistentStateThree))
+        verifyNoMoreInteractions(stateRepository)
+    }
+
+    @Test
     fun updateReturnsEmptyMapAndDoesNotInteractWithTheDatabaseWhenEmptyListOfStatesIsUsedAsInput() {
         val failedUpdates = assertDoesNotThrow { stateManager.update(emptyList()) }
 

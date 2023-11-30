@@ -75,6 +75,8 @@ class OutboundMessageProcessorTest {
     }
     private val serialNumber = 1L
     private val sessionCounterparties = mock<SessionManager.SessionCounterparties> {
+        on { ourId } doReturn myIdentity
+        on { counterpartyId } doReturn remoteIdentity
         on { serial } doReturn serialNumber
     }
 

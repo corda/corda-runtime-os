@@ -9,6 +9,7 @@ import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.LinkOutHeader
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.MessageAck
+import net.corda.data.p2p.NetworkType
 import net.corda.data.p2p.SessionPartitions
 import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
@@ -823,7 +824,8 @@ class InboundMessageProcessorTest {
         fun `non null responses from sessionManager will produce link out message`() {
             val handshake = ResponderHandshakeMessage()
             val message = LinkInMessage(handshake)
-            val response = LinkOutMessage(LinkOutHeader(), handshake)
+            val header = LinkOutHeader(myIdentity.toAvro(), remoteIdentity.toAvro(), NetworkType.CORDA_5, "https://example.com")
+            val response = LinkOutMessage(header, handshake)
             whenever(sessionManager.processSessionMessage(message)).thenReturn(response)
 
             val records = processor.onNext(
@@ -844,7 +846,8 @@ class InboundMessageProcessorTest {
                 on { header } doReturn commonHeader
             }
             val message = LinkInMessage(hello)
-            val response = LinkOutMessage(LinkOutHeader(), hello)
+            val header = LinkOutHeader(myIdentity.toAvro(), remoteIdentity.toAvro(), NetworkType.CORDA_5, "https://example.com")
+            val response = LinkOutMessage(header, hello)
             whenever(sessionManager.processSessionMessage(message)).thenReturn(response)
             whenever(assignedListener.getCurrentlyAssignedPartitions()).thenReturn(emptySet())
 
@@ -868,7 +871,8 @@ class InboundMessageProcessorTest {
                 on { header } doReturn commonHeader
             }
             val message = LinkInMessage(hello)
-            val response = LinkOutMessage(LinkOutHeader(), hello)
+            val header = LinkOutHeader(myIdentity.toAvro(), remoteIdentity.toAvro(), NetworkType.CORDA_5, "https://example.com")
+            val response = LinkOutMessage(header, hello)
             whenever(sessionManager.processSessionMessage(message)).thenReturn(response)
             whenever(assignedListener.getCurrentlyAssignedPartitions()).thenReturn(setOf(4, 5, 8))
 
