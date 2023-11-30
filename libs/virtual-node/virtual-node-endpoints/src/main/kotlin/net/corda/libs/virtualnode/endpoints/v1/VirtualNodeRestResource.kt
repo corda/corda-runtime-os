@@ -43,7 +43,7 @@ interface VirtualNodeRestResource : RestResource {
     ): ResponseEntity<AsyncResponse>
 
     /**
-     * Requests an update to an existing virtual node.
+     * Requests an update to an existing virtual node database.
      *
      * @throws `HttpApiException` If the request returns an exceptional response.
      */
