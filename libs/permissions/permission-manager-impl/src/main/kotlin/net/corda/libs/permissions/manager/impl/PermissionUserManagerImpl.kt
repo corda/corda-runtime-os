@@ -15,8 +15,7 @@ import net.corda.libs.permissions.manager.PermissionUserManager
 import net.corda.libs.permissions.manager.impl.SmartConfigUtil.getEndpointTimeout
 import net.corda.libs.permissions.manager.impl.converter.convertToResponseDto
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
-import net.corda.libs.permissions.manager.request.ChangeUserPasswordOtherDto
-import net.corda.libs.permissions.manager.request.ChangeUserPasswordSelfDto
+import net.corda.libs.permissions.manager.request.ChangeUserPasswordDto
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.request.GetPermissionSummaryRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
@@ -24,11 +23,11 @@ import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
 import net.corda.libs.permissions.manager.response.UserPermissionSummaryResponseDto
 import net.corda.libs.permissions.manager.response.UserResponseDto
 import net.corda.messaging.api.publisher.RPCSender
+import net.corda.permissions.password.PasswordHash
 import net.corda.permissions.password.PasswordService
 import net.corda.schema.configuration.ConfigKeys
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import java.time.temporal.TemporalUnit
 import java.util.concurrent.atomic.AtomicReference
 
 class PermissionUserManagerImpl(
@@ -65,7 +64,6 @@ class PermissionUserManagerImpl(
                 )
             )
         )
-
         return result.convertToResponseDto()
     }
 
@@ -77,19 +75,17 @@ class PermissionUserManagerImpl(
         return cachedUser.convertToResponseDto()
     }
 
-    override fun changeUserPasswordSelf(changeUserPasswordSelfDto: ChangeUserPasswordSelfDto): UserResponseDto {
-        val saltAndHash = changeUserPasswordSelfDto.newPassword.let {
-            passwordService.saltAndHash(it)
-        }
+    override fun changeUserPasswordSelf(changeUserPasswordDto: ChangeUserPasswordDto): UserResponseDto {
+        val saltAndHash = validatePasswordAndGetHash(changeUserPasswordDto.username, changeUserPasswordDto.newPassword)
 
         val result = sendPermissionWriteRequest<User>(
             rpcSender,
             writerTimeout,
             PermissionManagementRequest(
-                changeUserPasswordSelfDto.requestedBy,
+                changeUserPasswordDto.requestedBy,
                 null,
                 ChangeUserPasswordSelfRequest(
-                    changeUserPasswordSelfDto.requestedBy,
+                    changeUserPasswordDto.requestedBy,
                     saltAndHash.salt,
                     saltAndHash.value,
                     Instant.now().plus(selfUserPasswordExpiryDays.toLong(), ChronoUnit.DAYS)
@@ -100,28 +96,42 @@ class PermissionUserManagerImpl(
         return result.convertToResponseDto()
     }
 
-    override fun changeUserPasswordOther(changeUserPasswordOtherDto: ChangeUserPasswordOtherDto): UserResponseDto {
-        val saltAndHash = changeUserPasswordOtherDto.newPassword.let {
-            passwordService.saltAndHash(it)
-        }
+    override fun changeUserPasswordOther(changeUserPasswordDto: ChangeUserPasswordDto): UserResponseDto {
+        val saltAndHash = validatePasswordAndGetHash(changeUserPasswordDto.username, changeUserPasswordDto.newPassword)
 
         val result = sendPermissionWriteRequest<User>(
             rpcSender,
             writerTimeout,
             PermissionManagementRequest(
-                changeUserPasswordOtherDto.requestedBy,
+                changeUserPasswordDto.requestedBy,
                 null,
                 ChangeUserPasswordOtherRequest(
-                    changeUserPasswordOtherDto.requestedBy,
-                    changeUserPasswordOtherDto.otherUser,
+                    changeUserPasswordDto.requestedBy,
+                    changeUserPasswordDto.username,
                     saltAndHash.salt,
                     saltAndHash.value,
-                    Instant.now().plus(selfUserPasswordExpiryDays.toLong(), ChronoUnit.DAYS)
+                    Instant.now().plus(otherUserPasswordExpiryDays.toLong(), ChronoUnit.DAYS)
                 )
             )
         )
 
         return result.convertToResponseDto()
+    }
+
+    private fun validatePasswordAndGetHash(username: String, newPassword: String) : PasswordHash {
+        val permissionManagementCache = checkNotNull(permissionManagementCacheRef.get()) {
+            "Permission management cache is null."
+        }
+        val cachedUser: User = permissionManagementCache.getUser(username)
+            ?: throw IllegalStateException("Could not find user with username ${username}")
+
+        val saltAndHash = passwordService.saltAndHash(newPassword)
+
+        if (saltAndHash.value == cachedUser.hashedPassword) {
+            throw IllegalArgumentException("New password must be different from current one.")
+        }
+
+        return saltAndHash
     }
 
     override fun addRoleToUser(addRoleToUserRequestDto: AddRoleToUserRequestDto): UserResponseDto {

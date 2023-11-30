@@ -1,8 +1,7 @@
 package net.corda.libs.permissions.manager
 
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
-import net.corda.libs.permissions.manager.request.ChangeUserPasswordOtherDto
-import net.corda.libs.permissions.manager.request.ChangeUserPasswordSelfDto
+import net.corda.libs.permissions.manager.request.ChangeUserPasswordDto
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.request.GetPermissionSummaryRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
@@ -27,12 +26,12 @@ interface PermissionUserManager {
     /**
      * Change a user's own password.
      */
-    fun changeUserPasswordSelf(changeUserPasswordSelfDto: ChangeUserPasswordSelfDto): UserResponseDto
+    fun changeUserPasswordSelf(changeUserPasswordDto: ChangeUserPasswordDto): UserResponseDto
 
     /**
      * Change another user's password. Only valid for admin user.
      */
-    fun changeUserPasswordOther(changeUserPasswordOtherDto: ChangeUserPasswordOtherDto): UserResponseDto
+    fun changeUserPasswordOther(changeUserPasswordDto: ChangeUserPasswordDto): UserResponseDto
 
     /**
      * Add a Role to a User in the RBAC Permission System.

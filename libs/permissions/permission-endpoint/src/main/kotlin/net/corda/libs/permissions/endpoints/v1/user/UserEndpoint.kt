@@ -114,7 +114,7 @@ interface UserEndpoint : RestResource {
         loginName: String
     ): UserResponseType
 
-    @HttpPUT(path = "/selfpassword", description = "This method updates a users own password.",
+    @HttpPOST(path = "/selfpassword", description = "This method updates a users own password.",
         responseDescription = """
             A user with the following attributes:
             id: Unique server generated identifier for the user
@@ -144,7 +144,7 @@ interface UserEndpoint : RestResource {
         password: String,
     ): UserResponseType
 
-    @HttpPUT(path = "/otheruserpassword", description = "This method updates another user's password, only usable by admin.",
+    @HttpPOST(path = "/otheruserpassword", description = "This method updates another user's password, only usable by admin.",
         responseDescription = """
             A user with the following attributes:
             id: Unique server generated identifier for the user

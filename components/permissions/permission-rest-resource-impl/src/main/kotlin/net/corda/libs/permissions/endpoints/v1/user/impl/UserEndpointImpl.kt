@@ -18,8 +18,7 @@ import net.corda.libs.permissions.endpoints.v1.user.types.UserPermissionSummaryR
 import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
-import net.corda.libs.permissions.manager.request.ChangeUserPasswordOtherDto
-import net.corda.libs.permissions.manager.request.ChangeUserPasswordSelfDto
+import net.corda.libs.permissions.manager.request.ChangeUserPasswordDto
 import net.corda.libs.permissions.manager.request.GetPermissionSummaryRequestDto
 import net.corda.libs.permissions.manager.request.GetRoleRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
@@ -29,6 +28,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.permissions.management.PermissionManagementService
+import net.corda.rest.exception.InvalidStateChangeException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -107,29 +107,31 @@ class UserEndpointImpl @Activate constructor(
     }
 
     override fun changeUserPasswordSelf(loginName: String, password: String): UserResponseType {
-        // reject if same password as current
         val principal = getRestThreadLocalContext()
 
-        // Create request object, send it to kafka for db worker
-        val userResponseDto = withPermissionManager(permissionManagementService.permissionManager, logger) {
-            changeUserPasswordSelf(ChangeUserPasswordSelfDto(principal, password))
+        val userResponseDto = try {
+            withPermissionManager(permissionManagementService.permissionManager, logger) {
+                changeUserPasswordSelf(ChangeUserPasswordDto(principal, loginName, password))
+            }
+        } catch (e: IllegalArgumentException) {
+            throw InvalidStateChangeException(e.message ?: "New password must be different from old one.")
         }
 
         return userResponseDto.convertToEndpointType()
     }
 
     override fun changeOtherUserPassword(loginName: String, password: String): UserResponseType {
-        // reject if same password as current
-        TODO("verify that user is admin and has permission to update other user passwords")
+        val principal = getRestThreadLocalContext()
 
-//        val principal = getRestThreadLocalContext()
-//
-//        // Create request object, send it to kafka for db worker
-//        val userResponseDto = withPermissionManager(permissionManagementService.permissionManager, logger) {
-//            changeUserPasswordOther(ChangeUserPasswordOtherDto(principal, loginName, password))
-//        }
-//
-//        return userResponseDto.convertToEndpointType()
+        val userResponseDto = try {
+            withPermissionManager(permissionManagementService.permissionManager, logger) {
+                changeUserPasswordOther(ChangeUserPasswordDto(principal, loginName, password))
+            }
+        } catch (e: IllegalArgumentException) {
+            throw InvalidStateChangeException(e.message ?: "New password must be different from old one.")
+        }
+
+        return userResponseDto.convertToEndpointType()
     }
 
     override fun addRole(loginName: String, roleId: String): ResponseEntity<UserResponseType> {
