@@ -43,10 +43,8 @@ import net.corda.crypto.softhsm.impl.SoftCryptoService
 import net.corda.crypto.softhsm.impl.WrappingRepositoryImpl
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationRequest
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationResponse
-import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsResponse
-import net.corda.data.flow.event.FlowEvent
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
@@ -396,9 +394,8 @@ class CryptoProcessorImpl @Activate constructor(
         val flowOpsProcessor = CryptoFlowOpsProcessor(
             cryptoService,
             externalEventResponseFactory,
-            retryingConfig, keyEncodingService,
-            FlowOpsRequest::class.java,
-            FlowEvent::class.java
+            retryingConfig,
+            keyEncodingService
         )
 
         coordinator.createManagedResource(FLOW_OPS_SUBSCRIPTION) {
