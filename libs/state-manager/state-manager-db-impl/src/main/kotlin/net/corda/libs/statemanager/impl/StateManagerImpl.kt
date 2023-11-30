@@ -39,6 +39,7 @@ class StateManagerImpl(
         State(key, value, version, objectMapper.convertToMetadata(metadata), modifiedTime)
 
     override fun create(states: Collection<State>): Set<String> {
+        if (states.isEmpty()) return emptySet()
         val successfulKeys = dataSource.connection.transaction { connection ->
             stateRepository.create(connection, states.map { it.toPersistentEntity() })
         }

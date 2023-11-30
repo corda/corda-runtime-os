@@ -187,12 +187,6 @@ class StateManagerIntegrationTest {
     }
 
     @Test
-    fun `create called with no states succeeds`() {
-        val states = setOf<State>()
-        assertThat(stateManager.create(states)).isEmpty()
-    }
-
-    @Test
     @DisplayName(value = "failures when persisting some states do not halt the entire batch")
     fun failuresWhenPersistingSomeStatesDoesNotHaltTheEntireBatch() {
         val failedSates = 5

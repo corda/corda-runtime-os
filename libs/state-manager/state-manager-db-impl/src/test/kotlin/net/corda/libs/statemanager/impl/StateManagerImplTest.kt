@@ -13,6 +13,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
@@ -56,6 +57,13 @@ class StateManagerImplTest {
         assertThat(stateManager.create(listOf(apiStateOne, apiStateTwo)))
             .contains(apiStateOne.key)
         verify(stateRepository).create(connection, listOf(persistentStateOne, persistentStateTwo))
+    }
+
+    @Test
+    fun createReturnsEmptyWithEmptyInput() {
+        doReturn(emptySet<String>()).whenever(stateRepository).create(connection, listOf())
+        assertThat(stateManager.create(listOf())).isEmpty()
+        verify(stateRepository, never()).create(any(), any())
     }
 
     @Test
