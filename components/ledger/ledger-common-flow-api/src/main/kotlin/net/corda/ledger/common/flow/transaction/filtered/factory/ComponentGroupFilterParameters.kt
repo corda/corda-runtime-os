@@ -1,6 +1,7 @@
 package net.corda.ledger.common.flow.transaction.filtered.factory
 
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
+import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.crypto.merkle.MerkleProofType
 import java.util.function.Predicate
@@ -34,9 +35,33 @@ sealed interface ComponentGroupFilterParameters {
     data class AuditProof<T : Any>(
         override val componentGroupIndex: Int,
         val deserializedClass: Class<T>,
-        val predicate: Predicate<T>
+        val predicate: AuditProofPredicate<T>
     ) : ComponentGroupFilterParameters {
         override val merkleProofType = MerkleProofType.AUDIT
+
+        sealed interface AuditProofPredicate<T> {
+            /**
+             *  [Content] include components to [FilteredTransaction] where the components meet predicate.
+             *
+             *  @property predicate Filtering function that is applied to each deserialized component with the group
+             */
+            class Content<T>(private val predicate: Predicate<T>) : AuditProofPredicate<T>, Predicate<T> {
+                override fun test(t: T): Boolean {
+                    return predicate.test(t)
+                }
+            }
+
+            /**
+             *  [Index] include components of indexes if the indexes exist.
+             *
+             *  @property indexes component indexes to include.
+             */
+            class Index<T>(private val indexes: List<Int>) : AuditProofPredicate<T>, Predicate<Int> {
+                override fun test(t: Int): Boolean {
+                    return t in indexes
+                }
+            }
+        }
     }
 
     /**

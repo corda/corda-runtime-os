@@ -80,6 +80,11 @@ class UtxoLedgerServiceImpl @Activate constructor(
     override fun createTransactionBuilder() =
         UtxoTransactionBuilderImpl(utxoSignedTransactionFactory, notaryLookup)
 
+    @Suspendable
+    override fun verifyContract(ledgerTransaction: UtxoLedgerTransaction) {
+        transactionVerificationService.verify(ledgerTransaction)
+    }
+
     @Suppress("UNCHECKED_CAST")
     @Suspendable
     override fun <T : ContractState> resolve(stateRefs: Iterable<StateRef>): List<StateAndRef<T>> {

@@ -263,6 +263,15 @@ data class UtxoSignedTransactionImpl(
         return utxoLedgerTransactionFactory.create(wireTransaction)
     }
 
+    @Suspendable
+    override fun toLedgerTransaction(inputStateAndRefs: List<StateAndRef<*>>, referenceStateAndRefs: List<StateAndRef<*>>): UtxoLedgerTransaction {
+        return utxoLedgerTransactionFactory.createWithStateAndRefs(
+            wireTransaction,
+            inputStateAndRefs,
+            referenceStateAndRefs
+        )
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is UtxoSignedTransactionImpl) return false

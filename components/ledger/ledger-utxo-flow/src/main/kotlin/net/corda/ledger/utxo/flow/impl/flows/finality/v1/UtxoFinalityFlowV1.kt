@@ -109,6 +109,9 @@ class UtxoFinalityFlowV1(
                 }
             }
         }
+
+        // backchain switch will be applied in a follow up PR
+
     }
 
     @Suppress("MaxLineLength")
