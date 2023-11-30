@@ -61,7 +61,6 @@ class StateManagerImplTest {
 
     @Test
     fun createReturnsEmptyWithEmptyInput() {
-        doReturn(emptySet<String>()).whenever(stateRepository).create(connection, listOf())
         assertThat(stateManager.create(listOf())).isEmpty()
         verify(stateRepository, never()).create(any(), any())
     }
