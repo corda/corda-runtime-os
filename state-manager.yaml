@@ -93,3 +93,14 @@ workers:
             secretKeyRef:
               name: "state-manager-db-postgresql"
               key: "password"
+  crypto:
+    stateManager:
+      db:
+        host: "state-manager-db-postgresql"
+        username:
+          value: "statemanager-user"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "state-manager-db-postgresql"
+              key: "password"

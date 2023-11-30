@@ -1304,6 +1304,13 @@
                                         "$ref": "#/$defs/basicAuthConfig"
                                     }
                                 ]
+                            },
+                            "crypto": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/$defs/basicAuthConfig"
+                                    }
+                                ]
                             }
                         },
                         "clientImage": {
@@ -1663,6 +1670,9 @@
                                 "profiling": {},
                                 "resources": {},
                                 "kafka": {},
+                                "stateManager": {
+                                    "$ref": "#/$defs/stateManager"
+                                },
                                 "clusterDbConnectionPool": {
                                     "type": "object",
                                     "default": {},
