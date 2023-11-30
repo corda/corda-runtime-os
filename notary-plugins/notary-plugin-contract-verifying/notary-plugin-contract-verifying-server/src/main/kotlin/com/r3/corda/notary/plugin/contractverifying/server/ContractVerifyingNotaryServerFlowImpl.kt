@@ -39,6 +39,8 @@ class ContractVerifyingNotaryServerFlowImpl : ResponderFlow {
     @Suspendable
     override fun call(session: FlowSession) {
         try {
+            logger.info("Calling Contract Verifying Notary server...")
+
             // Receive the payload from the client
             val (initialTransaction, filteredTransactionsAndSignatures) = session.receive(ContractVerifyingNotarizationPayload::class.java)
 
