@@ -134,9 +134,6 @@ class PersistenceServiceInternalTests {
     @InjectService(timeout = TIMEOUT_MILLIS)
     lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
 
-    private val requestClass = EntityRequest::class.java
-    private val responseClass = FlowEvent::class.java
-
     @BeforeAll
     fun setup(
         @InjectService(timeout = TIMEOUT_MILLIS)
