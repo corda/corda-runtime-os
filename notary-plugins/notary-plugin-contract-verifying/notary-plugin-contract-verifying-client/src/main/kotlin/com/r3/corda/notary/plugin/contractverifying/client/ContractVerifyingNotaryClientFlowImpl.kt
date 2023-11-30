@@ -15,7 +15,6 @@ import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.LoggerFactory
-import java.lang.RuntimeException
 
 @InitiatingFlow(protocol = "com.r3.corda.notary.plugin.contractverifying", version = [1])
 class ContractVerifyingNotaryClientFlowImpl(
@@ -46,12 +45,21 @@ class ContractVerifyingNotaryClientFlowImpl(
             payload
         )
 
-        if (notarizationResponse.error != null) {
-            throw RuntimeException("Failed to notarize transaction ${signedTransaction.id}")
-        }
-
-        return notarizationResponse.signatures.also {
-            logger.info("Successfully notarized transaction: ${signedTransaction.id} with notary: $notaryRepresentative.")
+        return when (val error = notarizationResponse.error) {
+            null -> {
+                if (logger.isTraceEnabled) {
+                    logger.trace("Received notarization response from notary service {} for transaction {}",
+                        signedTransaction.notaryName, signedTransaction.id)
+                }
+                notarizationResponse.signatures
+            }
+            else -> {
+                if (logger.isTraceEnabled) {
+                    logger.trace("Received notarization error from notary service {}. Error: {}",
+                        signedTransaction.notaryName, error)
+                }
+                throw error
+            }
         }
     }
 
