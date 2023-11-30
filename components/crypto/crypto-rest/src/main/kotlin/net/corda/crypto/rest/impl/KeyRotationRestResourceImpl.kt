@@ -93,12 +93,10 @@ class KeyRotationRestResourceImpl @Activate constructor(
     private var subscriptionRegistrationHandle: RegistrationHandle? = null
 
     override fun start() {
-        logger.info("KeyRotationRestResource starting.")
         lifecycleCoordinator.start()
     }
 
     override fun stop() {
-        logger.info("KeyRotationRestResource stopping.")
         lifecycleCoordinator.stop()
     }
 
