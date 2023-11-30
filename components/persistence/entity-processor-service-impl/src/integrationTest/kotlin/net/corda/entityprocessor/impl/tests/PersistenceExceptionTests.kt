@@ -7,7 +7,6 @@ import net.corda.cpk.read.CpkReadService
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
@@ -115,9 +114,6 @@ class PersistenceExceptionTests {
     private lateinit var deserializer: CordaAvroDeserializer<EntityResponse>
 
     private var dbCounter = 0
-
-    private val requestClass = EntityRequest::class.java
-    private val responseClass = FlowEvent::class.java
 
     @BeforeAll
     fun setup(
