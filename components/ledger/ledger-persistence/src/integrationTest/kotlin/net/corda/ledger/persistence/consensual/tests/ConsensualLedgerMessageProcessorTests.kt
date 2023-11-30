@@ -150,9 +150,7 @@ class ConsensualLedgerMessageProcessorTests {
             currentSandboxGroupContext,
             virtualNode.entitySandboxService,
             delegatedRequestHandlerSelector,
-            responseFactory,
-            requestClass,
-            responseClass
+            responseFactory
         )
 
         // Process the messages (this should persist transaction to the DB)
