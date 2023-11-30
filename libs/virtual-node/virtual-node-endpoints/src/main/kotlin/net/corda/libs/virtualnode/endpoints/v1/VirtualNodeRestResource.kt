@@ -48,7 +48,7 @@ interface VirtualNodeRestResource : RestResource {
      * @throws `HttpApiException` If the request returns an exceptional response.
      */
     @HttpPUT(
-        path= "{virtualNodeShortId}",
+        path= "{virtualNodeShortId}/db",
         title = "Update virtual node",
         description = "This method updates virtual node connection strings.",
         responseDescription = "The details of the updated virtual node.",
