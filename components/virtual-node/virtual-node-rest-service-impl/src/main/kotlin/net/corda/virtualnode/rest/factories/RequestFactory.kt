@@ -2,7 +2,7 @@ package net.corda.virtualnode.rest.factories
 
 import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
-import net.corda.libs.virtualnode.endpoints.v1.types.UpdateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.UpdateVirtualNodeDbRequest
 import net.corda.virtualnode.HoldingIdentity
 
 internal interface RequestFactory {
@@ -15,6 +15,6 @@ internal interface RequestFactory {
 
     fun updateVirtualNodeRequest(
         holdingIdentity: HoldingIdentity,
-        request: UpdateVirtualNodeRequest
+        request: UpdateVirtualNodeDbRequest
     ): VirtualNodeAsynchronousRequest
 }

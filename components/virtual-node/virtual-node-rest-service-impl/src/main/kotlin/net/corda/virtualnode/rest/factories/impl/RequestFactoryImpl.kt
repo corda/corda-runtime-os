@@ -5,7 +5,7 @@ import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.data.virtualnode.VirtualNodeUpdateRequest
 import net.corda.rest.security.RestContextProvider
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
-import net.corda.libs.virtualnode.endpoints.v1.types.UpdateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.UpdateVirtualNodeDbRequest
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
@@ -45,7 +45,7 @@ internal class RequestFactoryImpl(
 
     override fun updateVirtualNodeRequest(
         holdingIdentity: HoldingIdentity,
-        request: UpdateVirtualNodeRequest
+        request: UpdateVirtualNodeDbRequest
     ): VirtualNodeAsynchronousRequest {
         return VirtualNodeAsynchronousRequest().apply {
             this.requestId = holdingIdentity.shortHash.toString()

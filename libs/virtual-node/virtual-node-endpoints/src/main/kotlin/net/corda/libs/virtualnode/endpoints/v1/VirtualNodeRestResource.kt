@@ -3,7 +3,7 @@ package net.corda.libs.virtualnode.endpoints.v1
 import net.corda.libs.virtualnode.endpoints.v1.types.ChangeVirtualNodeStateResponse
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity
-import net.corda.libs.virtualnode.endpoints.v1.types.UpdateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.UpdateVirtualNodeDbRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
 import net.corda.rest.RestResource
@@ -58,7 +58,7 @@ interface VirtualNodeRestResource : RestResource {
         @RestPathParameter(description = "Short ID of the virtual node instance to update")
         virtualNodeShortId: String,
         @ClientRequestBodyParameter(description = "Details of the virtual node to be updated")
-        request: UpdateVirtualNodeRequest
+        request: UpdateVirtualNodeDbRequest
     ): ResponseEntity<AsyncResponse>
 
 
