@@ -51,7 +51,9 @@ class ContractVerifyingNotaryServerFlowImpl : ResponderFlow {
 
             // Verify the signatures
             if (logger.isTraceEnabled) {
-                logger.trace("Verifying signatures for the following dependencies: {}", filteredTransactionsAndSignatures.map { it.filteredTransaction.id })
+                logger.trace(
+                    "Verifying signatures for the following dependencies: {}",
+                    filteredTransactionsAndSignatures.map { it.filteredTransaction.id })
             }
 
             verifySignatures(initialTransaction.notaryKey, filteredTransactionsAndSignatures)

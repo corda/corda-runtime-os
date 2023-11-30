@@ -264,7 +264,10 @@ data class UtxoSignedTransactionImpl(
     }
 
     @Suspendable
-    override fun toLedgerTransaction(inputStateAndRefs: List<StateAndRef<*>>, referenceStateAndRefs: List<StateAndRef<*>>): UtxoLedgerTransaction {
+    override fun toLedgerTransaction(
+        inputStateAndRefs: List<StateAndRef<*>>,
+        referenceStateAndRefs: List<StateAndRef<*>>
+    ): UtxoLedgerTransaction {
         return utxoLedgerTransactionFactory.createWithStateAndRefs(
             wireTransaction,
             inputStateAndRefs,

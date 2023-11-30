@@ -134,8 +134,14 @@ class FilteredTransactionFactoryImplTest {
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(
-                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java, AuditProofPredicate.Content { true }),
-                ComponentGroupFilterParameters.AuditProof(1, Any::class.java, AuditProofPredicate.Content { it is MyClassA || it is MyClassB }),
+                ComponentGroupFilterParameters.AuditProof(
+                    0,
+                    TransactionMetadata::class.java,
+                    AuditProofPredicate.Content { true }),
+                ComponentGroupFilterParameters.AuditProof(
+                    1,
+                    Any::class.java,
+                    AuditProofPredicate.Content { it is MyClassA || it is MyClassB }),
             )
         )
 

@@ -20,7 +20,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE_REQUIRED
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
-import java.util.function.Predicate
 
 @Component(
     service = [ FilteredTransactionFactory::class, SingletonSerializeAsToken::class, UsedByFlow::class ],
@@ -84,7 +83,7 @@ class FilteredTransactionFactoryImpl @Activate constructor(
             }
 
         val merkleProof = when (parameters) {
-            is ComponentGroupFilterParameters.AuditProof<*> -> {
+            is AuditProof<*> -> {
                 val skipFiltering = componentGroupIndex == 0
 
                 // change filtering logic here
