@@ -1,6 +1,6 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation.services
 
-import net.corda.data.virtualnode.VirtualNodeUpdateRequest
+import net.corda.data.virtualnode.VirtualNodeDbConnectionUpdateRequest
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.virtualnode.datamodel.repository.HoldingIdentityRepository
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
@@ -19,7 +19,7 @@ internal class UpdateVirtualNodeServiceImpl(
     publisher
 ) {
 
-    override fun validateRequest(request: VirtualNodeUpdateRequest): String? {
+    override fun validateRequest(request: VirtualNodeDbConnectionUpdateRequest): String? {
         with(request) {
             if (!vaultDdlConnection.isNullOrBlank() && vaultDmlConnection.isNullOrBlank()) {
                 return "If Vault DDL connection is provided, Vault DML connection needs to be provided as well."

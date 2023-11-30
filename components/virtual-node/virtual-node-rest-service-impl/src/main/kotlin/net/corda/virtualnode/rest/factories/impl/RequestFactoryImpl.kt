@@ -2,7 +2,7 @@ package net.corda.virtualnode.rest.factories.impl
 
 import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
-import net.corda.data.virtualnode.VirtualNodeUpdateRequest
+import net.corda.data.virtualnode.VirtualNodeDbConnectionUpdateRequest
 import net.corda.rest.security.RestContextProvider
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.UpdateVirtualNodeDbRequest
@@ -50,7 +50,7 @@ internal class RequestFactoryImpl(
         return VirtualNodeAsynchronousRequest().apply {
             this.requestId = holdingIdentity.shortHash.toString()
             this.timestamp = clock.instant()
-            this.request = VirtualNodeUpdateRequest().apply {
+            this.request = VirtualNodeDbConnectionUpdateRequest().apply {
                 this.holdingId = holdingIdentity.toAvro()
                 this.vaultDdlConnection = request.vaultDdlConnection
                 this.vaultDmlConnection = request.vaultDmlConnection

@@ -3,9 +3,9 @@ package net.corda.virtualnode.write.db.impl.writer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
+import net.corda.data.virtualnode.VirtualNodeDbConnectionUpdateRequest
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
-import net.corda.data.virtualnode.VirtualNodeUpdateRequest
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbConnectionManager
@@ -169,7 +169,7 @@ internal class VirtualNodeWriterFactory(
                 LoggerFactory.getLogger(CreateVirtualNodeOperationHandler::class.java)
             ),
 
-            VirtualNodeUpdateRequest::class.java to UpdateVirtualNodeOperationHandler(
+            VirtualNodeDbConnectionUpdateRequest::class.java to UpdateVirtualNodeOperationHandler(
                 dbConnectionManager.getClusterEntityManagerFactory(),
                 updateVirtualNodeService,
                 virtualNodeDbFactory,

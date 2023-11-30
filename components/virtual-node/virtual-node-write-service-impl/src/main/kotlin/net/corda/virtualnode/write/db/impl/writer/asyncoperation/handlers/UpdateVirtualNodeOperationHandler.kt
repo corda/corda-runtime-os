@@ -1,6 +1,6 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers
 
-import net.corda.data.virtualnode.VirtualNodeUpdateRequest
+import net.corda.data.virtualnode.VirtualNodeDbConnectionUpdateRequest
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
 import net.corda.messaging.api.publisher.Publisher
@@ -25,9 +25,9 @@ internal class UpdateVirtualNodeOperationHandler(
     statusPublisher: Publisher,
     private val logger: Logger,
     private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl(),
-): VirtualNodeAsyncOperationHandler<VirtualNodeUpdateRequest>,
+): VirtualNodeAsyncOperationHandler<VirtualNodeDbConnectionUpdateRequest>,
     AbstractVirtualNodeOperationHandler(statusPublisher, logger) {
-    override fun handle(requestTimestamp: Instant, requestId: String, request: VirtualNodeUpdateRequest) {
+    override fun handle(requestTimestamp: Instant, requestId: String, request: VirtualNodeDbConnectionUpdateRequest) {
         publishStartProcessingStatus(requestId)
 
         try {

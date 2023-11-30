@@ -1,6 +1,6 @@
 package net.corda.virtualnode.write.db.impl.writer.asyncoperation.services
 
-import net.corda.data.virtualnode.VirtualNodeUpdateRequest
+import net.corda.data.virtualnode.VirtualNodeDbConnectionUpdateRequest
 import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.messaging.api.records.Record
@@ -10,7 +10,7 @@ import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbConnections
 
 internal interface UpdateVirtualNodeService {
 
-    fun validateRequest(request: VirtualNodeUpdateRequest): String?
+    fun validateRequest(request: VirtualNodeDbConnectionUpdateRequest): String?
 
     fun persistHoldingIdAndVirtualNode(
         holdingIdentity: HoldingIdentity,
