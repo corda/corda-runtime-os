@@ -3927,54 +3927,6 @@
         }
       }
     },
-    "/virtualnode/{virtualnodeshortid}" : {
-      "put" : {
-        "tags" : [ "Virtual Node API" ],
-        "description" : "This method updates virtual node connection strings.",
-        "operationId" : "put_virtualnode__virtualnodeshortid_",
-        "parameters" : [ {
-          "name" : "virtualnodeshortid",
-          "in" : "path",
-          "description" : "Short ID of the virtual node instance to update",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "Short ID of the virtual node instance to update",
-            "nullable" : false,
-            "example" : "string"
-          }
-        } ],
-        "requestBody" : {
-          "description" : "requestBody",
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/UpdateVirtualNodeRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "The details of the updated virtual node.",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/AsyncResponse"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
     "/virtualnode/{virtualnodeshortid}/cpi/{targetcpifilechecksum}" : {
       "put" : {
         "tags" : [ "Virtual Node API" ],
@@ -4017,6 +3969,54 @@
         "responses" : {
           "200" : {
             "description" : "Identifier for the request.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AsyncResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/virtualnode/{virtualnodeshortid}/db" : {
+      "put" : {
+        "tags" : [ "Virtual Node API" ],
+        "description" : "This method updates virtual node connection strings.",
+        "operationId" : "put_virtualnode__virtualnodeshortid__db",
+        "parameters" : [ {
+          "name" : "virtualnodeshortid",
+          "in" : "path",
+          "description" : "Short ID of the virtual node instance to update",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Short ID of the virtual node instance to update",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateVirtualNodeDbRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "The details of the updated virtual node.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -5651,7 +5651,7 @@
           }
         }
       },
-      "UpdateVirtualNodeRequest" : {
+      "UpdateVirtualNodeDbRequest" : {
         "type" : "object",
         "properties" : {
           "cryptoDdlConnection" : {
