@@ -16,13 +16,7 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
 
     override fun create(connection: Connection, states: Collection<StateEntity>): Collection<String> {
         return connection.prepareStatement(queryProvider.createStates(states.size)).use { statement ->
-            val indices = iterator {
-                var i = 1
-                while (true) {
-                    yield(i)
-                    i++
-                }
-            }
+            val indices = generateSequence(1) { it + 1 }.iterator()
             states.forEach { state ->
                 statement.setString(indices.next(), state.key)
                 statement.setBytes(indices.next(), state.value)
@@ -50,13 +44,7 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
 
     override fun update(connection: Connection, states: List<StateEntity>): StateRepository.StateUpdateSummary {
         if (states.isEmpty()) return StateRepository.StateUpdateSummary(emptyList(), emptyList())
-        val indices = iterator {
-            var i = 1
-            while (true) {
-                yield(i)
-                i++
-            }
-        }
+        val indices = generateSequence(1) { it + 1 }.iterator()
         val updatedKeys = mutableListOf<String>()
         connection.prepareStatement(queryProvider.updateStates(states.size)).use { stmt ->
             states.forEach { state ->
