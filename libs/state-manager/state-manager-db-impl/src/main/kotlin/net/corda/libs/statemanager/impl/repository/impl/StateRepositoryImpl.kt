@@ -15,6 +15,7 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
     }
 
     override fun create(connection: Connection, states: Collection<StateEntity>): Collection<String> {
+        if (states.isEmpty()) return emptySet()
         return connection.prepareStatement(queryProvider.createStates(states.size)).use { statement ->
             val indices = generateSequence(1) { it + 1 }.iterator()
             states.forEach { state ->
