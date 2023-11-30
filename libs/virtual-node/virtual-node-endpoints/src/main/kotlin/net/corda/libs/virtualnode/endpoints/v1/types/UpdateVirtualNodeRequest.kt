@@ -5,7 +5,7 @@ package net.corda.libs.virtualnode.endpoints.v1.types
  *
  * @param shortHash The short hash of the virtual node.
  */
-data class UpdateVirtualNodeRequest(
+data class UpdateVirtualNodeDbRequest(
     val vaultDdlConnection: String?,
     val vaultDmlConnection: String?,
     val cryptoDdlConnection: String?,
