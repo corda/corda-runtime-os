@@ -74,19 +74,19 @@ class BatchedUniquenessCheckerLifecycleImpl @Activate constructor(
             }
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
-                    log.trace("The status of event: $event changed to ${event.status}, starting subscription.")
+                    log.trace("Starting subscription.")
                     initialiseRpcSubscription()
                     coordinator.updateStatus(LifecycleStatus.UP)
                 } else {
                     coordinator.updateStatus(event.status)
                     coordinator.closeManagedResources(setOf(CONFIG_HANDLE))
-                    log.trace("The status of event: $event changed to ${event.status}, stopping subscription.")
+                    log.trace("Stopping subscription.")
                 }
             }
             is StopEvent -> {
                 dependentComponents.stopAll()
                 coordinator.closeManagedResources(setOf(RPC_SUBSCRIPTION))
-                log.trace("Received stop event: $event, stopping subscription.")
+                log.trace("Stopping subscription.")
             }
             else -> {
                 log.warn("Unexpected event ${event}, ignoring")
