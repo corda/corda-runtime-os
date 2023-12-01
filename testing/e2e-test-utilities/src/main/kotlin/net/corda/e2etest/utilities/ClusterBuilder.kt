@@ -406,7 +406,7 @@ class ClusterBuilder {
         externalDBConnectionParams: ExternalDBConnectionParams? = null
     ) =
         put(
-            "/api/$REST_API_VERSION_PATH/virtualnode/$holdingIdShortHash",
+            "/api/$REST_API_VERSION_PATH/virtualnode/$holdingIdShortHash/db",
             vNodeChangeConnectionStringsBody(
                 externalDBConnectionParams?.cryptoDdlConnection,
                 externalDBConnectionParams?.cryptoDmlConnection,
