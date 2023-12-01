@@ -36,8 +36,12 @@ internal class SandboxGroupImpl(
     private val bundleUtils: BundleUtils
 ) : SandboxGroupInternal {
     init {
-        cpkSandboxes.groupBy { it.cpkMetadata.cpkId.name }.filter { (it.value.size > 1) }.map {
-            throw SandboxException("CPK ${it.key} is declared more than once.")
+        val cordappCpkNames = HashSet<String>()
+        cpkSandboxes.forEach {
+            if (cordappCpkNames.contains(it.cpkMetadata.cpkId.name)) {
+                throw SandboxException("CPK ${it.cpkMetadata.cpkId.name} is declared more than once.")
+            }
+            cordappCpkNames.add(it.cpkMetadata.cpkId.name)
         }
     }
 

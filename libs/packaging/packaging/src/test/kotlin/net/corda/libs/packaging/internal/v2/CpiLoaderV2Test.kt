@@ -55,7 +55,7 @@ class CpiLoaderV2Test {
             CpiLoaderV2().loadCpi(inMemoryCpi.toByteArray(), tmp, "in-memory", false)
         }
 
-        assert(e.message!!.contains("Multiple CPKs share a Corda-CPK-Cordapp-Name")) {
+        assert(e.message!!.contains("Multiple CPKs share the Corda-CPK-Cordapp-Name")) {
             "Failure should be caused by multiple CPKs sharing a Corda-CPK-Cordapp-Name."
         }
     }
