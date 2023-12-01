@@ -43,7 +43,7 @@ internal class RequestFactoryImpl(
         }
     }
 
-    override fun updateVirtualNodeRequest(
+    override fun updateVirtualNodeDbRequest(
         holdingIdentity: HoldingIdentity,
         request: UpdateVirtualNodeDbRequest
     ): VirtualNodeAsynchronousRequest {

@@ -13,7 +13,7 @@ internal interface RequestFactory {
         request: CreateVirtualNodeRequest
     ): VirtualNodeAsynchronousRequest
 
-    fun updateVirtualNodeRequest(
+    fun updateVirtualNodeDbRequest(
         holdingIdentity: HoldingIdentity,
         request: UpdateVirtualNodeDbRequest
     ): VirtualNodeAsynchronousRequest

@@ -440,7 +440,7 @@ internal class VirtualNodeRestResourceImpl(
         }
 
         // Build and send change request
-        val asyncRequest = requestFactory.updateVirtualNodeRequest(virtualNode.holdingIdentity, request)
+        val asyncRequest = requestFactory.updateVirtualNodeDbRequest(virtualNode.holdingIdentity, request)
 
         sendAsync(asyncRequest.requestId, asyncRequest)
 
