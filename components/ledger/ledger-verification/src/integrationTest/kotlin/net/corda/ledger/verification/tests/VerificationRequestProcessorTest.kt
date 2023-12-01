@@ -1,16 +1,15 @@
 package net.corda.ledger.verification.tests
 
-import net.corda.common.json.validation.JsonValidator
-import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.crypto.core.parseSecureHash
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.common.json.validation.JsonValidator
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.cipher.suite.SignatureSpecImpl
 import net.corda.crypto.core.DigitalSignatureWithKey
+import net.corda.crypto.core.parseSecureHash
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
@@ -158,9 +157,7 @@ class VerificationRequestProcessorTest {
             currentSandboxGroupContext,
             verificationSandboxService,
             VerificationRequestHandlerImpl(externalEventResponseFactory),
-            externalEventResponseFactory,
-            TransactionVerificationRequest::class.java,
-            FlowEvent::class.java
+            externalEventResponseFactory
         )
 
         // Send request to message processor
@@ -192,9 +189,7 @@ class VerificationRequestProcessorTest {
             currentSandboxGroupContext,
             verificationSandboxService,
             VerificationRequestHandlerImpl(externalEventResponseFactory),
-            externalEventResponseFactory,
-            TransactionVerificationRequest::class.java,
-            FlowEvent::class.java
+            externalEventResponseFactory
         )
 
         // Send request to message processor
@@ -229,9 +224,7 @@ class VerificationRequestProcessorTest {
             currentSandboxGroupContext,
             verificationSandboxService,
             VerificationRequestHandlerImpl(externalEventResponseFactory),
-            externalEventResponseFactory,
-            TransactionVerificationRequest::class.java,
-            FlowEvent::class.java
+            externalEventResponseFactory
         )
 
         // Send request to message processor (there were max number of redeliveries)

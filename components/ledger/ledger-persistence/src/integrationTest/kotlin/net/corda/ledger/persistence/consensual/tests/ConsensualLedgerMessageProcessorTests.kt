@@ -5,7 +5,6 @@ import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
-import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.persistence.FindTransaction
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
@@ -98,9 +97,6 @@ class ConsensualLedgerMessageProcessorTests {
     @InjectService(timeout = TIMEOUT_MILLIS)
     lateinit var currentSandboxGroupContext: CurrentSandboxGroupContext
 
-    private val requestClass = LedgerPersistenceRequest::class.java
-    private val responseClass = FlowEvent::class.java
-
     @BeforeAll
     fun setup(
         @InjectService(timeout = TIMEOUT_MILLIS)
@@ -150,9 +146,7 @@ class ConsensualLedgerMessageProcessorTests {
             currentSandboxGroupContext,
             virtualNode.entitySandboxService,
             delegatedRequestHandlerSelector,
-            responseFactory,
-            requestClass,
-            responseClass
+            responseFactory
         )
 
         // Process the messages (this should persist transaction to the DB)

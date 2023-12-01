@@ -30,10 +30,11 @@ class LedgerPersistenceRequestProcessor(
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     private val entitySandboxService: EntitySandboxService,
     private val delegatedRequestHandlerSelector: DelegatedRequestHandlerSelector,
-    private val responseFactory: ResponseFactory,
-    override val requestClass: Class<LedgerPersistenceRequest>,
-    override val responseClass: Class<FlowEvent>,
+    private val responseFactory: ResponseFactory
 ) : SyncRPCProcessor<LedgerPersistenceRequest, FlowEvent> {
+
+    override val requestClass = LedgerPersistenceRequest::class.java
+    override val responseClass = FlowEvent::class.java
 
     private companion object {
         val log: Logger = LoggerFactory.getLogger(LedgerPersistenceRequestProcessor::class.java)

@@ -29,10 +29,11 @@ class VerificationRequestProcessor(
     private val currentSandboxGroupContext: CurrentSandboxGroupContext,
     private val verificationSandboxService: VerificationSandboxService,
     private val requestHandler: VerificationRequestHandler,
-    private val responseFactory: ExternalEventResponseFactory,
-    override val requestClass: Class<TransactionVerificationRequest>,
-    override val responseClass: Class<FlowEvent>,
+    private val responseFactory: ExternalEventResponseFactory
 ) : SyncRPCProcessor<TransactionVerificationRequest, FlowEvent> {
+
+    override val requestClass = TransactionVerificationRequest::class.java
+    override val responseClass = FlowEvent::class.java
 
     private companion object {
         val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
