@@ -59,6 +59,16 @@ class CpiLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
                 emptyList()
             }
 
+            val cordappCpkNames = HashSet<String>()
+
+            cpks.forEach {
+                val name = it.metadata.cpkId.name
+                if (cordappCpkNames.contains(name)) {
+                    throw PackagingException("Multiple CPKs share a Corda-CPK-Cordapp-Name")
+                }
+                cordappCpkNames.add(name)
+            }
+
             val mainAttributes = jarInputStream.manifest.mainAttributes
             return CpiImpl(
                 CpiMetadata(
