@@ -10,6 +10,9 @@ import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbConnections
 
 internal interface UpdateVirtualNodeService {
 
+    /**
+     * @return `null` if validation was successful or non-empty string explaining why validation has failed
+     */
     fun validateRequest(request: VirtualNodeDbConnectionUpdateRequest): String?
 
     fun persistHoldingIdAndVirtualNode(

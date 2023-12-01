@@ -432,10 +432,10 @@ internal class VirtualNodeRestResourceImpl(
             ?: throw ResourceNotFoundException("Virtual node not found")
 
         // Log user making change
-        // Lookup actor to keep track of which REST user triggered an update
-        val instant = clock.instant()
-        val actor = restContextProvider.principal
         logger.debug {
+            // Lookup actor to keep track of which REST user triggered an update
+            val instant = clock.instant()
+            val actor = restContextProvider.principal
             "Received request to update vnode ${virtualNode.holdingIdentity.shortHash} connection strings by $actor at $instant"
         }
 

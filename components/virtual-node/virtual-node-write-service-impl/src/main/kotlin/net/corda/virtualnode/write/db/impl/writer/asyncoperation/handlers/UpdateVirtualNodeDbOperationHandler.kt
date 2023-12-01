@@ -19,7 +19,7 @@ import javax.persistence.EntityManagerFactory
 @Suppress("LongParameterList")
 internal class UpdateVirtualNodeDbOperationHandler(
     private val entityManagerFactory: EntityManagerFactory,
-    private val createVirtualNodeService: UpdateVirtualNodeService,
+    private val updateVirtualNodeService: UpdateVirtualNodeService,
     private val virtualNodeDbFactory: VirtualNodeDbFactory,
     private val recordFactory: RecordFactory,
     statusPublisher: Publisher,
@@ -34,15 +34,15 @@ internal class UpdateVirtualNodeDbOperationHandler(
             val holdingId = request.holdingId.toCorda()
             val x500Name = holdingId.x500Name.toString()
 
-            logger.info("Update Virtual Node: $x500Name")
-            val execLog = ExecutionTimeLogger("Create", x500Name, requestTimestamp.toEpochMilli(), logger)
+            logger.info("Update Virtual Node DB connection: $x500Name")
+            val execLog = ExecutionTimeLogger("vNode DB Update", x500Name, requestTimestamp.toEpochMilli(), logger)
 
             val requestValidationResult = execLog.measureExecTime("validation") {
-                createVirtualNodeService.validateRequest(request)
+                updateVirtualNodeService.validateRequest(request)
             }
             require(requestValidationResult == null) { "$requestValidationResult" }
 
-            val vNodeDbs = execLog.measureExecTime("get virtual node databases") {
+            val vNodeDbs = execLog.measureExecTime("create virtual node databases") {
                 virtualNodeDbFactory.createVNodeDbs(holdingId.shortHash, with (request) {
                     VirtualNodeConnectionStrings(
                         vaultDdlConnection,
@@ -63,7 +63,7 @@ internal class UpdateVirtualNodeDbOperationHandler(
 
 
             val vNodeConnections = execLog.measureExecTime("persist holding ID and virtual node") {
-                createVirtualNodeService.persistHoldingIdAndVirtualNode(
+                updateVirtualNodeService.persistHoldingIdAndVirtualNode(
                     holdingId,
                     vNodeDbs,
                     currentVirtualNode.cpiIdentifier,
@@ -73,7 +73,7 @@ internal class UpdateVirtualNodeDbOperationHandler(
             }
 
             execLog.measureExecTime("publish virtual node and MGM info") {
-                createVirtualNodeService.publishRecords(listOf(recordFactory.createVirtualNodeInfoRecord(
+                updateVirtualNodeService.publishRecords(listOf(recordFactory.createVirtualNodeInfoRecord(
                     holdingId,
                     currentVirtualNode.cpiIdentifier,
                     vNodeConnections,
