@@ -42,7 +42,7 @@ import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyn
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.VirtualNodeAsyncOperationProcessor
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.factories.RecordFactoryImpl
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.CreateVirtualNodeOperationHandler
-import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.UpdateVirtualNodeOperationHandler
+import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.UpdateVirtualNodeDbOperationHandler
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeOperationStatusHandler
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.handlers.VirtualNodeUpgradeOperationHandler
 import net.corda.virtualnode.write.db.impl.writer.asyncoperation.services.CreateVirtualNodeServiceImpl
@@ -169,13 +169,13 @@ internal class VirtualNodeWriterFactory(
                 LoggerFactory.getLogger(CreateVirtualNodeOperationHandler::class.java)
             ),
 
-            VirtualNodeDbConnectionUpdateRequest::class.java to UpdateVirtualNodeOperationHandler(
+            VirtualNodeDbConnectionUpdateRequest::class.java to UpdateVirtualNodeDbOperationHandler(
                 dbConnectionManager.getClusterEntityManagerFactory(),
                 updateVirtualNodeService,
                 virtualNodeDbFactory,
                 recordFactory,
                 publisher,
-                LoggerFactory.getLogger(UpdateVirtualNodeOperationHandler::class.java)
+                LoggerFactory.getLogger(UpdateVirtualNodeDbOperationHandler::class.java)
             )
         )
 

@@ -17,7 +17,7 @@ import java.time.Instant
 import javax.persistence.EntityManagerFactory
 
 @Suppress("LongParameterList")
-internal class UpdateVirtualNodeOperationHandler(
+internal class UpdateVirtualNodeDbOperationHandler(
     private val entityManagerFactory: EntityManagerFactory,
     private val createVirtualNodeService: UpdateVirtualNodeService,
     private val virtualNodeDbFactory: VirtualNodeDbFactory,
