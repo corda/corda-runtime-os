@@ -1,6 +1,7 @@
 @Library('corda-shared-build-pipeline-steps@5.0.1') _
 
 cordaPipelineKubernetesAgent(
+    dailyBuildCron: '', // override to empty string to stop nightly cron
     runIntegrationTests: true,
     createPostgresDb: true,
     publishOSGiImage: true,
