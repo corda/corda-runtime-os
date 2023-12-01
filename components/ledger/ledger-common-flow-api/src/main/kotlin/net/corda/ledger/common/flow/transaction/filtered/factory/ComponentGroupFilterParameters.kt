@@ -40,7 +40,7 @@ sealed interface ComponentGroupFilterParameters {
 
         sealed interface AuditProofPredicate<T> {
             /**
-             *  [Content] include components to [FilteredTransaction] where the components meet predicate.
+             *  [Content] include components in a [FilteredTransaction] where the components meet predicate.
              *
              *  @property predicate Filtering function that is applied to each deserialized component with the group
              */
@@ -51,7 +51,7 @@ sealed interface ComponentGroupFilterParameters {
             }
 
             /**
-             *  [Index] include components of indexes if the indexes exist.
+             *  [Index] indexes of components to include in a [FilteredTransaction]
              *
              *  @property indexes component indexes to include.
              */

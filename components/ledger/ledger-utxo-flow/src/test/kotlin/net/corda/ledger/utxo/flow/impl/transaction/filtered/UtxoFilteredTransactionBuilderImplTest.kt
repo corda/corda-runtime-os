@@ -128,6 +128,15 @@ class UtxoFilteredTransactionBuilderImplTest {
     }
 
     @Test
+    fun `withOutputStates indexes`() {
+        val componentGroupFilterParameters = utxoFilteredTransactionBuilder.withOutputStates(listOf(0)).outputStates
+        assertThat(componentGroupFilterParameters).isInstanceOf(AuditProof::class.java)
+        assertThat((componentGroupFilterParameters!!).componentGroupIndex).isEqualTo(UtxoComponentGroup.OUTPUTS.ordinal)
+        assertThat(((componentGroupFilterParameters as AuditProof<ContractState>).predicate as AuditProofPredicate.Index)
+            .test(0)).isEqualTo(true)
+    }
+
+    @Test
     fun withCommandsSize() {
         val componentGroupFilterParameters = utxoFilteredTransactionBuilder.withCommandsSize().commands
         assertThat(componentGroupFilterParameters).isInstanceOf(SizeProof::class.java)

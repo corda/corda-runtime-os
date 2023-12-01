@@ -95,25 +95,30 @@ class FilteredTransactionImplIntegrationTest {
                 ComponentGroupFilterParameters.AuditProof(
                     0,
                     TransactionMetadataImpl::class.java,
-                    AuditProofPredicate.Content { true }),
+                    AuditProofPredicate.Content { true }
+                ),
                 ComponentGroupFilterParameters.SizeProof(1),
                 ComponentGroupFilterParameters.AuditProof(
                     2,
                     Any::class.java,
-                    AuditProofPredicate.Content { it is MyClassC }),
+                    AuditProofPredicate.Content { it is MyClassC }
+                ),
                 ComponentGroupFilterParameters.AuditProof(
                     3,
                     Any::class.java,
-                    AuditProofPredicate.Content { it is MyClassC }),
+                    AuditProofPredicate.Content { it is MyClassC }
+                ),
                 ComponentGroupFilterParameters.SizeProof(4),
                 ComponentGroupFilterParameters.AuditProof(
                     5,
                     Any::class.java,
-                    AuditProofPredicate.Content { it is MyClassC }),
+                    AuditProofPredicate.Content { it is MyClassC }
+                ),
                 ComponentGroupFilterParameters.AuditProof(
                     6,
                     Any::class.java,
-                    AuditProofPredicate.Content { it is MyClassC }),
+                    AuditProofPredicate.Content { it is MyClassC }
+                ),
                 ComponentGroupFilterParameters.SizeProof(9),
             )
         )
