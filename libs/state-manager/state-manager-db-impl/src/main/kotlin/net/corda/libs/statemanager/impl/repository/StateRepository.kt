@@ -22,13 +22,14 @@ interface StateRepository {
     )
 
     /**
-     * Create state.
+     * Create a collection of states.
      * Transaction should be controlled by the caller.
      *
      * @param connection The JDBC connection used to interact with the database.
      * @param state State entity to persist.
+     * @return The collection of keys that were successfully created.
      */
-    fun create(connection: Connection, state: StateEntity)
+    fun create(connection: Connection, states: Collection<StateEntity>): Collection<String>
 
     /**
      * Get states with the given keys.

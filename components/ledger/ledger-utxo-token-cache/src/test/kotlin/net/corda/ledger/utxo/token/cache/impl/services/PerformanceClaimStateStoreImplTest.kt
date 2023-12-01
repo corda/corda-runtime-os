@@ -168,10 +168,11 @@ class PerformanceClaimStateStoreImplTest {
 
         override val name = LifecycleCoordinatorName("StateManagerSimulator", UUID.randomUUID().toString())
 
-        override fun create(states: Collection<State>): Map<String, Exception> {
+        override fun create(states: Collection<State>): Set<String> {
             return lock.withLock {
                 val invalidStates = states
-                    .filter { store.containsKey(it.key) }.associate { it.key to IllegalStateException() }
+                    .filter { store.containsKey(it.key) }
+                    .map { it.key }.toSet()
 
                 states
                     .filterNot { store.containsKey(it.key) }

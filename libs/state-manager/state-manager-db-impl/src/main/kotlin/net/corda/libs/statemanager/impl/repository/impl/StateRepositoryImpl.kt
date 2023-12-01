@@ -8,16 +8,29 @@ import net.corda.libs.statemanager.impl.repository.StateRepository
 import java.sql.Connection
 import java.sql.Timestamp
 
-// TODO-[CORE-18030]: batch create.
 class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepository {
 
-    override fun create(connection: Connection, state: StateEntity) {
-        connection.prepareStatement(queryProvider.createState).use { statement ->
-            statement.setString(1, state.key)
-            statement.setBytes(2, state.value)
-            statement.setInt(3, state.version)
-            statement.setString(4, state.metadata)
-            statement.executeUpdate()
+    private companion object {
+        private const val CREATE_RESULT_COLUMN_INDEX = 1
+    }
+
+    override fun create(connection: Connection, states: Collection<StateEntity>): Collection<String> {
+        if (states.isEmpty()) return emptySet()
+        return connection.prepareStatement(queryProvider.createStates(states.size)).use { statement ->
+            val indices = generateSequence(1) { it + 1 }.iterator()
+            states.forEach { state ->
+                statement.setString(indices.next(), state.key)
+                statement.setBytes(indices.next(), state.value)
+                statement.setInt(indices.next(), state.version)
+                statement.setString(indices.next(), state.metadata)
+            }
+            statement.execute()
+            val results = statement.resultSet
+            sequence<String> {
+                while (results.next()) {
+                    yield(results.getString(CREATE_RESULT_COLUMN_INDEX))
+                }
+            }.toList()
         }
     }
 
@@ -31,16 +44,15 @@ class StateRepositoryImpl(private val queryProvider: QueryProvider) : StateRepos
         }
 
     override fun update(connection: Connection, states: List<StateEntity>): StateRepository.StateUpdateSummary {
-        fun getParameterIndex(currentRow: Int, index: Int) = (currentRow * 4) + index // 4 columns in the temp table
-
         if (states.isEmpty()) return StateRepository.StateUpdateSummary(emptyList(), emptyList())
+        val indices = generateSequence(1) { it + 1 }.iterator()
         val updatedKeys = mutableListOf<String>()
         connection.prepareStatement(queryProvider.updateStates(states.size)).use { stmt ->
-            repeat(states.size) { stateIterator ->
-                stmt.setString(getParameterIndex(stateIterator, 1), states[stateIterator].key)
-                stmt.setBytes(getParameterIndex(stateIterator, 2), states[stateIterator].value)
-                stmt.setString(getParameterIndex(stateIterator, 3), states[stateIterator].metadata)
-                stmt.setInt(getParameterIndex(stateIterator, 4), states[stateIterator].version)
+            states.forEach { state ->
+                stmt.setString(indices.next(), state.key)
+                stmt.setBytes(indices.next(), state.value)
+                stmt.setString(indices.next(), state.metadata)
+                stmt.setInt(indices.next(), state.version)
             }
             stmt.execute()
             val results = stmt.resultSet

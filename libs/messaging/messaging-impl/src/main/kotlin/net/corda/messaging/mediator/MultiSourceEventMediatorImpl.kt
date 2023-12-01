@@ -220,7 +220,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 
                 // Persist states changes
                 val failedToCreateKeys = stateManager.create(statesToCreate.values.mapNotNull { it })
-                val failedToCreate = stateManager.get(failedToCreateKeys.keys)
+                val failedToCreate = stateManager.get(failedToCreateKeys)
                 val failedToDelete = stateManager.delete(statesToDelete.values.mapNotNull { it })
                 val failedToUpdate = stateManager.update(statesToUpdate.values.mapNotNull { it })
                 val failedToUpdateOptimisticLockFailure = failedToUpdate.mapNotNull { (key, value) -> value?.let { key to it } }.toMap()

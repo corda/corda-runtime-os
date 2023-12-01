@@ -31,10 +31,10 @@ class TestStateManagerFactoryImpl : StateManagerFactory {
         return object : StateManager {
             override val name = LifecycleCoordinatorName("MockStateManager", UUID.randomUUID().toString())
 
-            override fun create(states: Collection<State>): Map<String, Exception> {
+            override fun create(states: Collection<State>): Set<String> {
                 return states.mapNotNull {
                     storage.putIfAbsent(it.key, it)
-                }.associate { it.key to RuntimeException("State already exists [$it]") }
+                }.map { it.key }.toSet()
             }
 
             override fun get(keys: Collection<String>): Map<String, State> {
