@@ -158,6 +158,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         }
     }
 
+    @Suppress("MaxLineLength")
     @Test
     fun `Given two sessions where one has already received a session data event calling 'receive' and then receiving a session data event for the other session resumes the flow `() {
         given {
@@ -186,6 +187,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         }
     }
 
+    @Suppress("MaxLineLength")
     @Test
     fun `Given two sessions have already received their session data events when the flow calls 'receive' for each session individually the flow should resume`() {
         given {
@@ -243,6 +245,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         }
     }
 
+    @Suppress("MaxLineLength")
     @Test
     fun `Given two sessions receiving a session data event for one and a session error event for the other resumes the flow with an error and schedules session cleanup`() {
         given {
@@ -274,6 +277,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         }
     }
 
+    @Suppress("MaxLineLength")
     @Test
     fun `Given two sessions receiving a session error event first for one and a session data event for the other resumes the flow with an error and schedules session cleanup`() {
         given {
@@ -303,6 +307,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         }
     }
 
+    @Suppress("MaxLineLength")
     @Test
     fun `Given two sessions receiving a session close event for one session and a session data event for the other resumes the flow with an error`() {
         given {
@@ -356,6 +361,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         }
     }
 
+    @Suppress("MaxLineLength")
     @Test
     fun `Given two sessions receiving a session data and then close event for one session and a session data event for the other resumes the flow`() {
         given {

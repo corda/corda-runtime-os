@@ -24,7 +24,7 @@ class PostgresUtxoQueryProvider @Activate constructor(
                 VALUES (:id, :privacySalt, :accountId, :createdAt, :status, :updatedAt, :metadataHash)
             ON CONFLICT(id) DO
                 UPDATE SET status = EXCLUDED.status, updated = EXCLUDED.updated
-            WHERE utxo_transaction.status = EXCLUDED.status OR utxo_transaction.status = '$UNVERIFIED'"""
+            WHERE utxo_transaction.status in (EXCLUDED.status, '$UNVERIFIED', '$DRAFT')"""
             .trimIndent()
 
     override val persistTransactionMetadata: String

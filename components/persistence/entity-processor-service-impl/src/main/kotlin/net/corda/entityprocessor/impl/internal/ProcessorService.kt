@@ -31,7 +31,6 @@ import net.corda.v5.application.flows.FlowContextPropertyKeys
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.toCorda
 import org.slf4j.Logger
-import java.nio.ByteBuffer
 import java.time.Duration
 import java.util.UUID
 import javax.persistence.EntityManager
@@ -46,8 +45,7 @@ class ProcessorService {
         entitySandboxService: EntitySandboxService,
         currentSandboxGroupContext: CurrentSandboxGroupContext,
         responseFactory: ResponseFactory,
-        requestsIdsRepository: RequestsIdsRepository,
-        payload: (bytes: ByteBuffer) -> ByteBuffer
+        requestsIdsRepository: RequestsIdsRepository
     ): Record<*, *> {
         val startTime = System.nanoTime()
         val clientRequestId = request.flowExternalEventContext.contextProperties.toMap()[MDC_CLIENT_ID] ?: ""
@@ -70,7 +68,7 @@ class ProcessorService {
 
                 currentSandboxGroupContext.set(sandbox)
 
-                val persistenceServiceInternal = PersistenceServiceInternal(sandbox::getClass, payload)
+                val persistenceServiceInternal = PersistenceServiceInternal(sandbox::getClass)
 
                 processRequestWithSandbox(
                     sandbox, request, responseFactory, persistenceServiceInternal, requestsIdsRepository

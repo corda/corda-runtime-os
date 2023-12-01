@@ -1,5 +1,5 @@
 #! groovy
-@Library('corda-shared-build-pipeline-steps@5.1') _
+@Library('corda-shared-build-pipeline-steps@5.2') _
 
 /**
  * Forward merge any changes in current branch to the branch with following version.
@@ -14,13 +14,13 @@
  * the branch name of origin branch, it should match the current branch
  * and it acts as a fail-safe inside {@code forwardMerger} pipeline
  */
-String originBranch = 'release/os/5.1'
+String originBranch = 'release/os/5.2'
 
 /**
  * the branch name of target branch, it should be the branch with the next version
  * after the one in current branch.
  */
-String targetBranch = 'release/os/5.2'
+String targetBranch = 'release/os/5.3'
 
 /**
  * Forward merge any changes between {@code originBranch} and {@code targetBranch}

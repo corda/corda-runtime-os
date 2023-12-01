@@ -5,7 +5,7 @@ import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.rest.response.ResponseEntity
 
 import net.corda.rest.annotations.RestApiVersion.C5_0 as MIN_SUPPORTED
-import net.corda.rest.annotations.RestApiVersion.C5_1 as CURRENT
+import net.corda.rest.annotations.RestApiVersion.C5_2 as CURRENT
 
 /**
  * Annotation that is meant to be applied on annotations to flag the fact that they are meant for exposing

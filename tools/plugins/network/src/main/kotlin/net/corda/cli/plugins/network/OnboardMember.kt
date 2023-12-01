@@ -11,6 +11,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_SIGNATURE_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEYS_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_BACKCHAIN_REQUIRED
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
@@ -19,6 +20,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEYS_SIGNATURE_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
 import java.io.File
@@ -122,14 +124,17 @@ class OnboardMember : Runnable, BaseOnboard() {
             return it.cpiFileChecksum
         }
         if (!cpiFile.exists()) {
-            createCpi(cpbFile, cpiFile)
+            val exitCode = createCpi(cpbFile, cpiFile)
+            if (exitCode != 0) {
+                throw CordaRuntimeException("Create CPI returned non-zero exit code")
+            }
             println("CPI file saved as ${cpiFile.absolutePath}")
         }
         uploadSigningCertificates()
         return uploadCpi(cpiFile.inputStream(), cpiFile.name)
     }
 
-    private fun createCpi(cpbFile: File, cpiFile: File) {
+    private fun createCpi(cpbFile: File, cpiFile: File): Int {
         println(
             "Using the cpb file is not recommended." +
                     " It is advised to create CPI using the package create-cpi command."
@@ -143,7 +148,7 @@ class OnboardMember : Runnable, BaseOnboard() {
         creator.cpiUpgrade = false
         creator.outputFileName = cpiFile.absolutePath
         creator.signingOptions = createDefaultSingingOptions()
-        creator.run()
+        return creator.call()
     }
 
     private val ledgerKeyId by lazy {
@@ -166,9 +171,12 @@ class OnboardMember : Runnable, BaseOnboard() {
             val notaryServiceName = customProperties[NOTARY_SERVICE_NAME] ?:
                 throw IllegalArgumentException("When specifying a NOTARY role, " +
                         "you also need to specify a custom property for its name under $NOTARY_SERVICE_NAME.")
+            val isBackchainRequired = customProperties[NOTARY_SERVICE_BACKCHAIN_REQUIRED] ?: true
+            val notaryProtocol = customProperties[NOTARY_SERVICE_PROTOCOL] ?: "com.r3.corda.notary.plugin.nonvalidating"
             mapOf(
                 NOTARY_SERVICE_NAME to notaryServiceName,
-                NOTARY_SERVICE_PROTOCOL to "com.r3.corda.notary.plugin.nonvalidating",
+                NOTARY_SERVICE_BACKCHAIN_REQUIRED to "$isBackchainRequired",
+                NOTARY_SERVICE_PROTOCOL to notaryProtocol,
                 NOTARY_SERVICE_PROTOCOL_VERSIONS.format("0") to "1",
                 NOTARY_KEYS_ID.format("0") to notaryKeyId,
                 NOTARY_KEY_SPEC.format("0") to "SHA256withECDSA"

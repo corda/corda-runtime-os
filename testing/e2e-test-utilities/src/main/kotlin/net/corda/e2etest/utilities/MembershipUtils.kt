@@ -10,6 +10,8 @@ import net.corda.utilities.seconds
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions
 import java.io.File
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 private val mapper = ObjectMapper()
 
@@ -153,7 +155,8 @@ fun ClusterInfo.onboardNotaryMember(
     wait: Boolean = true,
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null,
     tlsCertificateUploadedCallback: (String) -> Unit = {},
-    notaryServiceName: String = DEFAULT_NOTARY_SERVICE
+    notaryServiceName: String = DEFAULT_NOTARY_SERVICE,
+    isBackchainRequired: Boolean = true
 ) = onboardMember(
     resourceName,
     cpiName,
@@ -167,6 +170,7 @@ fun ClusterInfo.onboardNotaryMember(
         mapOf(
             "corda.roles.0" to "notary",
             "corda.notary.service.name" to MemberX500Name.parse(notaryServiceName).toString(),
+            "corda.notary.service.backchain.required" to "$isBackchainRequired",
             "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.nonvalidating",
             "corda.notary.service.flow.protocol.version.0" to "1",
             "corda.notary.keys.0.id" to notaryKeyId,
@@ -287,36 +291,41 @@ fun registerStaticMember(
     holdingIdentityShortHash: String,
     notaryServiceName: String? = null,
     customMetadata: Map<String, String> = emptyMap(),
-) = DEFAULT_CLUSTER.registerStaticMember(holdingIdentityShortHash, notaryServiceName, customMetadata)
+    isBackchainRequired: Boolean = true
+) = DEFAULT_CLUSTER.registerStaticMember(holdingIdentityShortHash, notaryServiceName, customMetadata, isBackchainRequired)
 
+val memberRegisterLock = ReentrantLock()
 fun ClusterInfo.registerStaticMember(
     holdingIdentityShortHash: String,
     notaryServiceName: String? = null,
     customMetadata: Map<String, String> = emptyMap(),
+    isBackchainRequired: Boolean = true
 ) {
     cluster {
-        assertWithRetry {
-            interval(1.seconds)
-            timeout(10.seconds)
-            command { registerStaticMember(holdingIdentityShortHash, notaryServiceName, customMetadata) }
-            condition {
-                it.code == ResponseCode.OK.statusCode
-                        && it.toJson()["registrationStatus"].textValue() == REGISTRATION_SUBMITTED
+        memberRegisterLock.withLock {
+            assertWithRetry {
+                interval(1.seconds)
+                timeout(10.seconds)
+                command { registerStaticMember(holdingIdentityShortHash, notaryServiceName, customMetadata, isBackchainRequired) }
+                condition {
+                    it.code == ResponseCode.OK.statusCode
+                            && it.toJson()["registrationStatus"].textValue() == REGISTRATION_SUBMITTED
+                }
+                failMessage("Failed to register the member to the network '$holdingIdentityShortHash'")
             }
-            failMessage("Failed to register the member to the network '$holdingIdentityShortHash'")
-        }
 
-        assertWithRetry {
-            // Use a fairly long timeout here to give plenty of time for the other side to respond. Longer
-            // term this should be changed to not use the RPC message pattern and have the information available in a
-            // cache on the REST worker, but for now this will have to suffice.
-            timeout(20.seconds)
-            interval(1.seconds)
-            command { getRegistrationStatus(holdingIdentityShortHash) }
-            condition {
-                it.toJson().firstOrNull()?.get("registrationStatus")?.textValue() == REGISTRATION_APPROVED
+            assertWithRetry {
+                // Use a fairly long timeout here to give plenty of time for the other side to respond. Longer
+                // term this should be changed to not use the RPC message pattern and have the information available in a
+                // cache on the REST worker, but for now this will have to suffice.
+                timeout(60.seconds)
+                interval(2.seconds)
+                command { getRegistrationStatus(holdingIdentityShortHash) }
+                condition {
+                    it.toJson().firstOrNull()?.get("registrationStatus")?.textValue() == REGISTRATION_APPROVED
+                }
+                failMessage("Registration was not completed for $holdingIdentityShortHash")
             }
-            failMessage("Registration was not completed for $holdingIdentityShortHash")
         }
     }
 }

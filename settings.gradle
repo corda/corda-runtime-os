@@ -101,6 +101,7 @@ include 'components:crypto:crypto-hes'
 include 'components:crypto:crypto-hes-core-impl'
 include 'components:crypto:crypto-hes-impl'
 include 'components:crypto:crypto-persistence'
+include 'components:crypto:crypto-rest'
 include 'components:crypto:crypto-service-impl'
 include 'components:crypto:crypto-softhsm-impl'
 include 'components:db:db-connection-manager'
@@ -538,6 +539,3 @@ gradleEnterprise {
         }
     }
 }
-include 'libs:kotlin-coroutines'
-findProject(':libs:kotlin-coroutines')?.name = 'kotlin-coroutines'
-

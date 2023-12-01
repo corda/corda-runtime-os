@@ -12,7 +12,6 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
-import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.publicKeyIdFromBytes
@@ -22,13 +21,11 @@ import net.corda.crypto.hes.EphemeralKeyPairEncryptor
 import net.corda.crypto.hes.HybridEncryptionParams
 import net.corda.crypto.hes.StableKeyPairDecryptor
 import net.corda.crypto.persistence.db.model.CryptoEntities
-import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.DbPrivilege
@@ -64,7 +61,6 @@ import net.corda.processors.crypto.tests.infra.publishVirtualNodeInfo
 import net.corda.processors.crypto.tests.infra.randomDataByteArray
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Config.CONFIG_TOPIC
-import net.corda.schema.Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.test.util.TestRandom
@@ -742,96 +738,96 @@ class CryptoProcessorTests {
         )
     }
 
-    private fun `Should be able to sign by flow ops and verify`(
-        tenantId: String,
-        publicKey: PublicKey
-    ) {
-        schemeMetadata.supportedSignatureSpec(schemeMetadata.findKeyScheme(publicKey)).forEach { spec ->
-            val data = randomDataByteArray()
-            val key = UUID.randomUUID().toString()
-            val requestId = UUID.randomUUID().toString()
-            val event = transformer.createSign(
-                requestId = requestId,
-                tenantId = tenantId,
-                encodedPublicKeyBytes = publicKey.encoded,
-                signatureSpec = spec,
-                data = data,
-                flowExternalEventContext = ExternalEventContext(requestId, key, KeyValuePairList(emptyList()))
-            )
-            logger.info(
-                "Publishing: createSign({}, {}, {}), request id: $requestId, flow id: $key",
-                tenantId,
-                publicKey.publicKeyId(),
-                spec
-            )
-            publisher.publish(
-                listOf(
-                    Record(
-                        topic = FLOW_OPS_MESSAGE_TOPIC,
-                        key = key,
-                        value = event
-                    )
-                )
-            ).forEach { it.get() }
-            logger.info("Waiting for response for createSign")
-            val response = flowOpsResponses.waitForResponse(key)
-            val signature = transformer.transform(response) as DigitalSignatureWithKey
-            assertEquals(publicKey, signature.by)
-            assertTrue(signature.bytes.isNotEmpty())
-            verifier.verify(
-                originalData = data,
-                signatureData = signature.bytes,
-                publicKey = publicKey,
-                signatureSpec = spec
-            )
-        }
-    }
-
-    private fun `Should be able to sign by flow ops and verify bu inferring signature spec`(
-        tenantId: String,
-        publicKey: PublicKey
-    ) {
-        schemeMetadata.inferableDigestNames(schemeMetadata.findKeyScheme(publicKey)).forEach { digest ->
-            val data = randomDataByteArray()
-            val key = UUID.randomUUID().toString()
-            val spec = schemeMetadata.inferSignatureSpec(publicKey, digest)!!
-            val requestId = UUID.randomUUID().toString()
-            val event = transformer.createSign(
-                requestId = requestId,
-                tenantId = tenantId,
-                encodedPublicKeyBytes = publicKey.encoded,
-                signatureSpec = spec,
-                data = data,
-                flowExternalEventContext = ExternalEventContext(requestId, key, KeyValuePairList(emptyList()))
-            )
-            logger.info(
-                "Publishing: createSign({}, {}, {})",
-                tenantId,
-                publicKey.publicKeyId(),
-                spec
-            )
-            publisher.publish(
-                listOf(
-                    Record(
-                        topic = FLOW_OPS_MESSAGE_TOPIC,
-                        key = key,
-                        value = event
-                    )
-                )
-            ).forEach { it.get() }
-            logger.info("Waiting for response for createSign")
-            val response = flowOpsResponses.waitForResponse(key)
-            val signature = transformer.transform(response) as DigitalSignatureWithKey
-            assertEquals(publicKey, signature.by)
-            assertTrue(signature.bytes.isNotEmpty())
-            verifier.verify(
-                originalData = data,
-                signatureData = signature.bytes,
-                publicKey = publicKey,
-                digest = digest
-            )
-        }
-    }
+//    private fun `Should be able to sign by flow ops and verify`(
+//        tenantId: String,
+//        publicKey: PublicKey
+//    ) {
+//        schemeMetadata.supportedSignatureSpec(schemeMetadata.findKeyScheme(publicKey)).forEach { spec ->
+//            val data = randomDataByteArray()
+//            val key = UUID.randomUUID().toString()
+//            val requestId = UUID.randomUUID().toString()
+//            val event = transformer.createSign(
+//                requestId = requestId,
+//                tenantId = tenantId,
+//                encodedPublicKeyBytes = publicKey.encoded,
+//                signatureSpec = spec,
+//                data = data,
+//                flowExternalEventContext = ExternalEventContext(requestId, key, KeyValuePairList(emptyList()))
+//            )
+//            logger.info(
+//                "Publishing: createSign({}, {}, {}), request id: $requestId, flow id: $key",
+//                tenantId,
+//                publicKey.publicKeyId(),
+//                spec
+//            )
+//            publisher.publish(
+//                listOf(
+//                    Record(
+//                        topic = FLOW_OPS_MESSAGE_TOPIC,
+//                        key = key,
+//                        value = event
+//                    )
+//                )
+//            ).forEach { it.get() }
+//            logger.info("Waiting for response for createSign")
+//            val response = flowOpsResponses.waitForResponse(key)
+//            val signature = transformer.transform(response) as DigitalSignatureWithKey
+//            assertEquals(publicKey, signature.by)
+//            assertTrue(signature.bytes.isNotEmpty())
+//            verifier.verify(
+//                originalData = data,
+//                signatureData = signature.bytes,
+//                publicKey = publicKey,
+//                signatureSpec = spec
+//            )
+//        }
+//    }
+//
+//    private fun `Should be able to sign by flow ops and verify bu inferring signature spec`(
+//        tenantId: String,
+//        publicKey: PublicKey
+//    ) {
+//        schemeMetadata.inferableDigestNames(schemeMetadata.findKeyScheme(publicKey)).forEach { digest ->
+//            val data = randomDataByteArray()
+//            val key = UUID.randomUUID().toString()
+//            val spec = schemeMetadata.inferSignatureSpec(publicKey, digest)!!
+//            val requestId = UUID.randomUUID().toString()
+//            val event = transformer.createSign(
+//                requestId = requestId,
+//                tenantId = tenantId,
+//                encodedPublicKeyBytes = publicKey.encoded,
+//                signatureSpec = spec,
+//                data = data,
+//                flowExternalEventContext = ExternalEventContext(requestId, key, KeyValuePairList(emptyList()))
+//            )
+//            logger.info(
+//                "Publishing: createSign({}, {}, {})",
+//                tenantId,
+//                publicKey.publicKeyId(),
+//                spec
+//            )
+//            publisher.publish(
+//                listOf(
+//                    Record(
+//                        topic = FLOW_OPS_MESSAGE_TOPIC,
+//                        key = key,
+//                        value = event
+//                    )
+//                )
+//            ).forEach { it.get() }
+//            logger.info("Waiting for response for createSign")
+//            val response = flowOpsResponses.waitForResponse(key)
+//            val signature = transformer.transform(response) as DigitalSignatureWithKey
+//            assertEquals(publicKey, signature.by)
+//            assertTrue(signature.bytes.isNotEmpty())
+//            verifier.verify(
+//                originalData = data,
+//                signatureData = signature.bytes,
+//                publicKey = publicKey,
+//                digest = digest
+//            )
+//        }
+//    }
 //
 //    @Test
 //    fun `filterMyKeys filters and returns keys owned by the specified vnode`() {

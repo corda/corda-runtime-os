@@ -66,7 +66,8 @@ class StartFlowTest : FlowServiceTestBase() {
                 noFlowEvents()
                 flowStatus(
                     state = FlowStates.KILLED,
-                    flowTerminatedReason = "flowStartOperationalStatus is INACTIVE, new flows cannot be started for virtual node with shortHash ${CHARLIE_HOLDING_IDENTITY.toCorda().shortHash}"
+                    flowTerminatedReason = "flowStartOperationalStatus is INACTIVE, new flows cannot be started for " +
+                            "virtual node with shortHash ${CHARLIE_HOLDING_IDENTITY.toCorda().shortHash}"
                 )
             }
         }

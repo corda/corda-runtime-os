@@ -397,6 +397,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
                 any(), any(), any(), any(), any(), any(), any(), any(), any(),
             )
         ).thenReturn(vNode)
+        whenever(virtualNodeRepository.completedOperation(any(), any())).thenReturn(vNode)
         whenever(oldVirtualNodeEntityRepository.getCpiMetadataByChecksum(targetCpiChecksum)).thenReturn(targetCpiMetadata)
         whenever(oldVirtualNodeEntityRepository.getCPIMetadataById(any(), any())).thenReturn(currentCpiMetadata)
         whenever(virtualNodeInfoPublisher.publish(any())).thenReturn(emptyList())
@@ -529,13 +530,14 @@ class VirtualNodeUpgradeOperationHandlerTest {
                 eq(request.toString())
             )
         ).thenReturn(inProgressVnodeInfoWithoutVaultDdl)
+        whenever(virtualNodeRepository.completedOperation(any(), any())).thenReturn(inProgressVnodeInfoWithoutVaultDdl)
 
         val vnodeInfoCapture =
             argumentCaptor<List<Record<net.corda.data.identity.HoldingIdentity, net.corda.data.virtualnode.VirtualNodeInfo>>>()
 
         handler.handle(requestTimestamp, requestId, request)
 
-        verify(virtualNodeInfoPublisher, times(1)).publish(vnodeInfoCapture.capture())
+        verify(virtualNodeInfoPublisher, times(2)).publish(vnodeInfoCapture.capture())
 
         assertUpgradedVnodeInfoIsPublished(
             vnodeInfoCapture.firstValue,
@@ -567,6 +569,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
                 eq(request.toString())
             )
         ).thenReturn(inProgressVnodeInfoWithoutVaultDdl)
+        whenever(virtualNodeRepository.completedOperation(any(), any())).thenReturn(inProgressVnodeInfoWithoutVaultDdl)
         val mgmRecord = mock<Record<*, *>>()
         whenever(recordFactory.createMgmInfoRecord(any(), eq(newMgmInfo))).thenReturn(mgmRecord)
 
@@ -598,6 +601,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
                 eq(request.toString())
             )
         ).thenReturn(inProgressVnodeInfoWithoutVaultDdl)
+        whenever(virtualNodeRepository.completedOperation(any(), any())).thenReturn(inProgressVnodeInfoWithoutVaultDdl)
 
         val memberBytes = byteArrayOf(1, 2)
         val registrationRequest = mock<RegistrationRequestDetails> {
@@ -643,6 +647,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
                 eq(request.toString())
             )
         ).thenReturn(inProgressVnodeInfoWithoutVaultDdl)
+        whenever(virtualNodeRepository.completedOperation(any(), any())).thenReturn(inProgressVnodeInfoWithoutVaultDdl)
 
         val memberBytes = byteArrayOf(1, 2)
         val registrationRequest = mock<RegistrationRequestDetails> {

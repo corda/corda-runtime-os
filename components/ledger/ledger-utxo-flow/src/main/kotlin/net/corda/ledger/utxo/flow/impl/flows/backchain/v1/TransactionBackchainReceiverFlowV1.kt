@@ -7,6 +7,7 @@ import net.corda.ledger.common.data.transaction.TransactionStatus
 import net.corda.ledger.common.data.transaction.TransactionStatus.INVALID
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
+import net.corda.ledger.common.data.transaction.TransactionStatus.DRAFT
 import net.corda.ledger.utxo.flow.impl.UtxoLedgerMetricRecorder
 import net.corda.ledger.utxo.flow.impl.flows.backchain.InvalidBackchainException
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TopologicalSort
@@ -245,10 +246,12 @@ class TransactionBackchainReceiverFlowV1(
                             transactionsToRetrieve.remove(transactionId)
                         }
 
-                        INVALID -> {
+                        INVALID, DRAFT -> {
                             // If the status changed from UNVERIFIED -> INVALID we cannot go on with the resolution
+                            // Also transitioning back to Draft is impossible.
+
                             throw InvalidBackchainException(
-                                "Found the following invalid transaction during back-chain resolution: " +
+                                "Found the following $status transaction during back-chain resolution: " +
                                         "$transactionId. Backchain resolution cannot be continued."
                             )
                         }

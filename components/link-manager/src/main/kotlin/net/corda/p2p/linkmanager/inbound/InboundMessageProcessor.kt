@@ -31,7 +31,10 @@ import net.corda.p2p.linkmanager.membership.NetworkMessagingValidator
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
+import net.corda.p2p.linkmanager.metrics.recordInboundHeartbeatMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordInboundMessagesMetric
+import net.corda.p2p.linkmanager.metrics.recordInboundSessionMessagesMetric
+import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
 import net.corda.schema.Schemas
 import net.corda.tracing.traceEventProcessing
 import net.corda.utilities.debug
@@ -102,11 +105,11 @@ internal class InboundMessageProcessor(
     }
 
     private fun processSessionMessage(message: LinkInMessage): List<Record<String, *>> {
+        recordInboundSessionMessagesMetric()
         val response = sessionManager.processSessionMessage(message)
         return if (response != null) {
-            when (val payload = message.payload) {
+            val records = when (val payload = message.payload) {
                 is InitiatorHelloMessage -> {
-                    sessionManager.sessionMessageReceived(payload.header.sessionId)
                     val partitionsAssigned =
                         inboundAssignmentListener.getCurrentlyAssignedPartitions()
                     if (partitionsAssigned.isNotEmpty()) {
@@ -128,13 +131,16 @@ internal class InboundMessageProcessor(
                     }
                 }
                 is InitiatorHandshakeMessage -> {
-                    sessionManager.sessionMessageReceived(payload.header.sessionId)
                     listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response))
                 }
                 else -> {
                     listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response))
                 }
             }
+            if (records.isNotEmpty()) {
+                recordOutboundSessionMessagesMetric(response.header.sourceIdentity, response.header.destinationIdentity)
+            }
+            records
         } else {
             emptyList()
         }
@@ -144,7 +150,11 @@ internal class InboundMessageProcessor(
         val messages = mutableListOf<Record<*, *>>()
         when (val sessionDirection = sessionManager.getSessionById(sessionId)) {
             is SessionManager.SessionDirection.Inbound -> {
-                sessionManager.dataMessageReceived(sessionId)
+                sessionManager.dataMessageReceived(
+                    sessionId,
+                    sessionDirection.counterparties.counterpartyId,
+                    sessionDirection.counterparties.ourId
+                )
                 checkAllowedCommunication(sessionDirection.counterparties) {
                     messages.addAll(
                         processLinkManagerPayload(
@@ -205,7 +215,6 @@ internal class InboundMessageProcessor(
                     "of type ${innerMessage.message.javaClass} from session ${session.sessionId}"
             }
             messages.add(Record(Schemas.P2P.P2P_IN_TOPIC, innerMessage.key, AppMessage(innerMessage.message)))
-            recordInboundMessagesMetric(innerMessage.message)
             makeAckMessageForFlowMessage(innerMessage.message, session)?.let { ack -> messages.add(ack) }
             sessionManager.inboundSessionEstablished(session.sessionId)
         } else if (sessionSource != messageSource.toCorda()) {
@@ -234,9 +243,11 @@ internal class InboundMessageProcessor(
             when (val innerMessage = it.message) {
                 is HeartbeatMessage -> {
                     logger.debug { "Processing heartbeat message from session $sessionId" }
+                    recordInboundHeartbeatMessagesMetric(counterparties.counterpartyId, counterparties.ourId)
                     makeAckMessageForHeartbeatMessage(counterparties, session)?.let { ack -> messages.add(ack) }
                 }
                 is AuthenticatedMessageAndKey -> {
+                    recordInboundMessagesMetric(innerMessage.message)
                     checkIdentityBeforeProcessing(
                         counterparties,
                         innerMessage,
