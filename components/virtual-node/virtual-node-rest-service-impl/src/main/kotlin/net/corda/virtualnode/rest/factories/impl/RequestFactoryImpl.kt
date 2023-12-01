@@ -3,14 +3,15 @@ package net.corda.virtualnode.rest.factories.impl
 import net.corda.data.virtualnode.VirtualNodeAsynchronousRequest
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.data.virtualnode.VirtualNodeDbConnectionUpdateRequest
-import net.corda.rest.security.RestContextProvider
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.UpdateVirtualNodeDbRequest
+import net.corda.rest.security.RestContextProvider
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.rest.factories.RequestFactory
 import net.corda.virtualnode.toAvro
+import java.util.*
 
 internal class RequestFactoryImpl(
     private val restContextProvider: RestContextProvider,
@@ -48,7 +49,7 @@ internal class RequestFactoryImpl(
         request: UpdateVirtualNodeDbRequest
     ): VirtualNodeAsynchronousRequest {
         return VirtualNodeAsynchronousRequest().apply {
-            this.requestId = holdingIdentity.shortHash.toString()
+            this.requestId = UUID.randomUUID().toString()
             this.timestamp = clock.instant()
             this.request = VirtualNodeDbConnectionUpdateRequest().apply {
                 this.holdingId = holdingIdentity.toAvro()
