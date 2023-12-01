@@ -424,8 +424,8 @@ internal class VirtualNodeRestResourceImpl(
         return ResponseEntity.accepted(AsyncResponse(asyncRequest.requestId))
     }
 
-    override fun updateVirtualNode(virtualNodeShortId: String,
-                                   request: UpdateVirtualNodeDbRequest): ResponseEntity<AsyncResponse> {
+    override fun updateVirtualNodeDb(virtualNodeShortId: String,
+                                     request: UpdateVirtualNodeDbRequest): ResponseEntity<AsyncResponse> {
 
         // Check vnode exists
         val virtualNode = virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.parse(virtualNodeShortId))

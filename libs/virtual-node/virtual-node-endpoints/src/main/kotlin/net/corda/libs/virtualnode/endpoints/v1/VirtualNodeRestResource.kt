@@ -54,7 +54,7 @@ interface VirtualNodeRestResource : RestResource {
         responseDescription = "The details of the updated virtual node.",
         minVersion = RestApiVersion.C5_2
     )
-    fun updateVirtualNode(
+    fun updateVirtualNodeDb(
         @RestPathParameter(description = "Short ID of the virtual node instance to update")
         virtualNodeShortId: String,
         @ClientRequestBodyParameter(description = "Details of the virtual node to be updated")
