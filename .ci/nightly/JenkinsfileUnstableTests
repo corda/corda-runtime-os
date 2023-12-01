@@ -5,7 +5,7 @@ cordaPipelineKubernetesAgent(
     runIntegrationTests: true,
     createPostgresDb: true,
     gradleAdditionalArgs: '-PrunUnstableTests',
-    dailyBuildCron: 'H */6 * * 1-5',
+    dailyBuildCron: '', // override to empty string to stop nightly cron
     publishRepoPrefix: '',
     runE2eTests: false
     )
