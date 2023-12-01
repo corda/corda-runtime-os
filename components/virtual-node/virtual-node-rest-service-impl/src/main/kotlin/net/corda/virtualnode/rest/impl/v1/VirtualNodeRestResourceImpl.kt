@@ -435,7 +435,9 @@ internal class VirtualNodeRestResourceImpl(
         // Lookup actor to keep track of which REST user triggered an update
         val instant = clock.instant()
         val actor = restContextProvider.principal
-        logger.debug { "Received request to update vnode ${virtualNode.holdingIdentity.shortHash} by $actor at $instant" }
+        logger.debug {
+            "Received request to update vnode ${virtualNode.holdingIdentity.shortHash} connection strings by $actor at $instant"
+        }
 
         // Build and send change request
         val asyncRequest = requestFactory.updateVirtualNodeRequest(virtualNode.holdingIdentity, request)
