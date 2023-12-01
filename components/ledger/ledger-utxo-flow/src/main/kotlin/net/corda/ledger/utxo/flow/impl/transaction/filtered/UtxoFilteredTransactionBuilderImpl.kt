@@ -122,7 +122,7 @@ data class UtxoFilteredTransactionBuilderImpl(
     }
 
     @Suspendable
-    override fun withOutputStates(indexes: MutableList<Int>): UtxoFilteredTransactionBuilder {
+    override fun withOutputStates(indexes: List<Int>): UtxoFilteredTransactionBuilder {
         return copy(
             outputStates = ComponentGroupFilterParameters.AuditProof(
                 UtxoComponentGroup.OUTPUTS.ordinal,

@@ -39,7 +39,7 @@ class ContractVerifyingNotaryServerFlowImpl : ResponderFlow {
     @Suspendable
     override fun call(session: FlowSession) {
         try {
-            logger.info("Calling Contract Verifying Notary server...")
+            logger.debug("Calling Contract Verifying Notary server...")
 
             // Receive the payload from the client
             val (initialTransaction, filteredTransactionsAndSignatures) = session.receive(ContractVerifyingNotarizationPayload::class.java)
@@ -157,8 +157,6 @@ class ContractVerifyingNotaryServerFlowImpl : ResponderFlow {
         val dependentStateAndRefs = filteredTransactionsAndSignatures.flatMap { (filteredTransaction, _) ->
             (filteredTransaction.outputStateAndRefs as UtxoFilteredData.Audit<StateAndRef<*>>).values.values
         }.associateBy { it.ref }
-
-        println(dependentStateAndRefs)
 
         val inputStateAndRefs = initialTransaction.inputStateRefs.map { stateRef ->
             requireNotNull(dependentStateAndRefs[stateRef]) {

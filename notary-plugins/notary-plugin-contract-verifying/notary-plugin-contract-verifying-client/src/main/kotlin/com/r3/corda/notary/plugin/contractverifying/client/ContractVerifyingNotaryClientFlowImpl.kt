@@ -36,7 +36,7 @@ class ContractVerifyingNotaryClientFlowImpl(
 
     @Suspendable
     override fun call(): List<DigitalSignatureAndMetadata> {
-        logger.info("Calling Contract Verifying Notary client...")
+        logger.debug("Calling Contract Verifying Notary client..." )
 
         val session = flowMessaging.initiateFlow(notaryRepresentative)
         val payload = createPayload()
@@ -54,10 +54,9 @@ class ContractVerifyingNotaryClientFlowImpl(
                 notarizationResponse.signatures
             }
             else -> {
-                if (logger.isTraceEnabled) {
-                    logger.trace("Received notarization error from notary service {}. Error: {}",
+                logger.warn("Received notarization error from notary service {}. Error: {}",
                         signedTransaction.notaryName, error)
-                }
+
                 throw error
             }
         }

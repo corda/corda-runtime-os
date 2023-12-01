@@ -86,7 +86,6 @@ class FilteredTransactionFactoryImpl @Activate constructor(
             is AuditProof<*> -> {
                 val skipFiltering = componentGroupIndex == 0
 
-                // change filtering logic here
                 val filteredComponents = componentGroup
                     .mapIndexed { index, component -> index to component }
                     .filter { (index, component) ->
