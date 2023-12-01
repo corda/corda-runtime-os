@@ -1,10 +1,14 @@
 package net.corda.libs.packaging.internal.v2
 
+import net.corda.libs.packaging.core.exception.PackagingException
 import net.corda.libs.packaging.testutils.TestUtils.ALICE
+import net.corda.libs.packaging.testutils.cpb.TestCpbV2Builder
 import net.corda.libs.packaging.testutils.cpi.TestCpiV2Builder
+import net.corda.libs.packaging.testutils.cpk.TestCpkV2Builder
 import org.junit.jupiter.api.Assertions.assertAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
 
@@ -27,6 +31,33 @@ class CpiLoaderV2Test {
             { assertEquals("{\"groupId\":\"test\"}", cpi.metadata.groupPolicy) },
             { assertEquals(2, cpi.cpks.size) },
         )
+    }
+
+    @Test
+    fun `CPI loading fails with duplicate CPKs`() {
+        val inMemoryCpk1 = TestCpkV2Builder()
+            .name("test1.jar")
+            .bundleName("duplicate.cpk")
+
+        val inMemoryCpk2 = TestCpkV2Builder()
+            .name("test2.jar")
+            .bundleName("duplicate.cpk")
+
+        val inMemoryCpb = TestCpbV2Builder()
+            .cpks(inMemoryCpk1, inMemoryCpk2)
+
+        val inMemoryCpi = TestCpiV2Builder()
+            .signers(ALICE)
+            .cpb(inMemoryCpb)
+            .build()
+
+        val e = assertThrows<PackagingException> {
+            CpiLoaderV2().loadCpi(inMemoryCpi.toByteArray(), tmp, "in-memory", false)
+        }
+
+        assert(e.message!!.contains("Multiple CPKs share a Corda-CPK-Cordapp-Name")) {
+            "Failure should be caused by multiple CPKs sharing a Corda-CPK-Cordapp-Name."
+        }
     }
 }
 
