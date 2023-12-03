@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@GA-July') _
+@Library('corda-shared-build-pipeline-steps@GA-5.0.1') _
 
 cordaPipelineKubernetesAgent(
     runIntegrationTests: true,
