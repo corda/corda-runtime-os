@@ -42,6 +42,7 @@ class MultiSourceEventMediatorFactoryImpl(
             eventMediatorConfig,
             stateSerializer,
             stateDeserializer,
+            cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java),
             eventMediatorConfig.stateManager,
             taskManagerFactory.createThreadPoolTaskManager(
                 name = eventMediatorConfig.name,

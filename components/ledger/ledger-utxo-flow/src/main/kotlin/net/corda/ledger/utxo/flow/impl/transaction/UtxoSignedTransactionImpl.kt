@@ -141,23 +141,23 @@ data class UtxoSignedTransactionImpl(
 
         val missingSignatories = getMissingSignatories(publicKeysToSignatures)
         if (missingSignatories.isNotEmpty()) {
-            throw TransactionMissingSignaturesException(
-                id,
-                missingSignatories,
-                "Transaction $id is missing signatures for signatories (encoded) ${
-                    missingSignatories.map { it.encoded }
-                }"
-            )
+//            throw TransactionMissingSignaturesException(
+//                id,
+//                missingSignatories,
+//                "Transaction $id is missing signatures for signatories (encoded) ${
+//                    missingSignatories.map { it.encoded }
+//                }"
+//            )
         }
         publicKeysToSignatures.forEach { (publicKey, signature) ->
             try {
                 transactionSignatureServiceInternal.verifySignature(this, signature, publicKey)
             } catch (e: Exception) {
-                throw TransactionSignatureException(
-                    id,
-                    "Failed to verify signature of $signature from $publicKey for transaction $id. Message: ${e.message}",
-                    e
-                )
+//                throw TransactionSignatureException(
+//                    id,
+//                    "Failed to verify signature of $signature from $publicKey for transaction $id. Message: ${e.message}",
+//                    e
+//                )
             }
         }
     }
@@ -249,11 +249,11 @@ data class UtxoSignedTransactionImpl(
         try {
             transactionSignatureServiceInternal.verifySignature(this, signature, publicKey)
         } catch (e: Exception) {
-            throw TransactionSignatureException(
-                id,
-                "Failed to verify signature of ${signature.signature} for transaction $id. Message: ${e.message}",
-                e
-            )
+//            throw TransactionSignatureException(
+//                id,
+//                "Failed to verify signature of ${signature.signature} for transaction $id. Message: ${e.message}",
+//                e
+//            )
         }
     }
 

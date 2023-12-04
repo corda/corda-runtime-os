@@ -80,7 +80,7 @@ class ExternalEventManagerImpl(
         val requestId = externalEventResponse.requestId
         log.trace { "Processing response for external event with id '$requestId'" }
 
-        if (requestId == externalEventState.requestId) {
+//        if (requestId == externalEventState.requestId) {
             log.debug { "External event response with id $requestId matched last sent request" }
             externalEventState.response = externalEventResponse
 
@@ -121,13 +121,13 @@ class ExternalEventManagerImpl(
                     )
                 }
             }
-        } else {
-            log.warn(
-                "Received an external event response with id $requestId when waiting for a response with id " +
-                        "${externalEventState.requestId}. This response will be discarded. Content of the response: " +
-                        externalEventResponse
-            )
-        }
+//        } else {
+//            log.warn(
+//                "Received an external event response with id $requestId when waiting for a response with id " +
+//                        "${externalEventState.requestId}. This response will be discarded. Content of the response: " +
+//                        externalEventResponse
+//            )
+//        }
         return externalEventState
     }
 

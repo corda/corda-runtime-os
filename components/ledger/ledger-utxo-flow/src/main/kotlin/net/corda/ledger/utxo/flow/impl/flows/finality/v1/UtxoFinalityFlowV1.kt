@@ -179,8 +179,8 @@ class UtxoFinalityFlowV1(
                     "${e.missingSignatories.map { it.fullId() }}. The following counterparties provided signatures while finalizing " +
                     "the transaction: $counterpartiesToSignatoriesMessage"
             log.warn(message)
-            persistInvalidTransaction(transaction)
-            throw TransactionMissingSignaturesException(transactionId, e.missingSignatories, message)
+//            persistInvalidTransaction(transaction)
+//            throw TransactionMissingSignaturesException(transactionId, e.missingSignatories, message)
         }
     }
 

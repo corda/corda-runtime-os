@@ -2,6 +2,10 @@ package net.corda.messaging.mediator
 
 import net.corda.avro.serialization.CordaAvroDeserializer
 import net.corda.avro.serialization.CordaAvroSerializer
+import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
+import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.external.ExternalEventResponse
+import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -36,6 +40,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     private val config: EventMediatorConfig<K, S, E>,
     stateSerializer: CordaAvroSerializer<S>,
     stateDeserializer: CordaAvroDeserializer<S>,
+    private val deserializer: CordaAvroDeserializer<Any>,
     private val stateManager: StateManager,
     private val taskManager: TaskManager,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
@@ -70,6 +75,8 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     // TODO This timeout was set with CORE-17768 (changing configuration value would affect other messaging patterns)
     //  This should be reverted to use configuration value once event mediator polling is refactored (planned for 5.2)
     private val pollTimeout = Duration.ofMillis(50)
+    // Cache for external event replies
+    private val extEventReplies = mutableMapOf<String, FlowEvent>()
 
     override fun start() {
         log.debug { "Starting multi-source event mediator with config: $config" }
@@ -301,10 +308,32 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                     list
                 }
             } else {
+                val extEventReq = message.event()!!
+                val extEventKey = when (extEventReq) {
+                    is FlowOpsRequest -> "${extEventReq::class.java}:${extEventReq.request::class.java}"
+                    is LedgerPersistenceRequest -> "${extEventReq::class.java}:${extEventReq.request::class.java}"
+                    else -> "${extEventReq::class.java}"
+                }
+
                 @Suppress("UNCHECKED_CAST")
                 val reply = with(destination) {
-                    message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
-                    client.send(message) as MediatorMessage<E>?
+                    val cachedExtEventReply = extEventReplies[extEventKey]
+                    if (cachedExtEventReply != null) {
+                        // Return cached reply
+                        log.info("Using cached response from destination [${destination.endpoint}]")
+                        MediatorMessage(cachedExtEventReply) as MediatorMessage<E>?
+                    } else {
+                        // Get reply and cache it
+                        message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
+                        val rep = client.send(message) as MediatorMessage<E>?
+                        val extEventReply = rep!!.payload as FlowEvent
+//                        val extEvent = extEventReply.payload as ExternalEventResponse
+//                        val payload = deserializer.deserialize(extEvent.payload.array())
+//                        log.info("External response type is [${payload!!::class.java}]")
+                        log.info("Caching response from destination [${destination.endpoint}]")
+                        extEventReplies[extEventKey] = extEventReply
+                        rep
+                    }
                 }
                 if (reply != null) {
                     queue.addLast(
@@ -316,6 +345,17 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                     )
                 }
             }
+        }
+    }
+
+    private fun MediatorMessage<Any>.event(): Any? {
+        val event = payload
+        return if (event is ByteArray) {
+            val des = deserializer.deserialize(event)
+//            log.info("External request type is [${des!!::class.java}]")
+            des
+        } else {
+            event
         }
     }
 
