@@ -41,10 +41,12 @@ class CryptoFlowOpsProcessor(
     private val cryptoService: CryptoService,
     private val externalEventResponseFactory: ExternalEventResponseFactory,
     config: RetryingConfig,
-    private val keyEncodingService: KeyEncodingService,
-    override val requestClass: Class<FlowOpsRequest>,
-    override val responseClass: Class<FlowEvent>,
+    private val keyEncodingService: KeyEncodingService
 ) : SyncRPCProcessor<FlowOpsRequest, FlowEvent> {
+
+    override val requestClass = FlowOpsRequest::class.java
+    override val responseClass = FlowEvent::class.java
+
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }

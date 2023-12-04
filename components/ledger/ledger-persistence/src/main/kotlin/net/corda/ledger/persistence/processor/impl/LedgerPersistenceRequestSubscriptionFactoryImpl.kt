@@ -3,8 +3,8 @@ package net.corda.ledger.persistence.processor.impl
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.ledger.persistence.processor.DelegatedRequestHandlerSelector
-import net.corda.ledger.persistence.processor.LedgerPersistenceRequestSubscriptionFactory
 import net.corda.ledger.persistence.processor.LedgerPersistenceRequestProcessor
+import net.corda.ledger.persistence.processor.LedgerPersistenceRequestSubscriptionFactory
 import net.corda.messaging.api.constants.WorkerRPCPaths.LEDGER_PATH
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.api.subscription.config.SyncRPCConfig
@@ -39,9 +39,7 @@ class LedgerPersistenceRequestSubscriptionFactoryImpl @Activate constructor(
             currentSandboxGroupContext,
             entitySandboxService,
             delegatedRequestHandlerSelector,
-            responseFactory,
-            LedgerPersistenceRequest::class.java,
-            FlowEvent::class.java
+            responseFactory
         )
         val rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, LEDGER_PATH)
         return subscriptionFactory.createHttpRPCSubscription(rpcConfig, processor)

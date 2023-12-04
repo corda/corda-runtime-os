@@ -38,16 +38,12 @@ class LedgerPersistenceRequestProcessorTest {
     private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
 
     private val flowEvent = mock<FlowEvent>()
-    private val requestClass = LedgerPersistenceRequest::class.java
-    private val responseClass = FlowEvent::class.java
 
     private val target = LedgerPersistenceRequestProcessor(
         currentSandboxGroupContext,
         entitySandboxService,
         delegatedRequestHandlerSelector,
-        responseFactory,
-        requestClass,
-        responseClass
+        responseFactory
     )
 
     private fun createRequest(requestId: String): LedgerPersistenceRequest {

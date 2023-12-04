@@ -41,16 +41,12 @@ class VerificationRequestProcessorTest {
     private val virtualNodeContext = mock<VirtualNodeContext>()
     private val currentSandboxGroupContext = mock<CurrentSandboxGroupContext>()
     private val flowEvent = mock<FlowEvent>()
-    private val requestClass = TransactionVerificationRequest::class.java
-    private val responseClass = FlowEvent::class.java
 
     private val verificationRequestProcessor = VerificationRequestProcessor(
         currentSandboxGroupContext,
         verificationSandboxService,
         verificationRequestHandler,
-        responseFactory,
-        requestClass,
-        responseClass
+        responseFactory
     )
 
     private fun createRequest(requestId: String) =
