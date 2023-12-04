@@ -56,7 +56,7 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 @Component(service = [FlowRestResource::class, PluggableRestResource::class])
 class FlowRestResourceImpl @Activate constructor(
     @Reference(service = VirtualNodeInfoReadService::class)
