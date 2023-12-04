@@ -69,7 +69,6 @@ class KeyRotationRestResourceImpl @Activate constructor(
 
     private val configKeys = setOf(
         ConfigKeys.MESSAGING_CONFIG,
-        ConfigKeys.CRYPTO_CONFIG,
         ConfigKeys.STATE_MANAGER_CONFIG,
     )
 
@@ -86,11 +85,9 @@ class KeyRotationRestResourceImpl @Activate constructor(
     private val dependentComponents = DependentComponents.of(
         ::configurationReadService,
     )
-
-    override val isRunning: Boolean
-        get() = lifecycleCoordinator.isRunning
-
     private var subscriptionRegistrationHandle: RegistrationHandle? = null
+    private var isUp = false
+    override val isRunning get() = publishToKafka != null && isUp
 
     override fun start() {
         lifecycleCoordinator.start()
@@ -106,8 +103,12 @@ class KeyRotationRestResourceImpl @Activate constructor(
         when (event) {
             is StartEvent -> {
                 dependentComponents.registerAndStartAll(coordinator)
-                coordinator.updateStatus(LifecycleStatus.UP)
+                if (!isUp) {
+                    isUp = true
+                    signalUpStatus()
+                }
             }
+
             is RegistrationStatusChangeEvent -> {
                 configurationReadService.registerComponentForUpdates(lifecycleCoordinator, configKeys)
                 if (event.status == LifecycleStatus.UP) {
@@ -116,6 +117,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
                     lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
                 }
             }
+
             is ConfigChangedEvent -> {
                 initialise(event.config)
 
@@ -125,20 +127,23 @@ class KeyRotationRestResourceImpl @Activate constructor(
                 stateManager?.stop()
                 stateManager = stateManagerFactory.create(stateManagerConfig).also { it.start() }
                 logger.info("State manager created and started $stateManager")
-
-                // close the lifecycle registration first to prevent down being signaled
-                //subscriptionRegistrationHandle?.close()
-                //subscriptionRegistrationHandle = lifecycleCoordinator.followStatusChangesByName(setOf(stateManager!!.name,
-                //    LifecycleCoordinatorName.forComponent<ConfigurationReadService>()))
             }
+
             is StopEvent -> {
                 subscriptionRegistrationHandle?.close()
                 stateManager?.stop()
                 publishToKafka?.close()
             }
+
             else -> {
                 logger.error("Unexpected event $event!")
             }
+        }
+    }
+
+    private fun signalUpStatus() {
+        if (isRunning) {
+            lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
         }
     }
 
@@ -192,8 +197,8 @@ class KeyRotationRestResourceImpl @Activate constructor(
 fun doKeyRotation(
     oldKeyAlias: String,
     newKeyAlias: String,
-    serializeStatus: (KeyRotationStatus) ->ByteArray?,
-    publishStates: ( (List<State>) -> Unit),
+    serializeStatus: (KeyRotationStatus) -> ByteArray?,
+    publishStates: ((List<State>) -> Unit),
     publishRequests: ((List<Record<String, KeyRotationRequest>>) -> Unit)
 ): ResponseEntity<KeyRotationResponse> {
     // We cannot validate oldKeyAlias or newKeyAlias early here on the client side of the RPC since

@@ -13,7 +13,6 @@ import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationStatus
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.messaging.api.records.Record
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
@@ -22,6 +21,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.test.impl.LifecycleTest
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.ConfigKeys
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -133,7 +133,6 @@ class KeyRotationRestResourceTest {
         assertThat(stateManagerPublicationCount).isEqualTo(0)
     }
 
-    @Disabled
     @Test
     fun `start event doesnt post up status before being initialised`() {
         val context = getKeyRotationRestResourceTestContext()
