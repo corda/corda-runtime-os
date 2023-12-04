@@ -231,6 +231,18 @@ class FlowRestResourceImplTest {
     }
 
     @Test
+    fun `get multiple flow status by filter`() {
+        whenever(flowStatusCacheService.getStatusesPerIdentity(any())).thenReturn(listOf(FlowStatus(), FlowStatus()))
+        val flowRestResource = createFlowRestResource()
+        flowRestResource.getMultipleFlowStatusByFilter(VALID_SHORT_HASH, "COMPLETED")
+
+        verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
+        verify(flowStatusCacheService, times(1)).getStatusesPerIdentity(any())
+        verify(messageFactory, times(2)).createFlowStatusResponse(any())
+        verify(fatalErrorFunction, never()).invoke()
+    }
+
+    @Test
     fun `get multiple flow status throws resource not found if virtual node does not exist`() {
         whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(any())).thenReturn(null)
 

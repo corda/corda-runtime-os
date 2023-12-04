@@ -129,7 +129,9 @@ interface FlowRestResource : RestResource {
     )
     fun getMultipleFlowStatusByFilter(
         @RestPathParameter(description = "The short hash of the holding identity; obtained during node registration")
-        holdingIdentityShortHash: String
+        holdingIdentityShortHash: String,
+        @RestPathParameter(description = "Flow status to filter by")
+        status: String
     ): FlowStatusResponses
 
     @HttpGET(

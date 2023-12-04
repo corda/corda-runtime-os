@@ -2,6 +2,7 @@ package net.corda.flow.rest.impl.v1
 
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.flow.FlowKey
+import net.corda.data.flow.output.FlowStates
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.data.virtualnode.VirtualNodeOperationalState
 import net.corda.flow.rest.FlowStatusCacheService
@@ -269,6 +270,13 @@ class FlowRestResourceImpl @Activate constructor(
     override fun getMultipleFlowStatus(holdingIdentityShortHash: String): FlowStatusResponses {
         val vNode = getVirtualNode(holdingIdentityShortHash)
         val flowStatuses = flowStatusCacheService.getStatusesPerIdentity(vNode.holdingIdentity)
+        return FlowStatusResponses(flowStatusResponses = flowStatuses.map { messageFactory.createFlowStatusResponse(it) })
+    }
+
+    override fun getMultipleFlowStatusByFilter(holdingIdentityShortHash: String, status: String): FlowStatusResponses {
+        val vNode = getVirtualNode(holdingIdentityShortHash)
+        val flowStatuses = flowStatusCacheService.getStatusesPerIdentity(vNode.holdingIdentity)
+        flowStatuses.filter { it.flowStatus == FlowStates.valueOf(status)}
         return FlowStatusResponses(flowStatusResponses = flowStatuses.map { messageFactory.createFlowStatusResponse(it) })
     }
 
