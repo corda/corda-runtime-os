@@ -27,4 +27,66 @@ ignore:
         through Javalin which is configuring Jetty programmatically.
       expires: 2023-12-13T12:08:30.514Z
       created: 2023-07-13T12:08:30.517Z
+  SNYK-JAVA-ORGAPACHEAVRO-5926693:
+    - '*':
+        reason: >-
+            This vulnerability does not apply to C5 as it is not exposed i.e
+            user input is not feed into AVRO messages.
+        expires: 2024-12-13T12:16:30.514Z
+        created: 2023-12-04T12:16:30.517Z
+  SNYK-JAVA-ORGECLIPSEJETTYHTTP2-5958918:
+    - '*':
+        reason: >-
+            C5 is exposed to this vulnerability it doesn’t use the HTTP/2 protocol.
+        expires: 2024-12-13T12:16:30.514Z
+        created: 2023-12-04T12:16:30.517Z
+  SNYK-JAVA-ORGXERIALSNAPPY-5918282:
+    - '*':
+        reason: >-
+            C5 does not use the Snappy algorithm for compression in our existing Kafka setup.
+            Furthermore, this package is used internally and we don't send data to Snappy directly.
+        expires: 2024-12-13T12:16:30.514Z
+        created: 2023-12-04T12:16:30.517Z
+  SNYK-JAVA-ORGECLIPSEJETTY-5958847:
+    - '*':
+        reason: >-
+            C5 is exposed to this vulnerability it doesn’t use the HTTP/2 protocol.
+        expires: 2024-12-13T12:16:30.514Z
+        created: 2023-12-04T12:16:30.517Z
+  SNYK-JAVA-ORGECLIPSEJETTYHTTP2-5958845:
+    - '*':
+        reason: >-
+            C5 is exposed to this vulnerability it doesn’t use the HTTP/2 protocol.
+        expires: 2024-12-13T12:16:30.514Z
+        created: 2023-12-04T12:16:30.517Z
+  SNYK-JAVA-ORGECLIPSEJETTY-5902998:
+    - '*':
+          reason: >-
+              This vulnerability is fixed in Corda 5.1.
+          expires: 2024-12-13T12:16:30.514Z
+          created: 2023-12-04T12:16:30.517Z
+  SNYK-JAVA-ORGPF4J-5862957:
+    - '*':
+        reason: >-
+            In Corda-cli we do not allow deployment of custom plugins.
+            If the attacker writes their own plugin, they are not going to
+            gain any advantage as they will be running on their own computer.
+        expires: 2024-12-13T12:16:30.514Z
+        created: 2023-12-04T12:16:30.517Z
+  SNYK-JAVA-ORGPF4J-5862950:
+    - '*':
+        reason: >-
+            In Corda-cli we do not allow deployment of custom plugins.
+            If the attacker writes their own plugin, they are not going to
+            gain any advantage as they will be running on their own computer.
+        expires: 2024-12-13T12:16:30.514Z
+        created: 2023-12-04T12:16:30.517Z
+  SNYK-JAVA-ORGPF4J-5871275:
+    - '*':
+        reason: >-
+            In Corda-cli we do not allow deployment of custom plugins.
+            If the attacker writes their own plugin, they are not going to
+            gain any advantage as they will be running on their own computer.
+        expires: 2024-12-13T12:16:30.514Z
+        created: 2023-12-04T12:16:30.517Z
 patch: {}
