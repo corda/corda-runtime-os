@@ -121,10 +121,9 @@ class KeyRotationRestResourceImpl @Activate constructor(
 
                 val stateManagerConfig = event.config.getConfig(ConfigKeys.STATE_MANAGER_CONFIG)
 
-                logger.info("State manager config is $stateManagerConfig")
                 stateManager?.stop()
                 stateManager = stateManagerFactory.create(stateManagerConfig).also { it.start() }
-                logger.info("State manager created and started $stateManager")
+                logger.debug("State manager created and started ${stateManager!!.name}")
             }
 
             is StopEvent -> {
