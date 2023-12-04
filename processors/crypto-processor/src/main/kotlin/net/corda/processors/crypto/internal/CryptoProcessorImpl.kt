@@ -127,7 +127,7 @@ class CryptoProcessorImpl @Activate constructor(
     private val stateManagerFactory: StateManagerFactory,
     @Reference(service = CordaAvroSerializationFactory::class)
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory
-    ) : CryptoProcessor {
+) : CryptoProcessor {
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
         val configKeys = setOf(
@@ -160,11 +160,12 @@ class CryptoProcessorImpl @Activate constructor(
     // using `LifecycleTest` API
     // TODO - can we remove VisibleForTesting here? and go back to lifecycleCorodinator being private
     @get:VisibleForTesting
-    internal val lifecycleCoordinator = coordinatorFactory.createCoordinator<CryptoProcessor>(dependentComponents, ::eventHandler)
+    internal val lifecycleCoordinator =
+        coordinatorFactory.createCoordinator<CryptoProcessor>(dependentComponents, ::eventHandler)
 
     @Volatile
     private var dependenciesUp: Boolean = false
-    
+
     private lateinit var cryptoService: CryptoService
     private lateinit var tenantInfoService: TenantInfoService
     private var bootConfigRecord: SmartConfig? = null
@@ -192,9 +193,11 @@ class CryptoProcessorImpl @Activate constructor(
                 // No need to register coordinator to follow dependent components.
                 // This already happens in `coordinatorFactory.createCoordinator` above.
             }
+
             is StopEvent -> {
                 stateManager?.stop()
             }
+
             is BootConfigEvent -> {
                 val bootstrapConfig = event.config
 
@@ -204,6 +207,7 @@ class CryptoProcessorImpl @Activate constructor(
                 logger.trace("Bootstrapping {}", dbConnectionManager::class.simpleName)
                 dbConnectionManager.bootstrap(bootstrapConfig.getConfig(BOOT_DB))
             }
+
             is RegistrationStatusChangeEvent -> {
                 logger.trace("Registering for configuration updates.")
                 configurationReadService.registerComponentForUpdates(coordinator, configKeys)
@@ -214,14 +218,15 @@ class CryptoProcessorImpl @Activate constructor(
                     setStatus(event.status, coordinator)
                 }
             }
+
             is ConfigChangedEvent -> {
                 tenantInfoService = startTenantInfoService()
                 cryptoService = startCryptoService(event.config.getConfig(CRYPTO_CONFIG), tenantInfoService)
-                val bootConfig = bootConfigRecord?: throw IllegalStateException("boot config not available")
+                val bootConfig = bootConfigRecord ?: throw IllegalStateException("boot config not available")
                 val stateManagerConfig: SmartConfig? = if (bootConfig.hasPath(StateManagerConfig.STATE_MANAGER))
-                            bootConfig.getConfig(StateManagerConfig.STATE_MANAGER)
-                        else
-                            null
+                    bootConfig.getConfig(StateManagerConfig.STATE_MANAGER)
+                else
+                    null
                 logger.info("making statement manager $stateManagerConfig")
                 logger.info("state manager config is $stateManagerConfig")
                 if (stateManagerConfig != null) {
@@ -236,12 +241,12 @@ class CryptoProcessorImpl @Activate constructor(
                         logger.trace("Assigned SOFT HSM for $tenantId:$category")
                     }
                 }
-                startProcessors(event, coordinator, stateManager,cordaAvroSerializationFactory)
+                startProcessors(event, coordinator, stateManager, cordaAvroSerializationFactory)
                 setStatus(LifecycleStatus.UP, coordinator)
             }
         }
     }
-    
+
     @Suppress("ThrowsCount")
     private fun startCryptoService(config: SmartConfig, tenantInfoService: TenantInfoService): CryptoService {
         logger.info("Creating instance of the {}", SoftCryptoService::class.java.name)
@@ -291,7 +296,7 @@ class CryptoProcessorImpl @Activate constructor(
                 ),
                 tenantId = tenantId
             )
-        } 
+        }
         val signingRepositoryFactory = { tenantId: String ->
             SigningRepositoryImpl(
                 entityManagerFactory = getEntityManagerFactory(
@@ -311,8 +316,8 @@ class CryptoProcessorImpl @Activate constructor(
         }
         val wrappingKeyFactory = { it: CipherSchemeMetadata -> WrappingKeyImpl.generateWrappingKey(it) }
         return SoftCryptoService(
-            wrappingRepositoryFactory= wrappingRepositoryFactory,
-            signingRepositoryFactory=signingRepositoryFactory,
+            wrappingRepositoryFactory = wrappingRepositoryFactory,
+            signingRepositoryFactory = signingRepositoryFactory,
             schemeMetadata = schemeMetadata,
             digestService = digestService,
             defaultUnmanagedWrappingKeyName = defaultUnmanagedWrappingKeyName,
@@ -320,12 +325,12 @@ class CryptoProcessorImpl @Activate constructor(
             wrappingKeyCache = wrappingKeyCache,
             privateKeyCache = privateKeyCache,
             shortHashCache = shortHashCache,
-            keyPairGeneratorFactory = keyPairGeneratorFactory, 
+            keyPairGeneratorFactory = keyPairGeneratorFactory,
             wrappingKeyFactory = wrappingKeyFactory,
             tenantInfoService = tenantInfoService
         )
     }
-    
+
     private fun startTenantInfoService() = TenantInfoServiceImpl {
         HSMRepositoryImpl(
             getEntityManagerFactory(
@@ -360,8 +365,10 @@ class CryptoProcessorImpl @Activate constructor(
         createFlowOpsSubscription(coordinator, retryingConfig)
         createRpcOpsSubscription(coordinator, messagingConfig, retryingConfig)
         createHsmRegSubscription(coordinator, messagingConfig, retryingConfig)
-        createRekeySubscription(coordinator, messagingConfig, wrappingRepositoryFactory,
-            stateManager, cordaAvroSerializationFactory)
+        createRekeySubscription(
+            coordinator, messagingConfig, wrappingRepositoryFactory,
+            stateManager, cordaAvroSerializationFactory
+        )
         createRewrapSubscription(coordinator, messagingConfig)
     }
 
@@ -371,7 +378,7 @@ class CryptoProcessorImpl @Activate constructor(
         wrappingRepositoryFactory: (String) -> WrappingRepositoryImpl,
         stateManager: StateManager?,
         cordaAvroSerializationFactory: CordaAvroSerializationFactory
-        ) {
+    ) {
         val publisherConfig = PublisherConfig("RekeyBusProcessor", false)
         val rekeyPublisher = publisherFactory.createPublisher(publisherConfig, messagingConfig)
         val rekeyProcessor = CryptoRekeyBusProcessor(
