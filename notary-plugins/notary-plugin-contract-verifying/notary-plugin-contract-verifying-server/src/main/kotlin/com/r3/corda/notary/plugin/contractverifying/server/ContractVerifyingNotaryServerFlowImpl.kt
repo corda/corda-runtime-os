@@ -50,16 +50,10 @@ class ContractVerifyingNotaryServerFlowImpl : ResponderFlow {
             val initialTransactionDetails = getInitialTransactionDetail(initialTransaction)
 
             // Verify the signatures
-            if (logger.isTraceEnabled) {
-                logger.trace(
-                    "Verifying signatures for the following dependencies: {}",
-                    filteredTransactionsAndSignatures.map { it.filteredTransaction.id })
-            }
-
             verifySignatures(initialTransaction.notaryKey, filteredTransactionsAndSignatures)
 
             // Verify the contract
-            verifyContract(initialTransaction, filteredTransactionsAndSignatures)
+            verifyTransaction(initialTransaction, filteredTransactionsAndSignatures)
 
             // Request a uniqueness check on the transaction
             if (logger.isTraceEnabled) {
@@ -135,7 +129,7 @@ class ContractVerifyingNotaryServerFlowImpl : ResponderFlow {
     ) {
         filteredTransactionsAndSignatures.forEach { (filteredTransaction, signatures) ->
             require(signatures.isNotEmpty()) { "No notary signatures were received" }
-            filteredTransaction.verify()
+            filteredTransaction.verifyDependencies()
             for (signature in signatures) {
                 transactionSignatureService.verifySignature(
                     filteredTransaction.id,
@@ -143,12 +137,11 @@ class ContractVerifyingNotaryServerFlowImpl : ResponderFlow {
                     notaryKey
                 )
             }
-            logger.info("SUCCESSFULLY VERIFIED $filteredTransaction | $signatures")
         }
     }
 
     @Suspendable
-    private fun verifyContract(
+    private fun verifyTransaction(
         initialTransaction: UtxoSignedTransaction,
         filteredTransactionsAndSignatures: List<FilteredTransactionAndSignatures>
     ) {
@@ -168,12 +161,6 @@ class ContractVerifyingNotaryServerFlowImpl : ResponderFlow {
             }
         }
 
-        val ledgerTransaction = if (inputStateAndRefs.isNotEmpty() || referenceStateAndRefs.isNotEmpty()) {
-            initialTransaction.toLedgerTransaction(inputStateAndRefs, referenceStateAndRefs)
-        } else {
-            initialTransaction.toLedgerTransaction()
-        }
-
-        utxoLedgerService.verifyContract(ledgerTransaction)
+        utxoLedgerService.verify(initialTransaction.toLedgerTransaction(inputStateAndRefs, referenceStateAndRefs))
     }
 }

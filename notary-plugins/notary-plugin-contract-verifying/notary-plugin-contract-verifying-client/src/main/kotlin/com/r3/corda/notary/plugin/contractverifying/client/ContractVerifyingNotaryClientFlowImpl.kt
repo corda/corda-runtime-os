@@ -50,8 +50,10 @@ class ContractVerifyingNotaryClientFlowImpl(
         return when (val error = notarizationResponse.error) {
             null -> {
                 if (logger.isTraceEnabled) {
-                    logger.trace("Received notarization response from notary service {} for transaction {}",
-                        signedTransaction.notaryName, signedTransaction.id)
+                    logger.trace(
+                        "Received notarization response from notary service {} for transaction {}",
+                        signedTransaction.notaryName, signedTransaction.id
+                    )
                 }
                 notarizationResponse.signatures
             }

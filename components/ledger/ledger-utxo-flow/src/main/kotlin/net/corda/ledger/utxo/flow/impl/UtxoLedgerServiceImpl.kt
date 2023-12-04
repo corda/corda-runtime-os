@@ -81,7 +81,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
         UtxoTransactionBuilderImpl(utxoSignedTransactionFactory, notaryLookup)
 
     @Suspendable
-    override fun verifyContract(ledgerTransaction: UtxoLedgerTransaction) {
+    override fun verify(ledgerTransaction: UtxoLedgerTransaction) {
         transactionVerificationService.verify(ledgerTransaction)
     }
 

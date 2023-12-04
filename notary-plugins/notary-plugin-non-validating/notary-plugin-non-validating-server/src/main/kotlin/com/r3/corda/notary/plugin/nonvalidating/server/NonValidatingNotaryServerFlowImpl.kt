@@ -224,7 +224,7 @@ class NonValidatingNotaryServerFlowImpl() : ResponderFlow {
     @Suppress("NestedBlockDepth", "TooGenericExceptionCaught", "ThrowsCount",)
     private fun verifyTransaction(requestPayload: NonValidatingNotarizationPayload) {
         try {
-            (requestPayload.transaction as UtxoFilteredTransaction).verify()
+            (requestPayload.transaction as UtxoFilteredTransaction).verifyDependencies()
         } catch (e: Exception) {
             logger.warn(
                 "Error while validating transaction ${(requestPayload.transaction as UtxoFilteredTransaction).id}, reason: ${e.message}"
