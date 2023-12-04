@@ -37,7 +37,7 @@ ignore:
   SNYK-JAVA-ORGECLIPSEJETTYHTTP2-5958918:
     - '*':
         reason: >-
-            C5 is exposed to this vulnerability it doesn’t use the HTTP/2 protocol.
+            C5 is not exposed to this vulnerability it doesn’t use the HTTP/2 protocol.
         expires: 2024-12-13T12:16:30.514Z
         created: 2023-12-04T12:16:30.517Z
   SNYK-JAVA-ORGXERIALSNAPPY-5918282:
@@ -50,13 +50,13 @@ ignore:
   SNYK-JAVA-ORGECLIPSEJETTY-5958847:
     - '*':
         reason: >-
-            C5 is exposed to this vulnerability it doesn’t use the HTTP/2 protocol.
+            C5 is not exposed to this vulnerability it doesn’t use the HTTP/2 protocol.
         expires: 2024-12-13T12:16:30.514Z
         created: 2023-12-04T12:16:30.517Z
   SNYK-JAVA-ORGECLIPSEJETTYHTTP2-5958845:
     - '*':
         reason: >-
-            C5 is exposed to this vulnerability it doesn’t use the HTTP/2 protocol.
+            C5 is not exposed to this vulnerability it doesn’t use the HTTP/2 protocol.
         expires: 2024-12-13T12:16:30.514Z
         created: 2023-12-04T12:16:30.517Z
   SNYK-JAVA-ORGECLIPSEJETTY-5902998:
