@@ -718,7 +718,7 @@ workers:
         # -- the State Manager database port
         port: 5432
         # -- the State Manager database name
-        name: crypto_state_manager
+        name: key_rotation_state_manager
         # the State Manager database user configuration
         username:
           # -- the State Manager database user
@@ -1309,7 +1309,7 @@ workers:
         # -- the State Manager database port
         port: 5432
         # -- the State Manager database name
-        name: rest_state_manager
+        name: key_rotation_state_manager
         # the State Manager database user configuration
         username:
           # -- the State Manager database user
