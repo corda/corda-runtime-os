@@ -259,7 +259,7 @@ class SandboxGroupImplTests {
         val otherCpkSandbox =
             CpkSandboxImpl(randomUUID(), mockCpkMeta(), mockCpkMainBundle, setOf(mockCpkLibraryBundle))
 
-        val e = assertThrows<SandboxException> {
+        assertThrows<SandboxException> {
             SandboxGroupImpl(
                 randomUUID(),
                 setOf(cpkSandbox, otherCpkSandbox),
@@ -268,7 +268,6 @@ class SandboxGroupImplTests {
                 mockBundleUtils
             )
         }
-        assert(e.message!!.contains("declared more than once.")) {e.message!!}
     }
 }
 

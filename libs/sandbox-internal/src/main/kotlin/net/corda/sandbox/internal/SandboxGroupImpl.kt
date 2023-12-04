@@ -39,7 +39,7 @@ internal class SandboxGroupImpl(
         val cordappCpkNames = HashSet<String>()
         cpkSandboxes.forEach {
             if (cordappCpkNames.contains(it.cpkMetadata.cpkId.name)) {
-                throw SandboxException("CPK ${it.cpkMetadata.cpkId.name} is declared more than once.")
+                throw SandboxException("Multiple CPKs share the Corda-CPK-Cordapp-Name ${it.cpkMetadata.cpkId.name}.")
             }
             cordappCpkNames.add(it.cpkMetadata.cpkId.name)
         }
