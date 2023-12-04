@@ -1334,7 +1334,7 @@ workers:
               name: ""
               # -- the State Manager database password secret key
               key: ""
-        # flow mapper worker JDBC connection pool configuration for State Manager DB
+        # rest worker JDBC connection pool configuration for State Manager DB
         connectionPool:
           # -- flow mapper worker maximum JDBC connection pool size for state manager DB
           maxSize: 5
