@@ -1,6 +1,7 @@
 @Library('corda-shared-build-pipeline-steps@5.0.1') _
 
 cordaSnykScanPipeline (
+    dailyBuildCron: '', // override to empty string to stop nightly cron
     snykTokenId: 'r3-snyk-corda5',
     snykAdditionalCommands: "--all-sub-projects --configuration-matching='^runtimeClasspath\$' -d",
     cpuCount: 7
