@@ -27,6 +27,7 @@ import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationNotFoundE
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRestResource
 import net.corda.libs.virtualnode.endpoints.v1.types.ChangeVirtualNodeStateResponse
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
+import net.corda.libs.virtualnode.endpoints.v1.types.UpdateVirtualNodeDbRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
 import net.corda.lifecycle.CustomEvent
@@ -411,6 +412,35 @@ internal class VirtualNodeRestResourceImpl(
         virtualNodeValidationService.validateVirtualNodeDoesNotExist(holdingIdentity)
 
         val asyncRequest = requestFactory.createVirtualNodeRequest(holdingIdentity, request)
+
+        sendAsync(asyncRequest.requestId, asyncRequest)
+
+        // Write through status cache.
+        virtualNodeStatusCacheService.setStatus(
+            asyncRequest.requestId,
+            createVirtualNodeOperationStatus(asyncRequest.requestId)
+        )
+
+        return ResponseEntity.accepted(AsyncResponse(asyncRequest.requestId))
+    }
+
+    override fun updateVirtualNodeDb(virtualNodeShortId: String,
+                                     request: UpdateVirtualNodeDbRequest): ResponseEntity<AsyncResponse> {
+
+        // Check vnode exists
+        val virtualNode = virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.parse(virtualNodeShortId))
+            ?: throw ResourceNotFoundException("Virtual node not found")
+
+        // Log user making change
+        logger.debug {
+            // Lookup actor to keep track of which REST user triggered an update
+            val instant = clock.instant()
+            val actor = restContextProvider.principal
+            "Received request to update vnode ${virtualNode.holdingIdentity.shortHash} connection strings by $actor at $instant"
+        }
+
+        // Build and send change request
+        val asyncRequest = requestFactory.updateVirtualNodeDbRequest(virtualNode.holdingIdentity, request)
 
         sendAsync(asyncRequest.requestId, asyncRequest)
 
