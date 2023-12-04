@@ -1336,7 +1336,7 @@ workers:
               key: ""
         # rest worker JDBC connection pool configuration for State Manager DB
         connectionPool:
-          # -- flow mapper worker maximum JDBC connection pool size for state manager DB
+          # -- rest worker maximum JDBC connection pool size for state manager DB
           maxSize: 5
           # -- flow mapper worker minimum JDBC connection pool size for state manager DB; null value means pool's min size will default to pool's max size value
           minSize: null
