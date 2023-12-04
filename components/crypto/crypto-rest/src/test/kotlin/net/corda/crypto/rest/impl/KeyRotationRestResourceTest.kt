@@ -86,7 +86,7 @@ class KeyRotationRestResourceTest {
         whenever(cordaAvroSerializer.serialize(any<KeyRotationStatus>())).thenReturn(byteArray)
 
         stateManager = mock<StateManager> {
-            on { create(any()) } doReturn emptyMap()
+            on { create(any()) } doReturn emptySet()
         }
 
         stateManagerFactory = mock<StateManagerFactory>().also {
