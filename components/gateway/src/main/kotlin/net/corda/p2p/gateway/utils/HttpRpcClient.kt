@@ -50,7 +50,8 @@ internal class HttpRpcClient(
         val INITIAL_DELAY = Duration.ofMillis(100)
         const val DELAY_INCREASE_FACTOR = 2L
         private const val SUCCESS = "SUCCESS"
-        private const val FAILED = "FAILED" }
+        private const val FAILED = "FAILED"
+    }
 
     inline fun <reified R : Any> send(uri: URI, requestBody: Any): R? {
         return send(uri, requestBody, R::class.java)
