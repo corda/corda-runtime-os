@@ -35,13 +35,15 @@ class CpiLoaderV2Test {
 
     @Test
     fun `CPI loading fails with duplicate CPKs`() {
+        val cpkName = "com.test.duplicate"
+
         val inMemoryCpk1 = TestCpkV2Builder()
             .name("test1.jar")
-            .bundleName("duplicate.cpk")
+            .bundleName(cpkName)
 
         val inMemoryCpk2 = TestCpkV2Builder()
             .name("test2.jar")
-            .bundleName("duplicate.cpk")
+            .bundleName(cpkName)
 
         val inMemoryCpb = TestCpbV2Builder()
             .cpks(inMemoryCpk1, inMemoryCpk2)
@@ -55,9 +57,8 @@ class CpiLoaderV2Test {
             CpiLoaderV2().loadCpi(inMemoryCpi.toByteArray(), tmp, "in-memory", false)
         }
 
-        assert(e.message!!.contains("Multiple CPKs share the Corda-CPK-Cordapp-Name")) {
+        assertEquals(e.message, "Multiple CPKs share the Corda-CPK-Cordapp-Name $cpkName.") {
             "Failure should be caused by multiple CPKs sharing a Corda-CPK-Cordapp-Name."
         }
     }
 }
-

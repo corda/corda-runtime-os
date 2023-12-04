@@ -94,13 +94,12 @@ class CpiLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
                         cpkLocation = cpiLocation.plus("/${it.entry.name}"),
                         verifySignature = false,
                         cpkFileName = Paths.get(it.entry.name).fileName.toString()
-                    ).apply {
-                        metadata.cpkId.name.let {cpkName ->
-                            if (cordappCpkNames.contains(cpkName)) {
-                                throw PackagingException("Multiple CPKs share the Corda-CPK-Cordapp-Name $cpkName.")
-                            }
-                            cordappCpkNames.add(cpkName)
+                    ).also {
+                        val cpkName = it.metadata.cpkId.name
+                        if (cordappCpkNames.contains(cpkName)) {
+                            throw PackagingException("Multiple CPKs share the Corda-CPK-Cordapp-Name $cpkName.")
                         }
+                        cordappCpkNames.add(cpkName)
                     }
                 }
         }
