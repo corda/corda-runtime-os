@@ -231,10 +231,22 @@ class FlowRestResourceImplTest {
     }
 
     @Test
-    fun `get multiple flow status by filter`() {
+    fun `get multiple flow status by filter COMPLETED`() {
         whenever(flowStatusCacheService.getStatusesPerIdentity(any())).thenReturn(listOf(FlowStatus(), FlowStatus()))
         val flowRestResource = createFlowRestResource()
         flowRestResource.getMultipleFlowStatusByFilter(VALID_SHORT_HASH, "COMPLETED")
+
+        verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
+        verify(flowStatusCacheService, times(1)).getStatusesPerIdentity(any())
+        verify(messageFactory, times(2)).createFlowStatusResponse(any())
+        verify(fatalErrorFunction, never()).invoke()
+    }
+
+    @Test
+    fun `get multiple flow status by filter FAILED`() {
+        whenever(flowStatusCacheService.getStatusesPerIdentity(any())).thenReturn(listOf(FlowStatus(), FlowStatus()))
+        val flowRestResource = createFlowRestResource()
+        flowRestResource.getMultipleFlowStatusByFilter(VALID_SHORT_HASH, "FAILED")
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, times(1)).getStatusesPerIdentity(any())
