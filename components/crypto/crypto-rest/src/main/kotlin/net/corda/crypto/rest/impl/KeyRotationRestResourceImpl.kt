@@ -43,8 +43,6 @@ import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.util.UUID
 
-private const val UPLOAD_TOPIC = REKEY_MESSAGE_TOPIC
-
 @Suppress("LongParameterList")
 @Component(service = [PluggableRestResource::class])
 class KeyRotationRestResourceImpl @Activate constructor(
@@ -187,7 +185,7 @@ class KeyRotationRestResourceImpl @Activate constructor(
  * do the start key rotation operation
  *
  * @param oldKeyAlias alias to replace
- * @param newKeyALias alias to use
+ * @param newKeyAlias alias to use
  * @param serializeStatus callback to turn a status message into a byte array, if possible, or null
  * @param publishStates callback to publish a list of states (to state manager, in production)
  * @param publishKafka callback to publish a list of kafka messages
@@ -203,9 +201,6 @@ fun doKeyRotation(
 ): ResponseEntity<KeyRotationResponse> {
     // We cannot validate oldKeyAlias or newKeyAlias early here on the client side of the RPC since
     // those values are considered sensitive.
-
-    // We need to create a Record that tells Crypto processor to do key rotation
-    // Do we need to start the publisher? FlowRestResource is not starting its publisher for some reason
 
     val requestId = UUID.randomUUID().toString()
     val keyRotationRequest = KeyRotationRequest(
@@ -231,7 +226,7 @@ fun doKeyRotation(
         Instant.now()
     )
 
-    publishRequests(listOf(Record(UPLOAD_TOPIC, requestId, keyRotationRequest)))
+    publishRequests(listOf(Record(REKEY_MESSAGE_TOPIC, requestId, keyRotationRequest)))
 
     val serialized = serializeStatus(status)
     checkNotNull(serialized)
