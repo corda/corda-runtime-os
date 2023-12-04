@@ -79,14 +79,14 @@ class BatchedUniquenessCheckerLifecycleImpl @Activate constructor(
                     coordinator.updateStatus(LifecycleStatus.UP)
                 } else {
                     coordinator.updateStatus(event.status)
-                    coordinator.closeManagedResources(setOf(CONFIG_HANDLE))
                     log.trace("Stopping subscription.")
+                    coordinator.closeManagedResources(setOf(CONFIG_HANDLE))
                 }
             }
             is StopEvent -> {
                 dependentComponents.stopAll()
-                coordinator.closeManagedResources(setOf(RPC_SUBSCRIPTION))
                 log.trace("Stopping subscription.")
+                coordinator.closeManagedResources(setOf(RPC_SUBSCRIPTION))
             }
             else -> {
                 log.warn("Unexpected event ${event}, ignoring")
