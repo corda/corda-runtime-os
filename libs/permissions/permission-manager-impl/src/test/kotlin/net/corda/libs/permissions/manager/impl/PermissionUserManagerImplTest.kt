@@ -86,14 +86,9 @@ class PermissionUserManagerImplTest {
 
     @BeforeEach
     fun setup() {
-        rpcSender = mock<RPCSender<PermissionManagementRequest, PermissionManagementResponse>>()
-
-        config = mock<SmartConfig>()
-
-        whenever(config.getConfig("corda")).thenReturn(config)
+        rpcSender = mock()
+        config = mock()
         whenever(config.getConfig(ConfigKeys.RBAC_CONFIG)).thenReturn(config)
-        whenever(config.getConfig(ConfigKeys.REST_CONFIG)).thenReturn(config)
-
         whenever(config.getInt(ConfigKeys.RBAC_USER_PASSWORD_CHANGE_EXPIRY)).thenReturn(30)
         whenever(config.getInt(ConfigKeys.RBAC_ADMIN_PASSWORD_CHANGE_EXPIRY)).thenReturn(7)
         whenever(config.getLong(ConfigKeys.REST_ENDPOINT_TIMEOUT_MILLIS)).thenReturn(12345L)
