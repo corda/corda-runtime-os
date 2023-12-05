@@ -30,6 +30,7 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.atomic.AtomicReference
 
+@Suppress("LongParameterList")
 class PermissionUserManagerImpl(
     restConfig: SmartConfig,
     rbacConfig: SmartConfig,
