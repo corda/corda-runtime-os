@@ -111,7 +111,7 @@ interface FlowRestResource : RestResource {
     ): FlowStatusResponses
 
     @HttpGET(
-        path = "{holdingIdentityShortHash}/?status={filterStatus}",
+        path = "{holdingIdentityShortHash}/{filterStatus}",
         title = "Get Multiple Flow Status By Filter",
         description = "This method returns an array containing the statuses of all flows for a specified " +
                 "holding identity for the filter entered. An empty array is returned if there are no flows for that filter.",
