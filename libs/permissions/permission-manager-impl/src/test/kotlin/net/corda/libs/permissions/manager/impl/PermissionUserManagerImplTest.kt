@@ -1,6 +1,5 @@
 package net.corda.libs.permissions.manager.impl
 
-import com.typesafe.config.ConfigValueFactory
 import java.lang.IllegalArgumentException
 import net.corda.data.permissions.ChangeDetails
 import net.corda.data.permissions.Property
@@ -35,7 +34,6 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
-import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
