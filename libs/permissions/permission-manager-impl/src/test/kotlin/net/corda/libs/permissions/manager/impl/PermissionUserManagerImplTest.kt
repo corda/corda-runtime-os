@@ -81,18 +81,19 @@ class PermissionUserManagerImplTest {
     private val permissionManagementResponseWithoutPassword = PermissionManagementResponse(avroUserWithoutPassword)
 
     private lateinit var rpcSender: RPCSender<PermissionManagementRequest, PermissionManagementResponse>
-    private lateinit var config: SmartConfig
+    private var restConfig = mock<SmartConfig>()
+    private lateinit var rbacConfig: SmartConfig
     private lateinit var manager: PermissionUserManagerImpl
 
     @BeforeEach
     fun setup() {
         rpcSender = mock()
-        config = mock()
-        whenever(config.getInt(ConfigKeys.RBAC_USER_PASSWORD_CHANGE_EXPIRY)).thenReturn(30)
-        whenever(config.getInt(ConfigKeys.RBAC_ADMIN_PASSWORD_CHANGE_EXPIRY)).thenReturn(7)
+        rbacConfig = mock()
+        whenever(rbacConfig.getInt(ConfigKeys.RBAC_USER_PASSWORD_CHANGE_EXPIRY)).thenReturn(30)
+        whenever(rbacConfig.getInt(ConfigKeys.RBAC_ADMIN_PASSWORD_CHANGE_EXPIRY)).thenReturn(7)
 
         manager = PermissionUserManagerImpl(
-            config, rpcSender, permissionManagementCacheRef,
+            restConfig, rbacConfig, rpcSender, permissionManagementCacheRef,
             AtomicReference(permissionValidationCache), passwordService
         )
     }
@@ -254,7 +255,7 @@ class PermissionUserManagerImplTest {
         whenever(passwordService.saltAndHash(eq("mypassword"))).thenReturn(PasswordHash("randomSalt", "hashedPass"))
         whenever(future.getOrThrow(Duration.ofMillis(12345L))).thenReturn(permissionManagementResponse)
 
-        val manager = PermissionUserManagerImpl(config, rpcSender, permissionManagementCacheRef,
+        val manager = PermissionUserManagerImpl(config, rbacConfig, rpcSender, permissionManagementCacheRef,
             AtomicReference(permissionValidationCache), passwordService)
 
         val result = manager.createUser(createUserRequestDto)

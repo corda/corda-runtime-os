@@ -31,16 +31,17 @@ import java.time.temporal.ChronoUnit
 import java.util.concurrent.atomic.AtomicReference
 
 class PermissionUserManagerImpl(
-    config: SmartConfig,
+    restConfig: SmartConfig,
+    rbacConfig: SmartConfig,
     private val rpcSender: RPCSender<PermissionManagementRequest, PermissionManagementResponse>,
     private val permissionManagementCacheRef: AtomicReference<PermissionManagementCache?>,
     private val permissionValidationCacheRef: AtomicReference<PermissionValidationCache?>,
     private val passwordService: PasswordService
 ) : PermissionUserManager {
 
-    private val writerTimeout = config.getEndpointTimeout()
-    private val selfUserPasswordExpiryDays = config.getInt(ConfigKeys.RBAC_USER_PASSWORD_CHANGE_EXPIRY)
-    private val otherUserPasswordExpiryDays = config.getInt(ConfigKeys.RBAC_ADMIN_PASSWORD_CHANGE_EXPIRY)
+    private val writerTimeout = restConfig.getEndpointTimeout()
+    private val selfUserPasswordExpiryDays = rbacConfig.getInt(ConfigKeys.RBAC_USER_PASSWORD_CHANGE_EXPIRY)
+    private val otherUserPasswordExpiryDays = rbacConfig.getInt(ConfigKeys.RBAC_ADMIN_PASSWORD_CHANGE_EXPIRY)
 
     override fun createUser(createUserRequestDto: CreateUserRequestDto): UserResponseDto {
         val saltAndHash = createUserRequestDto.initialPassword?.let {

@@ -28,6 +28,7 @@ import net.corda.permissions.validation.cache.PermissionValidationCacheService
 import net.corda.schema.Schemas.Rest.REST_PERM_MGMT_REQ_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.RBAC_CONFIG
 import net.corda.schema.configuration.ConfigKeys.REST_CONFIG
 import net.corda.utilities.VisibleForTesting
 import org.slf4j.LoggerFactory
@@ -110,8 +111,9 @@ internal class PermissionManagementServiceEventHandler(
                 coordinator.updateStatus(LifecycleStatus.DOWN)
                 val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
                 createAndStartRpcSender(messagingConfig)
-                val rpcConfig = event.config[REST_CONFIG]!!
-                createPermissionManager(rpcConfig)
+                val restConfig = event.config[REST_CONFIG]!!
+                val rbacConfig = event.config[RBAC_CONFIG]!!
+                createPermissionManager(restConfig, rbacConfig)
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
             is StopEvent -> {
@@ -130,7 +132,7 @@ internal class PermissionManagementServiceEventHandler(
         }
     }
 
-    private fun createPermissionManager(config: SmartConfig) {
+    private fun createPermissionManager(restConfig: SmartConfig, rbacConfig: SmartConfig) {
         val permissionManagementCacheRef = permissionManagementCacheService.permissionManagementCacheRef
 
         val permissionValidationCacheRef = permissionValidationCacheService.permissionValidationCacheRef
@@ -139,7 +141,8 @@ internal class PermissionManagementServiceEventHandler(
         log.info("Creating and starting permission manager.")
         permissionManager =
             permissionManagerFactory.createPermissionManager(
-                config,
+                restConfig,
+                rbacConfig,
                 rpcSender!!,
                 permissionManagementCacheRef,
                 permissionValidationCacheRef
