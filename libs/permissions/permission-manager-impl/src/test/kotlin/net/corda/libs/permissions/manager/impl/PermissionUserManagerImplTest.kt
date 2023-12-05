@@ -1,5 +1,6 @@
 package net.corda.libs.permissions.manager.impl
 
+import com.typesafe.config.ConfigValueFactory
 import java.lang.IllegalArgumentException
 import net.corda.data.permissions.ChangeDetails
 import net.corda.data.permissions.Property
@@ -34,6 +35,7 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
@@ -86,10 +88,8 @@ class PermissionUserManagerImplTest {
     fun setup() {
         rpcSender = mock()
         config = mock()
-        whenever(config.getConfig(ConfigKeys.RBAC_CONFIG)).thenReturn(config)
         whenever(config.getInt(ConfigKeys.RBAC_USER_PASSWORD_CHANGE_EXPIRY)).thenReturn(30)
         whenever(config.getInt(ConfigKeys.RBAC_ADMIN_PASSWORD_CHANGE_EXPIRY)).thenReturn(7)
-        whenever(config.getLong(ConfigKeys.REST_ENDPOINT_TIMEOUT_MILLIS)).thenReturn(12345L)
 
         manager = PermissionUserManagerImpl(
             config, rpcSender, permissionManagementCacheRef,
@@ -243,7 +243,11 @@ class PermissionUserManagerImplTest {
 
     @Test
     fun `creating permission user manager will use the remote writer timeout set in the config`() {
-        whenever(config.hasPath(ConfigKeys.REST_ENDPOINT_TIMEOUT_MILLIS)).thenReturn(true)
+        val config = SmartConfigImpl.empty()
+            .withValue(ConfigKeys.REST_ENDPOINT_TIMEOUT_MILLIS, ConfigValueFactory.fromAnyRef(12345L))
+            .withValue(ConfigKeys.RBAC_USER_PASSWORD_CHANGE_EXPIRY, ConfigValueFactory.fromAnyRef(30))
+            .withValue(ConfigKeys.RBAC_ADMIN_PASSWORD_CHANGE_EXPIRY, ConfigValueFactory.fromAnyRef(7))
+        
         val future = mock<CompletableFuture<PermissionManagementResponse>>()
         val requestCaptor = argumentCaptor<PermissionManagementRequest>()
         whenever(rpcSender.sendRequest(requestCaptor.capture())).thenReturn(future)

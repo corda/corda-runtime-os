@@ -39,8 +39,8 @@ class PermissionUserManagerImpl(
 ) : PermissionUserManager {
 
     private val writerTimeout = config.getEndpointTimeout()
-    private val selfUserPasswordExpiryDays = config.getConfig(ConfigKeys.RBAC_CONFIG).getInt(ConfigKeys.RBAC_USER_PASSWORD_CHANGE_EXPIRY)
-    private val otherUserPasswordExpiryDays = config.getConfig(ConfigKeys.RBAC_CONFIG).getInt(ConfigKeys.RBAC_ADMIN_PASSWORD_CHANGE_EXPIRY)
+    private val selfUserPasswordExpiryDays = config.getInt(ConfigKeys.RBAC_USER_PASSWORD_CHANGE_EXPIRY)
+    private val otherUserPasswordExpiryDays = config.getInt(ConfigKeys.RBAC_ADMIN_PASSWORD_CHANGE_EXPIRY)
 
     override fun createUser(createUserRequestDto: CreateUserRequestDto): UserResponseDto {
         val saltAndHash = createUserRequestDto.initialPassword?.let {
