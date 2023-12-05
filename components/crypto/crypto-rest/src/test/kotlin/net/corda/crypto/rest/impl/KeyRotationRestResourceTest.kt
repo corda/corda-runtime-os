@@ -22,6 +22,7 @@ import net.corda.lifecycle.test.impl.LifecycleTest
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
+import net.corda.rest.exception.InternalServerException
 import net.corda.schema.configuration.ConfigKeys
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -126,7 +127,7 @@ class KeyRotationRestResourceTest {
     @Test
     fun `start key rotation event throws when not initialised`() {
         val keyRotationRestResource = createKeyRotationRestResource(false)
-        assertThrows<IllegalStateException> {
+        assertThrows<InternalServerException> {
             keyRotationRestResource.startKeyRotation("", "")
         }
         verify(publishToKafka, never()).publish(any())

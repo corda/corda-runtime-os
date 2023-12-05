@@ -31,6 +31,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.rest.PluggableRestResource
+import net.corda.rest.messagebus.MessageBusUtils.tryWithExceptionHandling
 import net.corda.rest.response.ResponseEntity
 import net.corda.schema.Schemas.Crypto.REKEY_MESSAGE_TOPIC
 import net.corda.schema.configuration.ConfigKeys
@@ -157,19 +158,27 @@ class KeyRotationRestResourceImpl @Activate constructor(
     }
 
     override fun getKeyRotationStatus(requestId: String): List<Pair<String, String>> {
-        val entries = stateManager!!.get(listOf(requestId))
+        val sM = tryWithExceptionHandling(logger, "retrieve key rotation status") {
+            checkNotNull(stateManager)
+        }
+
+        val entries = sM.get(listOf(requestId))
         val result = mutableListOf<Pair<String, String>>()
         entries.forEach { entry ->
             val keyRotationStatus = deserializer.deserialize(entry.value.value)!!
-
             result.add(keyRotationStatus.oldParentKeyAlias to keyRotationStatus.requestId.toString())
         }
         return result
     }
 
     override fun startKeyRotation(oldKeyAlias: String, newKeyAlias: String): ResponseEntity<KeyRotationResponse> {
-        val pTK = checkNotNull(publishToKafka)
-        val sM = checkNotNull(stateManager)
+        val pTK = tryWithExceptionHandling(logger, "start key rotation") {
+            checkNotNull(publishToKafka)
+        }
+        val sM = tryWithExceptionHandling(logger, "retrieve key rotation status") {
+            checkNotNull(stateManager)
+        }
+
         return doKeyRotation(
             oldKeyAlias,
             newKeyAlias,
