@@ -9,9 +9,12 @@ import com.r3.corda.notary.plugin.contractverifying.api.FilteredTransactionAndSi
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.ResponderFlow
+import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.UtxoLedgerService
@@ -22,9 +25,10 @@ import org.slf4j.LoggerFactory
 import java.security.PublicKey
 
 @InitiatedBy(protocol = "com.r3.corda.notary.plugin.contractverifying", version = [1])
-class ContractVerifyingNotaryServerFlowImpl : ResponderFlow {
+class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
     private companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
+        const val NOTARY_SERVICE_NAME = "corda.notary.service.name"
     }
 
     @CordaInject
@@ -36,18 +40,39 @@ class ContractVerifyingNotaryServerFlowImpl : ResponderFlow {
     @CordaInject
     private lateinit var utxoLedgerService: UtxoLedgerService
 
+    @CordaInject
+    private lateinit var memberLookup: MemberLookup
+
+    /**
+     * Constructor used for testing to initialize the necessary services
+     */
+    @VisibleForTesting
+    internal constructor(
+        clientService: LedgerUniquenessCheckerClientService,
+        transactionSignatureService: TransactionSignatureService,
+        utxoLedgerService: UtxoLedgerService,
+        memberLookup: MemberLookup
+    ) : this() {
+        this.clientService = clientService
+        this.transactionSignatureService = transactionSignatureService
+        this.utxoLedgerService = utxoLedgerService
+        this.memberLookup = memberLookup
+    }
+
     @Suspendable
     override fun call(session: FlowSession) {
         try {
             // Receive the payload from the client
             val (initialTransaction, filteredTransactionsAndSignatures) = session.receive(ContractVerifyingNotarizationPayload::class.java)
-
             if (logger.isTraceEnabled) {
                 logger.trace("Received notarization request for transaction {}", initialTransaction.id)
             }
 
             // Extract the data from the signed transaction
             val initialTransactionDetails = getInitialTransactionDetail(initialTransaction)
+
+            // validate whether notary in transaction matches the notary in network
+            validateTransactionNotaryAgainstCurrentNotary(initialTransactionDetails)
 
             // Verify the signatures
             verifySignatures(initialTransaction.notaryKey, filteredTransactionsAndSignatures)
@@ -119,6 +144,20 @@ class ContractVerifyingNotaryServerFlowImpl : ResponderFlow {
         )
     }
 
+    @Suspendable
+    private fun validateTransactionNotaryAgainstCurrentNotary(txDetails: NotaryTransactionDetails) {
+        val currentNotaryContext = memberLookup
+            .myInfo()
+            .memberProvidedContext
+        val currentNotaryServiceName = currentNotaryContext
+            .parse(NOTARY_SERVICE_NAME, MemberX500Name::class.java)
+
+        require(currentNotaryServiceName == txDetails.notaryName) {
+            "Notary service on the transaction ${txDetails.notaryName} does not match the notary service represented" +
+                    " by this notary virtual node (${currentNotaryServiceName})"
+        }
+    }
+
     /**
      * A function that will verify the signatures of the given [filteredTransactionsAndSignatures].
      */
@@ -129,7 +168,7 @@ class ContractVerifyingNotaryServerFlowImpl : ResponderFlow {
     ) {
         filteredTransactionsAndSignatures.forEach { (filteredTransaction, signatures) ->
             require(signatures.isNotEmpty()) { "No notary signatures were received" }
-            filteredTransaction.verifyDependencies()
+            filteredTransaction.verify()
             for (signature in signatures) {
                 transactionSignatureService.verifySignature(
                     filteredTransaction.id,

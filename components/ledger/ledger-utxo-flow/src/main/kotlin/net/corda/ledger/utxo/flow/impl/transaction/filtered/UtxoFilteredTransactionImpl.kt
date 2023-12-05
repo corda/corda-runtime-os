@@ -114,7 +114,7 @@ class UtxoFilteredTransactionImpl(
         }
     }
 
-    override fun verifyDependencies() {
+    override fun verify() {
         filteredTransaction.verify()
     }
 

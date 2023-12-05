@@ -9,6 +9,7 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
@@ -33,6 +34,22 @@ class ContractVerifyingNotaryClientFlowImpl(
 
     @CordaInject
     private lateinit var utxoLedgerService: UtxoLedgerService
+
+    /**
+     * Constructor used for testing to initialize the necessary services
+     */
+    @VisibleForTesting
+    internal constructor(
+        stx: UtxoSignedTransaction,
+        notary: MemberX500Name,
+        flowMessaging: FlowMessaging,
+        utxoLedgerService: UtxoLedgerService,
+        digestService: DigestService
+    ): this(stx, notary) {
+        this.flowMessaging = flowMessaging
+        this.utxoLedgerService = utxoLedgerService
+        this.digestService = digestService
+    }
 
     @Suspendable
     override fun call(): List<DigitalSignatureAndMetadata> {
