@@ -106,7 +106,8 @@ class LiquibaseSchemaMigratorImpl(
 
             val masterChangeLogFileName = "master-changelog-${UUID.randomUUID()}.xml"
 
-            return statusCommandStep.listUnrunChangeSets(Contexts(), LabelExpression(), DatabaseChangeLog(masterChangeLogFileName), database).map { it.filePath }
+            return statusCommandStep.listUnrunChangeSets(Contexts(), LabelExpression(),
+                DatabaseChangeLog(masterChangeLogFileName), database).map { it.filePath }
         }
     }
 
@@ -134,62 +135,46 @@ class LiquibaseSchemaMigratorImpl(
                 database
             )
 
-            log.info("Updating ${database.databaseProductName} ${database.databaseProductVersion} " +
-                    "DB Schema for ${database.connection.catalog}")
-            if (null == sql) {
+            log.info(
+                "Updating ${database.databaseProductName} ${database.databaseProductVersion} " +
+                        "DB Schema for ${database.connection.catalog}"
+            )
+
+            try {
                 val scopeObjects = mapOf(
                     Scope.Attr.database.name to lb.database,
                     Scope.Attr.resourceAccessor.name to lb.resourceAccessor
                 )
-
-                try {
-                    Scope.child(scopeObjects) {
-                        commandScopeFactory(UpdateCommandStep.COMMAND_NAME)
-                            .addArgumentValue(DbUrlConnectionCommandStep.DATABASE_ARG, lb.database)
-                            .addArgumentValue(UpdateCommandStep.CHANGELOG_FILE_ARG, lb.changeLogFile)
-                            .addArgumentValue(UpdateCommandStep.CONTEXTS_ARG, Contexts().toString())
-                            .addArgumentValue(UpdateCommandStep.LABEL_FILTER_ARG, LabelExpression().originalString)
-                            .addArgumentValue(
-                                ChangeExecListenerCommandStep.CHANGE_EXEC_LISTENER_ARG,
-                                lb.defaultChangeExecListener)
-                            .addArgumentValue(DatabaseChangelogCommandStep.CHANGELOG_PARAMETERS, lb.changeLogParameters)
-                            .addArgumentValue(TagCommandStep.TAG_ARG, tag)
-                            .execute()
+                Scope.child(scopeObjects) {
+                    val factory = commandScopeFactory(UpdateCommandStep.COMMAND_NAME)
+                        .addArgumentValue(DbUrlConnectionCommandStep.DATABASE_ARG, lb.database)
+                        .addArgumentValue(UpdateCommandStep.CHANGELOG_FILE_ARG, lb.changeLogFile)
+                        .addArgumentValue(UpdateCommandStep.CONTEXTS_ARG, Contexts().toString())
+                        .addArgumentValue(UpdateCommandStep.LABEL_FILTER_ARG, LabelExpression().originalString)
+                        .addArgumentValue(
+                            ChangeExecListenerCommandStep.CHANGE_EXEC_LISTENER_ARG,
+                            lb.defaultChangeExecListener
+                        )
+                        .addArgumentValue(
+                            DatabaseChangelogCommandStep.CHANGELOG_PARAMETERS,
+                            lb.changeLogParameters
+                        )
+                        .addArgumentValue(TagCommandStep.TAG_ARG, tag)
+                    if (null != sql) {
+                        factory.setOutput(
+                            WriterOutputStream(
+                                sql,
+                                GlobalConfiguration.OUTPUT_FILE_ENCODING.currentValue
+                            )
+                        )
                     }
-                } catch (e: Exception) {
-                    if (e is LiquibaseException) {
-                        throw e
-                    } else {
-                        throw LiquibaseException(e)
-                    }
+                    factory.execute()
                 }
-            } else {
-                val scopeObjects = mapOf(
-                    Scope.Attr.database.name to lb.database,
-                    Scope.Attr.resourceAccessor.name to lb.resourceAccessor
-                )
-
-                try {
-                    Scope.child(scopeObjects) {
-                        val factory = commandScopeFactory(UpdateCommandStep.COMMAND_NAME)
-                            .addArgumentValue(DbUrlConnectionCommandStep.DATABASE_ARG, lb.database)
-                            .addArgumentValue(UpdateCommandStep.CHANGELOG_FILE_ARG, lb.changeLogFile)
-                            .addArgumentValue(UpdateCommandStep.CONTEXTS_ARG, Contexts().toString())
-                            .addArgumentValue(UpdateCommandStep.LABEL_FILTER_ARG, LabelExpression().originalString)
-                            .addArgumentValue(
-                                ChangeExecListenerCommandStep.CHANGE_EXEC_LISTENER_ARG,
-                                lb.defaultChangeExecListener)
-                            .addArgumentValue(DatabaseChangelogCommandStep.CHANGELOG_PARAMETERS, lb.changeLogParameters)
-                            .addArgumentValue(TagCommandStep.TAG_ARG, tag)
-                        factory.setOutput(WriterOutputStream(sql, GlobalConfiguration.OUTPUT_FILE_ENCODING.currentValue))
-                        factory.execute()
-                    }
-                } catch (e: Exception) {
-                    if (e is LiquibaseException) {
-                        throw e
-                    } else {
-                        throw LiquibaseException(e)
-                    }
+            } catch (e: Exception) {
+                if (e is LiquibaseException) {
+                    throw e
+                } else {
+                    throw LiquibaseException(e)
                 }
             }
             log.info("${database.connection.catalog} DB schema update complete")

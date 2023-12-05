@@ -1,12 +1,8 @@
 package net.corda.db.admin.impl
 
-import liquibase.Contexts
-import liquibase.LabelExpression
 import liquibase.Liquibase
-import liquibase.changelog.DatabaseChangeLog
 import liquibase.command.CommandArgumentDefinition
 import liquibase.command.CommandScope
-import liquibase.command.core.StatusCommandStep
 import liquibase.command.core.UpdateCommandStep
 import liquibase.database.Database
 import liquibase.database.DatabaseConnection
@@ -21,7 +17,6 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.check
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.io.Writer
