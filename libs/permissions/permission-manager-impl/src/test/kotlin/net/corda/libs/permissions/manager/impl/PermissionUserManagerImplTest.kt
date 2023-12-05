@@ -10,7 +10,6 @@ import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.permissions.manager.exception.UnexpectedPermissionResponseException
 import net.corda.libs.permissions.manager.request.CreateUserRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
@@ -36,17 +35,19 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
+import net.corda.libs.permissions.manager.request.ChangeUserPasswordDto
 import net.corda.libs.permissions.manager.request.RemoveRoleFromUserRequestDto
 import net.corda.schema.configuration.ConfigKeys
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.assertThrows
 import java.util.concurrent.atomic.AtomicReference
 
 class PermissionUserManagerImplTest {
 
-    private val rpcSender = mock<RPCSender<PermissionManagementRequest, PermissionManagementResponse>>()
     private val permissionManagementCache = mock<PermissionManagementCache>()
     private val permissionManagementCacheRef = AtomicReference(permissionManagementCache)
     private val permissionValidationCache = mock<PermissionValidationCache>()
@@ -64,6 +65,7 @@ class PermissionUserManagerImplTest {
 
     private val userCreationTime = Instant.now()
     private val getUserRequestDto = GetUserRequestDto(requestedBy = requestUserName, loginName = "loginname123")
+    private val changeUserPasswordDto = ChangeUserPasswordDto("requestedBy", "loginname123", "mypassword")
     private val userProperty = Property(UUID.randomUUID().toString(), 0, ChangeDetails(userCreationTime), "email",
         "a@b.com")
 
@@ -77,12 +79,30 @@ class PermissionUserManagerImplTest {
 
     private val permissionManagementResponse = PermissionManagementResponse(avroUser)
     private val permissionManagementResponseWithoutPassword = PermissionManagementResponse(avroUserWithoutPassword)
-    private val config = mock<SmartConfig>()
 
-    private val manager = PermissionUserManagerImpl(
+    private lateinit var rpcSender: RPCSender<PermissionManagementRequest, PermissionManagementResponse>
+    private lateinit var config: SmartConfig
+    private lateinit var manager: PermissionUserManagerImpl
+
+    @BeforeEach
+    fun setup() {
+        rpcSender = mock<RPCSender<PermissionManagementRequest, PermissionManagementResponse>>()
+
+        config = mock<SmartConfig>()
+
+        whenever(config.getConfig("corda")).thenReturn(config)
+        whenever(config.getConfig(ConfigKeys.RBAC_CONFIG)).thenReturn(config)
+        whenever(config.getConfig(ConfigKeys.REST_CONFIG)).thenReturn(config)
+
+        whenever(config.getInt(ConfigKeys.RBAC_USER_PASSWORD_CHANGE_EXPIRY)).thenReturn(30)
+        whenever(config.getInt(ConfigKeys.RBAC_ADMIN_PASSWORD_CHANGE_EXPIRY)).thenReturn(7)
+        whenever(config.getLong(ConfigKeys.REST_ENDPOINT_TIMEOUT_MILLIS)).thenReturn(12345L)
+
+        manager = PermissionUserManagerImpl(
             config, rpcSender, permissionManagementCacheRef,
             AtomicReference(permissionValidationCache), passwordService
         )
+    }
 
     private val defaultTimeout = Duration.ofSeconds(30)
 
@@ -205,10 +225,32 @@ class PermissionUserManagerImplTest {
     }
 
     @Test
-    fun `creating permission user manager will use the remote writer timeout set in the config`() {
-        val config = SmartConfigImpl.empty()
-            .withValue(ConfigKeys.REST_ENDPOINT_TIMEOUT_MILLIS, ConfigValueFactory.fromAnyRef(12345L))
+    fun `changeUserPasswordSelf fails if the new password is the same as the existing one`() {
+        whenever(permissionManagementCache.getUser("loginname123")).thenReturn(avroUser)
+        whenever(passwordService.saltAndHash(eq("mypassword"))).thenReturn(PasswordHash("randomSalt", "temp-hashed-password"))
 
+        val exception = assertThrows<IllegalArgumentException> {
+            manager.changeUserPasswordSelf(changeUserPasswordDto)
+        }
+
+        assertEquals("New password must be different from current one.", exception.message)
+    }
+
+    @Test
+    fun `changeUserPasswordOther fails if the new password is the same as the existing one`() {
+        whenever(permissionManagementCache.getUser("loginname123")).thenReturn(avroUser)
+        whenever(passwordService.saltAndHash(eq("mypassword"))).thenReturn(PasswordHash("randomSalt", "temp-hashed-password"))
+
+        val exception = assertThrows<IllegalArgumentException> {
+            manager.changeUserPasswordOther(changeUserPasswordDto)
+        }
+
+        assertEquals("New password must be different from current one.", exception.message)
+    }
+
+    @Test
+    fun `creating permission user manager will use the remote writer timeout set in the config`() {
+        whenever(config.hasPath(ConfigKeys.REST_ENDPOINT_TIMEOUT_MILLIS)).thenReturn(true)
         val future = mock<CompletableFuture<PermissionManagementResponse>>()
         val requestCaptor = argumentCaptor<PermissionManagementRequest>()
         whenever(rpcSender.sendRequest(requestCaptor.capture())).thenReturn(future)
