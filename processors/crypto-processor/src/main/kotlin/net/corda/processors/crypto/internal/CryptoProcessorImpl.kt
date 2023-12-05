@@ -233,7 +233,7 @@ class CryptoProcessorImpl @Activate constructor(
                         it.start()
                     }
                 }
-                logger.debug("State manager created and started ${stateManager!!.name}")
+                logger.debug("State manager created and started.")
                 CryptoConsts.Categories.all.forEach { category ->
                     CryptoTenants.allClusterTenants.forEach { tenantId ->
                         tenantInfoService.populate(tenantId, category, cryptoService)
