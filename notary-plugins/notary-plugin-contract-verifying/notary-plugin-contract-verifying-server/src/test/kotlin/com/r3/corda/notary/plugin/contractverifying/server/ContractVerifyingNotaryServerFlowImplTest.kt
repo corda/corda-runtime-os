@@ -275,7 +275,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
     }
 
     @Test
-    fun `Contract verifying notary plugin server should respond with general error if unhandled exception occurred in uniqueness checker`() {
+    fun `Contract verifying notary plugin server should throw general error when unhandled exception in uniqueness checker`() {
         createAndCallServer(mockErrorUniquenessClientService(
             UniquenessCheckErrorUnhandledExceptionImpl(
                 IllegalArgumentException::class.java.name,
