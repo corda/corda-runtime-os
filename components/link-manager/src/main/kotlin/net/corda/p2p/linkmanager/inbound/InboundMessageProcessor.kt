@@ -23,7 +23,7 @@ import net.corda.data.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.data.p2p.crypto.InitiatorHelloMessage
 import net.corda.data.p2p.crypto.ResponderHandshakeMessage
 import net.corda.data.p2p.crypto.ResponderHelloMessage
-import net.corda.p2p.crypto.protocol.api.Session
+import net.corda.p2p.crypto.protocol.api.SessionWrapper
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.common.AvroSealedClasses
 import net.corda.p2p.linkmanager.common.MessageConverter
@@ -202,7 +202,7 @@ internal class InboundMessageProcessor(
     private fun checkIdentityBeforeProcessing(
         counterparties: SessionManager.Counterparties,
         innerMessage: AuthenticatedMessageAndKey,
-        session: Session,
+        session: SessionWrapper,
         messages: MutableList<Record<*, *>>
     ) {
         val sessionSource = counterparties.counterpartyId
@@ -234,7 +234,7 @@ internal class InboundMessageProcessor(
 
     private fun processLinkManagerPayload(
         counterparties: SessionManager.Counterparties,
-        session: Session,
+        session: SessionWrapper,
         sessionId: String,
         message: AvroSealedClasses.DataMessage
     ): MutableList<Record<*, *>> {
@@ -263,7 +263,7 @@ internal class InboundMessageProcessor(
 
     private fun makeAckMessageForHeartbeatMessage(
         counterparties: SessionManager.Counterparties,
-        session: Session
+        session: SessionWrapper
     ): Record<String, LinkOutMessage>? {
         val ackDest = counterparties.counterpartyId
         val ackSource = counterparties.ourId
@@ -284,7 +284,7 @@ internal class InboundMessageProcessor(
 
     private fun makeAckMessageForFlowMessage(
         message: AuthenticatedMessage,
-        session: Session
+        session: SessionWrapper
     ): Record<String, LinkOutMessage>? {
         // We route the ACK back to the original source
         val ackDest = message.header.source.toCorda()

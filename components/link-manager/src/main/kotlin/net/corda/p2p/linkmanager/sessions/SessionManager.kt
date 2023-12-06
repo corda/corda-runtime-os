@@ -6,7 +6,7 @@ import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
-import net.corda.p2p.crypto.protocol.api.Session
+import net.corda.p2p.crypto.protocol.api.SessionWrapper
 import net.corda.virtualnode.HoldingIdentity
 
 internal interface SessionManager : LifecycleWithDominoTile {
@@ -18,7 +18,7 @@ internal interface SessionManager : LifecycleWithDominoTile {
     fun dataMessageReceived(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity)
 
     fun recordsForSessionEstablished(
-        session: Session,
+        session: SessionWrapper,
         messageAndKey: AuthenticatedMessageAndKey,
         serial: Long,
     ): List<Record<String, *>>
@@ -46,14 +46,14 @@ internal interface SessionManager : LifecycleWithDominoTile {
         data class NewSessionsNeeded(val messages: List<Pair<String, LinkOutMessage>>,
                                      val sessionCounterparties: SessionCounterparties) : SessionState()
         data class SessionAlreadyPending(val sessionCounterparties: SessionCounterparties) : SessionState()
-        data class SessionEstablished(val session: Session,
+        data class SessionEstablished(val session: SessionWrapper,
                                       val sessionCounterparties: SessionCounterparties) : SessionState()
         object CannotEstablishSession : SessionState()
     }
 
     sealed class SessionDirection {
-        data class Inbound(val counterparties: Counterparties, val session: Session) : SessionDirection()
-        data class Outbound(val counterparties: Counterparties, val session: Session) : SessionDirection()
+        data class Inbound(val counterparties: Counterparties, val session: SessionWrapper) : SessionDirection()
+        data class Outbound(val counterparties: Counterparties, val session: SessionWrapper) : SessionDirection()
         object NoSession : SessionDirection()
     }
 }

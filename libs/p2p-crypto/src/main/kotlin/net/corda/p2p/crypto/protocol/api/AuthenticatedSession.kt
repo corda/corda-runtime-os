@@ -2,15 +2,16 @@ package net.corda.p2p.crypto.protocol.api
 
 import net.corda.data.p2p.crypto.CommonHeader
 import net.corda.data.p2p.crypto.MessageType
+import net.corda.data.p2p.crypto.protocol.AuthenticatedSessionDetails
+import net.corda.data.p2p.crypto.protocol.Session
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.HMAC_ALGO
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.PROTOCOL_VERSION
+import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolWrapper.Companion.secureRandom
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.time.Instant
-import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.ReentrantLock
 import javax.crypto.Mac
-import javax.crypto.SecretKey
 import kotlin.concurrent.withLock
 
 /**
@@ -18,34 +19,44 @@ import kotlin.concurrent.withLock
  *
  * This class is thread-safe, which means multiple threads can try to create & validate MACs concurrently using the same session.
  */
-class AuthenticatedSession(override val sessionId: String,
-                           nextSequenceNo: Long,
-                           private val outboundSecretKey: SecretKey,
-                           private val inboundSecretKey: SecretKey,
-                           val maxMessageSize: Int): Session {
+class AuthenticatedSession(
+    override val session: Session,
+    private val details: AuthenticatedSessionDetails,
+): SessionWrapper {
+    override val sessionId: String
+        get() = session.sessionId
 
     private val provider = BouncyCastleProvider.PROVIDER_NAME
-    private val generationHMac = Mac.getInstance(HMAC_ALGO, provider).apply {
-        this.init(outboundSecretKey)
+    private val outboundSecretKey by lazy {
+        details.outboundSecretKey.toSecretKey()
     }
-    private val validationHMac = Mac.getInstance(HMAC_ALGO, provider).apply {
-        this.init(inboundSecretKey)
+    private val inboundSecretKey by lazy {
+        details.inboundSecretKey.toSecretKey()
+    }
+    private val generationHMac by lazy {
+        Mac.getInstance(HMAC_ALGO, provider).apply {
+            this.init(outboundSecretKey)
+        }
+    }
+    private val validationHMac by lazy {
+        Mac.getInstance(HMAC_ALGO, provider).apply {
+            this.init(inboundSecretKey)
+        }
     }
     private val generationLock = ReentrantLock()
     private val validationLock = ReentrantLock()
-    private val sequenceNo = AtomicLong(nextSequenceNo)
 
     /**
      * Creates a message authentication code for the given payload and a header that is generated internally.
      * @return the header to be sent to the other party and the authentication code.
      */
     fun createMac(payload: ByteArray): AuthenticationResult {
-        if (payload.size > maxMessageSize) {
-            throw MessageTooLargeError(payload.size, maxMessageSize)
+        if (payload.size > session.maxMessageSize) {
+            throw MessageTooLargeError(payload.size, session.maxMessageSize)
         }
 
         val commonHeader = CommonHeader(MessageType.DATA, PROTOCOL_VERSION, sessionId,
-                                        sequenceNo.getAndIncrement(), Instant.now().toEpochMilli())
+            secureRandom.nextLong(), Instant.now().toEpochMilli())
         val tag = generationLock.withLock {
             generationHMac.reset()
             generationHMac.update(commonHeader.toByteBuffer().array())
@@ -61,8 +72,8 @@ class AuthenticatedSession(override val sessionId: String,
      * @throws InvalidMac if the provided MAC is not valid.
      */
     fun validateMac(header: CommonHeader, payload: ByteArray, tag: ByteArray) {
-        if (payload.size > maxMessageSize) {
-            throw MessageTooLargeError(payload.size, maxMessageSize)
+        if (payload.size > session.maxMessageSize) {
+            throw MessageTooLargeError(payload.size, session.maxMessageSize)
         }
 
         val calculatedTag = validationLock.withLock {

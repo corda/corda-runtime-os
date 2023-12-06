@@ -30,12 +30,12 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.integration.stub.CpiInfoReadServiceStub
 import net.corda.p2p.linkmanager.integration.stub.GroupPolicyProviderStub
 import net.corda.p2p.linkmanager.integration.stub.MembershipQueryClientStub
 import net.corda.p2p.linkmanager.integration.stub.VirtualNodeInfoReadServiceStub
+import net.corda.p2p.linkmanager.sessions.RevocationCheckMode
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.BootConfig.BOOT_MAX_ALLOWED_MSG_SIZE
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID

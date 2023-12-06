@@ -4,7 +4,6 @@ import net.corda.crypto.utils.AllowAllRevocationChecker
 import net.corda.crypto.utils.PemCertificate
 import net.corda.crypto.utils.convertToKeyStore
 import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
-import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
 import net.corda.data.p2p.gateway.certificates.RevocationMode
 import net.corda.data.p2p.gateway.certificates.Revoked
 import net.corda.v5.base.types.MemberX500Name
@@ -22,9 +21,9 @@ import java.security.cert.X509Certificate
 import java.util.*
 
 class CertificateValidator(
-    private val revocationCheckMode: RevocationCheckMode,
+    private val revocationCheckMode: RevocationMode?,
     private val pemTrustStore: List<PemCertificate>,
-    private val checkRevocation: (RevocationCheckRequest) -> RevocationCheckResponse,
+    private val checkRevocation: RevocationChecker,
     private val certPathValidator: CertPathValidator = CertPathValidator.getInstance(certificateAlgorithm),
     private val certificateFactory: CertificateFactory = CertificateFactory.getInstance(certificateFactoryType),
 ) {
@@ -96,11 +95,11 @@ class CertificateValidator(
 
     private fun validateRevocation(certificateChain: CertPath, pemCertificates: List<String>, trustStore: List<String>) {
         val revocationMode = when (revocationCheckMode) {
-            RevocationCheckMode.OFF -> return //No check to do
-            RevocationCheckMode.HARD_FAIL -> RevocationMode.HARD_FAIL
-            RevocationCheckMode.SOFT_FAIL -> RevocationMode.SOFT_FAIL
+            null -> return //No check to do
+            RevocationMode.HARD_FAIL -> RevocationMode.HARD_FAIL
+            RevocationMode.SOFT_FAIL -> RevocationMode.SOFT_FAIL
         }
-        val revocationStatus = checkRevocation(RevocationCheckRequest(pemCertificates, trustStore, revocationMode))
+        val revocationStatus = checkRevocation.checkRevocation(RevocationCheckRequest(pemCertificates, trustStore, revocationMode))
         val status = revocationStatus.status
         if (status is Revoked) {
             val x509CertChain = certificateChain.toX509()

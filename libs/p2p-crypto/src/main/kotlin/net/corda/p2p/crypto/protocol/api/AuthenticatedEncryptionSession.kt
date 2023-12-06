@@ -2,20 +2,21 @@ package net.corda.p2p.crypto.protocol.api
 
 import net.corda.data.p2p.crypto.CommonHeader
 import net.corda.data.p2p.crypto.MessageType
+import net.corda.data.p2p.crypto.protocol.AuthenticatedEncryptionSessionDetails
+import net.corda.data.p2p.crypto.protocol.Session
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.CIPHER_ALGO
+import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolWrapper.Companion.secureRandom
 import net.corda.p2p.crypto.util.decrypt
 import net.corda.p2p.crypto.util.encryptWithAssociatedData
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.lang.Exception
 import java.time.Instant
-import java.util.concurrent.atomic.AtomicLong
 import javax.crypto.AEADBadTagException
 import javax.crypto.BadPaddingException
 import javax.crypto.Cipher
 import javax.crypto.IllegalBlockSizeException
-import javax.crypto.SecretKey
 import kotlin.experimental.xor
 
 /**
@@ -24,27 +25,37 @@ import kotlin.experimental.xor
  *
  * This class is thread-safe, which means multiple threads can try to encrypt & decrypt data concurrently using the same session.
  */
-@Suppress("LongParameterList")
-class AuthenticatedEncryptionSession(override val sessionId: String,
-                                     nextSequenceNo: Long,
-                                     private val outboundSecretKey: SecretKey,
-                                     private val outboundNonce: ByteArray,
-                                     private val inboundSecretKey: SecretKey,
-                                     private val inboundNonce: ByteArray,
-                                     val maxMessageSize: Int): Session {
+class AuthenticatedEncryptionSession(
+    override val session: Session,
+    private val details: AuthenticatedEncryptionSessionDetails,
+): SessionWrapper {
+    override val sessionId: String
+        get() = session.sessionId
+
+    private val outboundNonce by lazy {
+        details.outboundNonce.array()
+    }
+    private val inboundNonce by lazy {
+        details.inboundNonce.array()
+    }
+    private val outboundSecretKey by lazy {
+        details.outboundSecretKey.toSecretKey()
+    }
+    private val inboundSecretKey by lazy {
+        details.inboundSecretKey.toSecretKey()
+    }
 
     private val provider = BouncyCastleProvider.PROVIDER_NAME
     private val encryptionCipher = Cipher.getInstance(CIPHER_ALGO, provider)
     private val decryptionCipher = Cipher.getInstance(CIPHER_ALGO, provider)
-    private val sequenceNo = AtomicLong(nextSequenceNo)
 
     fun encryptData(payload: ByteArray): EncryptionResult {
-        if (payload.size > maxMessageSize) {
-            throw MessageTooLargeError(payload.size, maxMessageSize)
+        if (payload.size > session.maxMessageSize) {
+            throw MessageTooLargeError(payload.size, session.maxMessageSize)
         }
 
         val commonHeader = CommonHeader(MessageType.DATA, ProtocolConstants.PROTOCOL_VERSION, sessionId,
-                                        sequenceNo.getAndIncrement(), Instant.now().toEpochMilli())
+            secureRandom.nextLong(), Instant.now().toEpochMilli())
 
         val nonce = xor(outboundNonce, commonHeader.sequenceNo.toByteArray())
         val (encryptedData, authTag) =
@@ -69,8 +80,8 @@ class AuthenticatedEncryptionSession(override val sessionId: String,
             }
         }
 
-        if (plaintext.size > maxMessageSize) {
-            throw MessageTooLargeError(plaintext.size, maxMessageSize)
+        if (plaintext.size > session.maxMessageSize) {
+            throw MessageTooLargeError(plaintext.size, session.maxMessageSize)
         }
 
         return plaintext

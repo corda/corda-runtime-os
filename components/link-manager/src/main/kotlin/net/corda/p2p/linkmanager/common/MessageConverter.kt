@@ -21,7 +21,7 @@ import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.DecryptionFailedError
 import net.corda.p2p.crypto.protocol.api.InvalidMac
-import net.corda.p2p.crypto.protocol.api.Session
+import net.corda.p2p.crypto.protocol.api.SessionWrapper
 import net.corda.p2p.linkmanager.common.AvroSealedClasses.DataMessage
 import net.corda.p2p.linkmanager.common.AvroSealedClasses.SessionAndMessage
 import net.corda.p2p.linkmanager.grouppolicy.networkType
@@ -98,7 +98,7 @@ class MessageConverter {
             message: MessageAck,
             source: HoldingIdentity,
             destination: HoldingIdentity,
-            session: Session,
+            session: SessionWrapper,
             groupPolicyProvider: GroupPolicyProvider,
             membershipGroupReaderProvider: MembershipGroupReaderProvider,
         ): LinkOutMessage? {
@@ -121,7 +121,7 @@ class MessageConverter {
 
         fun linkOutMessageFromAuthenticatedMessageAndKey(
             message: AuthenticatedMessageAndKey,
-            session: Session,
+            session: SessionWrapper,
             groupPolicyProvider: GroupPolicyProvider,
             membershipGroupReaderProvider: MembershipGroupReaderProvider,
             serial: Long,
@@ -149,7 +149,7 @@ class MessageConverter {
             source: HoldingIdentity,
             destination: HoldingIdentity,
             message: HeartbeatMessage,
-            session: Session,
+            session: SessionWrapper,
             groupPolicyProvider: GroupPolicyProvider,
             membershipGroupReaderProvider: MembershipGroupReaderProvider,
             filter: MembershipStatusFilter,
@@ -192,7 +192,7 @@ class MessageConverter {
             serializedPayload: ByteBuffer,
             source: HoldingIdentity,
             destination: HoldingIdentity,
-            session: Session,
+            session: SessionWrapper,
             groupPolicyProvider: GroupPolicyProvider,
             membershipGroupReaderProvider: MembershipGroupReaderProvider,
             filter: MembershipStatusFilter,
@@ -210,14 +210,6 @@ class MessageConverter {
                         ByteBuffer.wrap(result.encryptedPayload),
                         ByteBuffer.wrap(result.authTag)
                     )
-                }
-                else -> {
-                    logger.warn(
-                        "Invalid Session type ${session::class.java.simpleName}.Session must be either " +
-                            "${AuthenticatedSession::class.java.simpleName} or ${AuthenticatedEncryptionSession::class.java.simpleName}." +
-                            " The message was discarded."
-                    )
-                    return null
                 }
             }
 
@@ -253,7 +245,7 @@ class MessageConverter {
             )
         }
 
-        fun <T> extractPayload(session: Session, sessionId: String, message: DataMessage, deserialize: (ByteBuffer) -> T): T? {
+        fun <T> extractPayload(session: SessionWrapper, sessionId: String, message: DataMessage, deserialize: (ByteBuffer) -> T): T? {
             val sessionAndMessage = SessionAndMessage.create(session, sessionId, message) ?: return null
             return when (sessionAndMessage) {
                 is SessionAndMessage.Authenticated -> extractPayloadFromAuthenticatedMessage(sessionAndMessage, deserialize)

@@ -3,6 +3,7 @@ package net.corda.p2p.crypto.protocol.api
 import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.utils.PemCertificate
 import net.corda.data.p2p.crypto.ProtocolMode
+import net.corda.data.p2p.gateway.certificates.RevocationMode
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.MIN_PACKET_SIZE
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SignatureSpec
@@ -10,6 +11,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import java.security.KeyPair
@@ -76,7 +79,7 @@ class AuthenticationProtocolTest {
         val partyASessionKey = keyPairGenerator.generateKeyPair()
         val partyBSessionKey = keyPairGenerator.generateKeyPair()
         val ourCertificate = mutableListOf("")
-        val certificateCheckMode = CertificateCheckMode.CheckCertificate(mock(), RevocationCheckMode.HARD_FAIL, mock())
+        val certificateCheckMode = CertificateCheckMode.CheckCertificate(mock(), RevocationMode.HARD_FAIL)
         val certificateValidatorInitiator = mock<CertificateValidator>()
         val certificateValidatorResponder = mock<CertificateValidator>()
 
@@ -112,31 +115,41 @@ class AuthenticationProtocolTest {
                                 certificateValidatorInitiator: CertificateValidator? = null,
                                 certificateValidatorResponder: CertificateValidator? = null,) {
         val protocolInitiator = if (certificateValidatorInitiator != null) {
-            AuthenticationProtocolInitiator(
+            val certificateValidatorFactory = mock<CertificateValidatorFactory> {
+                on { create(any(), any(), any()) } doReturn certificateValidatorInitiator
+            }
+            AuthenticationProtocolInitiator.create(
                 sessionId,
                 setOf(ProtocolMode.AUTHENTICATION_ONLY),
                 partyAMaxMessageSize,
                 partyASessionKey.public,
                 groupId,
-                certificateCheckMode
-            ) { _, _, _ -> certificateValidatorInitiator }
+                certificateCheckMode,
+                mock(),
+                certificateValidatorFactory,
+            )
         } else {
-            AuthenticationProtocolInitiator(
+            AuthenticationProtocolInitiator.create(
                 sessionId,
                 setOf(ProtocolMode.AUTHENTICATION_ONLY),
                 partyAMaxMessageSize,
                 partyASessionKey.public,
                 groupId,
-                certificateCheckMode
+                certificateCheckMode,
+                mock(),
             )
         }
         val protocolResponder = if (certificateValidatorResponder != null) {
-            AuthenticationProtocolResponder(
+            val certificateValidatorFactory = mock<CertificateValidatorFactory> {
+                on { create(any(), any(), any()) } doReturn certificateValidatorResponder
+            }
+            AuthenticationProtocolResponder.create(
                 sessionId,
                 partyBMaxMessageSize,
-            ) { _, _, _ -> certificateValidatorResponder }
+                certificateValidatorFactory,
+            )
         } else {
-            AuthenticationProtocolResponder(
+            AuthenticationProtocolResponder.create(
                 sessionId,
                 partyBMaxMessageSize,
             )
@@ -193,9 +206,14 @@ class AuthenticationProtocolTest {
             )
         }
 
-        protocolResponder.validateEncryptedExtensions(certificateCheckMode, setOf(ProtocolMode.AUTHENTICATION_ONLY), aliceX500Name)
+        protocolResponder.validateEncryptedExtensions(certificateCheckMode, setOf(ProtocolMode.AUTHENTICATION_ONLY), aliceX500Name, mock())
         if (duplicateInvocations) {
-            protocolResponder.validateEncryptedExtensions(certificateCheckMode, setOf(ProtocolMode.AUTHENTICATION_ONLY), aliceX500Name)
+            protocolResponder.validateEncryptedExtensions(
+                certificateCheckMode,
+                setOf(ProtocolMode.AUTHENTICATION_ONLY),
+                aliceX500Name,
+                mock(),
+            )
         }
 
         // Step 4: responder sending handshake message and initiator validating it.

@@ -65,13 +65,13 @@ import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
 import net.corda.p2p.crypto.protocol.ProtocolConstants
-import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.gateway.Gateway
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import net.corda.p2p.gateway.messaging.TlsType
 import net.corda.p2p.linkmanager.LinkManager
+import net.corda.p2p.linkmanager.sessions.RevocationCheckMode
 import net.corda.schema.Schemas.Config.CONFIG_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_IN_TOPIC

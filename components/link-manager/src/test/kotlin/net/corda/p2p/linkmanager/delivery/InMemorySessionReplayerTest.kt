@@ -14,7 +14,6 @@ import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.data.p2p.crypto.InitiatorHelloMessage
 import net.corda.data.p2p.crypto.ProtocolMode
-import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.CertificateCheckMode
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
@@ -43,6 +42,7 @@ import java.security.KeyPairGenerator
 import java.security.Security
 import java.util.UUID
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
+import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import org.mockito.kotlin.doThrow
 
 class InMemorySessionReplayerTest {
@@ -107,13 +107,14 @@ class InMemorySessionReplayerTest {
     fun `The InMemorySessionReplacer adds a message to be replayed (by the replayScheduler) when addMessageForReplay`() {
         val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(), groupsAndMembers.second, groupsAndMembers.first,
             mockTimeFacilitiesProvider.clock)
-        val helloMessage = AuthenticationProtocolInitiator(
+        val helloMessage = AuthenticationProtocolInitiator.create(
             id,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
             MAX_MESSAGE_SIZE,
             KEY_PAIR.public,
             GROUP_ID,
             CertificateCheckMode.NoCertificate,
+            mock(),
         ).generateInitiatorHello()
 
         setRunning()
@@ -154,13 +155,14 @@ class InMemorySessionReplayerTest {
     fun `The replaySchedular callback publishes the session message`() {
         InMemorySessionReplayer(mock(), mock(), mock(), mock(), groupsAndMembers.second, groupsAndMembers.first,
             mockTimeFacilitiesProvider.clock)
-        val helloMessage = AuthenticationProtocolInitiator(
+        val helloMessage = AuthenticationProtocolInitiator.create(
             id,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
             MAX_MESSAGE_SIZE,
             KEY_PAIR.public,
             GROUP_ID,
             CertificateCheckMode.NoCertificate,
+            mock(),
         ).generateInitiatorHello()
 
         setRunning()
@@ -192,13 +194,14 @@ class InMemorySessionReplayerTest {
         }
 
         InMemorySessionReplayer(mock(), mock(), mock(), mock(), groups, groupsAndMembers.first, mockTimeFacilitiesProvider.clock)
-        val helloMessage = AuthenticationProtocolInitiator(
+        val helloMessage = AuthenticationProtocolInitiator.create(
             id,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
             MAX_MESSAGE_SIZE,
             KEY_PAIR.public,
             GROUP_ID,
-            CertificateCheckMode.NoCertificate
+            CertificateCheckMode.NoCertificate,
+            mock(),
         ).generateInitiatorHello()
 
         setRunning()
@@ -217,13 +220,14 @@ class InMemorySessionReplayerTest {
         }
 
         InMemorySessionReplayer(mock(), mock(), mock(), mock(), groups, groupsAndMembers.first, mockTimeFacilitiesProvider.clock)
-        val helloMessage = AuthenticationProtocolInitiator(
+        val helloMessage = AuthenticationProtocolInitiator.create(
             id,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
             MAX_MESSAGE_SIZE,
             KEY_PAIR.public,
             GROUP_ID,
-            CertificateCheckMode.NoCertificate
+            CertificateCheckMode.NoCertificate,
+            mock(),
         ).generateInitiatorHello()
 
         setRunning()
@@ -251,13 +255,14 @@ class InMemorySessionReplayerTest {
             membershipGroupReaderProvider,
             mockTimeFacilitiesProvider.clock,
         )
-        val helloMessage = AuthenticationProtocolInitiator(
+        val helloMessage = AuthenticationProtocolInitiator.create(
             id,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
             MAX_MESSAGE_SIZE,
             KEY_PAIR.public,
             GROUP_ID,
-            CertificateCheckMode.NoCertificate
+            CertificateCheckMode.NoCertificate,
+            mock(),
         ).generateInitiatorHello()
 
         setRunning()
@@ -281,13 +286,14 @@ class InMemorySessionReplayerTest {
             membershipGroupReaderProvider,
             mockTimeFacilitiesProvider.clock,
         )
-        val helloMessage = AuthenticationProtocolInitiator(
+        val helloMessage = AuthenticationProtocolInitiator.create(
             id,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
             MAX_MESSAGE_SIZE,
             KEY_PAIR.public,
             GROUP_ID,
-            CertificateCheckMode.NoCertificate
+            CertificateCheckMode.NoCertificate,
+            mock(),
         ).generateInitiatorHello()
 
         setRunning()
@@ -313,13 +319,14 @@ class InMemorySessionReplayerTest {
 
     @Test
     fun `The InMemorySessionReplayer will not replay before start`() {
-        val helloMessage = AuthenticationProtocolInitiator(
+        val helloMessage = AuthenticationProtocolInitiator.create(
             "",
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
             MAX_MESSAGE_SIZE,
             KEY_PAIR.public,
             GROUP_ID,
-            CertificateCheckMode.NoCertificate
+            CertificateCheckMode.NoCertificate,
+            mock(),
         ).generateInitiatorHello()
         val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(),
             groupsAndMembers.second, groupsAndMembers.first, mockTimeFacilitiesProvider.clock)

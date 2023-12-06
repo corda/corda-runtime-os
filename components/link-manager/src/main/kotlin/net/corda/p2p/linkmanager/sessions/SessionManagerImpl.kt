@@ -39,17 +39,16 @@ import net.corda.metrics.CordaMetrics
 import net.corda.metrics.CordaMetrics.Metric.InboundSessionCount
 import net.corda.metrics.CordaMetrics.Metric.OutboundSessionCount
 import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.data.p2p.crypto.protocol.HandshakeIdentityData
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.CertificateCheckMode
-import net.corda.p2p.crypto.protocol.api.HandshakeIdentityData
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
 import net.corda.p2p.crypto.protocol.api.InvalidPeerCertificate
-import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
-import net.corda.p2p.crypto.protocol.api.Session
+import net.corda.p2p.crypto.protocol.api.SessionWrapper
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.common.MessageConverter
@@ -131,13 +130,12 @@ internal class SessionManagerImpl(
 
     executorServiceFactory: () -> ScheduledExecutorService = Executors::newSingleThreadScheduledExecutor
 ) : SessionManager {
-
     private companion object {
         private const val SESSION_MANAGER_CLIENT_ID = "session-manager"
     }
 
     private val pendingInboundSessions = ConcurrentHashMap<String, AuthenticationProtocolResponder>()
-    private val activeInboundSessions = ConcurrentHashMap<String, Pair<SessionManager.Counterparties, Session>>()
+    private val activeInboundSessions = ConcurrentHashMap<String, Pair<SessionManager.Counterparties, SessionWrapper>>()
 
     private val logger = LoggerFactory.getLogger(this::class.java)
 
@@ -355,7 +353,10 @@ internal class SessionManagerImpl(
         return dominoTile.withLifecycleLock {
             when (val payload = message.payload) {
                 is ResponderHelloMessage -> processResponderHello(payload)
-                is ResponderHandshakeMessage -> processResponderHandshake(payload)
+                is ResponderHandshakeMessage -> {
+                    processResponderHandshake(payload)
+                    null
+                }
                 is InitiatorHelloMessage -> processInitiatorHello(payload)
                 is InitiatorHandshakeMessage -> processInitiatorHandshake(payload)
                 else -> {
@@ -370,7 +371,7 @@ internal class SessionManagerImpl(
         pendingInboundSessions.remove(sessionId)
     }
 
-    private fun dataMessageSent(session: Session) {
+    private fun dataMessageSent(session: SessionWrapper) {
         dominoTile.withLifecycleLock {
             heartbeatManager.dataMessageSent(session)
         }
@@ -395,7 +396,7 @@ internal class SessionManagerImpl(
     }
 
     override fun recordsForSessionEstablished(
-        session: Session,
+        session: SessionWrapper,
         messageAndKey: AuthenticatedMessageAndKey,
         serial: Long,
     ): List<Record<String, *>> {
@@ -513,7 +514,8 @@ internal class SessionManagerImpl(
                 sessionManagerConfig.maxMessageSize,
                 ourIdentityInfo.preferredSessionKeyAndCertificates.sessionPublicKey,
                 ourIdentityInfo.holdingIdentity.groupId,
-                pkiMode
+                pkiMode,
+                revocationCheckerClient,
             )
             messagesAndProtocol.add(Pair(session, session.generateInitiatorHello()))
         }
@@ -534,8 +536,7 @@ internal class SessionManagerImpl(
                 }
                 CertificateCheckMode.CheckCertificate(
                     trustedCertificates,
-                    sessionManagerConfig.revocationConfigMode,
-                    revocationCheckerClient::checkRevocation
+                    sessionManagerConfig.revocationConfigMode.toData(),
                 )
             }
             STANDARD_EV3, CORDA_4 -> {
@@ -725,17 +726,17 @@ internal class SessionManagerImpl(
         return createLinkOutMessage(payload, sessionInfo.ourId, responderMemberInfo, p2pParams.networkType)
     }
 
-    private fun processResponderHandshake(message: ResponderHandshakeMessage): LinkOutMessage? {
+    private fun processResponderHandshake(message: ResponderHandshakeMessage) {
         logger.info("Processing ${message::class.java.simpleName} for session ${message.header.sessionId}.")
         val sessionType = outboundSessionPool.getSession(message.header.sessionId) ?: run {
             logger.noSessionWarning(message::class.java.simpleName, message.header.sessionId)
-            return null
+            return
         }
 
         val (sessionCounterparties, session) = when (sessionType) {
             is OutboundSessionPool.SessionType.ActiveSession -> {
                 logger.alreadySessionWarning(message::class.java.simpleName, message.header.sessionId)
-                return null
+                return
             }
             is OutboundSessionPool.SessionType.PendingSession -> {
                 Pair(sessionType.sessionCounterparties, sessionType.protocol)
@@ -751,11 +752,11 @@ internal class SessionManagerImpl(
                 message.header.sessionId,
                 sessionCounterparties.counterpartyId
             )
-            return null
+            return
         }
 
         if (!session.validatePeerHandshakeMessageHandleError(message, memberInfo, sessionCounterparties)) {
-            return null
+            return
         }
         val authenticatedSession = session.getSession()
         sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(message.header.sessionId), sessionCounterparties)
@@ -779,7 +780,7 @@ internal class SessionManagerImpl(
             sessionManagerConfig.sessionRefreshThreshold.toLong(),
             TimeUnit.SECONDS
         )
-        return null
+        return
     }
 
     private fun refreshSessionAndLog(sessionCounterparties: SessionCounterparties, sessionId: String) {
@@ -886,12 +887,12 @@ internal class SessionManagerImpl(
         session.generateHandshakeSecrets()
         val ourIdentityData = session.validatePeerHandshakeMessageHandleError(message, peer) ?: return null
         // Find the correct Holding Identity to use (using the public key hash).
-        val ourIdentityInfo = linkManagerHostingMap.getInfo(ourIdentityData.responderPublicKeyHash, ourIdentityData.groupId)
+        val ourIdentityInfo = linkManagerHostingMap.getInfo(ourIdentityData.responderPublicKeyHash.array(), ourIdentityData.groupId)
         if (ourIdentityInfo == null) {
             logger.ourHashNotInMembersMapWarning(
                 message::class.java.simpleName,
                 message.header.sessionId,
-                ourIdentityData.responderPublicKeyHash.toBase64()
+                ourIdentityData.responderPublicKeyHash.array().toBase64()
             )
             return null
         }
@@ -910,7 +911,11 @@ internal class SessionManagerImpl(
         val sessionManagerConfig = config.get()
         val pkiMode = pkiMode(p2pParams, sessionManagerConfig) ?: return null
         try {
-            session.validateEncryptedExtensions(pkiMode, p2pParams.protocolModes, peer.holdingIdentity.x500Name)
+            session.validateEncryptedExtensions(pkiMode,
+                p2pParams.protocolModes,
+                peer.holdingIdentity.x500Name,
+                revocationCheckerClient,
+            )
         } catch (exception: InvalidPeerCertificate) {
             logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
             return null
@@ -921,7 +926,7 @@ internal class SessionManagerImpl(
 
         val tenantId = ourIdentityInfo.holdingIdentity.shortHash.value
         val ourIdentitySessionKey = ourIdentityInfo.allSessionKeysAndCertificates.first {
-            session.hash(it.sessionPublicKey).contentEquals(ourIdentityData.responderPublicKeyHash)
+            session.hash(it.sessionPublicKey).contentEquals(ourIdentityData.responderPublicKeyHash.array())
         }
 
         val response = try {
@@ -1143,7 +1148,7 @@ internal class SessionManagerImpl(
             }
         }
 
-        fun startSendingHeartbeats(session: Session) {
+        fun startSendingHeartbeats(session: SessionWrapper) {
             dominoTile.withLifecycleLock {
                 if (!isRunning) {
                     throw IllegalStateException("A message was sent before the HeartbeatManager was started.")
@@ -1162,7 +1167,7 @@ internal class SessionManagerImpl(
             }
         }
 
-        fun dataMessageSent(session: Session) {
+        fun dataMessageSent(session: SessionWrapper) {
             dominoTile.withLifecycleLock {
                 if (!isRunning) {
                     throw IllegalStateException("A message was sent before the HeartbeatManager was started.")
@@ -1258,7 +1263,7 @@ internal class SessionManagerImpl(
             }
         }
 
-        private fun sendHeartbeat(counterparties: SessionCounterparties, session: Session) {
+        private fun sendHeartbeat(counterparties: SessionCounterparties, session: SessionWrapper) {
             val sessionInfo = trackedOutboundSessions[session.sessionId]
             if (sessionInfo == null) {
                 logger.info("Stopped sending heartbeats for session (${session.sessionId}), which expired.")
@@ -1296,7 +1301,7 @@ internal class SessionManagerImpl(
         private fun sendHeartbeatMessage(
             source: HoldingIdentity,
             dest: HoldingIdentity,
-            session: Session,
+            session: SessionWrapper,
             filter: MembershipStatusFilter,
             serial: Long
         ) {

@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
@@ -34,20 +35,24 @@ class AuthenticationProtocolFailureTest {
     // party A
     private val partyAMaxMessageSize = 1_000_000
     private val partyASessionKey = keyPairGenerator.generateKeyPair()
-    private val authenticationProtocolA = AuthenticationProtocolInitiator(
+    private val authenticationProtocolA = AuthenticationProtocolInitiator.create(
         sessionId,
         setOf(ProtocolMode.AUTHENTICATION_ONLY),
         partyAMaxMessageSize,
         partyASessionKey.public,
         groupId,
-        CertificateCheckMode.NoCertificate
+        CertificateCheckMode.NoCertificate,
+        mock(),
     )
 
     // party B
     private val partyBMaxMessageSize = 1_500_000
     private val partyBSessionKey = keyPairGenerator.generateKeyPair()
-    private val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, partyBMaxMessageSize)
+    private val authenticationProtocolB = AuthenticationProtocolResponder.create(sessionId, partyBMaxMessageSize)
     private val certificateValidator = mock<CertificateValidator>()
+    private val certificateValidatorFactory = mock<CertificateValidatorFactory> {
+        on { create(any(), any(), any()) } doReturn certificateValidator
+    }
 
     companion object {
         @BeforeAll
@@ -198,7 +203,8 @@ class AuthenticationProtocolFailureTest {
         authenticationProtocolB.validateEncryptedExtensions(
             CertificateCheckMode.NoCertificate,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
-            aliceX500Name
+            aliceX500Name,
+            mock(),
         )
 
         // Step 4: responder creating different signature than the one expected.
@@ -223,15 +229,16 @@ class AuthenticationProtocolFailureTest {
 
     @Test
     fun `session authentication fails if two parties do not share a common supported protocol mode`() {
-        val authenticationProtocolA = AuthenticationProtocolInitiator(
+        val authenticationProtocolA = AuthenticationProtocolInitiator.create(
             sessionId,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
             partyAMaxMessageSize,
             partyASessionKey.public,
             sessionId,
-            CertificateCheckMode.NoCertificate
+            CertificateCheckMode.NoCertificate,
+            mock(),
         )
-        val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, partyBMaxMessageSize)
+        val authenticationProtocolB = AuthenticationProtocolResponder.create(sessionId, partyBMaxMessageSize)
 
         // Step 1: initiator sending hello message to responder.
         val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
@@ -266,7 +273,8 @@ class AuthenticationProtocolFailureTest {
             authenticationProtocolB.validateEncryptedExtensions(
                 CertificateCheckMode.NoCertificate,
                 setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
-                aliceX500Name
+                aliceX500Name,
+                mock(),
             )
         }
     }
@@ -274,17 +282,19 @@ class AuthenticationProtocolFailureTest {
     @Test
     fun `session authentication fails if responder certificate validation fails`() {
         val ourCertificates = listOf<String>()
-        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), mock(), mock())
+        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), mock())
 
-        val authenticationProtocolA = AuthenticationProtocolInitiator(
+        val authenticationProtocolA = AuthenticationProtocolInitiator.create(
             sessionId,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
             partyAMaxMessageSize,
             partyASessionKey.public,
             sessionId,
-            certCheckMode
-        ) { _, _, _, -> certificateValidator }
-        val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, partyBMaxMessageSize)
+            certCheckMode,
+            mock(),
+            certificateValidatorFactory,
+        )
+        val authenticationProtocolB = AuthenticationProtocolResponder.create(sessionId, partyBMaxMessageSize)
         whenever(certificateValidator.validate(any(), any(), any()))
             .thenThrow(InvalidPeerCertificate("Invalid peer certificate"))
 
@@ -316,27 +326,39 @@ class AuthenticationProtocolFailureTest {
             listOf(partyASessionKey.public to SignatureSpecs.ECDSA_SHA256)
         )
         assertThrows<InvalidPeerCertificate> {
-            authenticationProtocolB.validateEncryptedExtensions(certCheckMode, setOf(ProtocolMode.AUTHENTICATION_ONLY), aliceX500Name)
+            authenticationProtocolB.validateEncryptedExtensions(
+                certCheckMode,
+                setOf(ProtocolMode.AUTHENTICATION_ONLY),
+                aliceX500Name,
+                mock(),
+            )
         }
     }
 
     @Test
     fun `session authentication fails if initiator certificate validation fails`() {
         val ourCertificates = listOf<String>()
-        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), mock(), mock())
+        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), mock())
         val certificateValidatorResponder = mock<CertificateValidator>()
+        val responseValidatorFactory = mock<CertificateValidatorFactory> {
+            on { create(any(), any(), any()) } doReturn certificateValidatorResponder
+        }
 
-        val authenticationProtocolA = AuthenticationProtocolInitiator(
+        val authenticationProtocolA = AuthenticationProtocolInitiator.create(
             sessionId,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
             partyAMaxMessageSize,
             partyASessionKey.public,
             sessionId,
-            certCheckMode
-        ) { _, _, _, -> certificateValidator }
-        val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, partyBMaxMessageSize) { _, _, _, ->
-            certificateValidatorResponder
-        }
+            certCheckMode,
+            mock(),
+            certificateValidatorFactory,
+        )
+        val authenticationProtocolB = AuthenticationProtocolResponder.create(
+            sessionId,
+            partyBMaxMessageSize,
+            responseValidatorFactory,
+        )
         whenever(certificateValidator.validate(any(), any(), any())).thenThrow(InvalidPeerCertificate(""))
 
         // Step 1: initiator sending hello message to responder.
@@ -367,7 +389,12 @@ class AuthenticationProtocolFailureTest {
             initiatorHandshakeMessage,
             listOf(partyASessionKey.public to SignatureSpecs.ECDSA_SHA256),
         )
-        authenticationProtocolB.validateEncryptedExtensions(certCheckMode, setOf(ProtocolMode.AUTHENTICATION_ONLY), aliceX500Name)
+        authenticationProtocolB.validateEncryptedExtensions(
+            certCheckMode,
+            setOf(ProtocolMode.AUTHENTICATION_ONLY),
+            aliceX500Name,
+            mock(),
+        )
 
         // Step 4: responder sending handshake message and initiator validating it.
         val signingCallbackForB = { data: ByteArray ->
@@ -391,17 +418,22 @@ class AuthenticationProtocolFailureTest {
 
     @Test
     fun `session authentication fails for responder if initiator doesn't send a certificate`() {
-        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), mock(), mock())
+        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), mock())
 
-        val authenticationProtocolA = AuthenticationProtocolInitiator(
+        val authenticationProtocolA = AuthenticationProtocolInitiator.create(
             sessionId,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
             partyAMaxMessageSize,
             partyASessionKey.public,
             sessionId,
-            CertificateCheckMode.NoCertificate
+            CertificateCheckMode.NoCertificate,
+            mock()
         )
-        val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, partyBMaxMessageSize) { _, _, _, -> certificateValidator }
+        val authenticationProtocolB = AuthenticationProtocolResponder.create(
+            sessionId,
+            partyBMaxMessageSize,
+            certificateValidatorFactory,
+        )
 
         // Step 1: initiator sending hello message to responder.
         val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
@@ -432,24 +464,31 @@ class AuthenticationProtocolFailureTest {
         )
 
         assertThrows<InvalidPeerCertificate> {
-            authenticationProtocolB.validateEncryptedExtensions(certCheckMode, setOf(ProtocolMode.AUTHENTICATION_ONLY), aliceX500Name)
+            authenticationProtocolB.validateEncryptedExtensions(
+                certCheckMode,
+                setOf(ProtocolMode.AUTHENTICATION_ONLY),
+                aliceX500Name,
+                mock(),
+            )
         }
     }
 
     @Test
     fun `session authentication fails for initiator if responder doesn't send a certificate`() {
         val ourCertificates = listOf<String>()
-        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), mock(), mock())
+        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), mock())
 
-        val authenticationProtocolA = AuthenticationProtocolInitiator(
+        val authenticationProtocolA = AuthenticationProtocolInitiator.create(
             sessionId,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
             partyAMaxMessageSize,
             partyASessionKey.public,
             sessionId,
-            certCheckMode
-        ) { _, _, _, -> certificateValidator }
-        val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, partyBMaxMessageSize)
+            certCheckMode,
+            mock(),
+            certificateValidatorFactory,
+        )
+        val authenticationProtocolB = AuthenticationProtocolResponder.create(sessionId, partyBMaxMessageSize)
 
         // Step 1: initiator sending hello message to responder.
         val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
@@ -482,7 +521,8 @@ class AuthenticationProtocolFailureTest {
         authenticationProtocolB.validateEncryptedExtensions(
             CertificateCheckMode.NoCertificate,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
-            aliceX500Name
+            aliceX500Name,
+            mock(),
         )
 
         // Step 4: responder sending handshake message and initiator validating it.

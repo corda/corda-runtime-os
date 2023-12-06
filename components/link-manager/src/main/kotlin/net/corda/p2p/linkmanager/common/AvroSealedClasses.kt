@@ -4,7 +4,7 @@ import net.corda.data.p2p.crypto.AuthenticatedDataMessage
 import net.corda.data.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
-import net.corda.p2p.crypto.protocol.api.Session
+import net.corda.p2p.crypto.protocol.api.SessionWrapper
 import org.slf4j.LoggerFactory
 
 /**
@@ -25,7 +25,7 @@ class AvroSealedClasses {
     sealed class SessionAndMessage {
         companion object {
 
-            fun create(session: Session, sessionId: String, message: DataMessage): SessionAndMessage? {
+            fun create(session: SessionWrapper, sessionId: String, message: DataMessage): SessionAndMessage? {
                 return when (session) {
                     is AuthenticatedSession -> {
                         when (message) {

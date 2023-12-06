@@ -11,6 +11,7 @@ import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.RPCSenderWithDominoLogic
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
+import net.corda.p2p.crypto.protocol.api.RevocationChecker
 import net.corda.schema.Schemas
 import net.corda.utilities.concurrent.getOrThrow
 import org.slf4j.LoggerFactory
@@ -20,7 +21,7 @@ import java.util.concurrent.TimeoutException
 class RevocationCheckerClient(
     publisherFactory: PublisherFactory,
     coordinatorFactory: LifecycleCoordinatorFactory,
-    messagingConfiguration: SmartConfig): LifecycleWithDominoTile {
+    messagingConfiguration: SmartConfig): LifecycleWithDominoTile, RevocationChecker {
 
     private companion object {
         const val groupAndClientName = "GatewayRevocationChecker"
@@ -39,7 +40,7 @@ class RevocationCheckerClient(
         publisherFactory, coordinatorFactory, publisherConfig, messagingConfiguration
     )
 
-    fun checkRevocation(request: RevocationCheckRequest): RevocationCheckResponse {
+    override fun checkRevocation(request: RevocationCheckRequest): RevocationCheckResponse {
         return try {
             rpcSender.sendRequest(request).getOrThrow(timeout)
         } catch (except: TimeoutException) {

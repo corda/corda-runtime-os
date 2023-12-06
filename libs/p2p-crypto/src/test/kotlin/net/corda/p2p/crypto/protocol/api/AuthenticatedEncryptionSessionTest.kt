@@ -10,6 +10,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.Security
@@ -29,19 +30,20 @@ class AuthenticatedEncryptionSessionTest {
     // party A
     private val partyAMaxMessageSize = 1_000_000
     private val partyASessionKey = keyPairGenerator.generateKeyPair()
-    private val authenticationProtocolA = AuthenticationProtocolInitiator(
+    private val authenticationProtocolA = AuthenticationProtocolInitiator.create(
         sessionId,
         setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
         partyAMaxMessageSize,
         partyASessionKey.public,
         groupId,
-        CertificateCheckMode.NoCertificate
+        CertificateCheckMode.NoCertificate,
+        mock(),
     )
 
     // party B
     private val partyBMaxMessageSize = 1_500_000
     private val partyBSessionKey = keyPairGenerator.generateKeyPair()
-    private val authenticationProtocolB = AuthenticationProtocolResponder(sessionId, partyBMaxMessageSize)
+    private val authenticationProtocolB = AuthenticationProtocolResponder.create(sessionId, partyBMaxMessageSize)
 
     companion object {
         @BeforeAll
@@ -87,7 +89,8 @@ class AuthenticatedEncryptionSessionTest {
         authenticationProtocolB.validateEncryptedExtensions(
             CertificateCheckMode.NoCertificate,
             setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
-            aliceX500Name
+            aliceX500Name,
+            mock(),
         )
 
         // Step 4: responder sending handshake message and initiator validating it.
@@ -179,7 +182,8 @@ class AuthenticatedEncryptionSessionTest {
         authenticationProtocolB.validateEncryptedExtensions(
             CertificateCheckMode.NoCertificate,
             setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
-            aliceX500Name
+            aliceX500Name,
+            mock(),
         )
 
         // Step 4: responder sending handshake message and initiator validating it.
@@ -277,7 +281,8 @@ class AuthenticatedEncryptionSessionTest {
         authenticationProtocolB.validateEncryptedExtensions(
             CertificateCheckMode.NoCertificate,
             setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
-            aliceX500Name
+            aliceX500Name,
+            mock(),
         )
 
         // Step 4: responder sending handshake message and initiator validating it.

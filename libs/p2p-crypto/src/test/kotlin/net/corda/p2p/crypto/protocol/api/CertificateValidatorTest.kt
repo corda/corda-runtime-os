@@ -1,7 +1,6 @@
 package net.corda.p2p.crypto.protocol.api
 
-import net.corda.data.p2p.gateway.certificates.Active
-import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
+import net.corda.data.p2p.gateway.certificates.RevocationMode
 import net.corda.v5.base.types.MemberX500Name
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
@@ -52,7 +51,7 @@ class CertificateValidatorTest {
         whenever(certificate.keyUsage).thenReturn(BooleanArray(10) { it == 0 }) //Set key usage bit
         whenever(certificateFactory.generateCertificate(any())).thenThrow(CertificateException("Invalid certificate."))
         val validator = CertificateValidator(
-            RevocationCheckMode.HARD_FAIL, mock(), { RevocationCheckResponse(Active()) }, certPathValidator, certificateFactory
+            RevocationMode.HARD_FAIL, mock(), mock(), certPathValidator, certificateFactory
         )
         assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), certX500Name, publicKey) }
     }
@@ -60,9 +59,15 @@ class CertificateValidatorTest {
     @Test
     fun `certificate fails validation if X500 name doesn't match`() {
         val validator = CertificateValidator(
-            RevocationCheckMode.HARD_FAIL, mock(), { RevocationCheckResponse(Active()) }, certPathValidator, certificateFactory
+            RevocationMode.HARD_FAIL, mock(), mock(), certPathValidator, certificateFactory
         )
-        assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), aliceX500Name, publicKey) }
+        assertThrows<InvalidPeerCertificate> {
+            validator.validate(
+                listOf(certificatePemString),
+                aliceX500Name,
+                publicKey,
+            )
+        }
     }
 
     @Test
@@ -70,9 +75,15 @@ class CertificateValidatorTest {
         val nonX500Certificate = mock<Certificate>()
         whenever(certificateChain.certificates).thenReturn(listOf(nonX500Certificate))
         val validator = CertificateValidator(
-            RevocationCheckMode.HARD_FAIL, mock(), { RevocationCheckResponse(Active()) }, certPathValidator, certificateFactory
+            RevocationMode.HARD_FAIL, mock(), mock(), certPathValidator, certificateFactory
         )
-        assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), certX500Name, publicKey) }
+        assertThrows<InvalidPeerCertificate> {
+            validator.validate(
+                listOf(certificatePemString),
+                certX500Name,
+                publicKey,
+            )
+        }
     }
 
     @Test
@@ -83,7 +94,7 @@ class CertificateValidatorTest {
         }
         whenever(certificateChain.certificates).thenReturn(listOf(certificate))
         val validator = CertificateValidator(
-            RevocationCheckMode.HARD_FAIL, mock(), { RevocationCheckResponse(Active()) }, certPathValidator, certificateFactory
+            RevocationMode.HARD_FAIL, mock(), mock(), certPathValidator, certificateFactory
         )
         assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), certX500Name, publicKey) }
     }
@@ -92,7 +103,7 @@ class CertificateValidatorTest {
     fun `certificate fails validation if x509 cert does not have digital signature set`() {
         whenever(certificate.keyUsage).thenReturn(BooleanArray(10) { it != 0 })
         val validator = CertificateValidator(
-            RevocationCheckMode.HARD_FAIL, mock(), { RevocationCheckResponse(Active()) }, certPathValidator, certificateFactory
+            RevocationMode.HARD_FAIL, mock(), mock(), certPathValidator, certificateFactory
         )
         assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), certX500Name, publicKey) }
     }
@@ -104,7 +115,7 @@ class CertificateValidatorTest {
         whenever(certificateFactory.generateCertificate(any()))
             .thenReturn(certificate).thenThrow(CertificateException("Invalid certificate."))
         val validator = CertificateValidator(
-            RevocationCheckMode.HARD_FAIL, pemTruststore, { RevocationCheckResponse(Active()) }, certPathValidator, certificateFactory
+            RevocationMode.HARD_FAIL, pemTruststore, mock(), certPathValidator, certificateFactory
         )
         assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), certX500Name, publicKey) }
     }

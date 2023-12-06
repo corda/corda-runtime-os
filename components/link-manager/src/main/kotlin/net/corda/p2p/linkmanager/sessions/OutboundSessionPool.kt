@@ -1,14 +1,14 @@
 package net.corda.p2p.linkmanager.sessions
 
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
-import net.corda.p2p.crypto.protocol.api.Session
+import net.corda.p2p.crypto.protocol.api.SessionWrapper
 import net.corda.p2p.linkmanager.sessions.OutboundSessionPool.SessionCounterpartiesKey.Companion.toKey
 import net.corda.virtualnode.HoldingIdentity
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.random.Random
 
 /**
- * Stores outbound [AuthenticationProtocolInitiator] during session negotiation and [Session] once negotiation is
+ * Stores outbound [AuthenticationProtocolInitiator] during session negotiation and [SessionWrapper] once negotiation is
  * complete.
  * [calculateWeightForSession] - Used to calculate a weight per session. Sessions with a small weight
  * are favoured over sessions with a larger weight.
@@ -27,7 +27,7 @@ internal class OutboundSessionPool(
             val protocol: AuthenticationProtocolInitiator
         ) : SessionType()
 
-        data class ActiveSession(val sessionCounterparties: SessionManager.BaseCounterparties, val session: Session) : SessionType()
+        data class ActiveSession(val sessionCounterparties: SessionManager.BaseCounterparties, val session: SessionWrapper) : SessionType()
     }
     private data class SessionCounterpartiesKey(
         override val ourId: HoldingIdentity,
@@ -47,11 +47,11 @@ internal class OutboundSessionPool(
     sealed class SessionPoolStatus {
         object NewSessionsNeeded : SessionPoolStatus()
         object SessionPending : SessionPoolStatus()
-        data class SessionActive(val session: Session) : SessionPoolStatus()
+        data class SessionActive(val session: SessionWrapper) : SessionPoolStatus()
     }
 
     /**
-     * If session negotiation is completed (for any session) then select a random [Session] for the set of [sessionCounterparties],
+     * If session negotiation is completed (for any session) then select a random [SessionWrapper] for the set of [sessionCounterparties],
      * weighted by calculateWeightForSession. If session negotiation is started, but is not completed, then
      * [SessionPoolStatus.SessionPending] is returned, otherwise [SessionPoolStatus.NewSessionsNeeded] is returned.
      */
@@ -109,7 +109,7 @@ internal class OutboundSessionPool(
     /**
      * update the session pool once session negotiation is complete
      */
-    fun updateAfterSessionEstablished(session: Session) {
+    fun updateAfterSessionEstablished(session: SessionWrapper) {
         val counterparties = counterpartiesForSessionId[session.sessionId] ?: return
         outboundSessions.computeIfPresent(counterparties) { _, sessions ->
             sessions[session.sessionId] = SessionType.ActiveSession(counterparties, session)
@@ -134,7 +134,7 @@ internal class OutboundSessionPool(
     }
 
     /**
-     * Remove a single [AuthenticationProtocolInitiator] or [Session] in the pool and replace it
+     * Remove a single [AuthenticationProtocolInitiator] or [SessionWrapper] in the pool and replace it
      * with a [AuthenticationProtocolInitiator].
      */
     fun replaceSession(

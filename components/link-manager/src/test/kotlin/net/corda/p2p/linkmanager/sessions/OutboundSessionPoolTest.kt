@@ -1,8 +1,9 @@
 package net.corda.p2p.linkmanager.sessions
 
 import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
-import net.corda.p2p.crypto.protocol.api.Session
+import net.corda.p2p.crypto.protocol.api.SessionWrapper
 import net.corda.p2p.linkmanager.utilities.LoggingInterceptor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
@@ -91,7 +92,7 @@ class OutboundSessionPoolTest {
             authenticationProtocols.add(mockAuthenticationProtocol)
         }
 
-        val mockSession = mock<Session> {
+        val mockSession = mock<AuthenticatedSession> {
             on { sessionId } doReturn "session2"
         }
 
@@ -124,7 +125,7 @@ class OutboundSessionPoolTest {
         }
 
         val negotiatedSessionId = "session2"
-        val mockSession = mock<Session> {
+        val mockSession = mock<AuthenticatedSession> {
             on { sessionId } doReturn negotiatedSessionId
         }
 
@@ -164,16 +165,16 @@ class OutboundSessionPoolTest {
         }
         pool.addPendingSessions(sessionCounterparties, authenticationProtocols)
 
-        val mockSessions = mutableListOf<Session>()
+        val mockSessions = mutableListOf<SessionWrapper>()
         for (i in 0 until POOL_SIZE) {
-            val mockSession = mock<Session> {
+            val mockSession = mock<AuthenticatedSession> {
                 on { sessionId } doReturn "session$i"
             }
             mockSessions.add(mockSession)
             pool.updateAfterSessionEstablished(mockSession)
         }
 
-        val gotSessions = mutableListOf<Session>()
+        val gotSessions = mutableListOf<SessionWrapper>()
         // If all sessions have weight 1 then the total weight is POOL_SIZE. The sum of (total weight - weight) for each session is
         // (POOL_SIZE - 1) * total weight. Which is (POOL_SIZE - 1) * POOL_SIZE.
         for (i in 0 until (POOL_SIZE - 1) * POOL_SIZE) {
@@ -211,16 +212,16 @@ class OutboundSessionPoolTest {
         }
         pool.addPendingSessions(sessionCounterparties, authenticationProtocols)
 
-        val mockSessions = mutableListOf<Session>()
+        val mockSessions = mutableListOf<SessionWrapper>()
         for (i in 0 until POOL_SIZE) {
-            val mockSession = mock<Session> {
+            val mockSession = mock<AuthenticatedSession> {
                 on { sessionId } doReturn "session$i"
             }
             mockSessions.add(mockSession)
             pool.updateAfterSessionEstablished(mockSession)
         }
 
-        val gotSessions = mutableListOf<Session>()
+        val gotSessions = mutableListOf<SessionWrapper>()
         // If all sessions have weight 1 then the total weight is POOL_SIZE. The sum of (total weight - weight) for each session is
         // (POOL_SIZE - 1) * total weight. Which is (POOL_SIZE - 1) * POOL_SIZE.
         for (i in 0 until (POOL_SIZE - 1) * POOL_SIZE) {
@@ -259,16 +260,16 @@ class OutboundSessionPoolTest {
         }
         pool.addPendingSessions(sessionCounterparties, authenticationProtocols)
 
-        val mockSessions = mutableListOf<Session>()
+        val mockSessions = mutableListOf<SessionWrapper>()
         for (i in listOf(0, 1, 4)) {
-            val mockSession = mock<Session> {
+            val mockSession = mock<AuthenticatedSession> {
                 on { sessionId } doReturn "session$i"
             }
             mockSessions.add(mockSession)
             pool.updateAfterSessionEstablished(mockSession)
         }
 
-        val gotSessions = mutableListOf<Session>()
+        val gotSessions = mutableListOf<SessionWrapper>()
         for (i in 0 until (POOL_SIZE - 1) * POOL_SIZE) {
             gotSessions.add((pool.getNextSession(sessionCounterparties) as OutboundSessionPool.SessionPoolStatus.SessionActive).session)
         }
@@ -305,9 +306,9 @@ class OutboundSessionPoolTest {
         }
         pool.addPendingSessions(sessionCounterparties, authenticationProtocols)
 
-        val mockSessions = mutableListOf<Session>()
+        val mockSessions = mutableListOf<SessionWrapper>()
         for (i in 0 until POOL_SIZE) {
-            val mockSession = mock<Session> {
+            val mockSession = mock<AuthenticatedSession> {
                 on { sessionId } doReturn "session$i"
             }
             if (i != 2) mockSessions.add(mockSession)
@@ -320,7 +321,7 @@ class OutboundSessionPoolTest {
 
         pool.replaceSession(sessionCounterparties, timedOutSessionId, newPendingSession)
 
-        val gotSessions = mutableListOf<Session>()
+        val gotSessions = mutableListOf<SessionWrapper>()
         for (i in 0 until (POOL_SIZE - 1) * POOL_SIZE) {
             gotSessions.add((pool.getNextSession(sessionCounterparties) as OutboundSessionPool.SessionPoolStatus.SessionActive).session)
         }
@@ -357,9 +358,9 @@ class OutboundSessionPoolTest {
         }
         pool.addPendingSessions(sessionCounterparties, authenticationProtocols)
 
-        val mockSessions = mutableListOf<Session>()
+        val mockSessions = mutableListOf<SessionWrapper>()
         for (i in 0 until POOL_SIZE) {
-            val mockSession = mock<Session> {
+            val mockSession = mock<AuthenticatedSession> {
                 on { sessionId } doReturn "session$i"
             }
             if (i != 2) mockSessions.add(mockSession)
@@ -371,13 +372,13 @@ class OutboundSessionPoolTest {
         }
         pool.replaceSession(sessionCounterparties, timedOutSessionId, newPendingSession)
 
-        val mockSession = mock<Session> {
+        val mockSession = mock<AuthenticatedSession> {
             on { sessionId } doReturn "newSession"
         }
         pool.updateAfterSessionEstablished(mockSession)
         mockSessions.add(mockSession)
 
-        val gotSessions = mutableListOf<Session>()
+        val gotSessions = mutableListOf<SessionWrapper>()
         for (i in 0 until (POOL_SIZE - 1) * POOL_SIZE) {
             gotSessions.add((pool.getNextSession(sessionCounterparties) as OutboundSessionPool.SessionPoolStatus.SessionActive).session)
         }
@@ -419,16 +420,16 @@ class OutboundSessionPoolTest {
         }
         pool.addPendingSessions(sessionCounterparties, authenticationProtocols)
 
-        val mockSessions = mutableListOf<Session>()
+        val mockSessions = mutableListOf<SessionWrapper>()
         for (i in 0 until POOL_SIZE) {
-            val mockSession = mock<Session> {
+            val mockSession = mock<AuthenticatedSession> {
                 on { sessionId } doReturn "session$i"
             }
             mockSessions.add(mockSession)
             pool.updateAfterSessionEstablished(mockSession)
         }
 
-        val gotSessions = mutableListOf<Session>()
+        val gotSessions = mutableListOf<SessionWrapper>()
         // If Session 0 has weight 0, Session 1 has weight 1 etc. Then we have total weight is: POOL_SIZE * (POOL_SIZE - 1) / 2.
         // The sum of (total weight - weight) for each session is (POOL_SIZE - 1) * total weight. Which is
         // (POOL_SIZE - 1) * POOL_SIZE * (POOL_SIZE - 1) / 2.

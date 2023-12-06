@@ -7,12 +7,30 @@ import net.corda.p2p.crypto.protocol.api.CertificateCheckMode
 import java.security.PublicKey
 
 internal class CryptoProtocolFactory: ProtocolFactory {
-    override fun createInitiator(sessionId: String, supportedModes: Set<ProtocolMode>, ourMaxMessageSize: Int,
-                                 ourPublicKey: PublicKey, groupId: String, mode: CertificateCheckMode): AuthenticationProtocolInitiator {
-        return AuthenticationProtocolInitiator(sessionId, supportedModes, ourMaxMessageSize, ourPublicKey, groupId, mode)
+    override fun createInitiator(
+        sessionId: String,
+        supportedModes: Set<ProtocolMode>,
+        ourMaxMessageSize: Int,
+        ourPublicKey: PublicKey,
+        groupId: String,
+        mode: CertificateCheckMode,
+        revocationCheckerClient: RevocationCheckerClient,
+    ): AuthenticationProtocolInitiator {
+        return AuthenticationProtocolInitiator.create(
+            sessionId,
+            supportedModes,
+            ourMaxMessageSize,
+            ourPublicKey,
+            groupId,
+            mode,
+            revocationCheckerClient,
+        )
     }
 
     override fun createResponder(sessionId: String, ourMaxMessageSize: Int): AuthenticationProtocolResponder {
-        return AuthenticationProtocolResponder(sessionId, ourMaxMessageSize)
+        return AuthenticationProtocolResponder.create(
+            sessionId,
+            ourMaxMessageSize,
+        )
     }
 }

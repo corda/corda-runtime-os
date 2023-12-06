@@ -8,7 +8,14 @@ import java.security.PublicKey
 
 internal interface ProtocolFactory {
     @Suppress("LongParameterList")
-    fun createInitiator(sessionId: String, supportedModes: Set<ProtocolMode>, ourMaxMessageSize: Int,
-                        ourPublicKey: PublicKey, groupId: String, mode: CertificateCheckMode): AuthenticationProtocolInitiator
+    fun createInitiator(
+        sessionId: String,
+        supportedModes: Set<ProtocolMode>,
+        ourMaxMessageSize: Int,
+        ourPublicKey: PublicKey,
+        groupId: String,
+        mode: CertificateCheckMode,
+        revocationCheckerClient: RevocationCheckerClient,
+    ): AuthenticationProtocolInitiator
     fun createResponder(sessionId: String, ourMaxMessageSize: Int): AuthenticationProtocolResponder
 }
