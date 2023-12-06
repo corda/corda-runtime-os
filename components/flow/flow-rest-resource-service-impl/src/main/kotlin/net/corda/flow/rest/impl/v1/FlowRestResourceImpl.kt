@@ -274,33 +274,26 @@ class FlowRestResourceImpl @Activate constructor(
         return messageFactory.createFlowStatusResponse(flowStatus)
     }
 
-    private fun filterByFlowStatus(status: String, flowStatuses: List<FlowStatus>): List<FlowStatus> {
-        return flowStatuses.filter { it.flowStatus == FlowStates.valueOf(status) }
-    }
+    override fun getMultipleFlowStatus(holdingIdentityShortHash: String, status: String?): FlowStatusResponses {
+        val vNode = getVirtualNode(holdingIdentityShortHash)
+        val flowStatuses = flowStatusCacheService.getStatusesPerIdentity(vNode.holdingIdentity)
 
-    private fun validateFlowStatusFilter(status: String?) {
-        val correctStatuses = FlowStates.values().toList()
-        if (status != null) {
-            if (!correctStatuses.contains(FlowStates.valueOf(status))) {
+        val filteredStatuses = status?.let {
+            val flowState = try {
+                FlowStates.valueOf(it)
+            } catch (e: IllegalArgumentException) {
                 throw BadRequestException(
                     "Status to filter by is not found in list of valid statuses: ${FlowStates.values()}"
                 )
             }
-        }
+            flowStatuses.filter { it.flowStatus == flowState }
+        } ?: flowStatuses
+
+        return createFlowStatusResponses(filteredStatuses)
     }
 
-    override fun getMultipleFlowStatus(holdingIdentityShortHash: String, status: String?): FlowStatusResponses {
-        validateFlowStatusFilter(status)
-        val vNode = getVirtualNode(holdingIdentityShortHash)
-        var flowStatuses = flowStatusCacheService.getStatusesPerIdentity(vNode.holdingIdentity)
-         if (status != null) {
-            flowStatuses = filterByFlowStatus(status, flowStatuses)
-        }
-        return FlowStatusResponses(flowStatusResponses = flowStatuses.map {
-            messageFactory.createFlowStatusResponse(
-                it
-            )
-        })
+    private fun createFlowStatusResponses(flowStatuses: List<FlowStatus>): FlowStatusResponses {
+        return FlowStatusResponses(flowStatusResponses = flowStatuses.map { messageFactory.createFlowStatusResponse(it) })
     }
 
     override fun getFlowResult(
