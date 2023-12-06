@@ -9,6 +9,15 @@ import net.corda.v5.crypto.merkle.MerkleProofRebuildFailureException
 import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.crypto.merkle.MerkleTreeHashDigest
 
+/**
+ * Represent a merkle proof, which shows that some leaf data is in a Merkle tree.
+ *
+ * @param proofType
+ * @param treeSize - total number of leaves in the Merkle tree
+ * @param leaves - list of leaves for which we have data
+ * @param hashes - hashes of each node. Number of elements should match number of elements in leaves.
+ */
+
 class MerkleProofImpl(
     private val proofType: MerkleProofType,
     private val treeSize: Int,
