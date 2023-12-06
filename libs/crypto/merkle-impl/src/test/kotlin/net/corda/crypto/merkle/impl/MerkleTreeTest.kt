@@ -287,6 +287,7 @@ class MerkleTreeTest {
         // we don't want to take the time to do an expensive hash so we'll just make a cheap one
         val merkleTree = makeTestMerkleTree(treeSize, trivialHashDigestProvider)
 
+        assertThat(merkleTree.leaves).isNotEmpty()
         if (merkleTree.leaves.isNotEmpty()) {
             // Should not build proof for empty list
             assertThrows(IllegalArgumentException::class.java) {
