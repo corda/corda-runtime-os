@@ -3,6 +3,7 @@ package net.corda.flow.rest.impl.v1
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStates
+import net.corda.data.flow.output.FlowStatus
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.data.virtualnode.VirtualNodeOperationalState
 import net.corda.flow.rest.FlowStatusCacheService
@@ -273,29 +274,33 @@ class FlowRestResourceImpl @Activate constructor(
         return messageFactory.createFlowStatusResponse(flowStatus)
     }
 
-    override fun getMultipleFlowStatus(holdingIdentityShortHash: String, status: String?): FlowStatusResponses {
-        val vNode = getVirtualNode(holdingIdentityShortHash)
-        val flowStatuses = flowStatusCacheService.getStatusesPerIdentity(vNode.holdingIdentity)
+    private fun filterByFlowStatus(status: String, flowStatuses: List<FlowStatus>): List<FlowStatus> {
+        return flowStatuses.filter { it.flowStatus == FlowStates.valueOf(status) }
+    }
+
+    private fun validateFlowStatusFilter(status: String?) {
         val correctStatuses = FlowStates.values().toList()
-        return when (status) {
-            null -> FlowStatusResponses(flowStatusResponses = flowStatuses.map {
-                messageFactory.createFlowStatusResponse(
-                    it
-                )
-            })
-            else -> if (correctStatuses.contains(FlowStates.valueOf(status))) {
-                flowStatuses.filter { it.flowStatus == FlowStates.valueOf(status) }
-                FlowStatusResponses(flowStatusResponses = flowStatuses.map {
-                    messageFactory.createFlowStatusResponse(
-                        it
-                    )
-                })
-            } else {
+        if (status != null) {
+            if (!correctStatuses.contains(FlowStates.valueOf(status))) {
                 throw BadRequestException(
                     "Status to filter by is not found in list of valid statuses: ${FlowStates.values()}"
                 )
             }
         }
+    }
+
+    override fun getMultipleFlowStatus(holdingIdentityShortHash: String, status: String?): FlowStatusResponses {
+        validateFlowStatusFilter(status)
+        val vNode = getVirtualNode(holdingIdentityShortHash)
+        var flowStatuses = flowStatusCacheService.getStatusesPerIdentity(vNode.holdingIdentity)
+         if (status != null) {
+            flowStatuses = filterByFlowStatus(status, flowStatuses)
+        }
+        return FlowStatusResponses(flowStatusResponses = flowStatuses.map {
+            messageFactory.createFlowStatusResponse(
+                it
+            )
+        })
     }
 
     override fun getFlowResult(
