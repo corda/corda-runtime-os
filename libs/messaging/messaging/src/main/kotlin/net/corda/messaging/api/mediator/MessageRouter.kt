@@ -23,4 +23,7 @@ fun interface MessageRouter {
      * @return Destination for given message.
      */
     fun getDestination(message: MediatorMessage<Any>): RoutingDestination
+
+    fun asdasd(): String =
+        "asdasdas \"asdasd\""
 }

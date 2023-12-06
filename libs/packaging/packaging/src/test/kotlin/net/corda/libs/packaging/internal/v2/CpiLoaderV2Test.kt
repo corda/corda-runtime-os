@@ -35,15 +35,15 @@ class CpiLoaderV2Test {
 
     @Test
     fun `CPI loading fails with duplicate CPKs`() {
-        val cordappCpkName = "com.test.duplicate"
+        val cpkCordappName = "com.test.duplicate"
 
         val inMemoryCpk1 = TestCpkV2Builder()
             .name("test1.jar")
-            .bundleName(cordappCpkName)
+            .bundleName(cpkCordappName)
 
         val inMemoryCpk2 = TestCpkV2Builder()
             .name("test2.jar")
-            .bundleName(cordappCpkName)
+            .bundleName(cpkCordappName)
 
         val inMemoryCpb = TestCpbV2Builder()
             .cpks(inMemoryCpk1, inMemoryCpk2)
