@@ -278,9 +278,9 @@ class FlowRestResourceImpl @Activate constructor(
         val vNode = getVirtualNode(holdingIdentityShortHash)
         val flowStatuses = flowStatusCacheService.getStatusesPerIdentity(vNode.holdingIdentity)
 
-        val filteredStatuses = status?.let {
+        val filteredStatuses = status?.let { status ->
             val flowState = try {
-                FlowStates.valueOf(it)
+                FlowStates.valueOf(status)
             } catch (e: IllegalArgumentException) {
                 throw BadRequestException(
                     "Status to filter by is not found in list of valid statuses: ${FlowStates.values()}"
