@@ -90,7 +90,7 @@ internal class PermissionManagementServiceEventHandler(
                         configSubscription?.close()
                         configSubscription = configurationReadService.registerComponentForUpdates(
                             coordinator,
-                            setOf(BOOT_CONFIG, MESSAGING_CONFIG, REST_CONFIG)
+                            setOf(BOOT_CONFIG, MESSAGING_CONFIG, REST_CONFIG, RBAC_CONFIG)
                         )
                     }
                     LifecycleStatus.DOWN -> {
