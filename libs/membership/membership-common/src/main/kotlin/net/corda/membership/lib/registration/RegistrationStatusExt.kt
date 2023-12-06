@@ -9,7 +9,7 @@ object RegistrationStatusExt {
             when (this) {
                 RegistrationStatus.NEW -> 0
                 RegistrationStatus.SENT_TO_MGM -> 1
-                RegistrationStatus.RECEIVED_BY_MGM -> 2
+                RegistrationStatus.RECEIVED_BY_MGM -> 1
                 RegistrationStatus.STARTED_PROCESSING_BY_MGM -> 2
                 RegistrationStatus.PENDING_MEMBER_VERIFICATION -> 3
                 RegistrationStatus.PENDING_MANUAL_APPROVAL -> 4
