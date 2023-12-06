@@ -15,6 +15,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
 import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.crypto.merkle.MerkleProofType
+import net.corda.v5.crypto.merkle.MerkleTree
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
@@ -270,22 +271,23 @@ class MerkleTreeTest {
     @ParameterizedTest(name = "merkle proof tests for trees with sizes that run fast ({0} leaves)")
     @MethodSource("merkleProofTestSizes")
     fun `merkle proofs fast`(treeSize: Int) {
-        runMerkelProofTest(treeSize)
+        runMerkleProofTest(treeSize)
     }
 
-    // This test should be run whenever the merkle tree implemenetation is changed. It is disabled on CI since 
+    // This test should be run whenever the merkle tree implementation is changed. It is disabled on CI since
     // it can take 30 seconds.
     @Disabled
     @ParameterizedTest(name = "merkle proof tests for trees with extended sizes that run slow ({0} leaves)")
     @MethodSource("merkleProofExtendedTestSizes")
     fun `merkle proofs slow `(treeSize: Int) {
-        runMerkelProofTest(treeSize)
+        runMerkleProofTest(treeSize)
     }
 
-    private fun runMerkelProofTest(treeSize: Int) {
+    private fun runMerkleProofTest(treeSize: Int) {
+        // we don't want to take the time to do an expensive hash so we'll just make a cheap one
         val hashProvider = trivialHashDigestProvider
-        val leafData = (0 until treeSize).map { it.toByteArray() }
-        val merkleTree = MerkleTreeImpl.createMerkleTree(leafData, hashProvider)
+        val merkleTree = makeTestMerkleTree(treeSize, hashProvider)
+
 
         if (merkleTree.leaves.isNotEmpty()) {
             // Should not build proof for empty list
@@ -417,6 +419,25 @@ class MerkleTreeTest {
             assertFalse(badProof6.verify(root, hashProvider))
 
         }
+    }
+
+    /**
+     * Make a merkle tree for test purposes
+     *
+     * The leaf data will be successive integers starting at 0.
+     *
+     * @param treeSize the number of elements
+     * @param hashProvider the functions used to hash the tree
+     * @return a MerkleTree object
+     */
+    private fun makeTestMerkleTree(
+        treeSize: Int,
+        hashProvider: MerkleTreeHashDigestProvider
+    ): MerkleTree {
+        // 1. make some leaf data, which will just be successive integers starting at zero
+        val leafData = (0 until treeSize).map { it.toByteArray() }
+        // 2. make the tree from the leaf data
+        return MerkleTreeImpl.createMerkleTree(leafData, hashProvider)
     }
 
     @Test
