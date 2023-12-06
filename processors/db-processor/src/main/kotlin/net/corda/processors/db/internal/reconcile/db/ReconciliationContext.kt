@@ -11,11 +11,16 @@ import javax.persistence.EntityManagerFactory
  *
  * Context instances must be closed after use to close any created resources.
  */
-interface ReconciliationContext : AutoCloseable {
+sealed interface ReconciliationContext : AutoCloseable {
     /**
      * Return existing [EntityManager] or create one if one does not already exist.
      */
     fun getOrCreateEntityManager(): EntityManager
+
+    /**
+     * Provides human-readable description of the context
+     */
+    fun prettyPrint(): String
 }
 
 /**
@@ -29,6 +34,8 @@ class ClusterReconciliationContext(
     override fun getOrCreateEntityManager(): EntityManager = entityManager
         ?: dbConnectionManager.getClusterEntityManagerFactory().createEntityManager()
             .also { entityManager = it }
+
+    override fun prettyPrint(): String = "Cluster context"
 
     override fun close() {
         entityManager?.close()
@@ -55,6 +62,8 @@ class VirtualNodeReconciliationContext(
     override fun getOrCreateEntityManager(): EntityManager = entityManager
         ?: getOrCreateEntityManagerFactory().createEntityManager()
             .also { entityManager = it }
+
+    override fun prettyPrint(): String = "vNode ${virtualNodeInfo.holdingIdentity.shortHash} context"
 
     override fun close() {
         entityManager?.close()
