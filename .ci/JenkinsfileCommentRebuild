@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@jacob/ES-1589') _
+@Library('corda-shared-build-pipeline-steps@ES-1589') _
 
 githubCommentBuildTests(
     branch: 'release/5.2',
