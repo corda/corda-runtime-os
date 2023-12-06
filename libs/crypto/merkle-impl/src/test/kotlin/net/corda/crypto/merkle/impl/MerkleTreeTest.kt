@@ -406,6 +406,7 @@ class MerkleTreeTest {
                 merkleTree.leaves[extraIndex]
             )
 
+            // We add one leaf which breaks the proof.
             val badProofExtraLeaf: MerkleProof =
                 MerkleProofImpl(proof.proofType, proof.treeSize, proof.leaves + extraLeaf, proof.hashes)
             assertFalse(badProofExtraLeaf.verify(root, trivialHashDigestProvider))
