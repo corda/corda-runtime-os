@@ -3,6 +3,7 @@ package net.corda.flow.rest.impl.v1
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.data.flow.FlowKey
+import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
 import net.corda.flow.rest.FlowStatusCacheService
 import net.corda.flow.rest.factory.MessageFactory
@@ -232,25 +233,35 @@ class FlowRestResourceImplTest {
 
     @Test
     fun `get multiple flow status by filter COMPLETED`() {
-        whenever(flowStatusCacheService.getStatusesPerIdentity(any())).thenReturn(listOf(FlowStatus(), FlowStatus()))
+        val completed = FlowStatus()
+        completed.flowStatus = FlowStates.COMPLETED
+        val failed = FlowStatus()
+        failed.flowStatus = FlowStates.FAILED
+
+        whenever(flowStatusCacheService.getStatusesPerIdentity(any())).thenReturn(listOf(completed, failed))
         val flowRestResource = createFlowRestResource()
         flowRestResource.getMultipleFlowStatus(VALID_SHORT_HASH, "COMPLETED")
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, times(1)).getStatusesPerIdentity(any())
-        verify(messageFactory, times(2)).createFlowStatusResponse(any())
+        verify(messageFactory, times(1)).createFlowStatusResponse(any())
         verify(fatalErrorFunction, never()).invoke()
     }
 
     @Test
     fun `get multiple flow status by filter FAILED`() {
-        whenever(flowStatusCacheService.getStatusesPerIdentity(any())).thenReturn(listOf(FlowStatus(), FlowStatus()))
+        val completed = FlowStatus()
+        completed.flowStatus = FlowStates.COMPLETED
+        val failed = FlowStatus()
+        failed.flowStatus = FlowStates.FAILED
+
+        whenever(flowStatusCacheService.getStatusesPerIdentity(any())).thenReturn(listOf(completed, failed))
         val flowRestResource = createFlowRestResource()
         flowRestResource.getMultipleFlowStatus(VALID_SHORT_HASH, "FAILED")
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, times(1)).getStatusesPerIdentity(any())
-        verify(messageFactory, times(2)).createFlowStatusResponse(any())
+        verify(messageFactory, times(1)).createFlowStatusResponse(any())
         verify(fatalErrorFunction, never()).invoke()
     }
 
