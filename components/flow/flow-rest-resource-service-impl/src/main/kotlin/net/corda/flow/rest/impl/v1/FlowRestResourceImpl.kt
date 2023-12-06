@@ -201,8 +201,12 @@ class FlowRestResourceImpl @Activate constructor(
             val status = messageFactory.createStartFlowStatus(clientRequestId, vNode, flowClassName)
 
             val records = listOf(
-                addTraceContextToRecord(Record(FLOW_MAPPER_START,
-                    getKeyForStartEvent(status.key, holdingIdentityShortHash), startEvent)),
+                addTraceContextToRecord(
+                    Record(
+                        FLOW_MAPPER_START,
+                        getKeyForStartEvent(status.key, holdingIdentityShortHash), startEvent
+                    )
+                ),
                 Record(FLOW_STATUS_TOPIC, status.key, status),
             )
 
@@ -217,22 +221,24 @@ class FlowRestResourceImpl @Activate constructor(
             } catch (ex: CordaMessageAPIFatalException) {
                 throw markFatalAndReturnFailureException(ex)
             }
-            
+
             // Do not block REST thread execution till future completes, instead add a hook to log an error if batch
             // publication fails for whatever reason and return to the REST caller that flow start been accepted.
             // Should they wish to check the actual execution progress, they can always check the status using
             // client request id provided.
-            batchFuture.exceptionally { 
-                log.warn("Failed to publish start flow batch for flowClass: $flowClassName, " +
-                        "clientRequestId: $clientRequestId on vNode $holdingIdentityShortHash", it)
-                
+            batchFuture.exceptionally {
+                log.warn(
+                    "Failed to publish start flow batch for flowClass: $flowClassName, " +
+                            "clientRequestId: $clientRequestId on vNode $holdingIdentityShortHash", it
+                )
+
                 if (it is CordaMessageAPIFatalException) {
                     // Note: not throwing returned exception as this call will be performed asynchronously from 
                     // publisher's thread pool, just calling this method to log the fatal error
                     markFatalAndReturnFailureException(it)
                 }
             }
-            
+
             ResponseEntity.accepted(messageFactory.createFlowStatusResponse(status))
         }
     }
@@ -267,17 +273,29 @@ class FlowRestResourceImpl @Activate constructor(
         return messageFactory.createFlowStatusResponse(flowStatus)
     }
 
-    override fun getMultipleFlowStatus(holdingIdentityShortHash: String): FlowStatusResponses {
+    override fun getMultipleFlowStatus(holdingIdentityShortHash: String, status: String?): FlowStatusResponses {
         val vNode = getVirtualNode(holdingIdentityShortHash)
         val flowStatuses = flowStatusCacheService.getStatusesPerIdentity(vNode.holdingIdentity)
-        return FlowStatusResponses(flowStatusResponses = flowStatuses.map { messageFactory.createFlowStatusResponse(it) })
-    }
-
-    override fun getMultipleFlowStatusByFilter(holdingIdentityShortHash: String, filterStatus: String): FlowStatusResponses {
-        val vNode = getVirtualNode(holdingIdentityShortHash)
-        val flowStatuses = flowStatusCacheService.getStatusesPerIdentity(vNode.holdingIdentity)
-        flowStatuses.filter { it.flowStatus == FlowStates.valueOf(filterStatus)}
-        return FlowStatusResponses(flowStatusResponses = flowStatuses.map { messageFactory.createFlowStatusResponse(it) })
+        val correctStatuses = FlowStates.values().toList()
+        return when (status) {
+            null -> FlowStatusResponses(flowStatusResponses = flowStatuses.map {
+                messageFactory.createFlowStatusResponse(
+                    it
+                )
+            })
+            else -> if (correctStatuses.contains(FlowStates.valueOf(status))) {
+                flowStatuses.filter { it.flowStatus == FlowStates.valueOf(status) }
+                FlowStatusResponses(flowStatusResponses = flowStatuses.map {
+                    messageFactory.createFlowStatusResponse(
+                        it
+                    )
+                })
+            } else {
+                throw BadRequestException(
+                    "Status to filter by is not found in list of valid statuses: ${FlowStates.values()}"
+                )
+            }
+        }
     }
 
     override fun getFlowResult(
