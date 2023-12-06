@@ -111,8 +111,8 @@ internal class PermissionManagementServiceEventHandler(
                 coordinator.updateStatus(LifecycleStatus.DOWN)
                 val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
                 createAndStartRpcSender(messagingConfig)
-                val restConfig = event.config[REST_CONFIG]!!
-                val rbacConfig = event.config[RBAC_CONFIG]!!
+                val restConfig = event.config[REST_CONFIG] ?: throw IllegalStateException("REST config is missing")
+                val rbacConfig = event.config[RBAC_CONFIG] ?: throw IllegalStateException("RBAC config is missing")
                 createPermissionManager(restConfig, rbacConfig)
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
