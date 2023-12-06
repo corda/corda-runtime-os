@@ -15,7 +15,11 @@ import net.corda.v5.crypto.merkle.MerkleTreeHashDigest
  * @param proofType
  * @param treeSize - total number of leaves in the Merkle tree
  * @param leaves - list of leaves for which we have data
- * @param hashes - hashes of each node. Number of elements should match number of elements in leaves.
+ * @param hashes - the hashes needed to rebuild the parts of the tree where data is not given
+ *
+ * The number of elements in hashes will depend on the tree size and where in the tree the unknown
+ * data is. There will need to be at least one, to cover the gap left by missing data. There never
+ * needs to be more than the tree size minus the number of leaves specified.
  */
 
 class MerkleProofImpl(
@@ -52,6 +56,17 @@ class MerkleProofImpl(
             )
         }
 
+        // we do support and test with leaves.size == treeSize, which may not
+        // be very useful but needed not be a special case
+        if (leaves.size > treeSize) {
+            throw MerkleProofRebuildFailureException("MerkleProof has too many specified keys ${leaves.size} tree size ${treeSize}")
+        }
+        if (leaves.size < treeSize && hashes.isEmpty()) {
+            throw MerkleProofRebuildFailureException("No fill-in hashes specified to MerkleProof")
+        }
+        if (hashes.size > treeSize + leaves.size) {
+            throw MerkleProofRebuildFailureException("More MerkleProof non-data hashes given than is possibily necessary")
+        }
         if (leaves.isEmpty()) {
             throw MerkleProofRebuildFailureException("MerkleProof should have at least one leaf.")
         }
@@ -65,6 +80,7 @@ class MerkleProofImpl(
         }
         var hashIndex = 0
         val sortedLeaves = leaves.sortedBy { it.index }
+        // work out nodeHashes, which is a map from leaf index to digest
         var nodeHashes = sortedLeaves.map { Pair(it.index, digest.leafHash(it.index, it.nonce, it.leafData)) }
         var treeDepth = MerkleTreeImpl.treeDepth(treeSize)
         var currentSize = treeSize
