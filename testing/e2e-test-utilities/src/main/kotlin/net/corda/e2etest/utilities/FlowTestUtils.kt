@@ -11,8 +11,15 @@ import org.slf4j.LoggerFactory
 import java.util.UUID
 
 const val SMOKE_TEST_CLASS_NAME = "com.r3.corda.testing.smoketests.flow.RpcSmokeTestFlow"
+
 const val RPC_FLOW_STATUS_SUCCESS = "COMPLETED"
 const val RPC_FLOW_STATUS_FAILED = "FAILED"
+const val RPC_FLOW_STATUS_KILLED = "KILLED"
+const val RPC_FLOW_STATUS_RETRYING = "RETRYING"
+const val RPC_FLOW_STATUS_RUNNING = "RUNNING"
+const val RPC_FLOW_STATUS_START_REQUESTED = "START_REQUESTED"
+val RPC_VALID_STATUSES = listOf(RPC_FLOW_STATUS_SUCCESS, RPC_FLOW_STATUS_FAILED, RPC_FLOW_STATUS_KILLED, RPC_FLOW_STATUS_RETRYING, RPC_FLOW_STATUS_RUNNING, RPC_FLOW_STATUS_START_REQUESTED)
+
 private val RETRY_TIMEOUT = 6.minutes
 
 fun startRpcFlow(
@@ -168,6 +175,40 @@ fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
                             flowStatus["flowStatus"].textValue() == RPC_FLOW_STATUS_FAILED
                 }.all { true }
                 it.code == 200 && flowStatuses.size() == expectedFlowCount && allStatusComplete
+            }
+        }
+    }
+}
+
+fun assertValidStatusFilter (holdingId: String, expectedFlowCount: Int, status: String?) {
+    return DEFAULT_CLUSTER.cluster {
+        assertWithRetryIgnoringExceptions {
+            command { multipleFlowStatus(holdingId, status) }
+            timeout(RETRY_TIMEOUT)
+            condition {
+                val json = it.toJson()
+                val flowStatuses = json["flowStatusResponses"]
+                val allStatusesValid = flowStatuses.map { flowStatus ->
+                    flowStatus["flowStatus"].textValue() in RPC_VALID_STATUSES
+                }.all { true }
+                it.code == 200 && flowStatuses.size() == expectedFlowCount && allStatusesValid
+            }
+        }
+    }
+}
+
+fun assertInvalidStatusFilter (holdingId: String, expectedFlowCount: Int, status: String?) {
+    return DEFAULT_CLUSTER.cluster {
+        assertWithRetryIgnoringExceptions {
+            command { multipleFlowStatus(holdingId, status) }
+            timeout(RETRY_TIMEOUT)
+            condition {
+                val json = it.toJson()
+                val flowStatuses = json["flowStatusResponses"]
+                val notAllStatusesValid = flowStatuses.map { flowStatus ->
+                    flowStatus["flowStatus"].textValue() in RPC_VALID_STATUSES
+                }.all { false }
+                it.code == 400 && flowStatuses.size() == expectedFlowCount && notAllStatusesValid
             }
         }
     }
