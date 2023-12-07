@@ -298,13 +298,14 @@ class ClusterBuilder {
     private fun registerNotaryBody(
         notaryServiceName: String,
         customMetadata: Map<String, String>,
-        isBackchainRequiredNotary: Boolean = true
+        isBackchainRequiredNotary: Boolean = false,
+        notaryPlugin: String = "nonvalidating"
     ): String {
         val context = (mapOf(
             "corda.key.scheme" to "CORDA.ECDSA.SECP256R1",
             "corda.roles.0" to "notary",
             "corda.notary.service.name" to "$notaryServiceName",
-            "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.nonvalidating",
+            "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.$notaryPlugin",
             "corda.notary.service.flow.protocol.version.0" to "1",
             "corda.notary.service.backchain.required" to "$isBackchainRequiredNotary"
         ) + customMetadata)
@@ -448,13 +449,15 @@ class ClusterBuilder {
         holdingIdShortHash: String,
         notaryServiceName: String? = null,
         customMetadata: Map<String, String> = emptyMap(),
-        isBackchainRequiredNotary: Boolean = true
+        isBackchainRequiredNotary: Boolean = true,
+        notaryPlugin: String = "nonvalidating"
     ) = register(
         holdingIdShortHash,
         if (notaryServiceName != null) registerNotaryBody(
             notaryServiceName,
             customMetadata,
-            isBackchainRequiredNotary
+            isBackchainRequiredNotary,
+            notaryPlugin
         ) else registerMemberBody(
             customMetadata
         )
