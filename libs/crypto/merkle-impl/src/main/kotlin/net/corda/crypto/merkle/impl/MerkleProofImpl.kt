@@ -175,3 +175,6 @@ class MerkleProofImpl(
 
     override fun getHashes() = hashes
 }
+
+@Suppress("unused")
+fun calculateLeveledHashes(): List<LeveledHash> = emptyList()

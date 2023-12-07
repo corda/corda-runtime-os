@@ -287,8 +287,15 @@ class MerkleTreeTest {
     private fun runMerkleProofTest(treeSize: Int) {
         // we don't want to take the time to do an expensive hash so we'll just make a cheap one
         val merkleTree = makeTestMerkleTree(treeSize, trivialHashDigestProvider)
-
         assertThat(merkleTree.leaves).isNotEmpty()
+
+        checkAuditProofBehavior(merkleTree, treeSize)
+
+        // Now try with leveled hashes
+        calculateLeveledHashes( )
+    }
+
+    private fun checkAuditProofBehavior(merkleTree: MerkleTree, treeSize: Int): List<MerkleProof> {
 
         // Should not build proof for empty list
         // This is a special case check in the impl we don't really need but since it's there
@@ -320,9 +327,10 @@ class MerkleTreeTest {
         }
 
         // Test all the possible combinations of leaves for the proof.
-        for (i in 1 until (1 shl treeSize)) {
+        // And make a note of the proofs for furhter testing later
+        return (1 until (1 shl treeSize)).map { i ->
             val leafIndicesCombination = (0 until treeSize).filter { (i and (1 shl it)) != 0 }
-            testLeafCombination(merkleTree, leafIndicesCombination, merkleTree.root, treeSize)
+             testLeafCombination(merkleTree, leafIndicesCombination, merkleTree.root, treeSize)
         }
     }
 
@@ -331,7 +339,7 @@ class MerkleTreeTest {
         leafIndicesCombination: List<Int>,
         root: SecureHash,
         treeSize: Int
-    ) {
+    ): MerkleProof {
         val proof = merkleTree.createAuditProof(leafIndicesCombination)
 
         // The original root can be reconstructed from the proof
@@ -427,6 +435,7 @@ class MerkleTreeTest {
         val badProofDuplicateLeaf: MerkleProof =
             MerkleProofImpl(MerkleProofType.AUDIT, proof.treeSize, proof.leaves + proof.leaves.last(), proof.hashes)
         assertFalse(badProofDuplicateLeaf.verify(root, trivialHashDigestProvider))
+        return proof
     }
 
     /**
