@@ -33,7 +33,7 @@ interface HsmRestResource : RestResource {
      * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
      * services, or the value 'rest' for a cluster-level tenant of the REST.
      * @param category The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT',
-     * 'TLS', or 'JWT_KEY'.
+     * 'TLS', 'JWT_KEY', or 'ENCRYPTION_SECRET'.
      *
      * @return Information on the assigned HSM, or throws `ResourceNotFoundException` if no HSM is assigned.
      */
@@ -45,7 +45,7 @@ interface HsmRestResource : RestResource {
             id: the unique identifier of the HSM association
             hsmId: the HSM identifier included into the association
             category: the category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 
-                'TLS', or 'JWT_KEY'
+                'TLS', 'JWT_KEY', or 'ENCRYPTION_SECRET'
             masterKeyAlias: optional master key alias to be used on HSM
             deprecatedAt: time when the association was deprecated, epoch time in seconds; 
                 value of 0 means the association is active"""
@@ -55,7 +55,7 @@ interface HsmRestResource : RestResource {
                 " tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST")
         tenantId: String,
         @RestPathParameter(description = "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER'," +
-                " 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'")
+                " 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY', or 'ENCRYPTION_SECRET'")
         category: String
     ): HsmAssociationInfo
 
@@ -73,7 +73,7 @@ interface HsmRestResource : RestResource {
      * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
      * services, or the value 'rest' for a cluster-level tenant of the REST.
      * @param category The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT',
-     * 'TLS', or 'JWT_KEY'.
+     * 'TLS', 'JWT_KEY', or 'ENCRYPTION_SECRET'.
      *
      * @return Information on the newly assigned HSM.
      */
@@ -85,7 +85,7 @@ interface HsmRestResource : RestResource {
             id: the unique identifier of the HSM association
             hsmId: the HSM identifier included into the association
             category: the category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 
-                'TLS', or 'JWT_KEY'
+                'TLS', 'JWT_KEY', or 'ENCRYPTION_SECRET'
             masterKeyAlias: optional master key alias to be used on HSM
             deprecatedAt: time when the association was deprecated, epoch time in seconds; 
                 value of 0 means the association is active"""
@@ -95,7 +95,7 @@ interface HsmRestResource : RestResource {
                 " tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST")
         tenantId: String,
         @RestPathParameter(description = "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER'," +
-                " 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'")
+                " 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY', or 'ENCRYPTION_SECRET'")
         category: String
     ): HsmAssociationInfo
 }
