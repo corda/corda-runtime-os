@@ -15,6 +15,7 @@ import net.corda.data.virtualnode.VirtualNodeOperationStatusResponse
 import net.corda.data.virtualnode.VirtualNodeOperationalState
 import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
+import net.corda.data.virtualnode.VirtualNodeUpdateDbStatusResponse
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.external.messaging.serialization.ExternalMessagingRouteConfigSerializerImpl
@@ -342,6 +343,14 @@ internal class VirtualNodeRestResourceImpl(
         val resp: VirtualNodeManagementResponse = sendAndReceive(rpcRequest)
 
         return when (val resolvedResponse = resp.responseType) {
+            is VirtualNodeUpdateDbStatusResponse -> {
+                // It's a connection string change
+                messageConverter.convert(
+                    resolvedResponse.virtualNodeOperationStatus,
+                    OperationTypes.CHANGE_VIRTUAL_NODE_DB.toString(),
+                    null
+                )
+            }
             is VirtualNodeOperationStatusResponse -> {
                 resolvedResponse.run {
                     val x = this.operationHistory.first()
@@ -353,7 +362,6 @@ internal class VirtualNodeRestResourceImpl(
                     )
                 }
             }
-
             is VirtualNodeManagementResponseFailure -> throw handleFailure(resolvedResponse.exception)
             else -> throw UnknownResponseTypeException(resp.responseType::class.java.name)
         }
