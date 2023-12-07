@@ -14,6 +14,7 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.utxo.StateAndRef
@@ -167,14 +168,23 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
         filteredTransactionsAndSignatures: List<FilteredTransactionAndSignatures>
     ) {
         filteredTransactionsAndSignatures.forEach { (filteredTransaction, signatures) ->
-            require(signatures.isNotEmpty()) { "No notary signatures were received" }
+            require(signatures.isNotEmpty()) { "No notary signatures were received with transaction: ${filteredTransaction.id}." }
             filteredTransaction.verify()
-            for (signature in signatures) {
-                transactionSignatureService.verifySignature(
-                    filteredTransaction.id,
-                    signature,
-                    notaryKey
-                )
+
+            // throw exception if any of the signatures received is not valid notary signature
+            if (!signatures.any {
+                    try {
+                        transactionSignatureService.verifySignature(
+                            filteredTransaction.id,
+                            it,
+                            notaryKey
+                        )
+                        true
+                    } catch (e: Exception) {
+                        false
+                    }
+                }) {
+                throw CordaRuntimeException("Notary signature is not found with transaction: ${filteredTransaction.id}.")
             }
         }
     }
