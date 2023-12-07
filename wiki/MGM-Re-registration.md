@@ -217,3 +217,5 @@ In order for that to happen, the following steps need to be followed:
 * the members upgrade to the new version of the CPI. You can refer to the [Upgrading a CPI page](https://docs.r3.com/en/platform/corda/5.1/deploying-operating/vnodes/upgrade-cpi.html) for how to do this.
 
 At this point, the members in the network will see the new `MemberInfo` of the MGM.
+
+> Note: It is important to note that due to the above, if changes made to the MGM's MemberInfo are not backwards-compatible, members will not be able to communicate with the MGM until they have successfully updated their CPI. An example of a non backwards-compatible change is changing the endpoint without keeping the old one in the list of endpoints. 
