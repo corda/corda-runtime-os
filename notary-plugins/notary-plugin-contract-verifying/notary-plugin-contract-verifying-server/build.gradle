@@ -1,7 +1,7 @@
 plugins {
     id 'org.jetbrains.kotlin.jvm'
     id 'corda.common-publishing'
-    id 'net.corda.plugins.cordapp-cpb2'
+    id 'net.corda.plugins.cordapp-cpk2'
 }
 
 description 'Corda Contract Verifying Notary Plugin Server'
