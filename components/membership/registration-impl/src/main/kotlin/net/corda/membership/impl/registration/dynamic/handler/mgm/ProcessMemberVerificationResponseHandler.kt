@@ -88,6 +88,8 @@ internal class ProcessMemberVerificationResponseHandler(
             .setMember(member)
             .setMgm(member)
 
+        registrationLogger.info("Processing member verification response.")
+
         val messages = try {
             val success = command.verificationResponse.payload.items.firstOrNull {
                 it.key == VERIFIED

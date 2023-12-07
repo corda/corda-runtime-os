@@ -39,22 +39,24 @@ internal class ProcessMemberVerificationRequestHandler(
     override fun invoke(state: RegistrationState?, key: String, command: ProcessMemberVerificationRequest): RegistrationHandlerResult {
         val member = command.destination
         val mgm = command.source
+        val registrationId = command.verificationRequest.registrationId
         val registrationLogger = RegistrationLogger(logger)
-            .setRegistrationId(command.verificationRequest.registrationId)
+            .setRegistrationId(registrationId)
             .setMember(member)
             .setMgm(mgm)
+        registrationLogger.info("Processing member verification request.")
+
         val reasons = mutableListOf<String>()
         if (memberTypeChecker.isMgm(member)) {
             reasons += "${member.x500Name} is an MGM and can not register"
         }
+
         val payload = reasons.map { KeyValuePair(FAILURE_REASONS, it) } + if (reasons.isEmpty()) {
             KeyValuePair(VERIFIED, true.toString())
         } else {
             registrationLogger.warn("Failed to verify request. $reasons")
             KeyValuePair(VERIFIED, false.toString())
         }
-
-        val registrationId = command.verificationRequest.registrationId
 
         val commands = membershipPersistenceClient.setRegistrationRequestStatus(
             member.toCorda(),

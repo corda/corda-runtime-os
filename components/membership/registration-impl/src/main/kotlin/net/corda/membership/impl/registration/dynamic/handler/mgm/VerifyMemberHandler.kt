@@ -59,6 +59,8 @@ internal class VerifyMemberHandler(
             .setMember(member)
             .setMgm(mgm)
 
+        registrationLogger.info("Verifying member.")
+
         val messages = try {
             if (!memberTypeChecker.isMgm(mgm)) {
                 registrationLogger.info("Could not verify registration request. Not an MGM.")

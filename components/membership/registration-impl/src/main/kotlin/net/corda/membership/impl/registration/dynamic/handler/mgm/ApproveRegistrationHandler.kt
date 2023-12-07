@@ -76,6 +76,7 @@ internal class ApproveRegistrationHandler(
             .setRegistrationId(registrationId)
             .setMember(approvedMember)
             .setMgm(approvedBy)
+        registrationLogger.info("Processing registration approval.")
         val messages = try {
             val mgm = memberTypeChecker.getMgmMemberInfo(approvedBy.toCorda())
                 ?: throw CordaRuntimeException(
