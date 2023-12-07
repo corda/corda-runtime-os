@@ -231,8 +231,6 @@ class CryptoProcessorImpl @Activate constructor(
                     }
                 }
 
-                checkNotNull(stateManager) { "State manager not available." }
-
                 CryptoConsts.Categories.all.forEach { category ->
                     CryptoTenants.allClusterTenants.forEach { tenantId ->
                         tenantInfoService.populate(tenantId, category, cryptoService)
