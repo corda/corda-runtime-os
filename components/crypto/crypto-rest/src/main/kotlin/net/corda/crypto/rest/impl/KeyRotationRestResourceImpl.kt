@@ -151,18 +151,17 @@ class KeyRotationRestResourceImpl @Activate constructor(
 
         // Initialise publisher with messaging config
         publishToKafka?.close()
-        val newPublisher =
+        publishToKafka =
             publisherFactory.createPublisher(PublisherConfig("KeyRotationRestResource", false), messagingConfig)
-        newPublisher.start()
-        publishToKafka = newPublisher
+                .also { it.start() }
     }
 
     override fun getKeyRotationStatus(requestId: String): List<Pair<String, String>> {
-        val sM = tryWithExceptionHandling(logger, "retrieve key rotation status") {
+        tryWithExceptionHandling(logger, "retrieve key rotation status") {
             checkNotNull(stateManager)
         }
 
-        val entries = sM.get(listOf(requestId))
+        val entries = stateManager!!.get(listOf(requestId))
         val result = mutableListOf<Pair<String, String>>()
         entries.forEach { entry ->
             val keyRotationStatus = deserializer.deserialize(entry.value.value)!!
@@ -172,10 +171,8 @@ class KeyRotationRestResourceImpl @Activate constructor(
     }
 
     override fun startKeyRotation(oldKeyAlias: String, newKeyAlias: String): ResponseEntity<KeyRotationResponse> {
-        val pTK = tryWithExceptionHandling(logger, "start key rotation") {
+        tryWithExceptionHandling(logger, "start key rotation") {
             checkNotNull(publishToKafka)
-        }
-        val sM = tryWithExceptionHandling(logger, "retrieve key rotation status") {
             checkNotNull(stateManager)
         }
 
@@ -183,8 +180,8 @@ class KeyRotationRestResourceImpl @Activate constructor(
             oldKeyAlias,
             newKeyAlias,
             serializeStatus = { serializer.serialize(it) },
-            publishStates = { sM.create(it) },
-            publishRequests = { pTK.publish(it) }
+            publishStates = { stateManager!!.create(it) },
+            publishRequests = { publishToKafka!!.publish(it) }
         )
     }
 }
@@ -234,10 +231,9 @@ fun doKeyRotation(
         Instant.now()
     )
 
-    publishRequests(listOf(Record(REKEY_MESSAGE_TOPIC, requestId, keyRotationRequest)))
+    publishRequests(listOf(Record(REKEY_MESSAGE_TOPIC, requestId, keyRotationRequest, Instant.now().toEpochMilli())))
 
-    val serialized = serializeStatus(status)
-    checkNotNull(serialized)
+    val serialized = checkNotNull(serializeStatus(status))
     publishStates(listOf(State(requestId, serialized, 1, Metadata(), Instant.now())))
     return ResponseEntity.accepted(KeyRotationResponse(requestId, oldKeyAlias, newKeyAlias))
 }

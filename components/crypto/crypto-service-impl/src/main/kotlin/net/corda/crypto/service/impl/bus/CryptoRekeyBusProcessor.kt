@@ -68,11 +68,11 @@ class CryptoRekeyBusProcessor(
             // since they share the cluster crypto database. So we scan over the virtual node tenants and an arbitary
             // choice of cluster level tenant. We pick CryptoTenants.CRYPTO as the arbitrary cluster level tenant,
             // and we should not also check CryptoTenants.P2P and CryptoTenants.REST since if we do we'll get duplicate.
-            val allTenantIds = virtualNodeTenantIds+listOf(CryptoTenants.CRYPTO)
+            val allTenantIds = virtualNodeTenantIds + listOf(CryptoTenants.CRYPTO)
             logger.debug("Found ${allTenantIds.size} tenants; first few are: ${allTenantIds.take(10)}")
             val targetWrappingKeys = allTenantIds.asSequence().map { tenantId ->
                 wrappingRepositoryFactory.create(tenantId).use { wrappingRepo ->
-                    wrappingRepo.findKeysWrappedByAlias (request.oldParentKeyAlias).map { wki -> tenantId to wki}
+                    wrappingRepo.findKeysWrappedByAlias(request.oldParentKeyAlias).map { wki -> tenantId to wki }
                 }
             }.flatten()
             rekeyPublisher.publish(
@@ -80,7 +80,8 @@ class CryptoRekeyBusProcessor(
                     Record(
                         REWRAP_MESSAGE_TOPIC,
                         UUID.randomUUID().toString(),
-                        IndividualKeyRotationRequest(request.requestId,
+                        IndividualKeyRotationRequest(
+                            request.requestId,
                             tenantId,
                             request.oldParentKeyAlias,
                             request.newParentKeyAlias,
@@ -91,29 +92,23 @@ class CryptoRekeyBusProcessor(
                 }.toList()
             )
 
-            targetWrappingKeys.forEachIndexed { i, (tenantId, wrappingKeyInfo) ->
-                val generationNumber = 0 // TODO find out the correct generation number
-                val now = Instant.now()
-                val status = KeyRotationStatus(
-                    request.requestId,
-                    request.managedKey,
-                    request.oldParentKeyAlias,
-                    request.newParentKeyAlias,
-                    request.oldGeneration,
-                    request.tenantId,
-                    generationNumber,
-                    i+1,
-                    targetWrappingKeys.count(),
-                    Instant.ofEpochMilli(timestamp), // TODO get creation timestamp rather than this hack
-                    now
-                )
-                logger.info("Rewrapped ${wrappingKeyInfo.alias} in tenant ${tenantId} from "+
-                        "${wrappingKeyInfo.parentKeyAlias} to ${request.newParentKeyAlias}; "+
-                        "generation number now ${generationNumber}: status $status")
-                val flattend = serializer.serialize(status)
-                require(flattend!=null)
-                stateManager?.update(listOf(State(request.requestId, flattend, 1, Metadata(), now)))
-            }
+            val now = Instant.now()
+            val status = KeyRotationStatus(
+                request.requestId,
+                request.managedKey,
+                request.oldParentKeyAlias,
+                request.newParentKeyAlias,
+                request.oldGeneration,
+                request.tenantId,
+                0, // We don't know the new generation number at this stage
+                0, // We don't know how many keys are yet rotated
+                targetWrappingKeys.count(),
+                Instant.ofEpochMilli(timestamp),
+                now
+            )
+
+            val flattend = checkNotNull(serializer.serialize(status))
+            stateManager?.update(listOf(State(request.requestId, flattend, 1, Metadata(), now)))
         }
 
         return emptyList()

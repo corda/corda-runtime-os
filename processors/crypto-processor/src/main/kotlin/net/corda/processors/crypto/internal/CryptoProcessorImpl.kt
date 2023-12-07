@@ -222,18 +222,17 @@ class CryptoProcessorImpl @Activate constructor(
             is ConfigChangedEvent -> {
                 tenantInfoService = startTenantInfoService()
                 cryptoService = startCryptoService(event.config.getConfig(CRYPTO_CONFIG), tenantInfoService)
-                val bootConfig = bootConfigRecord ?: throw IllegalStateException("Boot config not available.")
-                val stateManagerConfig: SmartConfig? = if (bootConfig.hasPath(StateManagerConfig.STATE_MANAGER))
-                    bootConfig.getConfig(StateManagerConfig.STATE_MANAGER)
-                else
-                    null
+                val bootConfig = checkNotNull(bootConfigRecord) { "Boot config not available." }
 
-                if (stateManagerConfig != null) {
+                if (bootConfig.hasPath(StateManagerConfig.STATE_MANAGER)) {
+                    val stateManagerConfig = bootConfig.getConfig(StateManagerConfig.STATE_MANAGER)
                     stateManager = stateManagerFactory.create(stateManagerConfig).also {
                         it.start()
                     }
                 }
-                logger.debug("State manager created and started.")
+
+                checkNotNull(stateManager) { "State manager not available." }
+
                 CryptoConsts.Categories.all.forEach { category ->
                     CryptoTenants.allClusterTenants.forEach { tenantId ->
                         tenantInfoService.populate(tenantId, category, cryptoService)
