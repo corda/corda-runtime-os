@@ -298,7 +298,7 @@ class ClusterBuilder {
     private fun registerNotaryBody(
         notaryServiceName: String,
         customMetadata: Map<String, String>,
-        isBackchainRequiredNotary: Boolean = false,
+        isBackchainRequiredNotary: Boolean = true,
         notaryPlugin: String = "nonvalidating"
     ): String {
         val context = (mapOf(

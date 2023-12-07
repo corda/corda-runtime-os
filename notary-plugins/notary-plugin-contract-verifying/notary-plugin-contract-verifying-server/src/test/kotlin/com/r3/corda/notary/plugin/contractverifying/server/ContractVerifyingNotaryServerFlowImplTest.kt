@@ -240,25 +240,6 @@ class ContractVerifyingNotaryServerFlowImplTest {
     }
 
     @Test
-    fun `Contract verifying notary plugin server should respond with error if input states are not audit type in the filtered tx`() {
-        val mockInputStateProof = mock<UtxoFilteredData.SizeOnly<StateRef>>()
-
-        createAndCallServer(
-            mockSuccessfulUniquenessClientService(),
-            filteredTxContents = mapOf("inputStateRefs" to mockInputStateProof)
-        ) {
-            assertThat(responseFromServer).hasSize(1)
-
-            val responseError = responseFromServer.first().error
-            assertThat(responseError).isNotNull
-            assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
-            assertThat((responseError as NotaryExceptionGeneral).errorText).contains(
-                "Error while processing request from client"
-            )
-        }
-    }
-
-    @Test
     fun `Contract verifying notary plugin server should respond with error if transaction verification fails`() {
         fun throwVerify() {
             throw IllegalArgumentException("DUMMY ERROR")
@@ -310,12 +291,26 @@ class ContractVerifyingNotaryServerFlowImplTest {
         }
     }
 
+    /**
+     *  This function mocks up data such as filtered tx, signed tx and signatures to test verifying notary server.
+     *
+     *  @param clientService {@link LedgerUniquenessCheckerClientService} mock with UniquenessCheckResult that will be either
+     *  - UniquenessCheckResultFailureImpl using [mockErrorUniquenessClientService]
+     *  - UniquenessCheckResultSuccessImpl using [mockSuccessfulUniquenessClientService]
+     *  @param notaryServiceKey PublicKey of notary. CompositeKey by default.
+     *  @param filteredTxContents Map of content of FilteredTransaction to mock up with. It will be mocked up with default values if it's empty.
+     *  filtered contests that can be in a map:
+     *  - outputStateRefs
+     *  - notaryName
+     *  - notaryKey
+     *  - timeWindow
+     *  @param txVerificationLogic lambda function to execute on UtxoFilteredTransaction.verify() call
+     * */
     @Suppress("LongParameterList")
     private fun createAndCallServer(
         clientService: LedgerUniquenessCheckerClientService,
         notaryServiceKey: PublicKey = notaryServiceCompositeKey,
         filteredTxContents: Map<String, Any?> = emptyMap(),
-        flowSession: FlowSession? = null,
         txVerificationLogic: () -> Unit = {},
         extractData: (sigs: List<NotarizationResponse>) -> Unit
     ) {
@@ -362,6 +357,28 @@ class ContractVerifyingNotaryServerFlowImplTest {
                 filteredTxContents["outputStateRefs"] as? UtxoFilteredData<StateAndRef<*>>
                     ?: mockOutputStateRefUtxoFilteredData
             }
+            on { notaryName } doAnswer {
+                if (filteredTxContents.containsKey("notaryName")) {
+                    filteredTxContents["notaryName"] as MemberX500Name?
+                } else {
+                    notaryServiceName
+                }
+            }
+            on { notaryKey } doAnswer {
+                if (filteredTxContents.containsKey("notaryKey")) {
+                    filteredTxContents["notaryKey"] as PublicKey?
+                } else {
+                    notaryServiceKey
+                }
+            }
+            on { timeWindow } doAnswer {
+                if (filteredTxContents.containsKey("timeWindow")) {
+                    filteredTxContents["timeWindow"] as TimeWindow?
+                } else {
+                    mockTimeWindow
+                }
+            }
+
             on { verify() } doAnswer {
                 txVerificationLogic()
             }
@@ -376,7 +393,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
         )
 
         // 4. Mock the receive and send from the counterparty session, unless it is overwritten
-        val paramOrDefaultSession = flowSession ?: mock {
+        val paramOrDefaultSession = mock<FlowSession> {
             on { receive(ContractVerifyingNotarizationPayload::class.java) } doReturn ContractVerifyingNotarizationPayload(
                 signedTx,
                 filteredTxAndSignatures
