@@ -299,14 +299,15 @@ fun ClusterInfo.registerStaticMember(
     holdingIdentityShortHash: String,
     notaryServiceName: String? = null,
     customMetadata: Map<String, String> = emptyMap(),
-    isBackchainRequired: Boolean = true
+    isBackchainRequired: Boolean = true,
+    notaryPlugin: String = "notaryPlugin"
 ) {
     cluster {
         memberRegisterLock.withLock {
             assertWithRetry {
                 interval(1.seconds)
                 timeout(10.seconds)
-                command { registerStaticMember(holdingIdentityShortHash, notaryServiceName, customMetadata, isBackchainRequired) }
+                command { registerStaticMember(holdingIdentityShortHash, notaryServiceName, customMetadata, isBackchainRequired, notaryPlugin) }
                 condition {
                     it.code == ResponseCode.OK.statusCode
                             && it.toJson()["registrationStatus"].textValue() == REGISTRATION_SUBMITTED
