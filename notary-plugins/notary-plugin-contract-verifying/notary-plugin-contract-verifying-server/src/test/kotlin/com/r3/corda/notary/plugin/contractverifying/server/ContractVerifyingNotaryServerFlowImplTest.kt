@@ -115,7 +115,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
     }
 
     @Test
-    fun `Contract verifying notary should respond with success if the notary key is simple`() {
+    fun `Contract verifying notary should respond with success if the notary key is valid`() {
         // We sign with a key that is not part of the notary composite key
         createAndCallServer(
             mockSuccessfulUniquenessClientService(),
@@ -243,6 +243,24 @@ class ContractVerifyingNotaryServerFlowImplTest {
             "Error while processing request from client"
         )
 
+    }
+
+    @Test
+    fun `Contract verifying notary plugin server should respond with error if output states are not audit type in the filtered tx`() {
+        val mockOutputStateProof = mock<UtxoFilteredData.SizeOnly<StateRef>>()
+
+        createAndCallServer(
+            mockSuccessfulUniquenessClientService(),
+            filteredTxContents = mapOf("outputStateRefs" to mockOutputStateProof)
+        )
+        assertThat(responseFromServer).hasSize(1)
+
+        val responseError = responseFromServer.first().error
+        assertThat(responseError).isNotNull
+        assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
+        assertThat((responseError as NotaryExceptionGeneral).errorText).contains(
+            "Error while processing request from client"
+        )
     }
 
     @Test
