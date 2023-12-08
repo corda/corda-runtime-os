@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.e2etest.utilities.types.NetworkOnboardingMetadata
 import net.corda.e2etest.utilities.types.jsonToMemberList
 import net.corda.rest.ResponseCode
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.test.util.eventually
 import net.corda.utilities.minutes
 import net.corda.utilities.seconds
@@ -170,12 +171,16 @@ fun ClusterInfo.onboardNotaryMember(
         mapOf(
             "corda.roles.0" to "notary",
             "corda.notary.service.name" to MemberX500Name.parse(notaryServiceName).toString(),
-            "corda.notary.service.backchain.required" to "$isBackchainRequired",
             "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.nonvalidating",
             "corda.notary.service.flow.protocol.version.0" to "1",
             "corda.notary.keys.0.id" to notaryKeyId,
             "corda.notary.keys.0.signature.spec" to DEFAULT_SIGNATURE_SPEC
-        ) + (getAdditionalContext?.let { it(holdingId) } ?: emptyMap())
+        ) + (getAdditionalContext?.let { it(holdingId) } ?: emptyMap()) + (
+                // Add the optional backchain property if version is >= 5.2
+                if (restApiVersion != RestApiVersion.C5_0 && restApiVersion != RestApiVersion.C5_1)
+                    mapOf("corda.notary.service.backchain.required" to "$isBackchainRequired")
+                else emptyMap()
+        )
     },
     tlsCertificateUploadedCallback = tlsCertificateUploadedCallback,
     useLedgerKey = false
