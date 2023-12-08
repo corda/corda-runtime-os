@@ -289,10 +289,12 @@ class MerkleTreeTest {
         val merkleTree = makeTestMerkleTree(treeSize, trivialHashDigestProvider)
         assertThat(merkleTree.leaves).isNotEmpty()
 
-        checkAuditProofBehavior(merkleTree, treeSize)
+        val proofs = checkAuditProofBehavior(merkleTree, treeSize)
 
         // Now try with leveled hashes
-        calculateLeveledHashes( )
+        proofs.forEach {
+            calculateLeveledHashes(it)
+        }
     }
 
     private fun checkAuditProofBehavior(merkleTree: MerkleTree, treeSize: Int): List<MerkleProof> {
