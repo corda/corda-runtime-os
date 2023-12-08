@@ -10,7 +10,7 @@
 
 Corda is a scalable, permissioned peer-to-peer (P2P) distributed ledger technology (DLT) platform that enables the building of applications that foster and deliver digital trust between parties in regulated markets.
 
-Corda is developed and maintained by [R3](https://r3.com), and is made available under the Apache 2.0 license.
+Corda is developed and maintained by [R3](https://r3.com), and is made available under the Apache 2.0 license. TEST
 
 This repo contains the code that will evolve to become the Corda 5 release. For the current Corda 4 codebase, head over to the [Corda 4 repo](https://github.com/corda/corda).
 
