@@ -1,6 +1,8 @@
 package net.corda.libs.permissions.storage.writer.impl.user.impl
 
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
+import net.corda.data.permissions.management.user.ChangeUserPasswordOtherRequest
+import net.corda.data.permissions.management.user.ChangeUserPasswordSelfRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.libs.permissions.storage.common.converter.toAvroUser
@@ -39,6 +41,44 @@ class UserWriterImpl(
             val parentGroup = validator.validateAndGetOptionalParentGroup(request.parentGroupId)
 
             val user = persistNewUser(request, parentGroup, entityManager, requestUserId, loginName)
+            user.toAvroUser()
+        }
+    }
+
+    override fun changeUserPasswordSelf(
+        request: ChangeUserPasswordSelfRequest,
+        requestUserId: String
+    ): net.corda.data.permissions.User {
+        TODO("Not yet implemented")
+    }
+
+    override fun changeUserPasswordOther(
+        request: ChangeUserPasswordOtherRequest,
+        requestUserId: String
+    ): AvroUser {
+        log.debug { "Received request to change password for user: ${request.username}" }
+        return entityManagerFactory.transaction { entityManager ->
+
+            val validator = EntityValidationUtil(entityManager)
+            val user = validator.validateAndGetUniqueUser(request.username)
+
+            user.hashedPassword = request.hashedNewPassword
+            user.saltValue = request.saltValue
+            user.passwordExpiry = request.passwordExpiry
+
+            val updateTimestamp = Instant.now()
+            val auditLog = ChangeAudit(
+                id = UUID.randomUUID().toString(),
+                updateTimestamp = updateTimestamp,
+                actorUser = requestUserId,
+                changeType = RestPermissionOperation.USER_UPDATE,
+                details = "Password for user '${user.loginName}' changed by '$requestUserId'."
+            )
+
+            entityManager.merge(user)
+            entityManager.persist(auditLog)
+
+            log.info("Successfully changed password for user: ${user.loginName}.")
             user.toAvroUser()
         }
     }
