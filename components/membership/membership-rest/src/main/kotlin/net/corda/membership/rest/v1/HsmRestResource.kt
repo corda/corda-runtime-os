@@ -52,7 +52,7 @@ interface HsmRestResource : RestResource {
                 value of 0 means the association is active""",
         maxVersion = RestApiVersion.C5_1
     )
-    fun assignedHsmPre5_2(
+    fun assignedHsmPre52(
         @RestPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
                 " tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST")
         tenantId: String,
@@ -134,7 +134,7 @@ interface HsmRestResource : RestResource {
                 value of 0 means the association is active""",
         maxVersion = RestApiVersion.C5_1
     )
-    fun assignSoftHsmPre5_2(
+    fun assignSoftHsmPre52(
         @RestPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
                 " tenant of the P2P services, or the value 'rest' for a cluster-level tenant of the REST")
         tenantId: String,

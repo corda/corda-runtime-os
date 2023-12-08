@@ -47,7 +47,7 @@ class HsmRestResourceImpl @Activate constructor(
                 deprecatedAt = this.deprecatedAt
             )
 
-        private fun String.toCategoryPre5_2() = this.uppercase().also {
+        private fun String.toCategoryPre52() = this.uppercase().also {
             if (!CryptoConsts.Categories.pre_5_2.contains(it)) {
                 throw ResourceNotFoundException("Invalid category: $it")
             }
@@ -60,14 +60,14 @@ class HsmRestResourceImpl @Activate constructor(
         }
     }
 
-    override fun assignedHsmPre5_2(tenantId: String, category: String): HsmAssociationInfo {
+    override fun assignedHsmPre52(tenantId: String, category: String): HsmAssociationInfo {
         verifyTenantId(tenantId)
         return tryWithExceptionHandling(
             logger,
             "Find HSM",
             untranslatedExceptions = setOf(ResourceNotFoundException::class.java)
         ) {
-            hsmRegistrationClient.findHSM(tenantId, category.toCategoryPre5_2())?.expose() ?: throw ResourceNotFoundException(
+            hsmRegistrationClient.findHSM(tenantId, category.toCategoryPre52())?.expose() ?: throw ResourceNotFoundException(
                 "No association found for tenant $tenantId category $category"
             )
         }
@@ -86,14 +86,14 @@ class HsmRestResourceImpl @Activate constructor(
         }
     }
 
-    override fun assignSoftHsmPre5_2(tenantId: String, category: String): HsmAssociationInfo {
+    override fun assignSoftHsmPre52(tenantId: String, category: String): HsmAssociationInfo {
         verifyTenantId(tenantId)
         return tryWithExceptionHandling(
             logger,
             "Find HSM",
             untranslatedExceptions = setOf(ResourceNotFoundException::class.java)
         ) {
-            hsmRegistrationClient.findHSM(tenantId, category.toCategoryPre5_2())?.expose() ?: throw ResourceNotFoundException(
+            hsmRegistrationClient.findHSM(tenantId, category.toCategoryPre52())?.expose() ?: throw ResourceNotFoundException(
                 "No association found for tenant $tenantId category $category"
             )
         }

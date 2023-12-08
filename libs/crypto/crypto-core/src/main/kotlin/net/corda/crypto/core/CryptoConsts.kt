@@ -21,7 +21,7 @@ object CryptoConsts {
         const val JWT_KEY = "JWT_KEY"
         const val ENCRYPTION_SECRET = "ENCRYPTION_SECRET"
 
-        val pre_5_2 = setOf(
+        val pre_5_2: Set<String> = setOf(
             ACCOUNTS,
             CI,
             LEDGER,
