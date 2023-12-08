@@ -33,7 +33,6 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testImplementation project(":libs:crypto:crypto-core")
-    testImplementation project(':libs:serialization:serialization-amqp')
     testImplementation project(":libs:uniqueness:common")
     testImplementation project(":testing:crypto-testkit")
     testImplementation project(':testing:ledger:ledger-common-testkit')

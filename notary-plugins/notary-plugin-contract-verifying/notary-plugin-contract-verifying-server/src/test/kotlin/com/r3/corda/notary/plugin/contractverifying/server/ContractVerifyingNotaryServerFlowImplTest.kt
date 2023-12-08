@@ -52,34 +52,33 @@ class ContractVerifyingNotaryServerFlowImplTest {
     private companion object {
         const val NOTARY_SERVICE_NAME = "corda.notary.service.name"
         const val NOTARY_SERVICE_BACKCHAIN_REQUIRED = "corda.notary.service.backchain.required"
-
-
-        /* Cache for storing response from server */
-        val responseFromServer = mutableListOf<NotarizationResponse>()
-
-        /* Notary VNodes */
-        val notaryVNodeAliceKey = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x01)) }
-        val notaryVNodeBobKey = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x02)) }
-
-        /* Notary Service */
-        val notaryServiceCompositeKey = mock<CompositeKey> {
-            on { leafKeys } doReturn setOf(notaryVNodeAliceKey, notaryVNodeBobKey)
-        }
-
-        val notaryServiceName = MemberX500Name.parse("O=MyNotaryService, L=London, C=GB")
-
-        // The client that initiated the session with the notary server
-        val memberCharlieName = MemberX500Name.parse("O=MemberCharlie, L=London, C=GB")
-
-        // mock services
-        val mockTransactionSignatureService = mock<TransactionSignatureService>()
-        val mockLedgerService = mock<UtxoLedgerService>()
-
-        // mock for notary member lookup
-        val notaryInfo = mock<MemberInfo>()
-        val memberProvidedContext = mock<MemberContext>()
-        val mockMemberLookup = mock<MemberLookup>()
     }
+
+    /* Cache for storing response from server */
+    private val responseFromServer = mutableListOf<NotarizationResponse>()
+
+    /* Notary VNodes */
+    private val notaryVNodeAliceKey = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x01)) }
+    private val notaryVNodeBobKey = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x02)) }
+
+    /* Notary Service */
+    private val notaryServiceCompositeKey = mock<CompositeKey> {
+        on { leafKeys } doReturn setOf(notaryVNodeAliceKey, notaryVNodeBobKey)
+    }
+
+    private val notaryServiceName = MemberX500Name.parse("O=MyNotaryService, L=London, C=GB")
+
+    // The client that initiated the session with the notary server
+    private val memberCharlieName = MemberX500Name.parse("O=MemberCharlie, L=London, C=GB")
+
+    // mock services
+    private val mockTransactionSignatureService = mock<TransactionSignatureService>()
+    private val mockLedgerService = mock<UtxoLedgerService>()
+
+    // mock for notary member lookup
+    private val notaryInfo = mock<MemberInfo>()
+    private val memberProvidedContext = mock<MemberContext>()
+    private val mockMemberLookup = mock<MemberLookup>()
 
     @BeforeEach
     fun clearCache() {
@@ -370,7 +369,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
         whenever(memberProvidedContext.parse(NOTARY_SERVICE_BACKCHAIN_REQUIRED, Boolean::class.java)).thenReturn(true)
 
         // 3. Check if any filtered transaction data should be overwritten
-        val signedTx = mock<UtxoSignedTransaction>() {
+        val signedTx = mock<UtxoSignedTransaction> {
             on { id } doReturn txId
             on { inputStateRefs } doReturn listOf(mockInputRef)
             on { referenceStateRefs } doReturn emptyList()

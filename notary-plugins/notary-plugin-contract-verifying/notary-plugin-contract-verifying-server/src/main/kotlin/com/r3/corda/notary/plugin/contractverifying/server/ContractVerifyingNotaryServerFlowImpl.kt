@@ -63,25 +63,19 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
     @Suspendable
     override fun call(session: FlowSession) {
         try {
-            // Receive the payload from the client
             val (initialTransaction, filteredTransactionsAndSignatures) = session.receive(ContractVerifyingNotarizationPayload::class.java)
             if (logger.isTraceEnabled) {
                 logger.trace("Received notarization request for transaction {}", initialTransaction.id)
             }
 
-            // Extract the data from the signed transaction
             val initialTransactionDetails = getInitialTransactionDetail(initialTransaction)
 
-            // validate whether notary in transaction matches the notary in network
             validateTransactionNotaryAgainstCurrentNotary(initialTransactionDetails)
 
-            // Verify the signatures
             verifySignatures(initialTransaction.notaryKey, filteredTransactionsAndSignatures)
 
-            // Verify the contract
             verifyTransaction(initialTransaction, filteredTransactionsAndSignatures)
 
-            // Request a uniqueness check on the transaction
             if (logger.isTraceEnabled) {
                 logger.trace("Requesting uniqueness check for transaction {}", initialTransactionDetails.id)
             }
@@ -103,7 +97,6 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
                 )
             }
 
-            // Sign the request if the uniqueness check was successful
             val signature = if (uniquenessResult is UniquenessCheckResultSuccess) {
                 transactionSignatureService.signBatch(
                     listOf(initialTransactionDetails),
@@ -111,7 +104,6 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
                 ).first().first()
             } else null
 
-            // Send the response back to the client
             session.send(uniquenessResult.toNotarizationResponse(initialTransactionDetails.id, signature))
         } catch (e: Exception) {
             logger.warn("Error while processing request from client. Cause: $e ${e.stackTraceToString()}")

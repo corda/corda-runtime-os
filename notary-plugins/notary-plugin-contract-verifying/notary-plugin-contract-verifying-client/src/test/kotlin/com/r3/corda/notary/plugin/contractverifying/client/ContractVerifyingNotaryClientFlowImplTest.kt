@@ -32,37 +32,36 @@ import java.time.Instant
 class ContractVerifyingNotaryClientFlowImplTest {
 
     private companion object {
-
-        /* Signature */
-        val dummyUniquenessSignature = DigitalSignatureAndMetadata(
-            mock(),
-            DigitalSignatureMetadata(Instant.now(), SignatureSpecImpl("dummySignatureName"), emptyMap())
-        )
-
         val txId = SecureHashUtils.randomSecureHash()
         val hashedNotaryKey = SecureHashUtils.randomSecureHash()
+    }
 
-        /* State Refs */
-        val mockStateRef = mock<StateRef> {
-            on { transactionId } doReturn txId
-        }
+    /* State Refs */
+    private val mockStateRef = mock<StateRef> {
+        on { transactionId } doReturn txId
+    }
 
-        /* notary public keys */
-        val encodedNotary = byteArrayOf(0x01)
-        val notaryPublicKey = mock<PublicKey> {
-            on { encoded } doReturn encodedNotary
-        }
+    /* notary public keys */
+    private val encodedNotary = byteArrayOf(0x01)
+    private val notaryPublicKey = mock<PublicKey> {
+        on { encoded } doReturn encodedNotary
+    }
 
-            /* Transactions */
-        val mockFilteredTx = mock<UtxoFilteredTransaction>()
-        val mockSignedTx = mock<UtxoSignedTransaction> {
-            on { notaryKey } doReturn notaryPublicKey
-            on {inputStateRefs} doReturn listOf(mockStateRef)
-            on { referenceStateRefs } doReturn emptyList()
-        }
-        val mockDependency = mock<UtxoSignedTransaction> {
-            on {signatures} doReturn listOf(dummyUniquenessSignature)
-        }
+    /* Transactions */
+    private val mockFilteredTx = mock<UtxoFilteredTransaction>()
+    private val mockSignedTx = mock<UtxoSignedTransaction> {
+        on { notaryKey } doReturn notaryPublicKey
+        on {inputStateRefs} doReturn listOf(mockStateRef)
+        on { referenceStateRefs } doReturn emptyList()
+    }
+
+    /* Signature */
+    private val dummyUniquenessSignature = DigitalSignatureAndMetadata(
+        mock(),
+        DigitalSignatureMetadata(Instant.now(), SignatureSpecImpl("dummySignatureName"), emptyMap())
+    )
+    private val mockDependency = mock<UtxoSignedTransaction> {
+        on {signatures} doReturn listOf(dummyUniquenessSignature)
     }
 
     @Test
