@@ -4,8 +4,13 @@ import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.data.p2p.crypto.AuthenticatedDataMessage
 import net.corda.data.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.data.p2p.crypto.ProtocolMode
+import net.corda.data.p2p.crypto.protocol.AuthenticatedEncryptionSessionDetails
+import net.corda.data.p2p.crypto.protocol.Session
+import net.corda.p2p.crypto.protocol.api.Session.Companion.fromAvro
+import net.corda.data.p2p.crypto.protocol.SecretKeySpec as AvroSecretKeySpec
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
@@ -15,6 +20,7 @@ import java.security.KeyPairGenerator
 import java.security.Security
 import java.security.Signature
 import java.util.UUID
+import javax.crypto.spec.SecretKeySpec
 
 class AuthenticatedEncryptionSessionTest {
 
@@ -307,5 +313,45 @@ class AuthenticatedEncryptionSessionTest {
                 "Message's size (${partyAMaxMessageSize + 1} bytes) was larger than the max message " +
                     "size of the session ($partyAMaxMessageSize bytes)"
             )
+    }
+
+    @Test
+    fun `toAvro return a correct avro object`() {
+        val session = AuthenticatedEncryptionSession(
+            sessionId = "sessionId",
+            outboundSecretKey = SecretKeySpec( "aaa".toByteArray(), "alg1"),
+            outboundNonce = byteArrayOf(1),
+            inboundSecretKey = SecretKeySpec("bbb".toByteArray(), "alg2"),
+            inboundNonce = byteArrayOf(2, 3),
+            maxMessageSize = 100
+        )
+
+        val avro = session.toAvro()
+
+        assertThat(avro.details).isInstanceOf(AuthenticatedEncryptionSessionDetails::class.java)
+    }
+
+    @Test
+    fun `fromAvro return a correct session`() {
+        val avro = Session(
+            "sessionId",
+            300,
+            AuthenticatedEncryptionSessionDetails(
+                AvroSecretKeySpec(
+                    "alg",
+                    ByteBuffer.wrap(byteArrayOf(1)),
+                ),
+                ByteBuffer.wrap(byteArrayOf(2)),
+                AvroSecretKeySpec(
+                    "alg-2",
+                    ByteBuffer.wrap(byteArrayOf(3)),
+                ),
+                ByteBuffer.wrap(byteArrayOf(3)),
+            )
+        )
+
+        val session = avro.fromAvro()
+
+        assertThat(session).isInstanceOf(AuthenticatedEncryptionSession::class.java)
     }
 }

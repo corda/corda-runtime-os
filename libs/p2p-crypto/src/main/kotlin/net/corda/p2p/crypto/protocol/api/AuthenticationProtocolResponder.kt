@@ -32,8 +32,14 @@ import java.security.spec.X509EncodedKeySpec
 import java.time.Instant
 import javax.crypto.AEADBadTagException
 import net.corda.data.p2p.crypto.internal.InitiatorEncryptedExtensions
-import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
-import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
+import net.corda.data.p2p.crypto.protocol.AuthenticationProtocolHeader
+import net.corda.data.p2p.crypto.protocol.AuthenticationProtocolResponderDetails
+import net.corda.data.p2p.crypto.protocol.ResponderStep as Step
+import net.corda.p2p.crypto.protocol.api.HandshakeIdentityData.Companion.fromAvro
+import net.corda.p2p.crypto.protocol.api.Session.Companion.fromAvro
+import net.corda.utilities.crypto.publicKeyFactory
+import net.corda.data.p2p.crypto.protocol.HandshakeIdentityData as AvroHandshakeIdentityData
+import net.corda.utilities.crypto.toPem
 import kotlin.math.min
 
 /**
@@ -56,12 +62,19 @@ import kotlin.math.min
  *
  * This class is not thread-safe, which means clients that want to use it from different threads need to perform external synchronisation.
  */
+@Suppress("LongParameterList")
 class AuthenticationProtocolResponder(
     val sessionId: String,
     private val ourMaxMessageSize: Int,
+    private var step: Step = Step.INIT,
+    private var handshakeIdentityData: HandshakeIdentityData? = null,
+    private var responderHandshakeMessage: ResponderHandshakeMessage? = null,
+    private var session: Session? = null,
+    private var encryptedExtensions: InitiatorEncryptedExtensions? = null,
+    private var initiatorPublicKey: PublicKey? = null,
     certificateValidatorFactory: (revocationCheckMode: RevocationCheckMode,
                                   pemTrustStore: List<PemCertificate>,
-                                  checkRevocation: (RevocationCheckRequest) -> RevocationCheckResponse) -> CertificateValidator =
+                                  checkRevocation: CheckRevocation) -> CertificateValidator =
     { revocationCheckMode, pemTrustStore, checkRevocation -> CertificateValidator(revocationCheckMode, pemTrustStore, checkRevocation) }
 ): AuthenticationProtocol(certificateValidatorFactory) {
 
@@ -69,22 +82,20 @@ class AuthenticationProtocolResponder(
         require(ourMaxMessageSize >= MIN_PACKET_SIZE) { "max message size needs to be at least $MIN_PACKET_SIZE bytes." }
     }
 
-    private var step = Step.INIT
-    private var handshakeIdentityData: HandshakeIdentityData? = null
-    private var responderHandshakeMessage: ResponderHandshakeMessage? = null
-    private var session: Session? = null
-    private var encryptedExtensions: InitiatorEncryptedExtensions? = null
-    private var initiatorPublicKey: PublicKey? = null
-
-    enum class Step {
-        INIT,
-        RECEIVED_PEER_DH_KEY,
-        SENT_MY_DH_KEY,
-        GENERATED_HANDSHAKE_SECRETS,
-        RECEIVED_HANDSHAKE_MESSAGE,
-        VALIDATED_ENCRYPTED_EXTENSIONS,
-        SENT_HANDSHAKE_MESSAGE,
-        SESSION_ESTABLISHED
+    companion object {
+        fun AuthenticationProtocolResponderDetails.fromAvro():  AuthenticationProtocolResponder {
+            return AuthenticationProtocolResponder(
+                sessionId = this.header.sessionId,
+                ourMaxMessageSize = this.header.ourMaxMessageSize,
+                step = this.step,
+                handshakeIdentityData = this.handshakeIdentityData?.fromAvro(),
+                session = this.header.session?.fromAvro(),
+                encryptedExtensions = this.encryptedExtensions,
+                initiatorPublicKey = this.initiatorPublicKey?.let {
+                    publicKeyFactory(it.reader()) ?: throw CordaRuntimeException("Invalid public key PEM")
+                }
+            )
+        }
     }
 
     fun receiveInitiatorHello(initiatorHelloMsg: InitiatorHelloMessage) {
@@ -134,7 +145,7 @@ class AuthenticationProtocolResponder(
     /**
      * Validates the handshake message from the peer.
      *
-     * @param initiatorPublicKey the public key used to validate the handshake message.
+     * @param initiatorPublicKeys the public key used to validate the handshake message.
      * @throws InvalidHandshakeMessageException if the handshake message was invalid (e.g. due to invalid signatures, MACs etc.)
      *
      * @return the SHA-256 of the public key we need to use in the handshake.
@@ -230,7 +241,7 @@ class AuthenticationProtocolResponder(
                 encryptedExtensions.initiatorCertificate,
                 initiatorX500Name,
                 initiatorPublicKey!!,
-                "initiator handshake message"
+                "initiator handshake message",
             )
         }
     }
@@ -296,15 +307,30 @@ class AuthenticationProtocolResponder(
             val sharedSessionSecrets = generateSessionSecrets(sharedDHSecret!!, fullTranscript)
 
             session = when(selectedMode!!) {
-                ProtocolMode.AUTHENTICATION_ONLY -> AuthenticatedSession(sessionId, 2, sharedSessionSecrets.responderEncryptionKey,
+                ProtocolMode.AUTHENTICATION_ONLY -> AuthenticatedSession(sessionId, sharedSessionSecrets.responderEncryptionKey,
                     sharedSessionSecrets.initiatorEncryptionKey, agreedMaxMessageSize!!)
-                ProtocolMode.AUTHENTICATED_ENCRYPTION -> AuthenticatedEncryptionSession(sessionId, 2,
+                ProtocolMode.AUTHENTICATED_ENCRYPTION -> AuthenticatedEncryptionSession(sessionId,
                     sharedSessionSecrets.responderEncryptionKey, sharedSessionSecrets.responderNonce,
                     sharedSessionSecrets.initiatorEncryptionKey, sharedSessionSecrets.initiatorNonce,
                     agreedMaxMessageSize!!)
             }
             session!!
         }
+    }
+
+    fun toAvro(): AuthenticationProtocolResponderDetails {
+        return AuthenticationProtocolResponderDetails(
+            AuthenticationProtocolHeader(
+                sessionId,
+                ourMaxMessageSize,
+                session?.toAvro(),
+            ),
+            step,
+            handshakeIdentityData?.toAvro(),
+            responderHandshakeMessage,
+            encryptedExtensions,
+            initiatorPublicKey?.toPem(),
+        )
     }
 
     private fun <R> transition(fromStep: Step, toStep: Step, getCachedValue: () -> R, calculateValue: () -> R): R {
@@ -337,6 +363,14 @@ class NoCommonModeError(initiatorModes: Set<ProtocolMode>, responderModes: Set<P
  * @property groupId the group identifier the two identities are part of.
  */
 data class HandshakeIdentityData(val initiatorPublicKeyHash: ByteArray, val responderPublicKeyHash: ByteArray, val groupId: String) {
+    companion object {
+        fun AvroHandshakeIdentityData.fromAvro() =
+            HandshakeIdentityData(
+                initiatorPublicKeyHash = this.initiatorPublicKeyHash.array(),
+                responderPublicKeyHash = this.responderPublicKeyHash.array(),
+                groupId = this.groupId,
+            )
+    }
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -356,4 +390,13 @@ data class HandshakeIdentityData(val initiatorPublicKeyHash: ByteArray, val resp
         result = 31 * result + groupId.hashCode()
         return result
     }
+
+    fun toAvro(): AvroHandshakeIdentityData {
+        return AvroHandshakeIdentityData(
+            ByteBuffer.wrap(initiatorPublicKeyHash),
+            ByteBuffer.wrap(responderPublicKeyHash),
+            groupId,
+        )
+    }
 }
+

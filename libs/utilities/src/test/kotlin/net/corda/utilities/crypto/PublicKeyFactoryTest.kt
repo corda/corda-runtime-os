@@ -38,4 +38,11 @@ ORC/w+12HlGG968CICBvpZAN2HHIlo2Vmgak+avL2zdIK6LQo0nXuY+4e0KT
 
         assertThat(key).isNull()
     }
+
+    @Test
+    fun `toPem return a valid PEM`() {
+        val key = publicKeyFactory(VALID_KEY_PEM.reader())
+
+        assertThat(key?.toPem()?.trim()).isEqualTo(VALID_KEY_PEM.trim())
+    }
 }

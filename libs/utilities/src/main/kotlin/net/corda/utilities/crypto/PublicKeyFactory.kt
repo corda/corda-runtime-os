@@ -3,7 +3,10 @@ package net.corda.utilities.crypto
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
+import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import java.io.Reader
+import java.io.StringWriter
+import java.security.Key
 import java.security.PublicKey
 
 fun publicKeyFactory(pem: Reader): PublicKey? {
@@ -18,5 +21,14 @@ fun publicKeyFactory(pem: Reader): PublicKey? {
             }
         }.filterNotNull()
             .firstOrNull()
+    }
+}
+
+fun Key.toPem(): String {
+    return StringWriter().use { str ->
+        JcaPEMWriter(str).use { writer ->
+            writer.writeObject(this)
+        }
+        str.toString()
     }
 }

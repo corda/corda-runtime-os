@@ -46,6 +46,7 @@ import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
 import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
 import net.corda.v5.base.types.MemberX500Name
 
+typealias CheckRevocation = (RevocationCheckRequest) -> RevocationCheckResponse
 /**
  * A base, abstract class containing the core utilities for the session authentication protocol.
  * [AuthenticationProtocolInitiator] implements the APIs for the initiator side.
@@ -53,9 +54,12 @@ import net.corda.v5.base.types.MemberX500Name
  *
  * For the detailed spec of the authentication protocol, refer to the corresponding design document.
  */
-abstract class AuthenticationProtocol(private val certificateValidatorFactory: (revocationCheckMode: RevocationCheckMode,
+sealed class AuthenticationProtocol(private val certificateValidatorFactory: (revocationCheckMode: RevocationCheckMode,
                                        pemTrustStore: List<PemCertificate>,
-                                       checkRevocation: (RevocationCheckRequest) -> RevocationCheckResponse) -> CertificateValidator){
+                                       checkRevocation: CheckRevocation) -> CertificateValidator){
+    companion object {
+        internal val secureRandom = SecureRandom()
+    }
     protected var myPrivateDHKey: PrivateKey? = null
     protected var myPublicDHKey: ByteArray? = null
     protected var peerPublicDHKey: PublicKey? = null
@@ -70,7 +74,6 @@ abstract class AuthenticationProtocol(private val certificateValidatorFactory: (
     protected var responderHandshakePayloadBytes: ByteArray? = null
     protected var agreedMaxMessageSize: Int? = null
 
-    protected val secureRandom = SecureRandom()
     protected val provider = BouncyCastleProvider.PROVIDER_NAME
     protected val ephemeralKeyFactory = KeyFactory.getInstance(ELLIPTIC_CURVE_ALGO, provider)
     protected val keyPairGenerator = KeyPairGenerator.getInstance(ELLIPTIC_CURVE_ALGO, provider).apply {
@@ -135,14 +138,14 @@ abstract class AuthenticationProtocol(private val certificateValidatorFactory: (
         peerCertificate: List<String>?,
         peerX500Name: MemberX500Name,
         expectedPeerPublicKey: PublicKey,
-        messageName: String
+        messageName: String,
     ) {
         if (certificateCheckMode is CertificateCheckMode.CheckCertificate) {
             if (peerCertificate != null) {
                 val certificateValidator = certificateValidatorFactory(
                     certificateCheckMode.revocationCheckMode,
                     certificateCheckMode.truststore,
-                    certificateCheckMode.revocationChecker
+                    certificateCheckMode.revocationChecker,
                 )
                 certificateValidator.validate(
                     peerCertificate,
