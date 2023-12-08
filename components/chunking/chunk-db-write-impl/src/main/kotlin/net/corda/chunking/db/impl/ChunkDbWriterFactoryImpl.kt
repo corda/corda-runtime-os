@@ -9,7 +9,6 @@ import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.chunking.db.impl.persistence.database.DatabaseChunkPersistence
 import net.corda.chunking.db.impl.persistence.database.DatabaseCpiPersistence
 import net.corda.chunking.db.impl.validation.CpiValidatorImpl
-import net.corda.chunking.db.impl.validation.ExternalChannelsConfigValidatorImpl
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.data.chunking.Chunk
 import net.corda.libs.configuration.SmartConfig
@@ -145,8 +144,7 @@ class ChunkDbWriterFactoryImpl(
         val cpiCacheDir = tempPathProvider.getOrCreate(bootConfig, CPI_CACHE_DIR)
         val cpiPartsDir = tempPathProvider.getOrCreate(bootConfig, CPI_PARTS_DIR)
         val membershipSchemaValidator = membershipSchemaValidatorFactory.createValidator()
-        val externalChannelsConfigValidator =
-            ExternalChannelsConfigValidatorImpl(configurationValidatorFactory.createCordappConfigValidator())
+        val externalChannelsConfigValidator = configurationValidatorFactory.createExternalChannelsConfigValidator()
         val validator = CpiValidatorImpl(
             statusPublisher,
             chunkPersistence,

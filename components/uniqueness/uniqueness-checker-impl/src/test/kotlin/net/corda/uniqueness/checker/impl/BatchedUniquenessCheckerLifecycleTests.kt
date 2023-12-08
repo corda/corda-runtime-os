@@ -26,18 +26,18 @@ class BatchedUniquenessCheckerLifecycleTests {
     fun `when RegistrationStatusChangeEvent UP register endpoint and start`() {
         val coordinator = mock<LifecycleCoordinator>()
         doAnswer { (it.getArgument(1) as () -> RPCSubscription<UniquenessCheckRequestAvro, FlowEvent>).invoke() }
-            .whenever(coordinator).createManagedResource(any(), any<() -> RPCSubscription<UniquenessCheckRequestAvro, FlowEvent>>())
+            .whenever(coordinator)
+            .createManagedResource(any(), any<() -> RPCSubscription<UniquenessCheckRequestAvro, FlowEvent>>())
         val eventHandlerCaptor = argumentCaptor<LifecycleEventHandler>()
         val coordinatorFactory = mock<LifecycleCoordinatorFactory>() {
             on { createCoordinator(any(), eventHandlerCaptor.capture()) } doReturn (coordinator)
         }
         val subscription = mock<RPCSubscription<UniquenessCheckRequestAvro, FlowEvent>>()
         val subscriptionFactory = mock<SubscriptionFactory>() {
-            on { createHttpRPCSubscription(any(), any<UniquenessCheckRpcMessageProcessor>() ) } doReturn subscription
+            on { createHttpRPCSubscription(any(), any<UniquenessCheckMessageProcessor>()) } doReturn subscription
         }
         BatchedUniquenessCheckerLifecycleImpl(
             coordinatorFactory,
-            mock(),
             subscriptionFactory,
             mock(),
             mock(),
@@ -48,11 +48,11 @@ class BatchedUniquenessCheckerLifecycleTests {
             .processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
 
         verify(subscriptionFactory).createHttpRPCSubscription(
-            argThat {config: SyncRPCConfig ->
+            argThat { config: SyncRPCConfig ->
                 config.endpoint == "/uniqueness-checker"
 
             },
-            isA<UniquenessCheckRpcMessageProcessor>()
+            isA<UniquenessCheckMessageProcessor>()
         )
         verify(subscription).start()
     }

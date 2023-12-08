@@ -56,6 +56,7 @@ import java.security.Provider
 import java.security.PublicKey
 import java.time.Duration
 import javax.crypto.Cipher
+import javax.persistence.PersistenceException
 
 const val WRAPPING_KEY_ENCODING_VERSION: Int = 1
 const val PRIVATE_KEY_ENCODING_VERSION: Int = 1
@@ -163,11 +164,12 @@ open class SoftCryptoService(
                 wrappingKey.algorithm,
                 wrappingKeyEncrypted,
                 1,
-                parentKeyName
+                parentKeyName,
+                wrappingKeyAlias
             )
         recoverable("createWrappingKey save key") {
             wrappingRepositoryFactory.create(tenantId).use {
-                it.saveKey(wrappingKeyAlias, wrappingKeyInfo)
+                it.saveKey(wrappingKeyInfo)
             }
         }
         logger.trace("Stored wrapping key alias $wrappingKeyAlias context ${context.toString()}")
@@ -566,31 +568,48 @@ open class SoftCryptoService(
             encodingVersion = encodingVersion
         )
     }
-    
-    override fun rewrapWrappingKey(tenantId: String, targetAlias: String, newParentKeyAlias: String) {
+
+
+    @Suppress("NestedBlockDepth")
+    override fun rewrapWrappingKey(tenantId: String, targetAlias: String, newParentKeyAlias: String): Int {
         val newParentKey = checkNotNull(unmanagedWrappingKeys.get(newParentKeyAlias)) {
             "Unable to find parent key $newParentKeyAlias in the configured unmanaged wrapping keys"
         }
         wrappingRepositoryFactory.create(tenantId).use { wrappingRepo ->
-            val (id, wrappingKeyInfo) = checkNotNull(wrappingRepo.findKeyAndId(targetAlias)) {
-                "Wrapping key with alias $targetAlias not found"
-            }
-            // Find the current unmanaged parent key passed in via config, so we can decrypt the wrapping key
-            val oldParentKey = checkNotNull(unmanagedWrappingKeys.get(wrappingKeyInfo.parentKeyAlias)) {
-                "Unable to find parent key ${wrappingKeyInfo.parentKeyAlias} in the configured unmanaged wrapping keys"
-            }
-            oldParentKey.unwrapWrappingKey(wrappingKeyInfo.keyMaterial).also { wrappingKey ->
-                logger.trace { "Should decrypt key material in row $id with alias $targetAlias using " +
-                        "${wrappingKeyInfo.parentKeyAlias} and encrypt key material using $newParentKeyAlias" }
-                val wrappedWithNewKey = newParentKey.wrap(wrappingKey)
-                wrappingRepo.saveKeyWithId(
-                    targetAlias,
-                    wrappingKeyInfo.copy(keyMaterial = wrappedWithNewKey, parentKeyAlias = newParentKeyAlias),
-                    id)
+            while (true) { // retry if we do optimistic concurrency control
+                try {
+                    val (id, wrappingKeyInfo) = checkNotNull(wrappingRepo.findKeyAndId(targetAlias)) {
+                        "Wrapping key with alias $targetAlias not found"
+                    }
+                    // Find the current unmanaged parent key passed in via config, so we can decrypt the wrapping key
+                    val oldParentKey = checkNotNull(unmanagedWrappingKeys.get(wrappingKeyInfo.parentKeyAlias)) {
+                        "Unable to find parent key ${wrappingKeyInfo.parentKeyAlias} in the configured unmanaged wrapping keys"
+                    }
+                    val newGeneration = wrappingKeyInfo.generation + 1
+                    oldParentKey.unwrapWrappingKey(wrappingKeyInfo.keyMaterial).also { wrappingKey ->
+                        logger.trace { "Should decrypt key material in row $id with alias $targetAlias using " +
+                                "${wrappingKeyInfo.parentKeyAlias} and encrypt key material using $newParentKeyAlias" }
+                        val wrappedWithNewKey = newParentKey.wrap(wrappingKey)
+                        val newInfo = wrappingKeyInfo.copy(
+                            keyMaterial = wrappedWithNewKey,
+                            parentKeyAlias = newParentKeyAlias,
+                            generation = newGeneration)
+                        check(newInfo.alias == wrappingKeyInfo.alias)
+                        wrappingRepo.saveKeyWithId(newInfo, id)
+                    }
+                    return newGeneration
+                } catch (e: PersistenceException) {
+                    if (e.cause?.message?.contains("ConstraintViolationException") != true)  throw e
+                    // we lost a race updating the generation number, and we
+                    // don't know if the other update rewrapped as we are trying to do
+                    // so retry
+                    logger.info("Collision on key rotation of $targetAlias")
+                    Thread.sleep(10)
+                }
             }
         }
     }
-    
+
     override fun close() {
     }
 

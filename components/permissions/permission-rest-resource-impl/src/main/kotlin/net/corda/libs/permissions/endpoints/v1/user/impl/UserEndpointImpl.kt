@@ -18,6 +18,7 @@ import net.corda.libs.permissions.endpoints.v1.user.types.UserPermissionSummaryR
 import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.request.AddRoleToUserRequestDto
+import net.corda.libs.permissions.manager.request.ChangeUserPasswordDto
 import net.corda.libs.permissions.manager.request.GetPermissionSummaryRequestDto
 import net.corda.libs.permissions.manager.request.GetRoleRequestDto
 import net.corda.libs.permissions.manager.request.GetUserRequestDto
@@ -27,6 +28,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.permissions.management.PermissionManagementService
+import net.corda.rest.exception.InvalidStateChangeException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -102,6 +104,34 @@ class UserEndpointImpl @Activate constructor(
         }
 
         return userResponseDto?.convertToEndpointType() ?: throw ResourceNotFoundException("User", loginName)
+    }
+
+    override fun changeUserPasswordSelf(loginName: String, password: String): UserResponseType {
+        val principal = getRestThreadLocalContext()
+
+        val userResponseDto = try {
+            withPermissionManager(permissionManagementService.permissionManager, logger) {
+                changeUserPasswordSelf(ChangeUserPasswordDto(principal, loginName, password))
+            }
+        } catch (e: IllegalArgumentException) {
+            throw InvalidStateChangeException(e.message ?: "New password must be different from old one.")
+        }
+
+        return userResponseDto.convertToEndpointType()
+    }
+
+    override fun changeOtherUserPassword(loginName: String, password: String): UserResponseType {
+        val principal = getRestThreadLocalContext()
+
+        val userResponseDto = try {
+            withPermissionManager(permissionManagementService.permissionManager, logger) {
+                changeUserPasswordOther(ChangeUserPasswordDto(principal, loginName, password))
+            }
+        } catch (e: IllegalArgumentException) {
+            throw InvalidStateChangeException(e.message ?: "New password must be different from old one.")
+        }
+
+        return userResponseDto.convertToEndpointType()
     }
 
     override fun addRole(loginName: String, roleId: String): ResponseEntity<UserResponseType> {

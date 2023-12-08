@@ -9,6 +9,8 @@ import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.data.uniqueness.UniquenessCheckResponseAvro
+import net.corda.e2etest.utilities.ClusterReadiness
+import net.corda.e2etest.utilities.ClusterReadinessChecker
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
 import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
@@ -43,7 +45,7 @@ import kotlin.random.Random
  * Tests for the UniquenessChecker RPC service
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class UniquenessCheckerRPCSmokeTests {
+class UniquenessCheckerRPCSmokeTests : ClusterReadiness by ClusterReadinessChecker() {
     private val httpClient: HttpClient = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(30))
         .build()
@@ -86,6 +88,9 @@ class UniquenessCheckerRPCSmokeTests {
 
     @BeforeAll
     fun beforeAll() {
+        // check cluster is ready
+        assertIsReady(Duration.ofMinutes(1), Duration.ofMillis(100))
+
         DEFAULT_CLUSTER.conditionallyUploadCpiSigningCertificate()
 
         conditionallyUploadCordaPackage(

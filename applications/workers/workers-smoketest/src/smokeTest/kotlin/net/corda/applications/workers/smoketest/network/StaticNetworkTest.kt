@@ -2,6 +2,8 @@ package net.corda.applications.workers.smoketest.network
 
 import net.corda.applications.workers.smoketest.utils.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.utils.TEST_CPI_NAME
+import net.corda.e2etest.utilities.ClusterReadiness
+import net.corda.e2etest.utilities.ClusterReadinessChecker
 import net.corda.e2etest.utilities.DEFAULT_CLUSTER
 import net.corda.e2etest.utilities.TEST_NOTARY_CPB_LOCATION
 import net.corda.e2etest.utilities.TEST_NOTARY_CPI_NAME
@@ -10,13 +12,17 @@ import net.corda.e2etest.utilities.conditionallyUploadCpiSigningCertificate
 import net.corda.e2etest.utilities.containsExactlyInAnyOrderActiveMembers
 import net.corda.e2etest.utilities.getOrCreateVirtualNodeFor
 import net.corda.e2etest.utilities.registerStaticMember
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
+import java.time.Duration
 import java.util.*
 
 @Execution(ExecutionMode.SAME_THREAD)
-class StaticNetworkTest {
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+class StaticNetworkTest : ClusterReadiness by ClusterReadinessChecker() {
 
     private val testRunUniqueId = UUID.randomUUID()
     private val groupId = UUID.randomUUID().toString()
@@ -33,6 +39,12 @@ class StaticNetworkTest {
         bobX500,
         notaryX500
     )
+
+    @BeforeAll
+    fun setup() {
+        // check cluster is ready
+        assertIsReady(Duration.ofMinutes(1), Duration.ofMillis(100))
+    }
 
     @Test
     fun `register members`() {

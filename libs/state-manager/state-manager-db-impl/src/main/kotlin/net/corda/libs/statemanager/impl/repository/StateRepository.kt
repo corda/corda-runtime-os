@@ -22,13 +22,14 @@ interface StateRepository {
     )
 
     /**
-     * Create state into the persistence context.
+     * Create a collection of states.
      * Transaction should be controlled by the caller.
      *
      * @param connection The JDBC connection used to interact with the database.
      * @param state State entity to persist.
+     * @return The collection of keys that were successfully created.
      */
-    fun create(connection: Connection, state: StateEntity)
+    fun create(connection: Connection, states: Collection<StateEntity>): Collection<String>
 
     /**
      * Get states with the given keys.
@@ -41,9 +42,8 @@ interface StateRepository {
     fun get(connection: Connection, keys: Collection<String>): Collection<StateEntity>
 
     /**
-     * Update a collection of states within the database using JDBC connection.
-     *
-     * Note: Transaction should be controlled by the caller.
+     * Update collection of states.
+     * Transaction should be controlled by the caller.
      *
      * @param connection The JDBC connection used to interact with the database.
      * @param states A collection of states to be updated in the database.
@@ -52,8 +52,11 @@ interface StateRepository {
     fun update(connection: Connection, states: List<StateEntity>): StateUpdateSummary
 
     /**
-     * Delete states with the given keys from the persistence context.
+     * Delete states with the given keys.
      * Transaction should be controlled by the caller.
+     *
+     * Note that if the underlying provider isn't sure whether the delete was successful, the repository should behave
+     * as if it failed. The state manager must double-check any failures reported by the repository.
      *
      * @param connection The JDBC connection used to interact with the database.
      * @param states Collection of states to be deleted.
@@ -62,7 +65,7 @@ interface StateRepository {
     fun delete(connection: Connection, states: Collection<StateEntity>): Collection<String>
 
     /**
-     * Retrieve entities that were lastly updated between [IntervalFilter.start] and [IntervalFilter.finish].
+     * Retrieve states for which [StateEntity.modifiedTime] is within [interval].
      * Transaction should be controlled by the caller.
      *
      * @param connection The JDBC connection used to interact with the database.
@@ -72,8 +75,8 @@ interface StateRepository {
     fun updatedBetween(connection: Connection, interval: IntervalFilter): Collection<StateEntity>
 
     /**
-     * Filter states based on a list of custom single key filters over the [StateEntity.metadata], only states matching
-     * all [filters] are returned.
+     * Retrieve states exclusively matching all specified [filters] (comparisons are applied against the stored keys
+     * and values within the [StateEntity.metadata]).
      * Transaction should be controlled by the caller.
      *
      * @param connection The JDBC connection used to interact with the database.
@@ -83,8 +86,8 @@ interface StateRepository {
     fun filterByAll(connection: Connection, filters: Collection<MetadataFilter>): Collection<StateEntity>
 
     /**
-     * Filter states based on a list of custom single key filters over the [StateEntity.metadata], states matching
-     * any of the [filters] are returned.
+     * Retrieve states matching any of the specified [filters] (comparisons are applied against the stored keys and
+     * values within the [StateEntity.metadata]).
      * Transaction should be controlled by the caller.
      *
      * @param connection The JDBC connection used to interact with the database.
@@ -94,19 +97,36 @@ interface StateRepository {
     fun filterByAny(connection: Connection, filters: Collection<MetadataFilter>): Collection<StateEntity>
 
     /**
-     * Filter states based on a custom comparison operation to be executed against a single key within the metadata and
-     * the last updated time.
+     * Retrieve states that were lastly updated within [interval] (compared against [StateEntity.modifiedTime]) and
+     * exclusively matching all specified [filters] (comparisons are applied against the stored keys and values within
+     * the [StateEntity.metadata]).
      * Transaction should be controlled by the caller.
      *
      * @param connection The JDBC connection used to interact with the database.
      * @param interval Lower and upper bound to use when filtering by time.
-     * @param filter Filter to use when searching for entities.
+     * @param filters List of filter to use when searching for entities.
      * @return Collection of states found.
      */
-    @Suppress("LongParameterList")
-    fun filterByUpdatedBetweenAndMetadata(
+    fun filterByUpdatedBetweenWithMetadataMatchingAll(
         connection: Connection,
         interval: IntervalFilter,
-        filter: MetadataFilter
+        filters: Collection<MetadataFilter>
+    ): Collection<StateEntity>
+
+    /**
+     * Retrieve states that were lastly updated within [interval] (compared against [StateEntity.modifiedTime]) and
+     * matching any of the specified [filters] (comparisons are applied against the stored keys and values within
+     * the [StateEntity.metadata]).
+     * Transaction should be controlled by the caller.
+     *
+     * @param connection The JDBC connection used to interact with the database.
+     * @param interval Lower and upper bound to use when filtering by time.
+     * @param filters List of filter to use when searching for entities.
+     * @return Collection of states found.
+     */
+    fun filterByUpdatedBetweenWithMetadataMatchingAny(
+        connection: Connection,
+        interval: IntervalFilter,
+        filters: Collection<MetadataFilter>
     ): Collection<StateEntity>
 }

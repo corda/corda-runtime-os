@@ -1,6 +1,7 @@
 package net.corda.application.dbsetup
 
 import com.typesafe.config.ConfigRenderOptions
+import net.corda.crypto.config.impl.KeyDerivationParameters
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfigFactory
@@ -42,8 +43,16 @@ class ConfigEntityFactory(
     fun createCryptoConfig(): ConfigEntity {
         val random = SecureRandom()
         val config = createDefaultCryptoConfig(
-            smartConfigFactory.makeSecret(random.randomString(), "corda-master-wrapping-key-passphrase").root(),
-            smartConfigFactory.makeSecret(random.randomString(), "corda-master-wrapping-key-passphrase").root(),
+            listOf(
+                KeyDerivationParameters(
+                    smartConfigFactory.makeSecret(random.randomString(), "corda-master-wrapping-key-passphrase").root(),
+                    smartConfigFactory.makeSecret(random.randomString(), "corda-master-wrapping-key-salt").root()
+                ),
+                KeyDerivationParameters(
+                    smartConfigFactory.makeSecret(random.randomString(), "corda-master-wrapping-key-2-passphrase").root(),
+                    smartConfigFactory.makeSecret(random.randomString(), "corda-master-wrapping-key-2-salt").root()
+                )
+            ),
         ).root().render(ConfigRenderOptions.concise())
 
         return ConfigEntity(

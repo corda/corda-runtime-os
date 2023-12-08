@@ -37,7 +37,8 @@ class NotaryVirtualNodeSelectorServiceImplTest {
                 notary,
                 null,
                 emptyList(),
-                emptyList()
+                emptyList(),
+                true
             )
             val mockMemberContext: MemberContext = mock {
                 on { entries } doReturn mapOf(

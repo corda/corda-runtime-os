@@ -43,7 +43,6 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.name}")
 
-    private var clients = listOf<MessagingClient>()
     private lateinit var messageRouter: MessageRouter
     private val mediatorComponentFactory = MediatorComponentFactory(
         config.messageProcessor, config.consumerFactories, config.clientFactories, config.messageRouterFactory
@@ -92,7 +91,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 
     private fun run() {
         running.set(true)
-        clients = mediatorComponentFactory.createClients(::onSerializationError)
+        val clients = mediatorComponentFactory.createClients(::onSerializationError)
         messageRouter = mediatorComponentFactory.createRouter(clients)
         lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
         config.consumerFactories.map { consumerFactory ->
@@ -220,16 +219,21 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 
                 // Persist states changes
                 val failedToCreateKeys = stateManager.create(statesToCreate.values.mapNotNull { it })
-                val failedToCreate = stateManager.get(failedToCreateKeys.keys)
+                val failedToCreate = stateManager.get(failedToCreateKeys)
                 val failedToDelete = stateManager.delete(statesToDelete.values.mapNotNull { it })
                 val failedToUpdate = stateManager.update(statesToUpdate.values.mapNotNull { it })
-                states = failedToCreate + failedToDelete + failedToUpdate
+                val failedToUpdateOptimisticLockFailure = failedToUpdate.mapNotNull { (key, value) -> value?.let { key to it } }.toMap()
+                val failedToUpdateStateDoesNotExist = (failedToUpdate - failedToUpdateOptimisticLockFailure).map { it.key }
+
+                states = failedToCreate + failedToDelete + failedToUpdateOptimisticLockFailure
+
                 groups = if (states.isNotEmpty()) {
                     allocateGroups(flowEvents.filterKeys { states.containsKey(it) }.values.flatten())
                 } else {
                     listOf()
                 }
                 states.keys.forEach { asynchronousOutputs.remove(it) }
+                failedToUpdateStateDoesNotExist.forEach { asynchronousOutputs.remove(it) }
                 sendAsynchronousEvents(asynchronousOutputs.values.flatten())
             }
             metrics.commitTimer.recordCallable {

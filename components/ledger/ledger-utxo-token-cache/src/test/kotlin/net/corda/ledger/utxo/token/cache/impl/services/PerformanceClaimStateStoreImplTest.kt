@@ -168,10 +168,11 @@ class PerformanceClaimStateStoreImplTest {
 
         override val name = LifecycleCoordinatorName("StateManagerSimulator", UUID.randomUUID().toString())
 
-        override fun create(states: Collection<State>): Map<String, Exception> {
+        override fun create(states: Collection<State>): Set<String> {
             return lock.withLock {
                 val invalidStates = states
-                    .filter { store.containsKey(it.key) }.associate { it.key to IllegalStateException() }
+                    .filter { store.containsKey(it.key) }
+                    .map { it.key }.toSet()
 
                 states
                     .filterNot { store.containsKey(it.key) }
@@ -229,6 +230,20 @@ class PerformanceClaimStateStoreImplTest {
         override fun findUpdatedBetweenWithMetadataFilter(
             intervalFilter: IntervalFilter,
             metadataFilter: MetadataFilter
+        ): Map<String, State> {
+            TODO("Not yet implemented")
+        }
+
+        override fun findUpdatedBetweenWithMetadataMatchingAll(
+            intervalFilter: IntervalFilter,
+            metadataFilters: Collection<MetadataFilter>
+        ): Map<String, State> {
+            TODO("Not yet implemented")
+        }
+
+        override fun findUpdatedBetweenWithMetadataMatchingAny(
+            intervalFilter: IntervalFilter,
+            metadataFilters: Collection<MetadataFilter>
         ): Map<String, State> {
             TODO("Not yet implemented")
         }

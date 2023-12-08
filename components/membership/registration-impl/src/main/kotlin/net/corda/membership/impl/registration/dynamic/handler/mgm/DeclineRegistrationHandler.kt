@@ -8,6 +8,7 @@ import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.SmartConfig
+import net.corda.membership.impl.registration.RegistrationLogger
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
@@ -52,13 +53,19 @@ internal class DeclineRegistrationHandler(
         val declinedBy = state.mgm
         val declinedMember = state.registeringMember
         val registrationId = state.registrationId
+
+        val registrationLogger = RegistrationLogger(logger)
+            .setRegistrationId(registrationId)
+            .setMember(declinedMember)
+            .setMgm(declinedBy)
+
         if (memberTypeChecker.isMgm(declinedMember)) {
-            logger.warn("Trying to decline registration request: '$registrationId' of ${declinedMember.x500Name} which is an MGM")
+            registrationLogger.warn("Trying to decline registration request for member which is an MGM")
         }
         if (!memberTypeChecker.isMgm(declinedBy)) {
-            logger.warn("Trying to decline registration request: '$registrationId' by ${declinedBy.x500Name} which is not an MGM")
+            registrationLogger.warn("Trying to decline registration request for member which is not an MGM")
         }
-        logger.info("Declining registration request: '$registrationId' for ${declinedMember.x500Name} - ${command.reason}")
+        registrationLogger.info("Declining registration request. ${command.reason}")
         val pendingMemberInfo = membershipQueryClient.queryMemberInfo(declinedBy.toCorda(), listOf(declinedMember.toCorda()))
             .getOrThrow()
             .firstOrNull {
@@ -83,9 +90,7 @@ internal class DeclineRegistrationHandler(
                 )
             } else { null }
         } else {
-            logger.warn("Failed to retrieve pending member's info " +
-                    "for member with holding ID'${declinedMember.toCorda().shortHash}'. " +
-                    "Could not notify member about being declined.")
+            registrationLogger.warn("Failed to retrieve pending member's info. Could not notify member about being declined.")
             null
         }
         val registrationRequestDeclinedCommand = membershipPersistenceClient.setRegistrationRequestStatus(

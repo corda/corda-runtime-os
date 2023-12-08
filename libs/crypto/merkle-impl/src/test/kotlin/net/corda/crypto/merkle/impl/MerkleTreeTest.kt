@@ -15,6 +15,8 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
 import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.crypto.merkle.MerkleProofType
+import net.corda.v5.crypto.merkle.MerkleTree
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
@@ -270,43 +272,44 @@ class MerkleTreeTest {
     @ParameterizedTest(name = "merkle proof tests for trees with sizes that run fast ({0} leaves)")
     @MethodSource("merkleProofTestSizes")
     fun `merkle proofs fast`(treeSize: Int) {
-        runMerkelProofTest(treeSize)
+        runMerkleProofTest(treeSize)
     }
 
-    // This test should be run whenever the merkle tree implemenetation is changed. It is disabled on CI since 
+    // This test should be run whenever the merkle tree implementation is changed. It is disabled on CI since
     // it can take 30 seconds.
     @Disabled
     @ParameterizedTest(name = "merkle proof tests for trees with extended sizes that run slow ({0} leaves)")
     @MethodSource("merkleProofExtendedTestSizes")
     fun `merkle proofs slow `(treeSize: Int) {
-        runMerkelProofTest(treeSize)
+        runMerkleProofTest(treeSize)
     }
 
-    private fun runMerkelProofTest(treeSize: Int) {
-        val hashProvider = trivialHashDigestProvider
-        val leafData = (0 until treeSize).map { it.toByteArray() }
-        val merkleTree = MerkleTreeImpl.createMerkleTree(leafData, hashProvider)
+    private fun runMerkleProofTest(treeSize: Int) {
+        // we don't want to take the time to do an expensive hash so we'll just make a cheap one
+        val merkleTree = makeTestMerkleTree(treeSize, trivialHashDigestProvider)
 
-        if (merkleTree.leaves.isNotEmpty()) {
-            // Should not build proof for empty list
-            assertThrows(IllegalArgumentException::class.java) {
-                merkleTree.createAuditProof(emptyList())
-            }
+        assertThat(merkleTree.leaves).isNotEmpty()
 
-            // Cannot build proof for non-existing index
-            assertThrows(IllegalArgumentException::class.java) {
-                merkleTree.createAuditProof(listOf(treeSize + 1))
-            }
+        // Should not build proof for empty list
+        // This is a special case check in the impl we don't really need but since it's there
+        // let's have test coverage for it.
+        assertThrows(IllegalArgumentException::class.java) {
+            merkleTree.createAuditProof(emptyList())
+        }
 
-            // Cannot build proof if any of the indices do not exist in the tree
-            assertThrows(IllegalArgumentException::class.java) {
-                merkleTree.createAuditProof(listOf(0, treeSize + 1))
-            }
+        // Cannot build proof for non-existing index
+        assertThrows(IllegalArgumentException::class.java) {
+            merkleTree.createAuditProof(listOf(treeSize + 1))
+        }
 
-            // Should not create proof if indices have been duplicated
-            assertThrows(IllegalArgumentException::class.java) {
-                merkleTree.createAuditProof(listOf(treeSize - 1, treeSize - 1))
-            }
+        // Cannot build proof if any of the indices do not exist in the tree
+        assertThrows(IllegalArgumentException::class.java) {
+            merkleTree.createAuditProof(listOf(0, treeSize + 1))
+        }
+
+        // Should not create proof if indices have been duplicated
+        assertThrows(IllegalArgumentException::class.java) {
+            merkleTree.createAuditProof(listOf(treeSize - 1, treeSize - 1))
         }
 
         if (merkleTree.leaves.size > 1) {
@@ -316,107 +319,133 @@ class MerkleTreeTest {
             }
         }
 
-        val root = merkleTree.root
-
         // Test all the possible combinations of leaves for the proof.
         for (i in 1 until (1 shl treeSize)) {
-            val powerSet = (0 until treeSize).filter { (i and (1 shl it)) != 0 }
-            val proof = merkleTree.createAuditProof(powerSet)
+            val leafIndicesCombination = (0 until treeSize).filter { (i and (1 shl it)) != 0 }
+            testLeafCombination(merkleTree, leafIndicesCombination, merkleTree.root, treeSize)
+        }
+    }
 
-            // The original root can be reconstructed from the proof
-            assertEquals(proof.calculateRoot(hashProvider), merkleTree.root)
-            assertTrue(proof.verify(root, hashProvider))
+    private fun testLeafCombination(
+        merkleTree: MerkleTree,
+        leafIndicesCombination: List<Int>,
+        root: SecureHash,
+        treeSize: Int
+    ) {
+        val proof = merkleTree.createAuditProof(leafIndicesCombination)
 
-            // Wrong root should not be accepted.
-            val wrongRootBytes = root.bytes
-            wrongRootBytes[0] = wrongRootBytes[0] xor 1
-            val wrongRootHash = SecureHashImpl(DigestAlgorithmName.SHA2_256D.name, wrongRootBytes)
-            assertFalse(proof.verify(wrongRootHash, hashProvider))
+        // The original root can be reconstructed from the proof
+        assertEquals(proof.calculateRoot(trivialHashDigestProvider), merkleTree.root)
+        assertTrue(proof.verify(root, trivialHashDigestProvider))
 
-            // We break the leaves one by one. All of them should break the proof.
-            for (leaf in proof.leaves) {
-                val data = leaf.leafData
-                data[0] = data[0] xor 1
-                assertFalse(proof.verify(root, hashProvider))
-                data[0] = data[0] xor 1
-            }
+        // Wrong root should not be accepted.
+        val wrongRootBytes = root.bytes
+        wrongRootBytes[0] = wrongRootBytes[0] xor 1
+        val wrongRootHash = SecureHashImpl(DigestAlgorithmName.SHA2_256D.name, wrongRootBytes)
+        assertFalse(proof.verify(wrongRootHash, trivialHashDigestProvider))
 
-            // We break the hashes one by one. All of them should break the proof.
-            for (j in 0 until proof.hashes.size) {
-                val badHashes = proof.hashes.toMutableList()
-                val badHashBytes = badHashes[j].bytes
-                badHashBytes[0] = badHashBytes[0] xor 1
-                badHashes[j] = SecureHashImpl(DigestAlgorithmName.SHA2_256D.name, badHashBytes)
-                val badProof: MerkleProof =
-                    MerkleProofImpl(MerkleProofType.AUDIT, proof.treeSize, proof.leaves, badHashes)
-                assertFalse(badProof.verify(root, hashProvider))
-            }
+        // We break the leaves one by one. All of them should break the proof.
+        for (leaf in proof.leaves) {
+            val data = leaf.leafData
+            data[0] = data[0] xor 1
+            assertFalse(proof.verify(root, trivialHashDigestProvider))
+            data[0] = data[0] xor 1
+        }
 
-            // We add one extra hash which breaks the proof.
-            val badProof1: MerkleProof =
+        // We break the hashes one by one. All of them should break the proof.
+        for (j in 0 until proof.hashes.size) {
+            val badHashes = proof.hashes.toMutableList()
+            val badHashBytes = badHashes[j].bytes
+            badHashBytes[0] = badHashBytes[0] xor 1
+            badHashes[j] = SecureHashImpl(DigestAlgorithmName.SHA2_256D.name, badHashBytes)
+            val badProof: MerkleProof =
+                MerkleProofImpl(MerkleProofType.AUDIT, proof.treeSize, proof.leaves, badHashes)
+            assertFalse(badProof.verify(root, trivialHashDigestProvider))
+        }
+
+        // We add one extra hash which breaks the proof.
+        val badProof1: MerkleProof =
+            MerkleProofImpl(
+                MerkleProofType.AUDIT, proof.treeSize, proof.leaves, proof.hashes + digestService.getZeroHash(
+                    digestAlgorithm
+                )
+            )
+        assertFalse(badProof1.verify(root, trivialHashDigestProvider))
+
+        // We remove one hash which breaks the proof.
+        if (proof.hashes.size > 1) {
+            val badProof2: MerkleProof =
                 MerkleProofImpl(
-                    MerkleProofType.AUDIT, proof.treeSize, proof.leaves, proof.hashes + digestService.getZeroHash(
-                        digestAlgorithm
-                    )
+                    MerkleProofType.AUDIT,
+                    proof.treeSize,
+                    proof.leaves,
+                    proof.hashes.take(proof.hashes.size - 1)
                 )
-            assertFalse(badProof1.verify(root, hashProvider))
+            assertFalse(badProof2.verify(root, trivialHashDigestProvider))
+        }
 
-            // We remove one hash which breaks the proof.
-            if (proof.hashes.size > 1) {
-                val badProof2: MerkleProof =
-                    MerkleProofImpl(
-                        MerkleProofType.AUDIT,
-                        proof.treeSize,
-                        proof.leaves,
-                        proof.hashes.take(proof.hashes.size - 1)
-                    )
-                assertFalse(badProof2.verify(root, hashProvider))
-            }
-
-            // We remove one leaf which breaks the proof.
-            if (proof.leaves.size > 1) {
-                val badProof3: MerkleProof =
-                    MerkleProofImpl(
-                        MerkleProofType.AUDIT,
-                        proof.treeSize,
-                        proof.leaves.take(proof.leaves.size - 1),
-                        proof.hashes
-                    )
-                assertFalse(badProof3.verify(root, hashProvider))
-            }
-
-            // If there are leaves not have been added yet
-            val notInProofLeaves = (0 until treeSize).filter { (i in powerSet) }
-            if (notInProofLeaves.isNotEmpty()) {
-                val extraIndex = notInProofLeaves.first()
-                val extraLeaf = IndexedMerkleLeafImpl(
-                    extraIndex,
-                    trivialHashDigestProvider.leafNonce(extraIndex),
-                    merkleTree.leaves[extraIndex]
+        // We remove one leaf which breaks the proof.
+        if (proof.leaves.size > 1) {
+            val badProof3: MerkleProof =
+                MerkleProofImpl(
+                    MerkleProofType.AUDIT,
+                    proof.treeSize,
+                    proof.leaves.take(proof.leaves.size - 1),
+                    proof.hashes
                 )
-                // We add one leaf which breaks the proof.
-                val badProof4: MerkleProof =
-                    MerkleProofImpl(MerkleProofType.AUDIT, proof.treeSize, proof.leaves + extraLeaf, proof.hashes)
-                assertFalse(badProof4.verify(root, hashProvider))
+            assertFalse(badProof3.verify(root, trivialHashDigestProvider))
+        }
 
-                // We replace one leaf which breaks the proof.
-                val badProof5: MerkleProof =
-                    MerkleProofImpl(
-                        MerkleProofType.AUDIT,
-                        proof.treeSize,
-                        proof.leaves.dropLast(1) + extraLeaf,
-                        proof.hashes
-                    )
-                assertFalse(badProof5.verify(root, hashProvider))
+        // If there are leaves not have been added yet
+        val notInProofLeaves = (0 until treeSize).filter { it !in leafIndicesCombination }
+        if (notInProofLeaves.isNotEmpty()) {
+            val extraIndex = notInProofLeaves.first()
+            val extraLeaf = IndexedMerkleLeafImpl(
+                extraIndex,
+                trivialHashDigestProvider.leafNonce(extraIndex),
+                merkleTree.leaves[extraIndex]
+            )
 
-            }
+            // We add one leaf which breaks the proof.
+            val badProofExtraLeaf: MerkleProof =
+                MerkleProofImpl(proof.proofType, proof.treeSize, proof.leaves + extraLeaf, proof.hashes)
+            assertFalse(badProofExtraLeaf.verify(root, trivialHashDigestProvider))
 
-            // We duplicate one leaf which breaks the proof.
-            val badProof6: MerkleProof =
-                MerkleProofImpl(MerkleProofType.AUDIT, proof.treeSize, proof.leaves + proof.leaves.last(), proof.hashes)
-            assertFalse(badProof6.verify(root, hashProvider))
+            // We replace one leaf which breaks the proof, since the leaves will not match the hashes.
+            val badProofReplacedLeaf: MerkleProof =
+                MerkleProofImpl(
+                    MerkleProofType.AUDIT,
+                    proof.treeSize,
+                    proof.leaves.dropLast(1) + extraLeaf,
+                    proof.hashes
+                )
+            assertFalse(badProofReplacedLeaf.verify(root, trivialHashDigestProvider))
 
         }
+
+        // We duplicate one leaf which breaks the proof.
+        val badProofDuplicateLeaf: MerkleProof =
+            MerkleProofImpl(MerkleProofType.AUDIT, proof.treeSize, proof.leaves + proof.leaves.last(), proof.hashes)
+        assertFalse(badProofDuplicateLeaf.verify(root, trivialHashDigestProvider))
+    }
+
+    /**
+     * Make a merkle tree for test purposes
+     *
+     * The leaf data will be successive integers starting at 0.
+     *
+     * @param treeSize the number of elements
+     * @param hashProvider the functions used to hash the tree
+     * @return a MerkleTree object
+     */
+    private fun makeTestMerkleTree(
+        treeSize: Int,
+        hashProvider: MerkleTreeHashDigestProvider
+    ): MerkleTree {
+        // 1. make some leaf data, which will just be successive integers starting at zero
+        val leafData = (0 until treeSize).map { it.toByteArray() }
+        // 2. make the tree from the leaf data
+        return MerkleTreeImpl.createMerkleTree(leafData, hashProvider)
     }
 
     @Test

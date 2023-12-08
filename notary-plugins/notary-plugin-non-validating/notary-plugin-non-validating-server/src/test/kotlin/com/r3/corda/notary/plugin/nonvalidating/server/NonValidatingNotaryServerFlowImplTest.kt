@@ -47,6 +47,8 @@ class NonValidatingNotaryServerFlowImplTest {
 
     private companion object {
         const val NOTARY_SERVICE_NAME = "corda.notary.service.name"
+        const val NOTARY_SERVICE_BACKCHAIN_REQUIRED = "corda.notary.service.backchain.required"
+
 
         /* Cache for storing response from server */
         val responseFromServer = mutableListOf<NotarizationResponse>()
@@ -337,6 +339,7 @@ class NonValidatingNotaryServerFlowImplTest {
         whenever(mockMemberLookup.myInfo()).thenReturn(notaryInfo)
         whenever(notaryInfo.memberProvidedContext).thenReturn(memberProvidedContext)
         whenever(memberProvidedContext.parse(NOTARY_SERVICE_NAME, MemberX500Name::class.java)).thenReturn(notaryServiceName)
+        whenever(memberProvidedContext.parse(NOTARY_SERVICE_BACKCHAIN_REQUIRED, Boolean::class.java)).thenReturn(true)
 
         // 3. Check if any filtered transaction data should be overwritten
         val filteredTx = mock<UtxoFilteredTransaction> {

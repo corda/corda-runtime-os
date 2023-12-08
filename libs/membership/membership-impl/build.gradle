@@ -17,15 +17,20 @@ dependencies {
     implementation project(':libs:crypto:crypto-core')
     implementation project(":libs:membership:membership-common")
     implementation project(":libs:utilities")
+    implementation project(':libs:sandbox-types')
     implementation project(":libs:serialization:serialization-avro")
+    implementation project(':libs:serialization:serialization-internal')
 
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-membership"
     implementation 'net.corda:corda-serialization'
 
+    testImplementation project(':libs:crypto:cipher-suite-impl')
     testImplementation project(":libs:crypto:crypto-impl")
     testImplementation project(":testing:layered-property-map-testkit")
+    testImplementation project(':testing:test-serialization')
+    testImplementation project(':libs:serialization:serialization-amqp')
     testImplementation project(":testing:test-utilities")
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
