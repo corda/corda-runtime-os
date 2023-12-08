@@ -236,7 +236,7 @@ abstract class BaseOnboard : Runnable, RestCommand() {
         shortHashId
     }
 
-    protected fun assignSoftHsmAndGenerateKey(category: String): String {
+    private fun assignSoftHsm(tenantId: String, category: String) {
         createRestClient(HsmRestResource::class).use { client ->
             checkInvariant(
                 maxAttempts = MAX_ATTEMPTS,
@@ -244,13 +244,17 @@ abstract class BaseOnboard : Runnable, RestCommand() {
                 errorMessage = "Assign Soft HSM operation for $category: failed after the maximum number of attempts ($MAX_ATTEMPTS)."
             ) {
                 try {
-                    client.start().proxy.assignSoftHsm(holdingId, category)
+                    client.start().proxy.assignSoftHsm(tenantId, category)
                 } catch (e: MissingRequestedResourceException) {
                     //This exception can be thrown while the assigning Hsm Key is being processed, so we catch it and re-try.
                     null
                 }
             }
         }
+    }
+
+    protected fun assignSoftHsmAndGenerateKey(category: String): String {
+        assignSoftHsm(holdingId, category)
 
         val response = createRestClient(KeysRestResource::class).use { keyClient ->
             keyClient.start().proxy.generateKeyPair(
@@ -349,6 +353,8 @@ abstract class BaseOnboard : Runnable, RestCommand() {
     }
 
     protected fun setupNetwork() {
+        assignSoftHsm("p2p", "ENCRYPTION_SECRET")
+
         val request = HostedIdentitySetupRequest(
             p2pTlsCertificateChainAlias = P2P_TLS_CERTIFICATE_ALIAS,
             useClusterLevelTlsCertificateAndKey = true,
