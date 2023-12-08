@@ -65,6 +65,7 @@ class LinkManagerWorker @Activate constructor(
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator()
         )
+        logger.info("QQQ link manager : ${params.defaultParams.workerServerPort}")
         webServer.start(params.defaultParams.workerServerPort)
         linkManagerProcessor.start(config)
     }

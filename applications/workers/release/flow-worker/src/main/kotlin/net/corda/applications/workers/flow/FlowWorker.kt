@@ -1,5 +1,6 @@
 package net.corda.applications.workers.flow
 
+import com.typesafe.config.ConfigRenderOptions
 import net.corda.applications.workers.workercommon.ApplicationBanner
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
 import net.corda.applications.workers.workercommon.Health
@@ -80,6 +81,13 @@ class FlowWorker @Activate constructor(
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
             listOf(WorkerHelpers.createConfigFromParams(BOOT_WORKER_SERVICE, params.workerEndpoints)))
+        logger.info("QQQ flow worker, params.workerEndpoints -> ${params.workerEndpoints}")
+        logger.info("QQQ flow worker, listOf(...) -> " +
+                listOf(WorkerHelpers.createConfigFromParams(BOOT_WORKER_SERVICE, params.workerEndpoints))
+        )
+        logger.info("QQQ flow worker, config -> " +
+                {config.toSafeConfig().root().render(ConfigRenderOptions.concise())}
+        )
 
         flowProcessor.start(config)
     }

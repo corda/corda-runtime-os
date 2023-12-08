@@ -74,7 +74,7 @@ class TokenSelectionWorker @Activate constructor(
             configurationValidatorFactory.createConfigValidator(),
             listOf(WorkerHelpers.createConfigFromParams(BootConfig.BOOT_DB, params.databaseParams))
         )
-
+        logger.info("QQQ token : ${params.defaultParams.workerServerPort}")
         webServer.start(params.defaultParams.workerServerPort)
         tokenCacheProcessor.start(config)
     }
