@@ -156,7 +156,8 @@ fun ClusterInfo.onboardNotaryMember(
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null,
     tlsCertificateUploadedCallback: (String) -> Unit = {},
     notaryServiceName: String = DEFAULT_NOTARY_SERVICE,
-    isBackchainRequired: Boolean = true
+    isBackchainRequired: Boolean = true,
+    notaryPlugin: String = "nonvalidating"
 ) = onboardMember(
     resourceName,
     cpiName,
@@ -171,7 +172,7 @@ fun ClusterInfo.onboardNotaryMember(
             "corda.roles.0" to "notary",
             "corda.notary.service.name" to MemberX500Name.parse(notaryServiceName).toString(),
             "corda.notary.service.backchain.required" to "$isBackchainRequired",
-            "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.nonvalidating",
+            "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.$notaryPlugin",
             "corda.notary.service.flow.protocol.version.0" to "1",
             "corda.notary.keys.0.id" to notaryKeyId,
             "corda.notary.keys.0.signature.spec" to DEFAULT_SIGNATURE_SPEC
@@ -300,7 +301,7 @@ fun ClusterInfo.registerStaticMember(
     notaryServiceName: String? = null,
     customMetadata: Map<String, String> = emptyMap(),
     isBackchainRequired: Boolean = true,
-    notaryPlugin: String = "notaryPlugin"
+    notaryPlugin: String = "nonvalidating"
 ) {
     cluster {
         memberRegisterLock.withLock {
