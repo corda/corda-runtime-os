@@ -54,4 +54,11 @@ dependencies {
 
     testRuntimeOnly 'org.osgi:osgi.core'
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+
+    integrationTestImplementation project(':libs:web:web-impl')
+    integrationTestImplementation project(':libs:lifecycle:lifecycle-impl')
+    integrationTestImplementation project(':libs:lifecycle:registry')
+    integrationTestImplementation project(':libs:schema-registry:schema-registry-impl')
+    integrationTestImplementation project(':libs:messaging:kafka-message-bus-impl')
+    integrationTestImplementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
 }
