@@ -180,7 +180,13 @@ fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
     }
 }
 
-fun assertValidStatusFilter (holdingId: String, expectedFlowCount: Int, status: String?) {
+fun assertValidStatusFilter(
+    holdingId: String,
+    expectedFlowCount: Int,
+    status: String?
+) = DEFAULT_CLUSTER.assertValidStatusFilter(holdingId, expectedFlowCount, status)
+
+fun ClusterInfo.assertValidStatusFilter (holdingId: String, expectedFlowCount: Int, status: String?) {
     return DEFAULT_CLUSTER.cluster {
         assertWithRetryIgnoringExceptions {
             command { multipleFlowStatus(holdingId, status) }
@@ -197,7 +203,13 @@ fun assertValidStatusFilter (holdingId: String, expectedFlowCount: Int, status: 
     }
 }
 
-fun assertInvalidStatusFilter (holdingId: String, expectedFlowCount: Int, status: String?) {
+fun assertInvalidStatusFilter(
+    holdingId: String,
+    expectedFlowCount: Int,
+    status: String?
+) = DEFAULT_CLUSTER.assertInvalidStatusFilter(holdingId, expectedFlowCount, status)
+
+fun ClusterInfo.assertInvalidStatusFilter (holdingId: String, expectedFlowCount: Int, status: String?) {
     return DEFAULT_CLUSTER.cluster {
         assertWithRetryIgnoringExceptions {
             command { multipleFlowStatus(holdingId, status) }
