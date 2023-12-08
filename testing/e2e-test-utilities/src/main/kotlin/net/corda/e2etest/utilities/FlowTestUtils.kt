@@ -1,3 +1,4 @@
+@file:Suppress("TooManyFunctions")
 package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
@@ -9,7 +10,6 @@ import org.apache.commons.text.StringEscapeUtils.escapeJson
 import org.junit.jupiter.api.TestInfo
 import org.slf4j.LoggerFactory
 import java.util.UUID
-
 const val SMOKE_TEST_CLASS_NAME = "com.r3.corda.testing.smoketests.flow.RpcSmokeTestFlow"
 
 const val RPC_FLOW_STATUS_SUCCESS = "COMPLETED"
