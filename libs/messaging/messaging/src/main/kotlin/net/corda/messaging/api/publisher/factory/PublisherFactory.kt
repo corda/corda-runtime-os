@@ -51,9 +51,6 @@ interface PublisherFactory {
      * The client is responsible for retries
      *
      * The responder side can be found in [SubscriptionFactory] under [createHttpRPCSubscription]
-     *
-     * @param rpcConfig configuration object used to initialize the subscription
-     * @param messagingConfig other configuration settings if needed
      */
     fun createHttpRpcClient(): HttpRpcClient
 }

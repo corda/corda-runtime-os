@@ -9,7 +9,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.emulation.publisher.CordaPublisher
-import net.corda.messaging.emulation.publisher.HttpRpcClientIml
+import net.corda.messaging.emulation.publisher.HttpRpcClientImpl
 import net.corda.messaging.emulation.publisher.RPCSenderImpl
 import net.corda.messaging.emulation.rpc.RPCTopicService
 import net.corda.messaging.emulation.topic.service.TopicService
@@ -52,6 +52,6 @@ class CordaPublisherFactory @Activate constructor(
     }
 
     override fun createHttpRpcClient(): HttpRpcClient {
-        return HttpRpcClientIml()
+        return HttpRpcClientImpl()
     }
 }

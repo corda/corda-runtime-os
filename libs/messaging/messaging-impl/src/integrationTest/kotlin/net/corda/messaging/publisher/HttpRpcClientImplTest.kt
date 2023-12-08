@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 class HttpRpcClientImplTest {
     @Test
-    fun `client sends the correct reqeust to the server`() {
+    fun `client sends the correct request to the server`() {
         val config = SyncRPCConfig(
             name = "test",
             endpoint = "/endpoint",
