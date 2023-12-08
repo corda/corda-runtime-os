@@ -84,7 +84,10 @@ class MerkleProofImpl(
         var nodeHashes = sortedLeaves.map { Pair(it.index, digest.leafHash(it.index, it.nonce, it.leafData)) }
         var treeDepth = MerkleTreeImpl.treeDepth(treeSize)
         var currentSize = treeSize
+        println("calculateRoot initial tree size ${treeSize} leaves indices ${leaves.map { it.index }} |hashes|=${hashes.size}")
+
         while (currentSize > 1) {
+            println("\touter loop currentSize=${currentSize} treeDepth=${treeDepth} |nodeHashes|=${nodeHashes.size}" )
             if (nodeHashes.isEmpty()) {
                 throw MerkleProofRebuildFailureException(
                     "MerkleProof does not have enough nodeHashes to calculate root hash."
@@ -95,6 +98,8 @@ class MerkleProofImpl(
             var index = 0
             while (index < nodeHashes.size) {
                 val item = nodeHashes[index]
+                println("\t\tinner loop at index ${index} nodehash.first=${item.first}")
+
                 if (item.first < currentSize and 0x7FFFFFFE) {      // If the level has odd elements, we'll process
                                                                     // the last element later.
                     if (index < nodeHashes.size - 1) {              // If there is a next element...

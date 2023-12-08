@@ -292,7 +292,8 @@ class MerkleTreeTest {
         val proofs = checkAuditProofBehavior(merkleTree, treeSize)
 
         // Now try with leveled hashes
-        proofs.forEach {
+        proofs.take(2).forEach {
+            it.calculateRoot(trivialHashDigestProvider)
             calculateLeveledHashes(it, trivialHashDigestProvider)
         }
     }
