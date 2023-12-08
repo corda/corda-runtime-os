@@ -293,7 +293,7 @@ class MerkleTreeTest {
 
         // Now try with leveled hashes
         proofs.forEach {
-            calculateLeveledHashes(it)
+            calculateLeveledHashes(it, trivialHashDigestProvider)
         }
     }
 

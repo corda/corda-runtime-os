@@ -19,7 +19,7 @@ class CalculateLeveledHashesTest {
             on { leaves } doReturn listOf(leaf1)
             on { treeSize } doReturn  1
         }
-        val e = assertThrows(IllegalArgumentException::class.java) { calculateLeveledHashes(m) }
+        val e = assertThrows(IllegalArgumentException::class.java) { calculateLeveledHashes(m, mock()) }
         assertThat(e).hasMessageContaining("cannot point outside of the original tree")
     }
 
@@ -29,7 +29,7 @@ class CalculateLeveledHashesTest {
             on { leaves } doReturn emptyList()
             on { treeSize } doReturn  1
         }
-        assertThrows(IllegalArgumentException::class.java) { calculateLeveledHashes(m) }
+        assertThrows(IllegalArgumentException::class.java) { calculateLeveledHashes(m, mock()) }
     }
 
     @Test
@@ -41,7 +41,7 @@ class CalculateLeveledHashesTest {
             on { leaves } doReturn listOf(leaf1, leaf1)
             on { treeSize } doReturn 4
         }
-        val e = assertThrows(IllegalArgumentException::class.java) { calculateLeveledHashes(m) }
+        val e = assertThrows(IllegalArgumentException::class.java) { calculateLeveledHashes(m, mock()) }
         assertThat(e).hasMessageContaining("cannot have duplications")
     }
 }
