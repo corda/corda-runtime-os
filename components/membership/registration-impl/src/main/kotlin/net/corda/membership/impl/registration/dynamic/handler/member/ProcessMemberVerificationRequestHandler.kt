@@ -8,6 +8,7 @@ import net.corda.data.membership.command.registration.member.ProcessMemberVerifi
 import net.corda.data.membership.common.v2.RegistrationStatus
 import net.corda.data.membership.p2p.VerificationResponse
 import net.corda.data.membership.state.RegistrationState
+import net.corda.membership.impl.registration.RegistrationLogger
 import net.corda.membership.impl.registration.VerificationResponseKeys.FAILURE_REASONS
 import net.corda.membership.impl.registration.VerificationResponseKeys.VERIFIED
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
@@ -38,18 +39,24 @@ internal class ProcessMemberVerificationRequestHandler(
     override fun invoke(state: RegistrationState?, key: String, command: ProcessMemberVerificationRequest): RegistrationHandlerResult {
         val member = command.destination
         val mgm = command.source
+        val registrationId = command.verificationRequest.registrationId
+        val registrationLogger = RegistrationLogger(logger)
+            .setRegistrationId(registrationId)
+            .setMember(member)
+            .setMgm(mgm)
+        registrationLogger.info("Processing member verification request.")
+
         val reasons = mutableListOf<String>()
         if (memberTypeChecker.isMgm(member)) {
             reasons += "${member.x500Name} is an MGM and can not register"
         }
+
         val payload = reasons.map { KeyValuePair(FAILURE_REASONS, it) } + if (reasons.isEmpty()) {
             KeyValuePair(VERIFIED, true.toString())
         } else {
-            logger.warn("Failed to verify request: ${command.verificationRequest.registrationId} - $reasons")
+            registrationLogger.warn("Failed to verify request. $reasons")
             KeyValuePair(VERIFIED, false.toString())
         }
-
-        val registrationId = command.verificationRequest.registrationId
 
         val commands = membershipPersistenceClient.setRegistrationRequestStatus(
             member.toCorda(),
