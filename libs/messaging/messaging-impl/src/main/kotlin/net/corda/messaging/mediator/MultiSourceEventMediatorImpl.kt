@@ -43,7 +43,6 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.name}")
 
-    private var clients = listOf<MessagingClient>()
     private lateinit var messageRouter: MessageRouter
     private val mediatorComponentFactory = MediatorComponentFactory(
         config.messageProcessor, config.consumerFactories, config.clientFactories, config.messageRouterFactory
@@ -92,7 +91,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 
     private fun run() {
         running.set(true)
-        clients = mediatorComponentFactory.createClients(::onSerializationError)
+        val clients = mediatorComponentFactory.createClients(::onSerializationError)
         messageRouter = mediatorComponentFactory.createRouter(clients)
         lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
         config.consumerFactories.map { consumerFactory ->
