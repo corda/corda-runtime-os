@@ -32,11 +32,10 @@ import java.security.spec.X509EncodedKeySpec
 import java.time.Instant
 import javax.crypto.AEADBadTagException
 import net.corda.data.p2p.crypto.internal.InitiatorEncryptedExtensions
-import net.corda.data.p2p.crypto.protocol.AuthenticationProtocolHeader
 import net.corda.data.p2p.crypto.protocol.AuthenticationProtocolResponderDetails
 import net.corda.data.p2p.crypto.protocol.ResponderStep as Step
-import net.corda.p2p.crypto.protocol.api.HandshakeIdentityData.Companion.fromAvro
-import net.corda.p2p.crypto.protocol.api.Session.Companion.fromAvro
+import net.corda.p2p.crypto.protocol.api.HandshakeIdentityData.Companion.toCorda
+import net.corda.p2p.crypto.protocol.api.Session.Companion.toCorda
 import net.corda.utilities.crypto.publicKeyFactory
 import net.corda.data.p2p.crypto.protocol.HandshakeIdentityData as AvroHandshakeIdentityData
 import net.corda.utilities.crypto.toPem
@@ -66,16 +65,10 @@ import kotlin.math.min
 class AuthenticationProtocolResponder(
     val sessionId: String,
     private val ourMaxMessageSize: Int,
-    private var step: Step = Step.INIT,
-    private var handshakeIdentityData: HandshakeIdentityData? = null,
-    private var responderHandshakeMessage: ResponderHandshakeMessage? = null,
-    private var session: Session? = null,
-    private var encryptedExtensions: InitiatorEncryptedExtensions? = null,
-    private var initiatorPublicKey: PublicKey? = null,
-    certificateValidatorFactory: (revocationCheckMode: RevocationCheckMode,
-                                  pemTrustStore: List<PemCertificate>,
-                                  checkRevocation: CheckRevocation) -> CertificateValidator =
-    { revocationCheckMode, pemTrustStore, checkRevocation -> CertificateValidator(revocationCheckMode, pemTrustStore, checkRevocation) }
+    certificateValidatorFactory: CertificateValidatorFactory =
+    { revocationCheckMode, pemTrustStore, checkRevocation ->
+        CertificateValidator(revocationCheckMode, pemTrustStore, checkRevocation)
+    }
 ): AuthenticationProtocol(certificateValidatorFactory) {
 
     init {
@@ -83,20 +76,28 @@ class AuthenticationProtocolResponder(
     }
 
     companion object {
-        fun AuthenticationProtocolResponderDetails.fromAvro():  AuthenticationProtocolResponder {
+        fun AuthenticationProtocolResponderDetails.toCorda():  AuthenticationProtocolResponder {
             return AuthenticationProtocolResponder(
                 sessionId = this.header.sessionId,
                 ourMaxMessageSize = this.header.ourMaxMessageSize,
-                step = this.step,
-                handshakeIdentityData = this.handshakeIdentityData?.fromAvro(),
-                session = this.header.session?.fromAvro(),
-                encryptedExtensions = this.encryptedExtensions,
-                initiatorPublicKey = this.initiatorPublicKey?.let {
+            ).also {
+                it.applyHeaders(this.header)
+                it.step = this.step
+                it.handshakeIdentityData = this.handshakeIdentityData?.toCorda()
+                it.session = this.header.session?.toCorda()
+                it.encryptedExtensions = this.encryptedExtensions
+                it.initiatorPublicKey = this.initiatorPublicKey?.let {
                     publicKeyFactory(it.reader()) ?: throw CordaRuntimeException("Invalid public key PEM")
                 }
-            )
+            }
         }
     }
+    private var step: Step = Step.INIT
+    private var handshakeIdentityData: HandshakeIdentityData? = null
+    private var responderHandshakeMessage: ResponderHandshakeMessage? = null
+    private var session: Session? = null
+    private var encryptedExtensions: InitiatorEncryptedExtensions? = null
+    private var initiatorPublicKey: PublicKey? = null
 
     fun receiveInitiatorHello(initiatorHelloMsg: InitiatorHelloMessage) {
         return transition(Step.INIT, Step.RECEIVED_PEER_DH_KEY, {}) {
@@ -320,10 +321,10 @@ class AuthenticationProtocolResponder(
 
     fun toAvro(): AuthenticationProtocolResponderDetails {
         return AuthenticationProtocolResponderDetails(
-            AuthenticationProtocolHeader(
+            toAvro(
                 sessionId,
                 ourMaxMessageSize,
-                session?.toAvro(),
+                session,
             ),
             step,
             handshakeIdentityData?.toAvro(),
@@ -364,7 +365,7 @@ class NoCommonModeError(initiatorModes: Set<ProtocolMode>, responderModes: Set<P
  */
 data class HandshakeIdentityData(val initiatorPublicKeyHash: ByteArray, val responderPublicKeyHash: ByteArray, val groupId: String) {
     companion object {
-        fun AvroHandshakeIdentityData.fromAvro() =
+        fun AvroHandshakeIdentityData.toCorda() =
             HandshakeIdentityData(
                 initiatorPublicKeyHash = this.initiatorPublicKeyHash.array(),
                 responderPublicKeyHash = this.responderPublicKeyHash.array(),

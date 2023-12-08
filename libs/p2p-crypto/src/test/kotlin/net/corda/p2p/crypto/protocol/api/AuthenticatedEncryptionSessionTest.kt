@@ -6,7 +6,7 @@ import net.corda.data.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.data.p2p.crypto.ProtocolMode
 import net.corda.data.p2p.crypto.protocol.AuthenticatedEncryptionSessionDetails
 import net.corda.data.p2p.crypto.protocol.Session
-import net.corda.p2p.crypto.protocol.api.Session.Companion.fromAvro
+import net.corda.p2p.crypto.protocol.api.Session.Companion.toCorda
 import net.corda.data.p2p.crypto.protocol.SecretKeySpec as AvroSecretKeySpec
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions
@@ -332,7 +332,7 @@ class AuthenticatedEncryptionSessionTest {
     }
 
     @Test
-    fun `fromAvro return a correct session`() {
+    fun `toCorda return a correct session`() {
         val avro = Session(
             "sessionId",
             300,
@@ -350,7 +350,7 @@ class AuthenticatedEncryptionSessionTest {
             )
         )
 
-        val session = avro.fromAvro()
+        val session = avro.toCorda()
 
         assertThat(session).isInstanceOf(AuthenticatedEncryptionSession::class.java)
     }

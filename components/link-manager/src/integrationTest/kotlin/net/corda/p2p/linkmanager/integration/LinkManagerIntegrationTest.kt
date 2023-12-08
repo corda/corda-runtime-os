@@ -8,6 +8,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
+import net.corda.data.p2p.crypto.protocol.RevocationCheckMode
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
@@ -30,7 +31,6 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.integration.stub.CpiInfoReadServiceStub
 import net.corda.p2p.linkmanager.integration.stub.GroupPolicyProviderStub

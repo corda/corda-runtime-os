@@ -5,10 +5,10 @@ import net.corda.data.p2p.crypto.protocol.AuthenticatedEncryptionSessionDetails
 import net.corda.data.p2p.crypto.protocol.AuthenticationProtocolHeader
 import net.corda.data.p2p.crypto.protocol.AuthenticationProtocolInitiatorDetails
 import net.corda.data.p2p.crypto.protocol.InitiatorStep
+import net.corda.data.p2p.crypto.protocol.RevocationCheckMode
 import net.corda.data.p2p.crypto.protocol.SecretKeySpec
 import net.corda.data.p2p.crypto.protocol.Session
-import net.corda.data.p2p.gateway.certificates.RevocationMode
-import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator.Companion.fromAvro
+import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator.Companion.toCorda
 import net.corda.utilities.crypto.publicKeyFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
@@ -38,7 +38,7 @@ XfbQ7QyVUDZfbB+h09gXKkl6YfpsbU1yW1wN6uVOn7ReQu+0r+MXu8N/ZOeoVnTH
 cZyj8BXGy1y5rL75SE01/3qwAvSAatoTtVtPlPuHn5U1nGDe3AoaS1LvrqIypJjo
 ODGVZOuwAyZ6676J40yue06DiPpysNULHoZu3PEd+DEWKsCyPq3yYtB7E+HvLUAQ
 AQIDAQAB
------END PUBLIC KEY-----        
+-----END PUBLIC KEY-----
     """.trimIndent()
 
     private val publicKey by lazy {
@@ -68,13 +68,13 @@ AQIDAQAB
             assertThat(avro.supportedModes).containsOnly(ProtocolMode.AUTHENTICATION_ONLY)
             assertThat(avro.groupId).isEqualTo("group")
             assertThat(avro.ourPublicKey.trim()).isEqualTo(publicKeyPem.trim())
-            assertThat(avro.certificateCheckMode?.revocationCheckMode).isEqualTo(RevocationMode.HARD_FAIL)
+            assertThat(avro.certificateCheckMode?.revocationCheckMode).isEqualTo(RevocationCheckMode.HARD_FAIL)
             assertThat(avro.certificateCheckMode?.truststore).containsOnly("one")
         }
     }
 
     @Test
-    fun `fromAvro returns the correct object`() {
+    fun `toCorda returns the correct object`() {
         val avro = AuthenticationProtocolInitiatorDetails(
             AuthenticationProtocolHeader(
                 "sessionId",
@@ -95,6 +95,18 @@ AQIDAQAB
                         ByteBuffer.wrap(byteArrayOf(3)),
                     )
                 ),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
             ),
             InitiatorStep.SESSION_ESTABLISHED,
             listOf(ProtocolMode.AUTHENTICATION_ONLY, ProtocolMode.AUTHENTICATED_ENCRYPTION),
@@ -103,7 +115,7 @@ AQIDAQAB
             null,
             null,
         )
-        val initiator = avro.fromAvro { _ -> mock() }
+        val initiator = avro.toCorda { _ -> mock() }
 
         assertSoftly {
             assertThat(initiator).isInstanceOf(AuthenticationProtocolInitiator::class.java)

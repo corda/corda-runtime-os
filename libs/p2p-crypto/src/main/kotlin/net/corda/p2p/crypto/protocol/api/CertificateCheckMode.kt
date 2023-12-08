@@ -1,8 +1,7 @@
 package net.corda.p2p.crypto.protocol.api
 
 import net.corda.crypto.utils.PemCertificate
-import net.corda.data.p2p.gateway.certificates.RevocationMode
-import net.corda.p2p.crypto.protocol.api.RevocationCheckMode.Companion.fromAvro
+import net.corda.data.p2p.crypto.protocol.RevocationCheckMode
 import net.corda.data.p2p.crypto.protocol.CheckCertificate as AvroCheckCertificate
 
 /**
@@ -12,15 +11,15 @@ sealed class CertificateCheckMode {
     abstract fun toAvro() : AvroCheckCertificate?
 
     companion object {
-        fun AvroCheckCertificate?.fromAvro(
+        fun AvroCheckCertificate?.toCorda(
             checkRevocation: CheckRevocation
         ) : CertificateCheckMode {
-            if (this == null) {
-                return NoCertificate
+            return if (this == null) {
+                NoCertificate
             } else {
-                return CheckCertificate(
+                CheckCertificate(
                     truststore = this.truststore,
-                    revocationCheckMode = this.revocationCheckMode.fromAvro(),
+                    revocationCheckMode = this.revocationCheckMode,
                     checkRevocation,
                 )
             }
@@ -43,32 +42,11 @@ sealed class CertificateCheckMode {
         val revocationCheckMode: RevocationCheckMode,
         val revocationChecker: CheckRevocation,
     ): CertificateCheckMode() {
-        override fun toAvro(): AvroCheckCertificate? {
+        override fun toAvro(): AvroCheckCertificate {
             return AvroCheckCertificate(
                 truststore,
-                revocationCheckMode.toAvro(),
+                revocationCheckMode,
             )
-        }
-    }
-}
-
-enum class RevocationCheckMode {
-    OFF, SOFT_FAIL, HARD_FAIL;
-
-    fun toAvro(): RevocationMode? {
-        return when(this) {
-            OFF -> null
-            SOFT_FAIL -> RevocationMode.SOFT_FAIL
-            HARD_FAIL -> RevocationMode.HARD_FAIL
-        }
-    }
-    companion object {
-        fun RevocationMode?.fromAvro(): RevocationCheckMode {
-            return when(this) {
-                null -> OFF
-                RevocationMode.SOFT_FAIL -> SOFT_FAIL
-                RevocationMode.HARD_FAIL -> HARD_FAIL
-            }
         }
     }
 }

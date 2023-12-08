@@ -6,7 +6,7 @@ import net.corda.data.p2p.crypto.protocol.AuthenticationProtocolResponderDetails
 import net.corda.data.p2p.crypto.protocol.ResponderStep
 import net.corda.data.p2p.crypto.protocol.SecretKeySpec
 import net.corda.data.p2p.crypto.protocol.Session
-import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder.Companion.fromAvro
+import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder.Companion.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -46,7 +46,7 @@ class AuthenticationProtocolResponderTest {
     }
 
     @Test
-    fun `fromAvro returns the correct object`() {
+    fun `toCorda returns the correct object`() {
         val avro = AuthenticationProtocolResponderDetails(
             AuthenticationProtocolHeader(
                 "sessionId",
@@ -65,6 +65,18 @@ class AuthenticationProtocolResponderTest {
                         ),
                     )
                 ),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
             ),
             ResponderStep.SESSION_ESTABLISHED,
             null,
@@ -72,7 +84,7 @@ class AuthenticationProtocolResponderTest {
             null,
             null,
         )
-        val initiator = avro.fromAvro()
+        val initiator = avro.toCorda()
 
         SoftAssertions.assertSoftly {
             assertThat(initiator).isInstanceOf(AuthenticationProtocolResponder::class.java)

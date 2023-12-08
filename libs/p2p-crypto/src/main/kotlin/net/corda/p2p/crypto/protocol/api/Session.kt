@@ -29,7 +29,7 @@ interface Session {
                 this.algorithm,
                 ByteBuffer.wrap(this.encoded),
             )
-        fun AvroSession.fromAvro(): Session {
+        fun AvroSession.toCorda(): Session {
             return when(val details = this.details) {
                 is AuthenticatedSessionDetails -> {
                     AuthenticatedSession(

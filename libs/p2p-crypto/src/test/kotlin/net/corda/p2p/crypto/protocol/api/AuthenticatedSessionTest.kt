@@ -7,7 +7,7 @@ import net.corda.data.p2p.crypto.MessageType
 import net.corda.data.p2p.crypto.ProtocolMode
 import net.corda.data.p2p.crypto.protocol.AuthenticatedSessionDetails
 import net.corda.data.p2p.crypto.protocol.Session
-import net.corda.p2p.crypto.protocol.api.Session.Companion.fromAvro
+import net.corda.p2p.crypto.protocol.api.Session.Companion.toCorda
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -309,7 +309,7 @@ class AuthenticatedSessionTest {
     }
 
     @Test
-    fun `fromAvro return a correct session`() {
+    fun `toCorda return a correct session`() {
         val avro = Session(
             "sessionId",
             300,
@@ -325,7 +325,7 @@ class AuthenticatedSessionTest {
             )
         )
 
-        val session = avro.fromAvro()
+        val session = avro.toCorda()
 
         assertThat(session).isInstanceOf(AuthenticatedSession::class.java)
     }

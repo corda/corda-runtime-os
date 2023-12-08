@@ -12,7 +12,6 @@ import net.corda.data.p2p.crypto.internal.InitiatorEncryptedExtensions
 import net.corda.data.p2p.crypto.internal.InitiatorHandshakeIdentity
 import net.corda.data.p2p.crypto.internal.InitiatorHandshakePayload
 import net.corda.data.p2p.crypto.internal.ResponderHandshakePayload
-import net.corda.data.p2p.crypto.protocol.AuthenticationProtocolHeader
 import net.corda.data.p2p.crypto.protocol.AuthenticationProtocolInitiatorDetails
 import net.corda.data.p2p.crypto.protocol.InitiatorStep as Step
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.INITIATOR_SIG_PAD
@@ -33,8 +32,8 @@ import java.security.PublicKey
 import java.security.spec.X509EncodedKeySpec
 import java.time.Instant
 import javax.crypto.AEADBadTagException
-import net.corda.p2p.crypto.protocol.api.CertificateCheckMode.Companion.fromAvro
-import net.corda.p2p.crypto.protocol.api.Session.Companion.fromAvro
+import net.corda.p2p.crypto.protocol.api.CertificateCheckMode.Companion.toCorda
+import net.corda.p2p.crypto.protocol.api.Session.Companion.toCorda
 import net.corda.utilities.crypto.publicKeyFactory
 import net.corda.utilities.crypto.toPem
 
@@ -65,17 +64,14 @@ class AuthenticationProtocolInitiator(
     private val ourPublicKey: PublicKey,
     private val groupId: String,
     private val certificateCheckMode: CertificateCheckMode,
-    private var step: Step = Step.INIT,
-    private var initiatorHandshakeMessage: InitiatorHandshakeMessage? = null,
-    private var session: Session? = null,
-    certificateValidatorFactory: (revocationCheckMode: RevocationCheckMode,
-                                  pemTrustStore: List<PemCertificate>,
-                                  check: CheckRevocation) -> CertificateValidator =
-    { revocationCheckMode, pemTrustStore, checkRevocation -> CertificateValidator(revocationCheckMode, pemTrustStore, checkRevocation) }
+    certificateValidatorFactory: CertificateValidatorFactory =
+    { revocationCheckMode, pemTrustStore, checkRevocation ->
+        CertificateValidator(revocationCheckMode, pemTrustStore, checkRevocation)
+    }
 ): AuthenticationProtocol(certificateValidatorFactory) {
 
     companion object {
-        fun AuthenticationProtocolInitiatorDetails.fromAvro(
+        fun AuthenticationProtocolInitiatorDetails.toCorda(
             checkRevocation: CheckRevocation,
         ): AuthenticationProtocolInitiator {
             return AuthenticationProtocolInitiator(
@@ -84,13 +80,18 @@ class AuthenticationProtocolInitiator(
                 ourMaxMessageSize = this.header.ourMaxMessageSize,
                 ourPublicKey = publicKeyFactory(this.ourPublicKey.reader()) ?: throw CordaRuntimeException("Invalid public key PEM"),
                 groupId = this.groupId,
-                certificateCheckMode = this.certificateCheckMode.fromAvro(checkRevocation),
-                step = this.step,
-                initiatorHandshakeMessage = this.initiatorHandshakeMessage,
-                session = this.header.session?.fromAvro(),
-            )
+                certificateCheckMode = this.certificateCheckMode.toCorda(checkRevocation),
+            ).also {
+                it.step = this.step
+                it.initiatorHandshakeMessage = this.initiatorHandshakeMessage
+                it.session = this.header.session?.toCorda()
+                it.applyHeaders(this.header)
+            }
         }
     }
+    private var step: Step = Step.INIT
+    private var initiatorHandshakeMessage: InitiatorHandshakeMessage? = null
+    private var session: Session? = null
 
     init {
         require(supportedModes.isNotEmpty()) { "At least one supported mode must be provided." }
@@ -280,10 +281,10 @@ class AuthenticationProtocolInitiator(
 
     fun toAvro(): AuthenticationProtocolInitiatorDetails {
         return AuthenticationProtocolInitiatorDetails(
-            AuthenticationProtocolHeader(
+            toAvro(
                sessionId,
                 ourMaxMessageSize,
-                session?.toAvro(),
+                session,
             ),
             this.step,
             supportedModes.toList(),
