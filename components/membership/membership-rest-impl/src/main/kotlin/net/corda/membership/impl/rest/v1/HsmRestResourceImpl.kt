@@ -47,10 +47,29 @@ class HsmRestResourceImpl @Activate constructor(
                 deprecatedAt = this.deprecatedAt
             )
 
+        private fun String.toCategoryPre5_2() = this.uppercase().also {
+            if (!CryptoConsts.Categories.pre_5_2.contains(it)) {
+                throw ResourceNotFoundException("Invalid category: $it")
+            }
+        }
+        
         private fun String.toCategory() = this.uppercase().also {
             if (!CryptoConsts.Categories.all.contains(it)) {
                 throw ResourceNotFoundException("Invalid category: $it")
             }
+        }
+    }
+
+    override fun assignedHsmPre5_2(tenantId: String, category: String): HsmAssociationInfo {
+        verifyTenantId(tenantId)
+        return tryWithExceptionHandling(
+            logger,
+            "Find HSM",
+            untranslatedExceptions = setOf(ResourceNotFoundException::class.java)
+        ) {
+            hsmRegistrationClient.findHSM(tenantId, category.toCategoryPre5_2())?.expose() ?: throw ResourceNotFoundException(
+                "No association found for tenant $tenantId category $category"
+            )
         }
     }
 
@@ -62,11 +81,24 @@ class HsmRestResourceImpl @Activate constructor(
             untranslatedExceptions = setOf(ResourceNotFoundException::class.java)
         ) {
             hsmRegistrationClient.findHSM(tenantId, category.toCategory())?.expose() ?: throw ResourceNotFoundException(
-                "No association found for tenant ${tenantId} category ${category}"
+                "No association found for tenant $tenantId category $category"
             )
         }
     }
 
+    override fun assignSoftHsmPre5_2(tenantId: String, category: String): HsmAssociationInfo {
+        verifyTenantId(tenantId)
+        return tryWithExceptionHandling(
+            logger,
+            "Find HSM",
+            untranslatedExceptions = setOf(ResourceNotFoundException::class.java)
+        ) {
+            hsmRegistrationClient.findHSM(tenantId, category.toCategoryPre5_2())?.expose() ?: throw ResourceNotFoundException(
+                "No association found for tenant $tenantId category $category"
+            )
+        }
+    }
+    
     override fun assignSoftHsm(tenantId: String, category: String): HsmAssociationInfo {
         verifyTenantId(tenantId)
         return tryWithExceptionHandling(
