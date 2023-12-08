@@ -58,8 +58,8 @@ class ContractVerifyingNotaryServerFlowImplTest {
         val responseFromServer = mutableListOf<NotarizationResponse>()
 
         /* Notary VNodes */
-        val notaryVNodeAliceKey = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x01))}
-        val notaryVNodeBobKey = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x02))}
+        val notaryVNodeAliceKey = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x01)) }
+        val notaryVNodeBobKey = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x02)) }
 
         /* Notary Service */
         val notaryServiceCompositeKey = mock<CompositeKey> {
@@ -102,16 +102,16 @@ class ContractVerifyingNotaryServerFlowImplTest {
         whenever(mockTransactionSignatureService.signBatch(any(), any())).thenThrow(
             TransactionNoAvailableKeysException("The publicKeys do not have any private counterparts available.", null)
         )
-        createAndCallServer(mockSuccessfulUniquenessClientService()) {
-            assertThat(responseFromServer).hasSize(1)
+        createAndCallServer(mockSuccessfulUniquenessClientService())
+        assertThat(responseFromServer).hasSize(1)
 
-            val responseError = responseFromServer.first().error
-            assertThat(responseError).isNotNull
-            assertThat(responseFromServer.first().signatures).isEmpty()
-            assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
-            assertThat((responseError as NotaryExceptionGeneral).errorText)
-                .contains("Error while processing request from client")
-        }
+        val responseError = responseFromServer.first().error
+        assertThat(responseError).isNotNull
+        assertThat(responseFromServer.first().signatures).isEmpty()
+        assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
+        assertThat((responseError as NotaryExceptionGeneral).errorText)
+            .contains("Error while processing request from client")
+
     }
 
     @Test
@@ -120,57 +120,61 @@ class ContractVerifyingNotaryServerFlowImplTest {
         createAndCallServer(
             mockSuccessfulUniquenessClientService(),
             notaryServiceKey = notaryVNodeAliceKey
-        ) {
-            assertThat(responseFromServer).hasSize(1)
+        )
+        assertThat(responseFromServer).hasSize(1)
 
-            val response = responseFromServer.first()
-            assertThat(response.error).isNull()
-            assertThat(response.signatures).hasSize(1)
-            assertThat(response.signatures.first().by).isEqualTo(notaryVNodeAliceKey.fullIdHash())
-        }
+        val response = responseFromServer.first()
+        assertThat(response.error).isNull()
+        assertThat(response.signatures).hasSize(1)
+        assertThat(response.signatures.first().by).isEqualTo(notaryVNodeAliceKey.fullIdHash())
+
     }
 
     @Test
     fun `Contract verifying notary plugin server should respond with error if request signature is invalid`() {
-        createAndCallServer(mockSuccessfulUniquenessClientService()) {
-            assertThat(responseFromServer).hasSize(1)
+        createAndCallServer(mockSuccessfulUniquenessClientService())
+        assertThat(responseFromServer).hasSize(1)
 
-            val responseError = responseFromServer.first().error
-            assertThat(responseError).isNotNull
-            assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
-            assertThat((responseError as NotaryExceptionGeneral).errorText)
-                .contains("Error while processing request from client")
-        }
+        val responseError = responseFromServer.first().error
+        assertThat(responseError).isNotNull
+        assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
+        assertThat((responseError as NotaryExceptionGeneral).errorText)
+            .contains("Error while processing request from client")
+
     }
 
     @Test
     fun `Contract verifying notary plugin server should respond with error if the uniqueness check fails`() {
         val unknownStateRef = UniquenessCheckStateRefImpl(SecureHashUtils.randomSecureHash(), 0)
 
-        createAndCallServer(mockErrorUniquenessClientService(
-            UniquenessCheckErrorReferenceStateUnknownImpl(listOf(unknownStateRef))
-        )) {
+        createAndCallServer(
+            mockErrorUniquenessClientService(
+                UniquenessCheckErrorReferenceStateUnknownImpl(listOf(unknownStateRef))
+            )
+        )
 
-            assertThat(responseFromServer).hasSize(1)
-            val responseError = responseFromServer.first().error
-            assertThat(responseError).isNotNull
-            assertThat(responseFromServer.first().signatures).isEmpty()
-            assertThat(responseError).isInstanceOf(NotaryExceptionReferenceStateUnknown::class.java)
-            assertThat((responseError as NotaryExceptionReferenceStateUnknown).unknownStates).containsExactly(unknownStateRef)
-        }
+        assertThat(responseFromServer).hasSize(1)
+        val responseError = responseFromServer.first().error
+        assertThat(responseError).isNotNull
+        assertThat(responseFromServer.first().signatures).isEmpty()
+        assertThat(responseError).isInstanceOf(NotaryExceptionReferenceStateUnknown::class.java)
+        assertThat((responseError as NotaryExceptionReferenceStateUnknown).unknownStates).containsExactly(
+            unknownStateRef
+        )
+
     }
 
     @Test
     fun `Contract verifying notary plugin server should respond with error if an error encountered during uniqueness check`() {
-        createAndCallServer(mockThrowErrorUniquenessCheckClientService()) {
-            assertThat(responseFromServer).hasSize(1)
+        createAndCallServer(mockThrowErrorUniquenessCheckClientService())
+        assertThat(responseFromServer).hasSize(1)
 
-            val responseError = responseFromServer.first().error
-            assertThat(responseError).isNotNull
-            assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
-            assertThat((responseError as NotaryExceptionGeneral).errorText)
-                .contains("Error while processing request from client")
-        }
+        val responseError = responseFromServer.first().error
+        assertThat(responseError).isNotNull
+        assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
+        assertThat((responseError as NotaryExceptionGeneral).errorText)
+            .contains("Error while processing request from client")
+
     }
 
     @Test
@@ -183,60 +187,62 @@ class ContractVerifyingNotaryServerFlowImplTest {
 
         createAndCallServer(
             mockSuccessfulUniquenessClientService(),
-        ) {
-            assertThat(responseFromServer).hasSize(1)
+        )
+        assertThat(responseFromServer).hasSize(1)
 
-            val response = responseFromServer.first()
-            assertThat(response.error).isNull()
-            assertThat(response.signatures).hasSize(1)
-            assertThat(response.signatures.first().by).isEqualTo(notaryVNodeAliceKey.fullIdHash())
-        }
+        val response = responseFromServer.first()
+        assertThat(response.error).isNull()
+        assertThat(response.signatures).hasSize(1)
+        assertThat(response.signatures.first().by).isEqualTo(notaryVNodeAliceKey.fullIdHash())
+
     }
 
     @Test
     fun `Contract verifying notary plugin server should respond with error if time window not present on filtered tx`() {
-        createAndCallServer(mockSuccessfulUniquenessClientService(), filteredTxContents = mapOf("timeWindow" to null)) {
-            assertThat(responseFromServer).hasSize(1)
+        createAndCallServer(mockSuccessfulUniquenessClientService(), filteredTxContents = mapOf("timeWindow" to null))
+        assertThat(responseFromServer).hasSize(1)
 
-            val responseError = responseFromServer.first().error
-            assertThat(responseError).isNotNull
-            assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
-            assertThat((responseError as NotaryExceptionGeneral).errorText).contains(
-                "Error while processing request from client"
-            )
-        }
+        val responseError = responseFromServer.first().error
+        assertThat(responseError).isNotNull
+        assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
+        assertThat((responseError as NotaryExceptionGeneral).errorText).contains(
+            "Error while processing request from client"
+        )
+
     }
 
     @Test
     fun `Contract verifying notary plugin server should respond with error if notary name not present on filtered tx`() {
         createAndCallServer(
             mockSuccessfulUniquenessClientService(),
-            filteredTxContents = mapOf("notaryName" to null)) {
-            assertThat(responseFromServer).hasSize(1)
+            filteredTxContents = mapOf("notaryName" to null)
+        )
+        assertThat(responseFromServer).hasSize(1)
 
-            val responseError = responseFromServer.first().error
-            assertThat(responseError).isNotNull
-            assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
-            assertThat((responseError as NotaryExceptionGeneral).errorText).contains(
-                "Error while processing request from client"
-            )
-        }
+        val responseError = responseFromServer.first().error
+        assertThat(responseError).isNotNull
+        assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
+        assertThat((responseError as NotaryExceptionGeneral).errorText).contains(
+            "Error while processing request from client"
+        )
+
     }
 
     @Test
     fun `Contract verifying notary plugin server should respond with error if notary key not present on filtered tx`() {
         createAndCallServer(
             mockSuccessfulUniquenessClientService(),
-            filteredTxContents = mapOf("notaryKey" to null)) {
-            assertThat(responseFromServer).hasSize(1)
+            filteredTxContents = mapOf("notaryKey" to null)
+        )
+        assertThat(responseFromServer).hasSize(1)
 
-            val responseError = responseFromServer.first().error
-            assertThat(responseError).isNotNull
-            assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
-            assertThat((responseError as NotaryExceptionGeneral).errorText).contains(
-                "Error while processing request from client"
-            )
-        }
+        val responseError = responseFromServer.first().error
+        assertThat(responseError).isNotNull
+        assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
+        assertThat((responseError as NotaryExceptionGeneral).errorText).contains(
+            "Error while processing request from client"
+        )
+
     }
 
     @Test
@@ -244,34 +250,38 @@ class ContractVerifyingNotaryServerFlowImplTest {
         fun throwVerify() {
             throw IllegalArgumentException("DUMMY ERROR")
         }
-        createAndCallServer(mockSuccessfulUniquenessClientService(), txVerificationLogic = ::throwVerify) {
-            assertThat(responseFromServer).hasSize(1)
+        createAndCallServer(mockSuccessfulUniquenessClientService(), txVerificationLogic = ::throwVerify)
+        assertThat(responseFromServer).hasSize(1)
 
-            val responseError = responseFromServer.first().error
-            assertThat(responseError).isNotNull
-            assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
-            assertThat((responseError as NotaryExceptionGeneral).errorText)
-                .contains("Error while processing request from client")
-        }
+        val responseError = responseFromServer.first().error
+        assertThat(responseError).isNotNull
+        assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
+        assertThat((responseError as NotaryExceptionGeneral).errorText)
+            .contains("Error while processing request from client")
+
     }
 
     @Test
     fun `Contract verifying notary plugin server should throw general error when unhandled exception in uniqueness checker`() {
-        createAndCallServer(mockErrorUniquenessClientService(
-            UniquenessCheckErrorUnhandledExceptionImpl(
-                IllegalArgumentException::class.java.name,
-                "Unhandled error!"
+        createAndCallServer(
+            mockErrorUniquenessClientService(
+                UniquenessCheckErrorUnhandledExceptionImpl(
+                    IllegalArgumentException::class.java.name,
+                    "Unhandled error!"
+                )
             )
-        )) {
-            assertThat(responseFromServer).hasSize(1)
+        )
+        assertThat(responseFromServer).hasSize(1)
 
-            val responseError = responseFromServer.first().error
-            assertThat(responseError).isNotNull
-            assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
-            assertThat((responseError as NotaryExceptionGeneral).errorText)
-                .contains("Unhandled exception of type java.lang.IllegalArgumentException encountered during " +
-                        "uniqueness checking with message: Unhandled error!")
-        }
+        val responseError = responseFromServer.first().error
+        assertThat(responseError).isNotNull
+        assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
+        assertThat((responseError as NotaryExceptionGeneral).errorText)
+            .contains(
+                "Unhandled exception of type java.lang.IllegalArgumentException encountered during " +
+                        "uniqueness checking with message: Unhandled error!"
+            )
+
     }
 
     @Test
@@ -280,15 +290,15 @@ class ContractVerifyingNotaryServerFlowImplTest {
             mockSuccessfulUniquenessClientService(),
             // What party we pass in here does not matter, it just needs to be different from the notary server party
             filteredTxContents = mapOf("notaryName" to MemberX500Name.parse("C=GB,L=London,O=Bob"))
-        ) {
-            assertThat(responseFromServer).hasSize(1)
+        )
+        assertThat(responseFromServer).hasSize(1)
 
-            val responseError = responseFromServer.first().error
-            assertThat(responseError).isNotNull
-            assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
-            assertThat((responseError as NotaryExceptionGeneral).errorText)
-                .contains("Error while processing request from client")
-        }
+        val responseError = responseFromServer.first().error
+        assertThat(responseError).isNotNull
+        assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
+        assertThat((responseError as NotaryExceptionGeneral).errorText)
+            .contains("Error while processing request from client")
+
     }
 
     /**
@@ -298,7 +308,8 @@ class ContractVerifyingNotaryServerFlowImplTest {
      *  - UniquenessCheckResultFailureImpl using [mockErrorUniquenessClientService]
      *  - UniquenessCheckResultSuccessImpl using [mockSuccessfulUniquenessClientService]
      *  @param notaryServiceKey PublicKey of notary. CompositeKey by default.
-     *  @param filteredTxContents Map of content of FilteredTransaction to mock up with. It will be mocked up with default values if it's empty.
+     *  @param filteredTxContents Map of content of FilteredTransaction to mock up with.
+     *  It will be mocked up with default values if it's empty.
      *  filtered contests that can be in a map:
      *  - outputStateRefs
      *  - notaryName
@@ -312,7 +323,6 @@ class ContractVerifyingNotaryServerFlowImplTest {
         notaryServiceKey: PublicKey = notaryServiceCompositeKey,
         filteredTxContents: Map<String, Any?> = emptyMap(),
         txVerificationLogic: () -> Unit = {},
-        extractData: (sigs: List<NotarizationResponse>) -> Unit
     ) {
         val txId = SecureHashUtils.randomSecureHash()
 
@@ -336,7 +346,9 @@ class ContractVerifyingNotaryServerFlowImplTest {
         // 2. Get current notary and parse its data
         whenever(mockMemberLookup.myInfo()).thenReturn(notaryInfo)
         whenever(notaryInfo.memberProvidedContext).thenReturn(memberProvidedContext)
-        whenever(memberProvidedContext.parse(NOTARY_SERVICE_NAME, MemberX500Name::class.java)).thenReturn(notaryServiceName)
+        whenever(memberProvidedContext.parse(NOTARY_SERVICE_NAME, MemberX500Name::class.java)).thenReturn(
+            notaryServiceName
+        )
         whenever(memberProvidedContext.parse(NOTARY_SERVICE_BACKCHAIN_REQUIRED, Boolean::class.java)).thenReturn(true)
 
         // 3. Check if any filtered transaction data should be overwritten
@@ -387,9 +399,11 @@ class ContractVerifyingNotaryServerFlowImplTest {
 
         val signature = mock<DigitalSignatureAndMetadata>()
 
-        val filteredTxAndSignatures = listOf(FilteredTransactionAndSignatures(
-            filteredTx,
-            listOf(signature))
+        val filteredTxAndSignatures = listOf(
+            FilteredTransactionAndSignatures(
+                filteredTx,
+                listOf(signature)
+            )
         )
 
         // 4. Mock the receive and send from the counterparty session, unless it is overwritten
@@ -413,8 +427,6 @@ class ContractVerifyingNotaryServerFlowImplTest {
         )
 
         server.call(paramOrDefaultSession)
-
-        extractData(responseFromServer)
     }
 
     private fun mockSuccessfulUniquenessClientService(): LedgerUniquenessCheckerClientService {
@@ -437,7 +449,8 @@ class ContractVerifyingNotaryServerFlowImplTest {
                 IllegalArgumentException("Uniqueness checker cannot be reached")
     }
 
-    private fun mockUniquenessClientService(response: UniquenessCheckResult) = mock<LedgerUniquenessCheckerClientService> {
-        on { requestUniquenessCheck(any(), any(), any(), any(), any(), any(), any()) } doReturn response
-    }
+    private fun mockUniquenessClientService(response: UniquenessCheckResult) =
+        mock<LedgerUniquenessCheckerClientService> {
+            on { requestUniquenessCheck(any(), any(), any(), any(), any(), any(), any()) } doReturn response
+        }
 }
