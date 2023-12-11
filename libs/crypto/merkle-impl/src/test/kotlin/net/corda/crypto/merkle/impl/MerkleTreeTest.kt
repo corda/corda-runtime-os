@@ -16,6 +16,7 @@ import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
 import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.crypto.merkle.MerkleTree
+import org.assertj.core.api.AbstractStringAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -138,6 +139,7 @@ class MerkleTreeTest {
         val root = merkleTree.root
         val leaf0 = merkleTree.calcLeafHash(0)
         assertEquals(leaf0, root)
+        assertRoot(root, "7901af93")
     }
 
     @Test
@@ -512,3 +514,7 @@ class MerkleTreeTest {
         }
     }
 }
+
+fun SecureHash.hex() = bytes.joinToString(separator="") { "%02x".format(it) }
+
+fun assertRoot(root: SecureHash, valuePrefix: String): AbstractStringAssert<*> =assertThat(root.hex()).startsWith(valuePrefix)
