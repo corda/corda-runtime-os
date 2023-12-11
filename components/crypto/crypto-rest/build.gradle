@@ -17,7 +17,6 @@ dependencies {
     implementation project(':libs:crypto:crypto-config-impl')
     implementation project(":libs:state-manager:state-manager-api")
     implementation project(':libs:serialization:serialization-avro')
-    runtimeOnly project(':libs:state-manager:state-manager-db-impl')
 
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "org.osgi:osgi.annotation"
