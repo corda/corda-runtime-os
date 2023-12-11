@@ -5,6 +5,7 @@ import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.PlatformDigestServiceImpl
 import net.corda.common.json.validation.impl.JsonValidatorImpl
+import net.corda.crypto.cipher.suite.merkle.MerkleProofProvider
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
@@ -37,7 +38,7 @@ class FilteredTransactionFactoryImplTest {
 
     private val digestService =
         DigestServiceImpl(PlatformDigestServiceImpl(CipherSchemeMetadataImpl()), null)
-    private val jsonMarshallingService = JsonMarshallingServiceImpl()
+    private val jsonMarshallingService = JsonMarshallingServiceImpl(mock<MerkleProofProvider>{})
     private val jsonValidator = JsonValidatorImpl()
     private val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
     private val serializationService = mock<SerializationService>()

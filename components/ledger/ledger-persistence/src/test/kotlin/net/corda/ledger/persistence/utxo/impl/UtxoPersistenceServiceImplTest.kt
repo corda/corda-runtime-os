@@ -2,6 +2,7 @@ package net.corda.ledger.persistence.utxo.impl
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
+import net.corda.crypto.cipher.suite.merkle.MerkleProofProvider
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.ledger.common.data.transaction.PrivacySalt
@@ -90,7 +91,7 @@ class UtxoPersistenceServiceImplTest {
         mockDigestService,
         storage,
         DefaultContractStateVaultJsonFactoryImpl(),
-        JsonMarshallingServiceImpl(), // We could mock this but this is basically just a layer on top of Jackson
+        JsonMarshallingServiceImpl(mock<MerkleProofProvider>{}), // We could mock this but this is basically just a layer on top of Jackson
         UTCClock()
     )
 
@@ -141,7 +142,7 @@ class UtxoPersistenceServiceImplTest {
             mockDigestService,
             storage,
             emptyDefaultContractStateVaultJsonFactory,
-            JsonMarshallingServiceImpl(),
+            JsonMarshallingServiceImpl(mock<MerkleProofProvider>{}),
             UTCClock()
         )
 
@@ -226,7 +227,7 @@ class UtxoPersistenceServiceImplTest {
             mockDigestService,
             ContractStateVaultJsonFactoryRegistryImpl(), // Empty storage
             DefaultContractStateVaultJsonFactoryImpl(),
-            JsonMarshallingServiceImpl(),
+            JsonMarshallingServiceImpl(mock<MerkleProofProvider>{}),
             UTCClock()
         )
 
@@ -265,7 +266,7 @@ class UtxoPersistenceServiceImplTest {
             mockDigestService,
             storage,
             DefaultContractStateVaultJsonFactoryImpl(),
-            JsonMarshallingServiceImpl(),
+            JsonMarshallingServiceImpl(mock<MerkleProofProvider>{}),
             UTCClock()
         )
 
