@@ -1124,18 +1124,18 @@
         }, {
           "name" : "category",
           "in" : "path",
-          "description" : "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY', or 'ENCRYPTION_SECRET'",
+          "description" : "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY', or 'ENCRYPTION_SECRET'",
+            "description" : "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'",
             "nullable" : false,
             "example" : "string"
           }
         } ],
         "responses" : {
           "200" : {
-            "description" : "\n            The HSM association details including:\n            id: the unique identifier of the HSM association\n            hsmId: the HSM identifier included into the association\n            category: the category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', \n                'TLS', 'JWT_KEY', or 'ENCRYPTION_SECRET'\n            masterKeyAlias: optional master key alias to be used on HSM\n            deprecatedAt: time when the association was deprecated, epoch time in seconds; \n                value of 0 means the association is active",
+            "description" : "\n            The HSM association details including:\n            id: the unique identifier of the HSM association\n            hsmId: the HSM identifier included into the association\n            category: the category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', \n                'TLS', or 'JWT_KEY'\n            masterKeyAlias: optional master key alias to be used on HSM\n            deprecatedAt: time when the association was deprecated, epoch time in seconds; \n                value of 0 means the association is active",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1172,18 +1172,18 @@
         }, {
           "name" : "category",
           "in" : "path",
-          "description" : "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY', or 'ENCRYPTION_SECRET'",
+          "description" : "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY', or 'ENCRYPTION_SECRET'",
+            "description" : "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'",
             "nullable" : false,
             "example" : "string"
           }
         } ],
         "responses" : {
           "200" : {
-            "description" : "\n            The HSM association details including:\n            id: the unique identifier of the HSM association\n            hsmId: the HSM identifier included into the association\n            category: the category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', \n                'TLS', 'JWT_KEY', or 'ENCRYPTION_SECRET'\n            masterKeyAlias: optional master key alias to be used on HSM\n            deprecatedAt: time when the association was deprecated, epoch time in seconds; \n                value of 0 means the association is active",
+            "description" : "\n            The HSM association details including:\n            id: the unique identifier of the HSM association\n            hsmId: the HSM identifier included into the association\n            category: the category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', \n                'TLS', or 'JWT_KEY'\n            masterKeyAlias: optional master key alias to be used on HSM\n            deprecatedAt: time when the association was deprecated, epoch time in seconds; \n                value of 0 means the association is active",
             "content" : {
               "application/json" : {
                 "schema" : {
