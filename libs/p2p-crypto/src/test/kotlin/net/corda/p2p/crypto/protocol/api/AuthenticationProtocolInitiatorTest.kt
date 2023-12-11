@@ -2,7 +2,7 @@ package net.corda.p2p.crypto.protocol.api
 
 import net.corda.data.p2p.crypto.ProtocolMode
 import net.corda.data.p2p.crypto.protocol.AuthenticatedEncryptionSessionDetails
-import net.corda.data.p2p.crypto.protocol.AuthenticationProtocolHeader
+import net.corda.data.p2p.crypto.protocol.AuthenticationProtocolCommonDetails
 import net.corda.data.p2p.crypto.protocol.AuthenticationProtocolInitiatorDetails
 import net.corda.data.p2p.crypto.protocol.InitiatorStep
 import net.corda.data.p2p.crypto.protocol.RevocationCheckMode
@@ -64,7 +64,7 @@ AQIDAQAB
 
         assertSoftly {
             assertThat(avro).isInstanceOf(AuthenticationProtocolInitiatorDetails::class.java)
-            assertThat(avro.header.sessionId).isEqualTo("sessionId")
+            assertThat(avro.protocolCommonDetails.sessionId).isEqualTo("sessionId")
             assertThat(avro.supportedModes).containsOnly(ProtocolMode.AUTHENTICATION_ONLY)
             assertThat(avro.groupId).isEqualTo("group")
             assertThat(avro.ourPublicKey.trim()).isEqualTo(publicKeyPem.trim())
@@ -76,7 +76,7 @@ AQIDAQAB
     @Test
     fun `toCorda returns the correct object`() {
         val avro = AuthenticationProtocolInitiatorDetails(
-            AuthenticationProtocolHeader(
+            AuthenticationProtocolCommonDetails(
                 "sessionId",
                 500000,
                 Session(

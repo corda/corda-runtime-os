@@ -1,7 +1,7 @@
 package net.corda.p2p.crypto.protocol.api
 
 import net.corda.data.p2p.crypto.protocol.AuthenticatedSessionDetails
-import net.corda.data.p2p.crypto.protocol.AuthenticationProtocolHeader
+import net.corda.data.p2p.crypto.protocol.AuthenticationProtocolCommonDetails
 import net.corda.data.p2p.crypto.protocol.AuthenticationProtocolResponderDetails
 import net.corda.data.p2p.crypto.protocol.ResponderStep
 import net.corda.data.p2p.crypto.protocol.SecretKeySpec
@@ -35,8 +35,8 @@ class AuthenticationProtocolResponderTest {
 
         SoftAssertions.assertSoftly {
             assertThat(avro).isInstanceOf(AuthenticationProtocolResponderDetails::class.java)
-            assertThat(avro.header.sessionId).isEqualTo("sessionId")
-            assertThat(avro.header.ourMaxMessageSize).isEqualTo(500000)
+            assertThat(avro.protocolCommonDetails.sessionId).isEqualTo("sessionId")
+            assertThat(avro.protocolCommonDetails.ourMaxMessageSize).isEqualTo(500000)
             assertThat(avro.step).isEqualTo(ResponderStep.INIT)
             assertThat(avro.handshakeIdentityData).isNull()
             assertThat(avro.responderHandshakeMessage).isNull()
@@ -48,7 +48,7 @@ class AuthenticationProtocolResponderTest {
     @Test
     fun `toCorda returns the correct object`() {
         val avro = AuthenticationProtocolResponderDetails(
-            AuthenticationProtocolHeader(
+            AuthenticationProtocolCommonDetails(
                 "sessionId",
                 500000,
                 Session(

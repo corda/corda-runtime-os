@@ -75,17 +75,17 @@ class AuthenticationProtocolInitiator(
             checkRevocation: CheckRevocation,
         ): AuthenticationProtocolInitiator {
             return AuthenticationProtocolInitiator(
-                sessionId = this.header.sessionId,
+                sessionId = this.protocolCommonDetails.sessionId,
                 supportedModes = this.supportedModes.toSet(),
-                ourMaxMessageSize = this.header.ourMaxMessageSize,
+                ourMaxMessageSize = this.protocolCommonDetails.ourMaxMessageSize,
                 ourPublicKey = publicKeyFactory(this.ourPublicKey.reader()) ?: throw CordaRuntimeException("Invalid public key PEM"),
                 groupId = this.groupId,
                 certificateCheckMode = this.certificateCheckMode.toCorda(checkRevocation),
             ).also {
                 it.step = this.step
                 it.initiatorHandshakeMessage = this.initiatorHandshakeMessage
-                it.session = this.header.session?.toCorda()
-                it.applyHeaders(this.header)
+                it.session = this.protocolCommonDetails.session?.toCorda()
+                it.applyCommonDetails(this.protocolCommonDetails)
             }
         }
     }

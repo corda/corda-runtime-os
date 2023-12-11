@@ -78,13 +78,13 @@ class AuthenticationProtocolResponder(
     companion object {
         fun AuthenticationProtocolResponderDetails.toCorda():  AuthenticationProtocolResponder {
             return AuthenticationProtocolResponder(
-                sessionId = this.header.sessionId,
-                ourMaxMessageSize = this.header.ourMaxMessageSize,
+                sessionId = this.protocolCommonDetails.sessionId,
+                ourMaxMessageSize = this.protocolCommonDetails.ourMaxMessageSize,
             ).also {
-                it.applyHeaders(this.header)
+                it.applyCommonDetails(this.protocolCommonDetails)
                 it.step = this.step
                 it.handshakeIdentityData = this.handshakeIdentityData?.toCorda()
-                it.session = this.header.session?.toCorda()
+                it.session = this.protocolCommonDetails.session?.toCorda()
                 it.encryptedExtensions = this.encryptedExtensions
                 it.initiatorPublicKey = this.initiatorPublicKey?.let {
                     publicKeyFactory(it.reader()) ?: throw CordaRuntimeException("Invalid public key PEM")

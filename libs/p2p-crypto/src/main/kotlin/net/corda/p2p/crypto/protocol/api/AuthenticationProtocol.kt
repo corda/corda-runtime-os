@@ -43,7 +43,7 @@ import javax.crypto.Mac
 import javax.crypto.SecretKey
 import javax.crypto.spec.SecretKeySpec
 import net.corda.crypto.utils.PemCertificate
-import net.corda.data.p2p.crypto.protocol.AuthenticationProtocolHeader
+import net.corda.data.p2p.crypto.protocol.AuthenticationProtocolCommonDetails
 import net.corda.data.p2p.crypto.protocol.RevocationCheckMode
 import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
 import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
@@ -267,7 +267,7 @@ sealed class AuthenticationProtocol(private val certificateValidatorFactory: Cer
         return messageDigest.hash(key.encoded)
     }
 
-    protected fun applyHeaders(header: AuthenticationProtocolHeader) {
+    protected fun applyCommonDetails(header: AuthenticationProtocolCommonDetails) {
         myPrivateDHKey = header.myPrivateDHKey?.let {
             privateKeyFactory(it.reader())
         }
@@ -291,7 +291,7 @@ sealed class AuthenticationProtocol(private val certificateValidatorFactory: Cer
         ourMaxMessageSize: Int,
         session: Session?,
     ) =
-        AuthenticationProtocolHeader(
+        AuthenticationProtocolCommonDetails(
             sessionId,
             ourMaxMessageSize,
             session?.toAvro(),
