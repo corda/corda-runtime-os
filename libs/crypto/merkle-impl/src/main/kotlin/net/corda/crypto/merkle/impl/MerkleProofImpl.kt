@@ -146,7 +146,7 @@ class MerkleProofImpl(
                         )
                     }
                 } else {                                            // The last odd element, just gets lifted.
-                    println("\t\t\t\tlifting last ood element")
+                    println("\t\t\t\tlifting last odd element")
                     newItems += Pair((item.first + 1) / 2, item.second)
                 }
                 ++index // whatever of the last 3 cases we took, we consumed one element

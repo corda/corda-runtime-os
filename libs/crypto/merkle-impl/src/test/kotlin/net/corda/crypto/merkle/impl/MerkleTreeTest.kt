@@ -328,7 +328,7 @@ class MerkleTreeTest {
         return (1 until (1 shl treeSize)).map { i ->
             val leafIndicesCombination = (0 until treeSize).filter { (i and (1 shl it)) != 0 }
             testLeafCombination(merkleTree, leafIndicesCombination, merkleTree.root, treeSize).also {
-                //calculateLeveledHashes(it, trivialHashDigestProvider)
+                calculateLeveledHashes(it, trivialHashDigestProvider)
             }
         }
     }

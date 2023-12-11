@@ -23,7 +23,7 @@ fun calculateLeveledHashes(proof: MerkleProof, digest: MerkleTreeHashDigestProvi
     val treeSize = proof.treeSize
     val leaves = proof.leaves
     println("calculateLeveledHashes initial tree size ${treeSize} leaves indices ${leaves.map { it.index }} |hashes|=${hashes.size}")
-    var hashIndex = treeSize
+    var hashIndex = 0
     val sortedLeaves = leaves.sortedBy { it.index }
     var nodeHashes = sortedLeaves.map { Pair(it.index, digest.leafHash(it.index, it.nonce, it.leafData)) }
     val leveledHashes = mutableListOf<LeveledHash>() // output accumulator
@@ -59,7 +59,7 @@ fun calculateLeveledHashes(proof: MerkleProof, digest: MerkleTreeHashDigestProvi
                 } else {
                     println("\t\t\tThere is no next element; $index == ${nodeHashes.size -1 }")
                 }
-                println("\t\t\tafter first clause hash index $hashIndex")
+                println("\t\t\tat $hashIndex on level $index; cannot pair; have ${hashes.size} hashes")
                 if (hashIndex > hashes.size) {                 // We'll need one more hash to continue. So if
                     throw MerkleProofRebuildFailureException(   // we do not have more, the proof is incorrect.
                         "MerkleProof root calculation requires more hashes than the proof has."
