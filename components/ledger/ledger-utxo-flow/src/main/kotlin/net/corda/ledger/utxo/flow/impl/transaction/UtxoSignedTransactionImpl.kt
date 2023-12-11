@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.flow.impl.transaction.getKeyOrLeafKeys
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
@@ -10,13 +11,13 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.KeyUtils
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import net.corda.v5.ledger.utxo.Command
+import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
@@ -28,6 +29,7 @@ import java.util.Objects
 data class UtxoSignedTransactionImpl(
     private val serializationService: SerializationService,
     private val transactionSignatureServiceInternal: TransactionSignatureServiceInternal,
+    private val notarySignatureVerificationService: NotarySignatureVerificationService,
     private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
     override val wireTransaction: WireTransaction,
     private val signatures: List<DigitalSignatureAndMetadata>
@@ -91,6 +93,7 @@ data class UtxoSignedTransactionImpl(
         UtxoSignedTransactionImpl(
             serializationService,
             transactionSignatureServiceInternal,
+            notarySignatureVerificationService,
             utxoLedgerTransactionFactory,
             wireTransaction,
             signatures + signature
@@ -107,6 +110,7 @@ data class UtxoSignedTransactionImpl(
             UtxoSignedTransactionImpl(
                 serializationService,
                 transactionSignatureServiceInternal,
+                notarySignatureVerificationService,
                 utxoLedgerTransactionFactory,
                 wireTransaction,
                 signatures + newSignatures
@@ -179,51 +183,12 @@ data class UtxoSignedTransactionImpl(
             .toMap()
     }
 
-    private fun getNotaryPublicKeyByKeyId(keyId: SecureHash): PublicKey? {
-        val keyIdToPublicKey = keyIdToNotaryKeys.getOrPut(keyId.algorithm) {
-            // Prepare keyIds for all public keys related to the notary for the relevant algorithm
-            getKeyOrLeafKeys(notaryKey).associateBy {
-                transactionSignatureServiceInternal.getIdOfPublicKey(
-                    it,
-                    keyId.algorithm
-                )
-            }
-        }
-        return keyIdToPublicKey[keyId]
-    }
-
     override fun verifyAttachedNotarySignature() {
-        val notaryPublicKeysWithValidSignatures = signatures.mapNotNull {
-            val publicKey = getNotaryPublicKeyByKeyId(it.by)
-            if (publicKey != null) {
-                try {
-                    transactionSignatureServiceInternal.verifySignature(this, it, publicKey)
-                    publicKey
-                } catch (e: Exception) {
-                    throw TransactionSignatureException(
-                        id,
-                        "Failed to verify signature of ${it.signature} for transaction $id. Message: ${e.message}",
-                        e
-                    )
-                }
-            } else {
-                null
-            }
-        }.toSet()
-        // If the notary service key (composite key) is provided we need to make sure it contains the key the
-        // transaction was signed with. This means it was signed with one of the notary VNodes (worker).
-        if (!KeyUtils.isKeyFulfilledBy(notaryKey, notaryPublicKeysWithValidSignatures)) {
-            throw TransactionSignatureException(
-                id,
-                "Notary signing keys $notaryPublicKeysWithValidSignatures did not fulfil " +
-                    "requirements of notary service key $notaryKey",
-                null
-            )
-        }
+        notarySignatureVerificationService.verifyNotarySignatures(id, notaryKey, signatures, keyIdToNotaryKeys)
     }
 
     override fun verifyNotarySignature(signature: DigitalSignatureAndMetadata) {
-        val publicKey = getNotaryPublicKeyByKeyId(signature.by)
+        val publicKey = notarySignatureVerificationService.getNotaryPublicKeyByKeyId(signature.by, notaryKey, keyIdToNotaryKeys)
             ?: throw TransactionSignatureException(
                 id,
                 "Notary signature has not been created by the notary for this transaction. " +
@@ -290,12 +255,5 @@ data class UtxoSignedTransactionImpl(
 
     override fun toString(): String {
         return "UtxoSignedTransactionImpl(id=$id, signatures=$signatures, wireTransaction=$wireTransaction)"
-    }
-
-    private fun getKeyOrLeafKeys(publicKey: PublicKey): List<PublicKey> {
-        return when (publicKey) {
-            is CompositeKey -> publicKey.leafKeys.toList()
-            else -> listOf(publicKey)
-        }
     }
 }

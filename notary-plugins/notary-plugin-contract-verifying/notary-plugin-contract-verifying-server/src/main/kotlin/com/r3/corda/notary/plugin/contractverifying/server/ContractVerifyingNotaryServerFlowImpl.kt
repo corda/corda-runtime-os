@@ -2,7 +2,10 @@ package com.r3.corda.notary.plugin.contractverifying.server
 
 import com.r3.corda.notary.plugin.common.NotarizationResponse
 import com.r3.corda.notary.plugin.common.NotaryExceptionGeneral
+import com.r3.corda.notary.plugin.common.NotaryExceptionInvalidSignature
+import com.r3.corda.notary.plugin.common.NotaryExceptionTransactionVerificationFailure
 import com.r3.corda.notary.plugin.common.NotaryTransactionDetails
+import com.r3.corda.notary.plugin.common.TransactionSignatureServiceInternal
 import com.r3.corda.notary.plugin.common.toNotarizationResponse
 import com.r3.corda.notary.plugin.contractverifying.api.ContractVerifyingNotarizationPayload
 import com.r3.corda.notary.plugin.contractverifying.api.FilteredTransactionAndSignatures
@@ -15,7 +18,10 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
+import net.corda.v5.ledger.notary.plugin.core.NotaryException
+import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
@@ -38,10 +44,16 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
     private lateinit var transactionSignatureService: TransactionSignatureService
 
     @CordaInject
+    private lateinit var transactionSignatureServiceInternal: TransactionSignatureServiceInternal
+
+    @CordaInject
     private lateinit var utxoLedgerService: UtxoLedgerService
 
     @CordaInject
     private lateinit var memberLookup: MemberLookup
+
+    @CordaInject
+    private lateinit var notarySignatureVerificationService: NotarySignatureVerificationService
 
     /**
      * Constructor used for testing to initialize the necessary services
@@ -50,11 +62,13 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
     internal constructor(
         clientService: LedgerUniquenessCheckerClientService,
         transactionSignatureService: TransactionSignatureService,
+        transactionSignatureServiceInternal: TransactionSignatureServiceInternal,
         utxoLedgerService: UtxoLedgerService,
         memberLookup: MemberLookup
     ) : this() {
         this.clientService = clientService
         this.transactionSignatureService = transactionSignatureService
+        this.transactionSignatureServiceInternal = transactionSignatureServiceInternal
         this.utxoLedgerService = utxoLedgerService
         this.memberLookup = memberLookup
     }
@@ -106,14 +120,12 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
             session.send(uniquenessResult.toNotarizationResponse(initialTransactionDetails.id, signature))
         } catch (e: Exception) {
             logger.warn("Error while processing request from client. Cause: $e ${e.stackTraceToString()}")
-
+            val exception =
+                if (e is NotaryException) e else NotaryExceptionGeneral("Error during notarization. Cause: ${e.message}")
             session.send(
                 NotarizationResponse(
                     emptyList(),
-                    NotaryExceptionGeneral(
-                        "Error while processing request from client. " +
-                        "Please contract notary operator for further details."
-                    )
+                    exception
                 )
             )
         }
@@ -154,27 +166,25 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
      * A function that will verify the signatures of the given [filteredTransactionsAndSignatures].
      */
     @Suspendable
-    private fun verifySignatures(
+    fun verifySignatures(
         notaryKey: PublicKey,
         filteredTransactionsAndSignatures: List<FilteredTransactionAndSignatures>
     ) {
-        filteredTransactionsAndSignatures.forEach { (filteredTransaction, signatures) ->
-            require(signatures.isNotEmpty()) { "No notary signatures were received with transaction: ${filteredTransaction.id}." }
-            filteredTransaction.verify()
-            val hasValidSignature = signatures.any {
-                try {
-                    transactionSignatureService.verifySignature(
-                        filteredTransaction.id,
-                        it,
-                        notaryKey
-                    )
-                    true
-                } catch (e: Exception) {
-                    false
-                }
-            }
-            require(hasValidSignature) {
-                "A valid notary signature is not found with transaction: ${filteredTransaction.id}."
+        val keyIdToNotaryKeys: MutableMap<String, MutableMap<SecureHash, PublicKey>> = mutableMapOf()
+        filteredTransactionsAndSignatures.forEach {(filteredTransaction, signatures) ->
+            try {
+                filteredTransaction.verify()
+                notarySignatureVerificationService.verifyNotarySignatures(
+                    filteredTransaction.id,
+                    notaryKey,
+                    signatures,
+                    keyIdToNotaryKeys
+                )
+            } catch (e: Exception) {
+                throw NotaryExceptionInvalidSignature(
+                    "A valid notary signature is not found with error message: ${e.message}.",
+                    filteredTransaction.id
+                )
             }
         }
     }
@@ -184,22 +194,28 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
         initialTransaction: UtxoSignedTransaction,
         filteredTransactionsAndSignatures: List<FilteredTransactionAndSignatures>
     ) {
-        val dependentStateAndRefs = filteredTransactionsAndSignatures.flatMap { (filteredTransaction, _) ->
-            (filteredTransaction.outputStateAndRefs as UtxoFilteredData.Audit<StateAndRef<*>>).values.values
-        }.associateBy { it.ref }
+        try {
+            val dependentStateAndRefs = filteredTransactionsAndSignatures.flatMap { (filteredTransaction, _) ->
+                (filteredTransaction.outputStateAndRefs as UtxoFilteredData.Audit<StateAndRef<*>>).values.values
+            }.associateBy { it.ref }
 
-        val inputStateAndRefs = initialTransaction.inputStateRefs.map { stateRef ->
-            requireNotNull(dependentStateAndRefs[stateRef]) {
-                "Missing input state and ref from the filtered transaction"
+            val inputStateAndRefs = initialTransaction.inputStateRefs.map { stateRef ->
+                requireNotNull(dependentStateAndRefs[stateRef]) {
+                    "Missing input state and ref from the filtered transaction"
+                }
             }
-        }
 
-        val referenceStateAndRefs = initialTransaction.referenceStateRefs.map { stateRef ->
-            requireNotNull(dependentStateAndRefs[stateRef]) {
-                "Missing reference state and ref from the filtered transaction"
+            val referenceStateAndRefs = initialTransaction.referenceStateRefs.map { stateRef ->
+                requireNotNull(dependentStateAndRefs[stateRef]) {
+                    "Missing reference state and ref from the filtered transaction"
+                }
             }
+            utxoLedgerService.verify(initialTransaction.toLedgerTransaction(inputStateAndRefs, referenceStateAndRefs))
+        } catch (e: Exception) {
+            throw NotaryExceptionTransactionVerificationFailure(
+                "Transaction failed to verify with error message: ${e.message}.",
+                initialTransaction.id
+            )
         }
-
-        utxoLedgerService.verify(initialTransaction.toLedgerTransaction(inputStateAndRefs, referenceStateAndRefs))
     }
 }

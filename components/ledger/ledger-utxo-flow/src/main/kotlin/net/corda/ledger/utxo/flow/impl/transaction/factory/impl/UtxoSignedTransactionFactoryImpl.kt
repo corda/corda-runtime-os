@@ -29,6 +29,7 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
+import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -65,7 +66,9 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     @Reference(service = GroupParametersLookupInternal::class)
     private val groupParametersLookup: GroupParametersLookupInternal,
     @Reference(service = SignedGroupParametersVerifier::class)
-    private val signedGroupParametersVerifier: SignedGroupParametersVerifier
+    private val signedGroupParametersVerifier: SignedGroupParametersVerifier,
+    @Reference(service = NotarySignatureVerificationService::class)
+    private val notarySignatureVerificationService: NotarySignatureVerificationService
 ) : UtxoSignedTransactionFactory, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
@@ -92,6 +95,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         return UtxoSignedTransactionImpl(
             serializationService,
             transactionSignatureService,
+            notarySignatureVerificationService,
             utxoLedgerTransactionFactory,
             wireTransaction,
             signaturesWithMetadata
@@ -104,6 +108,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     ): UtxoSignedTransactionInternal = UtxoSignedTransactionImpl(
         serializationService,
         transactionSignatureService,
+        notarySignatureVerificationService,
         utxoLedgerTransactionFactory,
         wireTransaction,
         signaturesWithMetaData

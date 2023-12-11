@@ -292,8 +292,15 @@ fun registerStaticMember(
     holdingIdentityShortHash: String,
     notaryServiceName: String? = null,
     customMetadata: Map<String, String> = emptyMap(),
-    isBackchainRequired: Boolean = true
-) = DEFAULT_CLUSTER.registerStaticMember(holdingIdentityShortHash, notaryServiceName, customMetadata, isBackchainRequired)
+    isBackchainRequired: Boolean = true,
+    notaryPlugin: String = "nonvalidating"
+) = DEFAULT_CLUSTER.registerStaticMember(
+    holdingIdentityShortHash,
+    notaryServiceName,
+    customMetadata,
+    isBackchainRequired,
+    notaryPlugin
+)
 
 val memberRegisterLock = ReentrantLock()
 fun ClusterInfo.registerStaticMember(

@@ -2,7 +2,10 @@ package com.r3.corda.notary.plugin.contractverifying.server
 
 import com.r3.corda.notary.plugin.common.NotarizationResponse
 import com.r3.corda.notary.plugin.common.NotaryExceptionGeneral
+import com.r3.corda.notary.plugin.common.NotaryExceptionInvalidSignature
 import com.r3.corda.notary.plugin.common.NotaryExceptionReferenceStateUnknown
+import com.r3.corda.notary.plugin.common.NotaryExceptionTransactionVerificationFailure
+import com.r3.corda.notary.plugin.common.TransactionSignatureServiceInternal
 import com.r3.corda.notary.plugin.contractverifying.api.ContractVerifyingNotarizationPayload
 import com.r3.corda.notary.plugin.contractverifying.api.FilteredTransactionAndSignatures
 import net.corda.crypto.core.fullIdHash
@@ -20,6 +23,7 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckError
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.CompositeKey
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
@@ -54,18 +58,22 @@ class ContractVerifyingNotaryServerFlowImplTest {
         const val NOTARY_SERVICE_BACKCHAIN_REQUIRED = "corda.notary.service.backchain.required"
     }
 
-    /* Cache for storing response from server */
+    // Cache for storing response from server
     private val responseFromServer = mutableListOf<NotarizationResponse>()
 
-    /* Notary VNodes */
+    // Notary vnodes
     private val notaryVNodeAliceKey = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x01)) }
     private val notaryVNodeBobKey = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x02)) }
+    private val invalidVnodeKey = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x03)) }
 
-    /* Notary Service */
+    private val signatureAlice = getSignatureWithMetadataExample(notaryVNodeAliceKey)
+    private val signatureBob = getSignatureWithMetadataExample(notaryVNodeBobKey)
+    private val signatureInvalid = getSignatureWithMetadataExample(invalidVnodeKey)
+
+    // Notary Service and key
     private val notaryServiceCompositeKey = mock<CompositeKey> {
         on { leafKeys } doReturn setOf(notaryVNodeAliceKey, notaryVNodeBobKey)
     }
-
     private val notaryServiceName = MemberX500Name.parse("O=MyNotaryService, L=London, C=GB")
 
     // The client that initiated the session with the notary server
@@ -79,6 +87,28 @@ class ContractVerifyingNotaryServerFlowImplTest {
     private val notaryInfo = mock<MemberInfo>()
     private val memberProvidedContext = mock<MemberContext>()
     private val mockMemberLookup = mock<MemberLookup>()
+
+    // mock fields for signed transaction
+    private val txId = SecureHashUtils.randomSecureHash()
+    private val transactionMetadata = mock<TransactionMetadata>()
+    private val mockTimeWindow = mock<TimeWindow> {
+        on { from } doReturn Instant.now()
+        on { until } doReturn Instant.now().plusMillis(100000)
+    }
+    private  val mockInputRef = mock<StateRef>()
+    private val mockOutputStateAndRef = mock<StateAndRef<*>>()
+
+    // mock signed transaction
+    private val signedTx = mock<UtxoSignedTransaction> {
+        on { id } doReturn txId
+        on { inputStateRefs } doReturn listOf(mockInputRef)
+        on { referenceStateRefs } doReturn emptyList()
+        on { outputStateAndRefs } doReturn listOf(mockOutputStateAndRef)
+        on { timeWindow } doReturn mockTimeWindow
+        on { notaryKey } doReturn notaryServiceCompositeKey
+        on { notaryName } doReturn notaryServiceName
+        on { metadata } doReturn transactionMetadata
+    }
 
     @BeforeEach
     fun clearCache() {
@@ -101,7 +131,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
         whenever(mockTransactionSignatureService.signBatch(any(), any())).thenThrow(
             TransactionNoAvailableKeysException("The publicKeys do not have any private counterparts available.", null)
         )
-        createAndCallServer(mockSuccessfulUniquenessClientService())
+        createAndCallServer(mockSuccessfulUniquenessClientService(), notarySignature = signatureInvalid)
         assertThat(responseFromServer).hasSize(1)
 
         val responseError = responseFromServer.first().error
@@ -109,37 +139,29 @@ class ContractVerifyingNotaryServerFlowImplTest {
         assertThat(responseFromServer.first().signatures).isEmpty()
         assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
         assertThat((responseError as NotaryExceptionGeneral).errorText)
-            .contains("Error while processing request from client")
-
-    }
-
-    @Test
-    fun `Contract verifying notary should respond with success if the notary key is valid`() {
-        // We sign with a key that is not part of the notary composite key
-        createAndCallServer(
-            mockSuccessfulUniquenessClientService(),
-            notaryServiceKey = notaryVNodeAliceKey
-        )
-        assertThat(responseFromServer).hasSize(1)
-
-        val response = responseFromServer.first()
-        assertThat(response.error).isNull()
-        assertThat(response.signatures).hasSize(1)
-        assertThat(response.signatures.first().by).isEqualTo(notaryVNodeAliceKey.fullIdHash())
+            .contains("The publicKeys do not have any private counterparts available.")
 
     }
 
     @Test
     fun `Contract verifying notary plugin server should respond with error if request signature is invalid`() {
-        createAndCallServer(mockSuccessfulUniquenessClientService())
+        whenever(mockTransactionSignatureService.signBatch(any(), any())).thenReturn(
+            listOf(listOf(signatureAlice))
+        )
+
+        createAndCallServer(
+            mockSuccessfulUniquenessClientService(),
+            filteredTxContents = mapOf("notaryKey" to invalidVnodeKey),
+            signatureVerificationLogic = ::throwVerify
+
+        )
         assertThat(responseFromServer).hasSize(1)
 
         val responseError = responseFromServer.first().error
         assertThat(responseError).isNotNull
-        assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
-        assertThat((responseError as NotaryExceptionGeneral).errorText)
-            .contains("Error while processing request from client")
-
+        assertThat(responseError).isInstanceOf(NotaryExceptionInvalidSignature::class.java)
+        assertThat((responseError as NotaryExceptionInvalidSignature).errorText)
+            .contains("A valid notary signature is not found with error message: DUMMY ERROR")
     }
 
     @Test
@@ -172,16 +194,14 @@ class ContractVerifyingNotaryServerFlowImplTest {
         assertThat(responseError).isNotNull
         assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
         assertThat((responseError as NotaryExceptionGeneral).errorText)
-            .contains("Error while processing request from client")
+            .contains("Error during notarization. Cause: Uniqueness checker cannot be reached")
 
     }
 
     @Test
-    fun `Contract verifying notary plugin server should respond with signatures if the uniqueness check successful`() {
-        val notaryVNodeAliceSig = getSignatureWithMetadataExample(notaryVNodeAliceKey)
-
+    fun `Contract verifying notary plugin server should respond with signatures if alice key is in composite key`() {
         whenever(mockTransactionSignatureService.signBatch(any(), any())).thenReturn(
-            listOf(listOf(notaryVNodeAliceSig))
+            listOf(listOf(signatureAlice))
         )
 
         createAndCallServer(
@@ -193,7 +213,23 @@ class ContractVerifyingNotaryServerFlowImplTest {
         assertThat(response.error).isNull()
         assertThat(response.signatures).hasSize(1)
         assertThat(response.signatures.first().by).isEqualTo(notaryVNodeAliceKey.fullIdHash())
+    }
 
+    @Test
+    fun `Contract verifying notary plugin server should respond with signatures if bob key is in composite key`() {
+        whenever(mockTransactionSignatureService.signBatch(any(), any())).thenReturn(
+            listOf(listOf(signatureBob))
+        )
+
+        createAndCallServer(
+            mockSuccessfulUniquenessClientService(),
+        )
+        assertThat(responseFromServer).hasSize(1)
+
+        val response = responseFromServer.first()
+        assertThat(response.error).isNull()
+        assertThat(response.signatures).hasSize(1)
+        assertThat(response.signatures.first().by).isEqualTo(notaryVNodeBobKey.fullIdHash())
     }
 
     @Test
@@ -205,7 +241,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
         assertThat(responseError).isNotNull
         assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
         assertThat((responseError as NotaryExceptionGeneral).errorText).contains(
-            "Error while processing request from client"
+            "Error during notarization."
         )
 
     }
@@ -222,7 +258,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
         assertThat(responseError).isNotNull
         assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
         assertThat((responseError as NotaryExceptionGeneral).errorText).contains(
-            "Error while processing request from client"
+            "Error during notarization."
         )
 
     }
@@ -239,7 +275,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
         assertThat(responseError).isNotNull
         assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
         assertThat((responseError as NotaryExceptionGeneral).errorText).contains(
-            "Error while processing request from client"
+            "Error during notarization."
         )
 
     }
@@ -256,17 +292,14 @@ class ContractVerifyingNotaryServerFlowImplTest {
 
         val responseError = responseFromServer.first().error
         assertThat(responseError).isNotNull
-        assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
-        assertThat((responseError as NotaryExceptionGeneral).errorText).contains(
-            "Error while processing request from client"
+        assertThat(responseError).isInstanceOf(NotaryExceptionTransactionVerificationFailure::class.java)
+        assertThat((responseError as NotaryExceptionTransactionVerificationFailure).errorText).contains(
+            "Transaction failed to verify"
         )
     }
 
     @Test
     fun `Contract verifying notary plugin server should respond with error if transaction verification fails`() {
-        fun throwVerify() {
-            throw IllegalArgumentException("DUMMY ERROR")
-        }
         createAndCallServer(mockSuccessfulUniquenessClientService(), txVerificationLogic = ::throwVerify)
         assertThat(responseFromServer).hasSize(1)
 
@@ -274,7 +307,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
         assertThat(responseError).isNotNull
         assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
         assertThat((responseError as NotaryExceptionGeneral).errorText)
-            .contains("Error while processing request from client")
+            .contains("Error during notarization.")
 
     }
 
@@ -314,9 +347,10 @@ class ContractVerifyingNotaryServerFlowImplTest {
         assertThat(responseError).isNotNull
         assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
         assertThat((responseError as NotaryExceptionGeneral).errorText)
-            .contains("Error while processing request from client")
+            .contains("Error during notarization.")
 
     }
+
 
     /**
      *  This function mocks up data such as filtered tx, signed tx and signatures to test verifying notary server.
@@ -325,6 +359,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
      *  - UniquenessCheckResultFailureImpl using [mockErrorUniquenessClientService]
      *  - UniquenessCheckResultSuccessImpl using [mockSuccessfulUniquenessClientService]
      *  @param notaryServiceKey PublicKey of notary. CompositeKey by default.
+     *  @param notarySignature DigitalSignatureAndMetadata of notary
      *  @param filteredTxContents Map of content of FilteredTransaction to mock up with.
      *  It will be mocked up with default values if it's empty.
      *  filtered contests that can be in a map:
@@ -333,34 +368,19 @@ class ContractVerifyingNotaryServerFlowImplTest {
      *  - notaryKey
      *  - timeWindow
      *  @param txVerificationLogic lambda function to execute on UtxoFilteredTransaction.verify() call
+     *  @param signatureVerificationLogic lambda function to execute on
+     *  UtxoFilteredTransaction.verifyAttachedNotarySignature() call
      * */
     @Suppress("LongParameterList")
     private fun createAndCallServer(
         clientService: LedgerUniquenessCheckerClientService,
         notaryServiceKey: PublicKey = notaryServiceCompositeKey,
+        notarySignature: DigitalSignatureAndMetadata = signatureAlice,
         filteredTxContents: Map<String, Any?> = emptyMap(),
         txVerificationLogic: () -> Unit = {},
+        signatureVerificationLogic: () -> Unit = {}
     ) {
-        val txId = SecureHashUtils.randomSecureHash()
-
-        // 1. Set up the defaults for the filtered transaction
-        val transactionMetadata = mock<TransactionMetadata>()
-
-        val mockTimeWindow = mock<TimeWindow> {
-            on { from } doReturn Instant.now()
-            on { until } doReturn Instant.now().plusMillis(100000)
-        }
-
-        val mockInputRef = mock<StateRef>()
-        val mockDependencyOutputStateAndRef = mock<StateAndRef<*>> {
-            on { ref } doReturn mockInputRef
-        }
-        val mockOutputStateAndRef = mock<StateAndRef<*>>()
-        val mockOutputStateRefUtxoFilteredData = mock<UtxoFilteredData.Audit<StateAndRef<*>>> {
-            on { values } doReturn mapOf(0 to mockDependencyOutputStateAndRef)
-        }
-
-        // 2. Get current notary and parse its data
+        // Get current notary and parse its data
         whenever(mockMemberLookup.myInfo()).thenReturn(notaryInfo)
         whenever(notaryInfo.memberProvidedContext).thenReturn(memberProvidedContext)
         whenever(memberProvidedContext.parse(NOTARY_SERVICE_NAME, MemberX500Name::class.java)).thenReturn(
@@ -368,18 +388,14 @@ class ContractVerifyingNotaryServerFlowImplTest {
         )
         whenever(memberProvidedContext.parse(NOTARY_SERVICE_BACKCHAIN_REQUIRED, Boolean::class.java)).thenReturn(true)
 
-        // 3. Check if any filtered transaction data should be overwritten
-        val signedTx = mock<UtxoSignedTransaction> {
-            on { id } doReturn txId
-            on { inputStateRefs } doReturn listOf(mockInputRef)
-            on { referenceStateRefs } doReturn emptyList()
-            on { outputStateAndRefs } doReturn listOf(mockOutputStateAndRef)
-            on { timeWindow } doReturn mockTimeWindow
-            on { notaryKey } doReturn notaryServiceKey
-            on { notaryName } doReturn notaryServiceName
-            on { metadata } doReturn transactionMetadata
+        // Mock Filtered Transaction
+        val mockDependencyOutputStateAndRef = mock<StateAndRef<*>> {
+            on { ref } doReturn mockInputRef
         }
 
+        val mockOutputStateRefUtxoFilteredData = mock<UtxoFilteredData.Audit<StateAndRef<*>>> {
+            on { values } doReturn mapOf(0 to mockDependencyOutputStateAndRef)
+        }
         val filteredTx = mock<UtxoFilteredTransaction> {
             on { outputStateAndRefs } doAnswer {
                 @Suppress("unchecked_cast")
@@ -412,22 +428,28 @@ class ContractVerifyingNotaryServerFlowImplTest {
                 txVerificationLogic()
             }
             on { id } doReturn txId
+//            on { verifyAttachedNotarySignature(any(), any(), any(), any()) } doAnswer {
+//                signatureVerificationLogic()
+//            }
         }
 
-        val signature = mock<DigitalSignatureAndMetadata>()
-
-        val filteredTxAndSignatures = listOf(
-            FilteredTransactionAndSignatures(
-                filteredTx,
-                listOf(signature)
-            )
+        // Prepare filteredTransactionAndSignature data
+        val filteredTxAndSignature = FilteredTransactionAndSignatures(
+            filteredTx,
+            listOf(notarySignature)
         )
+        val filteredTxsAndSignatures = listOf(
+            filteredTxAndSignature
+        )
+        val mockTransactionSignatureServiceInternal = mock<TransactionSignatureServiceInternal> {
+            on { getIdOfPublicKey(signedTx.notaryKey, DigestAlgorithmName.SHA2_256.name) } doReturn notarySignature.by
+        }
 
-        // 4. Mock the receive and send from the counterparty session, unless it is overwritten
+        // Mock the receive and send from the counterparty session, unless it is overwritten
         val paramOrDefaultSession = mock<FlowSession> {
             on { receive(ContractVerifyingNotarizationPayload::class.java) } doReturn ContractVerifyingNotarizationPayload(
                 signedTx,
-                filteredTxAndSignatures
+                filteredTxsAndSignatures
             )
             on { send(any()) } doAnswer {
                 responseFromServer.add(it.arguments.first() as NotarizationResponse)
@@ -439,11 +461,16 @@ class ContractVerifyingNotaryServerFlowImplTest {
         val server = ContractVerifyingNotaryServerFlowImpl(
             clientService,
             mockTransactionSignatureService,
+            mockTransactionSignatureServiceInternal,
             mockLedgerService,
-            mockMemberLookup
+            mockMemberLookup,
         )
 
         server.call(paramOrDefaultSession)
+    }
+
+    private fun throwVerify() {
+        throw IllegalArgumentException("DUMMY ERROR")
     }
 
     private fun mockSuccessfulUniquenessClientService(): LedgerUniquenessCheckerClientService {

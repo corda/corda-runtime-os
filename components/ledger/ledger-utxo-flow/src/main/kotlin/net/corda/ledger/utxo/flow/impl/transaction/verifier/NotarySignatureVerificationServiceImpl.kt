@@ -1,0 +1,80 @@
+package net.corda.ledger.utxo.flow.impl.transaction.verifier
+
+import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
+import net.corda.sandbox.type.UsedByFlow
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
+import net.corda.v5.crypto.CompositeKey
+import net.corda.v5.crypto.KeyUtils
+import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.common.transaction.TransactionSignatureException
+import net.corda.v5.ledger.common.transaction.TransactionSignatureService
+import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
+import net.corda.v5.serialization.SingletonSerializeAsToken
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import java.security.PublicKey
+
+@Component(service = [NotarySignatureVerificationService::class, UsedByFlow::class], scope = PROTOTYPE)
+class NotarySignatureVerificationServiceImpl @Activate constructor(
+    private val transactionSignatureService: TransactionSignatureService
+) : NotarySignatureVerificationService, UsedByFlow, SingletonSerializeAsToken {
+    override fun verifyNotarySignatures(
+        transactionId: SecureHash,
+        notaryKey: PublicKey,
+        signatures: MutableList<DigitalSignatureAndMetadata>,
+        keyIdToNotaryKeys: MutableMap<String, MutableMap<SecureHash, PublicKey>>
+    ) {
+        val notaryPublicKeysWithValidSignatures = signatures.mapNotNull {
+            val publicKey =
+                getNotaryPublicKeyByKeyId(it.by, notaryKey, keyIdToNotaryKeys)
+            if (publicKey != null) {
+                try {
+                    (transactionSignatureService as TransactionSignatureServiceInternal).verifySignature(transactionId, it, publicKey)
+                    publicKey
+                } catch (e: Exception) {
+                    throw TransactionSignatureException(
+                        transactionId,
+                        "Failed to verify signature of ${it.signature} for transaction ${transactionId}. Message: ${e.message}",
+                        e
+                    )
+                }
+            } else {
+                null
+            }
+        }.toSet()
+        // If the notary service key (composite key) is provided we need to make sure it contains the key the
+        // transaction was signed with. This means it was signed with one of the notary VNodes (worker).
+        if (!KeyUtils.isKeyFulfilledBy(notaryKey, notaryPublicKeysWithValidSignatures)) {
+            throw TransactionSignatureException(
+                transactionId,
+                "Notary signing keys $notaryPublicKeysWithValidSignatures did not fulfil " +
+                        "requirements of notary service key $notaryKey",
+                null
+            )
+        }
+    }
+
+    override fun getNotaryPublicKeyByKeyId(
+        keyId: SecureHash,
+        notaryKey: PublicKey,
+        keyIdToNotaryKeys: MutableMap<String, MutableMap<SecureHash, PublicKey>>
+    ): PublicKey? {
+        val keyIdToPublicKey = keyIdToNotaryKeys.getOrPut(keyId.algorithm) {
+            //Prepare keyIds for all public keys related to the notary for the relevant algorithm
+            getKeyOrLeafKeys(notaryKey).associateBy {
+                (transactionSignatureService as TransactionSignatureServiceInternal).getIdOfPublicKey(
+                    it, keyId.algorithm
+                )
+            } as MutableMap<SecureHash, PublicKey>
+        }
+        return keyIdToPublicKey[keyId]
+    }
+
+    private fun getKeyOrLeafKeys(publicKey: PublicKey): List<PublicKey> {
+        return when (publicKey) {
+            is CompositeKey -> publicKey.leafKeys.toList()
+            else -> listOf(publicKey)
+        }
+    }
+}

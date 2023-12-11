@@ -12,6 +12,7 @@ import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -28,7 +29,9 @@ class UtxoSignedTransactionSerializer @Activate constructor(
     @Reference(service = TransactionSignatureServiceInternal::class)
     private val transactionSignatureService: TransactionSignatureServiceInternal,
     @Reference(service = UtxoLedgerTransactionFactory::class)
-    private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory
+    private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
+    @Reference(service = NotarySignatureVerificationService::class)
+    private val notarySignatureVerificationService: NotarySignatureVerificationService
 ) : BaseProxySerializer<UtxoSignedTransactionInternal, UtxoSignedTransactionProxy>(), UsedByFlow {
     private companion object {
         private const val VERSION_1 = 1
@@ -58,6 +61,7 @@ class UtxoSignedTransactionSerializer @Activate constructor(
                 UtxoSignedTransactionImpl(
                     serializationService,
                     transactionSignatureService,
+                    notarySignatureVerificationService,
                     utxoLedgerTransactionFactory,
                     proxy.wireTransaction,
                     proxy.signatures

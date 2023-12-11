@@ -12,6 +12,7 @@ import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.serialization.checkpoint.CheckpointOutput
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -28,7 +29,9 @@ class UtxoSignedTransactionKryoSerializer @Activate constructor(
     @Reference(service = TransactionSignatureServiceInternal::class)
     private val transactionSignatureService: TransactionSignatureServiceInternal,
     @Reference(service = UtxoLedgerTransactionFactory::class)
-    private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory
+    private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
+    @Reference(service = NotarySignatureVerificationService::class)
+    private val notarySignatureVerificationService: NotarySignatureVerificationService
 ) : CheckpointInternalCustomSerializer<UtxoSignedTransactionInternal>, UsedByFlow {
     override val type: Class<UtxoSignedTransactionInternal> get() = UtxoSignedTransactionInternal::class.java
 
@@ -45,6 +48,7 @@ class UtxoSignedTransactionKryoSerializer @Activate constructor(
         return UtxoSignedTransactionImpl(
             serialisationService,
             transactionSignatureService,
+            notarySignatureVerificationService,
             utxoLedgerTransactionFactory,
             wireTransaction,
             signatures
