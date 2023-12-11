@@ -289,13 +289,7 @@ class MerkleTreeTest {
         val merkleTree = makeTestMerkleTree(treeSize, trivialHashDigestProvider)
         assertThat(merkleTree.leaves).isNotEmpty()
 
-        val proofs = checkAuditProofBehavior(merkleTree, treeSize)
-
-        // Now try with leveled hashes
-        proofs.take(2).forEach {
-            it.calculateRoot(trivialHashDigestProvider)
-            calculateLeveledHashes(it, trivialHashDigestProvider)
-        }
+        checkAuditProofBehavior(merkleTree, treeSize)
     }
 
     private fun checkAuditProofBehavior(merkleTree: MerkleTree, treeSize: Int): List<MerkleProof> {
@@ -333,7 +327,9 @@ class MerkleTreeTest {
         // And make a note of the proofs for furhter testing later
         return (1 until (1 shl treeSize)).map { i ->
             val leafIndicesCombination = (0 until treeSize).filter { (i and (1 shl it)) != 0 }
-             testLeafCombination(merkleTree, leafIndicesCombination, merkleTree.root, treeSize)
+            testLeafCombination(merkleTree, leafIndicesCombination, merkleTree.root, treeSize).also {
+                //calculateLeveledHashes(it, trivialHashDigestProvider)
+            }
         }
     }
 

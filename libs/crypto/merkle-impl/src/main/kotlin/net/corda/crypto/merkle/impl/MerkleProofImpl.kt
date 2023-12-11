@@ -113,6 +113,7 @@ class MerkleProofImpl(
                             continue
                         }
                     }
+                    println("\t\t\tafter first clause hash index $hashIndex")
                     if (hashIndex >= hashes.size) {                 // We'll need one more hash to continue. So if
                         throw MerkleProofRebuildFailureException(   // we do not have more, the proof is incorrect.
                             "MerkleProof root calculation requires more hashes than the proof has."
