@@ -337,6 +337,14 @@ class MerkleTreeTest {
                     assertHash(hashes[0].hash, "0000000000000001")
                     assertThat(hashes[0].level).isEqualTo(0)
                 }
+
+                if (i == 42 && treeSize == 6) {
+                    assertThat(hashes).hasSize(3)
+                    assertThat(hashes.map { it.hash.hex() }).isEqualTo(
+                        arrayListOf("0000000000000000", "0000000000000002", "0000000000000004")
+                    )
+                    assertThat(hashes.map { it.level} ).isEqualTo(arrayListOf(2,2,2))
+                }
             }
         }
     }
