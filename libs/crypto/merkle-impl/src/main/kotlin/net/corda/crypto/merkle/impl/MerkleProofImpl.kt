@@ -8,6 +8,7 @@ import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.crypto.merkle.MerkleProofRebuildFailureException
 import net.corda.v5.crypto.merkle.MerkleProofType
 import net.corda.v5.crypto.merkle.MerkleTreeHashDigest
+import org.slf4j.LoggerFactory
 
 /**
  * Represent a merkle proof, which shows that some leaf data is in a Merkle tree.
@@ -28,6 +29,10 @@ class MerkleProofImpl(
     private val leaves: List<IndexedMerkleLeaf>,
     private val hashes: List<SecureHash>
 ) : MerkleProof {
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(this::class.java)
+    }
 
     // CORE-5111: add serialize/deserialize (and its test)
 
@@ -86,11 +91,11 @@ class MerkleProofImpl(
                                                                    // need for the number of elements
         var currentSize = treeSize                                 // outer loop variable; the number of
                                                                    // leaves left as we roll up the tree
-        println("calculateRoot initial tree size ${treeSize} depth $treeDepth leaves indices ${leaves.map { it.index }} |hashes|=${hashes.size}")
+        logger.trace( "calculateRoot initial tree size ${treeSize} depth $treeDepth leaves indices ${leaves.map { it.index }} |hashes|=${hashes.size}")
 
         // loop over each level of the tree, starting at the deepest level (i.e. furthest from root)
         while (currentSize > 1) {
-            println("\touter loop currentSize=${currentSize} treeDepth=${treeDepth} |nodeHashes|=${nodeHashes.size}" )
+            logger.trace ("\touter loop currentSize=${currentSize} treeDepth=${treeDepth} |nodeHashes|=${nodeHashes.size}" )
             if (nodeHashes.isEmpty()) {
                 throw MerkleProofRebuildFailureException(
                     "MerkleProof does not have enough nodeHashes to calculate root hash."
@@ -104,15 +109,15 @@ class MerkleProofImpl(
             var index = 0
             while (index < nodeHashes.size) {
                 val item = nodeHashes[index]
-                println("\t\tinner loop at index $index first node index ${item.first} of $currentSize tree depth $treeDepth nodehash.first=${item.first}")
+                logger.trace("\t\tinner loop at index $index first node index ${item.first} of $currentSize tree depth $treeDepth nodehash.first=${item.first}")
 
                 if (item.first < currentSize and 0x7FFFFFFE) {      // If the level has odd elements, we'll process
                                                                     // the last element later.
                     if (index < nodeHashes.size - 1) {              // If there is a next element...
                         val next = nodeHashes[index + 1]
-                        println("\t\t\tconsidering pair elements at index ${item.first} and ${next.first}")
+                        logger.trace("\t\t\tconsidering pair elements at index ${item.first} and ${next.first}")
                         if (item.first xor next.first == 1) {       // ... and they are a pair with the current
-                            println("\t\t\t\twe can combined node in the original tree to make a node with index ${item.first/2}!")
+                            logger.trace("\t\t\t\twe can combined node in the original tree to make a node with index ${item.first/2}!")
 
                             // make a single new item, computing a new hash
                             // (Pair is the Kotlin type, nothing to do with pairing nodes)
@@ -124,7 +129,7 @@ class MerkleProofImpl(
                             continue                                // continue the inner level scanning loop
                         }
                     }
-                    println("\t\t\tat $hashIndex on level $index; cannot pair; have ${hashes.size} hashes")
+                    logger.trace("\t\t\tat $hashIndex on level $index; cannot pair; have ${hashes.size} hashes")
                     if (hashIndex >= hashes.size) {                 // We'll need one more hash to continue. So if
                         throw MerkleProofRebuildFailureException(   // we do not have more, the proof is incorrect.
                             "MerkleProof root calculation requires more hashes than the proof has."
@@ -133,20 +138,20 @@ class MerkleProofImpl(
                                                                     // We pair the current element with a
                                                                     // hash from the proof
                     newItems += if ((item.first and 1) == 0) {      // Even index means, that the item is on the left
-                        println("\t\t\t\tcombined left of current element ${item.first} with right proof hash $hashIndex")
+                        logger.trace("\t\t\t\tcombined left of current element ${item.first} with right proof hash $hashIndex")
                         Pair(
                             item.first / 2,
                             digest.nodeHash(treeDepth, item.second, hashes[hashIndex++])
                         )
                     } else {                                        // Odd index means, that the item is on the right
-                        println("\t\t\t\tcombined left of proof hash $hashIndex with right current element ${item.first}")
+                        logger.trace("\t\t\t\tcombined left of proof hash $hashIndex with right current element ${item.first}")
                         Pair(
                             item.first / 2,
                             digest.nodeHash(treeDepth, hashes[hashIndex++], item.second)
                         )
                     }
                 } else {                                            // The last odd element, just gets lifted.
-                    println("\t\t\t\tlifting last odd element")
+                    logger.trace("\t\t\t\tlifting last odd element")
                     newItems += Pair((item.first + 1) / 2, item.second)
                 }
                 ++index // whatever of the last 3 cases we took, we consumed one element
