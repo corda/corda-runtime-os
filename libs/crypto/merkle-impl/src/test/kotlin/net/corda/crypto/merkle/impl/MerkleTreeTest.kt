@@ -151,6 +151,8 @@ class MerkleTreeTest {
         val leaf1 = merkleTree.calcLeafHash(1)
         val manualRoot = merkleTree.digest.nodeHash(0, leaf0, leaf1)
         assertEquals(manualRoot, root)
+        assertRoot(root, "bab170b1")
+
     }
 
     @Test
