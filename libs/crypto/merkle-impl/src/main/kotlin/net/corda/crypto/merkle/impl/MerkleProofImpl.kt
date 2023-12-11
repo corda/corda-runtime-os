@@ -80,12 +80,15 @@ class MerkleProofImpl(
         }
         var hashIndex = 0
         val sortedLeaves = leaves.sortedBy { it.index }
-        // work out nodeHashes, which is a map from leaf index to digest
+        // work out nodeHashes, which is a list of node information for the current level we operate at
         var nodeHashes = sortedLeaves.map { Pair(it.index, digest.leafHash(it.index, it.nonce, it.leafData)) }
-        var treeDepth = MerkleTreeImpl.treeDepth(treeSize)
-        var currentSize = treeSize
-        println("calculateRoot initial tree size ${treeSize} leaves indices ${leaves.map { it.index }} |hashes|=${hashes.size}")
+        var treeDepth = MerkleTreeImpl.treeDepth(treeSize)         // initialised to the depth of tree we should
+                                                                   // need for the number of elements
+        var currentSize = treeSize                                 // outer loop variable; the number of
+                                                                   // leaves left as we roll up the tree
+        println("calculateRoot initial tree size ${treeSize} depth $treeDepth leaves indices ${leaves.map { it.index }} |hashes|=${hashes.size}")
 
+        // loop over each level of the tree, starting at the deepest level (i.e. furthest from root)
         while (currentSize > 1) {
             println("\touter loop currentSize=${currentSize} treeDepth=${treeDepth} |nodeHashes|=${nodeHashes.size}" )
             if (nodeHashes.isEmpty()) {
@@ -93,27 +96,35 @@ class MerkleProofImpl(
                     "MerkleProof does not have enough nodeHashes to calculate root hash."
                 )
             }
-            --treeDepth
-            val newItems = mutableListOf<Pair<Int, SecureHash>>()
+            --treeDepth                                             // huh?
+            val newItems = mutableListOf<Pair<Int, SecureHash>>()   // this will become nodeHashes at the end of this
+                                                                    // out iteration
+
+            // walk over our current set of nodeHashes, striding over 1 or 2 at a time
             var index = 0
             while (index < nodeHashes.size) {
                 val item = nodeHashes[index]
-                println("\t\tinner loop at index ${index} nodehash.first=${item.first}")
+                println("\t\tinner loop at index $index first node index ${item.first} of $currentSize tree depth $treeDepth nodehash.first=${item.first}")
 
                 if (item.first < currentSize and 0x7FFFFFFE) {      // If the level has odd elements, we'll process
                                                                     // the last element later.
                     if (index < nodeHashes.size - 1) {              // If there is a next element...
                         val next = nodeHashes[index + 1]
+                        println("\t\t\tconsidering pair elements at index ${item.first} and ${next.first}")
                         if (item.first xor next.first == 1) {       // ... and they are a pair with the current
+                            println("\t\t\t\twe can combined node in the original tree to make a node with index ${item.first/2}!")
+
+                            // make a single new item, computing a new hash
+                            // (Pair is the Kotlin type, nothing to do with pairing nodes)
                             newItems += Pair(                       // in the original tree, we create their parent.
                                 item.first / 2,
                                 digest.nodeHash(treeDepth, item.second, next.second)
                             )
-                            index += 2
-                            continue
+                            index += 2                              // we've consumed two
+                            continue                                // continue the inner level scanning loop
                         }
                     }
-                    println("\t\t\tafter first clause hash index $hashIndex")
+                    println("\t\t\tat $hashIndex on level $index; cannot pair; have ${hashes.size} hashes")
                     if (hashIndex >= hashes.size) {                 // We'll need one more hash to continue. So if
                         throw MerkleProofRebuildFailureException(   // we do not have more, the proof is incorrect.
                             "MerkleProof root calculation requires more hashes than the proof has."
@@ -122,22 +133,27 @@ class MerkleProofImpl(
                                                                     // We pair the current element with a
                                                                     // hash from the proof
                     newItems += if ((item.first and 1) == 0) {      // Even index means, that the item is on the left
+                        println("\t\t\t\tcombined left of current element ${item.first} with right proof hash $hashIndex")
                         Pair(
                             item.first / 2,
                             digest.nodeHash(treeDepth, item.second, hashes[hashIndex++])
                         )
                     } else {                                        // Odd index means, that the item is on the right
+                        println("\t\t\t\tcombined left of proof hash $hashIndex with right current element ${item.first}")
                         Pair(
                             item.first / 2,
                             digest.nodeHash(treeDepth, hashes[hashIndex++], item.second)
                         )
                     }
                 } else {                                            // The last odd element, just gets lifted.
+                    println("\t\t\t\tlifting last ood element")
                     newItems += Pair((item.first + 1) / 2, item.second)
                 }
-                ++index
+                ++index // whatever of the last 3 cases we took, we consumed one element
             }
+            // now we move up a level, so the tree gets smaller...
             currentSize = (currentSize + 1) / 2
+            // and we have a new set of known elements
             nodeHashes = newItems
         }
         if (hashIndex != hashes.size) {
