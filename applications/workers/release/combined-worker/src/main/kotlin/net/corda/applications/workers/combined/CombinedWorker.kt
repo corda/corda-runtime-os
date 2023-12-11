@@ -311,6 +311,7 @@ private class CombinedWorkerParams {
     @Option(names = ["--hsm-id"], description = ["HSM ID which is handled by this worker instance."])
     var hsmId = ""
 
+    @Option(names = ["--serviceEndpoint"], description = ["Internal REST endpoints for Corda workers"])
     val workerEndpoints: Map<String, String> =
         listOf("crypto", "verification", "uniqueness", "persistence", "tokenSelection")
             .associate { "endpoints.$it" to "localhost:7004" }
