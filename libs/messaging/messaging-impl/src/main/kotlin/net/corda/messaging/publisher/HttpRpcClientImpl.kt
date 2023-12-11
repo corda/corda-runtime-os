@@ -1,5 +1,6 @@
-package net.corda.p2p.gateway.utils
+package net.corda.messaging.publisher
 
+import net.corda.messaging.api.publisher.HttpRpcClient
 import net.corda.metrics.CordaMetrics
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -12,7 +13,7 @@ import java.net.http.HttpResponse
 import java.nio.ByteBuffer
 import java.time.Duration
 
-internal class HttpRpcClient(
+class HttpRpcClientImpl(
     private val avroSchemaRegistry: AvroSchemaRegistry,
     private val httpClient: HttpClient = HttpClient.newBuilder().build(),
     private val requestBuilderFactory: () -> HttpRequest.Builder = {
@@ -21,27 +22,7 @@ internal class HttpRpcClient(
     private val sleeper: (Long) -> Unit = {
         Thread.sleep(it)
     },
-) {
-    class HttpRpcException private constructor(
-        val statusCode: Int?,
-        val responseSize: Int?,
-        message: String?,
-        cause: Throwable?,
-    ) :
-        CordaRuntimeException(
-            message,
-            cause,
-        ) {
-        constructor(cause: Exception) :
-            this(statusCode = null, responseSize = null, message = cause.message, cause = cause)
-        constructor(response: HttpResponse<ByteArray>) :
-            this(
-                statusCode = response.statusCode(),
-                responseSize = response.body().size,
-                message = "Server returned HTTP status code: ${response.statusCode()}",
-                cause = null,
-            )
-    }
+) : HttpRpcClient {
 
     private companion object {
         val logger = LoggerFactory.getLogger(HttpRpcClient::class.java)
@@ -53,11 +34,7 @@ internal class HttpRpcClient(
         private const val FAILED = "FAILED"
     }
 
-    inline fun <reified R : Any> send(uri: URI, requestBody: Any): R? {
-        return send(uri, requestBody, R::class.java)
-    }
-
-    private fun <T : Any, R : Any> send(uri: URI, requestBody: T, clz: Class<R>): R? {
+    override fun <T : Any, R : Any> send(uri: URI, requestBody: T, clz: Class<R>): R? {
         return try {
             val payload = avroSchemaRegistry.serialize(requestBody).array()
             val request = requestBuilderFactory()
@@ -105,7 +82,7 @@ internal class HttpRpcClient(
                         )
                     }
                 }
-            } catch (e: HttpRpcException) {
+            } catch (e: HttpRpcClient.HttpRpcException) {
                 if (retries > 0) {
                     logger.info("Got error while sending HTTP request. Will retry again $retries times", e)
                     sleeper(nextDelay.toMillis())
@@ -131,10 +108,10 @@ internal class HttpRpcClient(
                 if ((statusCode >= 200) && (statusCode < 300)) {
                     return response.body() to statusCode
                 } else {
-                    throw HttpRpcException(response)
+                    throw HttpRpcClient.HttpRpcException(response)
                 }
             } catch (e: IOException) {
-                throw HttpRpcException(e)
+                throw HttpRpcClient.HttpRpcException(e)
             }
         }
 
