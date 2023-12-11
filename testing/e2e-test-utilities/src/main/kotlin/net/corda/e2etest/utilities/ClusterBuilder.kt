@@ -534,7 +534,7 @@ class ClusterBuilder {
 
     /** Get status of multiple flows */
     fun multipleFlowStatus(holdingIdentityShortHash: String, status: String? = null) =
-        get("/api/$REST_API_VERSION_PATH/flow/$holdingIdentityShortHash/?status = $status")
+        get("/api/$REST_API_VERSION_PATH/flow/$holdingIdentityShortHash/?status=$status")
 
     /** Get result of a flow execution */
     fun flowResult(holdingIdentityShortHash: String, clientRequestId: String) =
