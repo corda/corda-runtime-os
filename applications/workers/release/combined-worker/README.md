@@ -116,10 +116,7 @@ java -jar -Dco.paralleluniverse.fibers.verifyInstrumentation=true \
   -spassphrase=password -ssalt=salt \
   -ddatabase.user=user -ddatabase.pass=password \
   -ddatabase.jdbc.directory=applications/workers/release/combined-worker/drivers \
-  -ddatabase.jdbc.url=jdbc:postgresql://localhost:5432/cordacluster \
-  --serviceEndpoint=endpoints.crypto=localhost:7004 --serviceEndpoint=endpoints.verification=localhost:7004 \
-  --serviceEndpoint=endpoints.uniqueness=localhost:7004 --serviceEndpoint=endpoints.persistence=localhost:7004 \
-  --serviceEndpoint=endpoints.tokenSelection=localhost:7004
+  -ddatabase.jdbc.url=jdbc:postgresql://localhost:5432/cordacluster
 ```
 
 Or if you want to connect to "real" Kafka:
@@ -130,10 +127,7 @@ java -jar -Dco.paralleluniverse.fibers.verifyInstrumentation=true \
   -spassphrase=password -ssalt=salt \
   -ddatabase.user=user -ddatabase.pass=password \
   -ddatabase.jdbc.directory=applications/workers/release/combined-worker/drivers \
-  -ddatabase.jdbc.url=jdbc:postgresql://localhost:5432/cordacluster \
-  --serviceEndpoint=endpoints.crypto=localhost:7004 --serviceEndpoint=endpoints.verification=localhost:7004 \
-  --serviceEndpoint=endpoints.uniqueness=localhost:7004 --serviceEndpoint=endpoints.persistence=localhost:7004 \
-  --serviceEndpoint=endpoints.tokenSelection=localhost:7004
+  -ddatabase.jdbc.url=jdbc:postgresql://localhost:5432/cordacluster
 ```
 
 ### From IntelliJ IDE
