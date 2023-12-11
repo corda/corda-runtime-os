@@ -7,6 +7,7 @@ import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.state.FlowCheckpoint
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.slf4j.LoggerFactory
 import java.time.Instant
 
 @Component(service = [FlowMessageFactory::class])
@@ -15,6 +16,10 @@ class FlowMessageFactoryImpl(private val currentTimeProvider: () -> Instant) : F
 
     @Activate
     constructor() : this(Instant::now)
+
+    private companion object {
+        val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
 
     override fun createFlowCompleteStatusMessage(checkpoint: FlowCheckpoint, flowResult: String?): FlowStatus {
         return getCommonFlowStatus(checkpoint).apply {
@@ -51,6 +56,9 @@ class FlowMessageFactoryImpl(private val currentTimeProvider: () -> Instant) : F
 
     private fun getCommonFlowStatus(checkpoint: FlowCheckpoint): FlowStatus {
         val startContext = checkpoint.flowStartContext
+        if (startContext.initiatorType == null) {
+            log.warn("Creating FlowStatus with null initiatorType")
+        }
         return FlowStatus().apply {
             key = startContext.statusKey
             initiatorType = startContext.initiatorType

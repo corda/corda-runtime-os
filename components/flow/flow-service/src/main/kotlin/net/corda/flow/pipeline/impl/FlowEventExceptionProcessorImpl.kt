@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.impl
 
+import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
@@ -242,6 +243,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             is StartFlow -> {
                 val status = FlowStatus().apply {
                     key = inputPayload.startContext.statusKey
+                    initiatorType = FlowInitiatorType.RPC
                     flowStatus = FlowStates.KILLED
                     this.flowId = flowId
                     processingTerminatedReason = message
