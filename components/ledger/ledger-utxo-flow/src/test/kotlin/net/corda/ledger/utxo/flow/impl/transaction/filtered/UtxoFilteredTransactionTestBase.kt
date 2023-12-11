@@ -135,7 +135,5 @@ open class UtxoFilteredTransactionTestBase {
                 ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.COMMANDS.ordinal),
             )
         )
-
     }
-
 }

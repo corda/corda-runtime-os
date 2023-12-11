@@ -35,7 +35,6 @@ class UtxoFilteredTransactionImplTest : UtxoFilteredTransactionTestBase() {
         assertThat(utxoFilteredTx.id).isEqualTo(wireTransaction.id)
         assertThat(utxoFilteredTx.metadata.getLedgerModel())
             .isEqualTo(wireTransaction.metadata.getLedgerModel())
-
     }
 
     @Test
@@ -118,7 +117,6 @@ class UtxoFilteredTransactionImplTest : UtxoFilteredTransactionTestBase() {
         assertThat(inputStateRefs.values[1]?.transactionId).isEqualTo(inputId)
         assertThat(inputStateRefs.values[1]?.index).isEqualTo(5)
     }
-
 
     @Test
     fun `can get notary and time window`() {
@@ -229,7 +227,6 @@ class UtxoFilteredTransactionImplTest : UtxoFilteredTransactionTestBase() {
 
         assertThat(utxoFilteredTransaction.referenceStateRefs)
             .isInstanceOf(UtxoFilteredData.Removed::class.java)
-
     }
 }
 

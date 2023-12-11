@@ -42,8 +42,8 @@ class UtxoFilteredTransactionFactoryImpl @Activate constructor(
     ): UtxoFilteredTransaction {
         val notaryAndTimeWindow = if (filteredTransactionBuilder.notary || filteredTransactionBuilder.timeWindow) {
             ComponentGroupFilterParameters.AuditProof(NOTARY.ordinal, Any::class.java) {
-                filteredTransactionBuilder.notary && (it is MemberX500Name || it is PublicKey ) // notary components
-                        || filteredTransactionBuilder.timeWindow && it is TimeWindow // time window
+                filteredTransactionBuilder.notary && (it is MemberX500Name || it is PublicKey) || // notary components
+                    filteredTransactionBuilder.timeWindow && it is TimeWindow // time window
             }
         } else {
             null

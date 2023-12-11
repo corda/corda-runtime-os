@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.transaction.factory.impl
 
 import net.corda.common.json.validation.JsonValidator
+import net.corda.flow.application.GroupParametersLookupInternal
 import net.corda.ledger.common.data.transaction.TransactionMetadataImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
@@ -12,7 +13,6 @@ import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.data.transaction.UtxoTransactionMetadata
 import net.corda.ledger.utxo.data.transaction.utxoComponentGroupStructure
 import net.corda.ledger.utxo.data.transaction.verifier.verifyMetadata
-import net.corda.flow.application.GroupParametersLookupInternal
 import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
@@ -37,7 +37,7 @@ import org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE_REQUIRED
 import org.osgi.service.component.annotations.ServiceScope
 import java.security.PublicKey
 
-//TODO impl impl in package name
+// TODO impl impl in package name
 
 @Suppress("LongParameterList")
 @Component(service = [UtxoSignedTransactionFactory::class, UsedByFlow::class], scope = ServiceScope.PROTOTYPE)
@@ -141,7 +141,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
             utxoTransactionBuilder.notaryName,
             utxoTransactionBuilder.notaryKey,
             utxoTransactionBuilder.timeWindow,
-            //TODO notaryallowlist
+            // TODO notaryallowlist
         )
 
         val encumbranceGroupSizes =
@@ -151,7 +151,8 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
             it.toTransactionState(
                 utxoTransactionBuilder.notaryName!!,
                 utxoTransactionBuilder.notaryKey!!,
-                it.encumbranceTag?.let { tag -> encumbranceGroupSizes[tag] })
+                it.encumbranceTag?.let { tag -> encumbranceGroupSizes[tag] }
+            )
         }
 
         val outputsInfo = outputTransactionStates.map {
@@ -171,7 +172,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
 
         return UtxoComponentGroup.values().sorted().map { componentGroupIndex ->
             when (componentGroupIndex) {
-                UtxoComponentGroup.METADATA -> listOf(1)// This will be populated later
+                UtxoComponentGroup.METADATA -> listOf(1) // This will be populated later
                 UtxoComponentGroup.NOTARY -> notaryGroup.map { it!! }
                 UtxoComponentGroup.SIGNATORIES -> utxoTransactionBuilder.signatories
                 UtxoComponentGroup.OUTPUTS_INFO -> outputsInfo

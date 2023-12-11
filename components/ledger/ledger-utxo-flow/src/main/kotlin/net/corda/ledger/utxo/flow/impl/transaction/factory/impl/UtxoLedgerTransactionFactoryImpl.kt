@@ -94,7 +94,7 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
             }
         requireNotNull(groupParameters) {
             "Signed group parameters $membershipGroupParametersHashString related to the transaction " +
-                    "${wireTransaction.id} cannot be accessed."
+                "${wireTransaction.id} cannot be accessed."
         }
         return groupParameters
     }

@@ -1,8 +1,8 @@
 package net.corda.ledger.persistence.query.registration.impl
 
-import net.corda.ledger.persistence.query.registration.VaultNamedQueryRegistry
 import net.corda.ledger.persistence.query.data.VaultNamedQuery
 import net.corda.ledger.persistence.query.parsing.VaultNamedQueryParser
+import net.corda.ledger.persistence.query.registration.VaultNamedQueryRegistry
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryCollector
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryFilter
 import net.corda.v5.ledger.utxo.query.VaultNamedQueryTransformer
@@ -44,9 +44,7 @@ class VaultNamedQueryBuilderImpl(
         return this
     }
 
-
     override fun collect(collector: VaultNamedQueryCollector<*, *>): VaultNamedQueryBuilderCollected {
-
         val notNullQuery = requireNotNull(query) { "Vault named query: $name does not have its query statement set" }
 
         // TODO These casts are necessary because using `Any` in `VaultNamedQuery` will result in a compilation error

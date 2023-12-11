@@ -5,6 +5,8 @@ plugins {
 
 description 'Corda ledger UTXO data'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
