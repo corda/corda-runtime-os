@@ -59,6 +59,7 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
      * Constructor used for testing to initialize the necessary services
      */
     @VisibleForTesting
+    @Suppress("LongParameterList")
     internal constructor(
         clientService: LedgerUniquenessCheckerClientService,
         transactionSignatureService: TransactionSignatureService,
