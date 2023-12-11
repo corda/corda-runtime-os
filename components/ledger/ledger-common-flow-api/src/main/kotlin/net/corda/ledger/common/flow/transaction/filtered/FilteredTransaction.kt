@@ -30,14 +30,14 @@ interface FilteredTransaction {
 
     /**
      * Gets the [TransactionMetadata] of the transaction.
-     * 
+     *
      * @throws IllegalStateException If the [TransactionMetadata] component group does not exist at index 0.
      */
     val metadata: TransactionMetadata
 
     /**
      * Verifies the structure of the transaction and the [MerkleProof]s contained within it
-     * 
+     *
      * @throws FilteredTransactionVerificationException If the transaction fails to verify.
      */
     fun verify()
