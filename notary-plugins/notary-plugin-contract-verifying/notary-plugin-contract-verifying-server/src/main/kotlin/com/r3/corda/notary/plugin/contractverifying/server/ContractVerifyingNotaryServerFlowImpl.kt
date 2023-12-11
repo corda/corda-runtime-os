@@ -64,13 +64,15 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
         transactionSignatureService: TransactionSignatureService,
         transactionSignatureServiceInternal: TransactionSignatureServiceInternal,
         utxoLedgerService: UtxoLedgerService,
-        memberLookup: MemberLookup
+        memberLookup: MemberLookup,
+        notarySignatureVerificationService: NotarySignatureVerificationService
     ) : this() {
         this.clientService = clientService
         this.transactionSignatureService = transactionSignatureService
         this.transactionSignatureServiceInternal = transactionSignatureServiceInternal
         this.utxoLedgerService = utxoLedgerService
         this.memberLookup = memberLookup
+        this.notarySignatureVerificationService = notarySignatureVerificationService
     }
 
     @Suspendable

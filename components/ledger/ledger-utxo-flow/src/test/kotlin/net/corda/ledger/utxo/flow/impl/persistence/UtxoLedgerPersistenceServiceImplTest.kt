@@ -33,6 +33,7 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
+import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
@@ -57,6 +58,7 @@ class UtxoLedgerPersistenceServiceImplTest {
     private val externalEventExecutor = mock<ExternalEventExecutor>()
     private val serializationService = mock<SerializationService>()
     private val transactionSignatureService = mock<TransactionSignatureServiceInternal>()
+    private val notarySignatureVerificationService = mock<NotarySignatureVerificationService>()
     private val utxoSignedTransactionFactory = mock<UtxoSignedTransactionFactory>()
     private val utxoLedgerTransactionFactory = mock<UtxoLedgerTransactionFactory>()
     private val sandbox = mock<SandboxGroupContext>()
@@ -174,6 +176,7 @@ class UtxoLedgerPersistenceServiceImplTest {
         val expectedObj = UtxoSignedTransactionImpl(
             serializationService,
             transactionSignatureService,
+            notarySignatureVerificationService,
             mock<UtxoLedgerTransactionFactory>(),
             wireTransaction,
             signatures

@@ -12,11 +12,13 @@ import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.security.PublicKey
 
 @Component(service = [NotarySignatureVerificationService::class, UsedByFlow::class], scope = PROTOTYPE)
 class NotarySignatureVerificationServiceImpl @Activate constructor(
+    @Reference(service = TransactionSignatureService::class)
     private val transactionSignatureService: TransactionSignatureService
 ) : NotarySignatureVerificationService, UsedByFlow, SingletonSerializeAsToken {
     override fun verifyNotarySignatures(

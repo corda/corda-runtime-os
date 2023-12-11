@@ -27,6 +27,7 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
+import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
@@ -305,9 +306,9 @@ class ContractVerifyingNotaryServerFlowImplTest {
 
         val responseError = responseFromServer.first().error
         assertThat(responseError).isNotNull
-        assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
-        assertThat((responseError as NotaryExceptionGeneral).errorText)
-            .contains("Error during notarization.")
+        assertThat(responseError).isInstanceOf(NotaryExceptionInvalidSignature::class.java)
+        assertThat((responseError as NotaryExceptionInvalidSignature).errorText)
+            .contains("A valid notary signature is not found")
 
     }
 
@@ -428,9 +429,6 @@ class ContractVerifyingNotaryServerFlowImplTest {
                 txVerificationLogic()
             }
             on { id } doReturn txId
-//            on { verifyAttachedNotarySignature(any(), any(), any(), any()) } doAnswer {
-//                signatureVerificationLogic()
-//            }
         }
 
         // Prepare filteredTransactionAndSignature data
@@ -443,6 +441,9 @@ class ContractVerifyingNotaryServerFlowImplTest {
         )
         val mockTransactionSignatureServiceInternal = mock<TransactionSignatureServiceInternal> {
             on { getIdOfPublicKey(signedTx.notaryKey, DigestAlgorithmName.SHA2_256.name) } doReturn notarySignature.by
+        }
+        val mockNotarySignatureVerificationService = mock<NotarySignatureVerificationService> {
+            on { verifyNotarySignatures(any(), any(), any(), any()) } doAnswer { signatureVerificationLogic() }
         }
 
         // Mock the receive and send from the counterparty session, unless it is overwritten
@@ -464,6 +465,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
             mockTransactionSignatureServiceInternal,
             mockLedgerService,
             mockMemberLookup,
+            mockNotarySignatureVerificationService
         )
 
         server.call(paramOrDefaultSession)
