@@ -139,7 +139,7 @@ class MerkleTreeTest {
         val root = merkleTree.root
         val leaf0 = merkleTree.calcLeafHash(0)
         assertEquals(leaf0, root)
-        assertRoot(root, "7901af93")
+        assertHash(root, "7901af93")
     }
 
     @Test
@@ -151,7 +151,7 @@ class MerkleTreeTest {
         val leaf1 = merkleTree.calcLeafHash(1)
         val manualRoot = merkleTree.digest.nodeHash(0, leaf0, leaf1)
         assertEquals(manualRoot, root)
-        assertRoot(root, "bab170b1")
+        assertHash(root, "bab170b1")
 
     }
 
@@ -293,11 +293,6 @@ class MerkleTreeTest {
         val merkleTree = makeTestMerkleTree(treeSize, trivialHashDigestProvider)
         assertThat(merkleTree.leaves).isNotEmpty()
 
-        checkAuditProofBehavior(merkleTree, treeSize)
-    }
-
-    private fun checkAuditProofBehavior(merkleTree: MerkleTree, treeSize: Int): List<MerkleProof> {
-
         // Should not build proof for empty list
         // This is a special case check in the impl we don't really need but since it's there
         // let's have test coverage for it.
@@ -329,10 +324,19 @@ class MerkleTreeTest {
 
         // Test all the possible combinations of leaves for the proof.
         // And make a note of the proofs for furhter testing later
-        return (1 until (1 shl treeSize)).map { i ->
+        (1 until (1 shl treeSize)).forEach { i ->
             val leafIndicesCombination = (0 until treeSize).filter { (i and (1 shl it)) != 0 }
             testLeafCombination(merkleTree, leafIndicesCombination, merkleTree.root, treeSize).also {
-                calculateLeveledHashes(it, trivialHashDigestProvider)
+                val hashes = calculateLeveledHashes(it, trivialHashDigestProvider)
+
+                if (i == 1 && treeSize == 1 ) {
+                    assertThat(hashes).hasSize(0)
+                }
+                if (i == 1 && treeSize == 2) {
+                    assertThat(hashes).hasSize(1)
+                    assertHash(hashes[0].hash, "0000000000000001")
+                    assertThat(hashes[0].level).isEqualTo(0)
+                }
             }
         }
     }
@@ -519,4 +523,4 @@ class MerkleTreeTest {
 
 fun SecureHash.hex() = bytes.joinToString(separator="") { "%02x".format(it) }
 
-fun assertRoot(root: SecureHash, valuePrefix: String): AbstractStringAssert<*> =assertThat(root.hex()).startsWith(valuePrefix)
+fun assertHash(hash: SecureHash, valuePrefix: String): AbstractStringAssert<*> =assertThat(hash.hex()).startsWith(valuePrefix)
