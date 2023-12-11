@@ -51,8 +51,6 @@ fun ClusterInfo.onboardMgm(
         mgmHoldingId, "$mgmHoldingId$CAT_PRE_AUTH", CAT_PRE_AUTH, DEFAULT_KEY_SCHEME
     )
 
-    addSoftHsmFor(TENANT_P2P, CAT_ENCRYPTION_SECRET)
-
     val registrationContext = createMgmRegistrationContext(
         getCa().caCertificate.toPem(),
         sessionKeyId,

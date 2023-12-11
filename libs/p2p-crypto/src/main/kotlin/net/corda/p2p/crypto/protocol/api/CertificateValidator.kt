@@ -3,6 +3,7 @@ package net.corda.p2p.crypto.protocol.api
 import net.corda.crypto.utils.AllowAllRevocationChecker
 import net.corda.crypto.utils.PemCertificate
 import net.corda.crypto.utils.convertToKeyStore
+import net.corda.data.p2p.crypto.protocol.RevocationCheckMode
 import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
 import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
 import net.corda.data.p2p.gateway.certificates.RevocationMode

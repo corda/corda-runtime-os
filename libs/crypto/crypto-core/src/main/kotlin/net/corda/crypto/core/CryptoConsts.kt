@@ -19,9 +19,8 @@ object CryptoConsts {
         const val SESSION_INIT = "SESSION_INIT"
         const val TLS = "TLS"
         const val JWT_KEY = "JWT_KEY"
-        const val ENCRYPTION_SECRET = "ENCRYPTION_SECRET"
 
-        val pre_5_2: Set<String> = setOf(
+        val all: Set<String> = setOf(
             ACCOUNTS,
             CI,
             LEDGER,
@@ -31,10 +30,6 @@ object CryptoConsts {
             TLS,
             JWT_KEY
         )
-        
-        val all: Set<String> = pre_5_2 + 
-            ENCRYPTION_SECRET
-        
     }
 
     /**

@@ -2,15 +2,19 @@ package net.corda.p2p.crypto.protocol.api
 
 import net.corda.data.p2p.crypto.CommonHeader
 import net.corda.data.p2p.crypto.MessageType
+import net.corda.data.p2p.crypto.protocol.AuthenticatedEncryptionSessionDetails
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.CIPHER_ALGO
+import net.corda.p2p.crypto.protocol.api.AuthenticationProtocol.Companion.secureRandom
+import net.corda.p2p.crypto.protocol.api.Session.Companion.toAvro
+import net.corda.data.p2p.crypto.protocol.Session as AvroSession
 import net.corda.p2p.crypto.util.decrypt
 import net.corda.p2p.crypto.util.encryptWithAssociatedData
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.lang.Exception
+import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.concurrent.atomic.AtomicLong
 import javax.crypto.AEADBadTagException
 import javax.crypto.BadPaddingException
 import javax.crypto.Cipher
@@ -26,7 +30,6 @@ import kotlin.experimental.xor
  */
 @Suppress("LongParameterList")
 class AuthenticatedEncryptionSession(override val sessionId: String,
-                                     nextSequenceNo: Long,
                                      private val outboundSecretKey: SecretKey,
                                      private val outboundNonce: ByteArray,
                                      private val inboundSecretKey: SecretKey,
@@ -36,7 +39,6 @@ class AuthenticatedEncryptionSession(override val sessionId: String,
     private val provider = BouncyCastleProvider.PROVIDER_NAME
     private val encryptionCipher = Cipher.getInstance(CIPHER_ALGO, provider)
     private val decryptionCipher = Cipher.getInstance(CIPHER_ALGO, provider)
-    private val sequenceNo = AtomicLong(nextSequenceNo)
 
     fun encryptData(payload: ByteArray): EncryptionResult {
         if (payload.size > maxMessageSize) {
@@ -44,7 +46,7 @@ class AuthenticatedEncryptionSession(override val sessionId: String,
         }
 
         val commonHeader = CommonHeader(MessageType.DATA, ProtocolConstants.PROTOCOL_VERSION, sessionId,
-                                        sequenceNo.getAndIncrement(), Instant.now().toEpochMilli())
+            secureRandom.nextLong(), Instant.now().toEpochMilli())
 
         val nonce = xor(outboundNonce, commonHeader.sequenceNo.toByteArray())
         val (encryptedData, authTag) =
@@ -84,6 +86,19 @@ class AuthenticatedEncryptionSession(override val sessionId: String,
 
         return initialisationVector.zip(paddedSeqNo).map { (first, second) -> first xor second }
             .toList().toByteArray()
+    }
+
+    override fun toAvro(): AvroSession {
+        return AvroSession(
+            sessionId,
+            maxMessageSize,
+            AuthenticatedEncryptionSessionDetails(
+                outboundSecretKey.toAvro(),
+                ByteBuffer.wrap(outboundNonce),
+                inboundSecretKey.toAvro(),
+                ByteBuffer.wrap(inboundNonce),
+            ),
+        )
     }
 
 }
