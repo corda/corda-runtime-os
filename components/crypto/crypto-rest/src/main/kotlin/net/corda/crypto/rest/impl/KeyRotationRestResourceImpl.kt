@@ -11,8 +11,6 @@ import net.corda.data.crypto.wire.ops.key.rotation.KeyType
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.platform.PlatformInfoProvider
-import net.corda.libs.statemanager.api.Metadata
-import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.DependentComponents
@@ -173,14 +171,11 @@ class KeyRotationRestResourceImpl @Activate constructor(
     override fun startKeyRotation(oldKeyAlias: String, newKeyAlias: String): ResponseEntity<KeyRotationResponse> {
         tryWithExceptionHandling(logger, "start key rotation") {
             checkNotNull(publishToKafka)
-            checkNotNull(stateManager)
         }
 
         return doKeyRotation(
             oldKeyAlias,
             newKeyAlias,
-            serializeStatus = { serializer.serialize(it) },
-            publishStates = { stateManager!!.create(it) },
             publishRequests = { publishToKafka!!.publish(it) }
         )
     }
@@ -191,17 +186,13 @@ class KeyRotationRestResourceImpl @Activate constructor(
  *
  * @param oldKeyAlias alias to replace
  * @param newKeyAlias alias to use
- * @param serializeStatus callback to turn a status message into a byte array, if possible, or null
- * @param publishStates callback to publish a list of states (to state manager, in production)
- * @param publishKafka callback to publish a list of kafka messages
+ * @param publishRequests callback to publish a list of kafka messages
  *
  * This is a top level function to make it easy to test without bothering with lifecycle and OSGi.
  */
 fun doKeyRotation(
     oldKeyAlias: String,
     newKeyAlias: String,
-    serializeStatus: (KeyRotationStatus) -> ByteArray?,
-    publishStates: ((List<State>) -> Unit),
     publishRequests: ((List<Record<String, KeyRotationRequest>>) -> Unit)
 ): ResponseEntity<KeyRotationResponse> {
     // We cannot validate oldKeyAlias or newKeyAlias early here on the client side of the RPC since
@@ -217,23 +208,6 @@ fun doKeyRotation(
         null
     )
 
-    val status = KeyRotationStatus(
-        requestId,
-        KeyType.UNMANAGED,
-        oldKeyAlias,
-        newKeyAlias,
-        null,
-        null,
-        0,
-        0,
-        0,
-        Instant.now(),
-        Instant.now()
-    )
-
     publishRequests(listOf(Record(REKEY_MESSAGE_TOPIC, requestId, keyRotationRequest, Instant.now().toEpochMilli())))
-
-    val serialized = checkNotNull(serializeStatus(status))
-    publishStates(listOf(State(requestId, serialized, 1, Metadata(), Instant.now())))
     return ResponseEntity.accepted(KeyRotationResponse(requestId, oldKeyAlias, newKeyAlias))
 }

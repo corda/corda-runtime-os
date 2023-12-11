@@ -108,7 +108,7 @@ class CryptoRekeyBusProcessor(
             )
 
             val flattend = checkNotNull(serializer.serialize(status))
-            stateManager?.update(listOf(State(request.requestId, flattend, 1, Metadata(), now)))
+            stateManager?.create(listOf(State(request.requestId, flattend, 1, Metadata(), now)))
         }
 
         return emptyList()

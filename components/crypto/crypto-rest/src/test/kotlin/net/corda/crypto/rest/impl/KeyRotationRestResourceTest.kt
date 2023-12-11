@@ -13,7 +13,6 @@ import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationStatus
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
 import net.corda.libs.statemanager.api.StateManagerFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -116,10 +115,8 @@ class KeyRotationRestResourceTest {
 
     @Test
     fun `start key rotation event triggers successfully`() {
-        val states = mutableListOf<State>()
         val records = mutableListOf<Record<String, KeyRotationRequest>>()
-        doKeyRotation(oldKeyAlias, newKeyAlias, { byteArrayOf(42)}, { states.addAll(it) }, { records.addAll(it) })
-        assertThat(states.size).isEqualTo(1)
+        doKeyRotation(oldKeyAlias, newKeyAlias, { records.addAll(it) })
         assertThat(records.size).isEqualTo(1)
     }
 
