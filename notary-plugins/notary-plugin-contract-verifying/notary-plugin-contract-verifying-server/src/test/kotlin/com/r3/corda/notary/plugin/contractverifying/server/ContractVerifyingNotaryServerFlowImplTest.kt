@@ -5,11 +5,11 @@ import com.r3.corda.notary.plugin.common.NotaryExceptionGeneral
 import com.r3.corda.notary.plugin.common.NotaryExceptionInvalidSignature
 import com.r3.corda.notary.plugin.common.NotaryExceptionReferenceStateUnknown
 import com.r3.corda.notary.plugin.common.NotaryExceptionTransactionVerificationFailure
-import com.r3.corda.notary.plugin.common.TransactionSignatureServiceInternal
 import com.r3.corda.notary.plugin.contractverifying.api.ContractVerifyingNotarizationPayload
 import com.r3.corda.notary.plugin.contractverifying.api.FilteredTransactionAndSignatures
 import net.corda.crypto.core.fullIdHash
 import net.corda.crypto.testkit.SecureHashUtils
+import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.ledger.common.testkit.getSignatureWithMetadataExample
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateUnknownImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorUnhandledExceptionImpl
@@ -26,7 +26,6 @@ import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
-import net.corda.v5.ledger.common.transaction.TransactionSignatureService
 import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
@@ -81,7 +80,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
     private val memberCharlieName = MemberX500Name.parse("O=MemberCharlie, L=London, C=GB")
 
     // mock services
-    private val mockTransactionSignatureService = mock<TransactionSignatureService>()
+    private val mockTransactionSignatureService = mock<TransactionSignatureServiceInternal>()
     private val mockLedgerService = mock<UtxoLedgerService>()
 
     // mock for notary member lookup
@@ -388,6 +387,12 @@ class ContractVerifyingNotaryServerFlowImplTest {
             notaryServiceName
         )
         whenever(memberProvidedContext.parse(NOTARY_SERVICE_BACKCHAIN_REQUIRED, Boolean::class.java)).thenReturn(true)
+        whenever(
+            mockTransactionSignatureService.getIdOfPublicKey(
+                signedTx.notaryKey,
+                DigestAlgorithmName.SHA2_256.name
+            )
+        ).thenReturn(notarySignature.by)
 
         // Mock Filtered Transaction
         val mockDependencyOutputStateAndRef = mock<StateAndRef<*>> {
@@ -439,9 +444,7 @@ class ContractVerifyingNotaryServerFlowImplTest {
         val filteredTxsAndSignatures = listOf(
             filteredTxAndSignature
         )
-        val mockTransactionSignatureServiceInternal = mock<TransactionSignatureServiceInternal> {
-            on { getIdOfPublicKey(signedTx.notaryKey, DigestAlgorithmName.SHA2_256.name) } doReturn notarySignature.by
-        }
+
         val mockNotarySignatureVerificationService = mock<NotarySignatureVerificationService> {
             on { verifyNotarySignatures(any(), any(), any(), any()) } doAnswer { signatureVerificationLogic() }
         }
@@ -462,7 +465,6 @@ class ContractVerifyingNotaryServerFlowImplTest {
         val server = ContractVerifyingNotaryServerFlowImpl(
             clientService,
             mockTransactionSignatureService,
-            mockTransactionSignatureServiceInternal,
             mockLedgerService,
             mockMemberLookup,
             mockNotarySignatureVerificationService

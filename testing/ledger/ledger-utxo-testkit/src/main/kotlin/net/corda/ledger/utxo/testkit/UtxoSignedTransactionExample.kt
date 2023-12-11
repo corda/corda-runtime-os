@@ -14,10 +14,10 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.NotarySignatureVerificationServiceInternal
 import net.corda.v5.application.crypto.DigestService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 
 fun UtxoSignedTransactionFactory.createExample(
@@ -46,7 +46,7 @@ fun getUtxoSignedTransactionExample(
     jsonMarshallingService: JsonMarshallingService,
     jsonValidator: JsonValidator,
     transactionSignatureService: TransactionSignatureServiceInternal,
-    notarySignatureVerificationService: NotarySignatureVerificationService,
+    notarySignatureVerificationService: NotarySignatureVerificationServiceInternal,
     utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
     cpkPackageSeed: String? = null
 ): UtxoSignedTransaction {

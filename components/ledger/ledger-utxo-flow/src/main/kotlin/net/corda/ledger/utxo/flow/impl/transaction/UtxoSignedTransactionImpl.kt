@@ -1,12 +1,12 @@
 package net.corda.ledger.utxo.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.flow.impl.transaction.getKeyOrLeafKeys
 import net.corda.ledger.common.flow.transaction.TransactionMissingSignaturesException
 import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInternal
 import net.corda.ledger.utxo.data.transaction.WrappedUtxoWireTransaction
 import net.corda.ledger.utxo.data.transaction.verifier.verifyMetadata
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.NotarySignatureVerificationServiceInternal
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
@@ -17,7 +17,6 @@ import net.corda.v5.ledger.common.transaction.TransactionMetadata
 import net.corda.v5.ledger.common.transaction.TransactionNoAvailableKeysException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import net.corda.v5.ledger.utxo.Command
-import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
@@ -29,7 +28,7 @@ import java.util.Objects
 data class UtxoSignedTransactionImpl(
     private val serializationService: SerializationService,
     private val transactionSignatureServiceInternal: TransactionSignatureServiceInternal,
-    private val notarySignatureVerificationService: NotarySignatureVerificationService,
+    private val notarySignatureVerificationService: NotarySignatureVerificationServiceInternal,
     private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
     override val wireTransaction: WireTransaction,
     private val signatures: List<DigitalSignatureAndMetadata>
@@ -123,7 +122,7 @@ data class UtxoSignedTransactionImpl(
         val keyIdToPublicKey = keyIdToSignatories.getOrPut(keyId.algorithm) {
             // Prepare keyIds for all public keys related to signatories for the relevant algorithm
             signatories.flatMap { signatory ->
-                getKeyOrLeafKeys(signatory).map {
+                notarySignatureVerificationService.getKeyOrLeafKeys(signatory).map {
                     transactionSignatureServiceInternal.getIdOfPublicKey(
                         it, keyId.algorithm
                     ) to it

@@ -26,6 +26,7 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.NotarySignatureVerificationServiceInternal
 import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.VirtualNodeContext
@@ -33,7 +34,6 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.ledger.common.transaction.CordaPackageSummary
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
-import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
@@ -58,7 +58,7 @@ class UtxoLedgerPersistenceServiceImplTest {
     private val externalEventExecutor = mock<ExternalEventExecutor>()
     private val serializationService = mock<SerializationService>()
     private val transactionSignatureService = mock<TransactionSignatureServiceInternal>()
-    private val notarySignatureVerificationService = mock<NotarySignatureVerificationService>()
+    private val notarySignatureVerificationService = mock<NotarySignatureVerificationServiceInternal>()
     private val utxoSignedTransactionFactory = mock<UtxoSignedTransactionFactory>()
     private val utxoLedgerTransactionFactory = mock<UtxoLedgerTransactionFactory>()
     private val sandbox = mock<SandboxGroupContext>()

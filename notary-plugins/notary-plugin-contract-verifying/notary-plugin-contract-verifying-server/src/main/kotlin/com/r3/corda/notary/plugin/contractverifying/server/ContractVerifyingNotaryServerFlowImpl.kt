@@ -5,7 +5,6 @@ import com.r3.corda.notary.plugin.common.NotaryExceptionGeneral
 import com.r3.corda.notary.plugin.common.NotaryExceptionInvalidSignature
 import com.r3.corda.notary.plugin.common.NotaryExceptionTransactionVerificationFailure
 import com.r3.corda.notary.plugin.common.NotaryTransactionDetails
-import com.r3.corda.notary.plugin.common.TransactionSignatureServiceInternal
 import com.r3.corda.notary.plugin.common.toNotarizationResponse
 import com.r3.corda.notary.plugin.contractverifying.api.ContractVerifyingNotarizationPayload
 import com.r3.corda.notary.plugin.contractverifying.api.FilteredTransactionAndSignatures
@@ -44,9 +43,6 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
     private lateinit var transactionSignatureService: TransactionSignatureService
 
     @CordaInject
-    private lateinit var transactionSignatureServiceInternal: TransactionSignatureServiceInternal
-
-    @CordaInject
     private lateinit var utxoLedgerService: UtxoLedgerService
 
     @CordaInject
@@ -59,18 +55,15 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
      * Constructor used for testing to initialize the necessary services
      */
     @VisibleForTesting
-    @Suppress("LongParameterList")
     internal constructor(
         clientService: LedgerUniquenessCheckerClientService,
         transactionSignatureService: TransactionSignatureService,
-        transactionSignatureServiceInternal: TransactionSignatureServiceInternal,
         utxoLedgerService: UtxoLedgerService,
         memberLookup: MemberLookup,
         notarySignatureVerificationService: NotarySignatureVerificationService
     ) : this() {
         this.clientService = clientService
         this.transactionSignatureService = transactionSignatureService
-        this.transactionSignatureServiceInternal = transactionSignatureServiceInternal
         this.utxoLedgerService = utxoLedgerService
         this.memberLookup = memberLookup
         this.notarySignatureVerificationService = notarySignatureVerificationService

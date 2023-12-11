@@ -16,16 +16,19 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.security.PublicKey
 
-@Component(service = [NotarySignatureVerificationService::class, UsedByFlow::class], scope = PROTOTYPE)
+@Component(
+    service = [NotarySignatureVerificationService::class, NotarySignatureVerificationServiceInternal::class, UsedByFlow::class],
+    scope = PROTOTYPE
+)
 class NotarySignatureVerificationServiceImpl @Activate constructor(
     @Reference(service = TransactionSignatureService::class)
     private val transactionSignatureService: TransactionSignatureService
-) : NotarySignatureVerificationService, UsedByFlow, SingletonSerializeAsToken {
+) : NotarySignatureVerificationService, NotarySignatureVerificationServiceInternal, UsedByFlow, SingletonSerializeAsToken {
     override fun verifyNotarySignatures(
         transactionId: SecureHash,
         notaryKey: PublicKey,
         signatures: MutableList<DigitalSignatureAndMetadata>,
-        keyIdToNotaryKeys: MutableMap<String, MutableMap<SecureHash, PublicKey>>
+        keyIdToNotaryKeys: MutableMap<String, Map<SecureHash, PublicKey>>
     ) {
         val notaryPublicKeysWithValidSignatures = signatures.mapNotNull {
             val publicKey =
@@ -60,7 +63,7 @@ class NotarySignatureVerificationServiceImpl @Activate constructor(
     override fun getNotaryPublicKeyByKeyId(
         keyId: SecureHash,
         notaryKey: PublicKey,
-        keyIdToNotaryKeys: MutableMap<String, MutableMap<SecureHash, PublicKey>>
+        keyIdToNotaryKeys: MutableMap<String, Map<SecureHash, PublicKey>>
     ): PublicKey? {
         val keyIdToPublicKey = keyIdToNotaryKeys.getOrPut(keyId.algorithm) {
             //Prepare keyIds for all public keys related to the notary for the relevant algorithm
@@ -73,7 +76,7 @@ class NotarySignatureVerificationServiceImpl @Activate constructor(
         return keyIdToPublicKey[keyId]
     }
 
-    private fun getKeyOrLeafKeys(publicKey: PublicKey): List<PublicKey> {
+    override fun getKeyOrLeafKeys(publicKey: PublicKey): List<PublicKey> {
         return when (publicKey) {
             is CompositeKey -> publicKey.leafKeys.toList()
             else -> listOf(publicKey)

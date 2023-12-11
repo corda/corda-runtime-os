@@ -20,6 +20,7 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.NotarySignatureVerificationServiceInternal
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.sandbox.type.UsedByFlow
@@ -29,7 +30,6 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.common.transaction.TransactionMetadata
-import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -67,8 +67,8 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     private val groupParametersLookup: GroupParametersLookupInternal,
     @Reference(service = SignedGroupParametersVerifier::class)
     private val signedGroupParametersVerifier: SignedGroupParametersVerifier,
-    @Reference(service = NotarySignatureVerificationService::class)
-    private val notarySignatureVerificationService: NotarySignatureVerificationService
+    @Reference(service = NotarySignatureVerificationServiceInternal::class)
+    private val notarySignatureVerificationService: NotarySignatureVerificationServiceInternal
 ) : UtxoSignedTransactionFactory, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
