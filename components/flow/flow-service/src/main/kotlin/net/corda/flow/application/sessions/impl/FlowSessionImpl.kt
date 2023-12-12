@@ -31,7 +31,7 @@ class FlowSessionImpl(
     private val flowContext: FlowContext,
     direction: Direction,
     private val requireClose: Boolean,
-    private val sessionTimeout: Duration?,
+    private val sessionTimeout: Duration? = null,
 ) : FlowSession, FlowSessionInternal {
 
     private companion object {
