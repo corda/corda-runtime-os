@@ -36,12 +36,12 @@ internal class SandboxGroupImpl(
     private val bundleUtils: BundleUtils
 ) : SandboxGroupInternal {
     init {
-        val cordappCpkNames = HashSet<String>()
+        val cpkCordappNames = hashSetOf<String>()
         cpkSandboxes.forEach {
-            if (cordappCpkNames.contains(it.cpkMetadata.cpkId.name)) {
+            if (cpkCordappNames.contains(it.cpkMetadata.cpkId.name)) {
                 throw SandboxException("Multiple CPKs share the Corda-CPK-Cordapp-Name ${it.cpkMetadata.cpkId.name}.")
             }
-            cordappCpkNames.add(it.cpkMetadata.cpkId.name)
+            cpkCordappNames.add(it.cpkMetadata.cpkId.name)
         }
     }
 

@@ -2,6 +2,15 @@ plugins {
     id 'corda.common-publishing'
     id 'corda.common-library'
 }
+sourceSets {
+    integrationTest {
+        compileClasspath += main.output + test.output
+        runtimeClasspath += main.output + test.output
+    }
+}
+
+tasks.named('integrationTest') {
+}
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'

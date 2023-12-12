@@ -23,6 +23,7 @@ import net.corda.crypto.config.impl.SALT
 import net.corda.crypto.config.impl.WRAPPING_KEYS
 import net.corda.crypto.config.impl.retrying
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoConsts.Categories.ENCRYPTION_SECRET
 import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.SigningKeyInfo
@@ -231,12 +232,15 @@ class CryptoProcessorImpl @Activate constructor(
                     }
                 }
 
-                CryptoConsts.Categories.all.forEach { category ->
+                (CryptoConsts.Categories.all - ENCRYPTION_SECRET).forEach { category ->
                     CryptoTenants.allClusterTenants.forEach { tenantId ->
                         tenantInfoService.populate(tenantId, category, cryptoService)
                         logger.trace("Assigned SOFT HSM for $tenantId:$category")
                     }
                 }
+
+                tenantInfoService.populate(CryptoTenants.P2P, ENCRYPTION_SECRET, cryptoService)
+                logger.trace("Assigned SOFT HSM for ${CryptoTenants.P2P}:$ENCRYPTION_SECRET")
                 startProcessors(event, coordinator, stateManager, cordaAvroSerializationFactory)
                 setStatus(LifecycleStatus.UP, coordinator)
             }
