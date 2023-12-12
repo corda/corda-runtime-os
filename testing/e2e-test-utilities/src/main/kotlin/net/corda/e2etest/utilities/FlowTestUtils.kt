@@ -219,7 +219,7 @@ fun ClusterInfo.assertInvalidStatusFilter (holdingId: String, expectedFlowCount:
                 val flowStatuses = json["flowStatusResponses"]
                 val notAllStatusesValid = flowStatuses.map { flowStatus ->
                     flowStatus["flowStatus"].textValue() in RPC_VALID_STATUSES
-                }.all { false }
+                }.any { false }
                 it.code == 400 && flowStatuses.size() == expectedFlowCount && notAllStatusesValid
             }
         }
