@@ -20,6 +20,7 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.LoggerFactory
+import java.time.Duration
 
 @Suppress("LongParameterList", "TooManyFunctions")
 class FlowSessionImpl(
@@ -29,7 +30,8 @@ class FlowSessionImpl(
     private val serializationService: SerializationServiceInternal,
     private val flowContext: FlowContext,
     direction: Direction,
-    private val requireClose: Boolean
+    private val requireClose: Boolean,
+    private val sessionTimeout: Duration?,
 ) : FlowSession, FlowSessionInternal {
 
     private companion object {
@@ -162,6 +164,7 @@ class FlowSessionImpl(
             sourceSessionId,
             counterparty,
             requireClose,
+            sessionTimeout,
             contextUserProperties = flowContext.flattenUserProperties(),
             contextPlatformProperties = flowContext.flattenPlatformProperties()
         )

@@ -28,6 +28,7 @@ import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSIONS_SUPPORTED
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSION_USED
 import net.corda.session.manager.Constants.Companion.FLOW_SESSION_REQUIRE_CLOSE
+import net.corda.session.manager.Constants.Companion.FLOW_SESSION_TIMEOUT_MS
 import net.corda.session.manager.SessionManager
 import net.corda.utilities.MDC_CLIENT_ID
 import net.corda.utilities.debug
@@ -120,10 +121,14 @@ class SessionEventHandler @Activate constructor(
         val counterpartySessionPropertiesMap = counterpartySessionProperties.toMap()
         val requireClose = counterpartySessionPropertiesMap[FLOW_SESSION_REQUIRE_CLOSE] ?: throw FlowFatalException("RequireClose was not" +
                 " set in the session properties")
+        val sessionTimeoutMs = counterpartySessionPropertiesMap[FLOW_SESSION_TIMEOUT_MS]
         val sessionContext = KeyValueStore().apply {
             put(FLOW_PROTOCOL, protocolVersion.protocol)
             put(FLOW_PROTOCOL_VERSION_USED, protocolVersion.protocolVersion.toString())
             put(FLOW_SESSION_REQUIRE_CLOSE, requireClose)
+            if (sessionTimeoutMs != null) {
+                put(FLOW_SESSION_TIMEOUT_MS, sessionTimeoutMs)
+            }
         }
 
         return sessionContext.avro

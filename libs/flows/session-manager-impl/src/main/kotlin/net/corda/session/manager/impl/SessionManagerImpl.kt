@@ -67,7 +67,9 @@ class SessionManagerImpl @Activate constructor(
         counterparty: HoldingIdentity,
         instant: Instant,
         initialStatus: SessionStateType,
-    ): SessionState = SessionState.newBuilder()
+    ): SessionState {
+        val sessionPropertiesMap = contextSessionProperties.toMap()
+        return SessionState.newBuilder()
             .setSessionId(sessionId)
             .setSessionStartTime(instant)
             .setLastReceivedMessageTime(instant)
@@ -77,8 +79,10 @@ class SessionManagerImpl @Activate constructor(
             .setSessionProperties(contextSessionProperties)
             .setStatus(initialStatus)
             .setHasScheduledCleanup(false)
-            .setRequireClose(contextSessionProperties.toMap()[Constants.FLOW_SESSION_REQUIRE_CLOSE].toBoolean())
+            .setRequireClose(sessionPropertiesMap[Constants.FLOW_SESSION_REQUIRE_CLOSE].toBoolean())
+            .setSessionTimeout(sessionPropertiesMap[Constants.FLOW_SESSION_TIMEOUT_MS]?.toInt())
             .build()
+    }
 
     override fun getNextReceivedEvent(sessionState: SessionState): SessionEvent? {
         val receivedEvents = sessionState.receivedEventsState ?: return null
@@ -176,7 +180,8 @@ class SessionManagerImpl @Activate constructor(
     ): List<SessionEvent> {
         val lastReceivedMessageTime = sessionState.lastReceivedMessageTime
 
-        val sessionTimeoutTimestamp = lastReceivedMessageTime.plusMillis(config.getLong(FlowConfig.SESSION_TIMEOUT_WINDOW))
+        val sessionTimeout = sessionState.sessionTimeout ?: config.getInt(FlowConfig.SESSION_TIMEOUT_WINDOW)
+        val sessionTimeoutTimestamp = lastReceivedMessageTime.plusMillis(sessionTimeout.toLong())
 
         return if (instant > sessionTimeoutTimestamp) {
             //send an error if the session has timed out

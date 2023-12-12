@@ -31,6 +31,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.time.Duration
 
 @Suppress("LongParameterList")
 @Component(service = [FlowRunner::class])
@@ -120,7 +121,9 @@ class FlowRunnerImpl @Activate constructor(
             mapOf("corda.account" to "account-zero")
         )
 
-        val requireClose = getRequireClose(sessionEvent)
+        val sessionProps = sessionEvent.contextSessionProperties.toMap()
+        val requireClose = sessionProps[FLOW_SESSION_REQUIRE_CLOSE].toBoolean()
+        val sessionTimeout = sessionProps[FLOW_SESSION_REQUIRE_CLOSE]?.let { Duration.parse(it) }
 
         return startFlow(
             context,
@@ -128,6 +131,7 @@ class FlowRunnerImpl @Activate constructor(
                 flowFactory.createInitiatedFlow(
                     flowStartContext,
                     requireClose,
+                    sessionTimeout,
                     sgc,
                     localContext.sessionProperties
                 )
@@ -139,11 +143,6 @@ class FlowRunnerImpl @Activate constructor(
                 localContext.platformProperties
             )
         )
-    }
-
-    private fun getRequireClose(sessionEvent: SessionEvent): Boolean {
-        val sessionProps = sessionEvent.contextSessionProperties.toMap()
-        return sessionProps[FLOW_SESSION_REQUIRE_CLOSE].toBoolean()
     }
 
     private fun addFlowStackItemSession(fsi: FlowStackItem, sessionId: String) {
