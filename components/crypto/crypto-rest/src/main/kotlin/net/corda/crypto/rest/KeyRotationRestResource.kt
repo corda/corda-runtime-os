@@ -29,11 +29,14 @@ interface KeyRotationRestResource : RestResource {
      *         the list of rotations runs in progress.
      */
     @HttpGET(
-        path = "unmanaged/rotation",
+        path = "unmanaged/rotation/{requestId}",
         description = "This method gets the status of the current rotation.",
         responseDescription = "",
     )
-    fun getKeyRotationStatus(): List<Pair<String, List<String>>>
+    fun getKeyRotationStatus(
+        @RestPathParameter(description = "The requestId obtained when starting key rotation request.")
+        requestId: String
+    ): List<Pair<String, String>>
 
     /**
      * Initiates the key rotation process. 

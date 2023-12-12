@@ -13,6 +13,7 @@ import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
@@ -289,6 +290,9 @@ class MemberProcessorTestUtils {
 
         fun Publisher.publishDefaultCryptoConf(cryptoConfig: SmartConfig) =
             publishConf(ConfigKeys.CRYPTO_CONFIG, cryptoConfig.root().render())
+
+        fun Publisher.publishEmptyStateManagerConf() =
+            publishConf(ConfigKeys.STATE_MANAGER_CONFIG, SmartConfigImpl.empty().root().render())
 
         fun Publisher.publishGatewayConfig() =
             publishConf(

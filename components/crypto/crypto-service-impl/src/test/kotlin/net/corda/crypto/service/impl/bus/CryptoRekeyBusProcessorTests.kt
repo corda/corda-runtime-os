@@ -2,6 +2,8 @@ package net.corda.crypto.service.impl.bus
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.avro.serialization.CordaAvroSerializationFactory
+import net.corda.avro.serialization.CordaAvroSerializer
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.CryptoTenants
@@ -15,6 +17,7 @@ import net.corda.crypto.softhsm.WrappingRepositoryFactory
 import net.corda.crypto.softhsm.impl.WrappingRepositoryImpl
 import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
+import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationStatus
 import net.corda.data.crypto.wire.ops.key.rotation.KeyType
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -28,13 +31,13 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.doReturn
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -55,6 +58,7 @@ class CryptoRekeyBusProcessorTests {
     private lateinit var rewrapPublishCapture: KArgumentCaptor<List<Record<*, *>>>
     private lateinit var cryptoService: CryptoService
     private lateinit var rewrapPublisher: Publisher
+    private lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
     private lateinit var config: Map<String, SmartConfig>
     private val oldKeyAlias = "oldKeyAlias"
 
@@ -88,9 +92,18 @@ class CryptoRekeyBusProcessorTests {
             on { publish(rewrapPublishCapture.capture()) } doReturn emptyList()
         }
 
+        val serializer = mock<CordaAvroSerializer<KeyRotationStatus>> {
+            on { serialize(any()) } doReturn byteArrayOf(42)
+        }
+        cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
+            on { createAvroSerializer<KeyRotationStatus>() } doReturn serializer
+        }
+
         cryptoRekeyBusProcessor = CryptoRekeyBusProcessor(
             cryptoService, virtualNodeInfoReadService,
-            wrappingRepositoryFactory, rewrapPublisher)
+            wrappingRepositoryFactory, rewrapPublisher,
+            mock(),
+            cordaAvroSerializationFactory)
     }
 
     @Test
@@ -146,7 +159,9 @@ class CryptoRekeyBusProcessorTests {
             cryptoService,
             virtualNodeInfoReadService,
             wrappingRepositoryFactory,
-            rewrapPublisher
+            rewrapPublisher,
+            mock(),
+            cordaAvroSerializationFactory,
         )
 
         cryptoRekeyBusProcessor.onNext(listOf(getKafkaRecord(oldKeyAlias)))
