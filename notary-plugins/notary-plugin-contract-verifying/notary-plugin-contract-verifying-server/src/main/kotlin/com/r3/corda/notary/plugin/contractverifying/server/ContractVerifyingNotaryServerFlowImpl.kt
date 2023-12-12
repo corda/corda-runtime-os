@@ -167,8 +167,9 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
         filteredTransactionsAndSignatures: List<FilteredTransactionAndSignatures>
     ) {
         val keyIdToNotaryKeys: MutableMap<String, MutableMap<SecureHash, PublicKey>> = mutableMapOf()
-        filteredTransactionsAndSignatures.forEach {(filteredTransaction, signatures) ->
-            try {
+        try {
+            filteredTransactionsAndSignatures.forEach { (filteredTransaction, signatures) ->
+
                 filteredTransaction.verify()
                 notarySignatureVerificationService.verifyNotarySignatures(
                     filteredTransaction.id,
@@ -176,12 +177,11 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
                     signatures,
                     keyIdToNotaryKeys
                 )
-            } catch (e: Exception) {
-                throw NotaryExceptionInvalidSignature(
-                    "A valid notary signature is not found with error message: ${e.message}.",
-                    filteredTransaction.id
-                )
             }
+        } catch (e: Exception) {
+            throw NotaryExceptionInvalidSignature(
+                "A valid notary signature is not found with error message: ${e.message}."
+            )
         }
     }
 
