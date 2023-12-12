@@ -196,7 +196,9 @@ internal class VirtualNodeRestResourceImpl(
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                     coordinator.createManagedResource(SENDER) {
                         virtualNodeSenderFactory.createSender(
-                            duration, messagingConfig, PublisherConfig(VIRTUAL_NODE_ASYNC_OPERATION_CLIENT_ID)
+                            duration,
+                            messagingConfig,
+                            PublisherConfig(VIRTUAL_NODE_ASYNC_OPERATION_CLIENT_ID)
                         )
                     }
 
@@ -292,8 +294,10 @@ internal class VirtualNodeRestResourceImpl(
         }
 
         if (currentCpi.fileChecksum.toHexString().slice(targetCpiFileChecksum.indices) == targetCpiFileChecksum) {
-            throw InvalidStateChangeException("Virtual Node with shorthash $virtualNodeShortId already has " +
-                    "CPI with file checksum $targetCpiFileChecksum")
+            throw InvalidStateChangeException(
+                "Virtual Node with shorthash $virtualNodeShortId already has " +
+                    "CPI with file checksum $targetCpiFileChecksum"
+            )
         }
 
         val targetCpi = virtualNodeValidationService.validateAndGetCpiByChecksum(targetCpiFileChecksum)
@@ -368,7 +372,9 @@ internal class VirtualNodeRestResourceImpl(
         sendAsync(
             virtualNodeShortId,
             VirtualNodeAsynchronousRequest(
-                requestTime, requestId, VirtualNodeUpgradeRequest(virtualNodeShortId, targetCpiFileChecksum, actor, forceUpgrade)
+                requestTime,
+                requestId,
+                VirtualNodeUpgradeRequest(virtualNodeShortId, targetCpiFileChecksum, actor, forceUpgrade)
             )
         )
 
@@ -381,7 +387,9 @@ internal class VirtualNodeRestResourceImpl(
      * triggering more than once.
      */
     private fun generateUpgradeRequestId(
-        virtualNodeShortId: String, currentCpiFileChecksum: String, targetCpiFileChecksum: String
+        virtualNodeShortId: String,
+        currentCpiFileChecksum: String,
+        targetCpiFileChecksum: String
     ): String {
         return virtualNodeShortId.take(12) + currentCpiFileChecksum.take(12) + targetCpiFileChecksum.take(12)
     }
@@ -424,9 +432,10 @@ internal class VirtualNodeRestResourceImpl(
         return ResponseEntity.accepted(AsyncResponse(asyncRequest.requestId))
     }
 
-    override fun updateVirtualNodeDb(virtualNodeShortId: String,
-                                     request: UpdateVirtualNodeDbRequest): ResponseEntity<AsyncResponse> {
-
+    override fun updateVirtualNodeDb(
+        virtualNodeShortId: String,
+        request: UpdateVirtualNodeDbRequest
+    ): ResponseEntity<AsyncResponse> {
         // Check vnode exists
         val virtualNode = virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.parse(virtualNodeShortId))
             ?: throw ResourceNotFoundException("Virtual node not found")
@@ -465,7 +474,8 @@ internal class VirtualNodeRestResourceImpl(
         val actor = restContextProvider.principal
         logger.debug { "Received request to update state for $virtualNodeShortId to $newState by $actor at $instant" }
 
-        val virtualNodeState = when (validateStateChange(virtualNodeShortId, newState)
+        val virtualNodeState = when (
+            validateStateChange(virtualNodeShortId, newState)
         ) {
             VirtualNodeStateTransitions.ACTIVE -> VirtualNodeOperationalState.ACTIVE
             VirtualNodeStateTransitions.MAINTENANCE -> VirtualNodeOperationalState.INACTIVE
@@ -507,8 +517,10 @@ internal class VirtualNodeRestResourceImpl(
         val virtualNode = getVirtualNode(virtualNodeShortId)
 
         if (state == VirtualNodeStateTransitions.ACTIVE && virtualNode.operationInProgress != null) {
-            throw BadRequestException("The Virtual Node with shortHash ${virtualNode.holdingIdentity.shortHash} " +
-                    "has an operation in progress and cannot be set to Active")
+            throw BadRequestException(
+                "The Virtual Node with shortHash ${virtualNode.holdingIdentity.shortHash} " +
+                    "has an operation in progress and cannot be set to Active"
+            )
         }
 
         return state

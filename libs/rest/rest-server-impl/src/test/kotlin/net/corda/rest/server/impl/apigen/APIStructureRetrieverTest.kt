@@ -1,13 +1,13 @@
 package net.corda.rest.server.impl.apigen
 
 import net.corda.rest.durablestream.DurableStreamContext
-import net.corda.rest.server.impl.rest.resources.impl.TestDuplicateProtocolVersionAPIImpl
 import net.corda.rest.server.apigen.test.TestJavaPrimitivesRestResourceImpl
 import net.corda.rest.server.impl.apigen.models.EndpointMethod
 import net.corda.rest.server.impl.apigen.models.GenericParameterizedType
 import net.corda.rest.server.impl.apigen.models.ParameterType
 import net.corda.rest.server.impl.apigen.processing.APIStructureRetriever
 import net.corda.rest.server.impl.apigen.processing.streams.FiniteDurableReturnResult
+import net.corda.rest.server.impl.rest.resources.impl.TestDuplicateProtocolVersionAPIImpl
 import net.corda.rest.server.impl.rest.resources.impl.TestRestAPIAnnotatedImpl
 import net.corda.rest.server.impl.rest.resources.impl.TestRestApiImpl
 import net.corda.rest.test.CalendarRestResource

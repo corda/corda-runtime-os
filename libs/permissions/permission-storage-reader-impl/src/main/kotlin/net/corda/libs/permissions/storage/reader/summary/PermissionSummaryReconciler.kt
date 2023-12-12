@@ -1,7 +1,7 @@
 package net.corda.libs.permissions.storage.reader.summary
 
-import net.corda.data.permissions.summary.UserPermissionSummary as AvroUserPermissionSummary
 import net.corda.libs.permissions.storage.reader.repository.UserLogin
+import net.corda.data.permissions.summary.UserPermissionSummary as AvroUserPermissionSummary
 
 /**
  * Reconciliation for permission summaries in a cache against permission summaries in a data storage.

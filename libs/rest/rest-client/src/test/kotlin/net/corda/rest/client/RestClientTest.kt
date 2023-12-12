@@ -22,7 +22,9 @@ import kotlin.test.assertNotNull
 
 class RestClientTest {
     private inline fun <reified I : RestResource> mockProxyGenerator(
-        restResourceClass: Class<I>, proxyHandler: RestClientProxyHandler<I>): I {
+        restResourceClass: Class<I>,
+        proxyHandler: RestClientProxyHandler<I>
+    ): I {
         assertNotNull(proxyHandler)
         assertNotNull(restResourceClass)
         return mock<I>().also {
@@ -31,7 +33,9 @@ class RestClientTest {
     }
 
     private inline fun <reified I : RestResource> mockErrorProxyGenerator(
-        restResourceClass: Class<I>, proxyHandler: RestClientProxyHandler<I>): I {
+        restResourceClass: Class<I>,
+        proxyHandler: RestClientProxyHandler<I>
+    ): I {
         assertNotNull(proxyHandler)
         assertNotNull(restResourceClass)
         return mock<I>().also {
@@ -57,7 +61,7 @@ class RestClientTest {
             }
         }
 
-        //counting invocations after closing the client, because otherwise extra invocations could be done between counting and closing
+        // counting invocations after closing the client, because otherwise extra invocations could be done between counting and closing
         val healthCheckInvocations = mockingDetails(client.ops).invocations.count { it.method.name.contains("getProtocolVersion") }
 
         // checks that daemon was cancelled
@@ -80,8 +84,11 @@ class RestClientTest {
         val exception = assertThrows<IllegalArgumentException> {
             client.start()
         }
-        assertEquals("Requested minimum protocol version (4) is higher than the server's supported protocol " +
-                "version (2)", exception.message)
+        assertEquals(
+            "Requested minimum protocol version (4) is higher than the server's supported protocol " +
+                "version (2)",
+            exception.message
+        )
     }
 
     @Test
@@ -169,7 +176,6 @@ class RestClientTest {
             eventually {
                 verify(listener, times(0)).onConnect(any())
             }
-
         }
 
         verify(listener, times(0)).onDisconnect(any())

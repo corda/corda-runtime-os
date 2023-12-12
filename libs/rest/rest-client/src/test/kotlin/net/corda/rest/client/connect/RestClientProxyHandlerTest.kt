@@ -34,11 +34,15 @@ internal class RestClientProxyHandlerTest {
     }
 
     private val testHealthCheckApiProxyHandler = RestClientProxyHandler(
-        client = client, EmptyAuthenticationConfig, TestHealthCheckAPI::class.java
+        client = client,
+        EmptyAuthenticationConfig,
+        TestHealthCheckAPI::class.java
     )
 
     private val customSerializationApiProxyHandler = RestClientProxyHandler(
-        client = client, EmptyAuthenticationConfig, CustomSerializationAPI::class.java
+        client = client,
+        EmptyAuthenticationConfig,
+        CustomSerializationAPI::class.java
     )
 
     @Test
@@ -46,7 +50,9 @@ internal class RestClientProxyHandlerTest {
         val result = testHealthCheckApiProxyHandler.invoke(Any(), TestHealthCheckAPI::voidResponse.javaMethod!!, null)
 
         verify(client, times(1)).call<Any>(
-            eq(HttpVerb.GET), argThat { this.path == "health/void" }, any()
+            eq(HttpVerb.GET),
+            argThat { this.path == "health/void" },
+            any()
         )
         assertNull(result)
     }
@@ -78,7 +84,9 @@ internal class RestClientProxyHandlerTest {
     @Test
     fun `should call client translating body on post call if it exists`() {
         val result = testHealthCheckApiProxyHandler.invoke(
-            Any(), TestHealthCheckAPI::ping.javaMethod!!, arrayOf(TestHealthCheckAPI.PingPongData("example"))
+            Any(),
+            TestHealthCheckAPI::ping.javaMethod!!,
+            arrayOf(TestHealthCheckAPI.PingPongData("example"))
         )
 
         verify(client, times(1)).call<Any>(
@@ -134,7 +142,9 @@ internal class RestClientProxyHandlerTest {
     @Test
     fun `should call client translating body with custom serializer successfully`() {
         val result = customSerializationApiProxyHandler.invoke(
-            Any(), CustomSerializationAPI::printString.javaMethod!!, arrayOf(CustomString("test"))
+            Any(),
+            CustomSerializationAPI::printString.javaMethod!!,
+            arrayOf(CustomString("test"))
         )
 
         verify(client, times(1)).call(

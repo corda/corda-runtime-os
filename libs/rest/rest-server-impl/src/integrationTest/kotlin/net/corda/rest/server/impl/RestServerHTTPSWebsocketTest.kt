@@ -31,7 +31,7 @@ class RestServerHTTPSWebsocketTest : AbstractWebsocketTest() {
         @JvmStatic
         @Suppress("unused")
         fun setUpBeforeClass() {
-            //System.setProperty("javax.net.debug", "all")
+            // System.setProperty("javax.net.debug", "all")
             val keyStoreInfo = sslService.getOrCreateKeyStoreInfo(mock())
             val sslConfig = RestSSLSettings(keyStoreInfo.path, keyStoreInfo.password)
 
@@ -55,7 +55,7 @@ class RestServerHTTPSWebsocketTest : AbstractWebsocketTest() {
             ).apply { start() }
             client = TestHttpClientUnirestImpl(
                 "https://${restServerSettings.address.host}:${server.port}" +
-                        "/${restServerSettings.context.basePath}/${apiVersion.versionPath}/",
+                    "/${restServerSettings.context.basePath}/${apiVersion.versionPath}/",
                 true
             )
         }

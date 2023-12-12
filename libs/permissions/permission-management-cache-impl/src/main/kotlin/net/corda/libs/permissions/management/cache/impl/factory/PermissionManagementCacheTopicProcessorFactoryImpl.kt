@@ -1,14 +1,14 @@
 package net.corda.libs.permissions.management.cache.impl.factory
 
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.data.permissions.Group
 import net.corda.data.permissions.Permission
 import net.corda.data.permissions.Role
 import net.corda.data.permissions.User
-import net.corda.libs.permissions.management.cache.factory.PermissionManagementCacheTopicProcessorFactory
-import net.corda.libs.permissions.cache.processor.PermissionCacheTopicProcessor
 import net.corda.libs.permissions.cache.impl.processor.PermissionTopicProcessor
+import net.corda.libs.permissions.cache.processor.PermissionCacheTopicProcessor
+import net.corda.libs.permissions.management.cache.factory.PermissionManagementCacheTopicProcessorFactory
 import org.osgi.service.component.annotations.Component
+import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [PermissionManagementCacheTopicProcessorFactory::class])
 class PermissionManagementCacheTopicProcessorFactoryImpl : PermissionManagementCacheTopicProcessorFactory {

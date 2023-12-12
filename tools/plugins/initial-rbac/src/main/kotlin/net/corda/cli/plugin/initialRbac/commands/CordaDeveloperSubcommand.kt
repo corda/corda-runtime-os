@@ -11,10 +11,12 @@ const val CORDA_DEV_ROLE = "CordaDeveloperRole"
 
 @CommandLine.Command(
     name = "corda-developer",
-    description = ["""Creates a role ('$CORDA_DEV_ROLE') which will permit:
+    description = [
+        """Creates a role ('$CORDA_DEV_ROLE') which will permit:
         - vNode reset
         - vNode vault sync
-        - Change state of the vNode"""],
+        - Change state of the vNode"""
+    ],
     mixinStandardHelpOptions = true
 )
 class CordaDeveloperSubcommand : RestCommand(), Callable<Int> {
@@ -22,7 +24,7 @@ class CordaDeveloperSubcommand : RestCommand(), Callable<Int> {
     private val permissionsToCreate: Map<String, String> = listOf(
         "Force CPI upload" to "POST:/api/$VERSION_PATH_REGEX/maintenance/virtualnode/forcecpiupload",
         "Resync the virtual node vault" to
-                "POST:/api/$VERSION_PATH_REGEX/maintenance/virtualnode/$VNODE_SHORT_HASH_REGEX/vault-schema/force-resync",
+            "POST:/api/$VERSION_PATH_REGEX/maintenance/virtualnode/$VNODE_SHORT_HASH_REGEX/vault-schema/force-resync",
     ).toMap()
 
     override fun call(): Int {
