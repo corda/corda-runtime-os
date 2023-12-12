@@ -27,7 +27,7 @@ class NotarySignatureVerificationServiceImpl @Activate constructor(
     override fun verifyNotarySignatures(
         transactionId: SecureHash,
         notaryKey: PublicKey,
-        signatures: MutableList<DigitalSignatureAndMetadata>,
+        signatures: List<DigitalSignatureAndMetadata>,
         keyIdToNotaryKeys: MutableMap<String, Map<SecureHash, PublicKey>>
     ) {
         val notaryPublicKeysWithValidSignatures = signatures.mapNotNull {
@@ -66,12 +66,12 @@ class NotarySignatureVerificationServiceImpl @Activate constructor(
         keyIdToNotaryKeys: MutableMap<String, Map<SecureHash, PublicKey>>
     ): PublicKey? {
         val keyIdToPublicKey = keyIdToNotaryKeys.getOrPut(keyId.algorithm) {
-            //Prepare keyIds for all public keys related to the notary for the relevant algorithm
+            // Prepare keyIds for all public keys related to the notary for the relevant algorithm
             getKeyOrLeafKeys(notaryKey).associateBy {
                 (transactionSignatureService as TransactionSignatureServiceInternal).getIdOfPublicKey(
                     it, keyId.algorithm
                 )
-            } as MutableMap<SecureHash, PublicKey>
+            }
         }
         return keyIdToPublicKey[keyId]
     }
