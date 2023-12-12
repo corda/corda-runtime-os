@@ -1,6 +1,5 @@
 package net.corda.processors.p2p.gateway.internal
 
-import com.typesafe.config.ConfigRenderOptions
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.libs.configuration.SmartConfig
