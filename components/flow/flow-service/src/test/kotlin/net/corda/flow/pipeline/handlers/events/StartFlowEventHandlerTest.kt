@@ -18,7 +18,6 @@ import org.mockito.kotlin.mock
 
 class StartFlowEventHandlerTest {
     private val holdingIdentity = BOB_X500_HOLDING_IDENTITY
-    private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
     private val startFlow = StartFlow(
         FlowStartContext().apply {
              identity = holdingIdentity
@@ -37,7 +36,7 @@ class StartFlowEventHandlerTest {
             holdingIdentity.toCorda(),
             contextExpected.checkpoint
         )
-        val handler = StartFlowEventHandler(virtualNodeInfoReadService, fakeCheckpointInitializer)
+        val handler = StartFlowEventHandler(fakeCheckpointInitializer)
         val actualContext = handler.preProcess(contextExpected)
         assertThat(actualContext).isEqualTo(contextExpected)
     }

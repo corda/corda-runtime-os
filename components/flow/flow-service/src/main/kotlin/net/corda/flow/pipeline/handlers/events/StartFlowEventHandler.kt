@@ -16,8 +16,6 @@ import org.slf4j.LoggerFactory
 
 @Component(service = [FlowEventHandler::class])
 class StartFlowEventHandler @Activate constructor(
-    @Reference(service = VirtualNodeInfoReadService::class)
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = CheckpointInitializer::class)
     private val checkpointInitializer: CheckpointInitializer
 ) : FlowEventHandler<StartFlow> {
