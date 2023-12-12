@@ -305,9 +305,9 @@ class ContractVerifyingNotaryServerFlowImplTest {
 
         val responseError = responseFromServer.first().error
         assertThat(responseError).isNotNull
-        assertThat(responseError).isInstanceOf(NotaryExceptionInvalidSignature::class.java)
-        assertThat((responseError as NotaryExceptionInvalidSignature).errorText)
-            .contains("A valid notary signature is not found")
+        assertThat(responseError).isInstanceOf(NotaryExceptionGeneral::class.java)
+        assertThat((responseError as NotaryExceptionGeneral).errorText)
+            .contains("Error during notarization. Cause: DUMMY ERROR")
 
     }
 
