@@ -1,8 +1,5 @@
 package net.corda.flow.pipeline.impl
 
-import net.corda.data.flow.FlowInitiatorType
-import net.corda.data.flow.event.StartFlow
-import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.cache.FlowFiberCache
