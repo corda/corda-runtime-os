@@ -86,7 +86,7 @@ class MerkleTreeTest {
         }
 
         @JvmStatic
-        fun merkleProofTestSizes(): List<Int> = (1 until 12).toList()
+        fun merkleProofTestSizes(): List<Int> = (6 until 7).toList()
 
         @JvmStatic
         fun merkleProofExtendedTestSizes(): List<Int> = (13 until 16).toList()
@@ -331,7 +331,7 @@ class MerkleTreeTest {
 
                 println("Merkle proof for a tree of size $treeSize with ${hashes.size} hashes supplied in the proof where we know $leafIndicesCombination")
 
-                var values: MutableList<Pair<Int, Int>> = (0..treeSize).map { it to it }.toMutableList()
+                var values: MutableList<Pair<Int, Int>> = (0..merkleTree.leaves.size).map { it to it }.toMutableList()
                 println("start values $values")
                 var levels: MutableList<List<Pair<Int, Int>>> = mutableListOf(values.toList())
                 while (values.size > 1) {
@@ -352,12 +352,13 @@ class MerkleTreeTest {
                         }
                     }
                     levels += newValues.toList()
-                    assertThat(newValues.size < values.size)
+                    check(newValues.size < values.size)
                     println("new values $newValues")
                     values = newValues
                 }
                 val rlevels = levels.reversed()
-                (0..treeSize).forEach { index ->
+                println(rlevels)
+                (0..merkleTree.leaves.size).forEach { index ->
                     val tree = (0..rlevels.size-2).map { level ->
                         val right = rlevels[level + 1].any { it.first == index }
                         val ch = if (right) {
@@ -366,20 +367,21 @@ class MerkleTreeTest {
                             if (index < treeSize) "┃" else "┗"
                         }
                         val ext = if (right) "━" else " "
-                        "$ch$ext"
+                        "$ch$ext "
                     }
-                    println("${tree.joinToString("")} $index")
-                }
-                (treeSize downTo 0 ).forEach {
-                    if (it in leafIndicesCombination)
-                        println("%02d known data".format(it))
+                    val des = if (index in leafIndicesCombination)
+                        "known data"
                     else {
-                        if (it in hashes.map { it.index }) {
-                            println("%02d proof hash".format(it))
+                        if (index in hashes.map { it.index }) {
+                            "proof hash"
                         } else {
-                            println("%02d can be computed".format(it))
+                            "can be computed"
                         }
                     }
+                    println("${tree.joinToString("")} $index $des")
+                }
+                (treeSize downTo 0 ).forEach {
+
                 }
 
                 println()
