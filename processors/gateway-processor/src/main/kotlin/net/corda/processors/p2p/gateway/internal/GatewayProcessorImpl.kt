@@ -1,9 +1,11 @@
 package net.corda.processors.p2p.gateway.internal
 
+import com.typesafe.config.ConfigRenderOptions
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.merger.ConfigMerger
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -39,7 +41,9 @@ class GatewayProcessorImpl @Activate constructor(
     @Reference(service = CryptoOpsClient::class)
     private val cryptoOpsClient: CryptoOpsClient,
     @Reference(service = AvroSchemaRegistry::class)
-    private val avroSchemaRegistry: AvroSchemaRegistry
+    private val avroSchemaRegistry: AvroSchemaRegistry,
+    @Reference(service = PlatformInfoProvider::class)
+    private val platformInfoProvider: PlatformInfoProvider,
 ) : GatewayProcessor {
 
     private companion object {
@@ -79,9 +83,11 @@ class GatewayProcessorImpl @Activate constructor(
                     subscriptionFactory,
                     publisherFactory,
                     coordinatorFactory,
-                    configMerger.getMessagingConfig(event.config),
+                    messagingConfiguration = configMerger.getMessagingConfig(event.config),
                     cryptoOpsClient,
-                    avroSchemaRegistry
+                    avroSchemaRegistry,
+                    platformInfoProvider,
+                    bootConfig = event.config,
                 )
                 this.gateway = gateway
 

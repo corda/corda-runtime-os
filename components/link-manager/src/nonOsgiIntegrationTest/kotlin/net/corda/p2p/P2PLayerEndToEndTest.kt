@@ -40,6 +40,7 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_REFRESH_THRESHOLD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -78,6 +79,7 @@ import net.corda.schema.Schemas.P2P.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_OUT_MARKERS
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.BootConfig.P2P_LINK_MANAGER_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
@@ -665,6 +667,17 @@ class P2PLayerEndToEndTest {
                 mock(),
                 mock(),
             )
+        private val platformInfoProvider = object : PlatformInfoProvider {
+            override val activePlatformVersion = 1
+            override val localWorkerPlatformVersion = 1
+            override val localWorkerSoftwareVersion = "5.2"
+        }
+        private val bootConfig = SmartConfigFactory.createWithoutSecurityServices()
+            .create(ConfigFactory.empty())
+            .withValue(
+                P2P_LINK_MANAGER_WORKER_REST_ENDPOINT,
+                ConfigValueFactory.fromAnyRef("localhost:8080"),
+            )
 
         private val gateway =
             Gateway(
@@ -674,7 +687,9 @@ class P2PLayerEndToEndTest {
                 lifecycleCoordinatorFactory,
                 bootstrapConfig,
                 cryptoOpsClient,
-                AvroSchemaRegistryImpl()
+                AvroSchemaRegistryImpl(),
+                platformInfoProvider,
+                bootConfig,
             )
 
         private fun Publisher.publishConfig(key: String, config: Config) {
