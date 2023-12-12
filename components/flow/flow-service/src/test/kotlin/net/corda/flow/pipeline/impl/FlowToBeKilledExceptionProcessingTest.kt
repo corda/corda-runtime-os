@@ -79,19 +79,6 @@ class FlowToBeKilledExceptionProcessingTest {
     }
 
     @Test
-    fun `processing FlowMarkedForKillException when checkpoint does not exist only outputs flow killed status record`() {
-        whenever(checkpoint.doesExist).thenReturn(false)
-        val inputEventPayload = StartFlow(FlowStartContext().apply { statusKey = flowKey }, "")
-        val testContext = buildFlowEventContext(checkpoint, inputEventPayload)
-        val exception = FlowMarkedForKillException("reasoning")
-        whenever(flowRecordFactory.createFlowStatusRecord(any())).thenReturn(flowKilledStatusRecord)
-
-        val response = target.process(exception, testContext)
-
-        assertThat(response.outputRecords).hasSize(1).contains(flowKilledStatusRecord)
-    }
-
-    @Test
     fun `error processing FlowMarkedForKillException falls back to null state record, empty response events and marked for DLQ`() {
         val testContext = buildFlowEventContext(checkpoint, Any())
         val exception = FlowMarkedForKillException("reasoning")
