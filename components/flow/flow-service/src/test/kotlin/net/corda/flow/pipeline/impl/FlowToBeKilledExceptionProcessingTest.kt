@@ -3,8 +3,6 @@ package net.corda.flow.pipeline.impl
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.FlowKey
-import net.corda.data.flow.FlowStartContext
-import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
