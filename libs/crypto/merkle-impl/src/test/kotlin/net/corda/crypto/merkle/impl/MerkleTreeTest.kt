@@ -359,15 +359,17 @@ class MerkleTreeTest {
                 val rlevels = levels.reversed()
                 println(rlevels)
                 (0..merkleTree.leaves.size).forEach { index ->
-                    val tree = (0..rlevels.size-2).map { level ->
-                        val right = rlevels[level + 1].any { it.first == index }
-                        val ch = if (right) {
-                            if (index < treeSize) "┣" else "┗"
+                    val tree = (0 until rlevels.size-1).map { level ->
+                        val nextIndices = rlevels[level+1].map { it.first }
+                        if (index in nextIndices) {
+                            if (index == 0) {
+                                if (index == nextIndices.max()) "━━" else "┳━"
+                            } else {
+                                if (index == nextIndices.max()) "┗━" else "┣━"
+                            }
                         } else {
-                            if (index < treeSize) "┃" else "┗"
+                            if (index < nextIndices.max()) "┃ " else "  "
                         }
-                        val ext = if (right) "━" else " "
-                        "$ch$ext "
                     }
                     val des = if (index in leafIndicesCombination)
                         "known data"
