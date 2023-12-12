@@ -940,7 +940,7 @@ internal class GatewayIntegrationTest : TestBase() {
                             String((p2pMessage.payload as AuthenticatedDataMessage).payload.array())
                         )
                             .isEqualTo("Target-$serverUri")
-                        val gatewayResponse = GatewayResponse(gatewayMessage.id)
+                        val gatewayResponse = GatewayResponse(gatewayMessage.id, null)
                         httpWriter.write(HttpResponseStatus.OK, request.source, avroSchemaRegistry.serialize(gatewayResponse).array())
                         deliveryLatch.countDown()
                     }

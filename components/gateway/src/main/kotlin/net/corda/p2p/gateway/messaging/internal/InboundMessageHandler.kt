@@ -145,7 +145,10 @@ internal class InboundMessageHandler(
 
         logger.debug("Received and processing message {} of type {} from {}",
             gatewayMessage.id, p2pMessage.payload::class.java, request.source)
-        val response = GatewayResponse(gatewayMessage.id)
+        val response = GatewayResponse(
+            gatewayMessage.id,
+            null,
+        )
         return when (p2pMessage.payload) {
             is InboundUnauthenticatedMessage -> {
                 p2pInPublisher.publish(listOf(Record(LINK_IN_TOPIC, generateKey(), p2pMessage)))
