@@ -331,16 +331,14 @@ class MerkleTreeTest {
 
                 println("Merkle proof for a tree of size $treeSize with ${hashes.size} hashes supplied in the proof where we know $leafIndicesCombination")
 
-                var treeDepth = MerkleTreeImpl.treeDepth(treeSize)
                 var values: MutableList<Pair<Int, Int>> = (0..treeSize).map { it to it }.toMutableList()
                 println("start values $values")
-                var levels: MutableList<List<Pair<Int, Int>>> = mutableListOf()
-                while (values.size > 1 && treeDepth > 0) {
-                    levels += values.toList()
+                var levels: MutableList<List<Pair<Int, Int>>> = mutableListOf(values.toList())
+                while (values.size > 1) {
                     var newValues:MutableList<Pair<Int, Int>>  = mutableListOf()
                     var index = 0 // index into node hashes, which starts off with an entry per leaf
                     while (index < values.size) {
-                        println("depth $treeDepth index $index: values=${values[index]}")
+                        println("index $index: values=${values[index]}")
                         if (index < values.size - 1) {
                             // pair the elements
                             println("pair $index")
@@ -353,12 +351,25 @@ class MerkleTreeTest {
                             index ++
                         }
                     }
+                    levels += newValues.toList()
                     assertThat(newValues.size < values.size)
                     println("new values $newValues")
                     values = newValues
-                    treeDepth --
                 }
-                println(levels)
+                val rlevels = levels.reversed()
+                (0..treeSize).forEach { index ->
+                    val tree = (0..rlevels.size-2).map { level ->
+                        val right = rlevels[level + 1].any { it.first == index }
+                        val ch = if (right) {
+                            if (index < treeSize) "┣" else "┗"
+                        } else {
+                            if (index < treeSize) "┃" else "┗"
+                        }
+                        val ext = if (right) "━" else " "
+                        "$ch$ext"
+                    }
+                    println("${tree.joinToString("")} $index")
+                }
                 (treeSize downTo 0 ).forEach {
                     if (it in leafIndicesCombination)
                         println("%02d known data".format(it))
