@@ -82,11 +82,11 @@ class GatewayProcessorImpl @Activate constructor(
                     subscriptionFactory,
                     publisherFactory,
                     coordinatorFactory,
-                    messagingConfiguration = configMerger.getMessagingConfig(event.config),
                     cryptoOpsClient,
                     avroSchemaRegistry,
                     platformInfoProvider,
                     bootConfig = event.config,
+                    messagingConfiguration = configMerger.getMessagingConfig(event.config),
                 )
                 this.gateway = gateway
 

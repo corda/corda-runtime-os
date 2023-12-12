@@ -34,11 +34,11 @@ class Gateway(
     subscriptionFactory: SubscriptionFactory,
     publisherFactory: PublisherFactory,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    messagingConfiguration: SmartConfig,
     cryptoOpsClient: CryptoOpsClient,
     avroSchemaRegistry: AvroSchemaRegistry,
     platformInfoProvider: PlatformInfoProvider,
     bootConfig: SmartConfig,
+    messagingConfiguration: SmartConfig,
 ) : LifecycleWithDominoTile {
 
     private val commonComponents = CommonComponents(

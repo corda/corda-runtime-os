@@ -92,13 +92,12 @@ internal class InboundMessageHandler(
         subscriptionFactory,
         messagingConfiguration
     )
-    private val linkManagerClient by lazy {
+    private val linkManagerClient =
         LinkManagerRpcClient(
             publisherFactory,
             platformInfoProvider,
             bootConfig,
         )
-    }
 
     private val server = ReconfigurableHttpServer(
         lifecycleCoordinatorFactory,

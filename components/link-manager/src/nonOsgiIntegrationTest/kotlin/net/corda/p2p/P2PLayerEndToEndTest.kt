@@ -685,11 +685,11 @@ class P2PLayerEndToEndTest {
                 subscriptionFactory,
                 publisherFactory,
                 lifecycleCoordinatorFactory,
-                bootstrapConfig,
                 cryptoOpsClient,
                 AvroSchemaRegistryImpl(),
                 platformInfoProvider,
                 bootConfig,
+                bootstrapConfig,
             )
 
         private fun Publisher.publishConfig(key: String, config: Config) {

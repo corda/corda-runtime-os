@@ -18,9 +18,10 @@ internal class LinkManagerRpcClient(
     private val client by lazy {
         publisherFactory.createHttpRpcClient()
     }
-    private val endpoint by lazy {
+
+    private val endpoint=
         bootConfig.getString(P2P_LINK_MANAGER_WORKER_REST_ENDPOINT)
-    }
+
     private val url by lazy {
         val platformVersion = platformInfoProvider.localWorkerSoftwareShortVersion
         URI.create("http://$endpoint/api/$platformVersion$P2P_LINK_MANAGER_PATH")
