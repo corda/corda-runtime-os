@@ -1,1 +1,4 @@
 # .git-blame-ignore-revs
+
+# CORE-18840 ignore ledger autoformating
+3c623c2d660c4c075860be44cbec8dcae57f67ad
