@@ -21,14 +21,14 @@ import org.mockito.kotlin.whenever
 import java.security.KeyPairGenerator
 import java.security.spec.ECGenParameterSpec
 
-internal class UtxoSignedTransactionImplTest: UtxoLedgerTest() {
+internal class UtxoSignedTransactionImplTest : UtxoLedgerTest() {
     private lateinit var signedTransaction: UtxoSignedTransactionInternal
 
     private val kpg: KeyPairGenerator = KeyPairGenerator.getInstance("EC").apply { initialize(ECGenParameterSpec("secp256r1")) }
-    private val notaryNode1PublicKey = kpg.generateKeyPair().public.also{println(it)}
-    private val notaryNode2PublicKey = kpg.generateKeyPair().public.also{println(it)}
+    private val notaryNode1PublicKey = kpg.generateKeyPair().public.also { println(it) }
+    private val notaryNode2PublicKey = kpg.generateKeyPair().public.also { println(it) }
     private val notaryKey =
-        CompositeKeyProviderImpl().createFromKeys(listOf(notaryNode1PublicKey, notaryNode2PublicKey), 1).also{println(it)}
+        CompositeKeyProviderImpl().createFromKeys(listOf(notaryNode1PublicKey, notaryNode2PublicKey), 1).also { println(it) }
     private val notaryX500Name = MemberX500Name.parse("O=ExampleNotaryService, L=London, C=GB")
     private val notary = notaryX500Name
 
@@ -49,15 +49,14 @@ internal class UtxoSignedTransactionImplTest: UtxoLedgerTest() {
             .addSignatories(listOf(anotherPublicKeyExample))
             .addCommand(UtxoCommandExample())
             .toSignedTransaction() as UtxoSignedTransactionInternal
-
     }
 
     @Test
     fun `verifyAttachedNotarySignature throws on unnotarized transaction`() {
         Assertions.assertThatThrownBy { signedTransaction.verifyAttachedNotarySignature() }.isInstanceOf(
-            TransactionSignatureException::class.java)
+            TransactionSignatureException::class.java
+        )
             .hasMessageContaining("did not fulfil requirements of notary service key")
-
     }
 
     @Test

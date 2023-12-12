@@ -17,5 +17,4 @@ interface SignedGroupParametersVerifier {
     fun verifySignature(
         signedGroupParameters: SignedGroupParameters
     )
-
 }

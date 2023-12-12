@@ -12,7 +12,7 @@ import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
  * transaction states.
  */
 interface UtxoLedgerTransactionFactory {
-    
+
     /**
      * Resolves the input and reference stateRefs to TransactionState objects
      * and returns a fully resolved UtxoLedgerTransation

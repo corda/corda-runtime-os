@@ -5,6 +5,8 @@ plugins {
 
 description "Token Cache"
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"

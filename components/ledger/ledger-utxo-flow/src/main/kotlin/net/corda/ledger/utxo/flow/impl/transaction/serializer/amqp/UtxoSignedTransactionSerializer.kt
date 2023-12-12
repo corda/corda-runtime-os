@@ -53,7 +53,7 @@ class UtxoSignedTransactionSerializer @Activate constructor(
     }
 
     override fun fromProxy(proxy: UtxoSignedTransactionProxy): UtxoSignedTransactionInternal {
-        return when(proxy.version) {
+        return when (proxy.version) {
             VERSION_1 ->
                 UtxoSignedTransactionImpl(
                     serializationService,

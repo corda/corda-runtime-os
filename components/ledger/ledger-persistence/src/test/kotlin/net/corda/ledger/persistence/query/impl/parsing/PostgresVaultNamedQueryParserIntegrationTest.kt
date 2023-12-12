@@ -94,7 +94,8 @@ class PostgresVaultNamedQueryParserIntegrationTest {
                     """WHERE custom -> 'TestUtxoState' ->> 'testField' = :testField
                         |AND custom -> 'Corda' ->> 'participants' IN :participants
                         |AND custom?:contractStateType
-                        |AND created > :created""".trimMargin(),
+                        |AND created > :created
+                    """.trimMargin(),
                     "custom -> 'TestUtxoState' ->> 'testField' = :testField AND custom -> 'Corda' ->> 'participants' IN (:participants) AND custom \\?\\? :contractStateType AND created > :created"
                 )
             )
@@ -109,7 +110,11 @@ class PostgresVaultNamedQueryParserIntegrationTest {
 
     @Test
     fun `queries containing a select throws an exception`() {
-        assertThatThrownBy { vaultNamedQueryParser.parseWhereJson("SELECT field") }.isExactlyInstanceOf(IllegalArgumentException::class.java)
+        assertThatThrownBy {
+            vaultNamedQueryParser.parseWhereJson(
+                "SELECT field"
+            )
+        }.isExactlyInstanceOf(IllegalArgumentException::class.java)
     }
 
     @Test

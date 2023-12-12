@@ -17,8 +17,7 @@ import java.time.Clock
 @Component(service = [ExternalEventFactory::class])
 class FindUnconsumedStatesByTypeExternalEventFactory(
     private val clock: Clock
-) : ExternalEventFactory<FindUnconsumedStatesByTypeParameters, UtxoTransactionOutputs, List<UtxoVisibleTransactionOutputDto>>
-{
+) : ExternalEventFactory<FindUnconsumedStatesByTypeParameters, UtxoTransactionOutputs, List<UtxoVisibleTransactionOutputDto>> {
     @Activate
     constructor() : this(Clock.systemUTC())
 

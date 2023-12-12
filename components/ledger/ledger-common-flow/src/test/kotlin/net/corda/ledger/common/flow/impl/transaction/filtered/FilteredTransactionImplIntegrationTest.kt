@@ -61,7 +61,6 @@ class FilteredTransactionImplIntegrationTest {
 
     @Test
     fun `transaction can be filtered and successfully verified`() {
-
         whenever(serializationService.deserialize(COMPONENT_1, Any::class.java)).thenReturn(MyClassA())
         whenever(serializationService.deserialize(COMPONENT_2, Any::class.java)).thenReturn(MyClassB())
         whenever(serializationService.deserialize(COMPONENT_3, Any::class.java)).thenReturn(MyClassC())
@@ -108,7 +107,6 @@ class FilteredTransactionImplIntegrationTest {
 
     @Test
     fun `component group content can be retrieved from a filtered transaction when the merkle proof for the group is an audit proof`() {
-
         whenever(serializationService.deserialize(COMPONENT_1, Any::class.java)).thenReturn(MyClassA())
         whenever(serializationService.deserialize(COMPONENT_2, Any::class.java)).thenReturn(MyClassB())
 
@@ -147,7 +145,6 @@ class FilteredTransactionImplIntegrationTest {
 
     @Test
     fun `retrieved component group content does not included filtered content when the merkle proof for the group is an audit proof`() {
-
         whenever(serializationService.deserialize(COMPONENT_1, Any::class.java)).thenReturn(MyClassA())
         whenever(serializationService.deserialize(COMPONENT_2, Any::class.java)).thenReturn(MyClassB())
         whenever(serializationService.deserialize(COMPONENT_3, Any::class.java)).thenReturn(MyClassC())
@@ -187,7 +184,6 @@ class FilteredTransactionImplIntegrationTest {
 
     @Test
     fun `cannot retrieve filtered out component group content when the merkle proof for the group is an audit proof`() {
-
         whenever(serializationService.deserialize(COMPONENT_1, Any::class.java)).thenReturn(MyClassA())
         whenever(serializationService.deserialize(COMPONENT_2, Any::class.java)).thenReturn(MyClassB())
         whenever(serializationService.deserialize(COMPONENT_3, Any::class.java)).thenReturn(MyClassC())
@@ -221,7 +217,6 @@ class FilteredTransactionImplIntegrationTest {
 
     @Test
     fun `original component group content cannot be retrieved from a filtered transaction when the merkle proof for the group is a size proof`() {
-
         whenever(serializationService.deserialize(COMPONENT_1, Any::class.java)).thenReturn(MyClassA())
         whenever(serializationService.deserialize(COMPONENT_2, Any::class.java)).thenReturn(MyClassB())
 

@@ -117,7 +117,7 @@ data class UtxoSignedTransactionImpl(
 
     private fun getSignatoryKeyFromKeyId(keyId: SecureHash): PublicKey? {
         val keyIdToPublicKey = keyIdToSignatories.getOrPut(keyId.algorithm) {
-            //Prepare keyIds for all public keys related to signatories for the relevant algorithm
+            // Prepare keyIds for all public keys related to signatories for the relevant algorithm
             signatories.flatMap { signatory ->
                 getKeyOrLeafKeys(signatory).map {
                     transactionSignatureServiceInternal.getIdOfPublicKey(
@@ -173,7 +173,7 @@ data class UtxoSignedTransactionImpl(
     }
 
     private fun getPublicKeysToSignatorySignatures(): Map<PublicKey, DigitalSignatureAndMetadata> {
-        return signatures.mapNotNull {// We do not care about non-notary/non-signatory keys
+        return signatures.mapNotNull { // We do not care about non-notary/non-signatory keys
             (getSignatoryKeyFromKeyId(it.by) ?: return@mapNotNull null) to it
         }
             .toMap()
@@ -181,10 +181,11 @@ data class UtxoSignedTransactionImpl(
 
     private fun getNotaryPublicKeyByKeyId(keyId: SecureHash): PublicKey? {
         val keyIdToPublicKey = keyIdToNotaryKeys.getOrPut(keyId.algorithm) {
-            //Prepare keyIds for all public keys related to the notary for the relevant algorithm
+            // Prepare keyIds for all public keys related to the notary for the relevant algorithm
             getKeyOrLeafKeys(notaryKey).associateBy {
                 transactionSignatureServiceInternal.getIdOfPublicKey(
-                    it, keyId.algorithm
+                    it,
+                    keyId.algorithm
                 )
             }
         }
@@ -215,7 +216,7 @@ data class UtxoSignedTransactionImpl(
             throw TransactionSignatureException(
                 id,
                 "Notary signing keys $notaryPublicKeysWithValidSignatures did not fulfil " +
-                        "requirements of notary service key $notaryKey",
+                    "requirements of notary service key $notaryKey",
                 null
             )
         }
@@ -226,8 +227,8 @@ data class UtxoSignedTransactionImpl(
             ?: throw TransactionSignatureException(
                 id,
                 "Notary signature has not been created by the notary for this transaction. " +
-                        "Notary public key: $notaryKey " +
-                        "Notary signature key Id: ${signature.by}",
+                    "Notary public key: $notaryKey " +
+                    "Notary signature key Id: ${signature.by}",
                 null
             )
 

@@ -8,6 +8,8 @@ plugins {
 
 description 'Corda ledger consensual - persistence implementation'
 
+ext.cordaEnableFormatting = true
+
 configurations {
     cpis {
         canBeConsumed = false

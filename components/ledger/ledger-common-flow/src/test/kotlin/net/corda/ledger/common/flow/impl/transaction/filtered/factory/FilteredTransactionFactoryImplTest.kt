@@ -164,7 +164,6 @@ class FilteredTransactionFactoryImplTest {
                 "Expected to have digest provider with size proof support"
             }
 
-
         filteredTransaction = filteredTransactionFactory.create(
             wireTransaction,
             componentGroupFilterParameters = listOf(

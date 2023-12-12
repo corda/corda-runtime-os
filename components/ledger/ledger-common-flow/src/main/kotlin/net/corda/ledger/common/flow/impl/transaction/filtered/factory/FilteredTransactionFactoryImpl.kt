@@ -40,7 +40,6 @@ class FilteredTransactionFactoryImpl @Activate constructor(
         wireTransaction: WireTransaction,
         componentGroupFilterParameters: List<ComponentGroupFilterParameters>
     ): FilteredTransaction {
-
         requireUniqueComponentGroupIndexes(componentGroupFilterParameters)
 
         // Guarantees construction of [WireTransaction.rootMerkleTree] as it is lazily constructed.
@@ -71,7 +70,6 @@ class FilteredTransactionFactoryImpl @Activate constructor(
         wireTransaction: WireTransaction,
         parameters: ComponentGroupFilterParameters
     ): FilteredComponentGroup {
-
         val componentGroupIndex = parameters.componentGroupIndex
         val componentGroup = wireTransaction.getComponentGroupList(componentGroupIndex)
 
@@ -86,7 +84,6 @@ class FilteredTransactionFactoryImpl @Activate constructor(
 
         val merkleProof = when (parameters) {
             is ComponentGroupFilterParameters.AuditProof<*> -> {
-
                 val skipFiltering = componentGroupIndex == 0
 
                 val filteredComponents = componentGroup
@@ -115,7 +112,6 @@ class FilteredTransactionFactoryImpl @Activate constructor(
                 }
             }
             is ComponentGroupFilterParameters.SizeProof -> {
-
                 wireTransaction.componentMerkleTrees[componentGroupIndex]!!.let { merkleTree ->
                     if (wireTransaction.getComponentGroupList(componentGroupIndex).isEmpty()) {
                         merkleTree.createAuditProof(listOf(0))

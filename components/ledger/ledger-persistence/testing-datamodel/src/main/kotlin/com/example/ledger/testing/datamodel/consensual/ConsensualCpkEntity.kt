@@ -1,12 +1,12 @@
 package com.example.ledger.testing.datamodel.consensual
 
+import net.corda.v5.base.annotations.CordaSerializable
 import java.time.Instant
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
 import javax.persistence.Lob
 import javax.persistence.Table
-import net.corda.v5.base.annotations.CordaSerializable
 
 @CordaSerializable
 @Entity

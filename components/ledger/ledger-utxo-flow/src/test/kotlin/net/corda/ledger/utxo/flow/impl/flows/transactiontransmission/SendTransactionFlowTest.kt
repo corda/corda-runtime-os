@@ -75,7 +75,6 @@ class SendTransactionFlowTest {
 
     @Test
     fun `sending transaction with no dependencies should not call backchain flow`() {
-
         whenever(sessionAlice.receive(Payload::class.java)).thenReturn(
             Payload.Success(successMessage)
         )

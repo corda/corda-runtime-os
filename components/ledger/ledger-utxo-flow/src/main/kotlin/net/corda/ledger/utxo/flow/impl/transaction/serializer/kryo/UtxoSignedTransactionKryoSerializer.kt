@@ -39,6 +39,7 @@ class UtxoSignedTransactionKryoSerializer @Activate constructor(
 
     override fun read(input: CheckpointInput, type: Class<out UtxoSignedTransactionInternal>): UtxoSignedTransactionInternal {
         val wireTransaction = input.readClassAndObject() as WireTransaction
+
         @Suppress("unchecked_cast")
         val signatures = input.readClassAndObject() as List<DigitalSignatureAndMetadata>
         return UtxoSignedTransactionImpl(

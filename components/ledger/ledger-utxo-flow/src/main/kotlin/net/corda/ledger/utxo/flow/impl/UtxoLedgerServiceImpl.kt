@@ -104,7 +104,8 @@ class UtxoLedgerServiceImpl @Activate constructor(
     @Suspendable
     override fun filterSignedTransaction(signedTransaction: UtxoSignedTransaction): UtxoFilteredTransactionBuilder {
         return UtxoFilteredTransactionBuilderImpl(
-            utxoFilteredTransactionFactory, signedTransaction as UtxoSignedTransactionInternal
+            utxoFilteredTransactionFactory,
+            signedTransaction as UtxoSignedTransactionInternal
         )
     }
 
@@ -137,16 +138,18 @@ class UtxoLedgerServiceImpl @Activate constructor(
         /*
         Need [doPrivileged] due to [contextLogger] being used in the flow's constructor.
         Creating the executing the SubFlow must be independent otherwise the security manager causes issues with Quasar.
-        */
+         */
         val utxoFinalityFlow = try {
             @Suppress("deprecation", "removal")
-            java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
-                UtxoFinalityFlow(
-                    signedTransaction as UtxoSignedTransactionInternal,
-                    sessions,
-                    getPluggableNotaryDetails(signedTransaction.notaryName)
-                )
-            })
+            java.security.AccessController.doPrivileged(
+                PrivilegedExceptionAction {
+                    UtxoFinalityFlow(
+                        signedTransaction as UtxoSignedTransactionInternal,
+                        sessions,
+                        getPluggableNotaryDetails(signedTransaction.notaryName)
+                    )
+                }
+            )
         } catch (e: PrivilegedActionException) {
             throw e.exception
         }
@@ -155,13 +158,16 @@ class UtxoLedgerServiceImpl @Activate constructor(
 
     @Suspendable
     override fun receiveFinality(
-        session: FlowSession, validator: UtxoTransactionValidator
+        session: FlowSession,
+        validator: UtxoTransactionValidator
     ): FinalizationResult {
         val utxoReceiveFinalityFlow = try {
             @Suppress("deprecation", "removal")
-            java.security.AccessController.doPrivileged(PrivilegedExceptionAction {
-                UtxoReceiveFinalityFlow(session, validator)
-            })
+            java.security.AccessController.doPrivileged(
+                PrivilegedExceptionAction {
+                    UtxoReceiveFinalityFlow(session, validator)
+                }
+            )
         } catch (e: PrivilegedActionException) {
             throw e.exception
         }
@@ -197,7 +203,7 @@ class UtxoLedgerServiceImpl @Activate constructor(
         utxoSignedTransaction.signatures.forEach {
             utxoSignedTransaction.verifySignatorySignature(it)
         }
-        //verifyTransaction
+        // verifyTransaction
         transactionVerificationService.verify(utxoSignedTransaction.toLedgerTransaction())
 
         // Initial verifications passed, the transaction can be saved in the database.
@@ -215,7 +221,6 @@ class UtxoLedgerServiceImpl @Activate constructor(
     @VisibleForTesting
     @Suppress("ThrowsCount")
     internal fun getPluggableNotaryDetails(notary: MemberX500Name): PluggableNotaryDetails {
-
         val notaryInfo = notaryLookup.notaryServices.firstOrNull { it.name == notary }
             ?: throw CordaRuntimeException(
                 "Notary service $notary has not been registered on the network."
@@ -235,15 +240,15 @@ class UtxoLedgerServiceImpl @Activate constructor(
         if (!PluggableNotaryClientFlow::class.java.isAssignableFrom(flowClass)) {
             throw CordaRuntimeException(
                 "Notary client flow class $flowName is invalid because " +
-                        "it does not inherit from ${PluggableNotaryClientFlow::class.simpleName}."
+                    "it does not inherit from ${PluggableNotaryClientFlow::class.simpleName}."
             )
         }
 
-        @Suppress("UNCHECKED_CAST") return PluggableNotaryDetails(
+        @Suppress("UNCHECKED_CAST")
+        return PluggableNotaryDetails(
             flowClass as Class<PluggableNotaryClientFlow>,
             notaryInfo.isBackchainRequired
         )
-
     }
 
     @Suspendable
