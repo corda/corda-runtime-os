@@ -25,15 +25,15 @@ class DigitalSignatureAndMetadataSerialisationModule(private val merkleProofProv
     val module = SimpleModule().apply {
         addSerializer(DigitalSignatureAndMetadata::class.java, DigitalSignatureAndMetadataSerializer())
         addDeserializer(DigitalSignatureAndMetadata::class.java, DigitalSignatureAndMetadataDeserializer())
-        addSerializer(DigitalSignatureMetadata::class.java, DigitalSignatureMetadataSerializer()) //optional
+        addSerializer(DigitalSignatureMetadata::class.java, DigitalSignatureMetadataSerializer())
         addDeserializer(DigitalSignatureMetadata::class.java, DigitalSignatureMetadataDeserializer())
-        addSerializer(DigitalSignature.WithKeyId::class.java, DigitalSignatureWithKeyIdSerializer()) //optional
+        addSerializer(DigitalSignature.WithKeyId::class.java, DigitalSignatureWithKeyIdSerializer())
         addDeserializer(DigitalSignature.WithKeyId::class.java, DigitalSignatureWithKeyIdDeserializer())
-        addSerializer(SignatureSpec::class.java, SignatureSpecSerializer()) //optional
+        addSerializer(SignatureSpec::class.java, SignatureSpecSerializer())
         addDeserializer(SignatureSpec::class.java, SignatureSpecDeserializer())
-        addSerializer(MerkleProof::class.java, MerkleProofSerializer()) //optional
+        addSerializer(MerkleProof::class.java, MerkleProofSerializer())
         addDeserializer(MerkleProof::class.java, MerkleProofDeserializer(merkleProofProvider))
-        addSerializer(IndexedMerkleLeaf::class.java, IndexedMerkleLeafSerializer()) //optional
+        addSerializer(IndexedMerkleLeaf::class.java, IndexedMerkleLeafSerializer())
         addDeserializer(IndexedMerkleLeaf::class.java, IndexedMerkleLeafDeserializer(merkleProofProvider))
     }
 }
