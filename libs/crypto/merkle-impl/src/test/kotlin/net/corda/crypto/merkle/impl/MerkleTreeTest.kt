@@ -329,6 +329,50 @@ class MerkleTreeTest {
             testLeafCombination(merkleTree, leafIndicesCombination, merkleTree.root, treeSize).also {
                 val hashes = calculateLeveledHashes(it, trivialHashDigestProvider)
 
+                println("Merkle proof for a tree of size $treeSize with ${hashes.size} hashes supplied in the proof where we know $leafIndicesCombination")
+
+                var treeDepth = MerkleTreeImpl.treeDepth(treeSize)
+                var values: MutableList<Pair<Int, Int>> = (0..treeSize).map { it to it }.toMutableList()
+                println("start values $values")
+                var levels: MutableList<List<Pair<Int, Int>>> = mutableListOf()
+                while (values.size > 1 && treeDepth > 0) {
+                    levels += values.toList()
+                    var newValues:MutableList<Pair<Int, Int>>  = mutableListOf()
+                    var index = 0 // index into node hashes, which starts off with an entry per leaf
+                    while (index < values.size) {
+                        println("depth $treeDepth index $index: values=${values[index]}")
+                        if (index < values.size - 1) {
+                            // pair the elements
+                            println("pair $index")
+                            newValues += Pair(values[index].first, values[index+1].second)
+                            index += 2
+                        } else {
+                            println("promote $index")
+                            // promote the odd man out
+                            newValues += values[index]
+                            index ++
+                        }
+                    }
+                    assertThat(newValues.size < values.size)
+                    println("new values $newValues")
+                    values = newValues
+                    treeDepth --
+                }
+                println(levels)
+                (treeSize downTo 0 ).forEach {
+                    if (it in leafIndicesCombination)
+                        println("%02d known data".format(it))
+                    else {
+                        if (it in hashes.map { it.index }) {
+                            println("%02d proof hash".format(it))
+                        } else {
+                            println("%02d can be computed".format(it))
+                        }
+                    }
+                }
+
+                println()
+
                 if (i == 1 && treeSize == 1 ) {
                     assertThat(hashes).hasSize(0)
                 }
