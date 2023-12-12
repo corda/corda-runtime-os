@@ -56,9 +56,6 @@ class FlowMessageFactoryImpl(private val currentTimeProvider: () -> Instant) : F
 
     private fun getCommonFlowStatus(checkpoint: FlowCheckpoint): FlowStatus {
         val startContext = checkpoint.flowStartContext
-        if (startContext.initiatorType == null) {
-            log.warn("Creating FlowStatus with null initiatorType")
-        }
         return FlowStatus().apply {
             key = startContext.statusKey
             initiatorType = startContext.initiatorType

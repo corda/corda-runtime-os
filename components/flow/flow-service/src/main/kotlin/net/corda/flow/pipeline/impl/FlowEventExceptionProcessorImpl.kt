@@ -194,19 +194,6 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         return withEscalation(context) {
             val checkpoint = context.checkpoint
 
-            if (!checkpoint.doesExist) {
-                val statusRecord = createFlowKilledStatusRecordWithoutCheckpoint(
-                    checkpoint.flowId,
-                    context,
-                    exception.message ?: "No exception message provided."
-                )
-
-                return@withEscalation context.copy(
-                    outputRecords = statusRecord,
-                    sendToDlq = false
-                )
-            }
-
             removeCachedFlowFiber(checkpoint)
             val cleanupRecords = checkpointCleanupHandler.cleanupCheckpoint(checkpoint, context.flowConfig, exception)
 
@@ -229,31 +216,6 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
     private fun createFlowKilledStatusRecord(checkpoint: FlowCheckpoint, message: String?): List<Record<*, *>> {
         return createStatusRecord(checkpoint.flowId) {
             flowMessageFactory.createFlowKilledStatusMessage(checkpoint, message)
-        }
-    }
-
-    private fun createFlowKilledStatusRecordWithoutCheckpoint(
-        flowId: String,
-        context: FlowEventContext<*>,
-        message: String?,
-    ): List<Record<*, *>> {
-        val inputPayload = context.inputEvent.payload
-
-        return when (inputPayload) {
-            is StartFlow -> {
-                val status = FlowStatus().apply {
-                    key = inputPayload.startContext.statusKey
-                    initiatorType = FlowInitiatorType.RPC
-                    flowStatus = FlowStates.KILLED
-                    this.flowId = flowId
-                    processingTerminatedReason = message
-                }
-                listOf(flowRecordFactory.createFlowStatusRecord(status))
-            }
-
-            else -> createFlowKilledStatusRecord(
-                context.checkpoint, message ?: "No exception message provided."
-            )
         }
     }
 

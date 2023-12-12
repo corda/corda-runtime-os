@@ -31,16 +31,6 @@ class StartFlowEventHandler @Activate constructor(
     override fun preProcess(context: FlowEventContext<StartFlow>): FlowEventContext<StartFlow> {
         log.info("Flow [${context.checkpoint.flowId}] started")
 
-        val holdingIdentity = context.inputEventPayload.startContext.identity.toCorda()
-        val virtualNodeInfo = virtualNodeInfoReadService.get(holdingIdentity)
-
-        if (virtualNodeInfo?.flowStartOperationalStatus == OperationalStatus.INACTIVE) {
-            throw FlowMarkedForKillException(
-                "flowStartOperationalStatus is INACTIVE, new flows cannot be started for virtual node with " +
-                        "shortHash ${holdingIdentity.shortHash}"
-            )
-        }
-
         checkpointInitializer.initialize(
             context.checkpoint,
             WaitingFor(WaitingForStartFlow),
