@@ -46,8 +46,8 @@ class UtxoFilteredTransactionFactoryImpl @Activate constructor(
                 NOTARY.ordinal,
                 Any::class.java,
                 AuditProofPredicate.Content {
-                    filteredTransactionBuilder.notary && (it is MemberX500Name || it is PublicKey ) // notary components
-                            || filteredTransactionBuilder.timeWindow && it is TimeWindow // time window
+                    filteredTransactionBuilder.notary && (it is MemberX500Name || it is PublicKey) || // notary components
+                        filteredTransactionBuilder.timeWindow && it is TimeWindow // time window
                 }
             )
         } else {

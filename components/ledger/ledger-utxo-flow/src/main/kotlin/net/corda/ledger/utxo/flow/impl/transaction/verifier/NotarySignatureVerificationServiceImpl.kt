@@ -40,7 +40,7 @@ class NotarySignatureVerificationServiceImpl @Activate constructor(
                 } catch (e: Exception) {
                     throw TransactionSignatureException(
                         transactionId,
-                        "Failed to verify signature of ${it.signature} for transaction ${transactionId}. Message: ${e.message}",
+                        "Failed to verify signature of ${it.signature} for transaction $transactionId. Message: ${e.message}",
                         e
                     )
                 }
@@ -54,7 +54,7 @@ class NotarySignatureVerificationServiceImpl @Activate constructor(
             throw TransactionSignatureException(
                 transactionId,
                 "Notary signing keys $notaryPublicKeysWithValidSignatures did not fulfil " +
-                        "requirements of notary service key $notaryKey",
+                    "requirements of notary service key $notaryKey",
                 null
             )
         }
@@ -69,7 +69,8 @@ class NotarySignatureVerificationServiceImpl @Activate constructor(
             // Prepare keyIds for all public keys related to the notary for the relevant algorithm
             getKeyOrLeafKeys(notaryKey).associateBy {
                 (transactionSignatureService as TransactionSignatureServiceInternal).getIdOfPublicKey(
-                    it, keyId.algorithm
+                    it,
+                    keyId.algorithm
                 )
             }
         }

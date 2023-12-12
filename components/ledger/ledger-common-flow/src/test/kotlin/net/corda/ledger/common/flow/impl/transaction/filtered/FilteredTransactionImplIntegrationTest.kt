@@ -148,7 +148,9 @@ class FilteredTransactionImplIntegrationTest {
                 ComponentGroupFilterParameters.AuditProof(
                     0,
                     TransactionMetadataImpl::class.java,
-                    AuditProofPredicate.Content { true }),
+                    AuditProofPredicate.Content { true }
+
+                ),
                 ComponentGroupFilterParameters.AuditProof(1, Any::class.java, AuditProofPredicate.Content { true }),
                 ComponentGroupFilterParameters.AuditProof(2, Any::class.java, AuditProofPredicate.Content { true }),
             )

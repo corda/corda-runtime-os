@@ -126,20 +126,24 @@ open class UtxoFilteredTransactionTestBase {
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.NOTARY.ordinal,
                     Any::class.java,
-                    AuditProofPredicate.Content { true }),
+                    AuditProofPredicate.Content { true }
+                ),
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.OUTPUTS_INFO.ordinal,
                     UtxoOutputInfoComponent::class.java,
-                    AuditProofPredicate.Content { true }),
+                    AuditProofPredicate.Content { true }
+                ),
                 ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.COMMANDS_INFO.ordinal),
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.INPUTS.ordinal,
                     StateRef::class.java,
-                    AuditProofPredicate.Content { true }),
+                    AuditProofPredicate.Content { true }
+                ),
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.OUTPUTS.ordinal,
                     ContractState::class.java,
-                    AuditProofPredicate.Content { true }),
+                    AuditProofPredicate.Content { true }
+                ),
                 ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.COMMANDS.ordinal),
             )
         )

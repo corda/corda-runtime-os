@@ -83,10 +83,11 @@ class UtxoFilteredTransactionImplTest : UtxoFilteredTransactionTestBase() {
                     TransactionMetadataImpl::class.java,
                     AuditProofPredicate.Content { true }
                 ),
-                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.NOTARY.ordinal,
+                ComponentGroupFilterParameters.AuditProof(
+                    UtxoComponentGroup.NOTARY.ordinal,
                     Any::class.java,
                     AuditProofPredicate.Content { true }
-                    ),
+                ),
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.OUTPUTS_INFO.ordinal,
                     UtxoOutputInfoComponent::class.java,

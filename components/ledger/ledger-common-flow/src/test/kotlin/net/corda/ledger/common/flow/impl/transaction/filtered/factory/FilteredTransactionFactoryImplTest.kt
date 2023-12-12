@@ -137,11 +137,13 @@ class FilteredTransactionFactoryImplTest {
                 ComponentGroupFilterParameters.AuditProof(
                     0,
                     TransactionMetadata::class.java,
-                    AuditProofPredicate.Content { true }),
+                    AuditProofPredicate.Content { true }
+                ),
                 ComponentGroupFilterParameters.AuditProof(
                     1,
                     Any::class.java,
-                    AuditProofPredicate.Content { it is MyClassA || it is MyClassB }),
+                    AuditProofPredicate.Content { it is MyClassA || it is MyClassB }
+                ),
             )
         )
 

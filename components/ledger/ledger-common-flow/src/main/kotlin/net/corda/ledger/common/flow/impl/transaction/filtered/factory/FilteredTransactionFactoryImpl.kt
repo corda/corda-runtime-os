@@ -106,9 +106,7 @@ class FilteredTransactionFactoryImpl @Activate constructor(
                                 }
                             }
                         }
-
                     }
-
                 wireTransaction.componentMerkleTrees[componentGroupIndex]!!.let { merkleTree ->
                     if (filteredComponents.isEmpty()) {
                         if (componentGroup.isEmpty()) {

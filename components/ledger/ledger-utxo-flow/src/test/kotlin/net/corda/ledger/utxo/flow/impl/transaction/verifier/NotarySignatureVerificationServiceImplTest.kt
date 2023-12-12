@@ -14,8 +14,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.mock
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.security.MessageDigest
 import java.security.PublicKey
@@ -45,11 +45,11 @@ class NotarySignatureVerificationServiceImplTest {
     private val keyIdToNotaryKeysMap: MutableMap<String, Map<SecureHash, PublicKey>> = mutableMapOf()
 
     // keyIds
-    private val keyIdOfAlice =  SecureHashImpl(
+    private val keyIdOfAlice = SecureHashImpl(
         signatureAlice.by.algorithm,
-    MessageDigest.getInstance(signatureAlice.by.algorithm).digest(notaryVNodeAliceKey.encoded)
+        MessageDigest.getInstance(signatureAlice.by.algorithm).digest(notaryVNodeAliceKey.encoded)
     )
-    private val keyIdOfBob =  SecureHashImpl(
+    private val keyIdOfBob = SecureHashImpl(
         signatureBob.by.algorithm,
         MessageDigest.getInstance(signatureBob.by.algorithm).digest(notaryVNodeBobKey.encoded)
     )
@@ -142,7 +142,7 @@ class NotarySignatureVerificationServiceImplTest {
         }
 
         assertEquals(
-            "Failed to verify signature of ${signatureBob.signature} for transaction ${transactionId}. Message: ",
+            "Failed to verify signature of ${signatureBob.signature} for transaction $transactionId. Message: ",
             exception.message
         )
     }
