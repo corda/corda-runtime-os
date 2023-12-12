@@ -1,7 +1,7 @@
 package net.corda.p2p.gateway.messaging.internal
 
 import net.corda.data.p2p.LinkInMessage
-import net.corda.data.p2p.MessageAck
+import net.corda.data.p2p.crypto.AuthenticatedDataMessage
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.messaging.api.constants.WorkerRPCPaths.P2P_LINK_MANAGER_PATH
@@ -26,7 +26,7 @@ internal class LinkManagerRpcClient(
         URI.create("http://$endpoint/api/$platformVersion$P2P_LINK_MANAGER_PATH")
     }
 
-    fun send(message: LinkInMessage): MessageAck? {
-        return client.send<MessageAck>(url, message)
+    fun send(message: LinkInMessage): AuthenticatedDataMessage? {
+        return client.send<AuthenticatedDataMessage>(url, message)
     }
 }
