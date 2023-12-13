@@ -25,6 +25,7 @@ import java.time.Duration
  * @property threads Number of threads used by task manager.
  * @property threadName Name (prefix) for task manager threads.
  * @property stateManager State manager.
+ * @property minGroupSize Minimum group size.
  */
 data class EventMediatorConfig<K: Any, S: Any, E: Any>(
     val name: String,
@@ -36,6 +37,7 @@ data class EventMediatorConfig<K: Any, S: Any, E: Any>(
     val threads: Int,
     val threadName: String,
     val stateManager: StateManager,
+    val minGroupSize: Int,
 ) {
     /**
      * Timeout for polling consumers.
