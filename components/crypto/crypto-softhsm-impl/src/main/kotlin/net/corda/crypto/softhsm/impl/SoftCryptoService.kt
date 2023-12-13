@@ -18,6 +18,7 @@ import net.corda.crypto.cipher.suite.publicKeyId
 import net.corda.crypto.cipher.suite.schemes.KeyScheme
 import net.corda.crypto.cipher.suite.schemes.KeySchemeCapability
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoConsts.Categories.ENCRYPTION_SECRET
 import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.DigitalSignatureWithKey
@@ -526,6 +527,38 @@ open class SoftCryptoService(
                 otherPublicKey
             )
         return deriveSharedSecret(spec, context + mapOf(CRYPTO_TENANT_ID to tenantId))
+    }
+
+    override fun encrypt(
+        tenantId: String,
+        plainBytes: ByteArray,
+        alias: String?,
+        context: Map<String, String>,
+    ): ByteArray {
+        val keyAlias = alias ?: run {
+            tenantInfoService.lookup(tenantId, ENCRYPTION_SECRET)?.masterKeyAlias
+                ?: throw IllegalStateException("No tenant association found for $tenantId $ENCRYPTION_SECRET.")
+        }
+
+        return obtainAndStoreWrappingKey(keyAlias, tenantId).run {
+            key.encryptor.encrypt(plainBytes)
+        }
+    }
+
+    override fun decrypt(
+        tenantId: String,
+        cipherBytes: ByteArray,
+        alias: String?,
+        context: Map<String, String>,
+    ): ByteArray {
+        val keyAlias = alias ?: run {
+            tenantInfoService.lookup(tenantId, ENCRYPTION_SECRET)?.masterKeyAlias
+                ?: throw IllegalStateException("No tenant association found for $tenantId $ENCRYPTION_SECRET.")
+        }
+
+        return obtainAndStoreWrappingKey(keyAlias, tenantId).run {
+            key.encryptor.decrypt(cipherBytes)
+        }
     }
 
     @Suppress("ThrowsCount")

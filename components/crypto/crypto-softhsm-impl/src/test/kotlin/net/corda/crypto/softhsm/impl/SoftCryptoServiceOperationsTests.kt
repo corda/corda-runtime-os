@@ -22,6 +22,7 @@ import net.corda.crypto.softhsm.deriveSupportedSchemes
 import net.corda.crypto.softhsm.impl.infra.TestWrappingRepository
 import net.corda.crypto.softhsm.impl.infra.makeShortHashCache
 import net.corda.crypto.softhsm.impl.infra.makeWrappingKeyCache
+import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.KeySchemeCodes.EDDSA_ED25519_CODE_NAME
@@ -41,6 +42,9 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.MethodSource
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import java.security.InvalidParameterException
 import java.security.KeyPairGenerator
@@ -99,6 +103,9 @@ class SoftCryptoServiceOperationsTests {
         private val wrappingKeyCache = makeWrappingKeyCache()
         private val shortHashCache = makeShortHashCache()
         private val signingRepository: SigningRepository = mock()
+        private val mockHsmAssociation = mock<HSMAssociationInfo> {
+            on { masterKeyAlias } doReturn knownWrappingKeyAlias
+        }
         private val cryptoService = SoftCryptoService(
             wrappingRepositoryFactory = {
                 when (it) {
@@ -118,7 +125,9 @@ class SoftCryptoServiceOperationsTests {
             shortHashCache = shortHashCache,
             signingRepositoryFactory = { signingRepository },
             privateKeyCache = null,
-            tenantInfoService = mock()
+            tenantInfoService = mock {
+                on { lookup(eq(CryptoTenants.P2P), any()) } doReturn mockHsmAssociation
+            }
         )
         private val category = CryptoConsts.Categories.LEDGER
         private val defaultContext = mapOf(CRYPTO_TENANT_ID to tenantId, CRYPTO_CATEGORY to category)
@@ -556,6 +565,47 @@ class SoftCryptoServiceOperationsTests {
         }
         assertThat(exception2.message).contains("Wrapping key with alias  not found")
     }
+
+    @Test
+    fun `should delegate decryption to correct key when alias is provided`() {
+        val cipherBytes = knownWrappingKey.key.encryptor.encrypt(byteArrayOf(33))
+        val expectedResult = knownWrappingKey.key.encryptor.decrypt(cipherBytes)
+
+        val result = cryptoService.decrypt(
+            CryptoTenants.P2P,
+            cipherBytes,
+            knownWrappingKeyAlias
+        )
+
+        assertThat(result).isEqualTo(expectedResult)
+    }
+
+    @Test
+    fun `should delegate decryption to default key when no alias is provided`() {
+        val cipherBytes = knownWrappingKey.key.encryptor.encrypt(byteArrayOf(33))
+        val expectedResult = knownWrappingKey.key.encryptor.decrypt(cipherBytes)
+
+        val result = cryptoService.decrypt(
+            CryptoTenants.P2P,
+            cipherBytes
+        )
+
+        assertThat(result).isEqualTo(expectedResult)
+    }
+
+    @Test
+    fun `should successfully delegate encryption to encryptor instance of key`() {
+        val plainBytes = byteArrayOf(33)
+
+        val result = cryptoService.encrypt(
+            CryptoTenants.P2P,
+            plainBytes,
+            knownWrappingKeyAlias
+        )
+
+        assertThat(result).isNotEmpty
+    }
+
     /*
     @ParameterizedTest
     @MethodSource("derivingSchemes")
