@@ -172,14 +172,14 @@ class MerkleTreeTest {
         val manualRoot = merkleTree.digest.nodeHash(0, node1, leaf2)
 
         assertEquals(manualRoot, root)
-        val labels: List<String> = listOf(leaf0, leaf1, leaf2).map{ " ${it.hex().slice(0..8)}" }
 
+        val labels: List<String> = merkleTree.leaves.map{ " ${it.map { x -> "%02x".format(x)}.joinToString(separator = ":")}" }
         val rtree = renderTree(merkleTree.leaves.size, labels, root.hex().slice(0..8)+ " ")
         assertThat(rtree).isEqualTo(
             """
-              a9d5543c2 ┳┳ 7901af93a
-                        ┃┗ 471864d30
-                        ┗━ 66973b1af
+              a9d5543c2 ┳┳ 00:00:00:00
+                        ┃┗ 00:00:00:01
+                        ┗━ 00:00:00:02
                         """.trimIndent())
     }
 
