@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
+import java.lang.IllegalStateException
 import java.security.SecureRandom
 import kotlin.experimental.xor
 
@@ -86,7 +87,7 @@ class MerkleTreeTest {
         }
 
         @JvmStatic
-        fun merkleProofTestSizes(): List<Int> = (6 until 7).toList()
+        fun merkleProofTestSizes(): List<Int> = (1 until 12).toList()
 
         @JvmStatic
         fun merkleProofExtendedTestSizes(): List<Int> = (13 until 16).toList()
@@ -331,21 +332,17 @@ class MerkleTreeTest {
 
                 println("Merkle proof for a tree of size $treeSize with ${hashes.size} hashes supplied in the proof where we know $leafIndicesCombination")
 
-                var values: MutableList<Pair<Int, Int>> = (0..merkleTree.leaves.size).map { it to it }.toMutableList()
-                println("start values $values")
+                var values: MutableList<Pair<Int, Int>> = (0 until merkleTree.leaves.size).map { it to it }.toMutableList()
                 var levels: MutableList<List<Pair<Int, Int>>> = mutableListOf(values.toList())
                 while (values.size > 1) {
                     var newValues:MutableList<Pair<Int, Int>>  = mutableListOf()
                     var index = 0 // index into node hashes, which starts off with an entry per leaf
                     while (index < values.size) {
-                        println("index $index: values=${values[index]}")
                         if (index < values.size - 1) {
                             // pair the elements
-                            println("pair $index")
                             newValues += Pair(values[index].first, values[index+1].second)
                             index += 2
                         } else {
-                            println("promote $index")
                             // promote the odd man out
                             newValues += values[index]
                             index ++
@@ -353,22 +350,41 @@ class MerkleTreeTest {
                     }
                     levels += newValues.toList()
                     check(newValues.size < values.size)
-                    println("new values $newValues")
                     values = newValues
                 }
+                println("found ${levels.size} levels; predicted ${MerkleTreeImpl.treeDepth(treeSize)}")
                 val rlevels = levels.reversed()
                 println(rlevels)
-                (0..merkleTree.leaves.size).forEach { index ->
-                    val tree = (0 until rlevels.size-1).map { level ->
-                        val nextIndices = rlevels[level+1].map { it.first }
-                        if (index in nextIndices) {
+                (0 until merkleTree.leaves.size).forEach { index ->
+                    val tree = (0 until rlevels.size).map { level ->
+                        val thisRange = rlevels[level].filter { index >= it.first && index <= it.second }.firstOrNull()
+                        val thisRangeIsLast = thisRange == rlevels[level].last()
+                        val nextRange = if (level < rlevels.size -1 ) rlevels[level+1].filter { index >= it.first && index <= it.second }.firstOrNull() else null
+                        val extendRight = index == (nextRange?.first ?: -1)
+                        if (nextRange == null || thisRange == null)
+                            "━━"
+                        else {
                             if (index == 0) {
-                                if (index == nextIndices.max()) "━━" else "┳━"
+                                // top of range
+                                if (thisRange.second == thisRange.first) "━━" else "┳━"
                             } else {
-                                if (index == nextIndices.max()) "┗━" else "┣━"
+                                if (thisRangeIsLast && index > thisRange.first ) {
+                                    // outside current range
+                                    if (extendRight) "┗━" else {
+                                        if (index < thisRange.second) "┃ " else "  "
+                                    }
+                                } else {
+                                    if (index == thisRange.second) {
+                                        // bottom of current range
+                                        "┗━"
+                                    } else {
+                                        if (index == nextRange.first) {
+                                            if (extendRight) "┣━" else "┃ "
+                                        } else "" +
+                                                "┃ "
+                                    } // midrange
+                                }
                             }
-                        } else {
-                            if (index < nextIndices.max()) "┃ " else "  "
                         }
                     }
                     val des = if (index in leafIndicesCombination)
