@@ -26,7 +26,7 @@ class EventMediatorConfigBuilder<K: Any, S: Any, E: Any> {
     private var threads: Int? = null
     private var threadName: String? = null
     private var stateManager: StateManager? = null
-    private var groupSize: Int? = null
+    private var minGroupSize: Int? = null
 
     /** Sets name for [MultiSourceEventMediator]. */
     fun name(name: String) =
@@ -60,12 +60,13 @@ class EventMediatorConfigBuilder<K: Any, S: Any, E: Any> {
     fun threadName(threadName: String) =
         apply { this.threadName = threadName }
 
-    /** Sets minimum size for groups of events passed to the task processor.
+    /**
+     * Sets minimum size for groups of events passed to the task processor.
      * If the number of resulting groups is evaluated to be more than the number of threads then the number of [threads] is used to
-     * calculate  [groupSize]
+     * calculate  [minGroupSize]
      */
-    fun groupSize(groupSize: Int) =
-        apply { this.groupSize = groupSize }
+    fun minGroupSize(minGroupSize: Int) =
+        apply { this.minGroupSize = minGroupSize }
 
 
     /** Sets state manager. */
@@ -86,7 +87,7 @@ class EventMediatorConfigBuilder<K: Any, S: Any, E: Any> {
             threads = checkNotNull(threads) { "Number of threads not set" },
             threadName = checkNotNull(threadName) { "Thread name not set" },
             stateManager = checkNotNull(stateManager) { "State manager not set" },
-            20,
+            minGroupSize = checkNotNull(minGroupSize) { "Min group size not set" },
         )
     }
 }

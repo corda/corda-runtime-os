@@ -19,7 +19,10 @@ class GroupAllocator {
      * @param config Mediator config
      * @return Records allocated to groups.
      */
-    fun <K : Any, E : Any> allocateGroups(events: List<Record<K, E>>, config: EventMediatorConfig<*, *, *>): List<Map<K, List<Record<K, E>>>>  {
+    fun <K : Any, S : Any, E : Any> allocateGroups(
+        events: List<Record<K, E>>,
+        config: EventMediatorConfig<K, S, E>
+    ): List<Map<K, List<Record<K, E>>>> {
         val groups = setUpGroups(config, events)
         val buckets = events.groupBy { it.key }
         val bucketsSized = buckets.keys.sortedByDescending { buckets[it]?.size }
@@ -32,8 +35,8 @@ class GroupAllocator {
         return groups.filter { it.values.isNotEmpty() }
     }
 
-    private fun <E : Any, K : Any> setUpGroups(
-        config: EventMediatorConfig<*, *, *>,
+    private fun <E : Any, S: Any, K : Any> setUpGroups(
+        config: EventMediatorConfig<K, S, E>,
         events: List<Record<K, E>>
     ): MutableList<MutableMap<K, List<Record<K, E>>>> {
         val groups = mutableListOf<MutableMap<K, List<Record<K, E>>>>()
