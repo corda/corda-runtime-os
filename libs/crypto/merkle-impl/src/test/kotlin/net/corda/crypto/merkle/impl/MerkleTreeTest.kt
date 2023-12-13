@@ -151,12 +151,10 @@ class MerkleTreeTest {
         val leaf1 = merkleTree.calcLeafHash(1)
         val manualRoot = merkleTree.digest.nodeHash(0, leaf0, leaf1)
         assertEquals(manualRoot, root)
-        val labels: List<String> = listOf(leaf0, leaf1).map{ " ${it.hex().slice(0..8)}" }
-        val rtree = renderTree(merkleTree.leaves.size, labels, root.hex().slice(0..8)+ " ")
-        assertThat(rtree).isEqualTo(
+        assertThat(merkleTree.render()).isEqualTo(
             """
-            bab170b1c ┳━ 7901af93a
-                      ┗━ 471864d30
+            bab170b1c ┳━ 00:00:00:00
+                      ┗━ 00:00:00:01
             """.trimIndent())
     }
 
