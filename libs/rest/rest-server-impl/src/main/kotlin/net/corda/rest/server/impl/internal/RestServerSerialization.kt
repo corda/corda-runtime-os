@@ -4,10 +4,10 @@ import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.databind.JsonSerializer
 import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.module.SimpleModule
-import net.corda.rest.json.serialization.jacksonObjectMapper
 import net.corda.rest.JsonObject
 import net.corda.rest.json.serialization.JsonObjectDeserializer
 import net.corda.rest.json.serialization.JsonObjectSerializer
+import net.corda.rest.json.serialization.jacksonObjectMapper
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SecureHash
 

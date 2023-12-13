@@ -67,15 +67,19 @@ internal class TestURLStreamHandlerFactory(content: Map<String, String>) : URLSt
     }.toMap()
 
     override fun createURLStreamHandler(protocol: String): URLStreamHandler? {
-        return if (PROTOCOL == protocol) object : URLStreamHandler() {
-            override fun openConnection(url: URL): URLConnection? {
-                return if (dummyContent.containsKey(url.toString())) {
-                    dummyContent.getValue(url.toString())
-                } else {
-                    null
+        return if (PROTOCOL == protocol) {
+            object : URLStreamHandler() {
+                override fun openConnection(url: URL): URLConnection? {
+                    return if (dummyContent.containsKey(url.toString())) {
+                        dummyContent.getValue(url.toString())
+                    } else {
+                        null
+                    }
                 }
             }
-        } else null
+        } else {
+            null
+        }
     }
 
     fun register() {

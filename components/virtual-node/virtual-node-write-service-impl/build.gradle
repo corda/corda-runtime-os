@@ -3,7 +3,9 @@ plugins {
     id 'corda.common-library'
 }
 
-description "Configuration Write Service Impl"
+description "Virtual Node Write Service Impl"
+
+ext.cordaEnableFormatting = true
 
 dependencies {
     api project(':libs:virtual-node:virtual-node-info')

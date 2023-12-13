@@ -31,7 +31,6 @@ internal class CreateVirtualNodeOperationHandler(
         requestId: String,
         request: VirtualNodeCreateRequest
     ) {
-
         publishStartProcessingStatus(requestId)
 
         try {
@@ -58,15 +57,19 @@ internal class CreateVirtualNodeOperationHandler(
             }
 
             val vNodeDbs = execLog.measureExecTime("get virtual node databases") {
-                virtualNodeDbFactory.createVNodeDbs(holdingId.shortHash, with (request) {
-                    VirtualNodeConnectionStrings(
-                        vaultDdlConnection,
-                        vaultDmlConnection,
-                        cryptoDdlConnection,
-                        cryptoDmlConnection,
-                        uniquenessDdlConnection,
-                        uniquenessDmlConnection
-                    )})
+                virtualNodeDbFactory.createVNodeDbs(
+                    holdingId.shortHash,
+                    with(request) {
+                        VirtualNodeConnectionStrings(
+                            vaultDdlConnection,
+                            vaultDmlConnection,
+                            cryptoDdlConnection,
+                            cryptoDmlConnection,
+                            uniquenessDdlConnection,
+                            uniquenessDmlConnection
+                        )
+                    }
+                )
             }
 
             // For each of the platform DB's run the creation process
@@ -97,7 +100,7 @@ internal class CreateVirtualNodeOperationHandler(
                 cpiMetadata.cpiId,
                 cpiMetadata.cpksMetadata
             )
-            
+
             logger.info("Generated new ExternalMessagingRouteConfig as: $externalMessagingRouteConfig")
 
             val vNodeConnections = execLog.measureExecTime("persist holding ID and virtual node") {
@@ -142,5 +145,4 @@ internal class CreateVirtualNodeOperationHandler(
 
         publishProcessingCompletedStatus(requestId)
     }
-
 }

@@ -1,11 +1,11 @@
 package net.corda.rest.client.processing
 
+import net.corda.rest.HttpFileUpload
+import net.corda.rest.test.TestFileUploadAPI
 import org.junit.jupiter.api.Test
 import kotlin.reflect.jvm.javaMethod
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
-import net.corda.rest.HttpFileUpload
-import net.corda.rest.test.TestFileUploadAPI
 
 class FormParametersResolverTest {
     @Test

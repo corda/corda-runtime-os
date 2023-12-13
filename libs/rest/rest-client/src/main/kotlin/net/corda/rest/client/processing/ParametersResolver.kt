@@ -1,11 +1,11 @@
 package net.corda.rest.client.processing
 
+import net.corda.rest.HttpFileUpload
 import java.io.InputStream
 import java.lang.reflect.Method
 import java.lang.reflect.Parameter
 import java.lang.reflect.ParameterizedType
 import java.net.URLEncoder
-import net.corda.rest.HttpFileUpload
 
 internal data class WebRequest<T>(
     val path: String,
@@ -18,7 +18,7 @@ internal data class WebResponse<T>(val body: T?, val headers: Map<String, String
 
 @Suppress("ComplexMethod")
 internal fun Method.parametersFrom(args: Array<out Any?>?, extraBodyParameters: Map<String, Any?> = emptyMap()): ResolvedParameters {
-    if(this.isMultipartFormRequest()) {
+    if (this.isMultipartFormRequest()) {
         return ResolvedParameters(
             null, // multipart form requests have all fields as form / query / path parameters or file uploads.
             args?.let { this.pathParametersFrom(it) } ?: emptyMap(),
@@ -44,9 +44,11 @@ private fun isParameterAFile(it: Parameter) =
     it.type == InputStream::class.java || it.type == HttpFileUpload::class.java
 
 internal fun isParameterAListOfFiles(it: Parameter) =
-    (it.parameterizedType is ParameterizedType && Collection::class.java.isAssignableFrom(it.type)
-            && (it.parameterizedType as ParameterizedType).actualTypeArguments.size == 1
-            && (it.parameterizedType as ParameterizedType).actualTypeArguments.first() == HttpFileUpload::class.java)
+    (
+        it.parameterizedType is ParameterizedType && Collection::class.java.isAssignableFrom(it.type) &&
+            (it.parameterizedType as ParameterizedType).actualTypeArguments.size == 1 &&
+            (it.parameterizedType as ParameterizedType).actualTypeArguments.first() == HttpFileUpload::class.java
+        )
 
 internal fun ResolvedParameters.toWebRequest(rawPath: String) = WebRequest<Any>(
     rawPath.replacePathParameters(pathParams).replace("/+".toRegex(), "/"),

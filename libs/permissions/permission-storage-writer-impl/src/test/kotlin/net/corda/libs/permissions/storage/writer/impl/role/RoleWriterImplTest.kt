@@ -63,7 +63,6 @@ class RoleWriterImplTest {
 
     @Test
     fun `create a role checks groupVisibility group ID and throws illegal argument exception if does not exist`() {
-
         whenever(entityManager.createQuery(any<String>())).thenReturn(query)
         whenever(query.setParameter(any<String>(), any())).thenReturn(query)
         whenever(query.singleResult).thenReturn(0L)
@@ -144,8 +143,14 @@ class RoleWriterImplTest {
         val permId = "permId"
 
         val role = Role(roleId, Instant.now(), "role", null)
-        val permission = Permission(permId, Instant.now(), null, null,
-            PermissionType.ALLOW, "permString")
+        val permission = Permission(
+            permId,
+            Instant.now(),
+            null,
+            null,
+            PermissionType.ALLOW,
+            "permString"
+        )
 
         whenever(entityManager.find(Role::class.java, roleId)).thenReturn(role)
         whenever(entityManager.find(Permission::class.java, permId)).thenReturn(permission)
@@ -215,8 +220,14 @@ class RoleWriterImplTest {
         val permId = "permId"
 
         val role = Role(roleId, Instant.now(), "role", null)
-        val permission = Permission(permId, Instant.now(), null, null,
-            PermissionType.ALLOW, "permString")
+        val permission = Permission(
+            permId,
+            Instant.now(),
+            null,
+            null,
+            PermissionType.ALLOW,
+            "permString"
+        )
         role.rolePermAssociations.add(RolePermissionAssociation("assocId", role, permission, Instant.now()))
 
         whenever(entityManager.find(Role::class.java, roleId)).thenReturn(role)
@@ -239,8 +250,14 @@ class RoleWriterImplTest {
         val permId = "permId"
 
         val role = Role(roleId, Instant.now(), "role", null)
-        val permission = Permission(permId, Instant.now(), null, null,
-            PermissionType.ALLOW, "permString")
+        val permission = Permission(
+            permId,
+            Instant.now(),
+            null,
+            null,
+            PermissionType.ALLOW,
+            "permString"
+        )
         val association = RolePermissionAssociation("assocId", role, permission, Instant.now())
         role.rolePermAssociations.add(association)
 
@@ -295,8 +312,14 @@ class RoleWriterImplTest {
         val permId = "permId"
 
         val role = Role(roleId, Instant.now(), "role", null)
-        val permission = Permission(permId, Instant.now(), null, null,
-            PermissionType.ALLOW, "permString")
+        val permission = Permission(
+            permId,
+            Instant.now(),
+            null,
+            null,
+            PermissionType.ALLOW,
+            "permString"
+        )
         val association = RolePermissionAssociation("assocId", role, permission, Instant.now())
         role.rolePermAssociations.add(association)
 

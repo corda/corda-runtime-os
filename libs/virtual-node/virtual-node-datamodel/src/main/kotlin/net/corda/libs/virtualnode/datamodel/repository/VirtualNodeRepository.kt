@@ -1,9 +1,5 @@
 package net.corda.libs.virtualnode.datamodel.repository
 
-import java.time.Instant
-import java.util.UUID
-import java.util.stream.Stream
-import javax.persistence.EntityManager
 import net.corda.crypto.core.ShortHash
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.common.exception.VirtualNodeOperationNotFoundException
@@ -13,6 +9,10 @@ import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.VirtualNodeInfo
+import java.time.Instant
+import java.util.UUID
+import java.util.stream.Stream
+import javax.persistence.EntityManager
 
 /**
  * Interface for CRUD operations for a virtual node.
@@ -63,9 +63,13 @@ interface VirtualNodeRepository {
     fun upgradeVirtualNodeCpi(
         entityManager: EntityManager,
         holdingIdentityShortHash: String,
-        cpiName: String, cpiVersion: String, cpiSignerSummaryHash: String,
+        cpiName: String,
+        cpiVersion: String,
+        cpiSignerSummaryHash: String,
         externalMessagingRouteConfig: String?,
-        requestId: String, requestTimestamp: Instant, serializedRequest: String
+        requestId: String,
+        requestTimestamp: Instant,
+        serializedRequest: String
     ): VirtualNodeInfo
 
     /**
@@ -92,4 +96,3 @@ interface VirtualNodeRepository {
         state: VirtualNodeOperationStateDto
     ): VirtualNodeInfo
 }
-

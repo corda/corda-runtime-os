@@ -25,7 +25,7 @@ internal class UpdateVirtualNodeDbOperationHandler(
     statusPublisher: Publisher,
     private val logger: Logger,
     private val virtualNodeRepository: VirtualNodeRepository = VirtualNodeRepositoryImpl(),
-): VirtualNodeAsyncOperationHandler<VirtualNodeDbConnectionUpdateRequest>,
+) : VirtualNodeAsyncOperationHandler<VirtualNodeDbConnectionUpdateRequest>,
     AbstractVirtualNodeOperationHandler(statusPublisher, logger) {
     override fun handle(requestTimestamp: Instant, requestId: String, request: VirtualNodeDbConnectionUpdateRequest) {
         publishStartProcessingStatus(requestId)
@@ -43,16 +43,19 @@ internal class UpdateVirtualNodeDbOperationHandler(
             require(requestValidationResult == null) { "$requestValidationResult" }
 
             val vNodeDbs = execLog.measureExecTime("create virtual node databases") {
-                virtualNodeDbFactory.createVNodeDbs(holdingId.shortHash, with (request) {
-                    VirtualNodeConnectionStrings(
-                        vaultDdlConnection,
-                        vaultDmlConnection,
-                        cryptoDdlConnection,
-                        cryptoDmlConnection,
-                        uniquenessDdlConnection,
-                        uniquenessDmlConnection
-                    )
-                })
+                virtualNodeDbFactory.createVNodeDbs(
+                    holdingId.shortHash,
+                    with(request) {
+                        VirtualNodeConnectionStrings(
+                            vaultDdlConnection,
+                            vaultDmlConnection,
+                            cryptoDdlConnection,
+                            cryptoDmlConnection,
+                            uniquenessDdlConnection,
+                            uniquenessDmlConnection
+                        )
+                    }
+                )
             }
 
             val currentVirtualNode =
@@ -60,7 +63,6 @@ internal class UpdateVirtualNodeDbOperationHandler(
                     virtualNodeRepository.find(em, holdingId.shortHash)
                         ?: throw VirtualNodeUpgradeRejectedException("Holding identity ${holdingId.shortHash} not found", requestId)
                 }
-
 
             val vNodeConnections = execLog.measureExecTime("persist holding ID and virtual node") {
                 updateVirtualNodeService.persistHoldingIdAndVirtualNode(
@@ -73,12 +75,16 @@ internal class UpdateVirtualNodeDbOperationHandler(
             }
 
             execLog.measureExecTime("publish virtual node and MGM info") {
-                updateVirtualNodeService.publishRecords(listOf(recordFactory.createVirtualNodeInfoRecord(
-                    holdingId,
-                    currentVirtualNode.cpiIdentifier,
-                    vNodeConnections,
-                    currentVirtualNode.externalMessagingRouteConfig
-                )))
+                updateVirtualNodeService.publishRecords(
+                    listOf(
+                        recordFactory.createVirtualNodeInfoRecord(
+                            holdingId,
+                            currentVirtualNode.cpiIdentifier,
+                            vNodeConnections,
+                            currentVirtualNode.externalMessagingRouteConfig
+                        )
+                    )
+                )
             }
         } catch (e: Exception) {
             publishErrorStatus(requestId, e.message ?: "Unexpected error")

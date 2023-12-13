@@ -5,6 +5,8 @@ plugins {
 
 description 'Implementation of the Security Manager that integrates with Role Based Access Control Permission system.'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
 

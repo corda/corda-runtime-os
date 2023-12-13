@@ -6,6 +6,8 @@ plugins {
 
 description 'REST Worker'
 
+ext.cordaEnableFormatting = true
+
 sourceSets {
     e2eTest {
         kotlin {

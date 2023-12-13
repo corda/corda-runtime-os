@@ -5,6 +5,8 @@ plugins {
 
 description "Virtual Node Info Service REST Extensions"
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 

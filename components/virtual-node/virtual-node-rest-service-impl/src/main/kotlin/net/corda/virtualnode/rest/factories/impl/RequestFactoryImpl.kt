@@ -18,15 +18,14 @@ internal class RequestFactoryImpl(
     private val clock: Clock
 ) : RequestFactory {
 
-    override fun createHoldingIdentity(groupId: String, request: CreateVirtualNodeRequest): HoldingIdentity{
-       return HoldingIdentity(MemberX500Name.parse(request.x500Name), groupId)
+    override fun createHoldingIdentity(groupId: String, request: CreateVirtualNodeRequest): HoldingIdentity {
+        return HoldingIdentity(MemberX500Name.parse(request.x500Name), groupId)
     }
 
     override fun createVirtualNodeRequest(
         holdingIdentity: HoldingIdentity,
         request: CreateVirtualNodeRequest
     ): VirtualNodeAsynchronousRequest {
-
         return VirtualNodeAsynchronousRequest().apply {
             this.requestId = holdingIdentity.shortHash.toString()
             this.timestamp = clock.instant()

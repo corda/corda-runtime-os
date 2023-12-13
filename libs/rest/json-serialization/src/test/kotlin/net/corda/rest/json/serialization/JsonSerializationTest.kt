@@ -11,10 +11,10 @@ import kotlin.test.assertNotNull
 
 data class Event(val name: String, val date: Instant, val memberX500Name: MemberX500Name)
 
-class JsonSerializationTest{
+class JsonSerializationTest {
 
     @Test
-    fun `jacksonObjectMapper should serialize Instant type as date string and X500 name as String`(){
+    fun `jacksonObjectMapper should serialize Instant type as date string and X500 name as String`() {
         val df = SimpleDateFormat("dd-MM-yyyy hh:mm")
         df.timeZone = TimeZone.getTimeZone("UTC")
         val date: Date = df.parse("01-01-1970 01:00")

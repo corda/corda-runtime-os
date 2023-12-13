@@ -185,7 +185,10 @@ internal class VirtualNodeWriterFactory(
         )
 
         return subscriptionFactory.createDurableSubscription(
-            subscriptionConfig, asyncOperationProcessor, messagingConfig, null
+            subscriptionConfig,
+            asyncOperationProcessor,
+            messagingConfig,
+            null
         )
     }
 
@@ -208,7 +211,6 @@ internal class VirtualNodeWriterFactory(
         messagingConfig: SmartConfig,
         vNodePublisher: Publisher,
     ): RPCSubscription<VirtualNodeManagementRequest, VirtualNodeManagementResponse> {
-
         val rpcConfig = RPCConfig(
             GROUP_NAME,
             CLIENT_NAME_RPC,

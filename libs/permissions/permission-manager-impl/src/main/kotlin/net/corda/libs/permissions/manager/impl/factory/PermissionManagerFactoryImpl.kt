@@ -35,7 +35,6 @@ class PermissionManagerFactoryImpl @Activate constructor(
         permissionManagementCacheRef: AtomicReference<PermissionManagementCache?>,
         permissionValidationCacheRef: AtomicReference<PermissionValidationCache?>
     ): PermissionManager {
-
         return PermissionManagerImpl(
             PermissionUserManagerImpl(
                 restConfig,
@@ -52,8 +51,8 @@ class PermissionManagerFactoryImpl @Activate constructor(
     }
 
     override fun createBasicAuthenticationService(
-        permissionManagementCacheRef: AtomicReference<PermissionManagementCache?>): BasicAuthenticationService {
-
+        permissionManagementCacheRef: AtomicReference<PermissionManagementCache?>
+    ): BasicAuthenticationService {
         return RbacBasicAuthenticationService(
             permissionManagementCacheRef,
             passwordServiceFactory.createPasswordService(SecureRandom())
