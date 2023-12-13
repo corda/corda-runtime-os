@@ -61,6 +61,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_BACKCHAIN_REQUIRED
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
@@ -471,11 +472,21 @@ class DynamicMemberRegistrationService @Activate constructor(
                     tlsSubject
 
             previousRegistrationContext?.let { previous ->
+                // This property can only be null when upgrading from 5.0/5.1, and we should move it to `true`
+                // because pre-5.2 notaries do not support optional backchain
+                val previousOptionalBackchainValue = previous[NOTARY_SERVICE_BACKCHAIN_REQUIRED]?.toBoolean()
+                val currentOptionalBackchainValue = newRegistrationContext[NOTARY_SERVICE_BACKCHAIN_REQUIRED]?.toBoolean()
+                if (previousOptionalBackchainValue == null) {
+                    require(currentOptionalBackchainValue == null || currentOptionalBackchainValue == true) {
+                        "Optional back-chain flag can only move to 'true' during platform upgrade."
+                    }
+                }
+
                 ((newRegistrationContext.entries - previous.entries) + (previous.entries - newRegistrationContext.entries)).filter {
                     it.key.startsWith(SESSION_KEYS) ||
                     it.key.startsWith(LEDGER_KEYS) ||
                     it.key.startsWith(ROLES_PREFIX) ||
-                    it.key.startsWith("corda.notary")
+                    (it.key.startsWith("corda.notary") && !it.key.endsWith("service.backchain.required"))
                 }.apply {
                     require(isEmpty()) {
                         throw InvalidMembershipRegistrationException(
