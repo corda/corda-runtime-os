@@ -83,7 +83,7 @@ enum class VirtualNodeOperationState {
 }
 
 enum class OperationType {
-    CREATE, UPGRADE;
+    CREATE, UPGRADE, CHANGE_DB;
 
     companion object {
         fun from(operationType: VirtualNodeOperationType): OperationType {

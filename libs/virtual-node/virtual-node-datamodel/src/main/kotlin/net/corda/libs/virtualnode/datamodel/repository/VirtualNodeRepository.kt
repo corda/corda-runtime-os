@@ -35,6 +35,11 @@ interface VirtualNodeRepository {
     fun findVirtualNodeOperationByRequestId(entityManager: EntityManager, requestId: String): List<VirtualNodeOperationDto>
 
     /**
+     * Stores virtual node operation into the DB
+     */
+    fun putVirtualNodeOperation(entityManager: EntityManager, operation: VirtualNodeOperationDto)
+
+    /**
      * Persist a holding identity with the given holdingId and CPI.
      */
     @Suppress("LongParameterList")
