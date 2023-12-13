@@ -274,6 +274,10 @@ class FlowRestResourceImpl @Activate constructor(
         return messageFactory.createFlowStatusResponse(flowStatus)
     }
 
+    override fun getMultipleFlowStatus(holdingIdentityShortHash: String): FlowStatusResponses {
+        return getMultipleFlowStatus(holdingIdentityShortHash, null)
+    }
+
     override fun getMultipleFlowStatus(holdingIdentityShortHash: String, status: String?): FlowStatusResponses {
         val vNode = getVirtualNode(holdingIdentityShortHash)
         val flowStatuses = flowStatusCacheService.getStatusesPerIdentity(vNode.holdingIdentity)
