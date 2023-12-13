@@ -152,8 +152,13 @@ class MerkleTreeTest {
         val manualRoot = merkleTree.digest.nodeHash(0, leaf0, leaf1)
         assertEquals(manualRoot, root)
         assertHash(root, "bab170b1")
-
-    }
+        val labels: List<String> = listOf(leaf0, leaf1).map{ " ${it.hex().slice(0..8)}" }
+        val rtree = renderTree(2, labels)
+        assertThat(rtree).isEqualTo(
+            """
+            ┳━ 7901af93a
+            ┗━ 471864d30""".trimIndent())
+}
 
     @Test
     fun `tree test 3 node`() {
@@ -381,13 +386,13 @@ class MerkleTreeTest {
 
         levels.forEachIndexed { level, ranges ->
             ranges.forEach { range ->
-                val x = (levels.size - level)
+                val x = levels.size - level -1
                 grid.put(x to range.first, '━')
             }
         }
         levels.forEachIndexed { level, ranges ->
             ranges.forEach { range ->
-                val x = (levels.size - level)
+                val x = levels.size - level - 1
                 if (range.first != range.second) {
                     val extent = if (level > 0) {
                         val nextLevel = levels[level - 1]
@@ -421,8 +426,7 @@ class MerkleTreeTest {
             "${line.joinToString("")}$label"
         }
 
-        val renderedTree = "\n" + (lines.joinToString("\n"))
-        return renderedTree
+        return lines.joinToString("\n")
     }
 
     private fun testLeafCombination(
