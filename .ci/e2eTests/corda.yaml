@@ -29,6 +29,20 @@ bootstrap:
           valueFrom:
             secretKeyRef:
               key: "password"
+      crypto:
+        username:
+          value: "state-manager-user"
+        password:
+          valueFrom:
+            secretKeyRef:
+              key: "password"
+      rest:
+        username:
+          value: "state-manager-user"
+        password:
+          valueFrom:
+            secretKeyRef:
+              key: "password"
   kafka:
     sasl:
       username:
