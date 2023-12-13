@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory
 import java.net.URI
 import java.nio.ByteBuffer
 
+@Suppress("ThrowsCount")
 class SessionEncryptionOpsClientImpl(
     private val sender: HttpRpcClient,
     private val platformInfoProvider: PlatformInfoProvider,
