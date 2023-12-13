@@ -153,11 +153,12 @@ class MerkleTreeTest {
         assertEquals(manualRoot, root)
         assertHash(root, "bab170b1")
         val labels: List<String> = listOf(leaf0, leaf1).map{ " ${it.hex().slice(0..8)}" }
-        val rtree = renderTree(merkleTree.leaves.size, labels)
+        val rtree = renderTree(merkleTree.leaves.size, labels, root.hex().slice(0..8))
         assertThat(rtree).isEqualTo(
             """
-            ┳━ 7901af93a
-            ┗━ 471864d30""".trimIndent())
+            bab170b1c┳━ 7901af93a
+                     ┗━ 471864d30
+            """.trimIndent())
     }
 
     @Test
@@ -342,7 +343,7 @@ class MerkleTreeTest {
                     " $y $caption"
                 }
                 println(renderTree(merkleTree.leaves.size, des))
-                if (i == 1 && treeSize == 1 ) {
+                if (i == 1 && treeSize == 1) {
                     assertThat(hashes).hasSize(0)
                 }
                 if (i == 1 && treeSize == 2) {
@@ -356,13 +357,13 @@ class MerkleTreeTest {
                     assertThat(hashes.map { it.hash.hex() }).isEqualTo(
                         arrayListOf("0000000000000000", "0000000000000002", "0000000000000004")
                     )
-                    assertThat(hashes.map { it.level} ).isEqualTo(arrayListOf(2,2,2))
+                    assertThat(hashes.map { it.level }).isEqualTo(arrayListOf(2, 2, 2))
                 }
             }
         }
     }
 
-    private fun renderTree(treeSize: Int, des: List<String>): String {
+    private fun renderTree(treeSize: Int, des: List<String>, rootLabel: String=""): String {
         var values: MutableList<Pair<Int, Int>> = (0 until treeSize).map { it to it }.toMutableList()
         var levels: MutableList<List<Pair<Int, Int>>> = mutableListOf(values.toList())
         while (values.size > 1) {
@@ -419,11 +420,11 @@ class MerkleTreeTest {
             }
         }
 
-        val maxy = grid.keys.map { it.second }.max()
-        val lines = (0 until maxy + 1).map { y ->
+        val lines = (0 until treeSize).map { y ->
             val line = (0 ..values.size).map { x -> grid.getOrDefault(x to y, ' ') }
+            val prefix = if (y ==0) rootLabel else " ".repeat(rootLabel.length)
             val label: String = des.getOrNull(y) ?: ""
-            "${line.joinToString("")}$label"
+            "$prefix${line.joinToString("")}$label"
         }
 
         return lines.joinToString("\n")
