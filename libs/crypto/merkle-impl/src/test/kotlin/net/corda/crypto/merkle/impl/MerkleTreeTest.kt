@@ -335,72 +335,7 @@ class MerkleTreeTest {
                     val caption = if (y in leafIndicesCombination) "known data" else "gap"
                     " $y $caption"
                 }
-                var values: MutableList<Pair<Int, Int>> = (0 until merkleTree.leaves.size).map { it to it }.toMutableList()
-                var levels: MutableList<List<Pair<Int, Int>>> = mutableListOf(values.toList())
-                while (values.size > 1) {
-                    var newValues:MutableList<Pair<Int, Int>>  = mutableListOf()
-                    var index = 0 // index into node hashes, which starts off with an entry per leaf
-                    while (index < values.size) {
-                        if (index < values.size - 1) {
-                            // pair the elements
-                            newValues += Pair(values[index].first, values[index+1].second)
-                            index += 2
-                        } else {
-                            // promote the odd man out
-                            newValues += values[index]
-                            index ++
-                        }
-                    }
-                    levels += newValues.toList()
-                    check(newValues.size < values.size)
-                    values = newValues
-                }
-                val grid: MutableMap<Pair<Int,Int>, Char> = mutableMapOf()
-
-                levels.forEachIndexed { level, ranges  ->
-                    ranges.forEach {range ->
-                        val x= (levels.size - level)
-                        grid.put(x to range.first, '━')
-                    }
-                }
-                levels.forEachIndexed { level, ranges  ->
-                    ranges.forEach {range ->
-                        val x = (levels.size - level)
-                        if (range.first != range.second) {
-                            val extent = if (level > 0 ) {
-                                val nextLevel = levels[level - 1]
-                                nextLevel.first { child -> range.second >= child.first && range.second <= child.second }.first
-                            } else range.second
-                            check(range.first <= extent)
-                            if (range.first != extent) {
-                                val curtop = grid.getOrDefault(x to range.first, ' ')
-                                grid[x to range.first] = when (curtop) {
-                                    '━' -> '┳'
-                                    else -> '┃'
-                                }
-                                (range.first + 1 until extent).forEach {
-                                    grid[x to it] = '┃'
-                                }
-                                val curbot = grid.getOrDefault(x to range.second, ' ')
-                                grid[x to extent] = when (curbot) {
-                                    '━' -> '┻'
-                                    else -> '┗'
-                                }
-                            }
-                        }
-                    }
-                }
-
-                val maxx = grid.keys.map { it.first }.max()
-                val maxy = grid.keys.map { it.second } .max()
-                val lines = (0 until maxy+1).map { y ->
-                    val line = (0 until maxx+1).map { x -> grid.getOrDefault(x to y, ' ') }
-                    val label: String  = des.getOrNull(y)?:""
-                    "${ line.joinToString("")}$label"
-                }
-
-                val renderedTree = "\n"+ (lines.joinToString("\n"))
-                println(renderedTree)
+                println(renderTree(merkleTree.leaves.size, des))
                 if (i == 1 && treeSize == 1 ) {
                     assertThat(hashes).hasSize(0)
                 }
@@ -419,6 +354,75 @@ class MerkleTreeTest {
                 }
             }
         }
+    }
+
+    private fun renderTree(treeSize: Int, des: List<String>): String {
+        var values: MutableList<Pair<Int, Int>> = (0 until treeSize).map { it to it }.toMutableList()
+        var levels: MutableList<List<Pair<Int, Int>>> = mutableListOf(values.toList())
+        while (values.size > 1) {
+            var newValues: MutableList<Pair<Int, Int>> = mutableListOf()
+            var index = 0 // index into node hashes, which starts off with an entry per leaf
+            while (index < values.size) {
+                if (index < values.size - 1) {
+                    // pair the elements
+                    newValues += Pair(values[index].first, values[index + 1].second)
+                    index += 2
+                } else {
+                    // promote the odd man out
+                    newValues += values[index]
+                    index++
+                }
+            }
+            levels += newValues.toList()
+            check(newValues.size < values.size)
+            values = newValues
+        }
+        val grid: MutableMap<Pair<Int, Int>, Char> = mutableMapOf()
+
+        levels.forEachIndexed { level, ranges ->
+            ranges.forEach { range ->
+                val x = (levels.size - level)
+                grid.put(x to range.first, '━')
+            }
+        }
+        levels.forEachIndexed { level, ranges ->
+            ranges.forEach { range ->
+                val x = (levels.size - level)
+                if (range.first != range.second) {
+                    val extent = if (level > 0) {
+                        val nextLevel = levels[level - 1]
+                        nextLevel.first { child -> range.second >= child.first && range.second <= child.second }.first
+                    } else range.second
+                    check(range.first <= extent)
+                    if (range.first != extent) {
+                        val curtop = grid.getOrDefault(x to range.first, ' ')
+                        grid[x to range.first] = when (curtop) {
+                            '━' -> '┳'
+                            else -> '┃'
+                        }
+                        (range.first + 1 until extent).forEach {
+                            grid[x to it] = '┃'
+                        }
+                        val curbot = grid.getOrDefault(x to range.second, ' ')
+                        grid[x to extent] = when (curbot) {
+                            '━' -> '┻'
+                            else -> '┗'
+                        }
+                    }
+                }
+            }
+        }
+
+        val maxx = grid.keys.map { it.first }.max()
+        val maxy = grid.keys.map { it.second }.max()
+        val lines = (0 until maxy + 1).map { y ->
+            val line = (0 until maxx + 1).map { x -> grid.getOrDefault(x to y, ' ') }
+            val label: String = des.getOrNull(y) ?: ""
+            "${line.joinToString("")}$label"
+        }
+
+        val renderedTree = "\n" + (lines.joinToString("\n"))
+        return renderedTree
     }
 
     private fun testLeafCombination(
