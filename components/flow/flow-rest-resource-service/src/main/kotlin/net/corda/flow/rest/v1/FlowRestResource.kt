@@ -11,6 +11,7 @@ import net.corda.rest.annotations.HttpGET
 import net.corda.rest.annotations.HttpPOST
 import net.corda.rest.annotations.HttpRestResource
 import net.corda.rest.annotations.HttpWS
+import net.corda.rest.annotations.RestApiVersion
 import net.corda.rest.annotations.RestPathParameter
 import net.corda.rest.annotations.RestQueryParameter
 import net.corda.rest.response.ResponseEntity
@@ -93,6 +94,29 @@ interface FlowRestResource : RestResource {
         path = "{holdingIdentityShortHash}",
         title = "Get Multiple Flow Status",
         description = "This method returns an array containing the statuses of all flows for a specified " +
+                "holding identity. An empty array is returned if there are no flows.",
+        responseDescription = """
+            A collection of statuses for the flow instances, including:
+            
+            holdingIdentityShortHash: The short form hash of the Holding Identity
+            clientRequestId: The unique ID supplied by the client when the flow was created.
+            flowId: The internal unique ID for the flow.
+            flowStatus: The current state of the executing flow.
+            flowResult: The result returned from a completed flow, only set when the flow status is 'COMPLETED' otherwise null
+            flowError: The details of the error that caused a flow to fail, only set when the flow status is 'FAILED' otherwise null
+            timestamp: The timestamp of when the status was last updated (in UTC)
+            """,
+        maxVersion = RestApiVersion.C5_1
+    )
+    fun getMultipleFlowStatus(
+        @RestPathParameter(description = "The short hash of the holding identity; obtained during node registration")
+        holdingIdentityShortHash: String,
+    ): FlowStatusResponses
+
+    @HttpGET(
+        path = "{holdingIdentityShortHash}",
+        title = "Get Multiple Flow Status",
+        description = "This method returns an array containing the statuses of all flows for a specified " +
                 "holding identity, for a particular flow processing status if specified. An empty array is returned if there are no flows.",
         responseDescription = """
             A collection of statuses for the flow instances, including:
@@ -104,7 +128,8 @@ interface FlowRestResource : RestResource {
             flowResult: The result returned from a completed flow, only set when the flow status is 'COMPLETED' otherwise null
             flowError: The details of the error that caused a flow to fail, only set when the flow status is 'FAILED' otherwise null
             timestamp: The timestamp of when the status was last updated (in UTC)
-            """
+            """,
+        minVersion = RestApiVersion.C5_2
     )
     fun getMultipleFlowStatus(
         @RestPathParameter(description = "The short hash of the holding identity; obtained during node registration")
