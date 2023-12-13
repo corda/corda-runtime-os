@@ -93,8 +93,8 @@ interface FlowRestResource : RestResource {
     @HttpGET(
         path = "{holdingIdentityShortHash}",
         title = "Get Multiple Flow Status",
-        description = "This method returns an array containing the statuses of all flows for a specified " +
-                "holding identity. An empty array is returned if there are no flows.",
+        description = "This method returns an array containing the statuses of all flows running for a specified " +
+                "holding identity. An empty array is returned if there are no flows running.",
         responseDescription = """
             A collection of statuses for the flow instances, including:
             

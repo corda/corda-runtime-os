@@ -5,7 +5,7 @@
 -runtrace: true
 
 #uncomment to remote debug
-# -runjdb: 5005
+ -runjdb: 5005
 
 -runvm: \
     --illegal-access=deny
