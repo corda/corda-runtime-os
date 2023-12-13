@@ -358,18 +358,21 @@ class MerkleTreeTest {
                 (0 until merkleTree.leaves.size).forEach { index ->
                     val tree = (0 until rlevels.size).map { level ->
                         val thisRange = rlevels[level].filter { index >= it.first && index <= it.second }.firstOrNull()
+                        checkNotNull(thisRange, {"it should be impossible to be outside a range"})
+                        check(index <= thisRange.second, {"fallen outside range"})
                         val thisRangeIsLast = thisRange == rlevels[level].last()
+                        val nextRanges =  rlevels.getOrNull(level+1) // ranges at the next level
+                        val nextRangeStarts = nextRanges?.map { it.first }
                         val nextRange = rlevels.getOrNull(level+1)?.filter { index >= it.first && index <= it.second }?.firstOrNull()
                         val nextRangeIsLast = nextRange != null && nextRange == rlevels[level+1].last()
                         when {
-                            nextRange == null -> "━━"
-                            thisRange != null && thisRange.second == thisRange.first -> "━━"
-                            index == 0 -> "┳━"
-                            thisRange != null && index > thisRange.second -> " "
+                            nextRange == null -> "━━" // we are at the right hand edge, bottom of the tree, so leaf
+                            thisRange.second == thisRange.first -> "━━" // we have a promoted single leaf element
+                            index == 0 -> "┳━" // top row looks like this
                             index == nextRange.first && (thisRangeIsLast || !nextRangeIsLast) -> "┗━"
                             index == nextRange.first -> "┣━"
-                            nextRangeIsLast && index > nextRange.first -> "  "
-                            else ->  "┃ "
+                            nextRangeStarts != null && nextRangeStarts.last() <= index -> "┃ "
+                            else ->  "  "
                         }
 
                     }
