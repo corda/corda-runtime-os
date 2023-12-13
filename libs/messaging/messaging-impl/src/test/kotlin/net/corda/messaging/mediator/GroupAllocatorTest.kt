@@ -1,7 +1,10 @@
 package net.corda.messaging.mediator
 
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
+import net.corda.messaging.api.mediator.factory.MessageRouterFactory
+import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -99,11 +102,19 @@ class GroupAllocatorTest {
         }
     }
 
-    private fun buildTestConfig(threadCount: Int, minGroupSize: Int): EventMediatorConfig<Any, Any, Any> {
-        val config = EventMediatorConfig<Any, Any, Any>(
-            "", SmartConfigImpl.empty(), emptyList(), emptyList(), mock(), mock(), threadCount, "", mock(), minGroupSize
+    private fun buildTestConfig(threadCount: Int, minGroupSize: Int): EventMediatorConfig<Int, Int, Int> {
+        return EventMediatorConfig(
+            "",
+            SmartConfigImpl.empty(),
+            emptyList(),
+            emptyList(),
+            mock<StateAndEventProcessor<Int, Int, Int>>(),
+            mock<MessageRouterFactory>(),
+            threadCount,
+            "",
+            mock<StateManager>(),
+            minGroupSize
         )
-        return config
     }
 
     private fun getIntRecords( recordCountByKey: List<Int>): List<Record<Int, Int>> {
