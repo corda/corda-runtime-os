@@ -61,9 +61,10 @@ class EventMediatorConfigBuilder<K: Any, S: Any, E: Any> {
         apply { this.threadName = threadName }
 
     /**
-     * Sets minimum size for groups of events passed to the task processor.
+     * Sets the minimum size for group of records passed to task manager for processing in a single thread. Does not block if
+     * group size is not met by polled record count.
      * If the number of resulting groups is evaluated to be more than the number of threads then the number of [threads] is used to
-     * calculate  [minGroupSize]
+     * calculate  [minGroupSize] instead.
      */
     fun minGroupSize(minGroupSize: Int) =
         apply { this.minGroupSize = minGroupSize }

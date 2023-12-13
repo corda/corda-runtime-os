@@ -25,7 +25,8 @@ import java.time.Duration
  * @property threads Number of threads used by task manager.
  * @property threadName Name (prefix) for task manager threads.
  * @property stateManager State manager.
- * @property minGroupSize Minimum group size.
+ * @property minGroupSize Minimum size for group of records passed to task manager for processing in a single thread. Does not block if
+ * group size is not met by polled record count.
  */
 data class EventMediatorConfig<K: Any, S: Any, E: Any>(
     val name: String,
