@@ -399,8 +399,8 @@ class MerkleTreeTest {
                     "${ line.joinToString("")}$label"
                 }
 
-
-                println("\n"+ (lines.joinToString("\n")))
+                val renderedTree = "\n"+ (lines.joinToString("\n"))
+                println(renderedTree)
                 if (i == 1 && treeSize == 1 ) {
                     assertThat(hashes).hasSize(0)
                 }
