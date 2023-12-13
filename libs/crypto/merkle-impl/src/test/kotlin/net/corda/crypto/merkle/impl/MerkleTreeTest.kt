@@ -356,12 +356,11 @@ class MerkleTreeTest {
                 val rlevels = levels.reversed()
                 println(rlevels)
                 val lines = (0 until merkleTree.leaves.size).map { index ->
-                    val tree = (0 until rlevels.size).map { level ->
+                    val tree = rlevels.indices.map { level ->
                         val levelsHere = rlevels[level]
-                        val thisRange = levelsHere.filter { index >= it.first && index <= it.second }.firstOrNull()
-
-                        checkNotNull(thisRange, {"it should be impossible to be outside a range"})
-                        check(index <= thisRange.second, {"fallen outside range"})
+                        val thisRange = levelsHere.firstOrNull { index >= it.first && index <= it.second }
+                        checkNotNull(thisRange) { "it should be impossible to be outside a range" }
+                        check(index <= thisRange.second) { "fallen outside range" }
                         val midRange = thisRange != rlevels[level].last()
                         val thisRangeIsLast = thisRange == rlevels[level].last()
                         val nextRanges =  rlevels.getOrNull(level+1) // ranges at the next level
@@ -370,18 +369,19 @@ class MerkleTreeTest {
                         val nextRange = rlevels.getOrNull(level+1)?.filter { index >= it.first && index <= it.second }?.firstOrNull()
                         val nextRangeIsLast = nextRange != null && nextRange == rlevels[level+1].last()
                         val indexPlusOneInNextRange = nextRange != null && index+1 >= nextRange.first && index+1 <= nextRange.second
+                        val furtherBranches = (index + 1 until merkleTree.leaves.size).any { index2 -> nextRangeStarts?.contains(index2)?:false }
                         when {
                             nextRange == null -> "━━" // we are at the right hand edge, bottom of the tree, so leaf
                             thisRange.second == thisRange.first -> "━━" // we have a promoted single leaf element
-                            index == thisRange.first || index == 0 -> "┳━" // top row looks like this
+                            (index == thisRange.first || index == 0) && furtherBranches -> "┳━" // top row looks like this
                             index == thisRange.second && (nextRange.second == nextRange.first)
                                     || (index == nextRange.first && (indexPlusOneInNextRange || index == merkleTree.leaves.size-1)) -> "┗━" // cannot alternative accept `index == nextRange.second` here
                             index == thisRange.first && midRange -> "┻━"
                             index == nextRange.first -> "┣━"
-                            nextRangeStarts != null && nextRangeStarts.last() >= index -> "┃ "
+                            furtherBranches -> "┃ "
                             else ->  "  "
                         }.also { chars ->
-                            println("(level=$level, index=$index) -> $chars (thisRange=$thisRange, followOnRange=$followOnRange, thisRangeIsLast=$thisRangeIsLast, midRange=$midRange nextRange=$nextRange, nextRangeStarts=$nextRangeStarts, nextRangeIsLast=$nextRangeIsLast) indexPlusOneInNextRange=$indexPlusOneInNextRange f")
+                            println("(level=$level, index=$index) -> $chars (thisRange=$thisRange, followOnRange=$followOnRange, thisRangeIsLast=$thisRangeIsLast, midRange=$midRange nextRange=$nextRange, nextRangeStarts=$nextRangeStarts, nextRangeIsLast=$nextRangeIsLast) indexPlusOneInNextRange=$indexPlusOneInNextRange furtherBranches=$furtherBranches")
                         }
                     }
                     val des = if (index in leafIndicesCombination)
