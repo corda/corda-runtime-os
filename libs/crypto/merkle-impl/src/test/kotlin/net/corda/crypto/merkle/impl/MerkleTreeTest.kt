@@ -351,8 +351,6 @@ class MerkleTreeTest {
                     check(newValues.size < values.size)
                     values = newValues
                 }
-                println("found ${levels.size} levels; predicted ${MerkleTreeImpl.treeDepth(treeSize)}")
-                println(levels)
                 val grid: MutableMap<Pair<Int,Int>, Char> = mutableMapOf()
 
                 levels.forEachIndexed { level, ranges  ->
@@ -367,10 +365,8 @@ class MerkleTreeTest {
                         if (range.first != range.second) {
                             val extent = if (level > 0 ) {
                                 val nextLevel = levels[level - 1]
-                                println("level $level range $range ending ${range.second} nextLevel ${nextLevel}")
                                 nextLevel.first { child -> range.second >= child.first && range.second <= child.second }.first
                             } else range.second
-                            println("line extent ${range} end at $extent")
                             check(range.first <= extent)
                             if (range.first != extent) {
                                 val curtop = grid.getOrDefault(x to range.first, ' ')
@@ -393,19 +389,10 @@ class MerkleTreeTest {
 
                 val maxx = grid.keys.map { it.first }.max()
                 val maxy = grid.keys.map { it.second } .max()
-                println("maxx=$maxx maxy=$maxy grid=$grid")
                 val lines = (0 until maxy+1).map { y ->
                     val line = (0 until maxx+1).map { x -> grid.getOrDefault(x to y, ' ') }
 
-                    val des = if (y in leafIndicesCombination)
-                        "known data"
-                    else {
-                        if (y in hashes.map { it.index }) {
-                            "proof hash"
-                        } else {
-                            "can be computed"
-                        }
-                    }
+                    val des = if (y in leafIndicesCombination) "known data" else "gap"
                     "${ line.joinToString("")} $y $des"
                 }
 
