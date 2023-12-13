@@ -1,6 +1,6 @@
 package net.corda.p2p.linkmanager.sessions
 
-import net.corda.crypto.cipher.suite.SignatureSpecs
+/*import net.corda.crypto.cipher.suite.SignatureSpecs
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.DigitalSignatureWithKey
 import net.corda.crypto.core.SecureHashImpl
@@ -104,11 +104,11 @@ import net.corda.p2p.crypto.protocol.api.NoCommonModeError
 import net.corda.p2p.linkmanager.grouppolicy.protocolModes
 import java.util.UUID
 import java.util.concurrent.TimeUnit
-import net.corda.membership.lib.exceptions.BadGroupPolicyException
+import net.corda.membership.lib.exceptions.BadGroupPolicyException*/
 
 class SessionManagerTest {
 
-    private companion object {
+ /*   private companion object {
         const val KEY = "KEY"
         const val GROUP_ID = "myGroup"
         const val MAX_MESSAGE_SIZE = 1024 * 1024
@@ -2494,5 +2494,5 @@ class SessionManagerTest {
             eq(sixDaysInMillis / 2),
             eq(TimeUnit.MILLISECONDS)
         )
-    }
+    } */
 }

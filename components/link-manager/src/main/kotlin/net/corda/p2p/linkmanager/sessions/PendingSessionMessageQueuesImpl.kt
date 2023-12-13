@@ -12,11 +12,19 @@ import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.util.LinkedList
 import java.util.Queue
+import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.p2p.linkmanager.outbound.OutboundMessageProcessor
+import net.corda.utilities.time.Clock
 
+@Suppress("LongParameterList")
 internal class PendingSessionMessageQueuesImpl(
     publisherFactory: PublisherFactory,
     coordinatorFactory: LifecycleCoordinatorFactory,
-    messagingConfiguration: SmartConfig
+    messagingConfiguration: SmartConfig,
+    private val groupPolicyProvider: GroupPolicyProvider,
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    private val clock: Clock,
 ) : PendingSessionMessageQueues {
 
     companion object {
@@ -67,7 +75,9 @@ internal class PendingSessionMessageQueuesImpl(
                     "Sending queued message ${message.message.header.messageId} " +
                         "to newly established session ${session.sessionId} with ${counterparties.counterpartyId}"
                 }
-                records.addAll(sessionManager.recordsForSessionEstablished(session, message, counterparties.serial))
+                records.addAll(OutboundMessageProcessor.recordsForSessionEstablished(
+                    session, sessionManager, counterparties.serial, groupPolicyProvider, membershipGroupReaderProvider, clock, message
+                ))
             }
             publisher.publish(records)
         }

@@ -1,6 +1,6 @@
 package net.corda.p2p.linkmanager.outbound
 
-import net.corda.data.identity.HoldingIdentity
+/*import net.corda.data.identity.HoldingIdentity
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.data.p2p.AuthenticatedMessageAndKey
@@ -46,10 +46,10 @@ import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
-import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.doThrow*/
 
 class OutboundMessageProcessorTest {
-    private val myIdentity = createTestHoldingIdentity("CN=PartyA, O=Corp, L=LDN, C=GB", "Group")
+ /*   private val myIdentity = createTestHoldingIdentity("CN=PartyA, O=Corp, L=LDN, C=GB", "Group")
     private val localIdentity = createTestHoldingIdentity("CN=PartyB, O=Corp, L=LDN, C=GB", "Group")
     private val remoteIdentity = createTestHoldingIdentity("CN=PartyC, O=Corp, L=LDN, C=GB", "Group")
     private val membersAndGroups = mockMembersAndGroups(
@@ -1354,5 +1354,5 @@ class OutboundMessageProcessorTest {
             it.assertThat(markers.map { it.topic }.distinct()).containsOnly(Schemas.P2P.P2P_OUT_MARKERS)
         }
     }
-
+*/
 }

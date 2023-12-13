@@ -13,8 +13,6 @@ import net.corda.data.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.data.p2p.crypto.InitiatorHelloMessage
 import net.corda.data.p2p.crypto.ResponderHandshakeMessage
 import net.corda.data.p2p.crypto.ResponderHelloMessage
-import net.corda.data.p2p.markers.AppMessageMarker
-import net.corda.data.p2p.markers.LinkManagerSentMarker
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -51,7 +49,6 @@ import net.corda.p2p.crypto.protocol.api.InvalidPeerCertificate
 import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
-import net.corda.p2p.linkmanager.LinkManager
 import net.corda.p2p.linkmanager.common.MessageConverter
 import net.corda.p2p.linkmanager.common.MessageConverter.Companion.createLinkOutMessage
 import net.corda.p2p.linkmanager.common.PublicKeyReader.Companion.getSignatureSpec
@@ -76,7 +73,6 @@ import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.peerHashNotInMe
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.peerNotInTheMembersMapWarning
 import net.corda.p2p.linkmanager.sessions.SessionManagerWarnings.validationFailedWarning
 import net.corda.schema.Schemas.P2P.LINK_OUT_TOPIC
-import net.corda.schema.Schemas.P2P.P2P_OUT_MARKERS
 import net.corda.schema.Schemas.P2P.SESSION_OUT_PARTITIONS
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.VisibleForTesting
@@ -294,7 +290,11 @@ internal class SessionManagerImpl(
         return false
     }
 
-    override fun processOutboundMessage(message: AuthenticatedMessageAndKey): SessionState {
+    override fun processOutboundMessages(messages: List<AuthenticatedMessageAndKey>) = messages.map {
+        message -> message to processOutboundMessage(message)
+    }
+
+    private fun processOutboundMessage(message: AuthenticatedMessageAndKey): SessionState {
         return dominoTile.withLifecycleLock {
             sessionNegotiationLock.read {
                 val counterparties = getSessionCounterpartiesFromMessage(message.message)
@@ -370,7 +370,7 @@ internal class SessionManagerImpl(
         pendingInboundSessions.remove(sessionId)
     }
 
-    private fun dataMessageSent(session: Session) {
+    override fun dataMessageSent(session: Session) {
         dominoTile.withLifecycleLock {
             heartbeatManager.dataMessageSent(session)
         }
@@ -392,30 +392,6 @@ internal class SessionManagerImpl(
         dominoTile.withLifecycleLock {
             heartbeatManager.dataMessageReceived(sessionId, source, destination)
         }
-    }
-
-    override fun recordsForSessionEstablished(
-        session: Session,
-        messageAndKey: AuthenticatedMessageAndKey,
-        serial: Long,
-    ): List<Record<String, *>> {
-        return MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(
-            messageAndKey,
-            session,
-            groupPolicyProvider,
-            membershipGroupReaderProvider,
-            serial
-        )?.let { message ->
-            val key = LinkManager.generateKey()
-            val messageRecord = Record(LINK_OUT_TOPIC, key, message)
-            val marker = AppMessageMarker(LinkManagerSentMarker(), clock.instant().toEpochMilli())
-            val markerRecord = Record(P2P_OUT_MARKERS, messageAndKey.message.header.messageId, marker)
-            dataMessageSent(session)
-            listOf(
-                messageRecord,
-                markerRecord,
-            )
-        } ?: emptyList()
     }
 
     private fun onTileStart() {
