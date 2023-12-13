@@ -360,32 +360,38 @@ class MerkleTreeTest {
                         val thisRange = rlevels[level].filter { index >= it.first && index <= it.second }.firstOrNull()
                         val thisRangeIsLast = thisRange == rlevels[level].last()
                         val nextRange = if (level < rlevels.size -1 ) rlevels[level+1].filter { index >= it.first && index <= it.second }.firstOrNull() else null
-                        val extendRight = index == (nextRange?.first ?: -1)
-                        if (nextRange == null || thisRange == null)
-                            "━━"
-                        else {
-                            if (index == 0) {
-                                // top of range
-                                if (thisRange.second == thisRange.first) "━━" else "┳━"
-                            } else {
-                                if (thisRangeIsLast && index > thisRange.first ) {
-                                    // outside current range
-                                    if (extendRight) "┗━" else {
-                                        if (index < thisRange.second) "┃ " else "  "
-                                    }
-                                } else {
-                                    if (index == thisRange.second) {
-                                        // bottom of current range
-                                        "┗━"
-                                    } else {
-                                        if (index == nextRange.first) {
-                                            if (extendRight) "┣━" else "┃ "
-                                        } else "" +
-                                                "┃ "
-                                    } // midrange
-                                }
-                            }
+                        val nextRangeIsLast = level < rlevels.size -1 && nextRange != null && nextRange == rlevels[level+1].last()
+                        //val extendRight = index == (nextRange?.first ?: -1)
+                        when {
+                            nextRange == null -> "━━"
+                            thisRange != null && thisRange.second == thisRange.first -> "━━"
+                            index == 0 -> "┳━"
+                            thisRange != null && index > thisRange.second -> "  "
+                            index == nextRange.first && (thisRangeIsLast || !nextRangeIsLast) -> "┗━"
+                            index == nextRange.first -> "┣━"
+                            nextRangeIsLast && index > nextRange.first -> "  "
+                            else ->  "┃ "
                         }
+//                            if (index == 0) {
+//                                // top of range
+//                                if (thisRange.second == thisRange.first) "━━" else "┳━"
+//                            } else {
+//                                if (thisRangeIsLast && index > thisRange.first ) {
+//                                    // outside current range
+//                                    if (extendRight) "┗━" else {
+//                                        if (index < thisRange.second) "┃ " else "  "
+//                                    }
+//                                } else {
+//                                    if (index == thisRange.second) {
+//                                        // bottom of current range
+//                                        "┗━"
+//                                    } else {
+//                                        if (index == nextRange.first) {
+//                                            if (extendRight) "┣━" else "┃ "
+//                                        } else "" +
+//                                                "┃ "
+//                                    } // midrange
+//                                }
                     }
                     val des = if (index in leafIndicesCombination)
                         "known data"
