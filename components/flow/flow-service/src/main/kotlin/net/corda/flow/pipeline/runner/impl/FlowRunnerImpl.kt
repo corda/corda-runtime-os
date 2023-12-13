@@ -124,9 +124,7 @@ class FlowRunnerImpl @Activate constructor(
 
         val sessionProps = sessionEvent.contextSessionProperties.toMap()
         val requireClose = sessionProps[FLOW_SESSION_REQUIRE_CLOSE].toBoolean()
-        val sessionTimeout = sessionProps[FLOW_SESSION_TIMEOUT_MS]?.let {
-            Duration.parse(it)
-        }
+        val sessionTimeout = sessionProps[FLOW_SESSION_TIMEOUT_MS]?.let { Duration.parse(it) }
 
         return startFlow(
             context,
