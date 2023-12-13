@@ -364,12 +364,12 @@ class MerkleTreeTest {
                         val nextRanges =  rlevels.getOrNull(level+1) // ranges at the next level
                         val nextRangeStarts = nextRanges?.map { it.first }
                         val nextRange = rlevels.getOrNull(level+1)?.filter { index >= it.first && index <= it.second }?.firstOrNull()
-                        val nextRangeIsLast = nextRange != null && nextRange == rlevels[level+1].last()
+                        //val nextRangeIsLast = nextRange != null && nextRange == rlevels[level+1].last()
                         when {
                             nextRange == null -> "━━" // we are at the right hand edge, bottom of the tree, so leaf
                             thisRange.second == thisRange.first -> "━━" // we have a promoted single leaf element
                             index == 0 -> "┳━" // top row looks like this
-                            index == nextRange.first && (thisRangeIsLast || !nextRangeIsLast) -> "┗━"
+                            index == nextRange.first && (thisRangeIsLast) -> "┗━"
                             index == nextRange.first -> "┣━"
                             nextRangeStarts != null && nextRangeStarts.last() <= index -> "┃ "
                             else ->  "  "
