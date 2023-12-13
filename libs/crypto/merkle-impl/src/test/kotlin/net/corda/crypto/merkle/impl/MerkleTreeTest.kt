@@ -29,7 +29,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
-import java.lang.IllegalStateException
 import java.security.SecureRandom
 import kotlin.experimental.xor
 
@@ -358,27 +357,35 @@ class MerkleTreeTest {
 
                 levels.forEachIndexed { level, ranges  ->
                     ranges.forEach {range ->
-                        val x= (levels.size - level) * 2 - 2
-                        grid.put(x+1 to range.first, '━')
+                        val x= (levels.size - level)
                         grid.put(x to range.first, '━')
                     }
                 }
                 levels.forEachIndexed { level, ranges  ->
                     ranges.forEach {range ->
-                        val x = (levels.size - level) * 2 - 2
+                        val x = (levels.size - level)
                         if (range.first != range.second) {
-                            val curtop = grid.getOrDefault(x to range.first, ' ')
-                            grid[x to range.first] = when (curtop) {
-                                '━' -> '┳'
-                                else -> '┃'
-                            }
-                            (range.first + 1 until range.second).forEach {
-                                grid[x to it] = '┃'
-                            }
-                            val curbot = grid.getOrDefault(x to range.second, ' ')
-                            grid[x to range.second] = when (curbot) {
-                                '━' -> '┻'
-                                else -> '┗'
+                            val extent = if (level > 0 ) {
+                                val nextLevel = levels[level - 1]
+                                println("level $level range $range ending ${range.second} nextLevel ${nextLevel}")
+                                nextLevel.first { child -> range.second >= child.first && range.second <= child.second }.first
+                            } else range.second
+                            println("line extent ${range} end at $extent")
+                            check(range.first <= extent)
+                            if (range.first != extent) {
+                                val curtop = grid.getOrDefault(x to range.first, ' ')
+                                grid[x to range.first] = when (curtop) {
+                                    '━' -> '┳'
+                                    else -> '┃'
+                                }
+                                (range.first + 1 until extent).forEach {
+                                    grid[x to it] = '┃'
+                                }
+                                val curbot = grid.getOrDefault(x to range.second, ' ')
+                                grid[x to extent] = when (curbot) {
+                                    '━' -> '┻'
+                                    else -> '┗'
+                                }
                             }
                         }
                     }
