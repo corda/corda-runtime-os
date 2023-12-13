@@ -331,6 +331,10 @@ class MerkleTreeTest {
 
                 println("Merkle proof for a tree of size $treeSize with ${hashes.size} hashes supplied in the proof where we know $leafIndicesCombination")
 
+                val des = (0 until merkleTree.leaves.size).map { y ->
+                    val caption = if (y in leafIndicesCombination) "known data" else "gap"
+                    " $y $caption"
+                }
                 var values: MutableList<Pair<Int, Int>> = (0 until merkleTree.leaves.size).map { it to it }.toMutableList()
                 var levels: MutableList<List<Pair<Int, Int>>> = mutableListOf(values.toList())
                 while (values.size > 1) {
@@ -391,9 +395,8 @@ class MerkleTreeTest {
                 val maxy = grid.keys.map { it.second } .max()
                 val lines = (0 until maxy+1).map { y ->
                     val line = (0 until maxx+1).map { x -> grid.getOrDefault(x to y, ' ') }
-
-                    val des = if (y in leafIndicesCombination) "known data" else "gap"
-                    "${ line.joinToString("")} $y $des"
+                    val label: String  = des.getOrNull(y)?:""
+                    "${ line.joinToString("")}$label"
                 }
 
 
