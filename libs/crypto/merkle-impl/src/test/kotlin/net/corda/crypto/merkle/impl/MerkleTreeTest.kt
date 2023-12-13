@@ -355,26 +355,33 @@ class MerkleTreeTest {
                 println("found ${levels.size} levels; predicted ${MerkleTreeImpl.treeDepth(treeSize)}")
                 val rlevels = levels.reversed()
                 println(rlevels)
-                (0 until merkleTree.leaves.size).forEach { index ->
+                val lines = (0 until merkleTree.leaves.size).map { index ->
                     val tree = (0 until rlevels.size).map { level ->
-                        val thisRange = rlevels[level].filter { index >= it.first && index <= it.second }.firstOrNull()
+                        val levelsHere = rlevels[level]
+                        val thisRange = levelsHere.filter { index >= it.first && index <= it.second }.firstOrNull()
+
                         checkNotNull(thisRange, {"it should be impossible to be outside a range"})
                         check(index <= thisRange.second, {"fallen outside range"})
+                        val midRange = thisRange != rlevels[level].last()
                         val thisRangeIsLast = thisRange == rlevels[level].last()
                         val nextRanges =  rlevels.getOrNull(level+1) // ranges at the next level
+                        val followOnRange = levelsHere.getOrNull(levelsHere.indexOf(thisRange) + 1)
                         val nextRangeStarts = nextRanges?.map { it.first }
                         val nextRange = rlevels.getOrNull(level+1)?.filter { index >= it.first && index <= it.second }?.firstOrNull()
-                        //val nextRangeIsLast = nextRange != null && nextRange == rlevels[level+1].last()
+                        val nextRangeIsLast = nextRange != null && nextRange == rlevels[level+1].last()
+                        val indexPlusOneInNextRange = nextRange != null && index+1 >= nextRange.first && index+1 <= nextRange.second
                         when {
                             nextRange == null -> "━━" // we are at the right hand edge, bottom of the tree, so leaf
                             thisRange.second == thisRange.first -> "━━" // we have a promoted single leaf element
-                            index == 0 -> "┳━" // top row looks like this
-                            index == nextRange.first && (thisRangeIsLast) -> "┗━"
+                            index == thisRange.first || index == 0 -> "┳━" // top row looks like this
+                            index == nextRange.first && (indexPlusOneInNextRange || index == merkleTree.leaves.size-1) -> "┗━" // cannot alternative accept `index == nextRange.second` here
+                            index == thisRange.first && midRange -> "┻━"
                             index == nextRange.first -> "┣━"
-                            nextRangeStarts != null && nextRangeStarts.last() <= index -> "┃ "
+                            nextRangeStarts != null && nextRangeStarts.last() >= index -> "┃ "
                             else ->  "  "
+                        }.also { chars ->
+                            println("(level=$level, index=$index) -> $chars (thisRange=$thisRange, followOnRange=$followOnRange, thisRangeIsLast=$thisRangeIsLast, midRange=$midRange nextRange=$nextRange, nextRangeStarts=$nextRangeStarts, nextRangeIsLast=$nextRangeIsLast) indexPlusOneInNextRange=$indexPlusOneInNextRange f")
                         }
-
                     }
                     val des = if (index in leafIndicesCombination)
                         "known data"
@@ -385,14 +392,11 @@ class MerkleTreeTest {
                             "can be computed"
                         }
                     }
-                    println("${tree.joinToString("")} $index $des")
-                }
-                (treeSize downTo 0 ).forEach {
-
+                    "${tree.joinToString("")} $index $des"
                 }
 
-                println()
-
+                println("\n"+ (lines.joinToString("\n")))
+                println((0 until rlevels.size).map { i -> "%02d".format(i)}.joinToString ("") )
                 if (i == 1 && treeSize == 1 ) {
                     assertThat(hashes).hasSize(0)
                 }
