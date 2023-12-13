@@ -20,6 +20,7 @@ fun buildSessionState(
     sessionId: String = "sessionId",
     counterpartyIdentity: HoldingIdentity = HoldingIdentity("Alice", "group1"),
     requireClose: Boolean = true,
+    sessionTimeout: Int? = null,
     sessionProperties: KeyValuePairList? = null
 ): SessionState {
     return SessionState.newBuilder()
@@ -33,6 +34,7 @@ fun buildSessionState(
         .setHasScheduledCleanup(false)
         .setSessionProperties(sessionProperties)
         .setRequireClose(requireClose)
+        .setSessionTimeout(sessionTimeout)
         .build()
 }
 
