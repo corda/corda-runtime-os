@@ -374,7 +374,8 @@ class MerkleTreeTest {
                             nextRange == null -> "━━" // we are at the right hand edge, bottom of the tree, so leaf
                             thisRange.second == thisRange.first -> "━━" // we have a promoted single leaf element
                             index == thisRange.first || index == 0 -> "┳━" // top row looks like this
-                            index == nextRange.first && (indexPlusOneInNextRange || index == merkleTree.leaves.size-1) -> "┗━" // cannot alternative accept `index == nextRange.second` here
+                            index == thisRange.second && (nextRange.second == nextRange.first)
+                                    || (index == nextRange.first && (indexPlusOneInNextRange || index == merkleTree.leaves.size-1)) -> "┗━" // cannot alternative accept `index == nextRange.second` here
                             index == thisRange.first && midRange -> "┻━"
                             index == nextRange.first -> "┣━"
                             nextRangeStarts != null && nextRangeStarts.last() >= index -> "┃ "
