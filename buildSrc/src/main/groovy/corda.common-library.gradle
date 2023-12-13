@@ -2,6 +2,7 @@
 
 plugins {
     id 'java-library'
+    id 'org.jetbrains.kotlin.jvm'
     id 'biz.aQute.bnd.builder'
 }
 
@@ -39,6 +40,7 @@ configurations {
 
 dependencies {
     compileOnly "org.jetbrains:annotations:$jetbrainsAnnotationsVersion"
+    testImplementation libs.bundles.test
     testImplementation "org.junit.jupiter:junit-jupiter:$junit5Version"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
