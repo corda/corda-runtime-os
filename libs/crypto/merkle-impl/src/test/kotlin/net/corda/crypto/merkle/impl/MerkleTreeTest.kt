@@ -271,6 +271,17 @@ class MerkleTreeTest {
         val node6 = merkleTree.digest.nodeHash(1, node3, node4)
         val manualRoot = merkleTree.digest.nodeHash(0, node5, node6)
         assertEquals(manualRoot, root)
+        assertThat(merkleTree.render()).isEqualTo(
+            """
+              a868a19c7 ┳┳ 00:00:00:00
+                        ┃┃ 00:00:00:01
+                        ┃┗ 00:00:00:02
+                        ┃  00:00:00:03
+                        ┗┳ 00:00:00:04
+                         ┃ 00:00:00:05
+                         ┗ 00:00:00:06
+                           00:00:00:07
+                        """.trimIndent())
     }
 
     @Test
