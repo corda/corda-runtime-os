@@ -363,6 +363,27 @@ class MerkleTreeTest {
                         grid.put(x to range.first, '━')
                     }
                 }
+                levels.forEachIndexed { level, ranges  ->
+                    ranges.forEach {range ->
+                        val x = (levels.size - level) * 2 - 2
+                        if (range.first != range.second) {
+                            val curtop = grid.getOrDefault(x to range.first, ' ')
+                            grid[x to range.first] = when (curtop) {
+                                '━' -> '┳'
+                                else -> '┃'
+                            }
+                            (range.first + 1 until range.second).forEach {
+                                grid[x to it] = '┃'
+                            }
+                            val curbot = grid.getOrDefault(x to range.second, ' ')
+                            grid[x to range.second] = when (curbot) {
+                                '━' -> '┻'
+                                else -> '┗'
+                            }
+                        }
+                    }
+                }
+
                 val maxx = grid.keys.map { it.first }.max()
                 val maxy = grid.keys.map { it.second } .max()
                 println("maxx=$maxx maxy=$maxy grid=$grid")
