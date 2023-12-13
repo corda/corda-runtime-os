@@ -763,7 +763,7 @@
     "/flow/{holdingidentityshorthash}" : {
       "get" : {
         "tags" : [ "Flow Management API" ],
-        "description" : "This method returns an array containing the statuses of all flows for a specified holding identity, for a particular flow processing status if specified. An empty array is returned if there are no flows.",
+        "description" : "This method returns an array containing the statuses of all flows running for a specified holding identity. An empty array is returned if there are no flows running.",
         "operationId" : "get_flow__holdingidentityshorthash_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
@@ -774,17 +774,6 @@
             "type" : "string",
             "description" : "The short hash of the holding identity; obtained during node registration",
             "nullable" : false,
-            "example" : "string"
-          }
-        }, {
-          "name" : "status",
-          "in" : "query",
-          "description" : "Processing status of a flow to filter by.",
-          "required" : false,
-          "schema" : {
-            "type" : "string",
-            "description" : "Processing status of a flow to filter by.",
-            "nullable" : true,
             "example" : "string"
           }
         } ],
