@@ -47,6 +47,7 @@ dependencies {
     testCompileOnly 'org.jetbrains:annotations'
     testImplementation libs.assertj.core
     testImplementation libs.junit.params
+    testRuntimeOnly libs.junit.engine
     testRuntimeOnly "org.jetbrains.kotlinx:kotlinx-metadata-jvm:$kotlinMetadataVersion"
     testRuntimeOnly "org.ow2.asm:asm:$asmVersion"
 
