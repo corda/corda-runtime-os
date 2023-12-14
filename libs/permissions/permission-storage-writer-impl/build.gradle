@@ -27,6 +27,4 @@ dependencies {
 
     implementation "javax.persistence:javax.persistence-api"
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

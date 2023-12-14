@@ -40,9 +40,6 @@ pluginManagement {
         id 'com.gradle.enterprise' version gradleEnterpriseVersion
         id 'com.gradle.common-custom-user-data-gradle-plugin' version gradleDataPlugin
         id 'net.corda.cordapp.cordapp-configuration' version cordaApiVersion
-        id 'org.jetbrains.kotlin.jvm' version kotlinVersion
-        id 'org.jetbrains.kotlin.plugin.allopen' version kotlinVersion
-        id 'org.jetbrains.kotlin.plugin.jpa' version kotlinVersion
         id 'net.corda.plugins.cordapp-cpk2' version cordaGradlePluginsVersion
         id 'net.corda.plugins.cordapp-cpb2' version cordaGradlePluginsVersion
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
