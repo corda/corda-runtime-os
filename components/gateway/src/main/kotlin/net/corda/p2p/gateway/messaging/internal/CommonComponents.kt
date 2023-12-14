@@ -9,6 +9,7 @@ import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.gateway.messaging.DynamicKeyStore
 import net.corda.p2p.gateway.messaging.http.TrustStoresMap
+import net.corda.utilities.flags.Features
 
 internal class CommonComponents(
     subscriptionFactory: SubscriptionFactory,
@@ -39,4 +40,6 @@ internal class CommonComponents(
         dependentChildren = children.map { it.coordinatorName },
         managedChildren = children.map { it.toNamedLifecycle() }
     )
+
+    val enableP2PGatewayToLinkManagerOverHttp = Features.ENABLE_P2P_GATEWAY_TO_LINK_MANAGER_OVER_HTTP
 }
