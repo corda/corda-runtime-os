@@ -38,7 +38,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CompletionException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -94,7 +93,7 @@ class MultiSourceEventMediatorImplTest {
         }
 
         val messageRouter = MessageRouter { _ ->
-            RoutingDestination.routeTo(messagingClient, "endpoint", RoutingDestination.Type.ASYNCHRONOUS)
+            RoutingDestination.routeTo(messagingClient, "endpoint", RoutingDestination.Type.SYNCHRONOUS)
         }
         whenever(messageRouterFactory.create(any<MessagingClientFinder>())).thenReturn(messageRouter)
 
@@ -194,7 +193,7 @@ class MultiSourceEventMediatorImplTest {
 
         whenever(messagingClient.send(any())).thenAnswer {
             if (sendCount.getAndIncrement() < errorsCount) {
-                throw CompletionException(CordaMessageAPIIntermittentException("IntermittentException"))
+                throw CordaMessageAPIIntermittentException("IntermittentException")
             }
             null
         }
