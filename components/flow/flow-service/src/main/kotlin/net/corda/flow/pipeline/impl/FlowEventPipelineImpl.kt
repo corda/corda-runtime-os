@@ -14,6 +14,7 @@ import net.corda.virtualnode.OperationalStatus
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
 import org.slf4j.LoggerFactory
+import net.corda.libs.statemanager.api.Metadata as StateMetadata
 
 /**
  * [FlowEventPipelineImpl] encapsulates the pipeline steps that are executed when a [FlowEvent] is received by a [FlowEventProcessor].
@@ -30,11 +31,21 @@ internal class FlowEventPipelineImpl(
     private val flowExecutionPipelineStage: FlowExecutionPipelineStage,
     private val flowGlobalPostProcessor: FlowGlobalPostProcessor,
     override var context: FlowEventContext<Any>,
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
 ) : FlowEventPipeline {
 
     private companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
+    }
+
+    private fun getMetaData(): StateMetadata {
+        val meta = context.metadata ?: StateMetadata()
+        return StateMetadata(
+            meta + mapOf(
+                "mtx_type" to "flow",
+                "mtx_name" to context.checkpoint.flowStartContext.flowClassName,
+            ),
+        )
     }
 
     override fun eventPreProcessing(): FlowEventPipelineImpl {
@@ -42,7 +53,8 @@ internal class FlowEventPipelineImpl(
 
         val handler = getFlowEventHandler(context.inputEvent)
 
-        context = handler.preProcess(context)
+        // Hack add some tracking metrics to the metadata
+        context = handler.preProcess(context).copy(metadata = getMetaData())
 
         // For now, we do this here as we need to be sure the flow start context exists, as for a
         // start flow event it won't exist until we have run the preProcess() for the start flow
@@ -72,13 +84,13 @@ internal class FlowEventPipelineImpl(
         val virtualNode = virtualNodeInfoReadService.get(holdingIdentity)
             ?: throw FlowTransientException(
                 "Failed to find the virtual node info for holder " +
-                        "'HoldingIdentity(x500Name=${holdingIdentity.x500Name}, groupId=${holdingIdentity.groupId})'"
+                    "'HoldingIdentity(x500Name=${holdingIdentity.x500Name}, groupId=${holdingIdentity.groupId})'",
             )
 
         if (virtualNode.flowStartOperationalStatus == OperationalStatus.INACTIVE) {
             throw FlowMarkedForKillException(
                 "flowStartOperationalStatus is INACTIVE, new flows cannot be started for virtual node with " +
-                        "shortHash ${holdingIdentity.shortHash}"
+                    "shortHash ${holdingIdentity.shortHash}",
             )
         }
 

@@ -83,7 +83,10 @@ object CordaMetrics {
          * Number of pipeline events processed can be inferred from the count of events recorded for this metric.
          */
         object FlowEventPipelineExecutionTime : Metric<Timer>("flow.event.pipeline.execution.time", CordaMetrics::timer)
-
+        object MtxEventExecutionTime : Metric<Timer>("mtx.event.execution", CordaMetrics::timer)
+        object MtxEventProcessingTime : Metric<Timer>("mtx.event.processing", CordaMetrics::timer)
+        object MtxEventAccruedLagTime : Metric<Timer>("mtx.event.accrued.lag", CordaMetrics::timer)
+        object MtxEventCount : Metric<Counter>("mtx.event.count", Metrics::counter)
 
         /**
          * Metric for the time the fiber is running between two suspension points.
@@ -905,7 +908,9 @@ object CordaMetrics {
         /**
          * Token selection database operation.
          */
-        TokenSelectionDbOperation("token.selection.db.operation")
+        TokenSelectionDbOperation("token.selection.db.operation"),
+        MtxType("mtx.type"),
+        MtxName("mtx.name"),
     }
 
     /**
