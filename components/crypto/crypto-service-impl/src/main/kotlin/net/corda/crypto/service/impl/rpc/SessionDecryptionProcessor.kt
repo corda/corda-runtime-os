@@ -32,16 +32,16 @@ class SessionDecryptionProcessor(
     override val requestClass = DecryptRpcCommand::class.java
     override val responseClass = EncryptionOpsResponse::class.java
 
-    override fun process(request: DecryptRpcCommand): EncryptionOpsResponse? {
+    override fun process(request: DecryptRpcCommand): EncryptionOpsResponse {
         logger.trace { "Processing request: ${request::class.java.name}" }
 
-        val response = try {
+        return try {
             executor.executeWithRetry {
                 val plainBytes = cryptoService.decrypt(
                     CryptoTenants.P2P,
                     request.cipherBytes.array(),
                     request.alias,
-                    request.context.toMap()
+                    request.context.toMap(),
                 )
                 EncryptionOpsResponse(CryptoDecryptionResult(ByteBuffer.wrap(plainBytes)))
             }
@@ -49,7 +49,5 @@ class SessionDecryptionProcessor(
             logger.warn("Failed to handle $requestClass for tenant ${CryptoTenants.P2P}", e)
             EncryptionOpsResponse(EncryptionOpsError(ExceptionEnvelope(e::class.java.name, e.message)))
         }
-
-        return response
     }
 }

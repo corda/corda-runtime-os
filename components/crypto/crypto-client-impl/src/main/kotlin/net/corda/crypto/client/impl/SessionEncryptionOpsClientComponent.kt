@@ -10,7 +10,6 @@ import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.messaging.api.publisher.factory.PublisherFactory
-import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -32,10 +31,10 @@ class SessionEncryptionOpsClientComponent @Activate constructor(
     configurationReadService = configurationReadService,
     upstream = DependenciesTracker.Default(
         setOf(
-            LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
+            LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
         )
     ),
-    configKeys = setOf(MESSAGING_CONFIG, CRYPTO_CONFIG)
+    configKeys = setOf(MESSAGING_CONFIG),
 ), SessionEncryptionOpsClient {
     override fun encryptSessionData(plainBytes: ByteArray, alias: String?, context: Map<String, String>): ByteArray =
         impl.ops.encryptSessionData(plainBytes, alias, context)
@@ -49,15 +48,14 @@ class SessionEncryptionOpsClientComponent @Activate constructor(
     class Impl(
         publisherFactory: PublisherFactory,
         platformInfoProvider: PlatformInfoProvider,
-        event: ConfigChangedEvent
+        event: ConfigChangedEvent,
     ) : AbstractImpl {
         val ops = SessionEncryptionOpsClientImpl(
             publisherFactory.createHttpRpcClient(),
             platformInfoProvider,
-            event.config.getConfig(MESSAGING_CONFIG)
+            event.config.getConfig(MESSAGING_CONFIG),
         )
-        override val downstream: DependenciesTracker
-            get() = TODO("Not yet implemented")
+        override val downstream = DependenciesTracker.AlwaysUp()
     }
 
 }

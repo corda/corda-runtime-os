@@ -322,8 +322,8 @@ interface CryptoService {
      *
      * @param tenantId ID of the tenant owning the key. The tenant must have been assigned the HSM category
      * 'ENCRYPTION_SECRET'.
-     * @param alias Optional. Alias of the symmetric key. If no alias is provided, the default alias for [tenantId] under
-     * HSM category 'ENCRYPTION_SECRET' will be used.
+     * @param alias Optional. Alias of the symmetric key. If no alias is provided, the default
+     *   alias for [tenantId] under HSM category 'ENCRYPTION_SECRET' will be used.
      * @param plainBytes The byte array to be encrypted.
      * @param context Optional. Key/value operation context.
      */
@@ -339,8 +339,8 @@ interface CryptoService {
      *
      * @param tenantId ID of the tenant owning the key. The tenant must have been assigned the HSM category
      * 'ENCRYPTION_SECRET'.
-     * @param alias Optional. Alias of the symmetric key. If no alias is provided, the default alias for [tenantId] under
-     * HSM category 'ENCRYPTION_SECRET' will be used.
+     * @param alias Optional. Alias of the symmetric key. If no alias is provided, the default alias for [tenantId]
+     * under HSM category 'ENCRYPTION_SECRET' will be used.
      * @param cipherBytes The byte array to be decrypted.
      * @param context Optional. Key/value operation context.
      */

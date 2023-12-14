@@ -22,6 +22,8 @@ import net.corda.crypto.config.impl.RetryingConfig
 import net.corda.crypto.config.impl.SALT
 import net.corda.crypto.config.impl.WRAPPING_KEYS
 import net.corda.crypto.config.impl.retrying
+import net.corda.crypto.core.ApiNames.DECRYPT_PATH
+import net.corda.crypto.core.ApiNames.ENCRYPT_PATH
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.Categories.ENCRYPTION_SECRET
 import net.corda.crypto.core.CryptoService
@@ -148,8 +150,6 @@ class CryptoProcessorImpl @Activate constructor(
 
         const val SUBSCRIPTION_NAME = "Crypto"
         const val CRYPTO_PATH = "/crypto"
-        const val SESSION_ENCRYPT_PATH = "/crypto-api/session/encrypt"
-        const val SESSION_DECRYPT_PATH = "/crypto-api/session/decrypt"
     }
 
     init {
@@ -466,8 +466,8 @@ class CryptoProcessorImpl @Activate constructor(
 
         coordinator.createManagedResource(SESSION_ENCRYPTION_SUBSCRIPTION) {
             subscriptionFactory.createHttpRPCSubscription(
-                rpcConfig = SyncRPCConfig(subscriptionName, SESSION_ENCRYPT_PATH),
-                processor = SessionEncryptionProcessor(cryptoService, retryingConfig)
+                rpcConfig = SyncRPCConfig(subscriptionName, ENCRYPT_PATH),
+                processor = SessionEncryptionProcessor(cryptoService, retryingConfig),
             ).also {
                 it.start()
             }
@@ -482,8 +482,8 @@ class CryptoProcessorImpl @Activate constructor(
 
         coordinator.createManagedResource(SESSION_DECRYPTION_SUBSCRIPTION) {
             subscriptionFactory.createHttpRPCSubscription(
-                rpcConfig = SyncRPCConfig(subscriptionName, SESSION_DECRYPT_PATH),
-                processor = SessionDecryptionProcessor(cryptoService, retryingConfig)
+                rpcConfig = SyncRPCConfig(subscriptionName, DECRYPT_PATH),
+                processor = SessionDecryptionProcessor(cryptoService, retryingConfig),
             ).also {
                 it.start()
             }
