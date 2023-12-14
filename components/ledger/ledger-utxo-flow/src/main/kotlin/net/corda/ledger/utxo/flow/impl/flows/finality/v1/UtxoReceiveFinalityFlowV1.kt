@@ -14,6 +14,7 @@ import net.corda.ledger.utxo.flow.impl.flows.finality.v1.FinalityNotarizationFai
 import net.corda.ledger.utxo.flow.impl.groupparameters.verifier.SignedGroupParametersVerifier
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerGroupParametersPersistenceService
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
+import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.sandbox.CordaSystemFlow
 import net.corda.utilities.trace
@@ -22,8 +23,12 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.ledger.common.NotaryLookup
+import net.corda.v5.ledger.common.transaction.TransactionSignatureVerificationService
+import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
+import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData.Audit
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -54,14 +59,28 @@ class UtxoReceiveFinalityFlowV1(
     @CordaInject
     lateinit var signedGroupParametersVerifier: SignedGroupParametersVerifier
 
+    @CordaInject
+    lateinit var notaryLookup: NotaryLookup
+
+    @CordaInject
+    lateinit var transactionSignatureVerificationService: TransactionSignatureVerificationService
+
+    @CordaInject
+    lateinit var utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory
+
     @Suspendable
     override fun call(): UtxoSignedTransaction {
-        val (initialTransaction, transferAdditionalSignatures) = receiveTransactionAndBackchain()
+        val (
+            initialTransaction,
+            transferAdditionalSignatures,
+            inputStateAndRefs,
+            referenceStateAndRefs
+        ) = receiveTransactionAndBackchain()
         val transactionId = initialTransaction.id
         addTransactionIdToFlowContext(flowEngine, transactionId)
         verifyExistingSignatures(initialTransaction, session)
-        verifyTransaction(initialTransaction)
-        var transaction = if (validateTransaction(initialTransaction)) {
+        verifyTransaction(initialTransaction, inputStateAndRefs, referenceStateAndRefs)
+        var transaction = if (validateTransaction(initialTransaction, inputStateAndRefs, referenceStateAndRefs)) {
             if (log.isTraceEnabled) {
                 log.trace("Successfully validated transaction: $transactionId")
             }
@@ -105,7 +124,7 @@ class UtxoReceiveFinalityFlowV1(
     }
 
     @Suspendable
-    private fun receiveTransactionAndBackchain(): Pair<UtxoSignedTransactionInternal, Boolean> {
+    private fun receiveTransactionAndBackchain(): InitialTransactionPayload {
         val payload = session.receive(FinalityPayload::class.java)
         val initialTransaction = payload.initialTransaction
         val transferAdditionalSignatures = payload.transferAdditionalSignatures
@@ -115,26 +134,65 @@ class UtxoReceiveFinalityFlowV1(
         }
         val currentGroupParameters = verifyLatestGroupParametersAreUsed(initialTransaction)
         utxoLedgerGroupParametersPersistenceService.persistIfDoesNotExist(currentGroupParameters)
-        val transactionDependencies = initialTransaction.dependencies
-        if (transactionDependencies.isNotEmpty()) {
-            try {
-                flowEngine.subFlow(TransactionBackchainResolutionFlow(transactionDependencies, session))
-            } catch (e: InvalidBackchainException) {
-                log.warn(
-                    "Invalid transaction found during back-chain resolution, marking transaction with ID " +
-                        "${initialTransaction.id} as invalid.",
-                    e
-                )
-                persistInvalidTransaction(initialTransaction)
-                throw e
-            }
-        } else {
-            log.trace {
-                "Transaction with id ${initialTransaction.id} has no dependencies so backchain resolution will not be performed."
-            }
+        val notaryInfo = requireNotNull(notaryLookup.lookup(initialTransaction.notaryName)) {
+            "Notary ${initialTransaction.notaryName} does not exist in the network"
         }
-        return Pair(initialTransaction, transferAdditionalSignatures)
+        return if (notaryInfo.isBackchainRequired) {
+            val transactionDependencies = initialTransaction.dependencies
+            if (transactionDependencies.isNotEmpty()) {
+                try {
+                    flowEngine.subFlow(TransactionBackchainResolutionFlow(transactionDependencies, session))
+                } catch (e: InvalidBackchainException) {
+                    log.warn(
+                        "Invalid transaction found during back-chain resolution, marking transaction with ID " +
+                            "${initialTransaction.id} as invalid.",
+                        e
+                    )
+                    persistInvalidTransaction(initialTransaction)
+                    throw e
+                }
+            } else {
+                log.trace {
+                    "Transaction with id ${initialTransaction.id} has no dependencies so backchain resolution will not be performed."
+                }
+            }
+            InitialTransactionPayload(initialTransaction, transferAdditionalSignatures, emptyList(), emptyList())
+        } else {
+            val filteredTransactionsAndSignatures =
+                session.receive(FinalityPayload::class.java).filteredTransactionsAndSignatures
+            val dependentStateAndRefs =
+                filteredTransactionsAndSignatures.flatMap { (filteredTransaction, signatures) ->
+                    require(signatures.isNotEmpty()) { "No notary signatures were received" }
+                    filteredTransaction.verify()
+
+                    for (signature in signatures) {
+                        transactionSignatureVerificationService.verifySignature(
+                            filteredTransaction.id,
+                            signature,
+                            filteredTransaction.notaryKey
+                        )
+                    }
+                    (filteredTransaction.outputStateAndRefs as Audit<StateAndRef<*>>).values.values
+                }.associateBy { stateRef -> stateRef.ref }
+            val inputStateAndRefs = initialTransaction.inputStateRefs.map { stateRef ->
+                requireNotNull(dependentStateAndRefs[stateRef]) {
+                    "Missing input state and ref from the filtered transaction"
+                }
+            }
+            val referenceStateAndRefs = initialTransaction.referenceStateRefs.map { stateRef ->
+                requireNotNull(dependentStateAndRefs[stateRef]) {
+                    "Missing reference state and ref from the filtered transaction"
+                }
+            }
+            InitialTransactionPayload(initialTransaction, transferAdditionalSignatures, inputStateAndRefs, referenceStateAndRefs)
+        }
     }
+    private data class InitialTransactionPayload(
+        val initialTransaction: UtxoSignedTransactionInternal,
+        val transferAdditionalSignatures: Boolean,
+        val inputStateAndRefs: List<StateAndRef<*>>,
+        val referenceStateAndRefs: List<StateAndRef<*>>
+    )
 
     @Suspendable
     private fun verifyLatestGroupParametersAreUsed(initialTransaction: UtxoSignedTransactionInternal): SignedGroupParameters {
@@ -154,16 +212,52 @@ class UtxoReceiveFinalityFlowV1(
     }
 
     @Suspendable
-    private fun validateTransaction(signedTransaction: UtxoSignedTransaction): Boolean {
+    private fun verifyTransaction(
+        initialTransaction: UtxoSignedTransactionInternal,
+        inputStateAndRefs: List<StateAndRef<*>>,
+        referenceStateAndRefs: List<StateAndRef<*>>
+    ) {
+        val ledgerTransaction = if (inputStateAndRefs.isNotEmpty() || referenceStateAndRefs.isNotEmpty()) {
+            utxoLedgerTransactionFactory.createWithStateAndRefs(
+                initialTransaction.wireTransaction,
+                inputStateAndRefs,
+                referenceStateAndRefs
+            )
+        } else {
+            initialTransaction.toLedgerTransaction()
+        }
+        try {
+            transactionVerificationService.verify(ledgerTransaction)
+        } catch (e: Exception) {
+            persistInvalidTransaction(initialTransaction)
+            throw e
+        }
+    }
+
+    @Suspendable
+    private fun validateTransaction(
+        initialTransaction: UtxoSignedTransactionInternal,
+        inputStateAndRefs: List<StateAndRef<*>>,
+        referenceStateAndRefs: List<StateAndRef<*>>
+    ): Boolean {
+        val ledgerTransaction = if (inputStateAndRefs.isNotEmpty() || referenceStateAndRefs.isNotEmpty()) {
+            utxoLedgerTransactionFactory.createWithStateAndRefs(
+                initialTransaction.wireTransaction,
+                inputStateAndRefs,
+                referenceStateAndRefs
+            )
+        } else {
+            initialTransaction.toLedgerTransaction()
+        }
         return try {
-            validator.checkTransaction(signedTransaction.toLedgerTransaction())
+            validator.checkTransaction(ledgerTransaction)
             true
         } catch (e: Exception) {
             // Should we only catch a specific exception type? Otherwise, some errors can be swallowed by this warning.
             // Means contracts can't use [check] or [require] unless we provide our own functions for this.
             if (e is IllegalStateException || e is IllegalArgumentException || e is CordaRuntimeException) {
                 if (log.isDebugEnabled) {
-                    log.debug("Transaction ${signedTransaction.id} failed verification. Message: ${e.message}")
+                    log.debug("Transaction ${ledgerTransaction.id} failed verification. Message: ${e.message}")
                 }
                 false
             } else {
