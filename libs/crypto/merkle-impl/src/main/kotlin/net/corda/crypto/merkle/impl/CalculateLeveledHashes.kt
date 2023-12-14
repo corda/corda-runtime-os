@@ -12,7 +12,7 @@ import net.corda.v5.crypto.merkle.MerkleProofRebuildFailureException
  *
  * @param proof A valid Merkle proof
  * @param digest An object that computes hashes for merkle tree elements
- * @return
+ * @return a list of LeveledHash objects, one entry with level information for each hash consumed in the proof.
  */
 @Suppress("NestedBlockDepth", "ThrowsCount")
 fun calculateLeveledHashes(proof: MerkleProof, digest: MerkleTreeHashDigestProvider): List<LeveledHash> {
@@ -41,7 +41,7 @@ fun calculateLeveledHashes(proof: MerkleProof, digest: MerkleTreeHashDigestProvi
 
     while (currentSize > 1) {
         // Now walk over the hashes at this tree level, striding over 1 or 2 at a time
-        // We are at level $treeDepth from the top of the tree (counting from 1),
+        // We are at level $treeDepth from the top of the tree (where 1 is the roof of the tree),
         //     and at $index nodes from the left (counting from 0)
         // $item is a pair of the index and the hash at the index.
         //
