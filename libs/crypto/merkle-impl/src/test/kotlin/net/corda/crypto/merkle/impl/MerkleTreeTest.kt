@@ -628,11 +628,7 @@ fun renderTree(treeSize: Int, des: List<String>, rootLabel: String = ""): String
                     for (y in range.first + 1 until extent) {
                         grid[x to y] = '┃'
                     }
-                    val curbot = grid.getOrDefault(x to range.second, ' ')
-                    grid[x to extent] = when (curbot) {
-                        '━' -> '┻'
-                        else -> '┗'
-                    }
+                    grid[x to extent] = '┗'
                 }
             }
         }
