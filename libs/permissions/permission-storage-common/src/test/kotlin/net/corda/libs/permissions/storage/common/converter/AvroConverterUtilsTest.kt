@@ -1,8 +1,6 @@
 package net.corda.libs.permissions.storage.common.converter
 
 import net.corda.data.permissions.PermissionAssociation
-import java.time.Instant
-import java.time.temporal.ChronoUnit
 import net.corda.permissions.model.Group
 import net.corda.permissions.model.GroupProperty
 import net.corda.permissions.model.Permission
@@ -17,6 +15,8 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 internal class AvroConverterUtilsTest {
 
@@ -41,19 +41,23 @@ internal class AvroConverterUtilsTest {
             "roleName1",
             null,
         )
-        user.userProperties.add(UserProperty(
-            "prop1",
-            now,
-            user,
-            "key1",
-            "val1"
-        ))
-        user.roleUserAssociations.add(RoleUserAssociation(
-            "rua1",
-            role,
-            user,
-            now
-        ))
+        user.userProperties.add(
+            UserProperty(
+                "prop1",
+                now,
+                user,
+                "key1",
+                "val1"
+            )
+        )
+        user.roleUserAssociations.add(
+            RoleUserAssociation(
+                "rua1",
+                role,
+                user,
+                now
+            )
+        )
 
         val avroUser = user.toAvroUser()
 
@@ -108,12 +112,18 @@ internal class AvroConverterUtilsTest {
         )
         role.rolePermAssociations.add(
             RolePermissionAssociation(
-                "rpa1", role, permission, change
+                "rpa1",
+                role,
+                permission,
+                change
             )
         )
         role.rolePermAssociations.add(
             RolePermissionAssociation(
-                "rpa2", role, permission2, change
+                "rpa2",
+                role,
+                permission2,
+                change
             )
         )
 

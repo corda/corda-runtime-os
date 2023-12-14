@@ -2,13 +2,6 @@ package net.corda.components.rest.internal
 
 import net.corda.components.rbac.RBACSecurityManagerService
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.rest.PluggableRestResource
-import net.corda.rest.RestResource
-import net.corda.rest.server.RestServer
-import net.corda.rest.server.factory.RestServerFactory
-import net.corda.rest.ssl.KeyStoreInfo
-import net.corda.rest.ssl.SslCertReadService
-import net.corda.rest.ssl.SslCertReadServiceFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -19,6 +12,13 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.permissions.management.PermissionManagementService
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.RestResource
+import net.corda.rest.server.RestServer
+import net.corda.rest.server.factory.RestServerFactory
+import net.corda.rest.ssl.KeyStoreInfo
+import net.corda.rest.ssl.SslCertReadService
+import net.corda.rest.ssl.SslCertReadServiceFactory
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.PathProvider
 import org.junit.jupiter.api.Assertions.assertNull
@@ -77,13 +77,15 @@ internal class RestGatewayEventHandlerTest {
 
     @BeforeEach
     fun setUp() {
-        whenever(coordinator.followStatusChangesByName(
-            setOf(
-                LifecycleCoordinatorName.forComponent<PermissionManagementService>(),
-                LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                LifecycleCoordinatorName.forComponent<RBACSecurityManagerService>(),
+        whenever(
+            coordinator.followStatusChangesByName(
+                setOf(
+                    LifecycleCoordinatorName.forComponent<PermissionManagementService>(),
+                    LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                    LifecycleCoordinatorName.forComponent<RBACSecurityManagerService>(),
+                )
             )
-        )).thenReturn(registration)
+        ).thenReturn(registration)
     }
 
     @Test

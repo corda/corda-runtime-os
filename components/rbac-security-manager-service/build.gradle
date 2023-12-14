@@ -5,6 +5,8 @@ plugins {
 
 description 'RBAC Security Manager for REST'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'

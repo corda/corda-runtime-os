@@ -14,15 +14,21 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
-class RestServerCaseSensitiveUrlTest: RestServerTestBase() {
+class RestServerCaseSensitiveUrlTest : RestServerTestBase() {
     companion object {
 
         @BeforeAll
         @JvmStatic
         @Suppress("Unused")
         fun setUpBeforeClass() {
-            val restServerSettings = RestServerSettings(NetworkHostAndPort("localhost", 0), context, null,
-                null, RestServerSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE, 20000L)
+            val restServerSettings = RestServerSettings(
+                NetworkHostAndPort("localhost", 0),
+                context,
+                null,
+                null,
+                RestServerSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+                20000L
+            )
             server = RestServerImpl(
                 listOf(TestHealthCheckAPIImpl()),
                 ::securityManager,
@@ -30,8 +36,10 @@ class RestServerCaseSensitiveUrlTest: RestServerTestBase() {
                 multipartDir,
                 true
             ).apply { start() }
-            client = TestHttpClientUnirestImpl("http://${restServerSettings.address.host}:${server.port}/" +
-                    "${restServerSettings.context.basePath}/${apiVersion.versionPath}/")
+            client = TestHttpClientUnirestImpl(
+                "http://${restServerSettings.address.host}:${server.port}/" +
+                    "${restServerSettings.context.basePath}/${apiVersion.versionPath}/"
+            )
         }
 
         @AfterAll
@@ -44,26 +52,47 @@ class RestServerCaseSensitiveUrlTest: RestServerTestBase() {
 
     @Test
     fun `Uppercase GET will redirect the request`() {
-
-        val plusOneResponse = client.call(GET, WebRequest<Any>("health/Plusone",
-            queryParameters = mapOf("numbers" to listOf(1.0, 2.0))), List::class.java, userName, password)
+        val plusOneResponse = client.call(
+            GET,
+            WebRequest<Any>(
+                "health/Plusone",
+                queryParameters = mapOf("numbers" to listOf(1.0, 2.0))
+            ),
+            List::class.java,
+            userName,
+            password
+        )
         assertEquals(HttpStatus.SC_OK, plusOneResponse.responseStatus)
         assertEquals(listOf(2.0, 3.0), plusOneResponse.body)
     }
 
     @Test
     fun `Uppercase POST will return 301 Moved Permanently`() {
-
-        val pingResponse = client.call(POST, WebRequest("health/Ping",
-            """{"pingPongData": {"str": "stringdata"}}"""), userName, password)
+        val pingResponse = client.call(
+            POST,
+            WebRequest(
+                "health/Ping",
+                """{"pingPongData": {"str": "stringdata"}}"""
+            ),
+            userName,
+            password
+        )
         assertEquals(HttpStatus.SC_MOVED_PERMANENTLY, pingResponse.responseStatus)
     }
 
     @Test
     fun `GET mixed case of query param`() {
         val requestStringValue = "MyRequestString"
-        val plusOneResponse = client.call(GET, WebRequest<Any>("health/EchoQuery",
-            queryParameters = mapOf("RequestString" to requestStringValue)), String::class.java, userName, password)
+        val plusOneResponse = client.call(
+            GET,
+            WebRequest<Any>(
+                "health/EchoQuery",
+                queryParameters = mapOf("RequestString" to requestStringValue)
+            ),
+            String::class.java,
+            userName,
+            password
+        )
         assertEquals(HttpStatus.SC_OK, plusOneResponse.responseStatus)
         assertEquals(requestStringValue, plusOneResponse.body)
     }
@@ -71,8 +100,13 @@ class RestServerCaseSensitiveUrlTest: RestServerTestBase() {
     @Test
     fun `GET mixed case of path param`() {
         val requestStringValue = "MyRequestString"
-        val plusOneResponse = client.call(GET, WebRequest<Any>("health/EchoPath/$requestStringValue"),
-            String::class.java, userName, password)
+        val plusOneResponse = client.call(
+            GET,
+            WebRequest<Any>("health/EchoPath/$requestStringValue"),
+            String::class.java,
+            userName,
+            password
+        )
         assertEquals(HttpStatus.SC_OK, plusOneResponse.responseStatus)
         assertEquals(requestStringValue, plusOneResponse.body)
     }

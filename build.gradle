@@ -335,7 +335,7 @@ void configureKotlinForOSGi(Configuration configuration) {
     }
 }
 
-logger.quiet("********************** CORDA FLOW WORKER BUILD **********************")
+logger.quiet("********************** CORDA 5 OS BUILD **********************")
 if (!JavaVersion.current().isCompatibleWith(javaVersion)) {
     throw new GradleException("The java version used ${JavaVersion.current()} is not compatible with the expected version ${javaVersion}.")
 }

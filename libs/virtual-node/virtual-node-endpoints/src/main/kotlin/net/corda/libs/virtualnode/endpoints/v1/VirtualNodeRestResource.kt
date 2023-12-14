@@ -48,7 +48,7 @@ interface VirtualNodeRestResource : RestResource {
      * @throws `HttpApiException` If the request returns an exceptional response.
      */
     @HttpPUT(
-        path= "{virtualNodeShortId}/db",
+        path = "{virtualNodeShortId}/db",
         title = "Update virtual node",
         description = "This method updates virtual node connection strings.",
         responseDescription = "The details of the updated virtual node.",
@@ -60,7 +60,6 @@ interface VirtualNodeRestResource : RestResource {
         @ClientRequestBodyParameter(description = "Details of the virtual node to be updated")
         request: UpdateVirtualNodeDbRequest
     ): ResponseEntity<AsyncResponse>
-
 
     /**
      * Lists all virtual nodes onboarded to the cluster.
@@ -89,8 +88,10 @@ interface VirtualNodeRestResource : RestResource {
     fun updateVirtualNodeState(
         @RestPathParameter(description = "Short ID of the virtual node instance to update")
         virtualNodeShortId: String,
-        @RestPathParameter(description = "State to transition virtual node instance into. " +
-                "Possible values are: MAINTENANCE and ACTIVE.")
+        @RestPathParameter(
+            description = "State to transition virtual node instance into. " +
+                "Possible values are: MAINTENANCE and ACTIVE."
+        )
         newState: String
     ): ChangeVirtualNodeStateResponse
 
@@ -124,7 +125,6 @@ interface VirtualNodeRestResource : RestResource {
         @RestPathParameter(description = "The requestId for the operation; obtained during node creation/upgrade")
         requestId: String
     ): AsyncOperationStatus
-
 
     /**
      * Asynchronous endpoint to upgrade a virtual node's CPI.

@@ -13,7 +13,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
-class RestServerCaseSensitiveLoginTest: RestServerTestBase() {
+class RestServerCaseSensitiveLoginTest : RestServerTestBase() {
     companion object {
 
         @BeforeAll
@@ -35,8 +35,10 @@ class RestServerCaseSensitiveLoginTest: RestServerTestBase() {
                 true
             ).apply { start() }
             client =
-                TestHttpClientUnirestImpl("http://${restServerSettings.address.host}:" +
-                        "${server.port}/${restServerSettings.context.basePath}/${apiVersion.versionPath}/")
+                TestHttpClientUnirestImpl(
+                    "http://${restServerSettings.address.host}:" +
+                        "${server.port}/${restServerSettings.context.basePath}/${apiVersion.versionPath}/"
+                )
         }
 
         @AfterAll
