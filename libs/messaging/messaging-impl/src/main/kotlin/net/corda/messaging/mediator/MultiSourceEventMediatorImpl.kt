@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory
 import java.lang.Thread.sleep
 import java.time.Duration
 import java.util.UUID
+import java.util.concurrent.CompletionException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -113,10 +114,11 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                             consumer.subscribe()
                         }
                         pollAndProcessEvents(consumer)
+                        attempts = 0
                     } catch (exception: Exception) {
-                        when (exception) {
+                        val cause = if (exception is CompletionException) exception.cause else exception
+                        when (cause) {
                             is CordaMessageAPIIntermittentException -> {
-                                attempts++
                                 log.warn(
                                     "Multi-source event mediator ${config.name} failed to process records, " +
                                             "Retrying poll and process. Attempts: $attempts.")
