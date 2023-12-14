@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory
 import java.lang.Thread.sleep
 import java.time.Duration
 import java.util.UUID
+import java.util.concurrent.CompletionException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -113,7 +114,8 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                         }
                         pollAndProcessEvents(consumer)
                     } catch (exception: Exception) {
-                        when (exception) {
+                        val cause = if (exception is CompletionException) exception.cause else exception
+                        when (cause) {
                             is CordaMessageAPIIntermittentException -> {
                                 attempts++
                                 log.warn(
