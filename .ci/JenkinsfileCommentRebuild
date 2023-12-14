@@ -1,6 +1,6 @@
 @Library('corda-shared-build-pipeline-steps@5.2') _
 
 githubCommentBuildTests(
-    branch: 'release/5.2',
+    branch: 'emily/core-16348/e2e-tests-to-enable-status-filter',
     chartVersion: '^5.2.0-alpha',
 )
