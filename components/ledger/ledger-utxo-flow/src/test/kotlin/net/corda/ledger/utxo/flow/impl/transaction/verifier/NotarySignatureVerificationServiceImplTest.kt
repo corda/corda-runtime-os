@@ -10,6 +10,7 @@ import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
+import net.corda.v5.ledger.common.transaction.TransactionWithMetadata
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -36,6 +37,9 @@ class NotarySignatureVerificationServiceImplTest {
     }
 
     // transactionId
+    private val transaction = mock<TransactionWithMetadata>().also {
+        whenever(it.id).thenReturn(transactionId)
+    }
     private val transactionId = mock<SecureHash>()
 
     // signatures
@@ -71,7 +75,7 @@ class NotarySignatureVerificationServiceImplTest {
         ).thenReturn(keyIdOfAlice)
         assertDoesNotThrow {
             notarySignatureVerificationService.verifyNotarySignatures(
-                transactionId,
+                transaction,
                 notaryVNodeAliceKey,
                 listOf(signatureAlice),
                 keyIdToNotaryKeysMap
@@ -89,7 +93,7 @@ class NotarySignatureVerificationServiceImplTest {
         ).thenReturn(keyIdOfAlice)
         assertDoesNotThrow {
             notarySignatureVerificationService.verifyNotarySignatures(
-                transactionId,
+                transaction,
                 notaryServiceCompositeKey,
                 listOf(signatureAlice),
                 keyIdToNotaryKeysMap
@@ -108,7 +112,7 @@ class NotarySignatureVerificationServiceImplTest {
 
         val exception = assertThrows<TransactionSignatureException> {
             notarySignatureVerificationService.verifyNotarySignatures(
-                transactionId,
+                transaction,
                 notaryServiceCompositeKey,
                 listOf(signatureBob),
                 keyIdToNotaryKeysMap
@@ -129,12 +133,12 @@ class NotarySignatureVerificationServiceImplTest {
                 signatureBob.by.algorithm
             )
         ).thenReturn(keyIdOfBob)
-        whenever(transactionSignatureServiceInternal.verifySignature(transactionId, signatureBob, notaryVNodeBobKey))
+        whenever(transactionSignatureServiceInternal.verifySignature(transaction, signatureBob, notaryVNodeBobKey))
             .thenThrow(TransactionSignatureException(transactionId, "", null))
 
         val exception = assertThrows<TransactionSignatureException> {
             notarySignatureVerificationService.verifyNotarySignatures(
-                transactionId,
+                transaction,
                 notaryVNodeBobKey,
                 listOf(signatureBob),
                 keyIdToNotaryKeysMap
@@ -142,7 +146,7 @@ class NotarySignatureVerificationServiceImplTest {
         }
 
         assertEquals(
-            "Failed to verify signature of ${signatureBob.signature} for transaction $transactionId. Message: ",
+            "Failed to verify signature of ${signatureBob.signature} for transaction $transaction. Message: ",
             exception.message
         )
     }

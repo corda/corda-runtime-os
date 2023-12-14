@@ -183,7 +183,7 @@ data class UtxoSignedTransactionImpl(
     }
 
     override fun verifyAttachedNotarySignature() {
-        notarySignatureVerificationService.verifyNotarySignatures(id, notaryKey, signatures, keyIdToNotaryKeys)
+        notarySignatureVerificationService.verifyNotarySignatures(wireTransaction, notaryKey, signatures, keyIdToNotaryKeys)
     }
 
     override fun verifyNotarySignature(signature: DigitalSignatureAndMetadata) {

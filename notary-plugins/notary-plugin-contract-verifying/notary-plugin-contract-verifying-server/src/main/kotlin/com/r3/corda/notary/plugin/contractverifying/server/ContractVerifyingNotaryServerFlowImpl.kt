@@ -172,7 +172,7 @@ class ContractVerifyingNotaryServerFlowImpl() : ResponderFlow {
             filteredTransaction.verify()
             try {
                 notarySignatureVerificationService.verifyNotarySignatures(
-                    filteredTransaction.id,
+                    filteredTransaction,
                     notaryKey,
                     signatures,
                     keyIdToNotaryKeys

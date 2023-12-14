@@ -8,6 +8,7 @@ import net.corda.v5.crypto.KeyUtils
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureService
+import net.corda.v5.ledger.common.transaction.TransactionWithMetadata
 import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -25,7 +26,7 @@ class NotarySignatureVerificationServiceImpl @Activate constructor(
     private val transactionSignatureService: TransactionSignatureService
 ) : NotarySignatureVerificationService, NotarySignatureVerificationServiceInternal, UsedByFlow, SingletonSerializeAsToken {
     override fun verifyNotarySignatures(
-        transactionId: SecureHash,
+        transaction: TransactionWithMetadata,
         notaryKey: PublicKey,
         signatures: List<DigitalSignatureAndMetadata>,
         keyIdToNotaryKeys: MutableMap<String, Map<SecureHash, PublicKey>>
@@ -35,12 +36,12 @@ class NotarySignatureVerificationServiceImpl @Activate constructor(
                 getNotaryPublicKeyByKeyId(it.by, notaryKey, keyIdToNotaryKeys)
             if (publicKey != null) {
                 try {
-                    (transactionSignatureService as TransactionSignatureServiceInternal).verifySignature(transactionId, it, publicKey)
+                    (transactionSignatureService as TransactionSignatureServiceInternal).verifySignature(transaction, it, publicKey)
                     publicKey
                 } catch (e: Exception) {
                     throw TransactionSignatureException(
-                        transactionId,
-                        "Failed to verify signature of ${it.signature} for transaction $transactionId. Message: ${e.message}",
+                        transaction.id,
+                        "Failed to verify signature of ${it.signature} for transaction $transaction. Message: ${e.message}",
                         e
                     )
                 }
@@ -52,7 +53,7 @@ class NotarySignatureVerificationServiceImpl @Activate constructor(
         // transaction was signed with. This means it was signed with one of the notary VNodes (worker).
         if (!KeyUtils.isKeyFulfilledBy(notaryKey, notaryPublicKeysWithValidSignatures)) {
             throw TransactionSignatureException(
-                transactionId,
+                transaction.id,
                 "Notary signing keys $notaryPublicKeysWithValidSignatures did not fulfil " +
                     "requirements of notary service key $notaryKey",
                 null
