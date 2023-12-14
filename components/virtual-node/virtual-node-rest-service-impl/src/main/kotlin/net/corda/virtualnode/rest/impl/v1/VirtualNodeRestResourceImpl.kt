@@ -15,9 +15,7 @@ import net.corda.data.virtualnode.VirtualNodeOperationStatusResponse
 import net.corda.data.virtualnode.VirtualNodeOperationalState
 import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
 import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
-import net.corda.data.virtualnode.VirtualNodeUpdateDbStatusResponse
 import net.corda.data.virtualnode.VirtualNodeUpgradeRequest
-import net.corda.data.virtualnode.*
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.connection.manager.DbConnectionManager
