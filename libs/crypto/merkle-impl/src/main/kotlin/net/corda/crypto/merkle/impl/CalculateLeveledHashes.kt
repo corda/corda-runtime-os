@@ -14,6 +14,7 @@ import net.corda.v5.crypto.merkle.MerkleProofRebuildFailureException
  * @param digest An object that computes hashes for merkle tree elements
  * @return
  */
+@Suppress("NestedBlockDepth")
 fun calculateLeveledHashes(proof: MerkleProof, digest: MerkleTreeHashDigestProvider): List<LeveledHash> {
     require(proof.leaves.isNotEmpty(), {"MerkleProof must have leaves"})
     require(proof.leaves.all { it.index >= 0 && it.index < proof.treeSize }, {"MerkleProof leaves cannot point outside of the original tree."})
