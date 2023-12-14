@@ -38,6 +38,7 @@ import net.corda.p2p.gateway.messaging.http.TrustStoresMap
 import net.corda.schema.Schemas.P2P.LINK_IN_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.test.util.time.MockTimeFacilitiesProvider
+import net.corda.utilities.flags.Features
 import net.corda.utilities.millis
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
@@ -156,6 +157,9 @@ class OutboundMessageHandlerTest {
         on { serialize(any<GatewayMessage>()) } doReturn ByteBuffer.wrap(serialisedMessage)
         on { deserialize(any(), eq(GatewayResponse::class.java), anyOrNull()) } doReturn GatewayResponse()
     }
+    private val features = mock<Features> {
+        on { enableP2PGatewayToLinkManagerOverHttp } doReturn false
+    }
 
     private val handler = OutboundMessageHandler(
         lifecycleCoordinatorFactory,
@@ -165,6 +169,7 @@ class OutboundMessageHandlerTest {
         SmartConfigImpl.empty(),
         avroSchemaRegistry,
         commonComponents,
+        features,
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }
 
     @AfterEach
@@ -692,7 +697,7 @@ class OutboundMessageHandlerTest {
                 replyPayload,
             )
         )
-        whenever(commonComponents.enableP2PGatewayToLinkManagerOverHttp).doReturn(true)
+        whenever(features.enableP2PGatewayToLinkManagerOverHttp).doReturn(true)
 
         val msgPayload = InboundUnauthenticatedMessage.newBuilder().apply {
             header = InboundUnauthenticatedMessageHeader(
@@ -744,7 +749,7 @@ class OutboundMessageHandlerTest {
                 replyPayload,
             )
         )
-        whenever(commonComponents.enableP2PGatewayToLinkManagerOverHttp).doReturn(false)
+        whenever(features.enableP2PGatewayToLinkManagerOverHttp).doReturn(false)
 
         val msgPayload = InboundUnauthenticatedMessage.newBuilder().apply {
             header = InboundUnauthenticatedMessageHeader(

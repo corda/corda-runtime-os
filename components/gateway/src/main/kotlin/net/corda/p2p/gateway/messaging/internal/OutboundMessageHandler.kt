@@ -30,6 +30,7 @@ import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.LINK_OUT_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.debug
+import net.corda.utilities.flags.Features
 import net.corda.v5.base.types.MemberX500Name
 import org.bouncycastle.asn1.x500.X500Name
 import org.slf4j.LoggerFactory
@@ -55,6 +56,7 @@ internal class OutboundMessageHandler(
     messagingConfiguration: SmartConfig,
     private val avroSchemaRegistry: AvroSchemaRegistry,
     private val commonComponents: CommonComponents,
+    private val features: Features = Features(),
     retryThreadPoolFactory: () -> ScheduledExecutorService = { Executors.newSingleThreadScheduledExecutor() },
 ) : PubSubProcessor<String, LinkOutMessage>, LifecycleWithDominoTile {
 
@@ -230,7 +232,7 @@ internal class OutboundMessageHandler(
                 } else {
                     logger.warn("Request (${pendingRequest.gatewayMessage.id}) failed with status code ${response.statusCode}.")
                 }
-            } else if (commonComponents.enableP2PGatewayToLinkManagerOverHttp) {
+            } else if (features.enableP2PGatewayToLinkManagerOverHttp) {
                 publishResponse(response)
             }
         }
