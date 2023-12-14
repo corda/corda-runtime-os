@@ -298,8 +298,7 @@ internal class OutboundMessageProcessor(
                 }
             }
         }
-        processRemoteAuthenticatedMessage(remoteAuthenticatedMessages, isReplay)
-        return markerMessagesWithSession + messageWithNoSession
+        return markerMessagesWithSession + messageWithNoSession + processRemoteAuthenticatedMessage(remoteAuthenticatedMessages, isReplay)
     }
 
     sealed class ProcessAuthenticateMessageResult {
