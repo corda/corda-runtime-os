@@ -120,26 +120,32 @@ internal class OutboundMessageProcessor(
 
     }
 
-    override fun onNext(events: List<EventLogRecord<String, AppMessage>>): List<Record<*, *>> {
-        return processEvents(events)
-    }
-
     private fun ttlExpired(ttl: Instant?): Boolean {
         if (ttl == null) return false
         val currentTimeInTimeMillis = clock.instant()
         return currentTimeInTimeMillis >= ttl
     }
 
-    private fun processEvents(events: List<EventLogRecord<String, AppMessage>>): List<Record<String, *>> {
-        val authenticatedMessages = mutableListOf<Pair<EventLogRecord<String, AppMessage>, AuthenticatedMessageAndKey>>()
-        val unauthenticatedMessages = mutableListOf<Pair<EventLogRecord<String, AppMessage>, OutboundUnauthenticatedMessage>>()
+    /**
+     * Class which wraps a message, so we can do event tracing by passing the original event log record to a lower layer.
+     */
+    private data class TraceableMessage<T>(
+        val message: T,
+        val originalRecord: EventLogRecord<String, AppMessage>?
+    )
+
+    override fun onNext(events: List<EventLogRecord<String, AppMessage>>): List<Record<String, *>> {
+        val authenticatedMessages = mutableListOf<TraceableMessage<AuthenticatedMessageAndKey>>()
+        val unauthenticatedMessages = mutableListOf<TraceableMessage<OutboundUnauthenticatedMessage>>()
         for (event in events) {
             when (val message = event.value?.message) {
                 is AuthenticatedMessage -> {
-                    authenticatedMessages += event to AuthenticatedMessageAndKey(message, event.key)
+                    authenticatedMessages += TraceableMessage(AuthenticatedMessageAndKey(message, event.key), event)
+                    recordOutboundMessagesMetric(message)
                 }
                 is OutboundUnauthenticatedMessage -> {
-                    unauthenticatedMessages += event to message
+                    unauthenticatedMessages += TraceableMessage(message, event)
+                    recordOutboundMessagesMetric(message)
                 }
                 null -> {
                     logger.warn("Message is null.")
@@ -150,10 +156,9 @@ internal class OutboundMessageProcessor(
             }
         }
 
-        return unauthenticatedMessages.map { (event, message) ->
-            processUnauthenticatedMessage(message).also {
-                recordOutboundMessagesMetric(message)
-                traceEventProcessing(event, "P2P Link Manager Outbound Event") { it }
+        return unauthenticatedMessages.map { (message, event) ->
+            processUnauthenticatedMessage(message).also { records ->
+                event?.let {event -> traceEventProcessing(event, "P2P Link Manager Outbound Event") { records } }
             }
         }.flatten() + processAuthenticatedMessages(authenticatedMessages)
     }
@@ -277,48 +282,58 @@ internal class OutboundMessageProcessor(
     }
 
     fun processReplayedAuthenticatedMessage(messageAndKey: AuthenticatedMessageAndKey): List<Record<String, *>> =
-        processAuthenticatedMessages(listOf(null to messageAndKey), true)
+        processAuthenticatedMessages(listOf(TraceableMessage(messageAndKey, null)), true)
 
     private fun processAuthenticatedMessages(
-        messagesAndKeys: List<Pair<EventLogRecord<String, AppMessage>?, AuthenticatedMessageAndKey>>,
+        messagesWithKeys: List<TraceableMessage<AuthenticatedMessageAndKey>>,
         isReplay: Boolean = false
     ): List<Record<String, *>> {
         val markerMessagesWithSession = mutableListOf<Record<String, *>>()
         val messageWithNoSession = mutableListOf<Record<String, *>>()
-        val remoteAuthenticatedMessages = mutableListOf<Pair<EventLogRecord<String, AppMessage>?, AuthenticatedMessageAndKey>>()
-        for ((event, message) in messagesAndKeys) {
-            when (val result = validateAuthenticatedMessage(message, isReplay)) {
-                is ProcessAuthenticateMessageResult.SessionNeeded -> {
+        val remoteAuthenticatedMessages = mutableListOf<TraceableMessage<AuthenticatedMessageAndKey>>()
+        for (message in messagesWithKeys) {
+            when (val result = validateAndCheckIfSessionNeeded(message, isReplay)) {
+                is ValidateAuthenticatedMessageResult.SessionNeeded -> {
                     markerMessagesWithSession += result.markerRecords
-                    remoteAuthenticatedMessages += event to result.authenticatedMessageAndKey
+                    remoteAuthenticatedMessages += result.messageWithKey
                 }
-                is ProcessAuthenticateMessageResult.NoSessionNeeded -> {
+                is ValidateAuthenticatedMessageResult.NoSessionNeeded -> {
                     messageWithNoSession += result.records
-                    event?. let { traceEventProcessing(event, "P2P Link Manager Outbound Event") { result.records } }
+                    message.originalRecord?.let { event ->
+                        traceEventProcessing(event, "P2P Link Manager Outbound Event") { result.records }
+                    }
                 }
             }
         }
         return markerMessagesWithSession + messageWithNoSession + processRemoteAuthenticatedMessage(remoteAuthenticatedMessages, isReplay)
     }
 
-    sealed class ProcessAuthenticateMessageResult {
+    private sealed class ValidateAuthenticatedMessageResult {
         data class SessionNeeded(
-            val authenticatedMessageAndKey: AuthenticatedMessageAndKey,
+            val messageWithKey: TraceableMessage<AuthenticatedMessageAndKey>,
             val markerRecords: List<Record<String, *>>
-        ): ProcessAuthenticateMessageResult()
-        data class NoSessionNeeded(val records: List<Record<String, *>>): ProcessAuthenticateMessageResult()
+        ): ValidateAuthenticatedMessageResult()
+        data class NoSessionNeeded(val records: List<Record<String, *>>): ValidateAuthenticatedMessageResult()
     }
 
     /**
-     * validates an AuthenticatedMessage returning a list of records to be persisted.
+     * validates an AuthenticatedMessage and checks if a session is needed.
      *
      * [isReplay] - If the message is being replayed we don't persist a [LinkManagerSentMarker] as there is already
      * a marker for this message. If the process is restarted we reread the original marker.
+     *
+     * @return
+     * [ValidateAuthenticatedMessageResult.SessionNeeded] if validation succeeds and the destination identity is hosted in a
+     * different corda cluster. This contains the authenticated message to be authenticated (and optionally encrypted by the session, along
+     * with some marker records.
+     * [ValidateAuthenticatedMessageResult.NoSessionNeeded] in all other cases. This contains some marker records and the message to be
+     * looped back (if validation succeeded).
      */
-    private fun validateAuthenticatedMessage(
-        messageAndKey: AuthenticatedMessageAndKey,
+    private fun validateAndCheckIfSessionNeeded(
+        traceableMessage: TraceableMessage<AuthenticatedMessageAndKey>,
         isReplay: Boolean = false
-    ): ProcessAuthenticateMessageResult {
+    ): ValidateAuthenticatedMessageResult {
+        val messageAndKey = traceableMessage.message
         logger.trace {
             "Processing outbound ${messageAndKey.message.javaClass} with ID ${messageAndKey.message.header.messageId} " +
                 "to ${messageAndKey.message.header.destination}."
@@ -331,15 +346,15 @@ internal class OutboundMessageProcessor(
         if (discardReason != null) {
             logger.warn("Dropping outbound authenticated message ${messageAndKey.message.header.messageId}" +
                     " from ${messageAndKey.message.header.source} to ${messageAndKey.message.header.destination} as the $discardReason")
-            return ProcessAuthenticateMessageResult.NoSessionNeeded(listOf(recordForLMDiscardedMarker(messageAndKey, discardReason)))
+            return ValidateAuthenticatedMessageResult.NoSessionNeeded(listOf(recordForLMDiscardedMarker(messageAndKey, discardReason)))
         }
 
         if (ttlExpired(messageAndKey.message.header.ttl)) {
             val expiryMarker = recordForTTLExpiredMarker(messageAndKey.message.header.messageId)
             return if (isReplay) {
-                ProcessAuthenticateMessageResult.NoSessionNeeded(listOf(expiryMarker))
+                ValidateAuthenticatedMessageResult.NoSessionNeeded(listOf(expiryMarker))
             } else {
-                ProcessAuthenticateMessageResult.NoSessionNeeded(
+                ValidateAuthenticatedMessageResult.NoSessionNeeded(
                     listOf(recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId), expiryMarker)
                 )
             }
@@ -350,9 +365,9 @@ internal class OutboundMessageProcessor(
         val destinationMemberInfo = membershipGroupReaderProvider.lookup(
             source, destination, messageAndKey.message.header.statusFilter
         ) ?: return if (isReplay) {
-            ProcessAuthenticateMessageResult.NoSessionNeeded(emptyList())
+            ValidateAuthenticatedMessageResult.NoSessionNeeded(emptyList())
         } else {
-            ProcessAuthenticateMessageResult.NoSessionNeeded(
+            ValidateAuthenticatedMessageResult.NoSessionNeeded(
                 listOf(recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId))
             )
         }.also {
@@ -364,14 +379,14 @@ internal class OutboundMessageProcessor(
         if (linkManagerHostingMap.isHostedLocallyAndSessionKeyMatch(destinationMemberInfo)) {
             recordInboundMessagesMetric(messageAndKey.message)
             return if (isReplay) {
-                ProcessAuthenticateMessageResult.NoSessionNeeded(
+                ValidateAuthenticatedMessageResult.NoSessionNeeded(
                     listOf(
                         Record(Schemas.P2P.P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)),
                         recordForLMReceivedMarker(messageAndKey.message.header.messageId)
                     )
                 )
             } else {
-                ProcessAuthenticateMessageResult.NoSessionNeeded(
+                ValidateAuthenticatedMessageResult.NoSessionNeeded(
                     listOf(
                         Record(Schemas.P2P.P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)),
                         recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId),
@@ -385,21 +400,21 @@ internal class OutboundMessageProcessor(
             } else {
                 listOf(recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId))
             }
-            return ProcessAuthenticateMessageResult.SessionNeeded(messageAndKey, markers)
+            return ValidateAuthenticatedMessageResult.SessionNeeded(traceableMessage, markers)
         }
     }
     private fun processRemoteAuthenticatedMessage(
-        messages: List<Pair<EventLogRecord<String, AppMessage>?, AuthenticatedMessageAndKey>>,
+        messages: List<TraceableMessage<AuthenticatedMessageAndKey>>,
         isReplay: Boolean = false
     ): List<Record<String, *>> {
-        return sessionManager.processOutboundMessages(messages.map { it.second }).withIndex().map { (i, result) ->
-            val (message, state) = result
+        return sessionManager.processOutboundMessages(messages.map { it.message }).withIndex().map { (i, state) ->
+            val (message, originalRecord) = messages[i]
             when (state) {
                 is SessionManager.SessionState.NewSessionsNeeded -> {
                     logger.trace { "No existing session with ${message.message.header.destination}. Initiating a new one.." }
                     if (!isReplay) messagesPendingSession.queueMessage(message, state.sessionCounterparties)
                     recordsForNewSessions(state).also { records ->
-                        messages[i].first?.let { event ->
+                        originalRecord?.let { event ->
                             traceEventProcessing(event, "P2P Link Manager Outbound Event") { records }
                         }
                     }
@@ -410,7 +425,7 @@ internal class OutboundMessageProcessor(
                         "Session already established with ${message.message.header.destination}. Using this to send outbound message."
                     }
                     recordsForSessionEstablished(state, message).also { records ->
-                        messages[i].first?.let { event ->
+                        originalRecord?.let { event ->
                             traceEventProcessing(event, "P2P Link Manager Outbound Event") { records }
                         }
                     }
@@ -422,14 +437,14 @@ internal class OutboundMessageProcessor(
                     }
                     if (!isReplay) messagesPendingSession.queueMessage(message, state.sessionCounterparties)
                     emptyList<Record<String, *>>().also { records ->
-                        messages[i].first?.let { event ->
+                        originalRecord?.let { event ->
                             traceEventProcessing(event, "P2P Link Manager Outbound Event") { records }
                         }
                     }
                 }
                 is SessionManager.SessionState.CannotEstablishSession -> {
                     emptyList<Record<String, *>>().also { records ->
-                        messages[i].first?.let { event ->
+                        originalRecord?.let { event ->
                             traceEventProcessing(event, "P2P Link Manager Outbound Event") { records }
                         }
                     }

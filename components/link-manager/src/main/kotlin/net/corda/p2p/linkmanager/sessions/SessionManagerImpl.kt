@@ -290,8 +290,8 @@ internal class SessionManagerImpl(
         return false
     }
 
-    override fun processOutboundMessages(messages: List<AuthenticatedMessageAndKey>) = messages.map {
-        message -> message to processOutboundMessage(message)
+    override fun processOutboundMessages(messages: List<AuthenticatedMessageAndKey>) = messages.map { message ->
+        processOutboundMessage(message)
     }
 
     private fun processOutboundMessage(message: AuthenticatedMessageAndKey): SessionState {

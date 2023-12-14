@@ -35,7 +35,7 @@ internal abstract class StatefulSessionManagerImpl(coordinatorFactory: Lifecycle
 
     override fun processOutboundMessages(
         messages: List<AuthenticatedMessageAndKey>
-    ): List<Pair<AuthenticatedMessageAndKey, SessionManager.SessionState>> {
+    ): List<SessionManager.SessionState> {
         TODO("Not yet implemented")
     }
 
