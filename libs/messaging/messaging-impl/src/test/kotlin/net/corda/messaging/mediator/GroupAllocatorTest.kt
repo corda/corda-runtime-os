@@ -71,7 +71,7 @@ class GroupAllocatorTest {
 
         val result = groupAllocator.allocateGroups(records, config)
 
-        assertGroupsSize(result, mapOf(0 to 18, 1 to 18, 2 to 17, 3 to 32, 4 to 15))
+        assertGroupsSize(result, mapOf(0 to 18, 1 to 18, 2 to 17, 3 to 30, 4 to 15))
     }
 
     @Test

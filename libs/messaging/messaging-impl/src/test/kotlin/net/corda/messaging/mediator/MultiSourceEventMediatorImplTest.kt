@@ -123,6 +123,7 @@ class MultiSourceEventMediatorImplTest {
             .threads(1)
             .threadName("mediator-thread")
             .stateManager(stateManager)
+            .minGroupSize(20)
             .build()
 
         mediator = MultiSourceEventMediatorImpl(
