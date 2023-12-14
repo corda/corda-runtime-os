@@ -84,4 +84,21 @@ class JavalinServerConfigTest {
         assertThat(response.statusCode()).isEqualTo(ResponseCode.OK.statusCode)
         assertThat(response.body()).isEqualTo("Flood ${size + 1}")
     }
+
+//    @Test
+//    fun `start server for prometheus`() {
+//        val endpoint = Endpoint(HTTPMethod.GET, "/metrics", { context ->
+//            context.result(readMetricsFile())
+//            context.header(Header.CACHE_CONTROL, "no-cache")
+//            context
+//        })
+//        server.registerEndpoint(endpoint)
+//
+//        while(true) { }
+//    }
+//
+//    private fun readMetricsFile(): String {
+//        val expectedConfigYamlFile = this::class.java.classLoader.getResource("metrics2.txt")?.toURI()
+//        return Files.readString(expectedConfigYamlFile?.toPath())
+//    }
 }

@@ -21,9 +21,12 @@ import org.slf4j.LoggerFactory
 object Metrics {
     private val logger = LoggerFactory.getLogger(Metrics::class.java)
     private val prometheusRegistry: PrometheusMeterRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
+//    private val fmr = MyLoggingMeterRegistry(logger::info, prometheusRegistry::scrape)
     fun configure(webServer: WebServer, name: String) {
         logger.info("Creating Prometheus metric registry")
         CordaMetrics.configure(name, prometheusRegistry)
+//        CordaMetrics.configure(name, LoggingMeterRegistry())
+//        CordaMetrics.configure(name, fmr)
 
         ClassLoaderMetrics().bindTo(CordaMetrics.registry)
         JvmMemoryMetrics().bindTo(CordaMetrics.registry)

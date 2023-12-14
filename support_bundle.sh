@@ -47,6 +47,8 @@ for podName in $(kubectl --namespace "$namespace" get pods -o jsonpath="{.items[
   if [[ "$podName" == *-worker-* ]]; then
     echo "Collecting status for pod ${podName}"
     curl -s "localhost:8001/api/v1/namespaces/${namespace}/pods/${podName}:7000/proxy/status" -o "${podDir}/status.json"
+    echo "Collecting metrics for pod ${podName}"
+    curl -s "localhost:8001/api/v1/namespaces/${namespace}/pods/${podName}:7000/metrics" -0 "${podDir}/metrics.txt"
   fi
 done
 disown $pid
