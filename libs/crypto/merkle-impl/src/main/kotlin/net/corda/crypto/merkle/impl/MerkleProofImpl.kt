@@ -107,6 +107,8 @@ class MerkleProofImpl(
             --treeDepth
             // We could check here that size of nodeHashes is as expected for treeDepth; there should be a closed form.
 
+            // ... so that's 3 variables that get updated as we work:
+            // - $hashIndex is the position we are at in the supplied proof hashes
             // $currentSize is the number of leafs+nodes at this level of the tree
             // $treeDepth is the level of the tree, counting from the root of the tree where $currentSize==1
             // $nodeHashes has a list of pairs of the index and hash of the node. We checked we have some content.
@@ -118,7 +120,8 @@ class MerkleProofImpl(
             var index = 0
             while (index < nodeHashes.size) {
                 val item = nodeHashes[index]
-                // Now we are at level $treeDepth from the top of the tree (counting from 1),
+                // Now walk over the hashes at this tree level, striding over 1 or 2 at a time
+                // We are at level $treeDepth from the top of the tree (counting from 1),
                 //     and at $index nodes from the left (counting from 0)
                 // $item is a pair of the index and the hash at the index.
                 //
@@ -145,7 +148,7 @@ class MerkleProofImpl(
                             continue                                // continue the inner level scanning loop
                         }
                     }
-                    // We've already skipped past here if chose to make a new node by combining two known hashes.
+                    // We skip the rest of this section if we chose to make a new node by combining two known hashes.
 
                     // At this point we know we do not know enough to simply take two known hashes at $index and ${index+1} and roll
                     // them up, so we are going to have to consume a hash.

@@ -25,7 +25,7 @@ fun calculateLeveledHashes(proof: MerkleProof, digest: MerkleTreeHashDigestProvi
     if (proof.hashes.isEmpty()) return emptyList()
     val treeSize = proof.treeSize
     val leaves = proof.leaves
-    //println("calculateLeveledHashes initial tree size ${treeSize} leaves indices ${leaves.map { it.index }} |hashes|=${hashes.size}")
+
     var hashIndex = 0
     val sortedLeaves = leaves.sortedBy { it.index }
     var nodeHashes = sortedLeaves.map { Pair(it.index, digest.leafHash(it.index, it.nonce, it.leafData)) }
@@ -33,8 +33,19 @@ fun calculateLeveledHashes(proof: MerkleProof, digest: MerkleTreeHashDigestProvi
     var treeDepth = MerkleTreeImpl.treeDepth(treeSize)
     var currentSize = treeSize
 
+    // ... so that's 4 variables that get updated as we work:
+    // - $hashIndex is the position we are at in the supplied proof hashes
+    // - $currentSize is the number of leafs+nodes at this level of the tree
+    // - $treeDepth is the level of the tree, counting from the root of the tree where $currentSize==1
+    // - $nodeHashes has a list of pairs of the index and hash of the node. We checked we have some content.
+
     while (currentSize > 1) {
-        //println("\touter loop currentSize=${currentSize} treeDepth=${treeDepth} |nodeHashes|=${nodeHashes.size}" )
+        // Now walk over the hashes at this tree level, striding over 1 or 2 at a time
+        // We are at level $treeDepth from the top of the tree (counting from 1),
+        //     and at $index nodes from the left (counting from 0)
+        // $item is a pair of the index and the hash at the index.
+        //
+        // Since index == item.first we don't really need to use item.first
         if (nodeHashes.isEmpty()) {
             throw MerkleProofRebuildFailureException(
                 "MerkleProof does not have enough nodeHashes to calculate root hash."
@@ -45,7 +56,7 @@ fun calculateLeveledHashes(proof: MerkleProof, digest: MerkleTreeHashDigestProvi
         var index = 0 // index into node hashes, which starts off with an entry per leaf
         while (index < nodeHashes.size) {
             val item = nodeHashes[index]
-            //println("\t\tinner loop at index ${index} nodehash.first=${item.first}")
+            // Decide if we can consume the next two elements since they are adjancent in the Merkle tree
             if (item.first < currentSize and 0x7FFFFFFE) {      // If the level has odd elements, we'll process
                 // the last element later.
                 if (index < nodeHashes.size - 1) {              // If there is a next element...
@@ -58,9 +69,9 @@ fun calculateLeveledHashes(proof: MerkleProof, digest: MerkleTreeHashDigestProvi
                         index += 2
                         continue
                     }
-                } else {
-                    //println("\t\t\tThere is no next element; $index == ${nodeHashes.size -1 }")
                 }
+                // We skip the rest of this section if we chose to make a new node by combining two known hashes.
+
                 //println("\t\t\tat $hashIndex on level $index; cannot pair; have ${hashes.size} hashes")
                 if (hashIndex > hashes.size) {                 // We'll need one more hash to continue. So if
                     throw MerkleProofRebuildFailureException(   // we do not have more, the proof is incorrect.
