@@ -153,9 +153,8 @@ class MerkleTreeTest {
         assertEquals(manualRoot, root)
         assertThat(merkleTree.render()).isEqualTo(
             """
-            bab170b1c ┳━ 00:00:00:00
-                      ┗━ 00:00:00:01
-            """.trimIndent())
+            bab170b1c ┳━  00:00:00:00
+                      ┗━  00:00:00:01""".trimIndent())
     }
 
     @Test
@@ -172,10 +171,10 @@ class MerkleTreeTest {
         assertEquals(manualRoot, root)
         assertThat(merkleTree.render()).isEqualTo(
             """
-              a9d5543c2 ┳┳ 00:00:00:00
-                        ┃┗ 00:00:00:01
-                        ┗━ 00:00:00:02
-                        """.trimIndent())
+                a9d5543c2 ┳┳━ 00:00:00:00
+                          ┃┗━ 00:00:00:01
+                          ┗━━ 00:00:00:02
+            """.trimIndent())
     }
 
     @Test
@@ -273,14 +272,14 @@ class MerkleTreeTest {
         assertEquals(manualRoot, root)
         assertThat(merkleTree.render()).isEqualTo(
             """
-              a868a19c7 ┳┳ 00:00:00:00
-                        ┃┃ 00:00:00:01
-                        ┃┗ 00:00:00:02
-                        ┃  00:00:00:03
-                        ┗┳ 00:00:00:04
-                         ┃ 00:00:00:05
-                         ┗ 00:00:00:06
-                           00:00:00:07
+              a868a19c7 ┳┳┳ 00:00:00:00
+                        ┃┃┗ 00:00:00:01
+                        ┃┗┳ 00:00:00:02
+                        ┃ ┗ 00:00:00:03
+                        ┗┳┳ 00:00:00:04
+                         ┃┗ 00:00:00:05
+                         ┗┳ 00:00:00:06
+                          ┗ 00:00:00:07
                         """.trimIndent())
     }
 
@@ -620,7 +619,7 @@ fun renderTree(treeSize: Int, des: List<String>, rootLabel: String=""): String {
     }
 
     val lines = (0 until treeSize).map { y ->
-        val line = (0 ..values.size).map { x -> grid.getOrDefault(x to y, ' ') }
+        val line = (0 ..values.size+1).map { x -> grid.getOrDefault(x to y, ' ') }
         val prefix = if (y ==0) rootLabel else " ".repeat(rootLabel.length)
         val label: String = des.getOrNull(y) ?: ""
         "$prefix${line.joinToString("")}$label"
