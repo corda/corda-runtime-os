@@ -692,6 +692,7 @@ class OutboundMessageHandlerTest {
                 replyPayload,
             )
         )
+        whenever(commonComponents.enableP2PGatewayToLinkManagerOverHttp).doReturn(true)
 
         val msgPayload = InboundUnauthenticatedMessage.newBuilder().apply {
             header = InboundUnauthenticatedMessageHeader(
@@ -715,6 +716,55 @@ class OutboundMessageHandlerTest {
         val data = record?.value as? LinkInMessage
         assertThat(data?.payload).isSameAs(replyPayload)
         assertThat(record?.topic).isEqualTo(LINK_IN_TOPIC)
+    }
+
+    @Test
+    fun `OK with data will not publish the data to the bus if the flag is off`() {
+        val content = byteArrayOf(1)
+        val client = mock<HttpClient> {
+            on { write(any()) } doAnswer {
+                sentMessages.add(it.arguments[0] as ByteArray)
+                val response = mock<HttpResponse> {
+                    on { statusCode } doReturn HttpResponseStatus.OK
+                    on { payload } doReturn content
+                }
+                CompletableFuture.completedFuture(response)
+            }
+        }
+        val replyPayload = AuthenticatedDataMessage()
+        whenever(
+            avroSchemaRegistry.deserialize(
+                ByteBuffer.wrap(content),
+                GatewayResponse::class.java,
+                null,
+            )
+        ).doReturn(
+            GatewayResponse(
+                "",
+                replyPayload,
+            )
+        )
+        whenever(commonComponents.enableP2PGatewayToLinkManagerOverHttp).doReturn(false)
+
+        val msgPayload = InboundUnauthenticatedMessage.newBuilder().apply {
+            header = InboundUnauthenticatedMessageHeader(
+                "subsystem",
+                "messageId",
+            )
+            payload = ByteBuffer.wrap(byteArrayOf())
+        }.build()
+        val headers = LinkOutHeader(
+            HoldingIdentity("b", GROUP_ID),
+            HoldingIdentity(VALID_X500_NAME, GROUP_ID),
+            NetworkType.CORDA_5,
+            "https://r3.com/",
+        )
+        val message = LinkOutMessage(headers, msgPayload)
+        whenever(connectionManager.constructed().first().acquire(any())).doReturn(client)
+
+        handler.onNext(Record("", "", message))
+
+        verify(p2pInPublisher.constructed().first(), never()).publish(any())
     }
 
     @Test
