@@ -341,11 +341,6 @@ class ClusterBuilder {
         return body.joinToString(prefix = "{", postfix = "}")
     }
 
-    @Suppress("LongParameterList")
-    private fun changeUserPasswordBody(password: String): String {
-        return """{"password": "$password"}"""
-    }
-
     private fun createPermissionBody(
         permissionString: String,
         permissionType: String,
@@ -573,20 +568,22 @@ class ClusterBuilder {
 
     @Suppress("LongParameterList")
     fun changeUserPasswordSelf(
+        loginName: String,
         password: String,
     ) =
         post(
-            "/api/$REST_API_VERSION_PATH/user/{loginName}/selfpassword",
-            changeUserPasswordBody(password)
+            "/api/$REST_API_VERSION_PATH/user/$loginName/selfpassword",
+            """{"password": "$password"}"""
         )
 
     @Suppress("LongParameterList")
     fun changeUserPasswordOther(
+        loginName: String,
         password: String,
     ) =
         post(
-            "/api/$REST_API_VERSION_PATH/user/{loginName}/otheruserpassword",
-            changeUserPasswordBody(password)
+            "/api/$REST_API_VERSION_PATH/user/$loginName/otheruserpassword",
+            """{"password": "$password"}"""
         )
 
     /** Get an RBAC user for a specific login name */
