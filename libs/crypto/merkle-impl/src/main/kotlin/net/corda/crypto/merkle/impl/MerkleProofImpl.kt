@@ -107,11 +107,11 @@ class MerkleProofImpl(
             --treeDepth
             // We could check here that size of nodeHashes is as expected for treeDepth; there should be a closed form.
 
-            // ... so that's 3 variables that get updated as we work:
+            // ... so that's 4 variables that get updated as we work:
             // - $hashIndex is the position we are at in the supplied proof hashes
-            // $currentSize is the number of leafs+nodes at this level of the tree
-            // $treeDepth is the level of the tree, counting from the root of the tree where $currentSize==1
-            // $nodeHashes has a list of pairs of the index and hash of the node. We checked we have some content.
+            // - $currentSize is the number of leafs+nodes at this level of the tree
+            // - $treeDepth is the level of the tree, counting from the root of the tree where $currentSize==1
+            // - $nodeHashes has a list of pairs of the index and hash of the node. We checked we have some content.
 
             val newItems = mutableListOf<Pair<Int, SecureHash>>()   // this will become nodeHashes at the end of this
             // out iteration
