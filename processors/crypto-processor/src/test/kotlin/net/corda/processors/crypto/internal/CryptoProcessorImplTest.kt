@@ -160,7 +160,9 @@ class CryptoProcessorImplTest {
                     layeredPropertyMapFactory = mock(),
                     digestService = mock(),
                     schemeMetadata = mock(),
-                    publisherFactory = mock(),)
+                    publisherFactory = mock(),
+                    stateManagerFactory = mock(),
+                    cordaAvroSerializationFactory = mock())
                 cryptoProcessor.lifecycleCoordinator
             }.run {
                 testClass.start()

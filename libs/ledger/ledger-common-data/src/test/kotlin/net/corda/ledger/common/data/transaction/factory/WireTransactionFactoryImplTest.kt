@@ -20,7 +20,8 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
         wireTransactionFactory.create(
             listOf(
                 listOf(canonicalJson.toByteArray()),
-            ), privacySalt
+            ),
+            privacySalt
         )
     }
 
@@ -30,7 +31,8 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
             wireTransactionFactory.create(
                 listOf(
                     listOf(metadataJson.toByteArray()),
-                ), privacySalt
+                ),
+                privacySalt
             )
         }
             .isInstanceOf(IllegalStateException::class.java)
@@ -52,7 +54,8 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
             wireTransactionFactory.create(
                 listOf(
                     listOf("".toByteArray()),
-                ), privacySalt
+                ),
+                privacySalt
             )
         }
             .isInstanceOf(IllegalStateException::class.java)
@@ -65,7 +68,8 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
             wireTransactionFactory.create(
                 listOf(
                     listOf("{}".toByteArray()),
-                ), privacySalt
+                ),
+                privacySalt
             )
         }
             .isInstanceOf(IllegalStateException::class.java)
@@ -80,7 +84,8 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
             wireTransactionFactory.create(
                 listOf(
                     listOf(mangledJson.toByteArray()),
-                ), privacySalt
+                ),
+                privacySalt
             )
         }
             .isInstanceOf(IllegalStateException::class.java)
@@ -95,7 +100,8 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
             wireTransactionFactory.create(
                 listOf(
                     listOf(mangledJson.toByteArray()),
-                ), privacySalt
+                ),
+                privacySalt
             )
         }
             .isInstanceOf(IllegalStateException::class.java)
@@ -110,7 +116,8 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
             wireTransactionFactory.create(
                 listOf(
                     listOf(metadataJson.toByteArray()),
-                ), privacySalt
+                ),
+                privacySalt
             )
         }
             .isInstanceOf(IllegalStateException::class.java)
@@ -121,13 +128,15 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
     fun `Creating a WireTransaction with Consensual settings`() {
         val metadata = transactionMetadataExample(
             ledgerModel = "net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl",
-            transactionSubType = null)
+            transactionSubType = null
+        )
         val metadataJson = jsonMarshallingService.format(metadata)
         val canonicalJson = jsonValidator.canonicalize(metadataJson)
         wireTransactionFactory.create(
             listOf(
                 listOf(canonicalJson.toByteArray()),
-            ), privacySalt
+            ),
+            privacySalt
         )
     }
 
@@ -143,7 +152,8 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
             wireTransactionFactory.create(
                 listOf(
                     listOf(canonicalJson.toByteArray()),
-                ), privacySalt
+                ),
+                privacySalt
             )
         }
             .isInstanceOf(IllegalStateException::class.java)
@@ -162,7 +172,8 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
         wireTransactionFactory.create(
             listOf(
                 listOf(canonicalJson.toByteArray()),
-            ), privacySalt
+            ),
+            privacySalt
         )
     }
 
@@ -179,7 +190,8 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
             wireTransactionFactory.create(
                 listOf(
                     listOf(canonicalJson.toByteArray()),
-                ), privacySalt
+                ),
+                privacySalt
             )
         }
             .isInstanceOf(IllegalStateException::class.java)
@@ -200,13 +212,13 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
             wireTransactionFactory.create(
                 listOf(
                     listOf(canonicalJson.toByteArray()),
-                ), privacySalt
+                ),
+                privacySalt
             )
         }
             .isInstanceOf(IllegalStateException::class.java)
             .hasMessageContaining("membershipGroupParametersHash: null found, string expected")
     }
-
 
     @Test
     fun `Creating a WireTransaction with UTXO settings with unknown transaction subtype throws`() {
@@ -221,7 +233,8 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
             wireTransactionFactory.create(
                 listOf(
                     listOf(canonicalJson.toByteArray()),
-                ), privacySalt
+                ),
+                privacySalt
             )
         }
             .isInstanceOf(IllegalStateException::class.java)
@@ -239,7 +252,8 @@ class WireTransactionFactoryImplTest : CommonLedgerTest() {
             wireTransactionFactory.create(
                 listOf(
                     listOf(canonicalJson.toByteArray()),
-                ), privacySalt
+                ),
+                privacySalt
             )
         }
             .isInstanceOf(IllegalStateException::class.java)

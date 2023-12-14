@@ -13,8 +13,10 @@ class EventConverterImpl(private val entityConverter: EntityConverter) : EventCo
     override fun convert(tokenPoolCacheEvent: TokenPoolCacheEvent): TokenEvent {
         val key = tokenPoolCacheEvent.poolKey
 
-        return when (val payload =
-            checkNotNull(tokenPoolCacheEvent.payload) { "The received TokenPoolCacheEvent payload is null." }) {
+        return when (
+            val payload =
+                checkNotNull(tokenPoolCacheEvent.payload) { "The received TokenPoolCacheEvent payload is null." }
+        ) {
             is TokenClaimQuery -> {
                 entityConverter.toClaimQuery(key, payload)
             }
@@ -36,9 +38,8 @@ class EventConverterImpl(private val entityConverter: EntityConverter) : EventCo
             }
 
             else -> {
-                error("The event payload type '${payload.javaClass}' is not supported. Found in event '${tokenPoolCacheEvent}'")
+                error("The event payload type '${payload.javaClass}' is not supported. Found in event '$tokenPoolCacheEvent'")
             }
         }
     }
 }
-

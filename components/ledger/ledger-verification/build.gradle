@@ -8,6 +8,8 @@ plugins {
 
 description 'Corda ledger verification'
 
+ext.cordaEnableFormatting = true
+
 configurations {
     cpis {
         canBeConsumed = false

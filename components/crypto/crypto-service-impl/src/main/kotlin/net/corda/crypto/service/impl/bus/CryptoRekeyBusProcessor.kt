@@ -1,29 +1,38 @@
 package net.corda.crypto.service.impl.bus
 
 
+import net.corda.avro.serialization.CordaAvroSerializationFactory
 import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.softhsm.WrappingRepositoryFactory
 import net.corda.data.crypto.wire.ops.key.rotation.IndividualKeyRotationRequest
 import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationRequest
+import net.corda.data.crypto.wire.ops.key.rotation.KeyRotationStatus
 import net.corda.data.crypto.wire.ops.key.rotation.KeyType
+import net.corda.libs.statemanager.api.Metadata
+import net.corda.libs.statemanager.api.State
+import net.corda.libs.statemanager.api.StateManager
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Crypto.REWRAP_MESSAGE_TOPIC
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.slf4j.LoggerFactory
+import java.time.Instant
 import java.util.UUID
 
 /**
  * This processor goes through the databases and find out what keys need re-wrapping.
  * It then posts a message to Kafka for each key needing re-wrapping with the tenant ID.
  */
+@Suppress("LongParameterList")
 class CryptoRekeyBusProcessor(
     val cryptoService: CryptoService,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val wrappingRepositoryFactory: WrappingRepositoryFactory,
-    private val rekeyPublisher: Publisher
+    private val rekeyPublisher: Publisher,
+    private val stateManager: StateManager?,
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ) : DurableProcessor<String, KeyRotationRequest> {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
@@ -31,11 +40,16 @@ class CryptoRekeyBusProcessor(
 
     override val keyClass: Class<String> = String::class.java
     override val valueClass = KeyRotationRequest::class.java
+
     @Suppress("NestedBlockDepth")
     override fun onNext(events: List<Record<String, KeyRotationRequest>>): List<Record<*, *>> {
         logger.debug("received ${events.size} key rotation requests")
-        events.mapNotNull { it.value }.forEach { request ->
+
+        val serializer = cordaAvroSerializationFactory.createAvroSerializer<KeyRotationStatus>()
+
+        events.mapNotNull { it.timestamp to it.value }.forEach { (timestamp, request) ->
             logger.debug("processing $request")
+            require(request != null)
             // root (unmanaged) keys can be used in clusterDB and vNodeDB
             // then for each key we will send a record on Kafka
             // We do not have a code that deals with rewrapping the root key in a cluster DB
@@ -54,11 +68,11 @@ class CryptoRekeyBusProcessor(
             // since they share the cluster crypto database. So we scan over the virtual node tenants and an arbitary
             // choice of cluster level tenant. We pick CryptoTenants.CRYPTO as the arbitrary cluster level tenant,
             // and we should not also check CryptoTenants.P2P and CryptoTenants.REST since if we do we'll get duplicate.
-            val allTenantIds = virtualNodeTenantIds+listOf(CryptoTenants.CRYPTO)
+            val allTenantIds = virtualNodeTenantIds + listOf(CryptoTenants.CRYPTO)
             logger.debug("Found ${allTenantIds.size} tenants; first few are: ${allTenantIds.take(10)}")
             val targetWrappingKeys = allTenantIds.asSequence().map { tenantId ->
                 wrappingRepositoryFactory.create(tenantId).use { wrappingRepo ->
-                    wrappingRepo.findKeysWrappedByAlias (request.oldParentKeyAlias).map { wki -> tenantId to wki}
+                    wrappingRepo.findKeysWrappedByAlias(request.oldParentKeyAlias).map { wki -> tenantId to wki }
                 }
             }.flatten()
             rekeyPublisher.publish(
@@ -66,7 +80,8 @@ class CryptoRekeyBusProcessor(
                     Record(
                         REWRAP_MESSAGE_TOPIC,
                         UUID.randomUUID().toString(),
-                        IndividualKeyRotationRequest(request.requestId,
+                        IndividualKeyRotationRequest(
+                            request.requestId,
                             tenantId,
                             request.oldParentKeyAlias,
                             request.newParentKeyAlias,
@@ -76,6 +91,24 @@ class CryptoRekeyBusProcessor(
                     )
                 }.toList()
             )
+
+            val now = Instant.now()
+            val status = KeyRotationStatus(
+                request.requestId,
+                request.managedKey,
+                request.oldParentKeyAlias,
+                request.newParentKeyAlias,
+                request.oldGeneration,
+                request.tenantId,
+                0, // We don't know the new generation number at this stage
+                0, // We don't know how many keys are yet rotated
+                targetWrappingKeys.count(),
+                Instant.ofEpochMilli(timestamp),
+                now
+            )
+
+            val flattend = checkNotNull(serializer.serialize(status))
+            stateManager?.create(listOf(State(request.requestId, flattend, 1, Metadata(), now)))
         }
 
         return emptyList()

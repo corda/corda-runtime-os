@@ -350,7 +350,6 @@ internal class RestClientIntegrationTest : RestIntegrationTestBase() {
             val connection = client.start()
 
             with(connection.proxy) {
-
                 SoftAssertions.assertSoftly {
                     it.assertThat(create(TestEntityRestResource.CreationParams("TestName", 20)))
                         .isEqualTo("Created using: CreationParams(name=TestName, amount=20)")
@@ -622,5 +621,4 @@ internal class RestClientIntegrationTest : RestIntegrationTestBase() {
             }
         }
     }
-
 }

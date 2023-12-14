@@ -6,7 +6,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
-class ConsensualSignedTransactionKryoSerializationTest: ConsensualLedgerIntegrationTest() {
+class ConsensualSignedTransactionKryoSerializationTest : ConsensualLedgerIntegrationTest() {
     @Test
     @Suppress("FunctionName")
     fun `correct serialization of a consensual Signed Transaction`() {

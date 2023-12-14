@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
-class WireTransactionAMQPSerializerTest: CommonLedgerTest() {
+class WireTransactionAMQPSerializerTest : CommonLedgerTest() {
     @Test
     fun `Should serialize and then deserialize wire Tx`() {
         val bytes = serializationServiceWithWireTx.serialize(wireTransactionExample)

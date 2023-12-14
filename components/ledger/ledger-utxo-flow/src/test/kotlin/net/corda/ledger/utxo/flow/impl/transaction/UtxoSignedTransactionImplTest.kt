@@ -9,26 +9,23 @@ import net.corda.ledger.utxo.testkit.getUtxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import net.corda.v5.membership.NotaryInfo
-import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.security.KeyPairGenerator
 import java.security.spec.ECGenParameterSpec
 
-internal class UtxoSignedTransactionImplTest: UtxoLedgerTest() {
+internal class UtxoSignedTransactionImplTest : UtxoLedgerTest() {
     private lateinit var signedTransaction: UtxoSignedTransactionInternal
 
     private val kpg: KeyPairGenerator = KeyPairGenerator.getInstance("EC").apply { initialize(ECGenParameterSpec("secp256r1")) }
-    private val notaryNode1PublicKey = kpg.generateKeyPair().public.also{println(it)}
-    private val notaryNode2PublicKey = kpg.generateKeyPair().public.also{println(it)}
+    private val notaryNode1PublicKey = kpg.generateKeyPair().public.also { println(it) }
+    private val notaryNode2PublicKey = kpg.generateKeyPair().public.also { println(it) }
     private val notaryKey =
-        CompositeKeyProviderImpl().createFromKeys(listOf(notaryNode1PublicKey, notaryNode2PublicKey), 1).also{println(it)}
+        CompositeKeyProviderImpl().createFromKeys(listOf(notaryNode1PublicKey, notaryNode2PublicKey), 1).also { println(it) }
     private val notaryX500Name = MemberX500Name.parse("O=ExampleNotaryService, L=London, C=GB")
     private val notary = notaryX500Name
 
@@ -49,24 +46,6 @@ internal class UtxoSignedTransactionImplTest: UtxoLedgerTest() {
             .addSignatories(listOf(anotherPublicKeyExample))
             .addCommand(UtxoCommandExample())
             .toSignedTransaction() as UtxoSignedTransactionInternal
-
-    }
-
-    @Test
-    fun `verifyAttachedNotarySignature throws on unnotarized transaction`() {
-        Assertions.assertThatThrownBy { signedTransaction.verifyAttachedNotarySignature() }.isInstanceOf(
-            TransactionSignatureException::class.java)
-            .hasMessageContaining("did not fulfil requirements of notary service key")
-
-    }
-
-    @Test
-    fun `verifyAttachedNotarySignature does not throw on notarized transaction`() {
-        val sig = getSignatureWithMetadataExample(notaryNode1PublicKey)
-        signedTransaction = signedTransaction.addSignature(sig)
-        assertDoesNotThrow {
-            signedTransaction.verifyAttachedNotarySignature()
-        }
     }
 
     @Test

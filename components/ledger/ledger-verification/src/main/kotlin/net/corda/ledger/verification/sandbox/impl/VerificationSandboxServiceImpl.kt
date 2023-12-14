@@ -6,7 +6,6 @@ import net.corda.flow.external.events.responses.exceptions.CpkNotAvailableExcept
 import net.corda.flow.external.events.responses.exceptions.NotAllowedCpkException
 import net.corda.ledger.utxo.verification.CordaPackageSummary
 import net.corda.ledger.verification.sandbox.VerificationSandboxService
-import net.corda.sandboxgroupcontext.putObjectByKey
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.RequireSandboxAMQP
 import net.corda.sandboxgroupcontext.RequireSandboxJSON
@@ -14,13 +13,14 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.getObjectByKey
+import net.corda.sandboxgroupcontext.putObjectByKey
+import net.corda.sandboxgroupcontext.service.SANDBOX_DEPENDENCY_INJECTOR_KEY
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
+import net.corda.sandboxgroupcontext.service.factory.SandboxDependencyInjectorFactory
 import net.corda.sandboxgroupcontext.service.registerCordappCustomSerializers
 import net.corda.sandboxgroupcontext.service.registerCustomCryptography
 import net.corda.sandboxgroupcontext.service.registerCustomJsonDeserializers
 import net.corda.sandboxgroupcontext.service.registerCustomJsonSerializers
-import net.corda.sandboxgroupcontext.service.SANDBOX_DEPENDENCY_INJECTOR_KEY
-import net.corda.sandboxgroupcontext.service.factory.SandboxDependencyInjectorFactory
 import net.corda.utilities.debug
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -120,5 +120,5 @@ fun SandboxGroupContext.getSerializationService(): SerializationService =
     getObjectByKey(RequireSandboxAMQP.AMQP_SERIALIZATION_SERVICE)
         ?: throw CordaRuntimeException(
             "Verification serialization service not found within the sandbox for identity: " +
-                    "${virtualNodeContext.holdingIdentity}"
+                "${virtualNodeContext.holdingIdentity}"
         )

@@ -157,7 +157,8 @@ fun ClusterInfo.onboardNotaryMember(
     getAdditionalContext: ((holdingId: String) -> Map<String, String>)? = null,
     tlsCertificateUploadedCallback: (String) -> Unit = {},
     notaryServiceName: String = DEFAULT_NOTARY_SERVICE,
-    isBackchainRequired: Boolean = true
+    isBackchainRequired: Boolean = true,
+    notaryPlugin: String = "nonvalidating"
 ) = onboardMember(
     resourceName,
     cpiName,
@@ -171,7 +172,7 @@ fun ClusterInfo.onboardNotaryMember(
         mapOf(
             "corda.roles.0" to "notary",
             "corda.notary.service.name" to MemberX500Name.parse(notaryServiceName).toString(),
-            "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.nonvalidating",
+            "corda.notary.service.flow.protocol.name" to "com.r3.corda.notary.plugin.$notaryPlugin",
             "corda.notary.service.flow.protocol.version.0" to "1",
             "corda.notary.keys.0.id" to notaryKeyId,
             "corda.notary.keys.0.signature.spec" to DEFAULT_SIGNATURE_SPEC
@@ -296,22 +297,38 @@ fun registerStaticMember(
     holdingIdentityShortHash: String,
     notaryServiceName: String? = null,
     customMetadata: Map<String, String> = emptyMap(),
-    isBackchainRequired: Boolean = true
-) = DEFAULT_CLUSTER.registerStaticMember(holdingIdentityShortHash, notaryServiceName, customMetadata, isBackchainRequired)
+    isBackchainRequired: Boolean = true,
+    notaryPlugin: String = "nonvalidating"
+) = DEFAULT_CLUSTER.registerStaticMember(
+    holdingIdentityShortHash,
+    notaryServiceName,
+    customMetadata,
+    isBackchainRequired,
+    notaryPlugin
+)
 
 val memberRegisterLock = ReentrantLock()
 fun ClusterInfo.registerStaticMember(
     holdingIdentityShortHash: String,
     notaryServiceName: String? = null,
     customMetadata: Map<String, String> = emptyMap(),
-    isBackchainRequired: Boolean = true
+    isBackchainRequired: Boolean = true,
+    notaryPlugin: String = "nonvalidating"
 ) {
     cluster {
         memberRegisterLock.withLock {
             assertWithRetry {
                 interval(1.seconds)
                 timeout(10.seconds)
-                command { registerStaticMember(holdingIdentityShortHash, notaryServiceName, customMetadata, isBackchainRequired) }
+                command {
+                    registerStaticMember(
+                        holdingIdentityShortHash,
+                        notaryServiceName,
+                        customMetadata,
+                        isBackchainRequired,
+                        notaryPlugin
+                    )
+                }
                 condition {
                     it.code == ResponseCode.OK.statusCode
                             && it.toJson()["registrationStatus"].textValue() == REGISTRATION_SUBMITTED

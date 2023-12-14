@@ -44,7 +44,8 @@ class TransactionMetadataImpl(private val properties: Map<String, Any>) : Transa
             version.toInt()
         } catch (e: NumberFormatException) {
             throw CordaRuntimeException(
-                "Transaction metadata representation error: ledger version should be an integer but could not be parsed: $version")
+                "Transaction metadata representation error: ledger version should be an integer but could not be parsed: $version"
+            )
         }
     }
 
@@ -57,7 +58,8 @@ class TransactionMetadataImpl(private val properties: Map<String, Any>) : Transa
             null -> emptyList()
             is List<*> -> data.map { CordaPackageSummaryImpl.from(it) }
             else -> throw CordaRuntimeException(
-                "Transaction metadata representation error: expected list of Corda package metadata but found [$data]")
+                "Transaction metadata representation error: expected list of Corda package metadata but found [$data]"
+            )
         }
     }
 
@@ -86,7 +88,8 @@ class TransactionMetadataImpl(private val properties: Map<String, Any>) : Transa
             version.toInt()
         } catch (e: NumberFormatException) {
             throw CordaRuntimeException(
-                "Transaction metadata representation error: JSON schema version should be an integer but could not be parsed: $version")
+                "Transaction metadata representation error: JSON schema version should be an integer but could not be parsed: $version"
+            )
         }
     }
 
@@ -99,8 +102,8 @@ class TransactionMetadataImpl(private val properties: Map<String, Any>) : Transa
             version.toInt()
         } catch (e: NumberFormatException) {
             throw CordaRuntimeException(
-                "Transaction metadata representation error: Platform version should be an integer but could not be parsed: $version")
+                "Transaction metadata representation error: Platform version should be an integer but could not be parsed: $version"
+            )
         }
     }
-
 }

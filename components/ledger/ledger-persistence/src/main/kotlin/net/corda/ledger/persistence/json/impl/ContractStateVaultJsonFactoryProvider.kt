@@ -36,8 +36,10 @@ class ContractStateVaultJsonFactoryProvider @Activate constructor(
         val metadataServices = context.getMetadataServices<ContractStateVaultJsonFactory<out ContractState>>()
 
         if (logger.isDebugEnabled) {
-            logger.debug("Number of contract state vault json factories found: ${metadataServices.size}, " +
-                    "those are: $metadataServices")
+            logger.debug(
+                "Number of contract state vault json factories found: ${metadataServices.size}, " +
+                    "those are: $metadataServices"
+            )
         }
 
         metadataServices.forEach {

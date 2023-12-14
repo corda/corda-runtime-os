@@ -45,7 +45,9 @@ class VirtualNodeOperationStatusHandlerTest {
         Instant.now(),
         Instant.now(),
         Instant.now(),
-        "IN_PROGRESS", null)
+        "IN_PROGRESS",
+        null
+    )
 
     @Test
     fun `OperationStatus handler returns VirtualNodeOperationStatusResponse if operation found`() {

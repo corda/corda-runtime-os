@@ -1,9 +1,9 @@
 package net.corda.ledger.utxo.token.cache.repositories
 
-import java.math.BigDecimal
-import javax.persistence.EntityManager
 import net.corda.ledger.utxo.token.cache.entities.AvailTokenQueryResult
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
+import java.math.BigDecimal
+import javax.persistence.EntityManager
 
 interface UtxoTokenRepository {
 

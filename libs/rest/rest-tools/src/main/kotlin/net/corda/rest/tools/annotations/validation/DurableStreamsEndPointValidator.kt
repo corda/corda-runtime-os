@@ -14,18 +14,22 @@ internal class DurableStreamsEndPointValidator(private val clazz: Class<out Rest
 
     companion object {
         val error = "Methods returning DurableCursorBuilder or FiniteDurableCursorBuilder " +
-                "can only be exposed via ${HttpPOST::class.simpleName} or ${HttpPUT::class.simpleName}."
+            "can only be exposed via ${HttpPOST::class.simpleName} or ${HttpPUT::class.simpleName}."
     }
 
     override fun validate(): RestValidationResult =
         clazz.methods.fold(RestValidationResult()) { total, method ->
             total + if (method.annotations.none { it is HttpPOST || it is HttpPUT }) {
                 validateReturnTypeOnWrongMethod(method)
-            } else RestValidationResult()
+            } else {
+                RestValidationResult()
+            }
         }
 
     private fun validateReturnTypeOnWrongMethod(method: Method) =
         if (method.returnsDurableCursorBuilder()) {
             RestValidationResult(listOf(error))
-        } else RestValidationResult()
+        } else {
+            RestValidationResult()
+        }
 }

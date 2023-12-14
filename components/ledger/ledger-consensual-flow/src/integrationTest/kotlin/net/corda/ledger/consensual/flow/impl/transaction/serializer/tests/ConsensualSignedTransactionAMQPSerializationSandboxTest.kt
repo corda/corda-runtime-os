@@ -7,7 +7,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Test
 
-class ConsensualSignedTransactionAMQPSerializationSandboxTest: ConsensualLedgerIntegrationTest() {
+class ConsensualSignedTransactionAMQPSerializationSandboxTest : ConsensualLedgerIntegrationTest() {
     @Test
     @Suppress("FunctionName")
     fun `successfully serialize and deserialize a Consensual Signed Transaction - via sandbox serializer`() {
