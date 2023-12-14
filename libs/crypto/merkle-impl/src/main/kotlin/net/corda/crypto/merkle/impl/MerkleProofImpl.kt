@@ -148,7 +148,8 @@ class MerkleProofImpl(
                             continue                                // continue the inner level scanning loop
                         }
                     }
-                    // We skip the rest of this section if we chose to make a new node by combining two known hashes.
+                    // The continue above in the previous section mean we skip the rest of this section if we
+                    // chose to make a new node by combining two known hashes.
 
                     // At this point we know we do not know enough to simply take two known hashes at $index and ${index+1} and roll
                     // them up, so we are going to have to consume a hash.
