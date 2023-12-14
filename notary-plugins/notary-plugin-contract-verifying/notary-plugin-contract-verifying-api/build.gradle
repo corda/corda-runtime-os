@@ -1,0 +1,34 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'corda.common-publishing'
+    id 'net.corda.plugins.cordapp-cpk2'
+    id 'corda.javadoc-generation'
+}
+
+ext {
+    releasable = true
+}
+
+description 'Corda Contract Verifying Notary Plugin API'
+
+group 'com.r3.corda.notary.plugin.contractverifying'
+
+cordapp {
+    targetPlatformVersion platformVersion.toInteger()
+    workflow {
+        name "Corda Contract Verifying Notary - API"
+        versionId 1
+        vendor "R3"
+    }
+}
+
+dependencies {
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+
+    cordaProvided 'net.corda:corda-application'
+    cordaProvided 'net.corda:corda-notary-plugin'
+    cordaProvided 'org.jetbrains.kotlin:kotlin-osgi-bundle'
+    cordaProvided 'org.slf4j:slf4j-api'
+
+    cordapp project(":notary-plugins:notary-plugin-common")
+}
