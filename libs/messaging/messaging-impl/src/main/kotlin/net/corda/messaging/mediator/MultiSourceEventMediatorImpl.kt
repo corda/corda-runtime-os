@@ -116,7 +116,6 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                     } catch (exception: Exception) {
                         when (exception) {
                             is CordaMessageAPIIntermittentException -> {
-                                attempts++
                                 log.warn(
                                     "Multi-source event mediator ${config.name} failed to process records, " +
                                             "Retrying poll and process. Attempts: $attempts.")
