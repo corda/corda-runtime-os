@@ -1526,11 +1526,11 @@ class DynamicMemberRegistrationServiceTest {
             }
 
             assertThat(registrationException)
-                .hasStackTraceContaining("Optional back-chain flag can only move to 'true' during platform upgrade.")
+                .hasStackTraceContaining("Optional back-chain flag can only move from 'none' to 'true' during re-registration.")
         }
 
         @Test
-        fun `re-registration allows optional backchain flag to be set to false from true`() {
+        fun `re-registration does not allow optional backchain flag to be set to false from true`() {
             val notaryKeyConvertedFields = mapOf(
                 NOTARY_KEY_PEM_KEY to NOTARY_KEY_PEM,
                 NOTARY_KEY_HASH_KEY to NOTARY_KEY_HASH,
@@ -1554,9 +1554,12 @@ class DynamicMemberRegistrationServiceTest {
             whenever(memberInfo.memberProvidedContext).doReturn(previous)
             whenever(groupReader.lookup(eq(memberName), any())).doReturn(memberInfo)
 
-            assertDoesNotThrow {
+            val registrationException = assertThrows<InvalidMembershipRegistrationException> {
                 registrationService.register(registrationResultId, member, newContext.toMap())
             }
+
+            assertThat(registrationException)
+                .hasStackTraceContaining("Optional back-chain flag can only move from 'none' to 'true' during re-registration.")
         }
 
         @Test

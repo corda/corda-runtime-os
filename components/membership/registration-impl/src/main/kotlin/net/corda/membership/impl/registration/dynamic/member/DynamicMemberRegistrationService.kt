@@ -476,10 +476,9 @@ class DynamicMemberRegistrationService @Activate constructor(
                 // because pre-5.2 notaries do not support optional backchain
                 val previousOptionalBackchainValue = previous[NOTARY_SERVICE_BACKCHAIN_REQUIRED]?.toBoolean()
                 val currentOptionalBackchainValue = newRegistrationContext[NOTARY_SERVICE_BACKCHAIN_REQUIRED]?.toBoolean()
-                if (previousOptionalBackchainValue == null) {
-                    require(currentOptionalBackchainValue == null || currentOptionalBackchainValue == true) {
-                        "Optional back-chain flag can only move to 'true' during platform upgrade."
-                    }
+                require((previousOptionalBackchainValue == null && currentOptionalBackchainValue == true)
+                        || previousOptionalBackchainValue == currentOptionalBackchainValue) {
+                    "Optional back-chain flag can only move from 'none' to 'true' during re-registration."
                 }
 
                 ((newRegistrationContext.entries - previous.entries) + (previous.entries - newRegistrationContext.entries)).filter {
