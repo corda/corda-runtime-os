@@ -472,15 +472,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     tlsSubject
 
             previousRegistrationContext?.let { previous ->
-                // This property can only be null when upgrading from 5.0/5.1, and we should move it to `true`
-                // because pre-5.2 notaries do not support optional backchain
-                val previousOptionalBackchainValue = previous[NOTARY_SERVICE_BACKCHAIN_REQUIRED]?.toBoolean()
-                val currentOptionalBackchainValue = newRegistrationContext[NOTARY_SERVICE_BACKCHAIN_REQUIRED]?.toBoolean()
-                require((previousOptionalBackchainValue == null && currentOptionalBackchainValue == true)
-                        || previousOptionalBackchainValue == currentOptionalBackchainValue) {
-                    "Optional back-chain flag can only move from 'none' to 'true' during re-registration."
-                }
-
+                verifyBackchainFlagMovement(previousRegistrationContext, newRegistrationContext)
                 ((newRegistrationContext.entries - previous.entries) + (previous.entries - newRegistrationContext.entries)).filter {
                     it.key.startsWith(SESSION_KEYS) ||
                     it.key.startsWith(LEDGER_KEYS) ||
@@ -820,6 +812,17 @@ class DynamicMemberRegistrationService @Activate constructor(
                 ),
                 CryptoSignatureSpec(signatureSpec, null, null),
             )
+        }
+    }
+
+    private fun verifyBackchainFlagMovement(previousContext: Map<String, String>, newContext: Map<String, String>) {
+        // This property can only be null when upgrading from 5.0/5.1, and we should move it to `true`
+        // because pre-5.2 notaries do not support optional backchain
+        val previousOptionalBackchainValue = previousContext[NOTARY_SERVICE_BACKCHAIN_REQUIRED]?.toBoolean()
+        val currentOptionalBackchainValue = newContext[NOTARY_SERVICE_BACKCHAIN_REQUIRED]?.toBoolean()
+        require((previousOptionalBackchainValue == null && currentOptionalBackchainValue == true)
+                || previousOptionalBackchainValue == currentOptionalBackchainValue) {
+            "Optional back-chain flag can only move from 'none' to 'true' during re-registration."
         }
     }
 }
