@@ -1,7 +1,5 @@
 package net.corda.ledger.utxo.impl.token.selection.factories
 
-import java.math.BigDecimal
-import java.math.BigInteger
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.utxo.token.selection.data.TokenAmount
 import net.corda.data.ledger.utxo.token.selection.data.TokenBalanceQuery
@@ -17,6 +15,8 @@ import net.corda.v5.ledger.utxo.token.selection.TokenBalance
 import net.corda.v5.ledger.utxo.token.selection.TokenBalanceCriteria
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import java.math.BigDecimal
+import java.math.BigInteger
 
 @Component(service = [ExternalEventFactory::class])
 class TokenBalanceQueryExternalEventFactory @Activate constructor() :
@@ -52,7 +52,7 @@ class TokenBalanceQueryExternalEventFactory @Activate constructor() :
     }
 
     private fun TokenAmount.toBigDecimal() =
-         BigDecimal(
+        BigDecimal(
             BigInteger(
                 ByteArray(unscaledValue.remaining())
                     .apply { unscaledValue.get(this) }

@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap
  * This class is nothing more than two maps with different keys.
  */
 internal class VirtualNodeInfoMap {
-    private val virtualNodeInfoByHoldingIdentity =  ConcurrentHashMap<HoldingIdentity, VirtualNodeInfo>()
+    private val virtualNodeInfoByHoldingIdentity = ConcurrentHashMap<HoldingIdentity, VirtualNodeInfo>()
     private val virtualNodeInfoById = ConcurrentHashMap<ShortHash, VirtualNodeInfo>()
 
     /** Class to be used as a key for putting items. */
@@ -36,10 +36,13 @@ internal class VirtualNodeInfoMap {
         if (key.holdingIdentity != value.holdingIdentity) {
             throw IllegalArgumentException("Trying to add a VirtualNodeInfo with a mismatched HoldingIdentity: ($key , $value)")
         }
-        if (virtualNodeInfoById.containsKey(key.holdingIdShortHash)
-            && virtualNodeInfoById[key.holdingIdShortHash]?.holdingIdentity != value.holdingIdentity) {
-            throw IllegalArgumentException("Cannot put different VirtualNodeInfo for same short hash value: " +
-                    "(${key.holdingIdShortHash}, $key , $value)")
+        if (virtualNodeInfoById.containsKey(key.holdingIdShortHash) &&
+            virtualNodeInfoById[key.holdingIdShortHash]?.holdingIdentity != value.holdingIdentity
+        ) {
+            throw IllegalArgumentException(
+                "Cannot put different VirtualNodeInfo for same short hash value: " +
+                    "(${key.holdingIdShortHash}, $key , $value)"
+            )
         }
         virtualNodeInfoById[key.holdingIdShortHash] = value
         virtualNodeInfoByHoldingIdentity[key.holdingIdentity] = value

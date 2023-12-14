@@ -1,13 +1,13 @@
 package net.corda.ledger.utxo.flow.impl.flows.backchain.v1
 
-import net.corda.flow.application.services.FlowConfigService
 import net.corda.crypto.core.parseSecureHash
+import net.corda.flow.application.services.FlowConfigService
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus
+import net.corda.ledger.common.data.transaction.TransactionStatus.DRAFT
 import net.corda.ledger.common.data.transaction.TransactionStatus.INVALID
 import net.corda.ledger.common.data.transaction.TransactionStatus.UNVERIFIED
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
-import net.corda.ledger.common.data.transaction.TransactionStatus.DRAFT
 import net.corda.ledger.utxo.flow.impl.UtxoLedgerMetricRecorder
 import net.corda.ledger.utxo.flow.impl.flows.backchain.InvalidBackchainException
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TopologicalSort
@@ -78,7 +78,6 @@ class TransactionBackchainReceiverFlowV1(
         val existingTransactionIdsInDb = mutableMapOf<SecureHash, TransactionStatus>()
 
         while (transactionsToRetrieve.isNotEmpty()) {
-
             handleExistingTransactionsAndTheirDependencies(existingTransactionIdsInDb, transactionsToRetrieve, sortedTransactionIds)
 
             val batch = transactionsToRetrieve.take(batchSize)
@@ -101,12 +100,11 @@ class TransactionBackchainReceiverFlowV1(
             log.trace { "Backchain resolution of $initialTransactionIds - Received content for transactions $batch" }
 
             for (retrievedTransaction in retrievedTransactions) {
-
                 val retrievedTransactionId = retrievedTransaction.id
 
                 require(retrievedTransactionId in batch) {
                     "Backchain resolution of $initialTransactionIds - Received transaction $retrievedTransactionId which was not " +
-                            "requested in the last batch $batch"
+                        "requested in the last batch $batch"
                 }
 
                 retrieveGroupParameters(retrievedTransaction)
@@ -117,15 +115,15 @@ class TransactionBackchainReceiverFlowV1(
                 when (status) {
                     TransactionExistenceStatus.DOES_NOT_EXIST -> log.trace {
                         "Backchain resolution of $initialTransactionIds - Persisted transaction $retrievedTransactionId as " +
-                                "unverified"
+                            "unverified"
                     }
                     TransactionExistenceStatus.UNVERIFIED -> log.trace {
                         "Backchain resolution of $initialTransactionIds - Transaction $retrievedTransactionId already exists as " +
-                                "unverified"
+                            "unverified"
                     }
                     TransactionExistenceStatus.VERIFIED -> log.trace {
                         "Backchain resolution of $initialTransactionIds - Transaction $retrievedTransactionId already exists as " +
-                                "verified"
+                            "verified"
                     }
                 }
 
@@ -154,7 +152,7 @@ class TransactionBackchainReceiverFlowV1(
 
         log.trace {
             "Backchain resolution of $initialTransactionIds - Retrieving group parameters ($groupParametersHash) " +
-                    "for transaction (${retrievedTransaction.id})"
+                "for transaction (${retrievedTransaction.id})"
         }
         val retrievedSignedGroupParameters = session.sendAndReceive(
             SignedGroupParameters::class.java,
@@ -163,7 +161,7 @@ class TransactionBackchainReceiverFlowV1(
         if (retrievedSignedGroupParameters.hash != groupParametersHash) {
             val message =
                 "Backchain resolution of $initialTransactionIds - Requested group parameters: $groupParametersHash, " +
-                        "but received: ${retrievedSignedGroupParameters.hash}"
+                    "but received: ${retrievedSignedGroupParameters.hash}"
             log.warn(message)
             throw CordaRuntimeException(message)
         }
@@ -185,8 +183,8 @@ class TransactionBackchainReceiverFlowV1(
                 log.trace {
                     val ignoredDependencies = dependencies - unseenDependencies
                     "Backchain resolution of $initialTransactionIds - Adding dependencies for transaction ${retrievedTransaction.id} " +
-                            "dependencies: $unseenDependencies to transactions to retrieve. Ignoring dependencies: $ignoredDependencies " +
-                            "as they have already been seen."
+                        "dependencies: $unseenDependencies to transactions to retrieve. Ignoring dependencies: $ignoredDependencies " +
+                        "as they have already been seen."
                 }
                 sortedTransactionIds.add(retrievedTransaction.id, dependencies)
                 transactionsToRetrieve.addAll(unseenDependencies)
@@ -211,7 +209,7 @@ class TransactionBackchainReceiverFlowV1(
             if (invalidTransactions.isNotEmpty()) {
                 throw InvalidBackchainException(
                     "Found the following invalid transaction(s) during back-chain resolution: " +
-                            "$invalidTransactions. Back-chain resolution cannot be continued."
+                        "$invalidTransactions. Back-chain resolution cannot be continued."
                 )
             }
 
@@ -252,7 +250,7 @@ class TransactionBackchainReceiverFlowV1(
 
                             throw InvalidBackchainException(
                                 "Found the following $status transaction during back-chain resolution: " +
-                                        "$transactionId. Backchain resolution cannot be continued."
+                                    "$transactionId. Backchain resolution cannot be continued."
                             )
                         }
 
@@ -290,11 +288,13 @@ class TransactionBackchainReceiverFlowV1(
     private fun fetchGroupParametersAndHashForTransaction(
         transaction: UtxoSignedTransaction
     ): Pair<SecureHash, SignedGroupParameters?> {
-        val groupParametersHash = parseSecureHash(requireNotNull(
-            (transaction.metadata as TransactionMetadataInternal).getMembershipGroupParametersHash()
-        ) {
-            "Transaction with ID ${transaction.id} does not have group parameters in its metadata."
-        })
+        val groupParametersHash = parseSecureHash(
+            requireNotNull(
+                (transaction.metadata as TransactionMetadataInternal).getMembershipGroupParametersHash()
+            ) {
+                "Transaction with ID ${transaction.id} does not have group parameters in its metadata."
+            }
+        )
 
         return Pair(groupParametersHash, utxoLedgerGroupParametersPersistenceService.find(groupParametersHash))
     }

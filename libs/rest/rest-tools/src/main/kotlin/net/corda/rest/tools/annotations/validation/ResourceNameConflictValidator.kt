@@ -11,15 +11,17 @@ import net.corda.rest.tools.annotations.extensions.path
  */
 internal class ResourceNameConflictValidator(private val classes: List<Class<out RestResource>>) : RestValidator {
     companion object {
-        fun error(path: String?,
-                  clazz: Class<out RestResource>,
-                  conflictingClass: Class<out RestResource>): String {
+        fun error(
+            path: String?,
+            clazz: Class<out RestResource>,
+            conflictingClass: Class<out RestResource>
+        ): String {
             val resource = clazz.getAnnotation(HttpRestResource::class.java)
             val conflictingResource = conflictingClass.getAnnotation(HttpRestResource::class.java)
             return "Duplicate resource with path '$path' in '${clazz.simpleName}' " +
-                    "for version range (${resource.minVersion} -> ${resource.maxVersion}). " +
-                    "Conflicting resource: '${conflictingClass.simpleName}' " +
-                    "with versions (${conflictingResource.minVersion} -> ${conflictingResource.maxVersion})."
+                "for version range (${resource.minVersion} -> ${resource.maxVersion}). " +
+                "Conflicting resource: '${conflictingClass.simpleName}' " +
+                "with versions (${conflictingResource.minVersion} -> ${conflictingResource.maxVersion})."
         }
     }
     override fun validate(): RestValidationResult {

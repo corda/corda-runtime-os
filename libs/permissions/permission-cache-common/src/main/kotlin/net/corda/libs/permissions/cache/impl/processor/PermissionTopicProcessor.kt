@@ -1,8 +1,8 @@
 package net.corda.libs.permissions.cache.impl.processor
 
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.libs.permissions.cache.processor.PermissionCacheTopicProcessor
 import net.corda.messaging.api.records.Record
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Permission topic processor responsible for updating a permission topic.

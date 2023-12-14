@@ -1,10 +1,5 @@
 package net.corda.libs.permissions.endpoints.v1.permission.impl
 
-import net.corda.rest.PluggableRestResource
-import net.corda.rest.exception.InvalidInputDataException
-import net.corda.rest.exception.ResourceNotFoundException
-import net.corda.rest.response.ResponseEntity
-import net.corda.rest.security.CURRENT_REST_CONTEXT
 import net.corda.libs.permissions.endpoints.common.PermissionEndpointEventHandler
 import net.corda.libs.permissions.endpoints.common.withPermissionManager
 import net.corda.libs.permissions.endpoints.v1.converter.convertToDto
@@ -23,6 +18,11 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.permissions.management.PermissionManagementService
+import net.corda.rest.PluggableRestResource
+import net.corda.rest.exception.InvalidInputDataException
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.response.ResponseEntity
+import net.corda.rest.security.CURRENT_REST_CONTEXT
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -84,7 +84,6 @@ class PermissionEndpointImpl @Activate constructor(
         virtualNode: String?,
         permissionStringPrefix: String?
     ): List<PermissionResponseType> {
-
         if (limit < 1 || limit > 1000) {
             throw InvalidInputDataException(
                 "limit supplied $limit is outside of the permitted range of [1..1000]"
@@ -116,11 +115,9 @@ class PermissionEndpointImpl @Activate constructor(
         return permissions.map { it.convertToEndpointType() }
     }
 
-    override fun createAndAssignPermissions(request: BulkCreatePermissionsRequestType):
-            ResponseEntity<BulkCreatePermissionsResponseType> {
-
+    override fun createAndAssignPermissions(request: BulkCreatePermissionsRequestType): ResponseEntity<BulkCreatePermissionsResponseType> {
         // Validate non-empty set of permissions requested
-        if(request.permissionsToCreate.isEmpty()) {
+        if (request.permissionsToCreate.isEmpty()) {
             throw InvalidInputDataException("No permissions requested to be created")
         }
 

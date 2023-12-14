@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test
 
 internal class PermissionQueryDtoComparatorTest {
 
-
     @Test
     fun `DENY should appear in sorted list before ALLOW`() {
         val perm1 = InternalPermissionQueryDto("user1", "id", null, null, "ABC", PermissionType.ALLOW)

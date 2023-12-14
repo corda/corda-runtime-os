@@ -6,7 +6,7 @@ import net.corda.virtualnode.HoldingIdentity
 import java.util.*
 import javax.persistence.EntityManager
 
-class HoldingIdentityRepositoryImpl: HoldingIdentityRepository {
+class HoldingIdentityRepositoryImpl : HoldingIdentityRepository {
     /**
      * Find [HoldingIdentity] for given [ShortHash].
      */

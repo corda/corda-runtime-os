@@ -5,10 +5,10 @@ import net.corda.rest.test.TestHealthCheckAPIImpl
 import net.corda.rest.test.utils.TestHttpClientUnirestImpl
 import net.corda.rest.test.utils.multipartDir
 import net.corda.utilities.NetworkHostAndPort
-import org.slf4j.LoggerFactory
 import org.eclipse.jetty.websocket.client.WebSocketClient
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
+import org.slf4j.LoggerFactory
 
 class RestServerWebsocketTest : AbstractWebsocketTest() {
     private companion object {
@@ -37,8 +37,10 @@ class RestServerWebsocketTest : AbstractWebsocketTest() {
                 multipartDir,
                 true
             ).apply { start() }
-            client = TestHttpClientUnirestImpl("http://${restServerSettings.address.host}:${server.port}/" +
-                    "${restServerSettings.context.basePath}/${apiVersion.versionPath}/")
+            client = TestHttpClientUnirestImpl(
+                "http://${restServerSettings.address.host}:${server.port}/" +
+                    "${restServerSettings.context.basePath}/${apiVersion.versionPath}/"
+            )
         }
 
         @AfterAll

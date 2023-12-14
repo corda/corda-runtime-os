@@ -137,7 +137,8 @@ internal class VirtualNodeWriterProcessor(
                         virtualNodeInfo.cpiIdentifier.version
                     )!!
                     dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).use { dataSource ->
-                        val emVault = dbConnectionManager.getOrCreateEntityManagerFactory(virtualNodeInfo.vaultDdlConnectionId!!,
+                        val emVault = dbConnectionManager.getOrCreateEntityManagerFactory(
+                            virtualNodeInfo.vaultDdlConnectionId!!,
                             jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)!!
                         ).createEntityManager()
                         // changelog tags are the CPK file checksum the changelog belongs to
@@ -149,7 +150,7 @@ internal class VirtualNodeWriterProcessor(
 
                         logger.info(
                             "CPK file checksums of currently applied changelogs on vault schema for virtual node " +
-                                    "$currentVNodeShortHash: [${cpkChecksumsOfAppliedChangelogs.joinToString()}]"
+                                "$currentVNodeShortHash: [${cpkChecksumsOfAppliedChangelogs.joinToString()}]"
                         )
 
                         val changesetsToRollback =
@@ -160,7 +161,7 @@ internal class VirtualNodeWriterProcessor(
                             val changeLogs = changelogs.joinToString { it.id.filePath }
                             logger.info(
                                 "Virtual node '$currentVNodeShortHash' attempting to roll back the following " +
-                                        "changelogs for CPK '$cpkFileChecksum' [$changeLogs]"
+                                    "changelogs for CPK '$cpkFileChecksum' [$changeLogs]"
                             )
                             rollbackVirtualNodeDb(
                                 dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!),
@@ -185,7 +186,7 @@ internal class VirtualNodeWriterProcessor(
                             }
                             logger.warn(
                                 "Error from liquibase API while running resync migrations for CPI " +
-                                        "${cpiMetadata.cpiId.name} - changelogs: [${changeLogs}]",
+                                    "${cpiMetadata.cpiId.name} - changelogs: [$changeLogs]",
                                 e
                             )
                             respFuture.complete(
@@ -231,7 +232,6 @@ internal class VirtualNodeWriterProcessor(
         stateChangeRequest: VirtualNodeStateChangeRequest,
         respFuture: CompletableFuture<VirtualNodeManagementResponse>
     ) {
-
         // Attempt and update, and on failure, pass the error back to the RPC processor
         try {
             val em = dbConnectionManager.getClusterEntityManagerFactory().createEntityManager()
@@ -254,11 +254,13 @@ internal class VirtualNodeWriterProcessor(
 
                 // Compare new state to current state
                 when (inMaintenance) {
-                    true -> if (newState == OperationalStatus.INACTIVE)
+                    true -> if (newState == OperationalStatus.INACTIVE) {
                         throw InvalidStateChangeRuntimeException("VirtualNode", newState.name, shortHash.value)
+                    }
 
-                    false -> if (newState == OperationalStatus.ACTIVE)
+                    false -> if (newState == OperationalStatus.ACTIVE) {
                         throw InvalidStateChangeRuntimeException("VirtualNode", newState.name, shortHash.value)
+                    }
                 }
 
                 val changelogsPerCpk = changeLogsRepository.findByCpiId(em, nodeInfo.cpiIdentifier)
@@ -297,7 +299,8 @@ internal class VirtualNodeWriterProcessor(
                 future.get()
             } catch (e: Exception) {
                 throw VirtualNodeWriteServiceException(
-                    "Record $virtualNodeRecord was written to the database, but couldn't be published. Cause: $e", e
+                    "Record $virtualNodeRecord was written to the database, but couldn't be published. Cause: $e",
+                    e
                 )
             }
 
@@ -338,14 +341,17 @@ internal class VirtualNodeWriterProcessor(
 
         LiquibaseSchemaMigratorImpl().updateDb(
             dataSource.connection,
-            VirtualNodeDbChangeLog(changelogs.map {
-                CpkDbChangeLog(
-                    CpkDbChangeLogIdentifier(
-                        it.id.cpkFileChecksum,
-                        it.id.filePath
-                    ), it.content
-                )
-            }),
+            VirtualNodeDbChangeLog(
+                changelogs.map {
+                    CpkDbChangeLog(
+                        CpkDbChangeLogIdentifier(
+                            it.id.cpkFileChecksum,
+                            it.id.filePath
+                        ),
+                        it.content
+                    )
+                }
+            ),
             tag = cpkFileChecksum.toString()
         )
         logger.info("Resync migrations for CPK '$cpkFileChecksum' completed.")
@@ -357,13 +363,13 @@ internal class VirtualNodeWriterProcessor(
         dataSource: DataSource,
         systemTerminatorTag: String
     ): Set<String> = (
-            em.createNativeQuery(
-                "SELECT tag FROM ${dataSource.connection.schema}.databasechangelog " +
-                        "WHERE tag IS NOT NULL and tag != :systemTerminatorTag " +
-                        "ORDER BY orderexecuted"
-            )
-                .setParameter("systemTerminatorTag", systemTerminatorTag)
-                .resultList
-                .toSet() as Set<String>
-            ).toSet()
+        em.createNativeQuery(
+            "SELECT tag FROM ${dataSource.connection.schema}.databasechangelog " +
+                "WHERE tag IS NOT NULL and tag != :systemTerminatorTag " +
+                "ORDER BY orderexecuted"
+        )
+            .setParameter("systemTerminatorTag", systemTerminatorTag)
+            .resultList
+            .toSet() as Set<String>
+        ).toSet()
 }

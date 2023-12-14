@@ -1,8 +1,8 @@
 package net.corda.rest.tools.annotations.validation.utils
 
+import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.rest.annotations.RestPathParameter
 import net.corda.rest.annotations.RestQueryParameter
-import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.rest.annotations.isRestParameterAnnotation
 import net.corda.rest.tools.annotations.extensions.name
 import net.corda.rest.tools.isDuplexChannel
@@ -20,8 +20,8 @@ val String.asPathParam
 fun Parameter.isPathOrQueryParameter() =
     this.annotations.any { annotation -> annotation is RestPathParameter || annotation is RestQueryParameter }
 
-fun Parameter.isBodyParameter() = (this.annotations.any { it is ClientRequestBodyParameter } || !this.isPathOrQueryParameter())
-        && !this.type.isDuplexChannel()
+fun Parameter.isBodyParameter() = (this.annotations.any { it is ClientRequestBodyParameter } || !this.isPathOrQueryParameter()) &&
+    !this.type.isDuplexChannel()
 
 @Suppress("ComplexMethod")
 fun getParameterName(parameter: Parameter) =

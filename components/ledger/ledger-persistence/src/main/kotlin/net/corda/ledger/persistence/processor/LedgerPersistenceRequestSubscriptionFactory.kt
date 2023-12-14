@@ -16,5 +16,4 @@ interface LedgerPersistenceRequestSubscriptionFactory {
      */
 
     fun createRpcSubscription(): RPCSubscription<LedgerPersistenceRequest, FlowEvent>
-
 }

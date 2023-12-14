@@ -49,6 +49,7 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeMessagi
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishMembershipConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeCryptoConfig
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishDefaultCryptoConf
+import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishEmptyStateManagerConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishGatewayConfig
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishMessagingConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishRawGroupPolicyData
@@ -206,6 +207,7 @@ class MemberProcessorIntegrationTest {
             publisher.publishMessagingConf(messagingConfig)
             publisher.publishMembershipConf(membershipConfig)
             publisher.publishDefaultCryptoConf(cryptoConfig)
+            publisher.publishEmptyStateManagerConf()
             publisher.publishGatewayConfig()
             publisher.publishRawGroupPolicyData(
                 virtualNodeInfoReader,

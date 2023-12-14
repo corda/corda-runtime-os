@@ -21,7 +21,7 @@ class ClaimReleaseExternalEventFactoryTest {
         val poolKey = PoolKey("", "", "", "", "")
         val avroPoolKey = poolKey.toTokenPoolCacheKey()
         val checkpoint = mock<FlowCheckpoint>()
-        val tokenClaimCheckpointService= mock<TokenClaimCheckpointService>()
+        val tokenClaimCheckpointService = mock<TokenClaimCheckpointService>()
         val flowExternalEventContext = ExternalEventContext()
         val parameters = ClaimReleaseParameters("c1", poolKey, listOf(stateRef))
 
@@ -47,6 +47,6 @@ class ClaimReleaseExternalEventFactoryTest {
         assertThat(result.topic).isEqualTo(TOKEN_CACHE_EVENT)
         assertThat(result.key).isEqualTo(avroPoolKey)
         assertThat(result).isEqualTo(expectedRecord)
-        assertThat(tokenClaimCheckpointService.removeClaimFromCheckpoint(checkpoint,"c1" ))
+        assertThat(tokenClaimCheckpointService.removeClaimFromCheckpoint(checkpoint, "c1"))
     }
 }

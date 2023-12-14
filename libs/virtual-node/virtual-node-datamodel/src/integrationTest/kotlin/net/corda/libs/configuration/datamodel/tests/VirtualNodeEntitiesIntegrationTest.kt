@@ -56,8 +56,8 @@ class VirtualNodeEntitiesIntegrationTest {
         }
         entityManagerFactory = EntityManagerFactoryFactoryImpl().create(
             this::class.java.simpleName,
-            VirtualNodeEntities.classes.toList()
-                    + CpiEntities.classes.toList() + ConfigurationEntities.classes.toList(),
+            VirtualNodeEntities.classes.toList() +
+                CpiEntities.classes.toList() + ConfigurationEntities.classes.toList(),
             dbConfig
         )
     }
@@ -104,11 +104,15 @@ class VirtualNodeEntitiesIntegrationTest {
                 version,
                 cpiSignerSummaryHash,
                 externalMessagingRouteConfig = null,
-                cpiMetadataRepository = CpiCpkRepositoryFactory().createCpiMetadataRepository())
+                cpiMetadataRepository = CpiCpkRepositoryFactory().createCpiMetadataRepository()
+            )
 
         assertThat(
             entityManagerFactory.createEntityManager().find(
-                VirtualNodeEntity::class.java, vnodeEntity.holdingIdentityId))
+                VirtualNodeEntity::class.java,
+                vnodeEntity.holdingIdentityId
+            )
+        )
             .isEqualTo(vnodeEntity)
     }
 
@@ -117,7 +121,6 @@ class VirtualNodeEntitiesIntegrationTest {
         val name = "Test CPI - ${UUID.randomUUID()}"
         val version = "1.0-${Instant.now().toEpochMilli()}"
         val cpiSignerSummaryHash = TestRandom.secureHash()
-
 
         val holdingIdentityEntity = VNodeTestUtils.newHoldingIdentityEntity("test - ${UUID.randomUUID()}")
 
@@ -133,11 +136,13 @@ class VirtualNodeEntitiesIntegrationTest {
                 cpiSignerSummaryHash,
                 holdingIdentityEntity = holdingIdentityEntity,
                 externalMessagingRouteConfig = null,
-                cpiMetadataRepository = CpiCpkRepositoryFactory().createCpiMetadataRepository())
+                cpiMetadataRepository = CpiCpkRepositoryFactory().createCpiMetadataRepository()
+            )
 
         assertThat(
             entityManagerFactory.createEntityManager()
-                .find(VirtualNodeEntity::class.java, vnodeEntity.holdingIdentityId))
+                .find(VirtualNodeEntity::class.java, vnodeEntity.holdingIdentityId)
+        )
             .isEqualTo(vnodeEntity)
     }
 
@@ -164,7 +169,8 @@ class VirtualNodeEntitiesIntegrationTest {
                 cpiSignerSummaryHash,
                 virtualNodeOperationEntity,
                 externalMessagingRouteConfig = null,
-                cpiMetadataRepository = CpiCpkRepositoryFactory().createCpiMetadataRepository())
+                cpiMetadataRepository = CpiCpkRepositoryFactory().createCpiMetadataRepository()
+            )
 
         val foundEntity =
             entityManagerFactory.createEntityManager().find(VirtualNodeEntity::class.java, vnodeEntity.holdingIdentityId)

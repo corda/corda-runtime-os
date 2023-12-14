@@ -7,4 +7,3 @@ data class BalanceQuery(
     override val ownerHash: String?,
     override val poolKey: TokenPoolKey,
 ) : TokenFilter
-
