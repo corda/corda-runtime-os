@@ -20,6 +20,7 @@ import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderInternal
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.NotarySignatureVerificationServiceInternal
 import net.corda.ledger.utxo.flow.impl.transaction.verifier.UtxoLedgerTransactionVerificationService
 import net.corda.membership.lib.SignedGroupParameters
 import net.corda.sandbox.type.UsedByFlow
@@ -65,7 +66,9 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     @Reference(service = GroupParametersLookupInternal::class)
     private val groupParametersLookup: GroupParametersLookupInternal,
     @Reference(service = SignedGroupParametersVerifier::class)
-    private val signedGroupParametersVerifier: SignedGroupParametersVerifier
+    private val signedGroupParametersVerifier: SignedGroupParametersVerifier,
+    @Reference(service = NotarySignatureVerificationServiceInternal::class)
+    private val notarySignatureVerificationService: NotarySignatureVerificationServiceInternal
 ) : UtxoSignedTransactionFactory, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
@@ -92,6 +95,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         return UtxoSignedTransactionImpl(
             serializationService,
             transactionSignatureService,
+            notarySignatureVerificationService,
             utxoLedgerTransactionFactory,
             wireTransaction,
             signaturesWithMetadata
@@ -104,6 +108,7 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
     ): UtxoSignedTransactionInternal = UtxoSignedTransactionImpl(
         serializationService,
         transactionSignatureService,
+        notarySignatureVerificationService,
         utxoLedgerTransactionFactory,
         wireTransaction,
         signaturesWithMetaData

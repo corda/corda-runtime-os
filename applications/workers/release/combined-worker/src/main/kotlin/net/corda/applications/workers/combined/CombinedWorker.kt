@@ -313,7 +313,7 @@ private class CombinedWorkerParams {
 
     @Option(names = ["--serviceEndpoint"], description = ["Internal REST endpoints for Corda workers"])
     val workerEndpoints: Map<String, String> =
-        listOf("crypto", "verification", "uniqueness", "persistence", "tokenSelection")
+        listOf("crypto", "verification", "uniqueness", "persistence", "tokenSelection", "p2pLinkManager")
             .associate { "endpoints.$it" to "localhost:7004" }
             .toMap()
 }

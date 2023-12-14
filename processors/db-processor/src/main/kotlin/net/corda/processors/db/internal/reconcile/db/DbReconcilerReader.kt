@@ -85,6 +85,7 @@ class DbReconcilerReader<K : Any, V : Any>(
                 }
             } catch (e: Exception) {
                 logger.warn("Error while retrieving DB records for reconciliation for ${context.prettyPrint()}", e)
+                context.close()
                 Stream.empty()
             }
         }

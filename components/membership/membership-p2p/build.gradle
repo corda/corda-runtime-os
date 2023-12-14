@@ -28,6 +28,4 @@ dependencies {
     implementation project(":libs:serialization:serialization-avro")
 
     testImplementation project(':testing:test-utilities')
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

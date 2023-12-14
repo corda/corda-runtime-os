@@ -72,8 +72,6 @@ dependencies {
     runtimeOnly project(':libs:virtual-node:cpi-upload-manager-impl')
     runtimeOnly project(':components:virtual-node:cpi-upload-rest-service')
 
-    integrationTestImplementation "org.assertj:assertj-core:$assertjVersion"
-    integrationTestImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
     integrationTestImplementation "io.swagger.core.v3:swagger-core:$swaggerVersion"
 
     integrationTestImplementation project(':libs:rest:rest')
