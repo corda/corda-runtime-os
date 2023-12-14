@@ -13,7 +13,8 @@ import java.util.function.Consumer
 import java.util.stream.StreamSupport
 import kotlin.math.ln
 
-class MyLoggingMeterRegistry(private val loggingSink: Consumer<String>, private val scraper: () -> String) : LoggingMeterRegistry(loggingSink) {
+class MyLoggingMeterRegistry(private val loggingSink: Consumer<String>,
+                             private val scraper: () -> String) : LoggingMeterRegistry(loggingSink) {
 
     override fun publish() {
         loggingSink.accept("PUBLISHING\n\n\n\n\n")
@@ -81,12 +82,18 @@ class CsvPrinter(sink: Consumer<String>) : MeterPrinter(sink) {
             { timer: Timer ->
                 val snapshot = timer.takeSnapshot()
                 val count = snapshot.count()
-                sink.accept("${meter.id}, ${unitlessRate(count.toDouble())}, ${snapshot.mean(baseTimeUnit)}, ${snapshot.max(baseTimeUnit)}")
+                sink.accept("${meter.id}, " +
+                        "${unitlessRate(count.toDouble())}, " +
+                        "${snapshot.mean(baseTimeUnit)}, " +
+                        "${snapshot.max(baseTimeUnit)}")
             },
             { summary: DistributionSummary ->
                 val snapshot = summary.takeSnapshot()
                 val count = snapshot.count()
-                sink.accept("${meter.id}, ${unitlessRate(count.toDouble())}, ${snapshot.mean(baseTimeUnit)}, ${snapshot.max(baseTimeUnit)}")
+                sink.accept("${meter.id}, " +
+                        "${unitlessRate(count.toDouble())}, " +
+                        "${snapshot.mean(baseTimeUnit)}, " +
+                        "${snapshot.max(baseTimeUnit)}")
             },
             { longTaskTimer: LongTaskTimer ->
                 val activeTasks = longTaskTimer.activeTasks()
