@@ -154,10 +154,7 @@ class MerkleTreeTest {
         assertTree(merkleTree, """
             bab170b1c ┳━  00:00:00:00
                       ┗━  00:00:00:01""")
-        assertThat(merkleTree.render()).isEqualTo(
-            """
-            bab170b1c ┳━  00:00:00:00
-                      ┗━  00:00:00:01""".trimIndent())
+
     }
 
     @Test
@@ -172,12 +169,11 @@ class MerkleTreeTest {
         val manualRoot = merkleTree.digest.nodeHash(0, node1, leaf2)
 
         assertEquals(manualRoot, root)
-        assertThat(merkleTree.render()).isEqualTo(
-            """
+        assertTree(merkleTree,"""
                 a9d5543c2 ┳┳━ 00:00:00:00
                           ┃┗━ 00:00:00:01
                           ┗━━ 00:00:00:02
-            """.trimIndent())
+            """)
     }
 
     @Test
@@ -249,8 +245,7 @@ class MerkleTreeTest {
         val node4 = merkleTree.digest.nodeHash(2, node1, node2)
         val node5 = merkleTree.digest.nodeHash(1, node3, leaf6)
         val manualRoot = merkleTree.digest.nodeHash(0, node4, node5)
-        assertThat(merkleTree.render()).isEqualTo(
-            """
+        assertTree(merkleTree, """
              4817d5722 ┳┳┳ 00:00:00:00
                        ┃┃┗ 00:00:00:01
                        ┃┗┳ 00:00:00:02
@@ -258,7 +253,7 @@ class MerkleTreeTest {
                        ┗┳┳ 00:00:00:04
                         ┃┗ 00:00:00:05
                         ┗━ 00:00:00:06
-                        """.trimIndent())
+                        """)
         assertEquals(manualRoot, root)
     }
 
@@ -283,8 +278,7 @@ class MerkleTreeTest {
         val node6 = merkleTree.digest.nodeHash(1, node3, node4)
         val manualRoot = merkleTree.digest.nodeHash(0, node5, node6)
         assertEquals(manualRoot, root)
-        assertThat(merkleTree.render()).isEqualTo(
-            """
+        assertTree(merkleTree, """
               a868a19c7 ┳┳┳ 00:00:00:00
                         ┃┃┗ 00:00:00:01
                         ┃┗┳ 00:00:00:02
@@ -293,7 +287,7 @@ class MerkleTreeTest {
                          ┃┗ 00:00:00:05
                          ┗┳ 00:00:00:06
                           ┗ 00:00:00:07
-                        """.trimIndent())
+                        """)
     }
 
     @Test
