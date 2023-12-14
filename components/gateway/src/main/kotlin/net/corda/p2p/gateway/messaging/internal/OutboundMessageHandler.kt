@@ -30,7 +30,6 @@ import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.LINK_OUT_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.utilities.debug
-import net.corda.utilities.flags.Features.ENABLE_P2P_GATEWAY_TO_LINK_MANAGER_OVER_HTTP
 import net.corda.v5.base.types.MemberX500Name
 import org.bouncycastle.asn1.x500.X500Name
 import org.slf4j.LoggerFactory
