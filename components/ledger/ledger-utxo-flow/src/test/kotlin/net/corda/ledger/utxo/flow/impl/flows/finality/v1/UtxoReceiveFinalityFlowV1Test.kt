@@ -549,8 +549,10 @@ class UtxoReceiveFinalityFlowV1Test {
         whenever(session.receive(FinalityPayload::class.java)).thenReturn(finalityPayload, finalityPayloadWithFilteredTx)
         whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
         whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
-        whenever(transactionSignatureVerificationService.verifySignature(filteredTransaction.id, signatureNotary, filteredTransaction.notaryKey))
-            .thenAnswer {  }
+        whenever(
+            transactionSignatureVerificationService.verifySignature(filteredTransaction.id, signatureNotary, filteredTransaction.notaryKey)
+        )
+            .thenAnswer { }
 
         callReceiveFinalityFlow()
 
@@ -571,7 +573,6 @@ class UtxoReceiveFinalityFlowV1Test {
 
         verify(flowEngine, timeout(100).times(1)).subFlow(any<TransactionBackchainResolutionFlow>())
     }
-
 
     private fun callReceiveFinalityFlow(validator: UtxoTransactionValidator = UtxoTransactionValidator { }) {
         val flow = UtxoReceiveFinalityFlowV1(session, validator)
