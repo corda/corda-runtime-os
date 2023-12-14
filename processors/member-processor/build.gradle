@@ -65,8 +65,6 @@ dependencies {
     runtimeOnly project(':components:membership:members-client-certificate-publisher-service-impl')
     runtimeOnly project(":libs:web:web-impl")
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:test-utilities")
     testImplementation "net.corda:corda-topic-schema"
     testImplementation "net.corda:corda-config-schema"

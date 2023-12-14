@@ -278,14 +278,6 @@ allprojects {
 
         shouldRunAfter tasks.named('test', Test)
     }
-
-    dependencies {
-        // Test utilities
-        testImplementation "org.assertj:assertj-core:$assertjVersion"
-        testImplementation "org.junit.jupiter:junit-jupiter:$junit5Version"
-        testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
-        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    }
 }
 
 tasks.register('createSBOMZip', Zip) {

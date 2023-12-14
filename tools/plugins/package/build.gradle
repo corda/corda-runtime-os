@@ -29,9 +29,9 @@ dependencies {
     implementation "org.pf4j:pf4j:${pf4jVersion}"
     kapt "org.pf4j:pf4j:${pf4jVersion}"
 
+    testImplementation libs.bundles.test
     testImplementation "net.corda.cli.host:api:$pluginHostVersion"
     testImplementation "org.pf4j:pf4j:${pf4jVersion}"
-    testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:packaging-test-utilities")
 

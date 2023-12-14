@@ -26,7 +26,4 @@ dependencies {
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-topic-schema"
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 }

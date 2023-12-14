@@ -41,12 +41,9 @@ configurations {
 dependencies {
     compileOnly "org.jetbrains:annotations:$jetbrainsAnnotationsVersion"
     testImplementation libs.bundles.test
-    testImplementation "org.junit.jupiter:junit-jupiter:$junit5Version"
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testRuntimeOnly libs.bundles.test.runtime
 
-    integrationTestRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
-    integrationTestRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    integrationTestRuntimeOnly libs.bundles.test.runtime
 }
 
 tasks.named('jar', Jar) {

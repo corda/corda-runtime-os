@@ -20,7 +20,4 @@ dependencies {
 
     api project(":libs:lifecycle:lifecycle")
     api project(':libs:rest:rest-security-read')
-
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
