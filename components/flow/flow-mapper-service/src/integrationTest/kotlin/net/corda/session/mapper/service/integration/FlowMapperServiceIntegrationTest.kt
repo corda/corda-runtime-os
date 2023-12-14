@@ -520,6 +520,10 @@ class FlowMapperServiceIntegrationTest {
                 producer {
                     close.timeout = 6000
                 }
+                mediator {
+                    poolSize = 1
+                    minPoolRecordCount = 20
+                }
                 pollTimeout = 100
             }
       """
