@@ -33,7 +33,7 @@ fun calculateLeveledHashes(proof: MerkleProof, digest: MerkleTreeHashDigestProvi
     var treeDepth = MerkleTreeImpl.treeDepth(treeSize)
     var currentSize = treeSize
 
-    // ... so that's 4 variables that get updated as we work:
+    // ... so we have 4 variables that get updated as we work:
     // - $hashIndex is the position we are at in the supplied proof hashes
     // - $currentSize is the number of leafs+nodes at this level of the tree
     // - $treeDepth is the level of the tree, counting from the root of the tree where $currentSize==1
