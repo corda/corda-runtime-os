@@ -23,9 +23,9 @@ dependencies {
     implementation "com.konghq:unirest-java:$unirestVersion"
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "org.apache.commons:commons-text:$commonsTextVersion"
-    implementation "org.assertj:assertj-core:$assertjVersion"
+    implementation libs.assertj.core
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$kotlinCoroutinesVersion"
-    implementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+    implementation libs.junit.api
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
     implementation project(':components:flow:flow-rest-resource-service')

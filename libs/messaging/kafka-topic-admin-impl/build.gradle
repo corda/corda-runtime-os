@@ -21,9 +21,6 @@ dependencies {
     implementation project(":libs:messaging:topic-admin")
     implementation project(":libs:utilities")
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-
     testRuntimeOnly 'org.osgi:osgi.core'
 }
 

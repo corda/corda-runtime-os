@@ -51,10 +51,6 @@ dependencies {
     implementation project(':notary-plugins:notary-plugin-common')
     implementation project(':libs:configuration:configuration-core')
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
-
     testImplementation project(':testing:test-serialization')
     testImplementation project(':testing:kryo-serialization-testkit')
     testImplementation project(':libs:serialization:serialization-internal')

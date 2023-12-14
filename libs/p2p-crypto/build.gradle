@@ -20,8 +20,6 @@ dependencies {
     api "org.bouncycastle:bcpkix-jdk18on:$bouncycastleVersion"
 
     testImplementation project(':libs:crypto:cipher-suite')
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     integrationTestImplementation project(":testing:p2p:certificates")
 }

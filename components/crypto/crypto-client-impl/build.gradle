@@ -25,8 +25,6 @@ dependencies {
     implementation project(':libs:platform-info')
     implementation project(":libs:utilities")
 
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
-
     testImplementation project(":components:crypto:crypto-component-test-utils")
 
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"

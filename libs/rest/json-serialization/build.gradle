@@ -19,6 +19,4 @@ dependencies {
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
     implementation project(":libs:serialization:json-serializers")
     implementation project(':libs:rest:rest')
-
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 }
