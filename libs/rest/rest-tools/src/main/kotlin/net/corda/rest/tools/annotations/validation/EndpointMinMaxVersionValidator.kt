@@ -15,13 +15,12 @@ internal class EndpointMinMaxVersionValidator(private val clazz: Class<out RestR
     companion object {
         fun error(method: Method): String =
             "Invalid combination of min/max version for endpoint " +
-                    "HTTP method in '${method.declaringClass.simpleName}.${method.name}'."
+                "HTTP method in '${method.declaringClass.simpleName}.${method.name}'."
     }
 
     override fun validate(): RestValidationResult = validateVersions(clazz.endpoints)
 
     private fun validateVersions(endpoints: List<Method>): RestValidationResult {
-
         return endpoints.fold(RestValidationResult()) { total, method ->
             method.restApiVersions.let {
                 if (it.maxVersion.isEqualOrChildOf(it.minVersion)) {

@@ -12,9 +12,14 @@ import java.security.PublicKey
 data class ContractStateAndEncumbranceTag(val contractState: ContractState, val encumbranceTag: String?) {
 
     fun toTransactionState(notaryName: MemberX500Name, notaryKey: PublicKey, encumbranceGroupSize: Int?): TransactionState<*> {
-        return TransactionStateImpl(contractState, notaryName, notaryKey, encumbranceTag?.let{
-            requireNotNull(encumbranceGroupSize)
-            EncumbranceGroupImpl(encumbranceGroupSize, it)
-        })
+        return TransactionStateImpl(
+            contractState,
+            notaryName,
+            notaryKey,
+            encumbranceTag?.let {
+                requireNotNull(encumbranceGroupSize)
+                EncumbranceGroupImpl(encumbranceGroupSize, it)
+            }
+        )
     }
 }

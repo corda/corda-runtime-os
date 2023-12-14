@@ -5,6 +5,8 @@ plugins {
 
 description 'Implementation of permission validation cache for the permission system.'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly "org.osgi:org.osgi.service.component.annotations"
 

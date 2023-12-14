@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory
 class PostgresConsensualQueryProvider @Activate constructor(
     @Reference(target = POSTGRES_TYPE_FILTER)
     databaseTypeProvider: DatabaseTypeProvider
-): AbstractConsensualQueryProvider() {
+) : AbstractConsensualQueryProvider() {
     init {
         LoggerFactory.getLogger(this::class.java).debug { "Activated for ${databaseTypeProvider.databaseType}" }
     }

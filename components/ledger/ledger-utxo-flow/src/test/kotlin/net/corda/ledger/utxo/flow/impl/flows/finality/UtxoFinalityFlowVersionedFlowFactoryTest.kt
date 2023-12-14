@@ -45,8 +45,6 @@ class UtxoFinalityFlowVersionedFlowFactoryTest {
 
     @Test
     fun `with platform version 0 throws exception`() {
-        assertThatThrownBy {factory.create(0, emptyList()) }.isInstanceOf(IllegalArgumentException::class.java)
+        assertThatThrownBy { factory.create(0, emptyList()) }.isInstanceOf(IllegalArgumentException::class.java)
     }
-
-
 }

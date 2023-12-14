@@ -1,7 +1,7 @@
 package net.corda.rest.test
 
-import net.corda.rest.PluggableRestResource
 import net.corda.lifecycle.Lifecycle
+import net.corda.rest.PluggableRestResource
 
 class LifecycleRestResourceImpl : LifecycleRestResource, PluggableRestResource<LifecycleRestResource>, Lifecycle {
 
@@ -14,7 +14,7 @@ class LifecycleRestResourceImpl : LifecycleRestResource, PluggableRestResource<L
     override val protocolVersion: Int
         get() = 2
 
-    override fun hello(pathParam: String, param: Int?) : String {
+    override fun hello(pathParam: String, param: Int?): String {
         return "Hello $param : $pathParam"
     }
 

@@ -14,6 +14,7 @@ dependencies {
     implementation "net.corda:corda-crypto"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation project(":libs:crypto:crypto-utils")
+    implementation project(":libs:utilities")
 
     api "org.bouncycastle:bcprov-jdk18on:$bouncycastleVersion"
     api "org.bouncycastle:bcpkix-jdk18on:$bouncycastleVersion"

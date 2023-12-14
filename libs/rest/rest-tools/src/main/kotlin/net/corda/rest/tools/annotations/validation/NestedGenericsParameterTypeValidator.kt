@@ -10,21 +10,27 @@ class NestedGenericsParameterTypeValidator(private val clazz: Class<out RestReso
 
     companion object {
         fun error(method: Method) = "Method \"${method.name}\" has nested generic parameter types. " +
-                "This complex structure is currently not supported. Please consider simplifying it."
+            "This complex structure is currently not supported. Please consider simplifying it."
     }
 
     override fun validate(): RestValidationResult =
         clazz.methods.fold(RestValidationResult()) { total, method ->
             total + if (method.annotations.any { it.isRestEndpointAnnotation() }) {
                 validateTypeNotNestedGenerics(method)
-            } else RestValidationResult()
+            } else {
+                RestValidationResult()
+            }
         }
 
     private fun validateTypeNotNestedGenerics(method: Method) =
         if (method.parameters.any { it.isNestedGenericType() }) {
             RestValidationResult(listOf(error(method)))
-        } else RestValidationResult()
+        } else {
+            RestValidationResult()
+        }
 
-    private fun Parameter.isNestedGenericType(): Boolean = (this.parameterizedType is ParameterizedType
-            && (this.parameterizedType as ParameterizedType).actualTypeArguments.any { nested -> nested !is Class<*> })
+    private fun Parameter.isNestedGenericType(): Boolean = (
+        this.parameterizedType is ParameterizedType &&
+            (this.parameterizedType as ParameterizedType).actualTypeArguments.any { nested -> nested !is Class<*> }
+        )
 }

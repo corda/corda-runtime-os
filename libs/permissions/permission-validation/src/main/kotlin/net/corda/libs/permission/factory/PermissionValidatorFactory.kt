@@ -1,7 +1,7 @@
 package net.corda.libs.permission.factory
 
-import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.libs.permission.PermissionValidator
+import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import java.util.concurrent.atomic.AtomicReference
 
 interface PermissionValidatorFactory {

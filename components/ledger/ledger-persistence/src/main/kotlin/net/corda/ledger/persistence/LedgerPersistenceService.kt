@@ -51,13 +51,13 @@ class LedgerPersistenceService @Activate constructor(
         when (event) {
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
-                    logger.debug {"The status of event: $event changed to ${event.status}, starting subscription."}
+                    logger.debug { "The status of event: $event changed to ${event.status}, starting subscription." }
                     initialiseRpcSubscription()
                     coordinator.updateStatus(LifecycleStatus.UP)
                 } else {
                     coordinator.updateStatus(event.status)
                     coordinator.closeManagedResources(setOf(RPC_SUBSCRIPTION))
-                    logger.debug {"The status of event: $event changed to ${event.status}, stopping subscription."}
+                    logger.debug { "The status of event: $event changed to ${event.status}, stopping subscription." }
                 }
             }
             is StopEvent -> {

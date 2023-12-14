@@ -5,6 +5,8 @@ plugins {
 
 description "Permission storage reader service"
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:osgi.core'

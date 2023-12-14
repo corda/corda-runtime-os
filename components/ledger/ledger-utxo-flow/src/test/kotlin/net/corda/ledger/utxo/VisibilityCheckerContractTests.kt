@@ -31,7 +31,6 @@ class VisibilityCheckerContractTests {
 
     @Test
     fun `Contract_isVisible should return true when alice is a participant`() {
-
         // Arrange
         val state = TestUtxoContractState(aliceAndBobLedgerKeys)
         val contract = TestUtxoContract()
@@ -46,7 +45,6 @@ class VisibilityCheckerContractTests {
 
     @Test
     fun `Contract_isVisible should return false when alice is not a participant`() {
-
         // Arrange
         val state = TestUtxoContractState(bobOnlyLedgerKeys)
         val contract = TestUtxoContract()

@@ -25,8 +25,9 @@ import org.mockito.kotlin.whenever
 class TokenCacheSubscriptionHandlerImplTest {
     private val rpcSubscription = mock<RPCSubscription<TokenPoolCacheEvent, FlowEvent>>()
     private val subscriptionFactory = mock<SubscriptionFactory>().apply {
-            whenever(createHttpRPCSubscription<TokenPoolCacheEvent, FlowEvent>(any(), any())).thenReturn(
-                rpcSubscription)
+        whenever(createHttpRPCSubscription<TokenPoolCacheEvent, FlowEvent>(any(), any())).thenReturn(
+            rpcSubscription
+        )
     }
     private val serviceConfiguration = mock<ServiceConfiguration>()
     private val toTokenConfig: (Map<String, SmartConfig>) -> SmartConfig = { _ -> MINIMUM_SMART_CONFIG }
@@ -98,7 +99,7 @@ class TokenCacheSubscriptionHandlerImplTest {
         val stateManager1 = mock<StateManager>().apply { whenever(name).thenReturn(stateManagerName) }
         val stateManager2 = mock<StateManager>().apply { whenever(name).thenReturn(stateManagerName) }
 
-       whenever(stateManagerFactory.create(any())).thenReturn(stateManager1, stateManager2)
+        whenever(stateManagerFactory.create(any())).thenReturn(stateManager1, stateManager2)
 
         context.run {
             addDependency(subName)

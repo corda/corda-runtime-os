@@ -1,21 +1,25 @@
 package net.corda.libs.permissions.cache.impl.processor
 
-import java.time.Instant
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.data.permissions.ChangeDetails
 import net.corda.data.permissions.User
 import net.corda.messaging.api.records.Record
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.time.Instant
+import java.util.concurrent.ConcurrentHashMap
 
 class PermissionTopicProcessorTest {
 
-    private val user = User("id1", 1, ChangeDetails(Instant.now()), "user-login1", "full name", true,
-    "hashedPassword", "saltValue", null, false, null, null, emptyList())
+    private val user = User(
+        "id1", 1, ChangeDetails(Instant.now()), "user-login1", "full name", true,
+        "hashedPassword", "saltValue", null, false, null, null, emptyList()
+    )
 
-    private val userUpdated = User("id2", 1, ChangeDetails(Instant.now()), "user-login2", "full name", true,
-        "hashedPassword", "saltValue", null, false, null, null, emptyList())
+    private val userUpdated = User(
+        "id2", 1, ChangeDetails(Instant.now()), "user-login2", "full name", true,
+        "hashedPassword", "saltValue", null, false, null, null, emptyList()
+    )
 
     private val userData: ConcurrentHashMap<String, User> = ConcurrentHashMap()
 
@@ -45,7 +49,7 @@ class PermissionTopicProcessorTest {
 
     @Test
     fun `onNext will add to or update the user data`() {
-        val userTopicProcessor = PermissionTopicProcessor(String::class.java, User::class.java, userData) {  }
+        val userTopicProcessor = PermissionTopicProcessor(String::class.java, User::class.java, userData) { }
         with(userTopicProcessor) {
             onNext(Record("topic", "user1", User()), null, emptyMap())
             assertTrue(userData.size == 1)
@@ -59,7 +63,7 @@ class PermissionTopicProcessorTest {
 
     @Test
     fun `onNext null Record value will delete user`() {
-        val userTopicProcessor = PermissionTopicProcessor(String::class.java, User::class.java, userData) {  }
+        val userTopicProcessor = PermissionTopicProcessor(String::class.java, User::class.java, userData) { }
         with(userTopicProcessor) {
             onNext(Record("topic", "user1", User()), null, emptyMap())
             assertTrue(userData.size == 1)

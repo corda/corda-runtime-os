@@ -34,7 +34,6 @@ internal object RoleCreationUtils {
      * - assigns permissions to the role.
      */
     fun RestCommand.checkOrCreateRole(roleName: String, permissionsToCreate: Set<PermissionTemplate>): Int {
-
         val logger: Logger = LoggerFactory.getLogger(this::class.java)
         val sysOut: Logger = LoggerFactory.getLogger("SystemOut")
         val errOut: Logger = LoggerFactory.getLogger("SystemErr")
@@ -65,14 +64,17 @@ internal object RoleCreationUtils {
                     permissionEndpointClient.start().proxy
                 }
 
-                val bulkRequest = BulkCreatePermissionsRequestType(permissionsToCreate.map { entry ->
-                    CreatePermissionType(
-                        PermissionType.ALLOW,
-                        entry.permissionString,
-                        null,
-                        entry.vnodeShortHash
-                    )
-                }.toSet(), setOf(roleId))
+                val bulkRequest = BulkCreatePermissionsRequestType(
+                    permissionsToCreate.map { entry ->
+                        CreatePermissionType(
+                            PermissionType.ALLOW,
+                            entry.permissionString,
+                            null,
+                            entry.vnodeShortHash
+                        )
+                    }.toSet(),
+                    setOf(roleId)
+                )
 
                 executeWithRetry(waitDuration, "Creating and assigning permissions to the role") {
                     permissionEndpoint.createAndAssignPermissions(bulkRequest)
@@ -81,8 +83,10 @@ internal object RoleCreationUtils {
 
             val end = System.currentTimeMillis()
 
-            sysOut.info("Successfully created $roleName with id: $roleId and assigned permissions. " +
-                    "Elapsed time: ${end - start}ms.")
+            sysOut.info(
+                "Successfully created $roleName with id: $roleId and assigned permissions. " +
+                    "Elapsed time: ${end - start}ms."
+            )
         }
 
         return 0

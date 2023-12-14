@@ -9,8 +9,8 @@ import java.nio.ByteBuffer
 class DbCachedTokenTest {
 
     @Test
-    fun `convert token to avro`(){
-        val avroToken = DbCachedToken("sr", BigDecimal.ONE,"tag","owner").toAvro()
+    fun `convert token to avro`() {
+        val avroToken = DbCachedToken("sr", BigDecimal.ONE, "tag", "owner").toAvro()
 
         assertThat(avroToken.stateRef).isEqualTo("sr")
         assertThat(avroToken.ownerHash).isEqualTo("owner")

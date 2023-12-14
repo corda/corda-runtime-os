@@ -59,7 +59,6 @@ class UtxoTransactionBuilderVerifierTest {
             .hasMessageContaining("cannot be found or is not a valid notary.")
     }
 
-
     @Test
     fun `throws an exception when the time window is null`() {
         whenever(transactionBuilder.timeWindow).thenReturn(null)

@@ -1,10 +1,10 @@
 package net.corda.rest.server.impl.websocket
 
 import io.javalin.websocket.WsConnectContext
-import java.lang.Exception
 import net.corda.rest.ws.DuplexChannel
 import org.eclipse.jetty.websocket.api.CloseStatus
 import org.eclipse.jetty.websocket.api.StatusCode
+import java.lang.Exception
 import java.util.concurrent.Future
 
 internal class ServerDuplexChannel(

@@ -197,7 +197,7 @@ class UtxoRepositoryImpl @Activate constructor(
         metadataBytes: ByteArray,
         groupParametersHash: String,
         cpiFileChecksum: String
-    ){
+    ) {
         entityManager.createNativeQuery(queryProvider.persistTransactionMetadata)
             .setParameter("hash", hash)
             .setParameter("canonicalData", metadataBytes)
@@ -373,9 +373,9 @@ class UtxoRepositoryImpl @Activate constructor(
             .map { t ->
                 UtxoVisibleTransactionOutputDto(
                     t[0] as String, // transactionId
-                    t[1] as Int,    // leaf ID
+                    t[1] as Int, // leaf ID
                     t[2] as ByteArray, // outputs info data
-                    t[3] as ByteArray  // outputs data
+                    t[3] as ByteArray // outputs data
                 )
             }
     }

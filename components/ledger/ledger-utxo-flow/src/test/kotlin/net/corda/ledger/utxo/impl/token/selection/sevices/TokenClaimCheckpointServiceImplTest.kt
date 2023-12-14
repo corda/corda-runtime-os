@@ -36,7 +36,7 @@ class TokenClaimCheckpointServiceImplTest {
             "a",
             PoolKey("a", "b", "c", "d", "e")
         )
-        whenever(tokenClaimFactory.createTokenClaimCheckpointState(claimID,poolKey)).thenReturn(claimState)
+        whenever(tokenClaimFactory.createTokenClaimCheckpointState(claimID, poolKey)).thenReturn(claimState)
 
         target.addClaimToCheckpoint(flowCheckpoint, claimID, poolKey)
 
@@ -63,7 +63,7 @@ class TokenClaimCheckpointServiceImplTest {
             "a",
             PoolKey("a", "b", "c", "d", "e")
         )
-        whenever(tokenClaimFactory.createTokenClaimCheckpointState(claimID,poolKey)).thenReturn(claimState)
+        whenever(tokenClaimFactory.createTokenClaimCheckpointState(claimID, poolKey)).thenReturn(claimState)
 
         target.addClaimToCheckpoint(flowCheckpoint, claimID, poolKey)
 

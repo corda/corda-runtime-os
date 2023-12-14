@@ -19,6 +19,9 @@ object HttpPathUtils {
      * OpenAPI Path always starts with "/"
      */
     fun String.toOpenApiPath(): String =
-        if (this.startsWith("/")) this
-        else "/$this"
+        if (this.startsWith("/")) {
+            this
+        } else {
+            "/$this"
+        }
 }

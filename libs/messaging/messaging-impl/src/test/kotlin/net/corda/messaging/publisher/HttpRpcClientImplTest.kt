@@ -1,5 +1,6 @@
-package net.corda.p2p.gateway.utils
+package net.corda.messaging.publisher
 
+import net.corda.messaging.api.publisher.send
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
@@ -24,7 +25,7 @@ import java.time.Duration
 import java.util.Date
 import java.util.UUID
 
-class HttpRpcClientTest {
+class HttpRpcClientImplTest {
     private val request = UUID(0, 1)
     private val expectedResponse = Date(100L)
     private val serializedRequest = byteArrayOf(1, 2, 3)
@@ -52,7 +53,7 @@ class HttpRpcClientTest {
     }
 
     private val sleepers = mutableListOf<Long>()
-    private val client = HttpRpcClient(
+    private val client = HttpRpcClientImpl(
         avroSchemaRegistry,
         httpClient,
         { requestBuilder },

@@ -20,7 +20,6 @@ import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
-
 class TokenCacheEventProcessorTest {
 
     private val mockHandler = mock<TokenEventHandler<FakeTokenEvent>>()
@@ -37,10 +36,8 @@ class TokenCacheEventProcessorTest {
         tokenCacheEventHandlerMap[FakeTokenEvent::class.java] = mockHandler as TokenEventHandler<in TokenEvent>
     }
 
-
     @Test
     fun `ensure a state and response are returned when an event is processed correctly`() {
-
         val handlerResponse = Record("", "", FlowEvent())
 
         whenever(mockHandler.handle(any(), eq(cachePoolState), eq(event))).thenReturn(handlerResponse)
@@ -53,10 +50,8 @@ class TokenCacheEventProcessorTest {
         assertThat(result.response).isSameAs(handlerResponse.value)
     }
 
-
     @Test
     fun `ensure expired and invalid claims are removed before calling event handlers`() {
-
         val handlerResponse = Record("", "", FlowEvent())
 
         whenever(mockHandler.handle(any(), eq(cachePoolState), eq(event))).thenReturn(handlerResponse)

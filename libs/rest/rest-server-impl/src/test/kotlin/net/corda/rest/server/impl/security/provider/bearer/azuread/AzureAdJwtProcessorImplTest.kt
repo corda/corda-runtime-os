@@ -49,7 +49,8 @@ class AzureAdJwtProcessorImplTest {
     @Test
     fun `process_invalidAudience_shouldThrow`() {
         val jwt = SignedJWT(
-            JWSHeader.Builder(JWSAlgorithm.RS256).build(), JWTClaimsSet.Builder().audience("random")
+            JWSHeader.Builder(JWSAlgorithm.RS256).build(),
+            JWTClaimsSet.Builder().audience("random")
                 .build()
         ).apply { sign(signer) }
 
@@ -61,7 +62,8 @@ class AzureAdJwtProcessorImplTest {
     @Test
     fun `process_invalidIssuer_shouldThrow`() {
         val jwt = SignedJWT(
-            JWSHeader.Builder(JWSAlgorithm.RS256).build(), JWTClaimsSet.Builder().audience(clientId).issuer("random")
+            JWSHeader.Builder(JWSAlgorithm.RS256).build(),
+            JWTClaimsSet.Builder().audience(clientId).issuer("random")
                 .build()
         ).apply { sign(signer) }
 

@@ -1,10 +1,5 @@
 package net.corda.libs.permissions.storage.reader.impl.summary
 
-import java.time.Instant
-import java.time.temporal.ChronoUnit
-import net.corda.data.permissions.summary.PermissionSummary as AvroPermissionSummary
-import net.corda.data.permissions.summary.UserPermissionSummary as AvroUserPermissionSummary
-import net.corda.data.permissions.PermissionType as AvroPermissionType
 import net.corda.libs.permissions.storage.reader.summary.InternalUserPermissionSummary
 import net.corda.permissions.model.PermissionType
 import net.corda.permissions.query.dto.InternalPermissionQueryDto
@@ -14,6 +9,11 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+import net.corda.data.permissions.PermissionType as AvroPermissionType
+import net.corda.data.permissions.summary.PermissionSummary as AvroPermissionSummary
+import net.corda.data.permissions.summary.UserPermissionSummary as AvroUserPermissionSummary
 
 internal class PermissionSummaryReconcilerImplTest {
 
@@ -74,7 +74,6 @@ internal class PermissionSummaryReconcilerImplTest {
 
     @Test
     fun `getSummariesForReconciliation detects difference with adding of a permission summary`() {
-
         val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val earlier = now.minusMillis(1000)
 
@@ -140,7 +139,6 @@ internal class PermissionSummaryReconcilerImplTest {
 
     @Test
     fun `getSummariesForReconciliation detects difference with a permission string`() {
-
         val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val earlier = now.minusMillis(1000)
 
@@ -196,7 +194,6 @@ internal class PermissionSummaryReconcilerImplTest {
 
     @Test
     fun `getSummariesForReconciliation detects difference with a permission type`() {
-
         val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val earlier = now.minusMillis(1000)
 
@@ -254,7 +251,6 @@ internal class PermissionSummaryReconcilerImplTest {
 
     @Test
     fun `getSummariesForReconciliation detects difference with a groupVisibility`() {
-
         val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val earlier = now.minusMillis(1000)
 
@@ -301,7 +297,6 @@ internal class PermissionSummaryReconcilerImplTest {
 
     @Test
     fun `getSummariesForReconciliation detects difference with a virtualNode`() {
-
         val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val earlier = now.minusMillis(1000)
 
@@ -348,7 +343,6 @@ internal class PermissionSummaryReconcilerImplTest {
 
     @Test
     fun `getSummariesForReconciliation detects multiple differences`() {
-
         val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val earlier = now.minusMillis(1000)
 
@@ -401,7 +395,6 @@ internal class PermissionSummaryReconcilerImplTest {
 
     @Test
     fun `getSummariesForReconciliation detects no difference when permissions are the same`() {
-
         val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val earlier = now.minusMillis(1000)
 
@@ -440,7 +433,6 @@ internal class PermissionSummaryReconcilerImplTest {
 
     @Test
     fun `getSummariesForReconciliation detects when a user was removed`() {
-
         val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val earlier = now.minusMillis(1000)
 
@@ -490,7 +482,6 @@ internal class PermissionSummaryReconcilerImplTest {
 
     @Test
     fun `getSummariesForReconciliation detects when a user was added`() {
-
         val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val earlier = now.minusMillis(1000)
 
@@ -547,7 +538,6 @@ internal class PermissionSummaryReconcilerImplTest {
 
     @Test
     fun `getSummariesForReconciliation detects when a user summary calculation from db is actually older than summary the cache`() {
-
         val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val later = now.plusMillis(1000)
 
@@ -583,7 +573,6 @@ internal class PermissionSummaryReconcilerImplTest {
 
     @Test
     fun `getSummariesForReconciliation detects when an id is the only difference`() {
-
         val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val earlier = now.minusMillis(1000)
 
@@ -632,7 +621,6 @@ internal class PermissionSummaryReconcilerImplTest {
 
     @Test
     fun `getSummariesForReconciliation detects when a user is disabled`() {
-
         val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val earlier = now.minusMillis(1000)
 
@@ -672,7 +660,6 @@ internal class PermissionSummaryReconcilerImplTest {
 
     @Test
     fun `getSummariesForReconciliation detects when a user is enabled`() {
-
         val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
         val earlier = now.minusMillis(1000)
 
@@ -709,5 +696,4 @@ internal class PermissionSummaryReconcilerImplTest {
         val resultAvroObject = result["loginName"]!!
         assertTrue(resultAvroObject.enabled)
     }
-
 }
