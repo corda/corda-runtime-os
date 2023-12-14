@@ -18,6 +18,7 @@ import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationRequest
 import net.corda.data.crypto.wire.hsm.registration.HSMRegistrationResponse
 import net.corda.data.crypto.wire.ops.encryption.request.DecryptRpcCommand
 import net.corda.data.crypto.wire.ops.encryption.request.EncryptRpcCommand
+import net.corda.data.crypto.wire.ops.encryption.response.DecryptionOpsResponse
 import net.corda.data.crypto.wire.ops.encryption.response.EncryptionOpsResponse
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
@@ -99,7 +100,7 @@ class   CryptoProcessorImplTest {
         val flowOpsSubscription = mock<Subscription<String, FlowOpsRequest>>()
         val rpcOpsSubscription = mock<RPCSubscription<RpcOpsRequest, RpcOpsResponse>>()
         val encryptionSubscription = mock<RPCSubscription<EncryptRpcCommand, EncryptionOpsResponse>>()
-        val decryptionSubscription = mock<RPCSubscription<DecryptRpcCommand, EncryptionOpsResponse>>()
+        val decryptionSubscription = mock<RPCSubscription<DecryptRpcCommand, DecryptionOpsResponse>>()
         val hsmRegSubscription = mock<RPCSubscription<HSMRegistrationRequest, HSMRegistrationResponse>>()
         val subscriptionFactory = mock<SubscriptionFactory>().also {
             whenever(it.createDurableSubscription<String, FlowOpsRequest>(any(), any(), any(), anyOrNull()))

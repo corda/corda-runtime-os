@@ -8,7 +8,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.ops.encryption.request.DecryptRpcCommand
 import net.corda.data.crypto.wire.ops.encryption.response.CryptoDecryptionResult
 import net.corda.data.crypto.wire.ops.encryption.response.EncryptionOpsError
-import net.corda.data.crypto.wire.ops.encryption.response.EncryptionOpsResponse
+import net.corda.data.crypto.wire.ops.encryption.response.DecryptionOpsResponse
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -51,7 +51,7 @@ class SessionDecryptionProcessorTest {
         val response = processor.process(request)
 
         assertThat(response).isEqualTo(
-            EncryptionOpsResponse(
+            DecryptionOpsResponse(
                 CryptoDecryptionResult(
                     ByteBuffer.wrap(byteArrayOf(5, 2))
                 )

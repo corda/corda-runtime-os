@@ -2,9 +2,12 @@ package net.corda.crypto.client.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.crypto.wire.ops.encryption.request.DecryptRpcCommand
+import net.corda.data.crypto.wire.ops.encryption.request.EncryptRpcCommand
 import net.corda.data.crypto.wire.ops.encryption.response.CryptoDecryptionResult
 import net.corda.data.crypto.wire.ops.encryption.response.CryptoEncryptionResult
 import net.corda.data.crypto.wire.ops.encryption.response.EncryptionOpsResponse
+import net.corda.data.crypto.wire.ops.encryption.response.DecryptionOpsResponse
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
@@ -43,9 +46,11 @@ class SessionEncryptionOpsClientComponentTest {
     private val coordinatorFactory = mock<LifecycleCoordinatorFactory> {
         on { createCoordinator(any(), handler.capture()) } doReturn coordinator
     }
-    private val response = mock<EncryptionOpsResponse>()
+    private val encryptionResponse = mock<EncryptionOpsResponse>()
+    private val decryptionResponse = mock<DecryptionOpsResponse>()
     private val httpRpcClient = mock<HttpRpcClient> {
-        on { send(any(), any(), eq(EncryptionOpsResponse::class.java)) } doReturn response
+        on { send(any(), any<EncryptRpcCommand>(), eq(EncryptionOpsResponse::class.java)) } doReturn encryptionResponse
+        on { send(any(), any<DecryptRpcCommand>(), eq(DecryptionOpsResponse::class.java)) } doReturn decryptionResponse
     }
     private val publisherFactory = mock<PublisherFactory> {
         on { createHttpRpcClient() } doReturn httpRpcClient
@@ -90,7 +95,7 @@ class SessionEncryptionOpsClientComponentTest {
         start()
         val data = "data".toByteArray()
         val results = CryptoEncryptionResult(ByteBuffer.wrap(data))
-        whenever(response.response).doReturn(results)
+        whenever(encryptionResponse.response).doReturn(results)
 
         val encrypted = component.encryptSessionData("hello".toByteArray())
 
@@ -102,7 +107,7 @@ class SessionEncryptionOpsClientComponentTest {
         start()
         val data = "data".toByteArray()
         val results = CryptoDecryptionResult(ByteBuffer.wrap(data))
-        whenever(response.response).doReturn(results)
+        whenever(decryptionResponse.response).doReturn(results)
 
         val encrypted = component.decryptSessionData("hello".toByteArray())
 

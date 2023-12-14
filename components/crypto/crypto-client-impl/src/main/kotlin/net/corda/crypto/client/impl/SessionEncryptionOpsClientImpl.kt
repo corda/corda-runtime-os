@@ -10,6 +10,7 @@ import net.corda.data.crypto.wire.ops.encryption.request.EncryptRpcCommand
 import net.corda.data.crypto.wire.ops.encryption.response.CryptoDecryptionResult
 import net.corda.data.crypto.wire.ops.encryption.response.CryptoEncryptionResult
 import net.corda.data.crypto.wire.ops.encryption.response.EncryptionOpsError
+import net.corda.data.crypto.wire.ops.encryption.response.DecryptionOpsResponse
 import net.corda.data.crypto.wire.ops.encryption.response.EncryptionOpsResponse
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.platform.PlatformInfoProvider
@@ -75,7 +76,7 @@ class SessionEncryptionOpsClientImpl(
             ByteBuffer.wrap(cipherBytes),
             context.toWire()
         )
-        val response = sender.send<EncryptionOpsResponse>(
+        val response = sender.send<DecryptionOpsResponse>(
             getRequestUrl(DECRYPT_PATH), request
         )?.response ?: throw CordaRuntimeException(
             "Received empty response for ${request::class.java.name} for tenant '${CryptoTenants.P2P}'."

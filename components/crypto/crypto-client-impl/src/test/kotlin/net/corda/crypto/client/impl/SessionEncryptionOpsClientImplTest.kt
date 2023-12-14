@@ -9,6 +9,7 @@ import net.corda.data.crypto.wire.ops.encryption.response.CryptoDecryptionResult
 import net.corda.data.crypto.wire.ops.encryption.response.CryptoEncryptionResult
 import net.corda.data.crypto.wire.ops.encryption.response.EncryptionOpsError
 import net.corda.data.crypto.wire.ops.encryption.response.EncryptionOpsResponse
+import net.corda.data.crypto.wire.ops.encryption.response.DecryptionOpsResponse
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.messaging.api.publisher.HttpRpcClient
@@ -27,11 +28,14 @@ import java.net.URI
 import java.nio.ByteBuffer
 
 class SessionEncryptionOpsClientImplTest {
-    private val response = mock<EncryptionOpsResponse>()
-    private val request = argumentCaptor<Any>()
+    private val encryptionResponse = mock<EncryptionOpsResponse>()
+    private val decryptionResponse = mock<DecryptionOpsResponse>()
+    private val encryptionRequest = argumentCaptor<EncryptRpcCommand>()
+    private val decryptionRequest = argumentCaptor<DecryptRpcCommand>()
     private val url = argumentCaptor<URI>()
     private val httpRpcClient = mock<HttpRpcClient> {
-        on { send(url.capture(), request.capture(), eq(EncryptionOpsResponse::class.java)) } doReturn response
+        on { send(url.capture(), encryptionRequest.capture(), eq(EncryptionOpsResponse::class.java)) } doReturn encryptionResponse
+        on { send(url.capture(), decryptionRequest.capture(), eq(DecryptionOpsResponse::class.java)) } doReturn decryptionResponse
     }
     private val platformInfoProvider = mock<PlatformInfoProvider> {
         on { localWorkerSoftwareShortVersion } doReturn "5.x"
@@ -47,6 +51,8 @@ class SessionEncryptionOpsClientImplTest {
 
     @Nested
     inner class EncryptSessionDataTest {
+        private val response = encryptionResponse
+
         @Test
         fun `it returns the correct data`() {
             val data = "data".toByteArray()
@@ -67,7 +73,7 @@ class SessionEncryptionOpsClientImplTest {
 
             client.encryptSessionData(data, "alias", context)
 
-            assertThat(request.firstValue as? EncryptRpcCommand).isEqualTo(
+            assertThat(encryptionRequest.firstValue).isEqualTo(
                 EncryptRpcCommand(
                     ENCRYPTION_SECRET,
                     "alias",
@@ -125,6 +131,7 @@ class SessionEncryptionOpsClientImplTest {
     }
     @Nested
     inner class DecryptSessionDataTest {
+        private val response = decryptionResponse
         @Test
         fun `it returns the correct data`() {
             val data = "data".toByteArray()
@@ -145,7 +152,7 @@ class SessionEncryptionOpsClientImplTest {
 
             client.decryptSessionData(data, "alias", context)
 
-            assertThat(request.firstValue as? DecryptRpcCommand).isEqualTo(
+            assertThat(decryptionRequest.firstValue).isEqualTo(
                 DecryptRpcCommand(
                     ENCRYPTION_SECRET,
                     "alias",
