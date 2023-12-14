@@ -818,6 +818,8 @@ class DynamicMemberRegistrationService @Activate constructor(
     private fun verifyBackchainFlagMovement(previousContext: Map<String, String>, newContext: Map<String, String>) {
         // This property can only be null when upgrading from 5.0/5.1, and we should move it to `true`
         // because pre-5.2 notaries do not support optional backchain
+        // Once the flag is set it should never change during re-registrations
+        // (i.e. no true->false or false->true change allowed)
         val previousOptionalBackchainValue = previousContext[NOTARY_SERVICE_BACKCHAIN_REQUIRED]?.toBoolean()
         val currentOptionalBackchainValue = newContext[NOTARY_SERVICE_BACKCHAIN_REQUIRED]?.toBoolean()
         require((previousOptionalBackchainValue == null && currentOptionalBackchainValue == true)
