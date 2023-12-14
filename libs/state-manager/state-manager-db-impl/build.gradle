@@ -3,7 +3,8 @@ plugins {
     id 'corda.common-publishing'
 }
 
-description 'Database as Persisent Storage Implementation of the State Manager '
+description 'Database as Persistent Storage Implementation of the State Manager'
+ext.cordaEnableFormatting = true
 
 dependencies {
     api project(":libs:state-manager:state-manager-api")
