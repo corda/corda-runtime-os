@@ -72,35 +72,46 @@ fun calculateLeveledHashes(proof: MerkleProof, digest: MerkleTreeHashDigestProvi
                 }
                 // We skip the rest of this section if we chose to make a new node by combining two known hashes.
 
-                //println("\t\t\tat $hashIndex on level $index; cannot pair; have ${hashes.size} hashes")
+                // At this point we know we do not know enough to simply take two known hashes at $index and ${index+1} and roll
+                // them up, so we are going to have to consume a hash.
+
                 if (hashIndex > hashes.size) {                 // We'll need one more hash to continue. So if
                     throw MerkleProofRebuildFailureException(   // we do not have more, the proof is incorrect.
                         "MerkleProof root calculation requires more hashes than the proof has."
                     )
                 }
+
                 newItems += if ((item.first and 1) == 0) {      // Even index means, that the item is on the left
+                    // Make new node with
+                    //   - left being current element, index $item.first, hash $item.second
+                    //   - right being proof of hash at $hashIndex
+                    //
+                    // Also remember we used hashIndex by bumping the counter
                     leveledHashes += LeveledHash(treeDepth, item.first + 1, hashes[hashIndex])
-                    //println("\t\t\tadd left; leveledHashes now ${leveledHashes.size}")
                     Pair(
                         item.first / 2,
                         digest.nodeHash(treeDepth, item.second, hashes[hashIndex++])
                     )
                 } else {                                        // Odd index means, that the item is on the right
+                    // Make new node with:
+                    //   - left being proof of hash at $hashIndex
+                    //   - right being current element, index $item.first, hash $item.second
+                    //
+                    // Also remember we used hashIndex by bumping the counter.
                     leveledHashes += LeveledHash(treeDepth, item.first - 1, hashes[hashIndex])
-                    //println("\t\t\tadd right; leveledHashes now ${leveledHashes.size}")
                     Pair(
                         item.first / 2,
                         digest.nodeHash(treeDepth, hashes[hashIndex++], item.second)
                     )
                 }
             } else {                                            // The last odd element, just gets lifted.
-                //println("\t\t\tlift odd element")
-
                 newItems += Pair((item.first + 1) / 2, item.second)
             }
-            ++index
+            ++index // whatever of the last 3 cases we took, we consumed one element
         }
+        // now we move up a level, so the tree gets smaller...
         currentSize = (currentSize + 1) / 2
+        // and we have a new set of known elements
         nodeHashes = newItems
     }
     if (hashIndex != hashes.size) {
@@ -113,6 +124,5 @@ fun calculateLeveledHashes(proof: MerkleProof, digest: MerkleTreeHashDigestProvi
             "MerkleProof root hash calculation ended with ${nodeHashes.size} node hashes instead of one."
         )
     }
-    //println("computed level hashes ${leveledHashes}\n\n")
     return leveledHashes
 }

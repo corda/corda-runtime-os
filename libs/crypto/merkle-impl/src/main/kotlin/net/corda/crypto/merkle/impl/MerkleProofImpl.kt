@@ -158,8 +158,8 @@ class MerkleProofImpl(
                             "MerkleProof root calculation requires more hashes than the proof has."
                         )
                     }
-                    // We pair the current element with a
-                    // hash from the proof
+
+                    // We pair the current element with a hash from the proof
                     newItems += if ((item.first and 1) == 0) {      // Even index means, that the item is on the left
                         // Make new node with
                         //   - left being current element, index $item.first, hash $item.second
