@@ -151,6 +151,9 @@ class MerkleTreeTest {
         val leaf1 = merkleTree.calcLeafHash(1)
         val manualRoot = merkleTree.digest.nodeHash(0, leaf0, leaf1)
         assertEquals(manualRoot, root)
+        assertTree(merkleTree, """
+            bab170b1c ┳━  00:00:00:00
+                      ┗━  00:00:00:01""")
         assertThat(merkleTree.render()).isEqualTo(
             """
             bab170b1c ┳━  00:00:00:00
@@ -642,3 +645,11 @@ fun MerkleTree.render(): String {
     val labels: List<String> = leaves.map{ " ${it.map { x -> "%02x".format(x)}.joinToString(separator = ":")}" }
     return renderTree(leaves.size, labels, root.hex().slice(0..8)+ " ")
 }
+
+/**
+ * Assert that a merkle tree has exact content.
+ *
+ * @param actual the `MerkleTree` to examine
+ * @param expectedRendered the rendered text form; indentation and extra whitespace before and after is ignored
+ */
+fun assertTree(actual: MerkleTree, expectedRendered: String): AbstractStringAssert<*> = assertThat(actual.render()).isEqualTo(expectedRendered.trimIndent())
