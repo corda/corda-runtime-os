@@ -7,7 +7,7 @@ import net.corda.v5.crypto.merkle.MerkleProofRebuildFailureException
 
 
 /**
- * Work out the hashes required to fulfill a proof, and returned them
+ * Work out the hashes required to fulfill a proof, and return them
  * with their levels and tree indices.
  *
  * @param proof A valid Merkle proof
