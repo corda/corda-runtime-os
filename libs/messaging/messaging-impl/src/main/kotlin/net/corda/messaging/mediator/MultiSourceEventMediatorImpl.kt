@@ -112,6 +112,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                             consumer.subscribe()
                         }
                         pollAndProcessEvents(consumer)
+                        attempts = 0
                     } catch (exception: Exception) {
                         when (exception) {
                             is CordaMessageAPIIntermittentException -> {
