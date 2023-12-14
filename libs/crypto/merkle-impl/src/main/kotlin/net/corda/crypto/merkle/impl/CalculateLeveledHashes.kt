@@ -14,10 +14,12 @@ import net.corda.v5.crypto.merkle.MerkleProofRebuildFailureException
  * @param digest An object that computes hashes for merkle tree elements
  * @return
  */
-@Suppress("NestedBlockDepth")
+@Suppress("NestedBlockDepth", "ThrowsCount")
 fun calculateLeveledHashes(proof: MerkleProof, digest: MerkleTreeHashDigestProvider): List<LeveledHash> {
     require(proof.leaves.isNotEmpty(), {"MerkleProof must have leaves"})
-    require(proof.leaves.all { it.index >= 0 && it.index < proof.treeSize }, {"MerkleProof leaves cannot point outside of the original tree."})
+    require(proof.leaves.all { it.index >= 0 && it.index < proof.treeSize }) {
+        "MerkleProof leaves cannot point outside of the original tree."
+    }
     require(proof.leaves.map { it.index }.toSet().size == proof.leaves.size, {"MerkleProof leaves cannot have duplications."})
     val hashes = proof.hashes
     if (proof.hashes.isEmpty()) return emptyList()
@@ -48,8 +50,7 @@ fun calculateLeveledHashes(proof: MerkleProof, digest: MerkleTreeHashDigestProvi
                 // the last element later.
                 if (index < nodeHashes.size - 1) {              // If there is a next element...
                     val next = nodeHashes[index + 1]
-                    //println("\t\t\tthere is a next element $next")
-                    if (item.first xor next.first == 1) {       // ... and they are a pair with the current
+                     if (item.first xor next.first == 1) {       // ... and they are a pair with the current
                         newItems += Pair(                       // in the original tree, we create their parent.
                             item.first / 2,
                             digest.nodeHash(treeDepth, item.second, next.second)

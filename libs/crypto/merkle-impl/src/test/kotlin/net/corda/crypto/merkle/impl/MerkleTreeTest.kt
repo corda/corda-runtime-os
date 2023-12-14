@@ -151,9 +151,11 @@ class MerkleTreeTest {
         val leaf1 = merkleTree.calcLeafHash(1)
         val manualRoot = merkleTree.digest.nodeHash(0, leaf0, leaf1)
         assertEquals(manualRoot, root)
-        assertTree(merkleTree, """
+        assertTree(
+            merkleTree, """
             bab170b1c ┳━  00:00:00:00
-                      ┗━  00:00:00:01""")
+                      ┗━  00:00:00:01"""
+        )
 
     }
 
@@ -169,11 +171,13 @@ class MerkleTreeTest {
         val manualRoot = merkleTree.digest.nodeHash(0, node1, leaf2)
 
         assertEquals(manualRoot, root)
-        assertTree(merkleTree,"""
+        assertTree(
+            merkleTree, """
                 a9d5543c2 ┳┳━ 00:00:00:00
                           ┃┗━ 00:00:00:01
                           ┗━━ 00:00:00:02
-            """)
+            """
+        )
     }
 
     @Test
@@ -245,7 +249,8 @@ class MerkleTreeTest {
         val node4 = merkleTree.digest.nodeHash(2, node1, node2)
         val node5 = merkleTree.digest.nodeHash(1, node3, leaf6)
         val manualRoot = merkleTree.digest.nodeHash(0, node4, node5)
-        assertTree(merkleTree, """
+        assertTree(
+            merkleTree, """
              4817d5722 ┳┳┳ 00:00:00:00
                        ┃┃┗ 00:00:00:01
                        ┃┗┳ 00:00:00:02
@@ -253,7 +258,8 @@ class MerkleTreeTest {
                        ┗┳┳ 00:00:00:04
                         ┃┗ 00:00:00:05
                         ┗━ 00:00:00:06
-                        """)
+                        """
+        )
         assertEquals(manualRoot, root)
     }
 
@@ -278,7 +284,8 @@ class MerkleTreeTest {
         val node6 = merkleTree.digest.nodeHash(1, node3, node4)
         val manualRoot = merkleTree.digest.nodeHash(0, node5, node6)
         assertEquals(manualRoot, root)
-        assertTree(merkleTree, """
+        assertTree(
+            merkleTree, """
               a868a19c7 ┳┳┳ 00:00:00:00
                         ┃┃┗ 00:00:00:01
                         ┃┗┳ 00:00:00:02
@@ -287,7 +294,8 @@ class MerkleTreeTest {
                          ┃┗ 00:00:00:05
                          ┗┳ 00:00:00:06
                           ┗ 00:00:00:07
-                        """)
+                        """
+        )
     }
 
     @Test
@@ -350,13 +358,16 @@ class MerkleTreeTest {
         }
 
         // Test all the possible combinations of leaves for the proof.
-        // And make a note of the proofs for furhter testing later
-        (1 until (1 shl treeSize)).forEach { i ->
+        for (i in 1 until (1 shl treeSize)) {
             val leafIndicesCombination = (0 until treeSize).filter { (i and (1 shl it)) != 0 }
             testLeafCombination(merkleTree, leafIndicesCombination, merkleTree.root, treeSize).also {
                 val hashes = calculateLeveledHashes(it, trivialHashDigestProvider)
 
-                println("Merkle proof for a tree of size $treeSize with ${hashes.size} hashes supplied in the proof where we know $leafIndicesCombination")
+                println(
+                    "Merkle proof for a tree of size $treeSize with ${hashes.size} " +
+                            "hashes supplied in the proof where we know $leafIndicesCombination"
+                )
+
 
                 val des = (0 until merkleTree.leaves.size).map { y ->
                     val caption = if (y in leafIndicesCombination) "known data" else "gap"
@@ -382,7 +393,6 @@ class MerkleTreeTest {
             }
         }
     }
-
 
     private fun testLeafCombination(
         merkleTree: MerkleTree,
@@ -514,7 +524,8 @@ class MerkleTreeTest {
         val merkleTreeDefault = MerkleTreeImpl.createMerkleTree(leafData, defaultHashDigestProvider)
         val proof1 = merkleTreeDefault.createAuditProof(leafList)
         assertEquals(true, proof1.verify(merkleTreeDefault.root, defaultHashDigestProvider))
-        val tweakedHash = TweakableHashDigestProvider(digestAlgorithm, digestService, ByteArray(4) { 0x12 }, ByteArray(4) { 0x34 })
+        val tweakedHash =
+            TweakableHashDigestProvider(digestAlgorithm, digestService, ByteArray(4) { 0x12 }, ByteArray(4) { 0x34 })
         val merkleTreeTweaked = MerkleTreeImpl.createMerkleTree(leafData, tweakedHash)
         val proof2 = merkleTreeTweaked.createAuditProof(leafList)
         assertEquals(true, proof2.verify(merkleTreeTweaked.root, tweakedHash))
@@ -544,7 +555,8 @@ class MerkleTreeTest {
         assertEquals(leafData.size, sizeOnlyProof.leaves.size)
         assertEquals(
             true,
-            sizeOnlyProof.verify(nonceMerkleTree.root,
+            sizeOnlyProof.verify(
+                nonceMerkleTree.root,
                 NonceHashDigestProvider.SizeOnlyVerify(digestAlgorithm, digestService)
             )
         )
@@ -564,11 +576,12 @@ class MerkleTreeTest {
     }
 }
 
-fun SecureHash.hex() = bytes.joinToString(separator="") { "%02x".format(it) }
+fun SecureHash.hex() = bytes.joinToString(separator = "") { "%02x".format(it) }
 
-fun assertHash(hash: SecureHash, valuePrefix: String): AbstractStringAssert<*> =assertThat(hash.hex()).startsWith(valuePrefix)
+fun assertHash(hash: SecureHash, valuePrefix: String): AbstractStringAssert<*> =
+    assertThat(hash.hex()).startsWith(valuePrefix)
 
-fun renderTree(treeSize: Int, des: List<String>, rootLabel: String=""): String {
+fun renderTree(treeSize: Int, des: List<String>, rootLabel: String = ""): String {
     var values: MutableList<Pair<Int, Int>> = (0 until treeSize).map { it to it }.toMutableList()
     var levels: MutableList<List<Pair<Int, Int>>> = mutableListOf(values.toList())
     while (values.size > 1) {
@@ -593,7 +606,7 @@ fun renderTree(treeSize: Int, des: List<String>, rootLabel: String=""): String {
 
     levels.forEachIndexed { level, ranges ->
         ranges.forEach { range ->
-            val x = levels.size - level -1
+            val x = levels.size - level - 1
             grid.put(x to range.first, '━')
         }
     }
@@ -612,8 +625,8 @@ fun renderTree(treeSize: Int, des: List<String>, rootLabel: String=""): String {
                         '━' -> '┳'
                         else -> '┃'
                     }
-                    (range.first + 1 until extent).forEach {
-                        grid[x to it] = '┃'
+                    for (y in range.first + 1 until extent) {
+                        grid[x to y] = '┃'
                     }
                     val curbot = grid.getOrDefault(x to range.second, ' ')
                     grid[x to extent] = when (curbot) {
@@ -626,8 +639,8 @@ fun renderTree(treeSize: Int, des: List<String>, rootLabel: String=""): String {
     }
 
     val lines = (0 until treeSize).map { y ->
-        val line = (0 ..values.size+1).map { x -> grid.getOrDefault(x to y, ' ') }
-        val prefix = if (y ==0) rootLabel else " ".repeat(rootLabel.length)
+        val line = (0..values.size + 1).map { x -> grid.getOrDefault(x to y, ' ') }
+        val prefix = if (y == 0) rootLabel else " ".repeat(rootLabel.length)
         val label: String = des.getOrNull(y) ?: ""
         "$prefix${line.joinToString("")}$label"
     }
@@ -636,8 +649,8 @@ fun renderTree(treeSize: Int, des: List<String>, rootLabel: String=""): String {
 }
 
 fun MerkleTree.render(): String {
-    val labels: List<String> = leaves.map{ " ${it.map { x -> "%02x".format(x)}.joinToString(separator = ":")}" }
-    return renderTree(leaves.size, labels, root.hex().slice(0..8)+ " ")
+    val labels: List<String> = leaves.map { " ${it.map { x -> "%02x".format(x) }.joinToString(separator = ":")}" }
+    return renderTree(leaves.size, labels, root.hex().slice(0..8) + " ")
 }
 
 /**
@@ -646,4 +659,5 @@ fun MerkleTree.render(): String {
  * @param actual the `MerkleTree` to examine
  * @param expectedRendered the rendered text form; indentation and extra whitespace before and after is ignored
  */
-fun assertTree(actual: MerkleTree, expectedRendered: String): AbstractStringAssert<*> = assertThat(actual.render()).isEqualTo(expectedRendered.trimIndent())
+fun assertTree(actual: MerkleTree, expectedRendered: String): AbstractStringAssert<*> =
+    assertThat(actual.render()).isEqualTo(expectedRendered.trimIndent())

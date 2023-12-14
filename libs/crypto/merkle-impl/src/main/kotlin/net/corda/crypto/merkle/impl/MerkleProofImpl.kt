@@ -86,11 +86,12 @@ class MerkleProofImpl(
         var hashIndex = 0
         val sortedLeaves = leaves.sortedBy { it.index }
         // work out nodeHashes, which is a list of node information for the current level we operate at
-        var nodeHashes: List<Pair<Int, SecureHash>> = sortedLeaves.map { Pair(it.index, digest.leafHash(it.index, it.nonce, it.leafData)) }
+        var nodeHashes: List<Pair<Int, SecureHash>> =
+            sortedLeaves.map { Pair(it.index, digest.leafHash(it.index, it.nonce, it.leafData)) }
         var treeDepth = MerkleTreeImpl.treeDepth(treeSize)         // initialised to the depth of tree we should
-                                                                   // need for the number of elements
+        // need for the number of elements
         var currentSize = treeSize                                 // outer loop variable; the number of
-                                                                   // leaves left as we roll up the tree
+        // leaves left as we roll up the tree
 
         // loop over each level of the tree, starting at the deepest level (i.e. furthest from root)
         while (currentSize > 1) {
@@ -111,17 +112,20 @@ class MerkleProofImpl(
             // $nodeHashes has a list of pairs of the index and hash of the node. We checked we have some content.
 
             val newItems = mutableListOf<Pair<Int, SecureHash>>()   // this will become nodeHashes at the end of this
-                                                                    // out iteration
+            // out iteration
 
             // Now walk over the hashes at this tree level, striding over 1 or 2 at a time
             var index = 0
             while (index < nodeHashes.size) {
                 val item = nodeHashes[index]
-                // Now we are at level $treeDepth from the top of the tree (counting from 1), and at $index nodes from the left (counting from 0)
-                // $item is a pair of the index and the hash at the index. Since index == item.index we don't really need to use item.index
+                // Now we are at level $treeDepth from the top of the tree (counting from 1),
+                //     and at $index nodes from the left (counting from 0)
+                // $item is a pair of the index and the hash at the index.
+                //
+                // Since index == item.first we don't really need to use item.first
 
                 if (item.first < currentSize and 0x7FFFFFFE) {      // If the level has odd elements, we'll process
-                                                                    // the last element later.
+                    // the last element later.
                     if (index < nodeHashes.size - 1) {              // If there is a next element...
                         val next = nodeHashes[index + 1]
                         // Decide if we can consume the next two elements since they are adjancent in the Merkle tree
@@ -151,8 +155,8 @@ class MerkleProofImpl(
                             "MerkleProof root calculation requires more hashes than the proof has."
                         )
                     }
-                                                                    // We pair the current element with a
-                                                                    // hash from the proof
+                    // We pair the current element with a
+                    // hash from the proof
                     newItems += if ((item.first and 1) == 0) {      // Even index means, that the item is on the left
                         // Make new node with
                         //   - left being current element, index $item.first, hash $item.second
