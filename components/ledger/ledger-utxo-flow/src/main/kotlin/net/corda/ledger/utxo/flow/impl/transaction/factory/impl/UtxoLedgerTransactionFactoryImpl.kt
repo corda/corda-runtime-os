@@ -16,6 +16,7 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -75,6 +76,19 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
             WrappedUtxoWireTransaction(wireTransaction, serializationService),
             inputStateAndRefs.map { it.toStateAndRef<ContractState>(serializationService) },
             referenceStateAndRefs.map { it.toStateAndRef<ContractState>(serializationService) },
+            getGroupParameters(wireTransaction)
+        )
+    }
+
+    override fun createWithStateAndRefs(
+        wireTransaction: WireTransaction,
+        inputStateAndRefs: List<StateAndRef<*>>,
+        referenceStateAndRefs: List<StateAndRef<*>>
+    ): UtxoLedgerTransactionInternal {
+        return UtxoLedgerTransactionImpl(
+            WrappedUtxoWireTransaction(wireTransaction, serializationService),
+            inputStateAndRefs,
+            referenceStateAndRefs,
             getGroupParameters(wireTransaction)
         )
     }

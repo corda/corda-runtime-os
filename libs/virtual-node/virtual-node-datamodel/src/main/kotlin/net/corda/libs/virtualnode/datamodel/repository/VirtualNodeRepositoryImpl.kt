@@ -87,6 +87,24 @@ class VirtualNodeRepositoryImpl : VirtualNodeRepository {
         }
     }
 
+    override fun putVirtualNodeOperation(entityManager: EntityManager, operation: VirtualNodeOperationDto) {
+        entityManager.merge(
+            with(operation) {
+                VirtualNodeOperationEntity(
+                    id = requestId,
+                    requestId = requestId,
+                    data = requestData,
+                    state = enumValueOf(state),
+                    operationType = enumValueOf(operationType),
+                    requestTimestamp = requestTimestamp,
+                    latestUpdateTimestamp = latestUpdateTimestamp,
+                    heartbeatTimestamp = heartbeatTimestamp,
+                    errors = errors
+                )
+            }
+        )
+    }
+
     /**
      * Writes a virtual node to the database.
      * @param holdingId Holding identity
