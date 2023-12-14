@@ -120,7 +120,6 @@ class MerkleProofImpl(
             var index = 0
             while (index < nodeHashes.size) {
                 val item = nodeHashes[index]
-                // Now walk over the hashes at this tree level, striding over 1 or 2 at a time
                 // We are at level $treeDepth from the top of the tree (where 1 is the root of the tree),
                 //     and at $index nodes from the left (counting from 0)
                 // $item is a pair of the index and the hash at the index.
