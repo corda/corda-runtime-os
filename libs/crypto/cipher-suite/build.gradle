@@ -17,8 +17,7 @@ dependencies {
     api 'net.corda:corda-crypto'
     api 'net.corda:corda-crypto-extensions'
 
-    api "org.bouncycastle:bcprov-jdk18on:$bouncycastleVersion"
-    api "org.bouncycastle:bcpkix-jdk18on:$bouncycastleVersion"
+    api libs.bundles.bouncycastle
 
 }
 

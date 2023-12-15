@@ -16,8 +16,7 @@ dependencies {
     implementation project(":libs:crypto:crypto-utils")
     implementation project(":libs:utilities")
 
-    api "org.bouncycastle:bcprov-jdk18on:$bouncycastleVersion"
-    api "org.bouncycastle:bcpkix-jdk18on:$bouncycastleVersion"
+    api libs.bundles.bouncycastle
 
     testImplementation project(':libs:crypto:cipher-suite')
 
