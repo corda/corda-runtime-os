@@ -67,7 +67,7 @@ AQIDAQAB
             assertThat(avro.protocolCommonDetails.sessionId).isEqualTo("sessionId")
             assertThat(avro.supportedModes).containsOnly(ProtocolMode.AUTHENTICATION_ONLY)
             assertThat(avro.groupId).isEqualTo("group")
-            assertThat(avro.ourPublicKey.trim()).isEqualTo(publicKeyPem.trim())
+            assertThat(avro.ourPublicKey.replace("\n", System.lineSeparator()).trim()).isEqualTo(publicKeyPem.trim())
             assertThat(avro.certificateCheckMode?.revocationCheckMode).isEqualTo(RevocationCheckMode.HARD_FAIL)
             assertThat(avro.certificateCheckMode?.truststore).containsOnly("one")
         }
