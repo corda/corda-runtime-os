@@ -31,7 +31,8 @@
 //
 //    constructor(loggingSink: Consumer<String>) : this(LoggingRegistryConfig.DEFAULT, Clock.SYSTEM, loggingSink)
 //
-//    constructor(config: LoggingRegistryConfig, clock: Clock, loggingSink: Consumer<String>) : this(config, clock, NamedThreadFactory("file-metrics-publisher"), loggingSink)
+//    constructor(config: LoggingRegistryConfig, clock: Clock, loggingSink: Consumer<String>) :
+//    this(config, clock, NamedThreadFactory("file-metrics-publisher"), loggingSink)
 //
 //    override fun getBaseTimeUnit(): TimeUnit {
 //        return TimeUnit.MILLISECONDS
@@ -52,7 +53,9 @@
 //    inner class Printer(val meter: Meter) {
 //
 //        fun time(time: Double): String {
-//            return TimeUtils.format(Duration.ofNanos(TimeUtils.convert(time, baseTimeUnit, TimeUnit.NANOSECONDS).toLong()))
+//            return TimeUtils.format(Duration.ofNanos(TimeUtils.convert(
+//            time, baseTimeUnit,
+//            TimeUnit.NANOSECONDS).toLong()))
 //        }
 //
 //        fun rate(rate: Double): String {
