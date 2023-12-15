@@ -17,7 +17,7 @@ dependencies {
     implementation "com.nimbusds:oauth2-oidc-sdk:$nimbusVersion"
     implementation "com.konghq:unirest-java:$unirestVersion"
 
-    implementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    implementation libs.mockito.kotlin
 
     implementation project(":libs:rest:rest")
     implementation project(":libs:rest:rest-common")

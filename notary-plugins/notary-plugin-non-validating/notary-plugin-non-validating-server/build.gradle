@@ -28,10 +28,7 @@ dependencies {
     // Common package pulled in as transitive dependency through API
     cordapp project(":notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-api")
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-
+    testImplementation libs.bundles.test
     testImplementation project(":libs:crypto:crypto-core")
     testImplementation project(':libs:serialization:serialization-amqp')
     testImplementation project(":libs:uniqueness:common")

@@ -49,11 +49,14 @@ class StateManagerFactoryImpl @Activate constructor(
                 val maxPoolSize = config.getInt(StateManagerConfig.Database.JDBC_POOL_MAX_SIZE)
                 val minPoolSize = config.getIntOrDefault(StateManagerConfig.Database.JDBC_POOL_MIN_SIZE, maxPoolSize)
                 val idleTimeout = config.getInt(StateManagerConfig.Database.JDBC_POOL_IDLE_TIMEOUT_SECONDS).toLong().run(
-                    Duration::ofSeconds)
+                    Duration::ofSeconds
+                )
                 val maxLifetime = config.getInt(StateManagerConfig.Database.JDBC_POOL_MAX_LIFETIME_SECONDS).toLong().run(
-                    Duration::ofSeconds)
+                    Duration::ofSeconds
+                )
                 val keepAliveTime = config.getInt(StateManagerConfig.Database.JDBC_POOL_KEEP_ALIVE_TIME_SECONDS).toLong().run(
-                    Duration::ofSeconds)
+                    Duration::ofSeconds
+                )
                 val validationTimeout =
                     config.getInt(StateManagerConfig.Database.JDBC_POOL_VALIDATION_TIMEOUT_SECONDS).toLong().run(Duration::ofSeconds)
 
@@ -74,7 +77,8 @@ class StateManagerFactoryImpl @Activate constructor(
 
         return StateManagerImpl(
             lifecycleCoordinatorFactory,
-            dataSource!!, StateRepositoryImpl(queryProvider())
+            dataSource!!,
+            StateRepositoryImpl(queryProvider())
         )
     }
 }

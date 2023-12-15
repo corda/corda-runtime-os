@@ -26,8 +26,6 @@ dependencies {
     implementation project(":libs:messaging:db-message-bus-datamodel")
     implementation project(":libs:messaging:db-message-bus-impl")
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     integrationTestImplementation project(":libs:db:db-admin")
     integrationTestImplementation project(":libs:db:db-admin-impl")

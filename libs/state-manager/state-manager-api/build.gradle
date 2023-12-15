@@ -2,7 +2,9 @@ plugins {
     id 'corda.common-publishing'
     id 'corda.common-library'
 }
+
 description 'State Manager API'
+ext.cordaEnableFormatting = true
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"

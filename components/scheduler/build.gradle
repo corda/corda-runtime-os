@@ -27,9 +27,5 @@ dependencies {
     implementation project(':libs:scheduler:scheduler-datamodel')
     implementation project(':libs:utilities')
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
 }
