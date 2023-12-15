@@ -2,11 +2,11 @@ package net.corda.ledger.utxo.serialization
 
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.JsonSerializer
 import com.fasterxml.jackson.databind.JsonDeserializer
+import com.fasterxml.jackson.databind.JsonSerializer
+import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.exc.InvalidDefinitionException
@@ -33,13 +33,12 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrowsExactly
 import org.junit.jupiter.api.Test
 import java.util.*
 import kotlin.test.assertContains
-
 
 class DigitalSignatureAndMetadataJsonSerializationTests : UtxoLedgerTest() {
 
@@ -56,17 +55,21 @@ class DigitalSignatureAndMetadataJsonSerializationTests : UtxoLedgerTest() {
         // Clone of SecureHash serializer/deserializer from JsonMarshallingServiceImpl call which are not exposed outside,
         // however they work together with SUT 'ProofOfActionSerialisationModule.module'.
         private val serializersFromJsonMarshallingService = SimpleModule().apply {
-            this.addSerializer(SecureHash::class.java,
+            this.addSerializer(
+                SecureHash::class.java,
                 object : JsonSerializer<SecureHash>() {
                     override fun serialize(obj: SecureHash, generator: JsonGenerator, provider: SerializerProvider) {
                         generator.writeString(obj.toString())
                     }
-                })
-            this.addDeserializer(SecureHash::class.java,
+                }
+            )
+            this.addDeserializer(
+                SecureHash::class.java,
                 object : JsonDeserializer<SecureHash>() {
                     override fun deserialize(parser: JsonParser, ctxt: DeserializationContext): SecureHash =
                         parseSecureHash(parser.text)
-                })
+                }
+            )
         }
 
         private val mapperWithoutProofOfActionModule =
@@ -90,7 +93,7 @@ class DigitalSignatureAndMetadataJsonSerializationTests : UtxoLedgerTest() {
     @Test
     fun secureHash() {
         val by: SecureHash = getSignatureWithMetadataExample().by
-        val json : String = mapper.writeValueAsString(by)
+        val json: String = mapper.writeValueAsString(by)
         val deserializeObject = mapper.readValue(json, SecureHash::class.java)
         assertEquals(by, deserializeObject)
     }
@@ -114,14 +117,15 @@ class DigitalSignatureAndMetadataJsonSerializationTests : UtxoLedgerTest() {
 
     @Test
     fun `digitalSignatureAndMetadata with Merkle proof`() {
-        val signatureBatches = transactionSignatureService.signBatch(listOf(signedTransaction), listOf(publicKeyExample))
+        val signatureBatches =
+            transactionSignatureService.signBatch(listOf(signedTransaction), listOf(publicKeyExample))
         assertEquals(1, signatureBatches.size)
         val signatureBatch = signatureBatches.first()
         assertEquals(1, signatureBatch.size)
         val signature: DigitalSignatureAndMetadata = signatureBatch.first()
         assertNotNull(signature.proof)
         val json: String = mapper.writeValueAsString(signature)
-        assertContains(json, "signature") //just double check that string is non empty
+        assertContains(json, "signature") // just double check that string is non empty
         assertContains(json, "metadata")
         assertContains(json, "proof")
         val deserializedObject = mapper.readValue(json, DigitalSignatureAndMetadata::class.java)
@@ -130,7 +134,8 @@ class DigitalSignatureAndMetadataJsonSerializationTests : UtxoLedgerTest() {
 
     @Test
     fun `deserialization fails without ProofOfActionSerialisation module`() {
-        val signatureBatches = transactionSignatureService.signBatch(listOf(signedTransaction), listOf(publicKeyExample))
+        val signatureBatches =
+            transactionSignatureService.signBatch(listOf(signedTransaction), listOf(publicKeyExample))
         assertEquals(1, signatureBatches.size)
         val signatureBatch = signatureBatches.first()
         assertEquals(1, signatureBatch.size)

@@ -63,7 +63,7 @@ open class UtxoFilteredTransactionTestBase {
 
     val digestService =
         DigestServiceImpl(PlatformDigestServiceImpl(CipherSchemeMetadataImpl()), null)
-    protected val jsonMarshallingService = JsonMarshallingServiceImpl(mock<MerkleProofProvider>{})
+    protected val jsonMarshallingService = JsonMarshallingServiceImpl(mock<MerkleProofProvider> {})
     protected val jsonValidator = JsonValidatorImpl()
     protected val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
     val serializationService = mock<SerializationService>()

@@ -93,7 +93,7 @@ class UtxoPersistenceServiceImplTest {
         mockDigestService,
         storage,
         DefaultContractStateVaultJsonFactoryImpl(),
-        JsonMarshallingServiceImpl(mock<MerkleProofProvider>{}), // We could mock this but this is basically just a layer on top of Jackson
+        JsonMarshallingServiceImpl(mock<MerkleProofProvider> {}), // We could mock this but this is basically just a layer on top of Jackson
         UTCClock()
     )
 
@@ -146,7 +146,7 @@ class UtxoPersistenceServiceImplTest {
             mockDigestService,
             storage,
             emptyDefaultContractStateVaultJsonFactory,
-            JsonMarshallingServiceImpl(mock<MerkleProofProvider>{}),
+            JsonMarshallingServiceImpl(mock<MerkleProofProvider> {}),
             UTCClock()
         )
 
@@ -237,7 +237,7 @@ class UtxoPersistenceServiceImplTest {
             mockDigestService,
             ContractStateVaultJsonFactoryRegistryImpl(), // Empty storage
             DefaultContractStateVaultJsonFactoryImpl(),
-            JsonMarshallingServiceImpl(mock<MerkleProofProvider>{}),
+            JsonMarshallingServiceImpl(mock<MerkleProofProvider> {}),
             UTCClock()
         )
 
@@ -277,7 +277,7 @@ class UtxoPersistenceServiceImplTest {
             mockDigestService,
             storage,
             DefaultContractStateVaultJsonFactoryImpl(),
-            JsonMarshallingServiceImpl(mock<MerkleProofProvider>{}),
+            JsonMarshallingServiceImpl(mock<MerkleProofProvider> {}),
             UTCClock()
         )
 
