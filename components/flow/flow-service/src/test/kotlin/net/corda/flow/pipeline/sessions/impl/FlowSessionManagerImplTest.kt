@@ -106,7 +106,9 @@ class FlowSessionManagerImplTest {
         mutableListOf(),
         sessionId = SESSION_ID,
         counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-        sessionProperties = KeyValueStore().avro
+        sessionProperties = KeyValueStore().apply {
+            put(Constants.FLOW_SESSION_REQUIRE_CLOSE, false.toString())
+        }.avro
     )
 
     private val anotherSessionState = buildSessionState(
@@ -117,7 +119,9 @@ class FlowSessionManagerImplTest {
         mutableListOf(),
         sessionId = ANOTHER_SESSION_ID,
         counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-        sessionProperties = KeyValueStore().avro
+        sessionProperties = KeyValueStore().apply {
+            put(Constants.FLOW_SESSION_REQUIRE_CLOSE, false.toString())
+        }.avro
     )
 
     private val flowKey = mock<FlowKey>()
