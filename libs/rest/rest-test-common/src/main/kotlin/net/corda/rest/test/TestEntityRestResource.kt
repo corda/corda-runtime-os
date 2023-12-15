@@ -2,14 +2,14 @@ package net.corda.rest.test
 
 import net.corda.rest.JsonObject
 import net.corda.rest.RestResource
+import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.rest.annotations.HttpDELETE
 import net.corda.rest.annotations.HttpGET
 import net.corda.rest.annotations.HttpPOST
 import net.corda.rest.annotations.HttpPUT
+import net.corda.rest.annotations.HttpRestResource
 import net.corda.rest.annotations.RestPathParameter
 import net.corda.rest.annotations.RestQueryParameter
-import net.corda.rest.annotations.ClientRequestBodyParameter
-import net.corda.rest.annotations.HttpRestResource
 
 @HttpRestResource(name = "TestEntity", description = "RESTful operations on Test Entity", path = "testEntity/")
 interface TestEntityRestResource : RestResource {

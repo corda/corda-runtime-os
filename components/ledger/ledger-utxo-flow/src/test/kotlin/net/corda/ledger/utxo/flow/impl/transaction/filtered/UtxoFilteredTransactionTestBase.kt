@@ -13,6 +13,7 @@ import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.impl.transaction.filtered.factory.FilteredTransactionFactoryImpl
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters
+import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters.AuditProof.AuditProofPredicate
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
@@ -120,23 +121,32 @@ open class UtxoFilteredTransactionTestBase {
             componentGroupFilterParameters = listOf(
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.METADATA.ordinal,
-                    TransactionMetadataImpl::class.java
-                ) { true },
-                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.NOTARY.ordinal, Any::class.java) { true },
+                    TransactionMetadataImpl::class.java,
+                    AuditProofPredicate.Content { true }
+                ),
+                ComponentGroupFilterParameters.AuditProof(
+                    UtxoComponentGroup.NOTARY.ordinal,
+                    Any::class.java,
+                    AuditProofPredicate.Content { true }
+                ),
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.OUTPUTS_INFO.ordinal,
-                    UtxoOutputInfoComponent::class.java
-                ) { true },
+                    UtxoOutputInfoComponent::class.java,
+                    AuditProofPredicate.Content { true }
+                ),
                 ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.COMMANDS_INFO.ordinal),
-                ComponentGroupFilterParameters.AuditProof(UtxoComponentGroup.INPUTS.ordinal, StateRef::class.java) { true },
+                ComponentGroupFilterParameters.AuditProof(
+                    UtxoComponentGroup.INPUTS.ordinal,
+                    StateRef::class.java,
+                    AuditProofPredicate.Content { true }
+                ),
                 ComponentGroupFilterParameters.AuditProof(
                     UtxoComponentGroup.OUTPUTS.ordinal,
-                    ContractState::class.java
-                ) { true },
+                    ContractState::class.java,
+                    AuditProofPredicate.Content { true }
+                ),
                 ComponentGroupFilterParameters.SizeProof(UtxoComponentGroup.COMMANDS.ordinal),
             )
         )
-
     }
-
 }

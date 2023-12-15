@@ -5,6 +5,8 @@ plugins {
 
 description 'Permission storage writer library Impl'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
@@ -25,6 +27,4 @@ dependencies {
 
     implementation "javax.persistence:javax.persistence-api"
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

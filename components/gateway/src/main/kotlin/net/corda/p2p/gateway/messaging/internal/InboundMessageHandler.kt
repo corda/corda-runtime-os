@@ -14,6 +14,7 @@ import net.corda.data.p2p.crypto.ResponderHelloMessage
 import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
@@ -51,7 +52,9 @@ internal class InboundMessageHandler(
     subscriptionFactory: SubscriptionFactory,
     messagingConfiguration: SmartConfig,
     commonComponents: CommonComponents,
-    private val avroSchemaRegistry: AvroSchemaRegistry
+    private val avroSchemaRegistry: AvroSchemaRegistry,
+    platformInfoProvider: PlatformInfoProvider,
+    bootConfig: SmartConfig,
 ) : RequestListener, LifecycleWithDominoTile {
 
     init {
@@ -89,6 +92,12 @@ internal class InboundMessageHandler(
         subscriptionFactory,
         messagingConfiguration
     )
+    private val linkManagerClient =
+        LinkManagerRpcClient(
+            publisherFactory,
+            platformInfoProvider,
+            bootConfig,
+        )
 
     private val server = ReconfigurableHttpServer(
         lifecycleCoordinatorFactory,
@@ -145,7 +154,10 @@ internal class InboundMessageHandler(
 
         logger.debug("Received and processing message {} of type {} from {}",
             gatewayMessage.id, p2pMessage.payload::class.java, request.source)
-        val response = GatewayResponse(gatewayMessage.id)
+        val response = GatewayResponse(
+            gatewayMessage.id,
+            null,
+        )
         return when (p2pMessage.payload) {
             is InboundUnauthenticatedMessage -> {
                 p2pInPublisher.publish(listOf(Record(LINK_IN_TOPIC, generateKey(), p2pMessage)))

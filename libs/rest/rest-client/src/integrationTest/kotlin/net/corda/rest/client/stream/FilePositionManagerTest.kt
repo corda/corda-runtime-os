@@ -33,7 +33,6 @@ class FilePositionManagerTest {
         // by catching any exception and logging them rather than failing the test as `@TempDir` would do.
         try {
             tempFolder.deleteRecursively()
-
         } catch (th: Throwable) {
             log.warn("Error whilst cleaning-up directories", th)
         }

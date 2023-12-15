@@ -5,6 +5,8 @@ plugins {
 
 description 'Corda ledger common - flow api'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 

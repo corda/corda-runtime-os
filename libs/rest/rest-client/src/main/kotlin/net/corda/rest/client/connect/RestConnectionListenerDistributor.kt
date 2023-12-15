@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * and disconnection events to interested listeners ([RestConnectionListener]).
  */
 class RestConnectionListenerDistributor<I : RestResource>
-    (private val listeners: Iterable<RestConnectionListener<I>>, private val credentialsProvider: CredentialsProvider) {
+(private val listeners: Iterable<RestConnectionListener<I>>, private val credentialsProvider: CredentialsProvider) {
     companion object {
         private val log = LoggerFactory.getLogger(this::class.java.enclosingClass)
 

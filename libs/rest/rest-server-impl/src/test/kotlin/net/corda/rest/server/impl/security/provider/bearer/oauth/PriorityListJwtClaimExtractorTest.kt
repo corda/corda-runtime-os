@@ -8,7 +8,7 @@ import javax.security.auth.login.FailedLoginException
 
 class PriorityListJwtClaimExtractorTest {
     private val token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6InVz" +
-            "ZXJAdGVzdC5jb20iLCJpYXQiOjE1MTYyMzkwMjIsImV4cCI6MTUxNjIzOTAyMiwib2lkIjoiaWQifQ.dWUlvy4GCaLDIzuWzgsp7VLMaKUYOiQbgt-UbKcKc_s"
+        "ZXJAdGVzdC5jb20iLCJpYXQiOjE1MTYyMzkwMjIsImV4cCI6MTUxNjIzOTAyMiwib2lkIjoiaWQifQ.dWUlvy4GCaLDIzuWzgsp7VLMaKUYOiQbgt-UbKcKc_s"
     private val username = "user@test.com"
 
     @Test

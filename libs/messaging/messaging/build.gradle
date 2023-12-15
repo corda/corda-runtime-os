@@ -29,9 +29,6 @@ dependencies {
     implementation project(":libs:messaging:message-bus")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:serialization:serialization-avro")
-
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
 
 description 'Messaging API'

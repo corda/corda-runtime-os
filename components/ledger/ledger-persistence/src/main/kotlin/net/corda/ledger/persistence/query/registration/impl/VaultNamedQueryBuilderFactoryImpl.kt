@@ -1,7 +1,7 @@
 package net.corda.ledger.persistence.query.registration.impl
 
-import net.corda.ledger.persistence.query.registration.VaultNamedQueryRegistry
 import net.corda.ledger.persistence.query.parsing.VaultNamedQueryParser
+import net.corda.ledger.persistence.query.registration.VaultNamedQueryRegistry
 import net.corda.sandbox.type.UsedByPersistence
 import net.corda.utilities.debug
 import net.corda.v5.ledger.utxo.query.registration.VaultNamedQueryBuilder

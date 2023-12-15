@@ -65,9 +65,6 @@ dependencies {
     implementation "com.esotericsoftware:kryo:$kryoVersion"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
     testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 

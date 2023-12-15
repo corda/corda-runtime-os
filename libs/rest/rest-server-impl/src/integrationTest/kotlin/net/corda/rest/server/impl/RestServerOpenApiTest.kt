@@ -65,8 +65,10 @@ class RestServerOpenApiTest : RestServerTestBase() {
                 multipartDir,
                 true
             ).apply { start() }
-            client = TestHttpClientUnirestImpl("http://${restServerSettings.address.host}:${server.port}/" +
-                    "${restServerSettings.context.basePath}/${apiVersion.versionPath}/")
+            client = TestHttpClientUnirestImpl(
+                "http://${restServerSettings.address.host}:${server.port}/" +
+                    "${restServerSettings.context.basePath}/${apiVersion.versionPath}/"
+            )
         }
 
         @AfterAll
@@ -80,7 +82,6 @@ class RestServerOpenApiTest : RestServerTestBase() {
 
     @Test
     fun `GET openapi should return the OpenApi spec json`() {
-
         val apiSpec = client.call(GET, WebRequest<Any>("swagger.json"))
         assertEquals(HttpStatus.SC_OK, apiSpec.responseStatus)
         assertEquals("application/json", apiSpec.headers["Content-Type"])
@@ -103,7 +104,7 @@ class RestServerOpenApiTest : RestServerTestBase() {
 
         val responseOk = path.post.responses["200"]
         assertNotNull(responseOk)
-        //need to assert that FiniteDurableReturnResult is generated as a referenced schema rather than inline content
+        // need to assert that FiniteDurableReturnResult is generated as a referenced schema rather than inline content
         assertEquals(
             "#/components/schemas/FiniteDurableReturnResult_of_CalendarDay",
             responseOk.content["application/json"]!!.schema.`$ref`
@@ -259,7 +260,6 @@ class RestServerOpenApiTest : RestServerTestBase() {
 
     @Test
     fun `OpenApi spec json should include correctly formatted multipart file upload endpoints`() {
-
         val apiSpec = client.call(GET, WebRequest<Any>("swagger.json"))
         assertEquals(HttpStatus.SC_OK, apiSpec.responseStatus)
         assertEquals("application/json", apiSpec.headers["Content-Type"])
@@ -440,7 +440,6 @@ class RestServerOpenApiTest : RestServerTestBase() {
 
     @Test
     fun `OpenApi spec json should include correctly formatted json objects including nullability`() {
-
         val apiSpec = client.call(GET, WebRequest<Any>("swagger.json"))
         val body = apiSpec.body!!.compact()
 
@@ -454,8 +453,17 @@ class RestServerOpenApiTest : RestServerTestBase() {
             assertEquals("{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}", jsonObject.example)
             assertEquals(nullable, jsonObject.nullable)
             val composedSchema = jsonObject as ComposedSchema
-            assertTrue(composedSchema.anyOf.containsAll(setOf(StringSchema(), NumberSchema(), IntegerSchema(), BooleanSchema(),
-                ArraySchema(), ObjectSchema()))
+            assertTrue(
+                composedSchema.anyOf.containsAll(
+                    setOf(
+                        StringSchema(),
+                        NumberSchema(),
+                        IntegerSchema(),
+                        BooleanSchema(),
+                        ArraySchema(),
+                        ObjectSchema()
+                    )
+                )
             )
         }
 
@@ -518,7 +526,6 @@ class RestServerOpenApiTest : RestServerTestBase() {
 
     @Test
     fun `GET swagger UI should return html with reference to swagger json`() {
-
         val apiSpec = client.call(GET, WebRequest<Any>("swagger"))
         assertEquals(HttpStatus.SC_OK, apiSpec.responseStatus)
         assertEquals("text/html", apiSpec.headers["Content-Type"])
@@ -541,7 +548,7 @@ class RestServerOpenApiTest : RestServerTestBase() {
         assertNotNull(swaggerUIcss.body)
     }
 
-    private val schemaDef =  """"CalendarDay" : {
+    private val schemaDef = """"CalendarDay" : {
         "required" : [ "dayOfWeek", "dayOfYear" ],
         "type" : "object",
         "properties" : {
@@ -556,9 +563,10 @@ class RestServerOpenApiTest : RestServerTestBase() {
             "example" : "string"
           }
         }
-      }""".trimIndent()
+      }
+    """.trimIndent()
 
-    private val finiteDurableReturnResultSchemaWithCalendarDayRef =  """"FiniteDurableReturnResult_of_CalendarDay" : {
+    private val finiteDurableReturnResultSchemaWithCalendarDayRef = """"FiniteDurableReturnResult_of_CalendarDay" : {
         "required" : [ "isLastResult", "positionedValues" ],
         "type" : "object",
         "properties" : {
@@ -586,9 +594,10 @@ class RestServerOpenApiTest : RestServerTestBase() {
               },
               "example" : "No example available for this type"
             }
-          }""".trimIndent()
+          }
+    """.trimIndent()
 
     private val finiteDurableReturnResultRef = """
          ref" : "#/components/schemas/FiniteDurableReturnResult_of_CalendarDay
-        """.trimIndent()
+    """.trimIndent()
 }

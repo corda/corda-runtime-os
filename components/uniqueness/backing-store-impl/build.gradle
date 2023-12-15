@@ -55,9 +55,6 @@ dependencies {
     implementation project(":libs:utilities")
 
     testImplementation "org.hibernate:hibernate-core:$hibernateVersion"
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:crypto-testkit")
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:uniqueness:backing-store-fake")

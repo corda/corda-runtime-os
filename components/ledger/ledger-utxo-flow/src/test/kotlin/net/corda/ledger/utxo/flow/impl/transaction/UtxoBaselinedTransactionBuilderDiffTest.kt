@@ -100,7 +100,6 @@ class UtxoBaselinedTransactionBuilderDiffTest : UtxoLedgerTest() {
         assertEquals(UtxoTransactionBuilderContainer(), result)
     }
 
-
     @Test
     fun `diff - signatories get set when there is a new one`() {
         val result =
@@ -126,7 +125,6 @@ class UtxoBaselinedTransactionBuilderDiffTest : UtxoLedgerTest() {
 
         assertEquals(UtxoTransactionBuilderContainer(), result)
     }
-
 
     @Test
     fun `diff - input StateRefs get set when there is a new one`() {

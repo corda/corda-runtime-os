@@ -77,7 +77,6 @@ class PoolCacheStateImplTest {
         assertThat(target.claimExists("r2")).isFalse
     }
 
-
     @Test
     fun `remove claim removes it from the underlying state object`() {
         val claim1 = TokenClaim().apply {
@@ -200,7 +199,7 @@ class PoolCacheStateImplTest {
 
         val poolState = TokenPoolCacheState.newBuilder()
             .setPoolKey(poolKey)
-            .setTokenClaims(mutableListOf(claim1,claim2))
+            .setTokenClaims(mutableListOf(claim1, claim2))
             .setAvailableTokens(mutableListOf())
             .build()
 
@@ -218,7 +217,8 @@ class PoolCacheStateImplTest {
         assertThat(target.claimExists("1")).isTrue
         assertThat(target.claimExists("2")).isFalse
     }
- @Test
+
+    @Test
     fun `remove invalid claims`() {
         val claim1 = TokenClaim.newBuilder()
             .setClaimId("1")
@@ -234,7 +234,7 @@ class PoolCacheStateImplTest {
 
         val poolState = TokenPoolCacheState.newBuilder()
             .setPoolKey(poolKey)
-            .setTokenClaims(mutableListOf(claim1,claim2))
+            .setTokenClaims(mutableListOf(claim1, claim2))
             .setAvailableTokens(mutableListOf())
             .build()
 

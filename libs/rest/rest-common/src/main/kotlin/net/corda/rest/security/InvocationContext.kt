@@ -30,7 +30,8 @@ data class Actor(val id: Id, val serviceId: AuthServiceId, val owningLegalIdenti
     companion object {
         fun service(serviceClassName: String, owningLegalIdentity: MemberX500Name): Actor = Actor(
             Id(serviceClassName),
-            AuthServiceId("SERVICE"), owningLegalIdentity
+            AuthServiceId("SERVICE"),
+            owningLegalIdentity
         )
     }
 

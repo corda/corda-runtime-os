@@ -1,7 +1,7 @@
 package net.corda.libs.statemanager.impl.repository.impl
 
-import net.corda.libs.statemanager.api.Operation
 import net.corda.libs.statemanager.api.MetadataFilter
+import net.corda.libs.statemanager.api.Operation
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest

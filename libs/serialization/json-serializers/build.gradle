@@ -12,6 +12,4 @@ dependencies {
     implementation "net.corda:corda-application"
     implementation 'net.corda:corda-base'
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

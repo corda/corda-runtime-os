@@ -118,7 +118,8 @@ class VirtualNodeWriterFactoryTests {
             VirtualNodeManagementResponse::class.java,
         )
         val subscriptionConfig = SubscriptionConfig(
-            "virtual.node.async.operation.group", Schemas.VirtualNode.VIRTUAL_NODE_ASYNC_REQUEST_TOPIC
+            "virtual.node.async.operation.group",
+            Schemas.VirtualNode.VIRTUAL_NODE_ASYNC_REQUEST_TOPIC
         )
         val expectedConfig = configFactory.create(ConfigFactory.parseMap(mapOf("dummyKey" to "dummyValue")))
         val externalMsgConfig = genExternalMessagingConfig()

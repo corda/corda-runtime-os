@@ -36,9 +36,8 @@ dependencies {
         }
     }
 
+    testImplementation libs.bundles.test
     testImplementation 'org.jetbrains.kotlin:kotlin-stdlib'
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.pf4j:pf4j:$pf4jVersion"
     testImplementation "net.corda.cli.host:api:$pluginHostVersion"
     testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"

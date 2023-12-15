@@ -5,8 +5,8 @@ Jenkinsfile        @corda/blt
 .ci/**             @corda/blt
 
 *.gradle           @corda/blt
-gradle.properties  @corda/corda5-team-leads
-gradle/*           @corda/blt
+gradle/wrapper     @corda/blt
+*.toml             @corda/corda5-team-leads
 
 .github/**          @corda/blt
 CODEOWNERS         @corda/blt @corda/corda5-team-leads
@@ -16,8 +16,10 @@ CODEOWNERS         @corda/blt @corda/corda5-team-leads
 /components/rest-gateway-comp/                  @corda/rest
 /components/permissions/                        @corda/rest
 /components/rbac-security-manager-service/      @corda/rest
+/components/virtual-node/                       @corda/rest
 /libs/rest/                                     @corda/rest
 /libs/permissions/                              @corda/rest
+/libs/virtual-node/                             @corda/rest
 /processors/rest-processor/                     @corda/rest
 /tools/plugins/initial-rbac/                    @corda/rest
 /tools/plugins/plugins-rest/                    @corda/rest

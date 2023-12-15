@@ -55,7 +55,7 @@ class CheckConnectionEventHandler(
         // TODO-[CORE-18202]: Remove try catch once ticket is fixed.
         try {
             coordinator.setTimer(CHECK_EVENT_KEY, delay) { key -> CheckConnectionEvent(key) }
-        } catch (lifecycleException : LifecycleException) {
+        } catch (lifecycleException: LifecycleException) {
             // Coordinator has been closed, ignore the exception until CORE-18202 is fixed
             logger.warn("Component {} is already closed, ignoring scheduling of {} event", componentName, CHECK_EVENT_KEY)
         }

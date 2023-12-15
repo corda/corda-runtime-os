@@ -10,7 +10,6 @@ class AsyncOperationStatusTest {
 
     @Test
     fun `accepted returns populated status`() {
-
         val target = AsyncOperationStatus.accepted("r1", "op1", now)
 
         assertThat(target.requestId).isEqualTo("r1")
@@ -24,8 +23,7 @@ class AsyncOperationStatusTest {
 
     @Test
     fun `inProgress returns populated status`() {
-
-        val target = AsyncOperationStatus.inProgress("r1", "op1", now,"stage1")
+        val target = AsyncOperationStatus.inProgress("r1", "op1", now, "stage1")
 
         assertThat(target.requestId).isEqualTo("r1")
         assertThat(target.operation).isEqualTo("op1")
@@ -38,7 +36,6 @@ class AsyncOperationStatusTest {
 
     @Test
     fun `succeeded returns populated status`() {
-
         val target = AsyncOperationStatus.succeeded("r1", "op1", now, "res1")
 
         assertThat(target.requestId).isEqualTo("r1")
@@ -52,8 +49,7 @@ class AsyncOperationStatusTest {
 
     @Test
     fun `failed returns populated status`() {
-
-        val target = AsyncOperationStatus.failed("r1", "op1", now, "err1","stage1")
+        val target = AsyncOperationStatus.failed("r1", "op1", now, "err1", "stage1")
 
         assertThat(target.requestId).isEqualTo("r1")
         assertThat(target.operation).isEqualTo("op1")
@@ -66,7 +62,6 @@ class AsyncOperationStatusTest {
 
     @Test
     fun `aborted returns populated status`() {
-
         val target = AsyncOperationStatus.aborted("r1", "op1", now)
 
         assertThat(target.requestId).isEqualTo("r1")

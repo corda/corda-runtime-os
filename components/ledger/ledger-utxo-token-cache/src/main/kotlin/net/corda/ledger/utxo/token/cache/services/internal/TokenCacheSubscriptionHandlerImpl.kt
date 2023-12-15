@@ -66,7 +66,7 @@ class TokenCacheSubscriptionHandlerImpl(
             localStateManager.start()
             stateManager = localStateManager
         } catch (ex: Exception) {
-            val reason = "Failed to configure the Token Event Handler using '${config}'"
+            val reason = "Failed to configure the Token Event Handler using '$config'"
             log.error(reason, ex)
             coordinator.updateStatus(LifecycleStatus.ERROR, reason)
         }

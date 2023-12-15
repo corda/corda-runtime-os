@@ -17,7 +17,7 @@ internal interface UpdateVirtualNodeService {
 
     fun persistHoldingIdAndVirtualNode(
         holdingIdentity: HoldingIdentity,
-        vNodeDbs: Map<VirtualNodeDbType,VirtualNodeDb>,
+        vNodeDbs: Map<VirtualNodeDbType, VirtualNodeDb>,
         cpiId: CpiIdentifier,
         updateActor: String,
         externalMessagingRouteConfig: String?

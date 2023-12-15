@@ -1,10 +1,10 @@
 package net.corda.rest.server.impl.security.basic
 
-import net.corda.rest.server.impl.security.provider.scheme.AuthenticationSchemeProvider
 import net.corda.rest.server.impl.security.provider.basic.UsernamePasswordAuthenticationProvider
+import net.corda.rest.server.impl.security.provider.scheme.AuthenticationSchemeProvider
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
-import org.junit.jupiter.api.Assertions.assertEquals
 
 class UsernamePasswordAuthenticationProviderTest {
     @Test

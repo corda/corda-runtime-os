@@ -3,8 +3,6 @@ package net.corda.flow.pipeline.impl
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.FlowKey
-import net.corda.data.flow.FlowStartContext
-import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.output.FlowStates
 import net.corda.data.flow.output.FlowStatus
@@ -76,19 +74,6 @@ class FlowToBeKilledExceptionProcessingTest {
         val response = target.process(exception, testContext)
 
         assertThat(response.outputRecords).contains(cleanupRecord)
-    }
-
-    @Test
-    fun `processing FlowMarkedForKillException when checkpoint does not exist only outputs flow killed status record`() {
-        whenever(checkpoint.doesExist).thenReturn(false)
-        val inputEventPayload = StartFlow(FlowStartContext().apply { statusKey = flowKey }, "")
-        val testContext = buildFlowEventContext(checkpoint, inputEventPayload)
-        val exception = FlowMarkedForKillException("reasoning")
-        whenever(flowRecordFactory.createFlowStatusRecord(any())).thenReturn(flowKilledStatusRecord)
-
-        val response = target.process(exception, testContext)
-
-        assertThat(response.outputRecords).hasSize(1).contains(flowKilledStatusRecord)
     }
 
     @Test

@@ -25,7 +25,6 @@ class SimpleTokenFilterStrategyTest {
      */
     @Test
     fun `null tag and owner criteria should match all`() {
-
         val tc = TokenCacheImpl()
         val query = ClaimQuery("r1", "f1", BigDecimal(1), null, null, POOL_KEY)
 
