@@ -11,14 +11,15 @@ import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
-class UtxoLedgerServiceTest: UtxoLedgerIntegrationTest() {
+class UtxoLedgerServiceTest : UtxoLedgerIntegrationTest() {
 
     lateinit var compositeKeyGenerator: CompositeKeyGenerator
     override fun initialize(setup: SandboxSetup) {
         super.initialize(setup)
         compositeKeyGenerator = sandboxGroupContext.getSandboxSingletonService()
     }
-        @Test
+
+    @Test
     @Suppress("FunctionName")
     fun `createTransactionBuilder should return a Transaction Builder`() {
         val transactionBuilder = utxoLedgerService.createTransactionBuilder()
@@ -26,17 +27,19 @@ class UtxoLedgerServiceTest: UtxoLedgerIntegrationTest() {
     }
 
     @Test
-    fun `Can use composite Keys`(){
+    fun `Can use composite Keys`() {
         val transactionBuilder = utxoLedgerService.createTransactionBuilder()
         val aliceKey = publicKeyExample
         val bobKey = anotherPublicKeyExample
-        val compositeKey = compositeKeyGenerator.create(listOf(
-            CompositeKeyNodeAndWeight(aliceKey, 1),
-            CompositeKeyNodeAndWeight(bobKey, 1),
-        ),1 )
+        val compositeKey = compositeKeyGenerator.create(
+            listOf(
+                CompositeKeyNodeAndWeight(aliceKey, 1),
+                CompositeKeyNodeAndWeight(bobKey, 1),
+            ),
+            1
+        )
         transactionBuilder
             .addSignatories(listOf(aliceKey, bobKey))
             .addSignatories(compositeKey)
     }
 }
-

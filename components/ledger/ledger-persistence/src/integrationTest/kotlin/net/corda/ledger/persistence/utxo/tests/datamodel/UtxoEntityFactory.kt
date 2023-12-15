@@ -25,7 +25,13 @@ class UtxoEntityFactory(private val entityManagerFactory: EntityManagerFactory) 
         utxoTransactionMetadata: Any
     ): Any {
         return utxoTransaction.constructors.single { it.parameterCount == 7 }.newInstance(
-            transactionId, privacySalt, accountId, created, status, updated, utxoTransactionMetadata
+            transactionId,
+            privacySalt,
+            accountId,
+            created,
+            status,
+            updated,
+            utxoTransactionMetadata
         )
     }
 
@@ -54,7 +60,10 @@ class UtxoEntityFactory(private val entityManagerFactory: EntityManagerFactory) 
         cpiFileChecksum: String,
     ): Any {
         return utxoTransactionMetadata.constructors.single { it.parameterCount == 4 }.newInstance(
-            hash, canonicalData, groupParametersHash, cpiFileChecksum
+            hash,
+            canonicalData,
+            groupParametersHash,
+            cpiFileChecksum
         )
     }
 
@@ -66,7 +75,11 @@ class UtxoEntityFactory(private val entityManagerFactory: EntityManagerFactory) 
         hash: String
     ): Any {
         return utxoTransactionComponent.constructors.single { it.parameterCount == 5 }.newInstance(
-            utxoTransaction, groupIdx, leafIdx, component, hash
+            utxoTransaction,
+            groupIdx,
+            leafIdx,
+            component,
+            hash
         )
     }
 
@@ -78,7 +91,11 @@ class UtxoEntityFactory(private val entityManagerFactory: EntityManagerFactory) 
         created: Instant
     ): Any {
         return utxoTransactionSignature.constructors.single { it.parameterCount == 5 }.newInstance(
-            utxoTransaction, signatureIndex, signature, publicKeyHash, created
+            utxoTransaction,
+            signatureIndex,
+            signature,
+            publicKeyHash,
+            created
         )
     }
 

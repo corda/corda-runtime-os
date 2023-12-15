@@ -1,7 +1,7 @@
 package net.corda.rest.server.impl.rest.resources.impl
 
-import net.corda.rest.server.impl.rest.resources.TestPingPongAPI
 import net.corda.rest.PluggableRestResource
+import net.corda.rest.server.impl.rest.resources.TestPingPongAPI
 
 class TestPingPongAPIImpl : TestPingPongAPI, PluggableRestResource<TestPingPongAPI> {
 

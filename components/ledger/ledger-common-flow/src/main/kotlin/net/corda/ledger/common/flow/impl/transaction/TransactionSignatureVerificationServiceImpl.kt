@@ -51,8 +51,7 @@ class TransactionSignatureVerificationServiceImpl @Activate constructor(
     TransactionSignatureVerificationServiceInternal,
     SingletonSerializeAsToken,
     UsedByFlow,
-    UsedByVerification
-{
+    UsedByVerification {
 
     override fun verifySignature(
         transaction: TransactionWithMetadata,
@@ -83,12 +82,12 @@ class TransactionSignatureVerificationServiceImpl @Activate constructor(
             )
 
         val proof = signatureWithMetadata.proof
-        val signedHash = if (proof == null) {   // Simple signature
+        val signedHash = if (proof == null) { // Simple signature
             secureHash
-        } else {                                // Batch signature
+        } else { // Batch signature
             require(proof.leaves.filter { secureHash.bytes contentEquals it.leafData }.size == 1) {
                 "The transaction id cannot be found in the provided Merkle proof for the batch signature" +
-                        " - the signature cannot be verified."
+                    " - the signature cannot be verified."
             }
             val hashDigestProvider = signatureWithMetadata.getBatchMerkleTreeDigestProvider(merkleTreeProvider)
             proof.calculateRoot(hashDigestProvider)
@@ -104,7 +103,7 @@ class TransactionSignatureVerificationServiceImpl @Activate constructor(
         )
     }
 
-    override fun getIdOfPublicKey(publicKey: PublicKey, digestAlgorithmName: String): SecureHash{
+    override fun getIdOfPublicKey(publicKey: PublicKey, digestAlgorithmName: String): SecureHash {
         return digestService.hash(
             keyEncodingService.encodeAsByteArray(publicKey),
             DigestAlgorithmName(digestAlgorithmName)

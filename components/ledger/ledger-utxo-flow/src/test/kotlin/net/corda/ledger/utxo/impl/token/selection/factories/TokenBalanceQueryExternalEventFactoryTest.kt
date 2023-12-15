@@ -1,7 +1,5 @@
 package net.corda.ledger.utxo.token.selection.impl.factories
 
-import java.math.BigDecimal
-import java.nio.ByteBuffer
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.utxo.token.selection.data.TokenAmount
@@ -22,6 +20,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.math.BigDecimal
+import java.nio.ByteBuffer
 
 class TokenBalanceQueryExternalEventFactoryTest {
     private val tokenType = "tt"
@@ -42,7 +42,6 @@ class TokenBalanceQueryExternalEventFactoryTest {
 
     @Test
     fun `createExternalEvent should return balance query event record`() {
-
         val flowExternalEventContext = ExternalEventContext("r1", "f1", KeyValuePairList())
 
         val parameters = TokenBalanceCriteria(tokenType, issuerHash, notaryX500Name, symbol)

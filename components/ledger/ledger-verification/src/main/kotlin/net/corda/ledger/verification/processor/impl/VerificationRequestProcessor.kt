@@ -69,7 +69,6 @@ class VerificationRequestProcessor(
         return result.value as FlowEvent
     }
 
-
     private fun errorResponse(externalEventContext: ExternalEventContext, exception: Exception) = when (exception) {
         is NotAllowedCpkException, is NotSerializableException -> {
             log.error(errorMessage(externalEventContext, ExternalEventResponseErrorType.PLATFORM), exception)
@@ -87,5 +86,3 @@ class VerificationRequestProcessor(
         errorType: ExternalEventResponseErrorType
     ) = "Exception occurred (type=$errorType) for verification-worker request ${externalEventContext.requestId}"
 }
-
-

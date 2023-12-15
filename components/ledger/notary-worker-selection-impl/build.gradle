@@ -5,6 +5,8 @@ plugins {
 
 description 'Corda notary virtual node selector - implementation'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
@@ -15,7 +17,4 @@ dependencies {
     implementation project(':components:ledger:notary-worker-selection')
     implementation project(':components:membership:membership-group-read')
     implementation project(':libs:sandbox-types')
-
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

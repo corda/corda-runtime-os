@@ -12,6 +12,8 @@ import net.corda.data.p2p.crypto.internal.InitiatorEncryptedExtensions
 import net.corda.data.p2p.crypto.internal.InitiatorHandshakeIdentity
 import net.corda.data.p2p.crypto.internal.InitiatorHandshakePayload
 import net.corda.data.p2p.crypto.internal.ResponderHandshakePayload
+import net.corda.data.p2p.crypto.protocol.AuthenticationProtocolInitiatorDetails
+import net.corda.data.p2p.crypto.protocol.InitiatorStep as Step
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.INITIATOR_SIG_PAD
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.MIN_PACKET_SIZE
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.PROTOCOL_VERSION
@@ -30,8 +32,10 @@ import java.security.PublicKey
 import java.security.spec.X509EncodedKeySpec
 import java.time.Instant
 import javax.crypto.AEADBadTagException
-import net.corda.data.p2p.gateway.certificates.RevocationCheckRequest
-import net.corda.data.p2p.gateway.certificates.RevocationCheckResponse
+import net.corda.p2p.crypto.protocol.api.CertificateCheckMode.Companion.toCorda
+import net.corda.p2p.crypto.protocol.api.Session.Companion.toCorda
+import net.corda.utilities.crypto.publicKeyFactory
+import net.corda.utilities.crypto.toPem
 
 /**
  * The initiator side of the session authentication protocol.
@@ -60,29 +64,38 @@ class AuthenticationProtocolInitiator(
     private val ourPublicKey: PublicKey,
     private val groupId: String,
     private val certificateCheckMode: CertificateCheckMode,
-    certificateValidatorFactory: (revocationCheckMode: RevocationCheckMode,
-                                  pemTrustStore: List<PemCertificate>,
-                                  checkRevocation: (RevocationCheckRequest) -> RevocationCheckResponse) -> CertificateValidator =
-    { revocationCheckMode, pemTrustStore, checkRevocation -> CertificateValidator(revocationCheckMode, pemTrustStore, checkRevocation) }
+    certificateValidatorFactory: CertificateValidatorFactory =
+    { revocationCheckMode, pemTrustStore, checkRevocation ->
+        CertificateValidator(revocationCheckMode, pemTrustStore, checkRevocation)
+    }
 ): AuthenticationProtocol(certificateValidatorFactory) {
+
+    companion object {
+        fun AuthenticationProtocolInitiatorDetails.toCorda(
+            checkRevocation: CheckRevocation,
+        ): AuthenticationProtocolInitiator {
+            return AuthenticationProtocolInitiator(
+                sessionId = this.protocolCommonDetails.sessionId,
+                supportedModes = this.supportedModes.toSet(),
+                ourMaxMessageSize = this.protocolCommonDetails.ourMaxMessageSize,
+                ourPublicKey = publicKeyFactory(this.ourPublicKey.reader()) ?: throw CordaRuntimeException("Invalid public key PEM"),
+                groupId = this.groupId,
+                certificateCheckMode = this.certificateCheckMode.toCorda(checkRevocation),
+            ).also {
+                it.step = this.step
+                it.initiatorHandshakeMessage = this.initiatorHandshakeMessage
+                it.session = this.protocolCommonDetails.session?.toCorda()
+                it.applyCommonDetails(this.protocolCommonDetails)
+            }
+        }
+    }
+    private var step: Step = Step.INIT
+    private var initiatorHandshakeMessage: InitiatorHandshakeMessage? = null
+    private var session: Session? = null
 
     init {
         require(supportedModes.isNotEmpty()) { "At least one supported mode must be provided." }
         require(ourMaxMessageSize >= MIN_PACKET_SIZE ) { "max message size needs to be at least $MIN_PACKET_SIZE bytes." }
-    }
-
-    private var step = Step.INIT
-    private var initiatorHandshakeMessage: InitiatorHandshakeMessage? = null
-    private var session: Session? = null
-
-    enum class Step {
-        INIT,
-        SENT_MY_DH_KEY,
-        RECEIVED_PEER_DH_KEY,
-        GENERATED_HANDSHAKE_SECRETS,
-        SENT_HANDSHAKE_MESSAGE,
-        RECEIVED_HANDSHAKE_MESSAGE,
-        SESSION_ESTABLISHED
     }
 
     fun generateInitiatorHello(): InitiatorHelloMessage {
@@ -238,7 +251,7 @@ class AuthenticationProtocolInitiator(
                 responderHandshakePayload.responderEncryptedExtensions.responderCertificate,
                 theirX500Name,
                 theirPublicKey,
-                "responder handshake message"
+                "responder handshake message",
             )
         }
     }
@@ -255,15 +268,31 @@ class AuthenticationProtocolInitiator(
             val fullTranscript = initiatorHelloToResponderHelloBytes!! + initiatorHandshakePayloadBytes!! + responderHandshakePayloadBytes!!
             val sharedSessionSecrets = generateSessionSecrets(sharedDHSecret!!, fullTranscript)
             session = when(selectedMode!!) {
-                ProtocolMode.AUTHENTICATION_ONLY -> AuthenticatedSession(sessionId, 2, sharedSessionSecrets.initiatorEncryptionKey,
+                ProtocolMode.AUTHENTICATION_ONLY -> AuthenticatedSession(sessionId, sharedSessionSecrets.initiatorEncryptionKey,
                     sharedSessionSecrets.responderEncryptionKey, agreedMaxMessageSize!!)
-                ProtocolMode.AUTHENTICATED_ENCRYPTION -> AuthenticatedEncryptionSession(sessionId, 2,
+                ProtocolMode.AUTHENTICATED_ENCRYPTION -> AuthenticatedEncryptionSession(sessionId,
                     sharedSessionSecrets.initiatorEncryptionKey, sharedSessionSecrets.initiatorNonce,
                     sharedSessionSecrets.responderEncryptionKey, sharedSessionSecrets.responderNonce,
                     agreedMaxMessageSize!!)
             }
             session!!
         }
+    }
+
+    fun toAvro(): AuthenticationProtocolInitiatorDetails {
+        return AuthenticationProtocolInitiatorDetails(
+            toAvro(
+               sessionId,
+                ourMaxMessageSize,
+                session,
+            ),
+            this.step,
+            supportedModes.toList(),
+            ourPublicKey.toPem(),
+            groupId,
+            certificateCheckMode.toAvro(),
+            initiatorHandshakeMessage
+        )
     }
 
     private fun <R> transition(fromStep: Step, toStep: Step, getCachedValue: () -> R, calculateValue: () -> R): R {

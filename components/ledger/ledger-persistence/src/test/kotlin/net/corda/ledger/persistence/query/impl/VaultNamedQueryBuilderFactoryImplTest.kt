@@ -82,6 +82,5 @@ class VaultNamedQueryBuilderFactoryImplTest {
         }.isExactlyInstanceOf(IllegalArgumentException::class.java)
     }
 
-
     private class DummyPojo
 }

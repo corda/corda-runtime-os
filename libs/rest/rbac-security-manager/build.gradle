@@ -5,6 +5,8 @@ plugins {
 
 description 'Implementation of the Security Manager that integrates with Role Based Access Control Permission system.'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
 
@@ -16,6 +18,4 @@ dependencies {
     implementation project(":libs:permissions:permission-manager")
     implementation project(":libs:permissions:permission-validation")
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

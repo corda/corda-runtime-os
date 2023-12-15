@@ -26,16 +26,16 @@ class WireTransactionDigestSettings {
             BATCH_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY to HASH_DIGEST_PROVIDER_TWEAKABLE_NAME,
             BATCH_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY to DigestAlgorithmName.SHA2_256D.name,
             BATCH_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY to
-                    base64Encoder.encodeToString("batchLeaf".toByteArray(Charsets.UTF_8)),
+                base64Encoder.encodeToString("batchLeaf".toByteArray(Charsets.UTF_8)),
             BATCH_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY to
-                    base64Encoder.encodeToString("batchNode".toByteArray(Charsets.UTF_8)),
+                base64Encoder.encodeToString("batchNode".toByteArray(Charsets.UTF_8)),
 
             ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY to HASH_DIGEST_PROVIDER_TWEAKABLE_NAME,
             ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY to DigestAlgorithmName.SHA2_256D.name,
             ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY to
-                    base64Encoder.encodeToString("leaf".toByteArray(Charsets.UTF_8)),
+                base64Encoder.encodeToString("leaf".toByteArray(Charsets.UTF_8)),
             ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY to
-                    base64Encoder.encodeToString("node".toByteArray(Charsets.UTF_8)),
+                base64Encoder.encodeToString("node".toByteArray(Charsets.UTF_8)),
 
             COMPONENT_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY to HASH_DIGEST_PROVIDER_NONCE_NAME,
             COMPONENT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY to DigestAlgorithmName.SHA2_256D.name,

@@ -4,8 +4,8 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.ledger.utxo.token.cache.entities.BalanceQuery
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
 import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
-import net.corda.ledger.utxo.token.cache.entities.internal.TokenBalanceCacheImpl
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
+import net.corda.ledger.utxo.token.cache.entities.internal.TokenBalanceCacheImpl
 import net.corda.ledger.utxo.token.cache.factories.RecordFactory
 import net.corda.ledger.utxo.token.cache.handlers.TokenBalanceQueryEventHandler
 import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
@@ -144,4 +144,3 @@ class TokenBalanceQueryEventHandlerTest {
         return BalanceQuery(balanceId, flowId, null, null, POOL_KEY)
     }
 }
-

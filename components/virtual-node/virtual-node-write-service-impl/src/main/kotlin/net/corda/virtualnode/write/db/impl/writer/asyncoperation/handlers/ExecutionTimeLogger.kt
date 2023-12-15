@@ -17,7 +17,7 @@ internal class ExecutionTimeLogger(
             val start = clock.instant().toEpochMilli()
             val result = call()
             val end = clock.instant().toEpochMilli()
-            logger.debug("[$operation ${vNodeName}] $stage took ${end - start}ms, elapsed ${end - creationTime}ms")
+            logger.debug("[$operation $vNodeName] $stage took ${end - start}ms, elapsed ${end - creationTime}ms")
             result
         }
     }

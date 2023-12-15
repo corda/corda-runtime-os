@@ -48,6 +48,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.impl.registration.KeyDetails
 import net.corda.membership.impl.registration.MemberRole
 import net.corda.membership.impl.registration.MemberRole.Companion.toMemberInfo
+import net.corda.membership.impl.registration.RegistrationLogger
 import net.corda.membership.impl.registration.verifiers.OrderVerifier
 import net.corda.membership.impl.registration.verifiers.P2pEndpointVerifier
 import net.corda.membership.impl.registration.verifiers.RegistrationContextCustomFieldsVerifier
@@ -60,6 +61,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_BACKCHAIN_REQUIRED
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PROTOCOL_VERSIONS
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEYS
@@ -260,6 +262,9 @@ class DynamicMemberRegistrationService @Activate constructor(
             member: HoldingIdentity,
             context: Map<String, String>,
         ): Collection<Record<*, *>> {
+            val registrationLogger = RegistrationLogger(logger)
+                .setRegistrationId(registrationId.toString())
+                .setMember(member)
             try {
                 membershipSchemaValidatorFactory
                     .createValidator()
@@ -284,8 +289,8 @@ class DynamicMemberRegistrationService @Activate constructor(
             }
             val customFieldsValid = registrationContextCustomFieldsVerifier.verify(context)
             if (customFieldsValid is RegistrationContextCustomFieldsVerifier.Result.Failure) {
-                val errorMessage = "Registration failed for ID '$registrationId'. ${customFieldsValid.reason}"
-                logger.warn(errorMessage)
+                val errorMessage = "Registration failed. ${customFieldsValid.reason}"
+                registrationLogger.warn(errorMessage)
                 throw InvalidMembershipRegistrationException(errorMessage)
             }
             return try {
@@ -397,19 +402,19 @@ class DynamicMemberRegistrationService @Activate constructor(
 
                 listOf(record) + commands
             } catch (e: InvalidMembershipRegistrationException) {
-                logger.warn("Registration failed.", e)
+                registrationLogger.warn("Registration failed.", e)
                 throw e
             } catch (e: IllegalArgumentException) {
-                logger.warn("Registration failed.", e)
+                registrationLogger.warn("Registration failed.", e)
                 throw InvalidMembershipRegistrationException(
                     "Registration failed. Reason: ${e.message}",
                     e,
                 )
             } catch (e: MembershipPersistenceResult.PersistenceRequestException) {
-                logger.warn("Registration failed.", e)
+                registrationLogger.warn("Registration failed.", e)
                 throw NotReadyMembershipRegistrationException("Could not persist request: ${e.message}", e)
             } catch (e: Exception) {
-                logger.warn("Registration failed.", e)
+                registrationLogger.warn("Registration failed.", e)
                 throw NotReadyMembershipRegistrationException(
                     "Registration failed. Reason: ${e.message}",
                     e,
@@ -467,11 +472,12 @@ class DynamicMemberRegistrationService @Activate constructor(
                     tlsSubject
 
             previousRegistrationContext?.let { previous ->
+                verifyBackchainFlagMovement(previousRegistrationContext, newRegistrationContext)
                 ((newRegistrationContext.entries - previous.entries) + (previous.entries - newRegistrationContext.entries)).filter {
                     it.key.startsWith(SESSION_KEYS) ||
                     it.key.startsWith(LEDGER_KEYS) ||
                     it.key.startsWith(ROLES_PREFIX) ||
-                    it.key.startsWith("corda.notary")
+                    (it.key.startsWith("corda.notary") && !it.key.endsWith("service.backchain.required"))
                 }.apply {
                     require(isEmpty()) {
                         throw InvalidMembershipRegistrationException(
@@ -806,6 +812,19 @@ class DynamicMemberRegistrationService @Activate constructor(
                 ),
                 CryptoSignatureSpec(signatureSpec, null, null),
             )
+        }
+    }
+
+    private fun verifyBackchainFlagMovement(previousContext: Map<String, String>, newContext: Map<String, String>) {
+        // This property can only be null when upgrading from 5.0/5.1, and we should move it to `true`
+        // because pre-5.2 notaries do not support optional backchain
+        // Once the flag is set it should never change during re-registrations
+        // (i.e. no true->false or false->true change allowed)
+        val previousOptionalBackchainValue = previousContext[NOTARY_SERVICE_BACKCHAIN_REQUIRED]?.toBoolean()
+        val currentOptionalBackchainValue = newContext[NOTARY_SERVICE_BACKCHAIN_REQUIRED]?.toBoolean()
+        require((previousOptionalBackchainValue == null && currentOptionalBackchainValue == true)
+                || previousOptionalBackchainValue == currentOptionalBackchainValue) {
+            "Optional back-chain flag can only move from 'none' to 'true' during re-registration."
         }
     }
 }

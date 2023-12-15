@@ -33,8 +33,11 @@ internal class PathParameterInURLPathValidator(private val clazz: Class<out Rest
             return RestValidationResult(listOf("Path parameter '$parameterName' incompatible with the defaulted endpoint path"))
         }
         val exists = parameterName.lowercase().existsInPath(path.lowercase())
-        return if (exists) RestValidationResult()
-        else RestValidationResult(listOf("Path parameter '$parameterName' does not exist in endpoint path '$path'"))
+        return if (exists) {
+            RestValidationResult()
+        } else {
+            RestValidationResult(listOf("Path parameter '$parameterName' does not exist in endpoint path '$path'"))
+        }
     }
 
     private fun String.existsInPath(path: String): Boolean {

@@ -1,6 +1,5 @@
 package net.corda.ledger.utxo.flow.impl.flows.transactiontransmission
 
-import net.corda.v5.ledger.utxo.VisibilityChecker
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.data.transaction.TransactionStatus.VERIFIED
 import net.corda.ledger.common.flow.flows.Payload
@@ -19,6 +18,7 @@ import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TransactionState
+import net.corda.v5.ledger.utxo.VisibilityChecker
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -34,7 +34,6 @@ class ReceiveTransactionFlowTest {
     private companion object {
         val TX_ID_1 = SecureHashImpl("SHA", byteArrayOf(2, 2, 2, 2))
         val TX_ID_2 = SecureHashImpl("SHA", byteArrayOf(3, 3, 3, 3))
-
 
         val TX_2_INPUT_DEPENDENCY_STATE_REF_1 = StateRef(TX_ID_2, 0)
         val TX_3_INPUT_DEPENDENCY_STATE_REF_1 = StateRef(TX_ID_2, 0)
@@ -121,8 +120,11 @@ class ReceiveTransactionFlowTest {
             .hasMessageContaining("Failed to verify transaction")
 
         verify(sessionAlice).receive(UtxoSignedTransactionInternal::class.java)
-        verify(sessionAlice).send(Payload.Failure<List<DigitalSignatureAndMetadata>>(
-            "Failed to verify transaction and signatures of transaction: ${transaction.id}"))
+        verify(sessionAlice).send(
+            Payload.Failure<List<DigitalSignatureAndMetadata>>(
+                "Failed to verify transaction and signatures of transaction: ${transaction.id}"
+            )
+        )
     }
 
     @Test
@@ -137,9 +139,11 @@ class ReceiveTransactionFlowTest {
             .hasMessageContaining("Failed to verify transaction")
 
         verify(sessionAlice).receive(UtxoSignedTransactionInternal::class.java)
-        verify(sessionAlice).send(Payload.Failure<List<DigitalSignatureAndMetadata>>(
-            "Failed to verify transaction and signatures of transaction: ${transaction.id}"
-        ))
+        verify(sessionAlice).send(
+            Payload.Failure<List<DigitalSignatureAndMetadata>>(
+                "Failed to verify transaction and signatures of transaction: ${transaction.id}"
+            )
+        )
     }
 
     @Test
@@ -154,9 +158,11 @@ class ReceiveTransactionFlowTest {
             .hasMessageContaining("Failed to verify transaction")
 
         verify(sessionAlice).receive(UtxoSignedTransactionInternal::class.java)
-        verify(sessionAlice).send(Payload.Failure<List<DigitalSignatureAndMetadata>>(
-            "Failed to verify transaction and signatures of transaction: ${transaction.id}"
-        ))
+        verify(sessionAlice).send(
+            Payload.Failure<List<DigitalSignatureAndMetadata>>(
+                "Failed to verify transaction and signatures of transaction: ${transaction.id}"
+            )
+        )
     }
 
     private fun callReceiveTransactionFlow(session: FlowSession) {

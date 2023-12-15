@@ -60,7 +60,7 @@ class ConsensualLedgerTransactionVerifierTest {
             .isExactlyInstanceOf(IllegalStateException::class.java)
             .hasMessageContaining(
                 "Deserialized required signatories from ${WireTransaction::class.java.simpleName} do not match with the ones derived " +
-                        "from the states"
+                    "from the states"
             )
     }
 

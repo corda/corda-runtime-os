@@ -44,5 +44,4 @@ val TOKEN_POOL_CACHE_STATE_2: TokenPoolCacheState = TokenPoolCacheState.newBuild
     .setTokenClaims(listOf(TOKEN_CLAIM))
     .build()
 
-
 val MINIMUM_SMART_CONFIG = SmartConfigFactory.createWithoutSecurityServices().create(ConfigFactory.empty())

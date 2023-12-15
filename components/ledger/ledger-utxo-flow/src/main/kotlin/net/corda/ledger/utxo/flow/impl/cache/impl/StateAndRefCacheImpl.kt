@@ -50,9 +50,11 @@ class StateAndRefCacheImpl @Activate constructor(
     override fun get(stateRefs: Set<StateRef>): Map<StateRef, StateAndRef<*>> {
         return if (stateRefs.isNotEmpty()) {
             val virtualNodeContext = currentSandboxGroupContext.get().virtualNodeContext
-            cache.getAllPresent(stateRefs.map {
-                SandboxedCache.CacheKey(virtualNodeContext, it)
-            }).map { (key, value) -> key.key to value }.toMap()
+            cache.getAllPresent(
+                stateRefs.map {
+                    SandboxedCache.CacheKey(virtualNodeContext, it)
+                }
+            ).map { (key, value) -> key.key to value }.toMap()
         } else {
             emptyMap()
         }
@@ -61,9 +63,11 @@ class StateAndRefCacheImpl @Activate constructor(
     override fun putAll(stateAndRefs: List<StateAndRef<*>>) {
         if (stateAndRefs.isNotEmpty()) {
             val virtualNodeContext = currentSandboxGroupContext.get().virtualNodeContext
-            cache.putAll(stateAndRefs.associateBy {
-                SandboxedCache.CacheKey(virtualNodeContext, it.ref)
-            })
+            cache.putAll(
+                stateAndRefs.associateBy {
+                    SandboxedCache.CacheKey(virtualNodeContext, it.ref)
+                }
+            )
         }
     }
 
@@ -83,7 +87,7 @@ class StateAndRefCacheImpl @Activate constructor(
     private fun onEviction(vnc: VirtualNodeContext) {
         log.debug {
             "Evicting cached items from ${cache::class.java} with holding identity: ${vnc.holdingIdentity} and sandbox type: " +
-                    SandboxGroupType.FLOW
+                SandboxGroupType.FLOW
         }
         remove(vnc)
     }

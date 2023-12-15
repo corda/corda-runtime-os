@@ -1,7 +1,5 @@
 package net.corda.libs.permissions.cache.impl
 
-import java.time.Instant
-import java.util.concurrent.ConcurrentHashMap
 import net.corda.data.permissions.ChangeDetails
 import net.corda.data.permissions.Group
 import net.corda.data.permissions.Permission
@@ -19,6 +17,8 @@ import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.time.Instant
+import java.util.concurrent.ConcurrentHashMap
 
 internal class PermissionManagementCacheImplTest {
 
@@ -29,25 +29,69 @@ internal class PermissionManagementCacheImplTest {
     private val permissionSummaryData = ConcurrentHashMap<String, UserPermissionSummary>()
     private val permissionCache = PermissionManagementCacheImpl(userData, groupData, roleData, permissionData)
 
-    private val user1 = User("id1", 1, ChangeDetails(Instant.now()), "user-login1", "full name", true,
-        "hashedPassword", "saltValue", null, false, null, null, emptyList())
-    private val user2 = User("id2", 1, ChangeDetails(Instant.now()), "user-login2", "full name2", true,
-        "hashedPassword", "saltValue", null, false, null, null, emptyList())
+    private val user1 = User(
+        "id1", 1, ChangeDetails(Instant.now()), "user-login1", "full name", true,
+        "hashedPassword", "saltValue", null, false, null, null, emptyList()
+    )
+    private val user2 = User(
+        "id2", 1, ChangeDetails(Instant.now()), "user-login2", "full name2", true,
+        "hashedPassword", "saltValue", null, false, null, null, emptyList()
+    )
 
-    private val group1 = Group("grpId1", 0, ChangeDetails(Instant.now()), "group1", null,
-        emptyList(), emptyList())
-    private val group2 = Group("grpId2", 0, ChangeDetails(Instant.now()), "group1", null,
-        emptyList(), listOf(RoleAssociation(ChangeDetails(Instant.now()), "role1"), RoleAssociation(ChangeDetails(Instant.now()), "role2")))
+    private val group1 = Group(
+        "grpId1",
+        0,
+        ChangeDetails(Instant.now()),
+        "group1",
+        null,
+        emptyList(),
+        emptyList()
+    )
+    private val group2 = Group(
+        "grpId2",
+        0,
+        ChangeDetails(Instant.now()),
+        "group1",
+        null,
+        emptyList(),
+        listOf(RoleAssociation(ChangeDetails(Instant.now()), "role1"), RoleAssociation(ChangeDetails(Instant.now()), "role2"))
+    )
 
-    private val permission1 = Permission("perm1", 0, ChangeDetails(Instant.now()), "virtNode1",
-        PermissionType.ALLOW, "*", group1.id)
-    private val permission2 = Permission("perm2", 0, ChangeDetails(Instant.now()), "virtNode2",
-        PermissionType.DENY, "*", group1.id)
+    private val permission1 = Permission(
+        "perm1",
+        0,
+        ChangeDetails(Instant.now()),
+        "virtNode1",
+        PermissionType.ALLOW,
+        "*",
+        group1.id
+    )
+    private val permission2 = Permission(
+        "perm2",
+        0,
+        ChangeDetails(Instant.now()),
+        "virtNode2",
+        PermissionType.DENY,
+        "*",
+        group1.id
+    )
 
-    private val role1 = Role("role1", 0, ChangeDetails(Instant.now()), "role1Name", group1.id,
-        listOf(PermissionAssociation(ChangeDetails(Instant.now()), permission1.id)))
-    private val role2 = Role("role2", 0, ChangeDetails(Instant.now()), "role2Name", group1.id,
-        listOf(PermissionAssociation(ChangeDetails(Instant.now()), permission2.id)))
+    private val role1 = Role(
+        "role1",
+        0,
+        ChangeDetails(Instant.now()),
+        "role1Name",
+        group1.id,
+        listOf(PermissionAssociation(ChangeDetails(Instant.now()), permission1.id))
+    )
+    private val role2 = Role(
+        "role2",
+        0,
+        ChangeDetails(Instant.now()),
+        "role2Name",
+        group1.id,
+        listOf(PermissionAssociation(ChangeDetails(Instant.now()), permission2.id))
+    )
 
     private val permissionSummary1 = UserPermissionSummary(
         "userlogin1",
@@ -151,9 +195,13 @@ internal class PermissionManagementCacheImplTest {
         val permissionIds = permissionsMap.keys
         val permissions = permissionsMap.values
         assertEquals(2, permissionsMap.size, "GetPermissions should return all permissions in the map.")
-        assertTrue(permissionIds.containsAll(listOf(permission1.id, permission2.id)),
-            "GetPermissions result should contain permission IDs as keys.")
-        assertTrue(permissions.containsAll(listOf(permission1, permission2)),
-            "GetPermissions result should contain expected permissions in the map.")
+        assertTrue(
+            permissionIds.containsAll(listOf(permission1.id, permission2.id)),
+            "GetPermissions result should contain permission IDs as keys."
+        )
+        assertTrue(
+            permissions.containsAll(listOf(permission1, permission2)),
+            "GetPermissions result should contain expected permissions in the map."
+        )
     }
 }

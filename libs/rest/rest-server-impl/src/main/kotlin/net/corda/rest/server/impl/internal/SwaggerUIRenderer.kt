@@ -4,10 +4,10 @@ import io.javalin.core.util.Util
 import io.javalin.http.Context
 import io.javalin.http.Handler
 import io.javalin.http.InternalServerErrorResponse
-import org.slf4j.LoggerFactory
-import net.corda.rest.server.impl.apigen.processing.openapi.OpenApiInfoProvider.Companion.jsonPath
 import net.corda.rest.server.config.RestServerSettingsProvider
+import net.corda.rest.server.impl.apigen.processing.openapi.OpenApiInfoProvider.Companion.jsonPath
 import org.osgi.framework.FrameworkUtil
+import org.slf4j.LoggerFactory
 
 /**
  * [SwaggerUIRenderer] is responsible for rendering the swagger html.
@@ -80,7 +80,8 @@ internal class SwaggerUIRenderer(private val configurationProvider: RestServerSe
                         }
                     });
                 </script>
-            </body>""".trimIndent()
+            </body>
+            """.trimIndent()
         )
     }
 

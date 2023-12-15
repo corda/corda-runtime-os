@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
-class WireTransactionKryoSerializationTest: CommonLedgerIntegrationTest() {
+class WireTransactionKryoSerializationTest : CommonLedgerIntegrationTest() {
     @Test
     @Suppress("FunctionName")
     fun `correct serialization of a wire Transaction`() {

@@ -71,6 +71,6 @@ class SqlQueryProviderTokens : SqlQueryProvider {
                 $ownerFilter
                 ORDER BY t_output.transaction_id
                 LIMIT $limit
-                """.trimIndent()
+        """.trimIndent()
     }
 }

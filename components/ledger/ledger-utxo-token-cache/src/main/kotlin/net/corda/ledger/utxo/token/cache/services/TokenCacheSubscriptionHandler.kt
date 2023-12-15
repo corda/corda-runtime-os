@@ -6,7 +6,7 @@ import net.corda.lifecycle.Lifecycle
 /**
  * The [TokenCacheSubscriptionHandler] controls the lifecycle of event subscriptions used by the token cache
  */
-interface TokenCacheSubscriptionHandler: Lifecycle {
+interface TokenCacheSubscriptionHandler : Lifecycle {
 
     /**
      * Receives a change in configuration.

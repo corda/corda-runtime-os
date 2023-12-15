@@ -847,7 +847,7 @@
                 "uid": "dnOZedS4z"
               },
               "editorMode": "code",
-              "expr": "rate(corda_messaging_processor_time_seconds_sum{messagepattern_type=\"RPC\", operationName=\"rpcResponder\"}[$__rate_interval])/ (rate(corda_messaging_processor_time_seconds_count{messagepattern_type=\"RPC\", operationName=\"rpcResponder\"}[$__rate_interval]))",
+              "expr": "rate(corda_messaging_processor_time_seconds_sum{messagepattern_type=\"RPC\", operation_name=\"rpcResponder\"}[$__rate_interval])/ (rate(corda_messaging_processor_time_seconds_count{messagepattern_type=\"RPC\", operation_name=\"rpcResponder\"}[$__rate_interval]))",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
@@ -938,7 +938,7 @@
                 "uid": "dnOZedS4z"
               },
               "editorMode": "builder",
-              "expr": "sum(rate(corda_messaging_processor_time_seconds_count{messagepattern_type=\"RPC\", operationName=\"rpcResponder\"}[$__rate_interval]))",
+              "expr": "sum(rate(corda_messaging_processor_time_seconds_count{messagepattern_type=\"RPC\", operation_name=\"rpcResponder\"}[$__rate_interval]))",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"

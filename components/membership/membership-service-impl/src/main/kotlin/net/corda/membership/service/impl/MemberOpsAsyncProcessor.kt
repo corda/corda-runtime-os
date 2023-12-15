@@ -85,7 +85,7 @@ internal class MemberOpsAsyncProcessor(
             holdingIdentity,
             registrationId.toString(),
             status,
-            message?.take(255),
+            message,
         ).createAsyncCommands()
         return createFailureWithoutRetryResponse(registrationId.toString(), records)
     }

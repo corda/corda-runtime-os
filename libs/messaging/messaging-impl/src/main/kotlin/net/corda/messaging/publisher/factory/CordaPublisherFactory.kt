@@ -7,6 +7,7 @@ import net.corda.messagebus.api.configuration.ProducerConfig
 import net.corda.messagebus.api.constants.ProducerRoles
 import net.corda.messagebus.api.consumer.builder.CordaConsumerBuilder
 import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
+import net.corda.messaging.api.publisher.HttpRpcClient
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -17,6 +18,8 @@ import net.corda.messaging.config.MessagingConfigResolver
 import net.corda.messaging.constants.SubscriptionType
 import net.corda.messaging.publisher.CordaPublisherImpl
 import net.corda.messaging.publisher.CordaRPCSenderImpl
+import net.corda.messaging.publisher.HttpRpcClientImpl
+import net.corda.schema.registry.AvroSchemaRegistry
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -34,7 +37,9 @@ class CordaPublisherFactory @Activate constructor(
     @Reference(service = CordaConsumerBuilder::class)
     private val cordaConsumerBuilder: CordaConsumerBuilder,
     @Reference(service = LifecycleCoordinatorFactory::class)
-    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = AvroSchemaRegistry::class)
+    private val avroSchemaRegistry: AvroSchemaRegistry,
 ) : PublisherFactory {
 
     override fun createPublisher(
@@ -72,5 +77,9 @@ class CordaPublisherFactory @Activate constructor(
             deserializer = deserializer,
             lifecycleCoordinatorFactory = lifecycleCoordinatorFactory
         )
+    }
+
+    override fun createHttpRpcClient(): HttpRpcClient {
+        return HttpRpcClientImpl(avroSchemaRegistry)
     }
 }

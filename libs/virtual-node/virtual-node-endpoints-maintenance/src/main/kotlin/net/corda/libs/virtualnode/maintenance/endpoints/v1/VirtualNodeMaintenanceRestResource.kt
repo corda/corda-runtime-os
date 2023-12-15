@@ -1,11 +1,11 @@
 package net.corda.libs.virtualnode.maintenance.endpoints.v1
 
+import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 import net.corda.rest.HttpFileUpload
 import net.corda.rest.RestResource
 import net.corda.rest.annotations.HttpPOST
-import net.corda.rest.annotations.RestPathParameter
 import net.corda.rest.annotations.HttpRestResource
-import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
+import net.corda.rest.annotations.RestPathParameter
 
 /**
  * Maintenance Rest operations for virtual node management.
@@ -15,7 +15,7 @@ import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRestResource
 @HttpRestResource(
     name = "Virtual Node Maintenance API",
     description = "The Virtual Node Maintenance API consists of a series of endpoints used for virtual node management." +
-            "Warning: Using these endpoints could be highly disruptive, so great care should be taken when using them.",
+        "Warning: Using these endpoints could be highly disruptive, so great care should be taken when using them.",
     path = "maintenance/virtualnode"
 )
 interface VirtualNodeMaintenanceRestResource : RestResource {
@@ -31,8 +31,8 @@ interface VirtualNodeMaintenanceRestResource : RestResource {
         path = "forceCpiUpload",
         title = "This method force uploads a CPI file.",
         description = "Even if CPI with the same metadata has already been uploaded, " +
-                "this endpoint will overwrite the previously stored CPI record. This operation also purges any sandboxes running " +
-                "an overwritten version of a CPI. This action can take some time to process, therefore it is performed asynchronously.",
+            "this endpoint will overwrite the previously stored CPI record. This operation also purges any sandboxes running " +
+            "an overwritten version of a CPI. This action can take some time to process, therefore it is performed asynchronously.",
         responseDescription = "The response ID which can be used to track the progress of the force CPI upload operation."
     )
     fun forceCpiUpload(upload: HttpFileUpload): CpiUploadRestResource.CpiUploadResponse
