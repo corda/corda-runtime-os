@@ -11,7 +11,7 @@ import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-class UtxoFilteredTransactionSerializerTest: UtxoLedgerTest() {
+class UtxoFilteredTransactionSerializerTest : UtxoLedgerTest() {
     private val testBase = UtxoFilteredTransactionTestBase()
     private val serializationService = TestSerializationService.getTestSerializationService({
         it.register(wireTransactionAMQPSerializer, it)
@@ -20,13 +20,12 @@ class UtxoFilteredTransactionSerializerTest: UtxoLedgerTest() {
     }, cipherSchemeMetadata)
 
     @BeforeEach
-    fun beforeEach()
-    {
+    fun beforeEach() {
         testBase.beforeEach()
     }
 
     @Test
-    fun `should serialize and then deserialize a utxo filtered transaction`(){
+    fun `should serialize and then deserialize a utxo filtered transaction`() {
         val utxoFilteredTransaction: UtxoFilteredTransaction =
             UtxoFilteredTransactionImpl(testBase.serializationService, testBase.filteredTransaction)
         val bytes = serializationService.serialize(utxoFilteredTransaction)
@@ -34,5 +33,4 @@ class UtxoFilteredTransactionSerializerTest: UtxoLedgerTest() {
 
         Assertions.assertThat(deserialized.id).isEqualTo(utxoFilteredTransaction.id)
     }
-
 }

@@ -36,8 +36,10 @@ abstract class RestCommand : ExtensionPoint {
     @Option(
         names = ["-y", "--yield"],
         required = false,
-        description = ["Duration in seconds to patiently wait till REST connection will become available. " +
-                "Defaults to 10 seconds if missing."]
+        description = [
+            "Duration in seconds to patiently wait till REST connection will become available. " +
+                "Defaults to 10 seconds if missing."
+        ]
     )
     var waitDurationSeconds: Int = 10
 

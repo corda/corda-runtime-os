@@ -1,0 +1,7 @@
+# .git-blame-ignore-revs
+# Ledger code formatting
+3c623c2d660c4c075860be44cbec8dcae57f67ad
+# REST code formatting
+a05941cd4bc4a92ace31b32d7f1450d8fc6043b2
+# State Manager Code Formatting
+85bf2428a0b5ed53a344cae7b75638d97a40fb2c

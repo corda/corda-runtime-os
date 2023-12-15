@@ -18,7 +18,6 @@ dependencies {
     implementation "net.corda:corda-serialization"
     implementation project(':libs:crypto:cipher-suite')
 
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "net.corda:corda-crypto"
     testImplementation project(':libs:crypto:crypto-core')
     testImplementation project(":testing:test-utilities")

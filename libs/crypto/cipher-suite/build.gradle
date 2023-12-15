@@ -20,10 +20,5 @@ dependencies {
     api "org.bouncycastle:bcprov-jdk18on:$bouncycastleVersion"
     api "org.bouncycastle:bcpkix-jdk18on:$bouncycastleVersion"
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
-    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
 

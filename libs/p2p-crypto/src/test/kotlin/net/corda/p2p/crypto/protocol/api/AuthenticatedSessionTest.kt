@@ -5,7 +5,11 @@ import net.corda.data.p2p.crypto.AuthenticatedDataMessage
 import net.corda.data.p2p.crypto.CommonHeader
 import net.corda.data.p2p.crypto.MessageType
 import net.corda.data.p2p.crypto.ProtocolMode
+import net.corda.data.p2p.crypto.protocol.AuthenticatedSessionDetails
+import net.corda.data.p2p.crypto.protocol.Session
+import net.corda.p2p.crypto.protocol.api.Session.Companion.toCorda
 import net.corda.v5.base.types.MemberX500Name
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.BeforeAll
@@ -16,6 +20,7 @@ import java.security.Security
 import java.security.Signature
 import java.time.Instant
 import java.util.UUID
+import javax.crypto.spec.SecretKeySpec
 
 class AuthenticatedSessionTest {
 
@@ -287,5 +292,41 @@ class AuthenticatedSessionTest {
                 "Message's size (${partyAMaxMessageSize + 1} bytes) was larger than the max message" +
                     " size of the session ($partyAMaxMessageSize bytes)"
             )
+    }
+
+    @Test
+    fun `toAvro return a correct avro object`() {
+        val session = AuthenticatedSession(
+            sessionId = "sessionId",
+            outboundSecretKey = SecretKeySpec( "aaa".toByteArray(), "alg1"),
+            inboundSecretKey = SecretKeySpec("bbb".toByteArray(), "alg2"),
+            maxMessageSize = 100
+        )
+
+        val avro = session.toAvro()
+
+        assertThat(avro.details).isInstanceOf(AuthenticatedSessionDetails::class.java)
+    }
+
+    @Test
+    fun `toCorda return a correct session`() {
+        val avro = Session(
+            "sessionId",
+            300,
+            AuthenticatedSessionDetails(
+                net.corda.data.p2p.crypto.protocol.SecretKeySpec(
+                    "alg",
+                    ByteBuffer.wrap(byteArrayOf(1)),
+                ),
+                net.corda.data.p2p.crypto.protocol.SecretKeySpec(
+                    "alg-2",
+                    ByteBuffer.wrap(byteArrayOf(3)),
+                ),
+            )
+        )
+
+        val session = avro.toCorda()
+
+        assertThat(session).isInstanceOf(AuthenticatedSession::class.java)
     }
 }

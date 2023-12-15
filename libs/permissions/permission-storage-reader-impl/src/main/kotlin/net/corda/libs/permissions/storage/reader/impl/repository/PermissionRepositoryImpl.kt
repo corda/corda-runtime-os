@@ -1,18 +1,18 @@
 package net.corda.libs.permissions.storage.reader.impl.repository
 
-import java.time.Instant
-import javax.persistence.EntityManager
 import net.corda.libs.permissions.storage.reader.repository.PermissionRepository
+import net.corda.libs.permissions.storage.reader.repository.UserLogin
+import net.corda.libs.permissions.storage.reader.summary.InternalUserPermissionSummary
+import net.corda.orm.utils.transaction
 import net.corda.permissions.model.Group
 import net.corda.permissions.model.Permission
 import net.corda.permissions.model.Role
 import net.corda.permissions.model.User
-import javax.persistence.EntityManagerFactory
-import net.corda.libs.permissions.storage.reader.repository.UserLogin
-import net.corda.libs.permissions.storage.reader.summary.InternalUserPermissionSummary
-import net.corda.orm.utils.transaction
 import net.corda.permissions.query.dto.InternalPermissionQueryDto
 import net.corda.permissions.query.dto.InternalUserEnabledQueryDto
+import java.time.Instant
+import javax.persistence.EntityManager
+import javax.persistence.EntityManagerFactory
 
 class PermissionRepositoryImpl(private val entityManagerFactory: EntityManagerFactory) : PermissionRepository {
 
@@ -79,9 +79,7 @@ class PermissionRepositoryImpl(private val entityManagerFactory: EntityManagerFa
         userPermissionsFromRoles: Map<UserLogin, List<InternalPermissionQueryDto>>,
         timeOfPermissionSummary: Instant,
     ): Map<String, InternalUserPermissionSummary> {
-
         return userLogins.associateBy({ it.loginName }) {
-
             // rolePermissionsQuery features inner joins so a user without roles won't be present in this map
             val permissionsInheritedFromRoles = userPermissionsFromRoles[it.loginName] ?: emptyList()
 

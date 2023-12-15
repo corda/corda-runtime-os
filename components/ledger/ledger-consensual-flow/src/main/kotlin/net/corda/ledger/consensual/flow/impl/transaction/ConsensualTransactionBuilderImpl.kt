@@ -16,7 +16,7 @@ class ConsensualTransactionBuilderImpl(
 
     private var alreadySigned = false
 
-     override fun withStates(vararg states: ConsensualState): ConsensualTransactionBuilder {
+    override fun withStates(vararg states: ConsensualState): ConsensualTransactionBuilder {
         this.states += states
         return this
     }

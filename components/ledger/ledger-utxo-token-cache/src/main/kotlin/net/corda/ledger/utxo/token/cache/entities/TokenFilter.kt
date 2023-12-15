@@ -1,6 +1,6 @@
 package net.corda.ledger.utxo.token.cache.entities
 
-interface TokenFilter: TokenEvent {
+interface TokenFilter : TokenEvent {
 
     /**
      * @return Returns the regular expression for a tag which the tokens will be matched against.

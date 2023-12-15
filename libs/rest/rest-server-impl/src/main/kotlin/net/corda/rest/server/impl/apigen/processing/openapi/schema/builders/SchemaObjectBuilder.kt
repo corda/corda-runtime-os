@@ -41,11 +41,10 @@ internal class SchemaObjectBuilder(
                 // and we don't want to force users to add more annotations :)
                 clazz.kotlin.memberProperties.filter {
                     it.visibility == KVisibility.PUBLIC &&
-                            it.annotations.none { annotation -> annotation is JsonIgnore } &&
-                            // annotations targeting ElementType.FIELD need to be resolved from javaField instead
-                            // however, it doesn't hurt to check kotlin property annotations too as above
-                            (it.javaField?.annotations?.none { annotation -> annotation is JsonIgnore } ?: true)
-
+                        it.annotations.none { annotation -> annotation is JsonIgnore } &&
+                        // annotations targeting ElementType.FIELD need to be resolved from javaField instead
+                        // however, it doesn't hurt to check kotlin property annotations too as above
+                        (it.javaField?.annotations?.none { annotation -> annotation is JsonIgnore } ?: true)
                 }.associate {
                     it.name to schemaModelProvider.toSchemaModel(
                         ParameterizedClass(

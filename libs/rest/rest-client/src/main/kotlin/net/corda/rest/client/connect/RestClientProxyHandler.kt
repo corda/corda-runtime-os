@@ -65,7 +65,7 @@ internal class RestClientProxyHandler<I : RestResource>(
             if (sinceVersion > serverProtocolVersion) {
                 throw UnsupportedOperationException(
                     "Method $method was added in protocol version '$sinceVersion' " +
-                            "but the server is running '$serverProtocolVersion'."
+                        "but the server is running '$serverProtocolVersion'."
                 )
             }
         }
@@ -94,7 +94,11 @@ internal class RestClientProxyHandler<I : RestResource>(
 
         if (method.returnsDurableCursorBuilder()) {
             return RestFiniteDurableCursorClientBuilderImpl(
-                client, method, rawPath, args, authenticationConfig
+                client,
+                method,
+                rawPath,
+                args,
+                authenticationConfig
             ).also { log.trace { """Invoke "${method.name}" completed.""" } }
         }
 

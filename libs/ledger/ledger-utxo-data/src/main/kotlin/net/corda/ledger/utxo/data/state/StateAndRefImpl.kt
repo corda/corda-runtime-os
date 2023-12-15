@@ -35,11 +35,11 @@ data class StateAndRefImpl<out T : ContractState>(
      * @return Returns true if the specified object is equal to the current object; otherwise, false.
      */
     override fun equals(other: Any?): Boolean {
-        return this === other
-                || other != null
-                && other is StateAndRef<*>
-                && other.ref == ref
-                && other.state == state
+        return this === other ||
+            other != null &&
+            other is StateAndRef<*> &&
+            other.ref == ref &&
+            other.state == state
     }
 
     /**

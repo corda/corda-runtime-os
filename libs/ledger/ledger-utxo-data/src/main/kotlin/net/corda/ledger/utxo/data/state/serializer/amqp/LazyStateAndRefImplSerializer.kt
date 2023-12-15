@@ -24,7 +24,7 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 class LazyStateAndRefSerializer @Activate constructor(
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService
-): BaseProxySerializer<LazyStateAndRefImpl<ContractState>, LazyStateAndRefImplProxy>(), UsedByFlow, UsedByPersistence, UsedByVerification {
+) : BaseProxySerializer<LazyStateAndRefImpl<ContractState>, LazyStateAndRefImplProxy>(), UsedByFlow, UsedByPersistence, UsedByVerification {
     private companion object {
         private const val VERSION_1 = 1
     }

@@ -93,7 +93,4 @@ class LedgerPersistenceRequestProcessorTest {
 
         assertThat(results).isEqualTo(failureResponseRecord.value)
     }
-
-
 }
-

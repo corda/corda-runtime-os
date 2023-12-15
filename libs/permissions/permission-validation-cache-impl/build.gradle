@@ -5,6 +5,8 @@ plugins {
 
 description 'Implementation of permission validation cache for the permission system.'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly "org.osgi:org.osgi.service.component.annotations"
 
@@ -18,6 +20,4 @@ dependencies {
     implementation project(":libs:permissions:permission-validation-cache")
     implementation project(":libs:permissions:permission-cache-common")
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

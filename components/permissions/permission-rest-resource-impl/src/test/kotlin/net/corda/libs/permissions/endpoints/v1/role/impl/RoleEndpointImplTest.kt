@@ -1,8 +1,5 @@
 package net.corda.libs.permissions.endpoints.v1.role.impl
 
-import net.corda.rest.exception.ResourceNotFoundException
-import net.corda.rest.security.CURRENT_REST_CONTEXT
-import net.corda.rest.security.RestAuthContext
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.request.CreateRoleRequestDto
@@ -11,7 +8,13 @@ import net.corda.libs.permissions.manager.response.RoleResponseDto
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.permissions.management.PermissionManagementService
+import net.corda.rest.ResponseCode
+import net.corda.rest.exception.ResourceNotFoundException
+import net.corda.rest.security.CURRENT_REST_CONTEXT
+import net.corda.rest.security.RestAuthContext
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -20,9 +23,6 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
-import net.corda.rest.ResponseCode
-import net.corda.permissions.management.PermissionManagementService
-import org.junit.jupiter.api.Assertions.assertNotNull
 
 internal class RoleEndpointImplTest {
 

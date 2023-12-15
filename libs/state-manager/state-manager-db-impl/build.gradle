@@ -3,7 +3,8 @@ plugins {
     id 'corda.common-publishing'
 }
 
-description 'Database as Persisent Storage Implementation of the State Manager '
+description 'Database as Persistent Storage Implementation of the State Manager'
+ext.cordaEnableFormatting = true
 
 dependencies {
     api project(":libs:state-manager:state-manager-api")
@@ -22,8 +23,6 @@ dependencies {
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     integrationTestImplementation project(':libs:db:db-admin')
     integrationTestImplementation project(':testing:db-testkit')

@@ -32,8 +32,4 @@ dependencies {
     testImplementation project(':testing:test-serialization')
     testImplementation project(':libs:serialization:serialization-amqp')
     testImplementation project(":testing:test-utilities")
-
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

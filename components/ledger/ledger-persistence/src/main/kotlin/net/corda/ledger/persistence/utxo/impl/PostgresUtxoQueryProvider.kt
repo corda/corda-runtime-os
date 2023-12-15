@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory
 class PostgresUtxoQueryProvider @Activate constructor(
     @Reference(target = POSTGRES_TYPE_FILTER)
     databaseTypeProvider: DatabaseTypeProvider
-): AbstractUtxoQueryProvider() {
+) : AbstractUtxoQueryProvider() {
     init {
         LoggerFactory.getLogger(this::class.java).debug { "Activated for ${databaseTypeProvider.databaseType}" }
     }

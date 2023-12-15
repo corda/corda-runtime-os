@@ -7,11 +7,11 @@ import net.corda.ledger.utxo.token.cache.entities.PoolCacheState
 import net.corda.ledger.utxo.token.cache.entities.TokenCache
 import net.corda.ledger.utxo.token.cache.factories.RecordFactory
 import net.corda.ledger.utxo.token.cache.services.AvailableTokenService
+import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
 import net.corda.ledger.utxo.token.cache.services.TokenFilterStrategy
 import net.corda.messaging.api.records.Record
-import java.math.BigDecimal
-import net.corda.ledger.utxo.token.cache.services.ServiceConfiguration
 import org.slf4j.LoggerFactory
+import java.math.BigDecimal
 
 class TokenClaimQueryEventHandler(
     private val filterStrategy: TokenFilterStrategy,
@@ -29,11 +29,9 @@ class TokenClaimQueryEventHandler(
         state: PoolCacheState,
         event: ClaimQuery
     ): Record<String, FlowEvent> {
-
         val claimId = event.externalEventRequestId
         val claim = state.claim(claimId)
-        if(claim != null) {
-
+        if (claim != null) {
             logger.warn("A token claim is being processed more than once. ClaimId: $claimId")
 
             return recordFactory.getSuccessfulClaimResponseWithListTokens(

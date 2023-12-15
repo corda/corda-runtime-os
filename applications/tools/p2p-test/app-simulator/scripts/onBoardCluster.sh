@@ -126,10 +126,6 @@ assign_hsm_and_generate_ledger_key_pair() {
     echo $LEDGER_KEY_ID
 }
 
-assign_hsm_for_session_encryption() {
-    curl --fail-with-body -s -S -k -u admin:admin -X POST https://$1/api/v1/hsm/soft/p2p/ENCRYPTION_SECRET &> /dev/null
-}
-
 get_csr() {
     curl --fail-with-body -s -S -k -u admin:admin  -X POST -H "Content-Type: application/json" -d '{"x500Name": "'$2'", "subjectAlternativeNames": [ "'$3'" ]}' "https://$1/api/v5_1/certificate/p2p/$4" > "$WORKING_DIR"/$5.csr
 }
@@ -262,10 +258,6 @@ on_board_mgm() {
 
    ECDH_KEY_ID=$(assign_hsm_and_generate_edch_key_pair $MGM_RPC $MGM_HOLDING_ID_SHORT_HASH)
    echo ECDH Key Id: $ECDH_KEY_ID
-
-   # Assign HSM for session encryption
-   assign_hsm_for_session_encryption()
-   echo "Assigned soft HSM category 'ENCRYPTION_SECRET' to tenant 'p2p'."
 
    # Generate Key Pair for TLS for MGM
    MGM_TLS_KEY_ID=$(assign_hsm_and_generate_tls_key_pair $MGM_RPC)

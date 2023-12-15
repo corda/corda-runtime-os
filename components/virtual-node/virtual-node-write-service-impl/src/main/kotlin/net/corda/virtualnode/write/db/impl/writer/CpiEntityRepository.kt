@@ -1,8 +1,8 @@
 package net.corda.virtualnode.write.db.impl.writer
 
-import javax.persistence.EntityManager
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
+import javax.persistence.EntityManager
 
 internal interface CpiEntityRepository {
 
@@ -12,4 +12,3 @@ internal interface CpiEntityRepository {
 
     fun getCPIMetadataById(em: EntityManager, id: CpiIdentifier): CpiMetadata?
 }
-

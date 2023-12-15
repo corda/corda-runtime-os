@@ -35,7 +35,7 @@ import java.security.PublicKey
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
+class UtxoLedgerServiceImplTest : UtxoLedgerTest() {
 
     @Test
     fun `createTransactionBuilder should return a Transaction Builder`() {
@@ -89,7 +89,6 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
 
     @Test
     fun `getPluggableNotaryClientFlow fails for an unknown notary service`() {
-
         val notaryService = mock<NotaryInfo>().apply {
             whenever(this.name).thenReturn(notaryX500Name)
         }
@@ -105,7 +104,6 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
 
     @Test
     fun `getPluggableNotaryClientFlow fails with plugin that does not inherit from base class`() {
-
         class MyClientFlow
 
         val notaryService = mock<NotaryInfo>().apply {
@@ -119,7 +117,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
         }
 
         val protocolStore = mock<FlowProtocolStore>().apply {
-            whenever(this.initiatorForProtocol(any(),any())).thenReturn(MyClientFlow::class.java.name)
+            whenever(this.initiatorForProtocol(any(), any())).thenReturn(MyClientFlow::class.java.name)
         }
 
         val virtualNodeContext = mock<VirtualNodeContext>().apply {
@@ -148,8 +146,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
 
     @Test
     fun `getPluggableNotaryClientFlow fails when protocol name not found in protocol store`() {
-
-        class MyClientFlow: PluggableNotaryClientFlow {
+        class MyClientFlow : PluggableNotaryClientFlow {
             override fun call(): List<DigitalSignatureAndMetadata> { return emptyList() }
         }
 
@@ -164,7 +161,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
         }
 
         val protocolStore = mock<FlowProtocolStore>().apply {
-            whenever(this.initiatorForProtocol(eq("my-client-flow"),any()))
+            whenever(this.initiatorForProtocol(eq("my-client-flow"), any()))
                 .thenThrow(FlowFatalException("Flow not found"))
         }
 
@@ -194,7 +191,6 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
 
     @Test
     fun `getPluggableNotaryClientFlow fails when no compatible version found`() {
-
         class MyClientFlow : PluggableNotaryClientFlow {
             override fun call(): List<DigitalSignatureAndMetadata> { return emptyList() }
         }
@@ -242,7 +238,6 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
 
     @Test
     fun `getPluggableNotaryClientFlow succeeds with valid notary service and plugin`() {
-
         class MyClientFlow : PluggableNotaryClientFlow {
             override fun call(): List<DigitalSignatureAndMetadata> { return emptyList() }
         }
@@ -258,7 +253,7 @@ class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
         }
 
         val protocolStore = mock<FlowProtocolStore>().apply {
-            whenever(this.initiatorForProtocol(any(),any())).thenReturn(MyClientFlow::class.java.name)
+            whenever(this.initiatorForProtocol(any(), any())).thenReturn(MyClientFlow::class.java.name)
         }
 
         val virtualNodeContext = mock<VirtualNodeContext>().apply {

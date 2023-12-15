@@ -42,8 +42,6 @@ dependencies {
     integrationTestImplementation 'net.corda:corda-topic-schema'
 
     integrationTestImplementation "com.typesafe:config:$typeSafeConfigVersion"
-    integrationTestImplementation "org.assertj:assertj-core:$assertjVersion"
-    integrationTestImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     integrationTestImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
     integrationTestImplementation "javax.persistence:javax.persistence-api"
     integrationTestImplementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"

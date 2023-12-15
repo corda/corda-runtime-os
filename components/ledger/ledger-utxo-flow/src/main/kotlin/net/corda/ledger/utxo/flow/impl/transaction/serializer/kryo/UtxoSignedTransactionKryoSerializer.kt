@@ -5,6 +5,7 @@ import net.corda.ledger.common.flow.transaction.TransactionSignatureServiceInter
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionInternal
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
+import net.corda.ledger.utxo.flow.impl.transaction.verifier.NotarySignatureVerificationServiceInternal
 import net.corda.sandbox.type.SandboxConstants.CORDA_UNINJECTABLE_SERVICE
 import net.corda.sandbox.type.UsedByFlow
 import net.corda.serialization.checkpoint.CheckpointInput
@@ -28,7 +29,9 @@ class UtxoSignedTransactionKryoSerializer @Activate constructor(
     @Reference(service = TransactionSignatureServiceInternal::class)
     private val transactionSignatureService: TransactionSignatureServiceInternal,
     @Reference(service = UtxoLedgerTransactionFactory::class)
-    private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory
+    private val utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory,
+    @Reference(service = NotarySignatureVerificationServiceInternal::class)
+    private val notarySignatureVerificationService: NotarySignatureVerificationServiceInternal
 ) : CheckpointInternalCustomSerializer<UtxoSignedTransactionInternal>, UsedByFlow {
     override val type: Class<UtxoSignedTransactionInternal> get() = UtxoSignedTransactionInternal::class.java
 
@@ -39,11 +42,13 @@ class UtxoSignedTransactionKryoSerializer @Activate constructor(
 
     override fun read(input: CheckpointInput, type: Class<out UtxoSignedTransactionInternal>): UtxoSignedTransactionInternal {
         val wireTransaction = input.readClassAndObject() as WireTransaction
+
         @Suppress("unchecked_cast")
         val signatures = input.readClassAndObject() as List<DigitalSignatureAndMetadata>
         return UtxoSignedTransactionImpl(
             serialisationService,
             transactionSignatureService,
+            notarySignatureVerificationService,
             utxoLedgerTransactionFactory,
             wireTransaction,
             signatures

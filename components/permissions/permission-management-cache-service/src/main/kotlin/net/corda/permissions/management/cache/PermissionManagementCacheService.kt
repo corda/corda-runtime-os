@@ -93,7 +93,7 @@ class PermissionManagementCacheService @Activate constructor(
     private val permissionData = ConcurrentHashMap<String, Permission>()
 
     private fun allSnapshotsReceived(): Boolean = userSnapshotReceived && groupSnapshotReceived &&
-            roleSnapshotReceived && permissionSnapshotReceived
+        roleSnapshotReceived && permissionSnapshotReceived
 
     private fun eventHandler(event: LifecycleEvent) {
         when (event) {
@@ -113,7 +113,8 @@ class PermissionManagementCacheService @Activate constructor(
                     if (configHandle == null) {
                         log.info("Registering for configuration updates.")
                         configHandle = configurationReadService.registerComponentForUpdates(
-                            coordinator, setOf(BOOT_CONFIG, MESSAGING_CONFIG))
+                            coordinator, setOf(BOOT_CONFIG, MESSAGING_CONFIG)
+                        )
                     }
                 } else {
                     downTransition()
@@ -219,13 +220,15 @@ class PermissionManagementCacheService @Activate constructor(
         )
 
         permissionManagementCacheRef.get()?.stop()
-        permissionManagementCacheRef.set(permissionManagementCacheFactory.createPermissionManagementCache(
-            userData,
-            groupData,
-            roleData,
-            permissionData
+        permissionManagementCacheRef.set(
+            permissionManagementCacheFactory.createPermissionManagementCache(
+                userData,
+                groupData,
+                roleData,
+                permissionData
+            )
+                .also { it.start() }
         )
-            .also { it.start() })
     }
 
     private fun createUserSubscription(

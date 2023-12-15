@@ -33,6 +33,7 @@ dependencies {
     implementation project(':libs:db:db-core')
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
 
+    testImplementation libs.bundles.test
     testImplementation 'org.jetbrains.kotlin:kotlin-stdlib'
     testImplementation "org.pf4j:pf4j:$pf4jVersion"
     testImplementation "com.github.stefanbirkner:system-lambda:$systemLambdaVersion"

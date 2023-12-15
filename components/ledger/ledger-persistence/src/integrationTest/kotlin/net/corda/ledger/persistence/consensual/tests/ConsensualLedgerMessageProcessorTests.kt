@@ -79,7 +79,9 @@ class ConsensualLedgerMessageProcessorTests {
         const val TOPIC = "consensual-ledger-dummy-topic"
         const val TIMEOUT_MILLIS = 10000L
         val EXTERNAL_EVENT_CONTEXT = ExternalEventContext(
-            "request id", "flow id", KeyValuePairList(listOf(KeyValuePair("corda.account", "test account")))
+            "request id",
+            "flow id",
+            KeyValuePairList(listOf(KeyValuePair("corda.account", "test account")))
         )
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -136,7 +138,7 @@ class ConsensualLedgerMessageProcessorTests {
             EXTERNAL_EVENT_CONTEXT.apply {
                 this.contextProperties = keyValuePairListOf(
                     this.contextProperties.toMap() +
-                            cpkFileHashes.toKeyValuePairList(CPK_FILE_CHECKSUM).toMap()
+                        cpkFileHashes.toKeyValuePairList(CPK_FILE_CHECKSUM).toMap()
                 )
             }
         )
@@ -159,7 +161,7 @@ class ConsensualLedgerMessageProcessorTests {
             EXTERNAL_EVENT_CONTEXT.apply {
                 this.contextProperties = keyValuePairListOf(
                     this.contextProperties.toMap() +
-                            cpkFileHashes.toKeyValuePairList(CPK_FILE_CHECKSUM).toMap()
+                        cpkFileHashes.toKeyValuePairList(CPK_FILE_CHECKSUM).toMap()
                 )
             }
         )

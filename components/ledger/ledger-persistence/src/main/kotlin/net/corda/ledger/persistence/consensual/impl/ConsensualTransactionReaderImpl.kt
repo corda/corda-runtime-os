@@ -32,7 +32,7 @@ class ConsensualTransactionReaderImpl(
         get() = signedTransaction.id
 
     override val account: String
-        get() = externalEventContext.contextProperties.items.find { it.key == CORDA_ACCOUNT || it.key == CORDA_INITIATOR_ACCOUNT}?.value
+        get() = externalEventContext.contextProperties.items.find { it.key == CORDA_ACCOUNT || it.key == CORDA_INITIATOR_ACCOUNT }?.value
             ?: throw MissingAccountContextPropertyException()
 
     override val status: TransactionStatus

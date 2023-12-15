@@ -2,8 +2,8 @@ package net.corda.rest.tools.annotations.validation
 
 import net.corda.rest.RestResource
 import net.corda.rest.annotations.HttpGET
-import net.corda.rest.annotations.RestPathParameter
 import net.corda.rest.annotations.HttpRestResource
+import net.corda.rest.annotations.RestPathParameter
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test

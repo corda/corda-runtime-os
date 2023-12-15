@@ -1124,18 +1124,18 @@
         }, {
           "name" : "category",
           "in" : "path",
-          "description" : "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY', or 'ENCRYPTION_SECRET'",
+          "description" : "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY', or 'ENCRYPTION_SECRET'",
+            "description" : "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'",
             "nullable" : false,
             "example" : "string"
           }
         } ],
         "responses" : {
           "200" : {
-            "description" : "\n            The HSM association details including:\n            id: the unique identifier of the HSM association\n            hsmId: the HSM identifier included into the association\n            category: the category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', \n                'TLS', 'JWT_KEY', or 'ENCRYPTION_SECRET'\n            masterKeyAlias: optional master key alias to be used on HSM\n            deprecatedAt: time when the association was deprecated, epoch time in seconds; \n                value of 0 means the association is active",
+            "description" : "\n            The HSM association details including:\n            id: the unique identifier of the HSM association\n            hsmId: the HSM identifier included into the association\n            category: the category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', \n                'TLS', or 'JWT_KEY'\n            masterKeyAlias: optional master key alias to be used on HSM\n            deprecatedAt: time when the association was deprecated, epoch time in seconds; \n                value of 0 means the association is active",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1172,18 +1172,18 @@
         }, {
           "name" : "category",
           "in" : "path",
-          "description" : "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY', or 'ENCRYPTION_SECRET'",
+          "description" : "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY', or 'ENCRYPTION_SECRET'",
+            "description" : "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'",
             "nullable" : false,
             "example" : "string"
           }
         } ],
         "responses" : {
           "200" : {
-            "description" : "\n            The HSM association details including:\n            id: the unique identifier of the HSM association\n            hsmId: the HSM identifier included into the association\n            category: the category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', \n                'TLS', 'JWT_KEY', or 'ENCRYPTION_SECRET'\n            masterKeyAlias: optional master key alias to be used on HSM\n            deprecatedAt: time when the association was deprecated, epoch time in seconds; \n                value of 0 means the association is active",
+            "description" : "\n            The HSM association details including:\n            id: the unique identifier of the HSM association\n            hsmId: the HSM identifier included into the association\n            category: the category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', \n                'TLS', or 'JWT_KEY'\n            masterKeyAlias: optional master key alias to be used on HSM\n            deprecatedAt: time when the association was deprecated, epoch time in seconds; \n                value of 0 means the association is active",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -4223,54 +4223,6 @@
         }
       }
     },
-    "/wrappingkey/unmanaged/rotation" : {
-      "get" : {
-        "tags" : [ "Key Rotation API" ],
-        "description" : "This method gets the status of the current rotation.",
-        "operationId" : "get_wrappingkey_unmanaged_rotation",
-        "parameters" : [ ],
-        "responses" : {
-          "200" : {
-            "description" : "Success",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "uniqueItems" : false,
-                  "type" : "array",
-                  "nullable" : false,
-                  "items" : {
-                    "type" : "object",
-                    "properties" : {
-                      "first" : {
-                        "type" : "string",
-                        "nullable" : false,
-                        "example" : "string"
-                      },
-                      "second" : {
-                        "uniqueItems" : false,
-                        "type" : "array",
-                        "nullable" : false,
-                        "items" : {
-                          "type" : "string",
-                          "example" : "string"
-                        }
-                      }
-                    },
-                    "example" : "No example available for this type"
-                  }
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
     "/wrappingkey/unmanaged/rotation/{oldkeyalias}" : {
       "post" : {
         "tags" : [ "Key Rotation API" ],
@@ -4314,6 +4266,61 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/KeyRotationResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/wrappingkey/unmanaged/rotation/{requestid}" : {
+      "get" : {
+        "tags" : [ "Key Rotation API" ],
+        "description" : "This method gets the status of the current rotation.",
+        "operationId" : "get_wrappingkey_unmanaged_rotation__requestid_",
+        "parameters" : [ {
+          "name" : "requestid",
+          "in" : "path",
+          "description" : "The requestId obtained when starting key rotation request.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The requestId obtained when starting key rotation request.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "uniqueItems" : false,
+                  "type" : "array",
+                  "nullable" : false,
+                  "items" : {
+                    "type" : "object",
+                    "properties" : {
+                      "first" : {
+                        "type" : "string",
+                        "nullable" : false,
+                        "example" : "string"
+                      },
+                      "second" : {
+                        "type" : "string",
+                        "nullable" : false,
+                        "example" : "string"
+                      }
+                    },
+                    "example" : "No example available for this type"
+                  }
                 }
               }
             }

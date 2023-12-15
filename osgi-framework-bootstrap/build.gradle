@@ -29,10 +29,11 @@ dependencies {
     runtimeOnly "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     runtimeOnly "com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion"
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation libs.mockito.core
     testImplementation "org.apache.sling:org.apache.sling.testing.osgi-mock.junit5:$slingVersion"
-    testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
+    testImplementation libs.junit.api
+    testImplementation libs.assertj.core
+    testRuntimeOnly libs.junit.engine
 
     testBundles project(':testing:apps:test-app')
 }
