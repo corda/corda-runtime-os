@@ -24,14 +24,15 @@ class GroupAllocator {
         config: EventMediatorConfig<K, S, E>
     ): List<Map<K, List<Record<K, E>>>> {
         val groups = setUpGroups(config, events)
-        val buckets = events.groupBy { it.key }
-        val bucketsSized = buckets.keys.sortedByDescending { buckets[it]?.size }
-        for (i in 0 until buckets.size) {
-            val group = groups.minBy { it.values.flatten().size }
-            val key = bucketsSized[i]
-            group[key] = buckets[key]!!
+        val buckets = events
+            .groupBy { it.key }.toList()
+            .sortedByDescending { it.second.size }
+        
+        buckets.forEach { (key, records) ->
+            val leastFilledGroup = groups.minByOrNull { it.values.flatten().size }
+            leastFilledGroup?.put(key, records)
         }
-
+        
         return groups.filter { it.values.isNotEmpty() }
     }
 
@@ -39,13 +40,11 @@ class GroupAllocator {
         config: EventMediatorConfig<K, S, E>,
         events: List<Record<K, E>>
     ): MutableList<MutableMap<K, List<Record<K, E>>>> {
-        val groups = mutableListOf<MutableMap<K, List<Record<K, E>>>>()
-        val threadCount = config.threads
-        val groupCountBasedOnEvents = ceil(events.size.toDouble() / config.minGroupSize).toInt()
-        val groupsCount = if (groupCountBasedOnEvents < threadCount) groupCountBasedOnEvents else threadCount
-        for (i in 0 until groupsCount) {
-            groups.add(mutableMapOf())
-        }
-        return groups
+        val numGroups = min(
+            ceil(events.size.toDouble() / config.minGroupSize).toInt(),
+            config.threads
+        )
+        
+        return MutableList(numGroups) { mutableMapOf() }
     }
 }
