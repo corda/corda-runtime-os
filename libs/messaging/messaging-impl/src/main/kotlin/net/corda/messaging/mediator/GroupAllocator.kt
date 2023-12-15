@@ -3,6 +3,7 @@ package net.corda.messaging.mediator
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.records.Record
 import kotlin.math.ceil
+import kotlin.math.min
 
 /**
  * Helper class to use in the mediator to divide polled records into groups for processing.
