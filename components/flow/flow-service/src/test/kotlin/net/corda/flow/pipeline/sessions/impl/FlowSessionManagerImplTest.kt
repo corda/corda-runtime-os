@@ -66,6 +66,9 @@ class FlowSessionManagerImplTest {
         val X500_NAME = MemberX500Name("Alice", "Alice Corp", "LDN", "GB")
         val HOLDING_IDENTITY = HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group id")
         val COUNTERPARTY_HOLDING_IDENTITY = HoldingIdentity(X500_NAME.toString(), "group id")
+        val SESSION_PROPERTIES = KeyValueStore().apply {
+            put(Constants.FLOW_SESSION_REQUIRE_CLOSE, false.toString())
+        }.avro
 
         val sessionContext = KeyValueStore().apply {
             this[FLOW_PROTOCOL] = PROTOCOL
@@ -103,9 +106,7 @@ class FlowSessionManagerImplTest {
         mutableListOf(),
         sessionId = SESSION_ID,
         counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-        sessionProperties = KeyValueStore().apply {
-            put(Constants.FLOW_SESSION_REQUIRE_CLOSE, false.toString())
-        }.avro
+        sessionProperties = KeyValueStore().avro
     )
 
     private val anotherSessionState = buildSessionState(
@@ -116,9 +117,7 @@ class FlowSessionManagerImplTest {
         mutableListOf(),
         sessionId = ANOTHER_SESSION_ID,
         counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-        sessionProperties = KeyValueStore().apply {
-            put(Constants.FLOW_SESSION_REQUIRE_CLOSE, false.toString())
-        }.avro
+        sessionProperties = KeyValueStore().avro
     )
 
     private val flowKey = mock<FlowKey>()
@@ -234,7 +233,7 @@ class FlowSessionManagerImplTest {
             timestamp = instant,
             initiatingIdentity = HOLDING_IDENTITY,
             initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-            null
+            SESSION_PROPERTIES
         )
 
         val sessionState = flowSessionManager.sendCounterpartyInfoRequest(
@@ -284,7 +283,7 @@ class FlowSessionManagerImplTest {
             timestamp = instant,
             initiatingIdentity = HOLDING_IDENTITY,
             initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-            null
+            SESSION_PROPERTIES
         )
         val anotherExpectedSessionEvent = buildSessionEvent(
             MessageDirection.OUTBOUND,
@@ -294,7 +293,7 @@ class FlowSessionManagerImplTest {
             timestamp = instant,
             initiatingIdentity = HOLDING_IDENTITY,
             initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-            null
+            SESSION_PROPERTIES
         )
 
         val sessionStates = flowSessionManager.sendDataMessages(
@@ -788,9 +787,7 @@ class FlowSessionManagerImplTest {
             mutableListOf(),
             sessionId = SESSION_ID,
             counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-            sessionProperties = KeyValueStore().apply {
-                put(Constants.FLOW_SESSION_REQUIRE_CLOSE, false.toString())
-            }.avro
+            sessionProperties = SESSION_PROPERTIES
         )
 
         whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(closingSessionState)
@@ -816,9 +813,7 @@ class FlowSessionManagerImplTest {
             mutableListOf(),
             sessionId = SESSION_ID,
             counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-            sessionProperties = KeyValueStore().apply {
-                put(Constants.FLOW_SESSION_REQUIRE_CLOSE, false.toString())
-            }.avro
+            sessionProperties = SESSION_PROPERTIES
         )
 
         whenever(checkpoint.sessions).thenReturn(listOf(closingSessionState))
@@ -840,9 +835,7 @@ class FlowSessionManagerImplTest {
             mutableListOf(),
             sessionId = SESSION_ID,
             counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-            sessionProperties = KeyValueStore().apply {
-                put(Constants.FLOW_SESSION_REQUIRE_CLOSE, false.toString())
-            }.avro
+            sessionProperties = SESSION_PROPERTIES
         )
 
         whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(closingSessionState)
@@ -863,9 +856,7 @@ class FlowSessionManagerImplTest {
             mutableListOf(),
             sessionId = SESSION_ID,
             counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-            sessionProperties = KeyValueStore().apply {
-                put(Constants.FLOW_SESSION_REQUIRE_CLOSE, false.toString())
-            }.avro
+            sessionProperties = SESSION_PROPERTIES
         )
 
         whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(closingSessionState)
@@ -1012,9 +1003,7 @@ class FlowSessionManagerImplTest {
             mutableListOf(),
             sessionId = SESSION_ID,
             counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-            sessionProperties = KeyValueStore().apply {
-                put(Constants.FLOW_SESSION_REQUIRE_CLOSE, false.toString())
-            }.avro
+            sessionProperties = SESSION_PROPERTIES
         )
 
         whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(confirmedSessionState)
@@ -1127,7 +1116,7 @@ class FlowSessionManagerImplTest {
     }
 
     private fun SessionState.requireClose(requireClose: Boolean) =
-        sessionProperties.apply {
+        KeyValueStore(sessionProperties).apply {
             put(Constants.FLOW_SESSION_REQUIRE_CLOSE, requireClose.toString())
         }
 }
