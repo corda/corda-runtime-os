@@ -41,10 +41,6 @@ fun calculateLeveledHashes(proof: MerkleProof, digest: MerkleTreeHashDigestProvi
 
     while (currentSize > 1) {
         // Now walk over the hashes at this tree level, striding over 1 or 2 at a time
-        // We are at level $treeDepth from the top of the tree (where 1 is the roof of the tree),
-        //     and at $index nodes from the left (counting from 0)
-        // $item is a pair of the index and the hash at the index.
-        //
         // Since index == item.first we don't really need to use item.first
         if (nodeHashes.isEmpty()) {
             throw MerkleProofRebuildFailureException(
@@ -56,6 +52,14 @@ fun calculateLeveledHashes(proof: MerkleProof, digest: MerkleTreeHashDigestProvi
         var index = 0 // index into node hashes, which starts off with an entry per leaf
         while (index < nodeHashes.size) {
             val item = nodeHashes[index]
+            // We are at level $treeDepth from the top of the tree (where 1 is the root of the tree),
+            //     and at $index nodes from the left (counting from 0)
+            // $item is a pair of the left-most leaf index, shifted right by the number of levels we've gone, within that
+            // subtree and the hash at that leaf index.
+            //
+            // So if you take a tree slice at the level we are looking at ($currentSize from the top),
+            // the $item.first will be merkle tree position of the node. That will often be different from
+            // the index, when don't have the full tree structure at this level.
             // Decide if we can consume the next two elements since they are adjancent in the Merkle tree
             if (item.first < currentSize and 0x7FFFFFFE) {      // If the level has odd elements, we'll process
                 // the last element later.
