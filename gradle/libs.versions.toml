@@ -3,7 +3,7 @@ kotlinVersion = "1.8.21"
 
 # Testing
 assertjVersion = "3.24.2"
-junitVersion = "5.10.0"
+junitVersion = "5.10.1"
 mockitoVersion = "5.5.0"
 mockitoKotlinVersion = "4.1.0"
 
