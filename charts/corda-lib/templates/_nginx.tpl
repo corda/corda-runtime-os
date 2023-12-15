@@ -3,7 +3,10 @@
 {{- end }}
 
 {{- define "corda.nginxClusterUniqueName" -}}
-{{- printf "%s-%s-nginx" .Release.Namespace . }}
+{{- $workerName := index . 1 }}
+{{- with ( index . 0 ) }}
+{{- printf "%s-%s" .Release.Namespace ( include "corda.nginxName" $workerName ) }}
+{{- end }}
 {{- end }}
 
 {{- define "corda.nginxComponent" -}}
@@ -64,7 +67,7 @@ kind: ClusterRole
 metadata:
   labels:
     {{- include "corda.nginxLabels" ( list . $workerName ) | nindent 4 }}
-  name: {{ include "corda.nginxClusterUniqueName" $workerName | quote }}
+  name: {{ include "corda.nginxClusterUniqueName" ( list . $workerName ) | quote }}
 rules:
   - apiGroups:
       - networking.k8s.io
@@ -80,11 +83,11 @@ kind: ClusterRoleBinding
 metadata:
   labels:
     {{- include "corda.nginxLabels" ( list . $workerName ) | nindent 4 }}
-  name: {{ include "corda.nginxClusterUniqueName" $workerName | quote }}
+  name: {{ include "corda.nginxClusterUniqueName" ( list . $workerName ) | quote }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ include "corda.nginxClusterUniqueName" $workerName | quote }}
+  name: {{ include "corda.nginxClusterUniqueName" ( list . $workerName ) | quote }}
 subjects:
   - kind: ServiceAccount
     name: {{ include "corda.nginxName" $workerName | quote }}
