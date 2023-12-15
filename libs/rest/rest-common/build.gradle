@@ -18,6 +18,4 @@ dependencies {
     implementation project(':libs:messaging:messaging')
 
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
 }

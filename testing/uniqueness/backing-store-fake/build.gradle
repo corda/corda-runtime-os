@@ -21,8 +21,4 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":components:uniqueness:backing-store")
     implementation project(":libs:uniqueness:common")
-
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

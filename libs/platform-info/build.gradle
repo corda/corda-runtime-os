@@ -13,7 +13,5 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.osgi:osgi.core"
 }

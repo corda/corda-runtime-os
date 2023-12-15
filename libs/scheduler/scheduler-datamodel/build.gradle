@@ -14,8 +14,6 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation project(':libs:db:db-core')
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     integrationTestImplementation project(':libs:db:db-admin')
     integrationTestImplementation project(':libs:db:db-admin-impl')
