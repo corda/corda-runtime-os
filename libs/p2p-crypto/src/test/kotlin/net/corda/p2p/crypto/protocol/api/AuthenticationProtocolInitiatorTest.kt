@@ -40,7 +40,7 @@ cZyj8BXGy1y5rL75SE01/3qwAvSAatoTtVtPlPuHn5U1nGDe3AoaS1LvrqIypJjo
 ODGVZOuwAyZ6676J40yue06DiPpysNULHoZu3PEd+DEWKsCyPq3yYtB7E+HvLUAQ
 AQIDAQAB
 -----END PUBLIC KEY-----
-    """.trimIndent()
+    """
 
     private val publicKey by lazy {
         publicKeyPem.toPublicKey()
