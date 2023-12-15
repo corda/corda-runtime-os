@@ -25,6 +25,8 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.CompositeKey
+import net.corda.v5.crypto.KeyUtils
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionFatal
@@ -133,6 +135,19 @@ class UtxoFinalityFlowV1(
                     val dependency = requireNotNull(utxoLedgerService.findSignedTransaction(transactionId)) {
                         "Dependent transaction $transactionId does not exist"
                     }
+                    val newTxNotaryKey = initialTransaction.notaryKey
+                    val dependencyNotaryKey = dependency.notaryKey
+
+                    val newTxNotaryKeyIds = if (newTxNotaryKey is CompositeKey) {
+                        require(KeyUtils.isKeyFulfilledBy(newTxNotaryKey, dependencyNotaryKey)) {
+                            "A composite notary key of new transaction $newTxNotaryKey doesn't contain " +
+                                "a dependency notary key $dependencyNotaryKey"
+                        }
+
+                        newTxNotaryKey.leafKeys.toSet().map { it.fullIdHash() }
+                    } else {
+                        setOf(newTxNotaryKey.fullIdHash())
+                    }
 
                     FilteredTransactionAndSignatures(
                         utxoLedgerService.filterSignedTransaction(dependency)
@@ -140,7 +155,7 @@ class UtxoFinalityFlowV1(
                             .withNotary()
                             .withTimeWindow()
                             .build(),
-                        dependency.signatures.filter { initialTransaction.notaryKey.fullIdHash() == it.by }
+                        dependency.signatures.filter { newTxNotaryKeyIds.contains(it.by) }
                     )
                 }
             flowMessaging.sendAll(FinalityPayload(filteredTransactionsAndSignatures), sessions.toSet())
