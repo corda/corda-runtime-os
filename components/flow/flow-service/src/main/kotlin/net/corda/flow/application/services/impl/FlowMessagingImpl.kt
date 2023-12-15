@@ -17,6 +17,7 @@ import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
+import net.corda.v5.application.messaging.FlowSessionConfiguration
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
@@ -51,8 +52,8 @@ class FlowMessagingImpl @Activate constructor(
         return doInitiateFlow(x500Name, requireClose)
     }
 
-    override fun initiateFlow(x500Name: MemberX500Name, requireClose: Boolean, sessionTimeout: Duration?): FlowSession {
-        return doInitiateFlow(x500Name, requireClose, sessionTimeout)
+    override fun initiateFlow(x500Name: MemberX500Name, sessionConfiguration: FlowSessionConfiguration): FlowSession {
+        return doInitiateFlow(x500Name, sessionConfiguration.isRequireClose, sessionConfiguration.timeout)
     }
 
     @Suspendable
@@ -71,11 +72,15 @@ class FlowMessagingImpl @Activate constructor(
 
     override fun initiateFlow(
         x500Name: MemberX500Name,
-        requireClose: Boolean,
-        sessionTimeout: Duration?,
+        sessionConfiguration: FlowSessionConfiguration,
         flowContextPropertiesBuilder: FlowContextPropertiesBuilder
     ): FlowSession {
-        return doInitiateFlow(x500Name, requireClose, sessionTimeout, flowContextPropertiesBuilder)
+        return doInitiateFlow(
+            x500Name,
+            sessionConfiguration.isRequireClose,
+            sessionConfiguration.timeout,
+            flowContextPropertiesBuilder
+        )
     }
 
     @Suspendable

@@ -25,6 +25,7 @@ import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.flow.utils.mutableKeyValuePairList
 import net.corda.messaging.api.records.Record
+import net.corda.session.manager.Constants
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL
 import net.corda.session.manager.Constants.Companion.FLOW_PROTOCOL_VERSIONS_SUPPORTED
 import net.corda.session.manager.SessionManager
@@ -102,7 +103,9 @@ class FlowSessionManagerImplTest {
         mutableListOf(),
         sessionId = SESSION_ID,
         counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-        requireClose = false
+        sessionProperties = KeyValueStore().apply {
+            put(Constants.FLOW_SESSION_REQUIRE_CLOSE, false.toString())
+        }.avro
     )
 
     private val anotherSessionState = buildSessionState(
@@ -113,7 +116,9 @@ class FlowSessionManagerImplTest {
         mutableListOf(),
         sessionId = ANOTHER_SESSION_ID,
         counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-        requireClose = false
+        sessionProperties = KeyValueStore().apply {
+            put(Constants.FLOW_SESSION_REQUIRE_CLOSE, false.toString())
+        }.avro
     )
 
     private val flowKey = mock<FlowKey>()
@@ -783,7 +788,9 @@ class FlowSessionManagerImplTest {
             mutableListOf(),
             sessionId = SESSION_ID,
             counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-            requireClose = false
+            sessionProperties = KeyValueStore().apply {
+                put(Constants.FLOW_SESSION_REQUIRE_CLOSE, false.toString())
+            }.avro
         )
 
         whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(closingSessionState)
@@ -809,7 +816,9 @@ class FlowSessionManagerImplTest {
             mutableListOf(),
             sessionId = SESSION_ID,
             counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-            requireClose = false
+            sessionProperties = KeyValueStore().apply {
+                put(Constants.FLOW_SESSION_REQUIRE_CLOSE, false.toString())
+            }.avro
         )
 
         whenever(checkpoint.sessions).thenReturn(listOf(closingSessionState))
@@ -831,7 +840,9 @@ class FlowSessionManagerImplTest {
             mutableListOf(),
             sessionId = SESSION_ID,
             counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-            requireClose = false
+            sessionProperties = KeyValueStore().apply {
+                put(Constants.FLOW_SESSION_REQUIRE_CLOSE, false.toString())
+            }.avro
         )
 
         whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(closingSessionState)
@@ -852,7 +863,9 @@ class FlowSessionManagerImplTest {
             mutableListOf(),
             sessionId = SESSION_ID,
             counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-            requireClose = false
+            sessionProperties = KeyValueStore().apply {
+                put(Constants.FLOW_SESSION_REQUIRE_CLOSE, false.toString())
+            }.avro
         )
 
         whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(closingSessionState)
@@ -999,7 +1012,9 @@ class FlowSessionManagerImplTest {
             mutableListOf(),
             sessionId = SESSION_ID,
             counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY,
-            requireClose = false
+            sessionProperties = KeyValueStore().apply {
+                put(Constants.FLOW_SESSION_REQUIRE_CLOSE, false.toString())
+            }.avro
         )
 
         whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(confirmedSessionState)
@@ -1013,8 +1028,8 @@ class FlowSessionManagerImplTest {
         sessionState.status = SessionStateType.CONFIRMED
         anotherSessionState.status = SessionStateType.CREATED
 
-        sessionState.requireClose = true
-        anotherSessionState.requireClose = false
+        sessionState.requireClose(true)
+        anotherSessionState.requireClose(false)
 
         assertEquals(
             Pair(
@@ -1033,8 +1048,8 @@ class FlowSessionManagerImplTest {
         sessionState.status = SessionStateType.CLOSING
         anotherSessionState.status = SessionStateType.CLOSING
 
-        sessionState.requireClose = true
-        anotherSessionState.requireClose = true
+        sessionState.requireClose(true)
+        anotherSessionState.requireClose(true)
 
         assertEquals(
             Pair(
@@ -1053,8 +1068,8 @@ class FlowSessionManagerImplTest {
         sessionState.status = SessionStateType.ERROR
         anotherSessionState.status = SessionStateType.CLOSED
 
-        sessionState.requireClose = true
-        anotherSessionState.requireClose = false
+        sessionState.requireClose(true)
+        anotherSessionState.requireClose(false)
 
         assertEquals(
             Pair(
@@ -1110,4 +1125,9 @@ class FlowSessionManagerImplTest {
         flowSessionManager.updateStatus(checkpoint, listOf(ANOTHER_SESSION_ID), SessionStateType.CLOSING)
         assertThat(anotherSessionState.status).isEqualTo(SessionStateType.CLOSING)
     }
+
+    private fun SessionState.requireClose(requireClose: Boolean) =
+        sessionProperties.apply {
+            put(Constants.FLOW_SESSION_REQUIRE_CLOSE, requireClose.toString())
+        }
 }

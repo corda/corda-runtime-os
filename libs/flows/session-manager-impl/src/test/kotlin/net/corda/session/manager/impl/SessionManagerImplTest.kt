@@ -9,11 +9,13 @@ import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
+import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.messaging.api.chunking.ChunkDeserializerService
 import net.corda.messaging.api.chunking.MessagingChunkFactory
 import net.corda.schema.configuration.FlowConfig
+import net.corda.session.manager.Constants
 import net.corda.session.manager.SessionManager
 import net.corda.session.manager.impl.factory.SessionEventProcessorFactory
 import net.corda.test.flow.util.buildSessionEvent
@@ -179,7 +181,9 @@ class SessionManagerImplTest {
             4,
             listOf(),
             instant,
-            sessionTimeout = flowSpecificSessionTimeout
+            sessionProperties = KeyValueStore().apply {
+                put(Constants.FLOW_SESSION_TIMEOUT_MS, flowSpecificSessionTimeout.toString())
+            }.avro
         )
 
         //validate no heartbeat

@@ -9,11 +9,12 @@ import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
-import net.corda.flow.utils.toMap
+import net.corda.flow.utils.KeyValueStore
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.chunking.MessagingChunkFactory
 import net.corda.schema.configuration.FlowConfig
 import net.corda.session.manager.Constants
+import net.corda.session.manager.Constants.Companion.FLOW_SESSION_TIMEOUT_MS
 import net.corda.session.manager.SessionManager
 import net.corda.session.manager.impl.factory.SessionEventProcessorFactory
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
@@ -67,9 +68,7 @@ class SessionManagerImpl @Activate constructor(
         counterparty: HoldingIdentity,
         instant: Instant,
         initialStatus: SessionStateType,
-    ): SessionState {
-        val sessionPropertiesMap = contextSessionProperties.toMap()
-        return SessionState.newBuilder()
+    ): SessionState = SessionState.newBuilder()
             .setSessionId(sessionId)
             .setSessionStartTime(instant)
             .setLastReceivedMessageTime(instant)
@@ -79,10 +78,7 @@ class SessionManagerImpl @Activate constructor(
             .setSessionProperties(contextSessionProperties)
             .setStatus(initialStatus)
             .setHasScheduledCleanup(false)
-            .setRequireClose(sessionPropertiesMap[Constants.FLOW_SESSION_REQUIRE_CLOSE].toBoolean())
-            .setSessionTimeout(sessionPropertiesMap[Constants.FLOW_SESSION_TIMEOUT_MS]?.toInt())
             .build()
-    }
 
     override fun getNextReceivedEvent(sessionState: SessionState): SessionEvent? {
         val receivedEvents = sessionState.receivedEventsState ?: return null
@@ -180,7 +176,9 @@ class SessionManagerImpl @Activate constructor(
     ): List<SessionEvent> {
         val lastReceivedMessageTime = sessionState.lastReceivedMessageTime
 
-        val sessionTimeout = sessionState.sessionTimeout ?: config.getInt(FlowConfig.SESSION_TIMEOUT_WINDOW)
+        val sessionProperties = KeyValueStore(sessionState.sessionProperties)
+        val sessionTimeout = sessionProperties[FLOW_SESSION_TIMEOUT_MS]?.toInt()
+            ?: config.getInt(FlowConfig.SESSION_TIMEOUT_WINDOW)
         val sessionTimeoutTimestamp = lastReceivedMessageTime.plusMillis(sessionTimeout.toLong())
 
         return if (instant > sessionTimeoutTimestamp) {
