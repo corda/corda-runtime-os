@@ -21,8 +21,7 @@ import java.time.Clock
 @Component(service = [ExternalEventFactory::class])
 class ResolveStateRefsExternalEventFactory(
     private val clock: Clock = Clock.systemUTC()
-) : ExternalEventFactory<ResolveStateRefsParameters, UtxoTransactionOutputs, List<UtxoVisibleTransactionOutputDto>>
-{
+) : ExternalEventFactory<ResolveStateRefsParameters, UtxoTransactionOutputs, List<UtxoVisibleTransactionOutputDto>> {
     @Activate
     constructor() : this(Clock.systemUTC())
 
@@ -45,14 +44,17 @@ class ResolveStateRefsExternalEventFactory(
     }
 
     private fun createRequest(parameters: ResolveStateRefsParameters): Any {
-        return ResolveStateRefs(parameters.stateRefs.map {
-            net.corda.data.ledger.utxo.StateRef(
-                SecureHash(
-                    it.transactionId.algorithm,
-                    ByteBuffer.wrap(it.transactionId.bytes)
-                ), it.index
-            )
-        })
+        return ResolveStateRefs(
+            parameters.stateRefs.map {
+                net.corda.data.ledger.utxo.StateRef(
+                    SecureHash(
+                        it.transactionId.algorithm,
+                        ByteBuffer.wrap(it.transactionId.bytes)
+                    ),
+                    it.index
+                )
+            }
+        )
     }
 
     override fun resumeWith(checkpoint: FlowCheckpoint, response: UtxoTransactionOutputs): List<UtxoVisibleTransactionOutputDto> {

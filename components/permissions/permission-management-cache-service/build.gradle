@@ -5,6 +5,8 @@ plugins {
 
 description 'Permission Management Cache component. Certain components require only the cache therefore this must live in its own component.'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
@@ -23,7 +25,4 @@ dependencies {
     implementation project(':libs:permissions:permission-storage-common')
 
     api project(':libs:permissions:permission-management-cache')
-
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

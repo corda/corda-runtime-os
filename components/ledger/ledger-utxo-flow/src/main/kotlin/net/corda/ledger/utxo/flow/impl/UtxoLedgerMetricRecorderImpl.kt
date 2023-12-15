@@ -18,7 +18,7 @@ import org.osgi.service.component.annotations.ServiceScope
 class UtxoLedgerMetricRecorderImpl @Activate constructor(
     @Reference(service = CurrentSandboxGroupContext::class)
     private val currentSandboxGroupContext: CurrentSandboxGroupContext
-): UtxoLedgerMetricRecorder, UsedByFlow, SingletonSerializeAsToken {
+) : UtxoLedgerMetricRecorder, UsedByFlow, SingletonSerializeAsToken {
 
     override fun recordTransactionBackchainLength(length: Int) {
         CordaMetrics.Metric.Ledger.BackchainResolutionChainLength

@@ -17,4 +17,3 @@ interface EventConverter {
      */
     fun convert(tokenPoolCacheEvent: TokenPoolCacheEvent): TokenEvent
 }
-

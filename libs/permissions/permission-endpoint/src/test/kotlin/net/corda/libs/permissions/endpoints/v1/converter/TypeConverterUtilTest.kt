@@ -2,7 +2,6 @@ package net.corda.libs.permissions.endpoints.v1.converter
 
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
-import java.time.Instant
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
 import net.corda.libs.permissions.manager.response.PermissionAssociationResponseDto
@@ -14,6 +13,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.time.Instant
 import java.util.*
 
 class TypeConverterUtilTest {
@@ -122,7 +122,11 @@ class TypeConverterUtilTest {
     @Test
     fun `convert CreatePermissionType to CreatePermissionRequestDto`() {
         val createPermissionType = CreatePermissionType(
-            PermissionType.ALLOW, "permissionString","group1", "virtualNode")
+            PermissionType.ALLOW,
+            "permissionString",
+            "group1",
+            "virtualNode"
+        )
 
         val requestedBy = "me"
         val dto = createPermissionType.convertToDto(requestedBy)

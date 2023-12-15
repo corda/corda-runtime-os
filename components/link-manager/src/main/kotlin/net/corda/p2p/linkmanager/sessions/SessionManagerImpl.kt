@@ -39,6 +39,7 @@ import net.corda.metrics.CordaMetrics
 import net.corda.metrics.CordaMetrics.Metric.InboundSessionCount
 import net.corda.metrics.CordaMetrics.Metric.OutboundSessionCount
 import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.data.p2p.crypto.protocol.RevocationCheckMode
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoExtension.Companion.sessionInitiationKeys
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
@@ -48,7 +49,6 @@ import net.corda.p2p.crypto.protocol.api.HandshakeIdentityData
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
 import net.corda.p2p.crypto.protocol.api.InvalidPeerCertificate
-import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
 import net.corda.p2p.linkmanager.LinkManager

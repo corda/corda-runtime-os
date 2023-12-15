@@ -81,7 +81,9 @@ class UtxoLedgerMessageProcessorTests {
     companion object {
         const val TIMEOUT_MILLIS = 10000L
         val EXTERNAL_EVENT_CONTEXT = ExternalEventContext(
-            "request id", "flow id", KeyValuePairList(listOf(KeyValuePair("corda.account", "test account")))
+            "request id",
+            "flow id",
+            KeyValuePairList(listOf(KeyValuePair("corda.account", "test account")))
         )
         private val notaryX500Name = MemberX500Name.parse("O=ExampleNotaryService, L=London, C=GB")
         private val publicKeyExample: PublicKey = KeyPairGenerator.getInstance("RSA")
@@ -141,9 +143,10 @@ class UtxoLedgerMessageProcessorTests {
             ConsensualLedgerMessageProcessorTests.EXTERNAL_EVENT_CONTEXT.apply {
                 this.contextProperties = keyValuePairListOf(
                     this.contextProperties.toMap() +
-                            cpkFileHashes.toKeyValuePairList(CPK_FILE_CHECKSUM).toMap()
+                        cpkFileHashes.toKeyValuePairList(CPK_FILE_CHECKSUM).toMap()
                 )
-            })
+            }
+        )
 
         // Send request to message processor
         val processor = LedgerPersistenceRequestProcessor(
@@ -158,14 +161,15 @@ class UtxoLedgerMessageProcessorTests {
 
         // Check that we wrote the expected things to the DB
         val findRequest = createRequest(
-                virtualNodeInfo.holdingIdentity,
-                FindTransaction(transaction.id.toString(), TransactionStatus.VERIFIED.value),
-                EXTERNAL_EVENT_CONTEXT.apply {
+            virtualNodeInfo.holdingIdentity,
+            FindTransaction(transaction.id.toString(), TransactionStatus.VERIFIED.value),
+            EXTERNAL_EVENT_CONTEXT.apply {
                 this.contextProperties = keyValuePairListOf(
                     this.contextProperties.toMap() +
-                            cpkFileHashes.toKeyValuePairList(CPK_FILE_CHECKSUM).toMap()
+                        cpkFileHashes.toKeyValuePairList(CPK_FILE_CHECKSUM).toMap()
                 )
-            })
+            }
+        )
 
         val result = assertSuccessResponse(processor.process(findRequest), logger)
         val entityResponse = deserializer.deserialize(result.payload.array())!!
@@ -180,7 +184,12 @@ class UtxoLedgerMessageProcessorTests {
         ).bytes
         val outputInfo = ctx.getSerializationService().serialize(
             UtxoOutputInfoComponent(
-                null, null, notaryX500Name, publicKeyExample, TestContractState::class.java.name, "contract tag"
+                null,
+                null,
+                notaryX500Name,
+                publicKeyExample,
+                TestContractState::class.java.name,
+                "contract tag"
             )
         ).bytes
         val wireTransactionFactory: WireTransactionFactory = ctx.getSandboxSingletonService()

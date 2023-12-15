@@ -16,6 +16,7 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.membership.GroupParameters
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -79,6 +80,19 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
         )
     }
 
+    override fun createWithStateAndRefs(
+        wireTransaction: WireTransaction,
+        inputStateAndRefs: List<StateAndRef<*>>,
+        referenceStateAndRefs: List<StateAndRef<*>>
+    ): UtxoLedgerTransactionInternal {
+        return UtxoLedgerTransactionImpl(
+            WrappedUtxoWireTransaction(wireTransaction, serializationService),
+            inputStateAndRefs,
+            referenceStateAndRefs,
+            getGroupParameters(wireTransaction)
+        )
+    }
+
     private fun getGroupParameters(wireTransaction: WireTransaction): GroupParameters {
         val membershipGroupParametersHashString =
             requireNotNull((wireTransaction.metadata as TransactionMetadataInternal).getMembershipGroupParametersHash()) {
@@ -94,7 +108,7 @@ class UtxoLedgerTransactionFactoryImpl @Activate constructor(
             }
         requireNotNull(groupParameters) {
             "Signed group parameters $membershipGroupParametersHashString related to the transaction " +
-                    "${wireTransaction.id} cannot be accessed."
+                "${wireTransaction.id} cannot be accessed."
         }
         return groupParameters
     }

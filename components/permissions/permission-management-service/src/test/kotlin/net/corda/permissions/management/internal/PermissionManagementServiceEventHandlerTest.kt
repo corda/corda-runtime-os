@@ -122,7 +122,8 @@ internal class PermissionManagementServiceEventHandlerTest {
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
 
         verify(configurationReadService).registerComponentForUpdates(
-            coordinator, setOf(
+            coordinator,
+            setOf(
                 ConfigKeys.BOOT_CONFIG,
                 ConfigKeys.MESSAGING_CONFIG,
                 ConfigKeys.REST_CONFIG,
@@ -146,7 +147,8 @@ internal class PermissionManagementServiceEventHandlerTest {
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), coordinator)
 
         verify(configurationReadService).registerComponentForUpdates(
-            coordinator, setOf(
+            coordinator,
+            setOf(
                 ConfigKeys.BOOT_CONFIG,
                 ConfigKeys.MESSAGING_CONFIG,
                 ConfigKeys.REST_CONFIG,

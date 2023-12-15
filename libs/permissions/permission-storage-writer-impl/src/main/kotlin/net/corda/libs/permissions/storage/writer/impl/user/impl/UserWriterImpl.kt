@@ -117,7 +117,7 @@ class UserWriterImpl(
             actorUser = requestUserId,
             changeType = RestPermissionOperation.ADD_ROLE_TO_USER,
             details = "Role '${role.id}' assigned to User '${user.loginName}' by '$requestUserId'. " +
-                    "Created RoleUserAssociation '${association.id}'."
+                "Created RoleUserAssociation '${association.id}'."
         )
 
         user.roleUserAssociations.add(association)
@@ -143,7 +143,7 @@ class UserWriterImpl(
             actorUser = requestUserId,
             changeType = RestPermissionOperation.DELETE_ROLE_FROM_USER,
             details = "Role '$roleId' unassigned from User '${user.loginName}' by '$requestUserId'. " +
-                    "Removed RoleUserAssociation '${association.id}'."
+                "Removed RoleUserAssociation '${association.id}'."
         )
 
         user.roleUserAssociations.remove(association)

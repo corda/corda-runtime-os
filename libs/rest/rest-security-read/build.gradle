@@ -4,6 +4,8 @@ plugins {
 }
 description 'Corda Rest Security Read'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
 
     compileOnly "org.osgi:osgi.annotation"

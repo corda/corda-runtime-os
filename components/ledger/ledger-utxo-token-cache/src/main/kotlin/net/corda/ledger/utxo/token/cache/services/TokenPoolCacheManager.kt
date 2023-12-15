@@ -16,7 +16,6 @@ class TokenPoolCacheManager(
         poolKey: TokenPoolKey,
         tokenEvent: TokenEvent
     ): ResponseAndState {
-
         // Cleanup
         state.removeInvalidClaims()
         state.removeExpiredClaims()

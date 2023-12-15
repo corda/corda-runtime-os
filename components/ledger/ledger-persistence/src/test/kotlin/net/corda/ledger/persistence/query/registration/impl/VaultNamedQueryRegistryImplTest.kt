@@ -13,7 +13,7 @@ class VaultNamedQueryRegistryImplTest {
         const val DUMMY_QUERY_NAME = "DUMMY"
         val DUMMY_JSON_QUERY = VaultNamedQuery.ParsedQuery(
             originalQuery = "WHERE custom ->> 'TestUtxoState.testField' = :testField",
-            query ="WHERE custom ->> 'TestUtxoState.testField' = :testField",
+            query = "WHERE custom ->> 'TestUtxoState.testField' = :testField",
             VaultNamedQuery.Type.WHERE_JSON
         )
     }

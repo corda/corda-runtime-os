@@ -23,10 +23,12 @@ class VaultNamedQueryExpressionValidatorImplTest {
 
     @Test
     fun `expression containing a nested select token throws an exception`() {
-        assertThatThrownBy { validator.validateWhereJson(
-            "my query",
-            listOf(Where(listOf(Select(listOf(PathReference("a"))))))
-        ) }
+        assertThatThrownBy {
+            validator.validateWhereJson(
+                "my query",
+                listOf(Where(listOf(Select(listOf(PathReference("a"))))))
+            )
+        }
             .isInstanceOf(IllegalArgumentException::class.java)
             .hasMessageContaining("cannot contain the SELECT keyword")
             .hasMessageContaining("my query")

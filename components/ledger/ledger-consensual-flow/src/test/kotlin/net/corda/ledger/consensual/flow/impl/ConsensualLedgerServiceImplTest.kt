@@ -8,7 +8,7 @@ import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
 import org.junit.jupiter.api.Test
 import kotlin.test.assertIs
 
-class ConsensualLedgerServiceImplTest: ConsensualLedgerTest() {
+class ConsensualLedgerServiceImplTest : ConsensualLedgerTest() {
     @Test
     fun `createTransactionBuilder should return a Transaction Builder`() {
         val transactionBuilder = consensualLedgerService.createTransactionBuilder()

@@ -6,7 +6,9 @@ import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
 import net.corda.data.virtualnode.VirtualNodeOperationStatus
 import net.corda.data.virtualnode.VirtualNodeOperationStatusRequest
 import net.corda.data.virtualnode.VirtualNodeOperationStatusResponse
+import net.corda.data.virtualnode.VirtualNodeUpdateDbStatusResponse
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.libs.virtualnode.datamodel.dto.VirtualNodeOperationType
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepository
 import net.corda.libs.virtualnode.datamodel.repository.VirtualNodeRepositoryImpl
 import java.time.Instant
@@ -38,10 +40,22 @@ internal class VirtualNodeOperationStatusHandler(
                 )
             }
 
-            val response = VirtualNodeManagementResponse(
-                instant,
-                VirtualNodeOperationStatusResponse(request.requestId, operationStatusesAvro)
-            )
+            val response: VirtualNodeManagementResponse =
+                if (operationStatuses.firstOrNull()?.operationType == VirtualNodeOperationType.CHANGE_DB.name) {
+                    VirtualNodeManagementResponse(
+                        instant,
+                        VirtualNodeUpdateDbStatusResponse(
+                            request.requestId,
+                            VirtualNodeOperationType.CHANGE_DB.name,
+                            operationStatusesAvro.first()
+                        )
+                    )
+                } else {
+                    VirtualNodeManagementResponse(
+                        instant,
+                        VirtualNodeOperationStatusResponse(request.requestId, operationStatusesAvro)
+                    )
+                }
             respFuture.complete(response)
         } catch (e: Exception) {
             respFuture.complete(

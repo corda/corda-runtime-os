@@ -1,7 +1,7 @@
 package net.corda.ledger.consensual.flow.impl.flows.finality.v1
 
-import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.crypto.cipher.suite.SignatureSpecImpl
+import net.corda.crypto.core.DigitalSignatureWithKeyId
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.crypto.core.fullIdHash
 import net.corda.ledger.common.data.transaction.TransactionStatus
@@ -131,8 +131,16 @@ class ConsensualReceiveFinalityFlowV1Test {
 
     @Test
     fun `receiving an invalid transaction initially throws and persists as invalid`() {
-        whenever(ledgerTransaction.states).thenReturn(listOf(ConsensualStateClassExample("throw", listOf(
-            publicKeyExample))))
+        whenever(ledgerTransaction.states).thenReturn(
+            listOf(
+                ConsensualStateClassExample(
+                    "throw",
+                    listOf(
+                        publicKeyExample
+                    )
+                )
+            )
+        )
 
         assertThatThrownBy { callReceiveFinalityFlow() }
             .isInstanceOf(IllegalStateException::class.java)
