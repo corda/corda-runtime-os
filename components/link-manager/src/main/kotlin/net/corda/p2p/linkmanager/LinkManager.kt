@@ -37,6 +37,7 @@ class LinkManager(
     membershipGroupReaderProvider: MembershipGroupReaderProvider,
     membershipQueryClient: MembershipQueryClient,
     groupParametersReaderService: GroupParametersReaderService,
+    //stateManagerFactory: StateManagerFactory,
     linkManagerHostingMap: LinkManagerHostingMap =
         LinkManagerHostingMapImpl(
             lifecycleCoordinatorFactory,
@@ -47,6 +48,8 @@ class LinkManager(
 ) : LifecycleWithDominoTile {
 
     companion object {
+        //var stateManager: StateManager? = null
+
         internal fun generateKey(): String {
             return UUID.randomUUID().toString()
         }
@@ -66,7 +69,8 @@ class LinkManager(
         membershipQueryClient = membershipQueryClient,
         virtualNodeInfoReadService = virtualNodeInfoReadService,
         groupParametersReaderService = groupParametersReaderService,
-        clock = clock
+        clock = clock,
+        //stateManager = stateManagerFactory,
     )
     private val outboundLinkManager = OutboundLinkManager(
         lifecycleCoordinatorFactory = lifecycleCoordinatorFactory,

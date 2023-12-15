@@ -1,6 +1,7 @@
 package net.corda.processors.p2p.linkmanager.internal
 
 import com.typesafe.config.ConfigValueFactory
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
@@ -61,6 +62,8 @@ class LinkManagerProcessorImpl @Activate constructor(
     private val membershipQueryClient: MembershipQueryClient,
     @Reference(service = GroupParametersReaderService::class)
     private val groupParametersReaderService: GroupParametersReaderService,
+    //@Reference(service = StateManagerFactory::class)
+    //private val stateManagerFactory: StateManagerFactory,
 ) : LinkManagerProcessor {
 
     private companion object {
@@ -69,6 +72,7 @@ class LinkManagerProcessorImpl @Activate constructor(
 
     private var registration: RegistrationHandle? = null
     private var linkManager: LinkManager? = null
+    //private var stateManager: StateManager? = null
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<LinkManagerProcessorImpl>(::eventHandler)
 
@@ -94,8 +98,13 @@ class LinkManagerProcessorImpl @Activate constructor(
                 log.info("Link manager processor is ${event.status}")
                 coordinator.updateStatus(event.status)
             }
+            is ConfigChangedEvent -> {
+
+            }
             is BootConfigEvent -> {
                 configurationReadService.bootstrapConfig(event.config)
+
+                println("bootconfig was: " + event.config.toString())
 
                 Security.addProvider(BouncyCastleProvider())
 
@@ -112,6 +121,7 @@ class LinkManagerProcessorImpl @Activate constructor(
                     membershipGroupReaderProvider,
                     membershipQueryClient,
                     groupParametersReaderService,
+                    //stateManagerFactory,
                 )
 
                 this.linkManager = linkManager

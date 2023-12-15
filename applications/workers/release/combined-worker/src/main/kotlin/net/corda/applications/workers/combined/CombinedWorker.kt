@@ -162,6 +162,8 @@ class CombinedWorker @Activate constructor(
             )
         )
 
+        println("boot confgig was: " + config.toString())
+
         val superUser = System.getenv("CORDA_DEV_POSTGRES_USER") ?: "postgres"
         val superUserPassword = System.getenv("CORDA_DEV_POSTGRES_PASSWORD") ?: "password"
         val dbName = dbUrl.split("/").last().split("?").first()

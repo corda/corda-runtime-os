@@ -29,6 +29,13 @@ bootstrap:
           valueFrom:
             secretKeyRef:
               key: "password"
+      p2pLinkManager:
+        username:
+          value: "state-manager-user"
+        password:
+          valueFrom:
+            secretKeyRef:
+              key: "password"
   kafka:
     sasl:
       username:
@@ -163,6 +170,15 @@ workers:
             secretKeyRef:
               name: "kafka-credentials"
               key: "p2pLinkManager"
+    stateManager:
+      db:
+        name: state-manager
+        username:
+          value: "state-manager-user"
+        password:
+          valueFrom:
+            secretKeyRef:
+              key: "password"
   persistence:
     kafka:
       sasl:

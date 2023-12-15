@@ -102,6 +102,7 @@ internal class CommonComponents(
         NamedLifecycle.of(groupPolicyProvider),
         NamedLifecycle.of(membershipGroupReaderProvider),
         NamedLifecycle.of(cryptoOpsClient),
+        //NamedLifecycle.of(stateManager),
     )
 
     private val externalManagedDependencies = listOf(
