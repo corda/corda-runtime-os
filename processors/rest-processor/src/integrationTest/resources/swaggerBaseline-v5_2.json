@@ -4223,54 +4223,6 @@
         }
       }
     },
-    "/wrappingkey/unmanaged/rotation" : {
-      "get" : {
-        "tags" : [ "Key Rotation API" ],
-        "description" : "This method gets the status of the current rotation.",
-        "operationId" : "get_wrappingkey_unmanaged_rotation",
-        "parameters" : [ ],
-        "responses" : {
-          "200" : {
-            "description" : "Success",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "uniqueItems" : false,
-                  "type" : "array",
-                  "nullable" : false,
-                  "items" : {
-                    "type" : "object",
-                    "properties" : {
-                      "first" : {
-                        "type" : "string",
-                        "nullable" : false,
-                        "example" : "string"
-                      },
-                      "second" : {
-                        "uniqueItems" : false,
-                        "type" : "array",
-                        "nullable" : false,
-                        "items" : {
-                          "type" : "string",
-                          "example" : "string"
-                        }
-                      }
-                    },
-                    "example" : "No example available for this type"
-                  }
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "description" : "Forbidden"
-          }
-        }
-      }
-    },
     "/wrappingkey/unmanaged/rotation/{oldkeyalias}" : {
       "post" : {
         "tags" : [ "Key Rotation API" ],
@@ -4314,6 +4266,61 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/KeyRotationResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/wrappingkey/unmanaged/rotation/{requestid}" : {
+      "get" : {
+        "tags" : [ "Key Rotation API" ],
+        "description" : "This method gets the status of the current rotation.",
+        "operationId" : "get_wrappingkey_unmanaged_rotation__requestid_",
+        "parameters" : [ {
+          "name" : "requestid",
+          "in" : "path",
+          "description" : "The requestId obtained when starting key rotation request.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The requestId obtained when starting key rotation request.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "uniqueItems" : false,
+                  "type" : "array",
+                  "nullable" : false,
+                  "items" : {
+                    "type" : "object",
+                    "properties" : {
+                      "first" : {
+                        "type" : "string",
+                        "nullable" : false,
+                        "example" : "string"
+                      },
+                      "second" : {
+                        "type" : "string",
+                        "nullable" : false,
+                        "example" : "string"
+                      }
+                    },
+                    "example" : "No example available for this type"
+                  }
                 }
               }
             }

@@ -25,7 +25,7 @@ class WireTransaction(
     private val metadata: TransactionMetadata
 ) : TransactionWithMetadata {
 
-    init{
+    init {
         check((metadata as TransactionMetadataInternal).getNumberOfComponentGroups() == componentGroupLists.size) {
             "Number of component groups in metadata structure description does not match with the real number!"
         }
@@ -74,17 +74,19 @@ class WireTransaction(
             componentMerkleTreeDigestAlgorithmName,
             mapOf(
                 HASH_DIGEST_PROVIDER_ENTROPY_OPTION to
-                        getComponentGroupEntropy(privacySalt, componentGroupIndex.toByteArray())
+                    getComponentGroupEntropy(privacySalt, componentGroupIndex.toByteArray())
             )
         )
 
     val componentMerkleTrees: ConcurrentHashMap<Int, MerkleTree> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        ConcurrentHashMap(componentGroupLists.mapIndexed { index, group ->
-            index to merkleTreeProvider.createTree(
-                group.ifEmpty { listOf(ByteArray(0)) },
-                getComponentGroupMerkleTreeDigestProvider(privacySalt, index)
-            )
-        }.toMap())
+        ConcurrentHashMap(
+            componentGroupLists.mapIndexed { index, group ->
+                index to merkleTreeProvider.createTree(
+                    group.ifEmpty { listOf(ByteArray(0)) },
+                    getComponentGroupMerkleTreeDigestProvider(privacySalt, index)
+                )
+            }.toMap()
+        )
     }
 
     val rootMerkleTree: MerkleTree by lazy(LazyThreadSafetyMode.PUBLICATION) {
@@ -101,26 +103,28 @@ class WireTransaction(
         if (other.privacySalt != privacySalt) return false
         if (other.componentGroupLists.size != componentGroupLists.size) return false
 
-        return (other.componentGroupLists.withIndex().all { i ->
-            i.value.size == componentGroupLists[i.index].size &&
+        return (
+            other.componentGroupLists.withIndex().all { i ->
+                i.value.size == componentGroupLists[i.index].size &&
                     i.value.withIndex().all { j ->
                         j.value contentEquals componentGroupLists[i.index][j.index]
                     }
-        })
+            }
+            )
     }
 
     override fun hashCode(): Int = Objects.hash(privacySalt, componentGroupLists)
 
     override fun toString(): String {
         return "WireTransaction(" +
-                "id=$id, " +
-                "privacySalt=$privacySalt, " +
-                "metadata=$metadata, componentGroupLists=${
-                    componentGroupLists.map { group ->
-                        group.map { component -> "(size=${component.size}, sum=${component.sum()})" }
-                    }
-                }" +
-                ")"
+            "id=$id, " +
+            "privacySalt=$privacySalt, " +
+            "metadata=$metadata, componentGroupLists=${
+                componentGroupLists.map { group ->
+                    group.map { component -> "(size=${component.size}, sum=${component.sum()})" }
+                }
+            }" +
+            ")"
     }
 
     override fun getId(): SecureHash {

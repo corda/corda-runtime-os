@@ -63,7 +63,7 @@ sealed class Payload<T> {
      * @property reason The reason for the error. [reason] should refer to a statically defined string that can also be accessed by the
      * flow that received this [Failure].
      */
-    data class Failure<T>(val message: String, val reason: String?): Payload<T>() {
+    data class Failure<T>(val message: String, val reason: String?) : Payload<T>() {
 
         constructor(message: String) : this(message, reason = null)
 

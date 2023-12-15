@@ -5,6 +5,8 @@ plugins {
 
 description 'Common module for sharing dependencies between cache implementations.'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
@@ -13,7 +15,5 @@ dependencies {
     implementation 'net.corda:corda-base'
     implementation project(":libs:messaging:messaging")
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "net.corda:corda-avro-schema"
 }

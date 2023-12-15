@@ -16,13 +16,19 @@ data class RestClientConfig internal constructor(
 
     fun minimumServerProtocolVersion(minimumServerProtocolVersion: Int) = copy(minimumServerProtocolVersion = minimumServerProtocolVersion)
     fun username(username: String) = copy(
-        authenticationConfig = if (authenticationConfig is BasicAuthenticationConfig)
-            authenticationConfig.copy(username = username) else BasicAuthenticationConfig(username)
+        authenticationConfig = if (authenticationConfig is BasicAuthenticationConfig) {
+            authenticationConfig.copy(username = username)
+        } else {
+            BasicAuthenticationConfig(username)
+        }
     )
 
     fun password(password: String) = copy(
-        authenticationConfig = if (authenticationConfig is BasicAuthenticationConfig)
-            authenticationConfig.copy(password = password) else BasicAuthenticationConfig(password = password)
+        authenticationConfig = if (authenticationConfig is BasicAuthenticationConfig) {
+            authenticationConfig.copy(password = password)
+        } else {
+            BasicAuthenticationConfig(password = password)
+        }
     )
 
     fun bearerToken(tokenProvider: BearerTokenProvider) = copy(authenticationConfig = BearerTokenAuthenticationConfig(tokenProvider))

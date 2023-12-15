@@ -70,7 +70,8 @@ internal class SchemaPairBuilderTest {
         val provider = DefaultSchemaModelProvider(schemaModelContextHolder)
         val builder = SchemaPairBuilder(provider)
         val result = builder.build(
-            Pair::class.java, listOf(
+            Pair::class.java,
+            listOf(
                 GenericParameterizedType(
                     Pair::class.java,
                     listOf(

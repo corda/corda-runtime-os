@@ -19,7 +19,7 @@ class ConsensualLedgerTransactionVerifier(private val transaction: ConsensualLed
         val requiredSignatoriesFromStates = transaction.states.flatMap { it.participants }.toSet()
         check(transaction.requiredSignatories == requiredSignatoriesFromStates) {
             "Deserialized required signatories from ${WireTransaction::class.java.simpleName} do not match with the ones derived " +
-                    "from the states."
+                "from the states."
         }
     }
 }

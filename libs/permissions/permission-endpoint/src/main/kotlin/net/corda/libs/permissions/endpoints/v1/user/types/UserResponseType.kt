@@ -1,7 +1,7 @@
 package net.corda.libs.permissions.endpoints.v1.user.types
 
-import java.time.Instant
 import net.corda.libs.permissions.endpoints.v1.role.types.RoleAssociationResponseType
+import java.time.Instant
 
 /**
  * Response type representing a User to be returned to the caller.

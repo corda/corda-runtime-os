@@ -27,7 +27,6 @@ class ClaimReleaseExternalEventFactory @Activate constructor(
         flowExternalEventContext: ExternalEventContext,
         parameters: ClaimReleaseParameters
     ): ExternalEventRecord {
-
         val poolKey = parameters.poolKey.toTokenPoolCacheKey()
         val claimRelease = TokenClaimRelease().apply {
             this.poolKey = poolKey

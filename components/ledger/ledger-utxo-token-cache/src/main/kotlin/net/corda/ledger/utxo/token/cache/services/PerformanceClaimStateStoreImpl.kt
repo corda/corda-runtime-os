@@ -28,8 +28,10 @@ class PerformanceClaimStateStoreImpl(
     // We use a limited queue executor to ensure we only ever queue one new request if we are currently processing
     // an existing request.
     private val executor = ThreadPoolExecutor(
-        1, 1,
-        0L, TimeUnit.MILLISECONDS,
+        1,
+        1,
+        0L,
+        TimeUnit.MILLISECONDS,
         LinkedBlockingQueue(1),
         ThreadPoolExecutor.DiscardPolicy()
     )
@@ -77,7 +79,6 @@ class PerformanceClaimStateStoreImpl(
                     .map { it.value }
                     .firstOrNull()
             } catch (ex: Exception) {
-
                 logger.warn("Exception during execution of an update", ex)
 
                 // The current batch of requests aborted and the state set to version -1.

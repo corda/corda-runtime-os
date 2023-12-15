@@ -1,22 +1,22 @@
 package net.corda.rest.server.impl.apigen.processing
 
-import java.io.InputStream
+import net.corda.rest.HttpFileUpload
+import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.rest.annotations.RestPathParameter
 import net.corda.rest.annotations.RestQueryParameter
-import net.corda.rest.annotations.ClientRequestBodyParameter
-import net.corda.rest.server.impl.apigen.models.EndpointParameter
-import net.corda.rest.server.impl.apigen.models.ParameterType
-import net.corda.rest.server.impl.apigen.models.GenericParameterizedType
-import net.corda.utilities.VisibleForTesting
-import org.slf4j.LoggerFactory
 import net.corda.rest.annotations.isRestParameterAnnotation
+import net.corda.rest.server.impl.apigen.models.EndpointParameter
+import net.corda.rest.server.impl.apigen.models.GenericParameterizedType
+import net.corda.rest.server.impl.apigen.models.ParameterType
 import net.corda.rest.tools.annotations.extensions.name
+import net.corda.utilities.VisibleForTesting
 import net.corda.utilities.trace
+import org.slf4j.LoggerFactory
+import java.io.InputStream
 import java.lang.reflect.Parameter
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.createInstance
 import kotlin.reflect.jvm.jvmErasure
-import net.corda.rest.HttpFileUpload
 
 /**
  * [ParametersTransformer] implementations are responsible for transforming values into [EndpointParameter].
@@ -159,6 +159,6 @@ private class BodyParametersExplicitTransformer(private val name: String, privat
 
 private fun determineIfParameterIsFile(classType: Class<out Any>, parameterizedTypes: List<GenericParameterizedType>): Boolean {
     return classType == InputStream::class.java ||
-            classType == HttpFileUpload::class.java ||
-            parameterizedTypes.any { it.clazz == HttpFileUpload::class.java }
+        classType == HttpFileUpload::class.java ||
+        parameterizedTypes.any { it.clazz == HttpFileUpload::class.java }
 }

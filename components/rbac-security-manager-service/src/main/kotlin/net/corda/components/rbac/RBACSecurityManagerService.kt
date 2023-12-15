@@ -1,7 +1,5 @@
 package net.corda.components.rbac
 
-import net.corda.rest.security.read.RestSecurityManager
-import net.corda.rest.security.read.rbac.RBACSecurityManager
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -14,6 +12,8 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.permissions.management.PermissionManagementService
+import net.corda.rest.security.read.RestSecurityManager
+import net.corda.rest.security.read.rbac.RBACSecurityManager
 import net.corda.utilities.VisibleForTesting
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

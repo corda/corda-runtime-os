@@ -47,7 +47,9 @@ internal class ClientHttpRequestContext(private val ctx: Context) : ClientReques
     override fun addWwwAuthenticateHeaders(restAuthProvider: RestAuthenticationProvider) {
         val authMethods = restAuthProvider.getSchemeProviders().map {
             val parameters = it.provideParameters()
-            val attributes = if (parameters.isEmpty()) "" else {
+            val attributes = if (parameters.isEmpty()) {
+                ""
+            } else {
                 parameters.map { (k, v) -> "$k=\"$v\"" }.joinToString(", ")
             }
             "${it.authenticationMethod} $attributes"

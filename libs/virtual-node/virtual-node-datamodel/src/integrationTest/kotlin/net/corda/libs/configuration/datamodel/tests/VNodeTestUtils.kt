@@ -30,7 +30,6 @@ internal object VNodeTestUtils {
         externalMessagingRouteConfig: String?,
         cpiMetadataRepository: CpiMetadataRepository
     ): VirtualNodeEntity {
-
         println("Creating VNode for testing: $cpiName, $cpiVersion, $cpiSignerSummaryHash")
 
         val holdingIdentity = holdingIdentityEntity ?: newHoldingIdentityEntity(cpiName)
@@ -104,12 +103,14 @@ internal object VNodeTestUtils {
             Instant.now(),
             "test",
             "test connection",
-            "{}")
+            "{}"
+        )
 
     fun newHoldingIdentityEntity(id: String): HoldingIdentityEntity {
         val hi = HoldingIdentity(
             MemberX500Name.parse("C=GB,L=London,O=$id"),
-            "dummy")
+            "dummy"
+        )
         return HoldingIdentityEntity(
             holdingIdentityShortHash = hi.shortHash.value,
             holdingIdentityFullHash = hi.fullHash,

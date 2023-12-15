@@ -21,8 +21,5 @@ dependencies {
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation 'org.slf4j:slf4j-api'
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

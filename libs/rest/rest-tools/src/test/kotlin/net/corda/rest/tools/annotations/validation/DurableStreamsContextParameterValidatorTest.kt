@@ -1,12 +1,12 @@
 package net.corda.rest.tools.annotations.validation
 
 import net.corda.rest.RestResource
+import net.corda.rest.annotations.ClientRequestBodyParameter
 import net.corda.rest.annotations.HttpGET
 import net.corda.rest.annotations.HttpPOST
+import net.corda.rest.annotations.HttpRestResource
 import net.corda.rest.annotations.RestPathParameter
 import net.corda.rest.annotations.RestQueryParameter
-import net.corda.rest.annotations.ClientRequestBodyParameter
-import net.corda.rest.annotations.HttpRestResource
 import net.corda.rest.durablestream.api.DurableCursorBuilder
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test

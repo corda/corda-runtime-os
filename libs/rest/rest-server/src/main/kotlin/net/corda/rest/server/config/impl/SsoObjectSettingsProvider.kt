@@ -33,8 +33,11 @@ internal class SsoObjectSettingsProvider(private val settings: SsoSettings) : Ss
     }
 
     private val azureAd by lazy {
-        if (settings.azureAd == null) null
-        else AzureAdObjectSettingsProvider(settings.azureAd)
+        if (settings.azureAd == null) {
+            null
+        } else {
+            AzureAdObjectSettingsProvider(settings.azureAd)
+        }
     }
 
     override fun azureAd(): AzureAdSettingsProvider? {

@@ -5,6 +5,8 @@ plugins {
 
 description "Virtual Node Info Service REST Extensions"
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
@@ -16,6 +18,4 @@ dependencies {
     implementation project(":components:virtual-node:virtual-node-info-read-service")
 
     testImplementation project(":testing:test-utilities")
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
