@@ -16,6 +16,7 @@ import net.corda.messaging.api.mediator.MultiSourceEventMediator
 import net.corda.messaging.api.mediator.RoutingDestination
 import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.mediator.config.MediatorConsumerConfig
+import net.corda.messaging.api.mediator.factory.MediatorConsumerFactory
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.factory.MediatorComponentFactory
@@ -95,63 +96,71 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         val clients = mediatorComponentFactory.createClients(::onSerializationError)
         messageRouter = mediatorComponentFactory.createRouter(clients)
         lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
+
         config.consumerFactories.map { consumerFactory ->
             taskManager.executeLongRunningTask {
-                var attempts = 0
-                var consumer: MediatorConsumer<K, E>? = null
-                while (!stopped()) {
-                    attempts++
-                    try {
-                        if (consumer == null) {
-                            consumer = consumerFactory.create(
-                                MediatorConsumerConfig(
-                                    config.messageProcessor.keyClass,
-                                    config.messageProcessor.eventValueClass,
-                                    ::onSerializationError
-                                )
-                            )
-                            consumer.subscribe()
-                        }
-                        pollAndProcessEvents(consumer)
-                        attempts = 0
-                    } catch (exception: Exception) {
-                        val cause = if (exception is CompletionException) exception.cause else exception
-                        when (cause) {
-                            is CordaMessageAPIIntermittentException -> {
-                                log.warn(
-                                    "Multi-source event mediator ${config.name} failed to process records, " +
-                                            "Retrying poll and process. Attempts: $attempts.")
-                                consumer?.resetEventOffsetPosition()
-                            }
-                            else -> {
-                                log.error(
-                                    "${exception.message} Attempts: $attempts. Fatal error occurred!",
-                                    exception
-                                )
-                                consumer?.close()
-                                consumer = null
-                            }
-                        }
+                processTopic(consumerFactory)
+            }.exceptionally { exception ->
+                handleTaskException(exception)
+            }
+        }.map {
+            it.join()
+        }
+
+        clients.forEach { it.close() }
+        if (lifecycleCoordinator.status != LifecycleStatus.ERROR) {
+            lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
+        }
+        running.set(false)
+    }
+
+    private fun processTopic(consumerFactory: MediatorConsumerFactory) {
+        var attempts = 0
+        var consumer: MediatorConsumer<K, E>? = null
+        while (!stopped()) {
+            attempts++
+            try {
+                if (consumer == null) {
+                    consumer = consumerFactory.create(
+                        MediatorConsumerConfig(
+                            config.messageProcessor.keyClass,
+                            config.messageProcessor.eventValueClass,
+                            ::onSerializationError
+                        )
+                    )
+                    consumer.subscribe()
+                }
+                pollAndProcessEvents(consumer)
+                attempts = 0
+            } catch (exception: Exception) {
+                val cause = if (exception is CompletionException ) { exception.cause ?: exception} else exception
+                when (cause) {
+                    is CordaMessageAPIIntermittentException -> {
+                        log.warn(
+                            "Multi-source event mediator ${config.name} failed to process records, " +
+                                    "Retrying poll and process. Attempts: $attempts."
+                        )
+                        consumer?.resetEventOffsetPosition()
+                    }
+                    else -> {
+                        log.debug { "${exception.message} Attempts: $attempts. Fatal error occurred!: $exception"}
+                        consumer?.close()
+                        //rethrow to break out of processing topic
+                        throw cause
                     }
                 }
-                consumer
             }
-        }.map {
-            it.exceptionally { exception ->
-                stop()
-                lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, "Error: ${exception.message}")
-                log.error(
-                    "${exception.message}. Closing Multi-Source Event Mediator.",
-                    exception
-                )
-                null
-            }
-        }.map {
-            it.join()?.close()
         }
-        clients.forEach { it.close() }
-        lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
-        running.set(false)
+    }
+
+    private fun handleTaskException(exception: Throwable): Nothing? {
+        stop()
+        lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, "Error: ${exception.message}")
+        log.error(
+            "${exception.message}. Closing Multi-Source Event Mediator.",
+            exception
+        )
+        return null
     }
 
     private fun onSerializationError(event: ByteArray) {
@@ -163,79 +172,30 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     private fun pollAndProcessEvents(consumer: MediatorConsumer<K, E>) {
         val messages = consumer.poll(pollTimeout)
         val startTimestamp = System.nanoTime()
+        val polledRecords = messages.map { it.toRecord() }
         if (messages.isNotEmpty()) {
-            var groups = allocateGroups(messages.map { it.toRecord() })
-            var states = stateManager.get(messages.map { it.key.toString() }.distinct())
+            var groups = allocateGroups(polledRecords)
+            var statesToProcess = stateManager.get(messages.map { it.key.toString() }.distinct())
 
             while (groups.isNotEmpty()) {
                 val asynchronousOutputs = ConcurrentHashMap<String, MutableList<MediatorMessage<Any>>>()
-                val statesToCreate = ConcurrentHashMap<String, State?>()
-                val statesToUpdate = ConcurrentHashMap<String, State?>()
-                val statesToDelete = ConcurrentHashMap<String, State?>()
-                val flowEvents = ConcurrentHashMap<String, MutableList<Record<K, E>>>()
+                val statesToPersist = StatestoPersist()
 
                 // Process each group on a thread
                 groups.filter {
                     it.isNotEmpty()
                 }.map { group ->
                     taskManager.executeShortRunningTask {
-                        // Process all same flow events in one go
-                        group.map {
-                            // Keep track of all records belonging to one flow
-                            flowEvents.compute(it.key.toString()) { _, v ->
-                                if (v == null) {
-                                    it.value.toMutableList()
-                                } else {
-                                    v.addAll(it.value)
-                                    v
-                                }
-                            }
-                            val state = states.getOrDefault(it.key.toString(), null)
-                            var processorState = stateManagerHelper.deserializeValue(state)?.let { stateValue ->
-                                StateAndEventProcessor.State(
-                                    stateValue,
-                                    state?.metadata
-                                )
-                            }
-                            val queue = ArrayDeque(it.value)
-                            while (queue.isNotEmpty()) {
-                                val event = queue.removeFirst()
-                                val response = config.messageProcessor.onNext(processorState, event)
-                                processorState = response.updatedState
-                                processOutputEvents(it.key.toString(), response, asynchronousOutputs, queue, event)
-                            }
-
-                            // ---- Manage the state ----
-                            val processedState = stateManagerHelper.createOrUpdateState(
-                                it.key.toString(),
-                                state,
-                                processorState,
-                            )
-
-                            qualifyState(it.key.toString(), state, processedState, statesToCreate, statesToUpdate, statesToDelete)
-                        }
+                        processEventsInGroup(group, statesToProcess, asynchronousOutputs, statesToPersist)
                     }
                 }.map {
                     it.join()
                 }
 
-                // Persist states changes
-                val failedToCreateKeys = stateManager.create(statesToCreate.values.mapNotNull { it })
-                val failedToCreate = stateManager.get(failedToCreateKeys)
-                val failedToDelete = stateManager.delete(statesToDelete.values.mapNotNull { it })
-                val failedToUpdate = stateManager.update(statesToUpdate.values.mapNotNull { it })
-                val failedToUpdateOptimisticLockFailure = failedToUpdate.mapNotNull { (key, value) -> value?.let { key to it } }.toMap()
-                val failedToUpdateStateDoesNotExist = (failedToUpdate - failedToUpdateOptimisticLockFailure).map { it.key }
-
-                states = failedToCreate + failedToDelete + failedToUpdateOptimisticLockFailure
-
-                groups = if (states.isNotEmpty()) {
-                    allocateGroups(flowEvents.filterKeys { states.containsKey(it) }.values.flatten())
-                } else {
-                    listOf()
-                }
-                states.keys.forEach { asynchronousOutputs.remove(it) }
-                failedToUpdateStateDoesNotExist.forEach { asynchronousOutputs.remove(it) }
+                // Persist state changes, send async outputs and setup to reprocess states that fail to persist
+                val failedStates = persistStatesAndRetrieveFailures(statesToPersist, asynchronousOutputs)
+                statesToProcess = failedStates
+                groups = assignNewGroupsForFailedStates(failedStates, polledRecords)
                 sendAsynchronousEvents(asynchronousOutputs.values.flatten())
             }
             metrics.commitTimer.recordCallable {
@@ -245,32 +205,78 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         metrics.processorTimer.record(System.nanoTime() - startTimestamp, TimeUnit.NANOSECONDS)
     }
 
+    private fun processEventsInGroup(
+        group: Map<K, List<Record<K, E>>>,
+        retrievedStates: Map<String, State>,
+        asynchronousOutputs: ConcurrentHashMap<String, MutableList<MediatorMessage<Any>>>,
+        statesToPersist: StatestoPersist
+    ) {
+        group.map { groupEntry ->
+            val groupKey = groupEntry.key.toString()
+            val state = retrievedStates.getOrDefault(groupKey, null)
+            var processorState = stateManagerHelper.deserializeValue(state)?.let { stateValue ->
+                StateAndEventProcessor.State(
+                    stateValue,
+                    state?.metadata
+                )
+            }
+            val queue = ArrayDeque(groupEntry.value)
+            while (queue.isNotEmpty()) {
+                val event = queue.removeFirst()
+                val response = config.messageProcessor.onNext(processorState, event)
+                processorState = response.updatedState
+                processOutputEvents(groupKey, response, asynchronousOutputs, queue, event)
+            }
+
+            // ---- Manage the state ----
+            qualifyState(groupKey, state, processorState, statesToPersist)
+        }
+    }
+
     /**
      * Decide, based on the original and processed state values, whether the state must be deleted, updated or
      * deleted; and add the relevant state value to the specific Map.
      */
     fun qualifyState(
-        groupId: String,
+        groupKey: String,
         original: State?,
-        processed: State?,
-        toCreate : MutableMap<String, State?>,
-        toUpdate : MutableMap<String, State?>,
-        toDelete : MutableMap<String, State?>
+        processorState: StateAndEventProcessor.State<S>?,
+        statesToPersist: StatestoPersist
     ) {
-        // New state
-        if (original == null && processed != null) {
-            toCreate[groupId] = processed
+        val processed = stateManagerHelper.createOrUpdateState(groupKey, original, processorState)
+        statesToPersist.apply {
+            when {
+                original == null && processed != null -> statesToCreate[groupKey] = processed
+                original != null && processed != null -> statesToUpdate[groupKey] = processed
+                original != null && processed == null -> statesToPersist.statesToDelete[groupKey] = original
+            }
         }
+    }
 
-        // Update state
-        if (original != null && processed != null) {
-            toUpdate[groupId] = processed
-        }
+    private fun persistStatesAndRetrieveFailures(
+        statesToPersist: StatestoPersist,
+        asynchronousOutputs: ConcurrentHashMap<String, MutableList<MediatorMessage<Any>>>
+    ): Map<String, State> {
+        val failedToCreateKeys = stateManager.create(statesToPersist.statesToCreate.values.mapNotNull { it })
+        val failedToCreate = stateManager.get(failedToCreateKeys)
+        val failedToDelete = stateManager.delete(statesToPersist.statesToDelete.values.mapNotNull { it })
+        val failedToUpdate = stateManager.update(statesToPersist.statesToUpdate.values.mapNotNull { it })
+        val failedToUpdateOptimisticLockFailure = failedToUpdate.mapNotNull { (key, value) -> value?.let { key to it } }.toMap()
+        val failedToUpdateStateDoesNotExist = (failedToUpdate - failedToUpdateOptimisticLockFailure).map { it.key }
+        failedToUpdateStateDoesNotExist.forEach { asynchronousOutputs.remove(it) }
 
-        // Delete state
-        if (original != null && processed == null) {
-            toDelete[groupId] = original
-        }
+        val failedStates = failedToCreate + failedToDelete + failedToUpdateOptimisticLockFailure
+        failedStates.keys.forEach { asynchronousOutputs.remove(it) }
+        return failedStates
+    }
+
+    private fun assignNewGroupsForFailedStates(
+        retrievedStates: Map<String, State>,
+        polledEvents: List<Record<K, E>>
+    ) = if (retrievedStates.isNotEmpty()) {
+        allocateGroups(polledEvents.filter { retrievedStates.containsKey(it.key.toString()) })
+    } else {
+        listOf()
     }
 
     private fun sendAsynchronousEvents(busEvents: Collection<MediatorMessage<Any>>) {
@@ -283,7 +289,8 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     }
 
     /**
-     * Send any synchronous events immediately, add asynchronous events to the busEvents collection to be sent later
+     * Send any synchronous events immediately and feed results back onto the queue, add asynchronous events to the busEvents collection to
+     * be sent later
      */
     private fun processOutputEvents(
         key: String,
@@ -338,4 +345,10 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 
         return groups
     }
+
+    data class StatestoPersist(
+        val statesToCreate: ConcurrentHashMap<String, State?> = ConcurrentHashMap<String, State?>(),
+        val statesToUpdate: ConcurrentHashMap<String, State?> = ConcurrentHashMap<String, State?>(),
+        val statesToDelete: ConcurrentHashMap<String, State?> = ConcurrentHashMap<String, State?>(),
+    )
 }
