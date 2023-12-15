@@ -41,7 +41,7 @@ import java.util.*
 import kotlin.test.assertContains
 
 
-class DigitalSignatureAndMetadataSerializationTests : UtxoLedgerTest() {
+class DigitalSignatureAndMetadataJsonSerializationTests : UtxoLedgerTest() {
 
     private val signedTransaction: UtxoSignedTransactionInternal =
         UtxoTransactionBuilderImpl(utxoSignedTransactionFactory, mockNotaryLookup)
