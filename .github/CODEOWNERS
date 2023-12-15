@@ -5,8 +5,8 @@ Jenkinsfile        @corda/blt
 .ci/**             @corda/blt
 
 *.gradle           @corda/blt
-gradle.properties  @corda/corda5-team-leads
-gradle/*           @corda/blt
+gradle/wrapper     @corda/blt
+*.toml             @corda/corda5-team-leads
 
 .github/**          @corda/blt
 CODEOWNERS         @corda/blt @corda/corda5-team-leads
