@@ -7,7 +7,9 @@ import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.utils.INITIATED_SESSION_ID_SUFFIX
+import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
+import net.corda.session.manager.Constants
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions.assertThat
@@ -77,7 +79,9 @@ class SessionCloseProcessorSendTest {
             sessionStartTime = Instant.now(),
             sessionId = "sessionId-$INITIATED_SESSION_ID_SUFFIX",
             counterpartyIdentity = HoldingIdentity("Alice", "group1"),
-            requireClose = true
+            sessionProperties = KeyValueStore().apply {
+                put(Constants.FLOW_SESSION_REQUIRE_CLOSE, true.toString())
+            }.avro
         )
 
         val result = SessionCloseProcessorSend("key", inputState, sessionEvent, Instant.now()).execute()
