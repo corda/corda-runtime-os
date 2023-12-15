@@ -88,29 +88,34 @@ internal class SandboxGroupContextCacheImpl private constructor(
     private fun buildSandboxGroupTypeCache(
         type: SandboxGroupType,
         capacity: Long
-    ): Cache<VirtualNodeContext, SandboxGroupContextWrapper> = CacheFactoryImpl().buildNonAsync(
-        "sandbox-cache-${type}",
-        Caffeine.newBuilder()
-            .maximumSize(capacity)
-            // Add the wrapped [CloseableSandboxGroupContext] to the internal [expiryQueue],
-            // so it is only closed once it's safe to do so (i.e. wrapping [SandboxGroupContextWrapper]
-            // is not referenced anymore).
-            .removalListener { key, context, cause ->
-                purgeExpiryQueue()
-                key ?: return@removalListener
-                (context?.wrappedSandboxGroupContext as? AutoCloseable)?.also { autoCloseable ->
-                    toBeClosed += ToBeClosed(key, context.completion, autoCloseable, context, expiryQueue)
-                    onEviction(key)
-                }
+    ): Cache<VirtualNodeContext, SandboxGroupContextWrapper> {
+        var cacheInstance: Cache<VirtualNodeContext, SandboxGroupContextWrapper>? = null
+        cacheInstance = CacheFactoryImpl().buildNonAsync(
+            "sandbox-cache-${type}",
+            Caffeine.newBuilder()
+                .maximumSize(capacity)
+                // Add the wrapped [CloseableSandboxGroupContext] to the internal [expiryQueue],
+                // so it is only closed once it's safe to do so (i.e. wrapping [SandboxGroupContextWrapper]
+                // is not referenced anymore).
+                .removalListener { key, context, cause ->
+                    purgeExpiryQueue()
+                    key ?: return@removalListener
+                    (context?.wrappedSandboxGroupContext as? AutoCloseable)?.also { autoCloseable ->
+                        toBeClosed += ToBeClosed(key, context.completion, autoCloseable, context, expiryQueue)
+                        onEviction(key)
+                    }
 
-                logger.info(
-                    "Evicting {} sandbox for {} [{}]",
-                    key.sandboxGroupType,
-                    key.holdingIdentity.x500Name,
-                    cause.name
-                )
-            }
-    )
+                    logger.info(
+                        "Evicting {} sandbox for {} [{}]. Current size {}",
+                        key.sandboxGroupType,
+                        key.holdingIdentity.x500Name,
+                        cause.name,
+                        cacheInstance?.estimatedSize()
+                    )
+                }
+        )
+        return cacheInstance
+    }
 
     /**
      * Creates the cache for the given [sandboxGroupType] with [newCapacity] maximum size, if not created yet.
