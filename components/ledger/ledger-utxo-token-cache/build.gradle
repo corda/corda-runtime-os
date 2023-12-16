@@ -5,6 +5,8 @@ plugins {
 
 description "Token Cache"
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
@@ -41,9 +43,6 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
     testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 

@@ -147,7 +147,7 @@ class FlowMapperServiceIntegrationTest {
         }
     }
 
-    //@Test
+    @Test
     fun `Test first session event outbound sets up flow mapper state, verify subsequent messages received are passed to flow event topic`
                 () {
         val testId = "test1"
@@ -209,7 +209,7 @@ class FlowMapperServiceIntegrationTest {
         flowEventMediator.close()
     }
 
-    //@Test
+    @Test
     fun testStartRPCDuplicatesAndCleanup() {
         val testId = "test2"
         val publisher = publisherFactory.createPublisher(PublisherConfig(testId), messagingConfig)
@@ -279,7 +279,7 @@ class FlowMapperServiceIntegrationTest {
         flowEventMediator.close()
     }
 
-    //@Test
+    @Test
     fun testNoStateForMapper() {
         val testId = "test3"
         val publisher = publisherFactory.createPublisher(PublisherConfig(testId), messagingConfig)
@@ -375,7 +375,7 @@ class FlowMapperServiceIntegrationTest {
     }
 
 
-    //@Test
+    @Test
     fun `when the flow mapper receives an inbound session message for a non-existent session, an error is returned`() {
         val testId = "test5"
         val publisher = publisherFactory.createPublisher(PublisherConfig(testId), messagingConfig)
@@ -418,7 +418,7 @@ class FlowMapperServiceIntegrationTest {
         assertThat(event.payload).isInstanceOf(SessionError::class.java)
     }
 
-    //@Test
+    @Test
     fun `mapper state cleanup correctly cleans up old states`() {
 
         // Create a state in the state manager. Note the modified time has to be further in the past than the configured

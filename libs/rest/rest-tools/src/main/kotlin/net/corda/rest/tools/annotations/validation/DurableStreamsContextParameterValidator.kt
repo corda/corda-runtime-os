@@ -3,9 +3,9 @@ package net.corda.rest.tools.annotations.validation
 import net.corda.rest.RestResource
 import net.corda.rest.annotations.HttpPOST
 import net.corda.rest.annotations.HttpPUT
+import net.corda.rest.durablestream.api.returnsDurableCursorBuilder
 import net.corda.rest.tools.annotations.validation.utils.getParameterName
 import net.corda.rest.tools.annotations.validation.utils.isBodyParameter
-import net.corda.rest.durablestream.api.returnsDurableCursorBuilder
 import java.lang.reflect.Method
 
 /**
@@ -16,14 +16,16 @@ class DurableStreamsContextParameterValidator(private val clazz: Class<out RestR
 
     companion object {
         const val error = "Methods returning DurableCursorBuilder or FiniteDurableCursorBuilder " +
-                "are not allowed to have a body parameter with the name 'context'"
+            "are not allowed to have a body parameter with the name 'context'"
     }
 
     override fun validate(): RestValidationResult =
         clazz.methods.fold(RestValidationResult()) { total, method ->
             total + if (method.annotations.any { it is HttpPOST || it is HttpPUT }) {
                 validateBodyParameterOnPOST(method)
-            } else RestValidationResult()
+            } else {
+                RestValidationResult()
+            }
         }
 
     private fun validateBodyParameterOnPOST(method: Method) =
@@ -35,5 +37,7 @@ class DurableStreamsContextParameterValidator(private val clazz: Class<out RestR
                         else -> RestValidationResult(listOf(error))
                     }
                 }
-        } else RestValidationResult()
+        } else {
+            RestValidationResult()
+        }
 }

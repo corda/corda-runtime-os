@@ -67,7 +67,7 @@ internal class CreateVirtualNodeServiceImpl(
             if (virtualNodeRepository.find(em, holdingIdShortHash) != null) {
                 throw VirtualNodeAlreadyExistsException(
                     "Virtual node for CPI with file checksum ${request.cpiFileChecksum} and x500Name " +
-                            "${request.holdingId.x500Name} already exists."
+                        "${request.holdingId.x500Name} already exists."
                 )
             }
 
@@ -81,7 +81,7 @@ internal class CreateVirtualNodeServiceImpl(
 
     override fun getCpiMetaData(cpiFileChecksum: String): CpiMetadata {
         return cpiEntityRepository.getCpiMetadataByChecksum(cpiFileChecksum)
-            ?: throw  CpiNotFoundException("CPI with file checksum ${cpiFileChecksum} was not found.")
+            ?: throw CpiNotFoundException("CPI with file checksum $cpiFileChecksum was not found.")
     }
 
     override fun runCpiMigrations(
@@ -102,7 +102,7 @@ internal class CreateVirtualNodeServiceImpl(
                     vaultDb.runCpiMigrations(allChangeLogsForCpk, cpkFileChecksum.toString())
                 } catch (e: Exception) {
                     val msg = "CPI migrations failed for virtual node '${holdingIdentity.shortHash}`. Failure " +
-                            "occurred running CPI migrations on CPK with file checksum $cpkFileChecksum."
+                        "occurred running CPI migrations on CPK with file checksum $cpkFileChecksum."
                     logger.warn(msg, e)
                     throw VirtualNodeWriteServiceException(msg, e)
                 }

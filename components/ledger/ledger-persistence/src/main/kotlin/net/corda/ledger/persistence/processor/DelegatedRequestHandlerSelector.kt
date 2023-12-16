@@ -5,6 +5,5 @@ import net.corda.ledger.persistence.common.RequestHandler
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 
 interface DelegatedRequestHandlerSelector {
-    fun selectHandler(sandbox: SandboxGroupContext, request: LedgerPersistenceRequest) : RequestHandler
+    fun selectHandler(sandbox: SandboxGroupContext, request: LedgerPersistenceRequest): RequestHandler
 }
-

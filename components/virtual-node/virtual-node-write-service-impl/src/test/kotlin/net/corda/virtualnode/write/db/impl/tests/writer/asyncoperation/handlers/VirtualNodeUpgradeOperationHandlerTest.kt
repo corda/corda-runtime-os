@@ -181,7 +181,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
                         "${GroupPolicyConstants.PolicyKeys.ProtocolParameters.STATIC_NETWORK}": {}
                     }
                 }
-                """.trimIndent()
+        """.trimIndent()
     }
 
     private fun genDynamicGroupPolicy(groupId: String): String {
@@ -189,7 +189,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
                 {
                     "${GroupPolicyConstants.PolicyKeys.Root.GROUP_ID}": "$groupId"
                 }
-                """.trimIndent()
+        """.trimIndent()
     }
 
     private val targetCpiChecksum = "targetCpi"
@@ -305,7 +305,10 @@ class VirtualNodeUpgradeOperationHandlerTest {
                 Instant.now(),
                 requestId,
                 VirtualNodeUpgradeRequest(
-                    null, "aaaa", null, false
+                    null,
+                    "aaaa",
+                    null,
+                    false
                 )
             )
         }
@@ -318,7 +321,10 @@ class VirtualNodeUpgradeOperationHandlerTest {
                 Instant.now(),
                 requestId,
                 VirtualNodeUpgradeRequest(
-                    vnodeId, null, null, false
+                    vnodeId,
+                    null,
+                    null,
+                    false
                 )
             )
         }
@@ -409,7 +415,7 @@ class VirtualNodeUpgradeOperationHandlerTest {
         )
 
         verify(virtualNodeRepository, times(1)).upgradeVirtualNodeCpi(any(), any(), any(), any(), any(), any(), any(), any(), any())
-}
+    }
 
     @Test
     fun `upgrade handler can't find target CPI throws`() {
@@ -610,9 +616,14 @@ class VirtualNodeUpgradeOperationHandlerTest {
         }
         whenever(deserializer.deserialize(any()))
             .thenReturn(KeyValuePairList(listOf(KeyValuePair("key", "value"))))
-        whenever(membershipQueryClient.queryRegistrationRequests(
-            eq(mockHoldingIdentity), eq(mockHoldingIdentity.x500Name), eq(listOf(RegistrationStatus.APPROVED)), anyOrNull(),
-        )).thenReturn(MembershipQueryResult.Success(listOf(registrationRequest)))
+        whenever(
+            membershipQueryClient.queryRegistrationRequests(
+                eq(mockHoldingIdentity),
+                eq(mockHoldingIdentity.x500Name),
+                eq(listOf(RegistrationStatus.APPROVED)),
+                anyOrNull(),
+            )
+        ).thenReturn(MembershipQueryResult.Success(listOf(registrationRequest)))
         val requestCaptor = argumentCaptor<Map<String, String>>()
         whenever(memberResourceClient.startRegistration(eq(mockHoldingIdentity.shortHash), requestCaptor.capture()))
             .thenReturn(mock())
@@ -656,9 +667,14 @@ class VirtualNodeUpgradeOperationHandlerTest {
         }
         whenever(deserializer.deserialize(any()))
             .thenReturn(KeyValuePairList(listOf(KeyValuePair("key", "value"))))
-        whenever(membershipQueryClient.queryRegistrationRequests(
-            eq(mockHoldingIdentity), eq(mockHoldingIdentity.x500Name), eq(listOf(RegistrationStatus.APPROVED)), anyOrNull(),
-        )).thenReturn(MembershipQueryResult.Success(listOf(registrationRequest)))
+        whenever(
+            membershipQueryClient.queryRegistrationRequests(
+                eq(mockHoldingIdentity),
+                eq(mockHoldingIdentity.x500Name),
+                eq(listOf(RegistrationStatus.APPROVED)),
+                anyOrNull(),
+            )
+        ).thenReturn(MembershipQueryResult.Success(listOf(registrationRequest)))
         val requestCaptor = argumentCaptor<Map<String, String>>()
         whenever(memberResourceClient.startRegistration(eq(mockHoldingIdentity.shortHash), requestCaptor.capture()))
             .thenReturn(mock())

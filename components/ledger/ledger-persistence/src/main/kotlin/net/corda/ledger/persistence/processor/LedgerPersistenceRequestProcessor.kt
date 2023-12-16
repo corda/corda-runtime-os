@@ -54,7 +54,6 @@ class LedgerPersistenceRequestProcessor(
                 ) + translateFlowContextToMDC(request.flowExternalEventContext.contextProperties.toMap())
             ) {
                 try {
-
                     val cpkFileHashes = request.flowExternalEventContext.contextProperties.items
                         .filter { it.key.startsWith(CPK_FILE_CHECKSUM) }
                         .map { it.value.toSecureHash() }
@@ -96,4 +95,3 @@ class LedgerPersistenceRequestProcessor(
 }
 
 private fun String.toSecureHash() = parseSecureHash(this)
-

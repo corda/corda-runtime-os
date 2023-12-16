@@ -41,7 +41,7 @@ class PerformanceClaimStateStoreImplTest {
     )
 
     @Test
-    //@org.junit.jupiter.api.Disabled
+    // @org.junit.jupiter.api.Disabled
     @Suppress("SpreadOperator")
     fun `concurrency simulation`() {
         /*
@@ -122,9 +122,7 @@ class PerformanceClaimStateStoreImplTest {
                 true
             }
 
-
             allInstanceClaims.add(f2)
-
         }
 
         Timer().scheduleAtFixedRate(0, 100) {
@@ -145,7 +143,6 @@ class PerformanceClaimStateStoreImplTest {
         println("Instance A  Failures: $instanceAFailCount")
         println("Instance B  Failures: $instanceBFailCount")
     }
-
 
     private fun createTokenClaim(claimId: String): TokenClaim {
         return TokenClaim.newBuilder()

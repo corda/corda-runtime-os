@@ -96,7 +96,7 @@ class UtxoOutputRecordFactoryImpl(
     ): Record<String, FlowEvent> {
         return responseFactory.successResponse(
             externalEventContext,
-                UtxoTransactionOutputs(
+            UtxoTransactionOutputs(
                 states.map { state ->
                     UtxoTransactionOutput.newBuilder()
                         .setTransactionId(state.transactionId)

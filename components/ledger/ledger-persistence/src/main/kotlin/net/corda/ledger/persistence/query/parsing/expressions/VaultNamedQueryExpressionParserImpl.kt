@@ -1,7 +1,5 @@
 package net.corda.ledger.persistence.query.parsing.expressions
 
-import java.util.Deque
-import java.util.LinkedList
 import net.corda.ledger.persistence.query.parsing.And
 import net.corda.ledger.persistence.query.parsing.As
 import net.corda.ledger.persistence.query.parsing.Associativity.Left
@@ -40,6 +38,8 @@ import net.corda.ledger.persistence.query.parsing.Token
 import net.corda.ledger.persistence.query.parsing.TopLevelKeyword
 import net.corda.ledger.persistence.query.parsing.UnaryKeyword
 import net.corda.ledger.persistence.query.parsing.Where
+import java.util.Deque
+import java.util.LinkedList
 
 class VaultNamedQueryExpressionParserImpl : VaultNamedQueryExpressionParser {
     private companion object {
@@ -62,9 +62,10 @@ class VaultNamedQueryExpressionParserImpl : VaultNamedQueryExpressionParser {
         private val whitespacePattern = """\s++""".toRegex()
 
         private fun parenthesise(tokens: LinkedList<Token>): LinkedList<Token> {
-            if (tokens.peekFirst() != LeftParenthesis
-                || tokens.peekLast() != RightParenthesis
-                || tokens.lastIndexOf(LeftParenthesis) != 0) {
+            if (tokens.peekFirst() != LeftParenthesis ||
+                tokens.peekLast() != RightParenthesis ||
+                tokens.lastIndexOf(LeftParenthesis) != 0
+            ) {
                 tokens.addFirst(LeftParenthesis)
                 tokens.addLast(RightParenthesis)
             }
@@ -75,7 +76,7 @@ class VaultNamedQueryExpressionParserImpl : VaultNamedQueryExpressionParser {
     /**
      * A sub-sequence of [Token]s extracted from between parentheses.
      */
-    private class Expression(val ops: LinkedList<Token>): Token {
+    private class Expression(val ops: LinkedList<Token>) : Token {
         fun tokens(): LinkedList<Token> {
             return if (ops.size == 1 && ops.peekFirst() is Reference) {
                 ops
@@ -199,7 +200,7 @@ class VaultNamedQueryExpressionParserImpl : VaultNamedQueryExpressionParser {
     }
 
     private fun toKeyword(keyword: String): Keyword {
-        return when(val name = whitespacePattern.replace(keyword, " ").uppercase()) {
+        return when (val name = whitespacePattern.replace(keyword, " ").uppercase()) {
             "SELECT" -> Select()
             "WHERE" -> Where()
             "FROM" -> From()
@@ -297,8 +298,9 @@ class VaultNamedQueryExpressionParserImpl : VaultNamedQueryExpressionParser {
                 is Operator -> {
                     while (true) {
                         val top = operators.peekFirst() ?: break
-                        if ((token.precedence > top.precedence)
-                            || (token.precedence == top.precedence && token.associativity == Left)) {
+                        if ((token.precedence > top.precedence) ||
+                            (token.precedence == top.precedence && token.associativity == Left)
+                        ) {
                             output.addLast(createOperation(operators, output))
                         } else {
                             break

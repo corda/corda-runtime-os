@@ -45,7 +45,7 @@ class ConsensualLedgerPersistenceServiceImplTest {
     @BeforeEach
     fun setup() {
         consensualLedgerPersistenceService = ConsensualLedgerPersistenceServiceImpl(
-                externalEventExecutor, serializationService, transactionSignatureService
+            externalEventExecutor, serializationService, transactionSignatureService
         )
 
         whenever(serializationService.serialize(any<Any>())).thenReturn(serializedBytes)

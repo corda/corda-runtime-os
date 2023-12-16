@@ -3,9 +3,9 @@ package net.corda.rest.tools.annotations.validation
 import net.corda.rest.RestResource
 import net.corda.rest.annotations.HttpGET
 import net.corda.rest.annotations.HttpPOST
-import net.corda.rest.annotations.RestQueryParameter
 import net.corda.rest.annotations.HttpRestResource
 import net.corda.rest.annotations.RestApiVersion
+import net.corda.rest.annotations.RestQueryParameter
 import net.corda.rest.tools.annotations.validation.EndpointNameConflictValidator.Companion.error
 import net.corda.rest.tools.annotations.validation.utils.EndpointType
 import org.assertj.core.api.Assertions.assertThat
@@ -20,11 +20,11 @@ class EndpointNameConflictValidatorTest {
     fun `validate withEndpointNameConflictOnSamePathDifferentVersions errorListIsEmpty`() {
         @HttpRestResource
         abstract class TestInterface : RestResource {
-            @HttpGET("/test", minVersion=RestApiVersion.C5_0, maxVersion=RestApiVersion.C5_0)
+            @HttpGET("/test", minVersion = RestApiVersion.C5_0, maxVersion = RestApiVersion.C5_0)
             @Suppress("unused")
             abstract fun test()
 
-            @HttpGET("/test", minVersion=RestApiVersion.C5_1, maxVersion=RestApiVersion.C5_2)
+            @HttpGET("/test", minVersion = RestApiVersion.C5_1, maxVersion = RestApiVersion.C5_2)
             @Suppress("unused")
             abstract fun test2()
         }
@@ -76,15 +76,15 @@ class EndpointNameConflictValidatorTest {
     fun `validate withEndpointNameConflictOnSamePathMultipleConflicts errorListContainsErrors`() {
         @HttpRestResource
         abstract class TestInterface : RestResource {
-            @HttpGET("/test", minVersion=RestApiVersion.C5_0, maxVersion=RestApiVersion.C5_0)
+            @HttpGET("/test", minVersion = RestApiVersion.C5_0, maxVersion = RestApiVersion.C5_0)
             @Suppress("unused")
             abstract fun test()
 
-            @HttpGET("/test", minVersion=RestApiVersion.C5_2, maxVersion=RestApiVersion.C5_2)
+            @HttpGET("/test", minVersion = RestApiVersion.C5_2, maxVersion = RestApiVersion.C5_2)
             @Suppress("unused")
             abstract fun test2()
 
-            @HttpGET("/test", minVersion=RestApiVersion.C5_0, maxVersion=RestApiVersion.C5_2)
+            @HttpGET("/test", minVersion = RestApiVersion.C5_0, maxVersion = RestApiVersion.C5_2)
             @Suppress("unused")
             abstract fun test3()
         }
@@ -172,8 +172,11 @@ class EndpointNameConflictValidatorTest {
         val result = EndpointNameConflictValidator(TestInterface::class.java).validate()
 
         assertThat(result.errors).hasSize(2).allMatch { error ->
-            error == error("test", EndpointType.GET, TestInterface::class.java.methods.first { it.name == "test" },
-                TestInterface::class.java.methods.last { it.name == "test" })}
+            error == error(
+                "test", EndpointType.GET, TestInterface::class.java.methods.first { it.name == "test" },
+                TestInterface::class.java.methods.last { it.name == "test" }
+            )
+        }
     }
 
     @Test
@@ -242,8 +245,14 @@ class EndpointNameConflictValidatorTest {
 
         val result = RestInterfaceValidator.validate(TestInterface::class.java)
 
-        assertThat(result.errors).hasSize(1).contains(error("getprotocolversion", EndpointType.GET,
-            TestInterface::test.javaMethod!!, RestResource::protocolVersion.javaGetter!!))
+        assertThat(result.errors).hasSize(1).contains(
+            error(
+                "getprotocolversion",
+                EndpointType.GET,
+                TestInterface::test.javaMethod!!,
+                RestResource::protocolVersion.javaGetter!!
+            )
+        )
     }
 
     @Test
@@ -269,9 +278,10 @@ class EndpointNameConflictValidatorTest {
 
         val result = RestInterfaceValidator.validate(TestInterface::class.java)
 
-        assertThat(result.errors).hasSize(2).
-            contains(
+        assertThat(result.errors).hasSize(2)
+            .contains(
                 error("null", EndpointType.GET, TestInterface::test2.javaMethod!!, TestInterface::test.javaMethod!!),
-                error("null", EndpointType.POST, TestInterface::test4.javaMethod!!, TestInterface::test3.javaMethod!!))
+                error("null", EndpointType.POST, TestInterface::test4.javaMethod!!, TestInterface::test3.javaMethod!!)
+            )
     }
 }

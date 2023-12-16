@@ -82,7 +82,7 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
                 log.error("Publisher is null, not publishing")
                 return
             }
-            //TODO:  according the publish kdoc, we need to handle failure, retries, and possibly transactions.  Next PR.
+            // TODO:  according the publish kdoc, we need to handle failure, retries, and possibly transactions.  Next PR.
             val futures = publisher!!.publish(records)
 
             // Wait for the future (there should only be one) to complete.
@@ -96,7 +96,6 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
     override fun start() = coordinator.start()
 
     override fun stop() = coordinator.stop()
-
 
     /**
      * We received the following flow of events before the component is fully configured and

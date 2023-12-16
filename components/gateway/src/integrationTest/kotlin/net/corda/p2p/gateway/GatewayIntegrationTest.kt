@@ -25,6 +25,7 @@ import net.corda.data.p2p.gateway.GatewayMessage
 import net.corda.data.p2p.gateway.GatewayResponse
 import net.corda.data.p2p.mtls.gateway.ClientCertificateSubjects
 import net.corda.libs.configuration.SmartConfigImpl
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
 import net.corda.lifecycle.impl.LifecycleCoordinatorSchedulerFactoryImpl
@@ -60,6 +61,7 @@ import net.corda.schema.Schemas.P2P.GATEWAY_TLS_TRUSTSTORES
 import net.corda.schema.Schemas.P2P.LINK_IN_TOPIC
 import net.corda.schema.Schemas.P2P.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.SESSION_OUT_PARTITIONS
+import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
@@ -122,11 +124,24 @@ internal class GatewayIntegrationTest : TestBase() {
     private val sessionId = "session-1"
     private val instanceId = AtomicInteger(0)
 
-    private val messagingConfig = SmartConfigImpl.empty()
+    private val baseMessagingConfig = SmartConfigImpl.empty()
         .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.getAndIncrement()))
         .withValue(MAX_ALLOWED_MSG_SIZE, ConfigValueFactory.fromAnyRef(10000000))
+    private fun messagingConfig() =
+        baseMessagingConfig
+            .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet()))
 
     private val avroSchemaRegistry = AvroSchemaRegistryImpl()
+    private val platformInfoProvider = object : PlatformInfoProvider {
+        override val activePlatformVersion = 1
+        override val localWorkerPlatformVersion = 1
+        override val localWorkerSoftwareVersion = "5.2"
+    }
+    private val bootConfig = SmartConfigImpl.empty()
+        .withValue(
+            BootConfig.P2P_LINK_MANAGER_WORKER_REST_ENDPOINT,
+            ConfigValueFactory.fromAnyRef("localhost:${getOpenPort()}"),
+        )
 
     private inner class Node(private val name: String) {
         private val topicService = TopicServiceImpl()
@@ -136,7 +151,7 @@ internal class GatewayIntegrationTest : TestBase() {
             LifecycleCoordinatorFactoryImpl(LifecycleRegistryImpl(), LifecycleCoordinatorSchedulerFactoryImpl())
         val subscriptionFactory = InMemSubscriptionFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
         val publisherFactory = CordaPublisherFactory(topicService, rpcTopicService, lifecycleCoordinatorFactory)
-        val publisher = publisherFactory.createPublisher(PublisherConfig("$name.id", false), messagingConfig)
+        val publisher = publisherFactory.createPublisher(PublisherConfig("$name.id", false), baseMessagingConfig)
         val cryptoOpsClient = TestCryptoOpsClient(lifecycleCoordinatorFactory)
 
         fun stop() {
@@ -165,8 +180,7 @@ internal class GatewayIntegrationTest : TestBase() {
                     override val keyClass = Any::class.java
                     override val valueClass = Any::class.java
                 },
-                messagingConfig = messagingConfig
-                    .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet()))
+                messagingConfig = messagingConfig()
                     .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef("")),
                 partitionAssignmentListener = null
             ).use {
@@ -272,9 +286,11 @@ internal class GatewayIntegrationTest : TestBase() {
                 alice.subscriptionFactory,
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
-                messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 alice.cryptoOpsClient,
-                avroSchemaRegistry
+                avroSchemaRegistry,
+                platformInfoProvider,
+                bootConfig,
+                messagingConfig(),
             ).usingLifecycle {
                 alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore, aliceHoldingIdentity)
                 it.startAndWaitForStarted()
@@ -318,9 +334,11 @@ internal class GatewayIntegrationTest : TestBase() {
                 alice.subscriptionFactory,
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
-                messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 alice.cryptoOpsClient,
-                avroSchemaRegistry
+                avroSchemaRegistry,
+                platformInfoProvider,
+                bootConfig,
+                messagingConfig(),
             ).usingLifecycle {
                 alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore, aliceHoldingIdentity)
                 it.startAndWaitForStarted()
@@ -386,9 +404,11 @@ internal class GatewayIntegrationTest : TestBase() {
                 alice.subscriptionFactory,
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
-                messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 alice.cryptoOpsClient,
-                avroSchemaRegistry
+                avroSchemaRegistry,
+                platformInfoProvider,
+                bootConfig,
+                messagingConfig(),
             ).usingLifecycle {
                 alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore, aliceHoldingIdentity)
                 it.startAndWaitForStarted()
@@ -461,9 +481,11 @@ internal class GatewayIntegrationTest : TestBase() {
                 alice.subscriptionFactory,
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
-                messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 alice.cryptoOpsClient,
-                avroSchemaRegistry
+                avroSchemaRegistry,
+                platformInfoProvider,
+                bootConfig,
+                messagingConfig(),
             ).usingLifecycle {
                 alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore, aliceHoldingIdentity)
                 it.startAndWaitForStarted()
@@ -528,9 +550,11 @@ internal class GatewayIntegrationTest : TestBase() {
                 alice.subscriptionFactory,
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
-                messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 alice.cryptoOpsClient,
                 avroSchemaRegistry,
+                platformInfoProvider,
+                bootConfig,
+                messagingConfig(),
             ).usingLifecycle {
                 alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore, aliceHoldingIdentity)
                 it.startAndWaitForStarted()
@@ -633,9 +657,11 @@ internal class GatewayIntegrationTest : TestBase() {
                 alice.subscriptionFactory,
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
-                messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 alice.cryptoOpsClient,
-                avroSchemaRegistry
+                avroSchemaRegistry,
+                platformInfoProvider,
+                bootConfig,
+                messagingConfig(),
             ).usingLifecycle {
                 alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore, aliceHoldingIdentity)
                 it.startAndWaitForStarted()
@@ -680,9 +706,11 @@ internal class GatewayIntegrationTest : TestBase() {
                 alice.subscriptionFactory,
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
-                messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 alice.cryptoOpsClient,
-                avroSchemaRegistry
+                avroSchemaRegistry,
+                platformInfoProvider,
+                bootConfig,
+                messagingConfig(),
             ).usingLifecycle {
                 alice.publishKeyStoreCertificatesAndKeys(ipKeyStore, aliceHoldingIdentity)
                 it.startAndWaitForStarted()
@@ -780,9 +808,11 @@ internal class GatewayIntegrationTest : TestBase() {
                     alice.subscriptionFactory,
                     alice.publisherFactory,
                     alice.lifecycleCoordinatorFactory,
-                    messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                     alice.cryptoOpsClient,
                     avroSchemaRegistry,
+                    platformInfoProvider,
+                    bootConfig,
+                    messagingConfig(),
                 ).usingLifecycle { gateway ->
                     gateway.start()
 
@@ -867,9 +897,11 @@ internal class GatewayIntegrationTest : TestBase() {
                 alice.subscriptionFactory,
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
-                messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 alice.cryptoOpsClient,
-                avroSchemaRegistry
+                avroSchemaRegistry,
+                platformInfoProvider,
+                bootConfig,
+                messagingConfig(),
             ).usingLifecycle {
                 it.startAndWaitForStarted()
                 (1..clientNumber).map { index ->
@@ -940,7 +972,7 @@ internal class GatewayIntegrationTest : TestBase() {
                             String((p2pMessage.payload as AuthenticatedDataMessage).payload.array())
                         )
                             .isEqualTo("Target-$serverUri")
-                        val gatewayResponse = GatewayResponse(gatewayMessage.id)
+                        val gatewayResponse = GatewayResponse(gatewayMessage.id, null)
                         httpWriter.write(HttpResponseStatus.OK, request.source, avroSchemaRegistry.serialize(gatewayResponse).array())
                         deliveryLatch.countDown()
                     }
@@ -976,9 +1008,11 @@ internal class GatewayIntegrationTest : TestBase() {
                 alice.subscriptionFactory,
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
-                messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 alice.cryptoOpsClient,
-                avroSchemaRegistry
+                avroSchemaRegistry,
+                platformInfoProvider,
+                bootConfig,
+                messagingConfig(),
             ).usingLifecycle {
                 alice.publishKeyStoreCertificatesAndKeys(aliceKeyStore, aliceHoldingIdentity)
                 startTime = Instant.now().toEpochMilli()
@@ -1047,10 +1081,7 @@ internal class GatewayIntegrationTest : TestBase() {
                     override val keyClass = Any::class.java
                     override val valueClass = Any::class.java
                 },
-                messagingConfig = messagingConfig.withValue(
-                    INSTANCE_ID,
-                    ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())
-                ),
+                messagingConfig = messagingConfig(),
                 partitionAssignmentListener = null
             )
             bobSubscription.start()
@@ -1069,10 +1100,7 @@ internal class GatewayIntegrationTest : TestBase() {
                     override val keyClass = Any::class.java
                     override val valueClass = Any::class.java
                 },
-                messagingConfig = messagingConfig.withValue(
-                    INSTANCE_ID,
-                    ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())
-                ),
+                messagingConfig = messagingConfig(),
                 partitionAssignmentListener = null
             )
             aliceSubscription.start()
@@ -1098,9 +1126,11 @@ internal class GatewayIntegrationTest : TestBase() {
                     alice.subscriptionFactory,
                     alice.publisherFactory,
                     alice.lifecycleCoordinatorFactory,
-                    messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                     alice.cryptoOpsClient,
-                    avroSchemaRegistry
+                    avroSchemaRegistry,
+                    platformInfoProvider,
+                    bootConfig,
+                    messagingConfig(),
                 ),
                 Gateway(
                     createConfigurationServiceFor(
@@ -1121,9 +1151,11 @@ internal class GatewayIntegrationTest : TestBase() {
                     bob.subscriptionFactory,
                     bob.publisherFactory,
                     bob.lifecycleCoordinatorFactory,
-                    messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                     bob.cryptoOpsClient,
                     avroSchemaRegistry,
+                    platformInfoProvider,
+                    bootConfig,
+                    messagingConfig(),
                 )
             ).onEach {
                 it.startAndWaitForStarted()
@@ -1194,9 +1226,11 @@ internal class GatewayIntegrationTest : TestBase() {
                 alice.subscriptionFactory,
                 alice.publisherFactory,
                 alice.lifecycleCoordinatorFactory,
-                messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 alice.cryptoOpsClient,
-                avroSchemaRegistry
+                avroSchemaRegistry,
+                platformInfoProvider,
+                bootConfig,
+                messagingConfig(),
             ).usingLifecycle { gateway ->
                 val port = getOpenPort()
                 logger.info("Publishing good config")
@@ -1349,9 +1383,11 @@ internal class GatewayIntegrationTest : TestBase() {
                 server.subscriptionFactory,
                 server.publisherFactory,
                 server.lifecycleCoordinatorFactory,
-                messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 server.cryptoOpsClient,
-                avroSchemaRegistry
+                avroSchemaRegistry,
+                platformInfoProvider,
+                bootConfig,
+                messagingConfig(),
             ).usingLifecycle { gateway ->
                 gateway.startAndWaitForStarted()
                 val firstCertificatesAuthority = CertificateAuthorityFactory
@@ -1526,10 +1562,7 @@ internal class GatewayIntegrationTest : TestBase() {
                     override val keyClass = Any::class.java
                     override val valueClass = Any::class.java
                 },
-                messagingConfig = messagingConfig.withValue(
-                    INSTANCE_ID,
-                    ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())
-                ),
+                messagingConfig = messagingConfig(),
                 partitionAssignmentListener = null
             )
             bobSubscription.start()
@@ -1548,10 +1581,7 @@ internal class GatewayIntegrationTest : TestBase() {
                     override val keyClass = Any::class.java
                     override val valueClass = Any::class.java
                 },
-                messagingConfig = messagingConfig.withValue(
-                    INSTANCE_ID,
-                    ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())
-                ),
+                messagingConfig = messagingConfig(),
                 partitionAssignmentListener = null
             )
             aliceSubscription.start()
@@ -1577,9 +1607,11 @@ internal class GatewayIntegrationTest : TestBase() {
                     alice.subscriptionFactory,
                     alice.publisherFactory,
                     alice.lifecycleCoordinatorFactory,
-                    messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                     alice.cryptoOpsClient,
-                    avroSchemaRegistry
+                    avroSchemaRegistry,
+                    platformInfoProvider,
+                    bootConfig,
+                    messagingConfig(),
                 ),
                 Gateway(
                     createConfigurationServiceFor(
@@ -1599,9 +1631,11 @@ internal class GatewayIntegrationTest : TestBase() {
                     bob.subscriptionFactory,
                     bob.publisherFactory,
                     bob.lifecycleCoordinatorFactory,
-                    messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                     bob.cryptoOpsClient,
                     avroSchemaRegistry,
+                    platformInfoProvider,
+                    bootConfig,
+                    messagingConfig(),
                 )
             ).onEach {
                 it.startAndWaitForStarted()

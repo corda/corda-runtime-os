@@ -5,7 +5,7 @@ import java.math.BigDecimal
 
 internal class TokenBalanceCacheImpl(private val availableBalance: BigDecimal, private val totalBalance: BigDecimal) : TokenBalance {
     override fun getAvailableBalance(): BigDecimal {
-        return  availableBalance
+        return availableBalance
     }
 
     override fun getTotalBalance(): BigDecimal {

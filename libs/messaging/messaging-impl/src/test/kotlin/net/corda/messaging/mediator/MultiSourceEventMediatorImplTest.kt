@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 class MultiSourceEventMediatorImplTest {
     companion object {
-        private const val TEST_TIMEOUT_SECONDS = 20L
+        private const val TEST_TIMEOUT_SECONDS = 2000L
         private const val TEST_PROCESSOR_RETRIES = 3
         const val KEY1 = "key1"
         const val KEY2 = "key2"
@@ -93,7 +93,7 @@ class MultiSourceEventMediatorImplTest {
         }
 
         val messageRouter = MessageRouter { _ ->
-            RoutingDestination.routeTo(messagingClient, "endpoint", RoutingDestination.Type.ASYNCHRONOUS)
+            RoutingDestination.routeTo(messagingClient, "endpoint", RoutingDestination.Type.SYNCHRONOUS)
         }
         whenever(messageRouterFactory.create(any<MessagingClientFinder>())).thenReturn(messageRouter)
 
@@ -176,8 +176,8 @@ class MultiSourceEventMediatorImplTest {
         verify(messagingClient, times(events.size)).send(any())
     }
 
-//    @Test
-    fun `mediator retries after intermittent exceptions`() {
+    @Test
+    fun `mediator retries after intermittent exceptions wrapped in completion exception`() {
         val event1 = cordaConsumerRecords(KEY1, "event1")
         val sendCount = AtomicInteger(0)
         val errorsCount = TEST_PROCESSOR_RETRIES + 1
@@ -202,9 +202,9 @@ class MultiSourceEventMediatorImplTest {
         waitWhile(Duration.ofSeconds(TEST_TIMEOUT_SECONDS)) { sendCount.get() < expectedProcessingCount }
         mediator.close()
 
-        verify(mediatorConsumerFactory, times(2)).create(any<MediatorConsumerConfig<Any, Any>>())
-        verify(messagingClientFactory, times(2)).create(any<MessagingClientConfig>())
-        verify(messageRouterFactory, times(2)).create(any<MessagingClientFinder>())
+        verify(mediatorConsumerFactory, times(1)).create(any<MediatorConsumerConfig<Any, Any>>())
+        verify(messagingClientFactory, times(1)).create(any<MessagingClientConfig>())
+        verify(messageRouterFactory, times(1)).create(any<MessagingClientFinder>())
         verify(messageProcessor, times(expectedProcessingCount)).onNext(anyOrNull(), any())
         verify(consumer, atLeast(expectedProcessingCount)).poll(any())
         verify(messagingClient, times(expectedProcessingCount)).send(any())

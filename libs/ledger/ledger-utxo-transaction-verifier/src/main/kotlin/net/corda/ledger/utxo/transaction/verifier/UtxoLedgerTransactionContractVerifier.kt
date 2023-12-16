@@ -2,9 +2,9 @@ package net.corda.ledger.utxo.transaction.verifier
 
 import net.corda.ledger.utxo.data.transaction.ContractVerificationFailureImpl
 import net.corda.metrics.CordaMetrics
+import net.corda.v5.ledger.utxo.Contract
 import net.corda.v5.ledger.utxo.ContractVerificationException
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
-import net.corda.v5.ledger.utxo.Contract
 import net.corda.virtualnode.HoldingIdentity
 
 /**
@@ -20,13 +20,11 @@ fun verifyContracts(
     holdingIdentity: HoldingIdentity,
     injectService: (Contract) -> Unit
 ) {
-
     CordaMetrics.Metric.Ledger.ContractVerificationTime
         .builder()
         .forVirtualNode(holdingIdentity.shortHash.toString())
         .build()
         .recordCallable {
-
             val failureReasons = verifyEncumbrance(transaction).toMutableList()
 
             val allTransactionStateAndRefs = transaction.inputStateAndRefs + transaction.outputStateAndRefs
@@ -46,7 +44,6 @@ fun verifyContracts(
                     .withTag(CordaMetrics.Tag.LedgerContractName, contractClass.name)
                     .build()
                     .recordCallable {
-
                         try {
                             val contract = contractClass.getConstructor().newInstance()
                             injectService(contract)

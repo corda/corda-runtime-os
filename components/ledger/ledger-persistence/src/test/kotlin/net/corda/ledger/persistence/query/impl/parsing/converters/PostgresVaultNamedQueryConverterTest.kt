@@ -75,10 +75,12 @@ class PostgresVaultNamedQueryConverterTest {
 
     @Test
     fun `JsonField is appended to the output with a space on either side`() {
-        val expression = listOf(JsonField(
-            listOf(PATH_A),
-            listOf(PATH_B)
-        ))
+        val expression = listOf(
+            JsonField(
+                listOf(PATH_A),
+                listOf(PATH_B)
+            )
+        )
 
         postgresVaultNamedQueryConverter.convert(output, expression)
         assertThat(output.toString()).isEqualTo("${PATH_A.ref} -> ${PATH_B.ref}")
@@ -86,10 +88,12 @@ class PostgresVaultNamedQueryConverterTest {
 
     @Test
     fun `JsonArrayOrObjectAsText is appended to the output with a space on either side`() {
-        val expression = listOf(JsonArrayOrObjectAsText(
-            listOf(PATH_A),
-            listOf(PATH_B)
-        ))
+        val expression = listOf(
+            JsonArrayOrObjectAsText(
+                listOf(PATH_A),
+                listOf(PATH_B)
+            )
+        )
 
         postgresVaultNamedQueryConverter.convert(output, expression)
         assertThat(output.toString()).isEqualTo("${PATH_A.ref} ->> ${PATH_B.ref}")
@@ -104,10 +108,12 @@ class PostgresVaultNamedQueryConverterTest {
 
     @Test
     fun `As is appended to the output with a space on either side`() {
-        val expression = listOf(As(
-            listOf(PATH_A),
-            listOf(PATH_B)
-        ))
+        val expression = listOf(
+            As(
+                listOf(PATH_A),
+                listOf(PATH_B)
+            )
+        )
         postgresVaultNamedQueryConverter.convert(output, expression)
         assertThat(output.toString()).isEqualTo("${PATH_A.ref} AS ${PATH_B.ref}")
     }
@@ -135,80 +141,96 @@ class PostgresVaultNamedQueryConverterTest {
 
     @Test
     fun `Or is appended to the output with a space on either side`() {
-        val expression = listOf(Or(
-            listOf(PATH_A),
-            listOf(PATH_B)
-        ))
+        val expression = listOf(
+            Or(
+                listOf(PATH_A),
+                listOf(PATH_B)
+            )
+        )
         postgresVaultNamedQueryConverter.convert(output, expression)
         assertThat(output.toString()).isEqualTo("${PATH_A.ref} OR ${PATH_B.ref}")
     }
 
     @Test
     fun `Equals is appended to the output with a space on either side`() {
-        val expression = listOf(Equals(
-            listOf(PATH_A),
-            listOf(PATH_B)
-        ))
+        val expression = listOf(
+            Equals(
+                listOf(PATH_A),
+                listOf(PATH_B)
+            )
+        )
         postgresVaultNamedQueryConverter.convert(output, expression)
         assertThat(output.toString()).isEqualTo("${PATH_A.ref} = ${PATH_B.ref}")
     }
 
     @Test
     fun `NotEquals is appended to the output with a space on either side`() {
-        val expression = listOf(NotEquals(
-            listOf(PATH_A),
-            listOf(PATH_B)
-        ))
+        val expression = listOf(
+            NotEquals(
+                listOf(PATH_A),
+                listOf(PATH_B)
+            )
+        )
         postgresVaultNamedQueryConverter.convert(output, expression)
         assertThat(output.toString()).isEqualTo("${PATH_A.ref} != ${PATH_B.ref}")
     }
 
     @Test
     fun `GreaterThan is appended to the output with a space on either side`() {
-        val expression = listOf(GreaterThan(
-            listOf(PATH_A),
-            listOf(PATH_B)
-        ))
+        val expression = listOf(
+            GreaterThan(
+                listOf(PATH_A),
+                listOf(PATH_B)
+            )
+        )
         postgresVaultNamedQueryConverter.convert(output, expression)
         assertThat(output.toString()).isEqualTo("${PATH_A.ref} > ${PATH_B.ref}")
     }
 
     @Test
     fun `GreaterThanEquals is appended to the output with a space on either side`() {
-        val expression = listOf(GreaterThanEquals(
-            listOf(PATH_A),
-            listOf(PATH_B)
-        ))
+        val expression = listOf(
+            GreaterThanEquals(
+                listOf(PATH_A),
+                listOf(PATH_B)
+            )
+        )
         postgresVaultNamedQueryConverter.convert(output, expression)
         assertThat(output.toString()).isEqualTo("${PATH_A.ref} >= ${PATH_B.ref}")
     }
 
     @Test
     fun `LessThan is appended to the output with a space on either side`() {
-        val expression = listOf(LessThan(
-            listOf(PATH_A),
-            listOf(PATH_B)
-        ))
+        val expression = listOf(
+            LessThan(
+                listOf(PATH_A),
+                listOf(PATH_B)
+            )
+        )
         postgresVaultNamedQueryConverter.convert(output, expression)
         assertThat(output.toString()).isEqualTo("${PATH_A.ref} < ${PATH_B.ref}")
     }
 
     @Test
     fun `LessThanEquals is appended to the output with a space on either side`() {
-        val expression = listOf(LessThanEquals(
-            listOf(PATH_A),
-            listOf(PATH_B)
-        ))
+        val expression = listOf(
+            LessThanEquals(
+                listOf(PATH_A),
+                listOf(PATH_B)
+            )
+        )
         postgresVaultNamedQueryConverter.convert(output, expression)
         assertThat(output.toString()).isEqualTo("${PATH_A.ref} <= ${PATH_B.ref}")
     }
 
     @Test
     fun `In is appended to the output with a space on either side`() {
-        val expression = listOf(In(
-            listOf(PATH_A),
-            listOf(PATH_B)
-        ))
+        val expression = listOf(
+            In(
+                listOf(PATH_A),
+                listOf(PATH_B)
+            )
+        )
         postgresVaultNamedQueryConverter.convert(output, expression)
         assertThat(output.toString()).isEqualTo("${PATH_A.ref} IN ${PATH_B.ref}")
     }
@@ -252,20 +274,24 @@ class PostgresVaultNamedQueryConverterTest {
 
     @Test
     fun `JsonCast is appended directly to the output with no spaces`() {
-        val expression = listOf(JsonCast(
-            listOf(PATH_A),
-            listOf(SqlType("int"))
-        ))
+        val expression = listOf(
+            JsonCast(
+                listOf(PATH_A),
+                listOf(SqlType("int"))
+            )
+        )
         postgresVaultNamedQueryConverter.convert(output, expression)
         assertThat(output.toString()).isEqualTo("${PATH_A.ref}\\:\\:int")
     }
 
     @Test
     fun `JsonKeyExists is appended to the output with a space on either side`() {
-        val expression = listOf(JsonKeyExists(
-            listOf(PATH_A),
-            listOf(PATH_B)
-        ))
+        val expression = listOf(
+            JsonKeyExists(
+                listOf(PATH_A),
+                listOf(PATH_B)
+            )
+        )
         postgresVaultNamedQueryConverter.convert(output, expression)
         assertThat(output.toString()).isEqualTo("${PATH_A.ref} \\?\\? ${PATH_B.ref}")
     }

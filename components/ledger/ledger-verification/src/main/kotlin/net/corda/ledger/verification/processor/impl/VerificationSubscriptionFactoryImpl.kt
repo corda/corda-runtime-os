@@ -39,5 +39,4 @@ class VerificationSubscriptionFactoryImpl @Activate constructor(
         val rpcConfig = SyncRPCConfig(SUBSCRIPTION_NAME, VERIFICATION_PATH)
         return subscriptionFactory.createHttpRPCSubscription(rpcConfig, processor)
     }
-
 }

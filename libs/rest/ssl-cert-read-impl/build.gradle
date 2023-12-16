@@ -5,6 +5,8 @@ plugins {
 
 description 'SSL Read Service Implementation'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
     compileOnly "org.osgi:org.osgi.service.component.annotations"
@@ -13,11 +15,7 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
-    implementation "org.bouncycastle:bcprov-jdk18on:$bouncycastleVersion"
-    implementation "org.bouncycastle:bcpkix-jdk18on:$bouncycastleVersion"
+    implementation libs.bundles.bouncycastle
 
     api project(':libs:rest:ssl-cert-read')
-
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

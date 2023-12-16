@@ -86,7 +86,9 @@ class VerificationRequestProcessorTest {
             }.genKeyPair().public
         val REQUEST_ID = UUID.randomUUID().toString()
         val EXTERNAL_EVENT_CONTEXT = ExternalEventContext(
-            REQUEST_ID, "flow id", KeyValuePairList(listOf(KeyValuePair("corda.account", "test account")))
+            REQUEST_ID,
+            "flow id",
+            KeyValuePairList(listOf(KeyValuePair("corda.account", "test account")))
         )
         val NON_EXISTING_CPK = CordaPackageSummary(
             "NonExistingCPK",
@@ -251,7 +253,12 @@ class VerificationRequestProcessorTest {
 
         val outputInfo = ctx.getSerializationService().serialize(
             UtxoOutputInfoComponent(
-                null, null, NOTARY_X500_NAME, PUBLIC_KEY, outputState::class.java.canonicalName, "contract tag"
+                null,
+                null,
+                NOTARY_X500_NAME,
+                PUBLIC_KEY,
+                outputState::class.java.canonicalName,
+                "contract tag"
             )
         ).bytes
 
@@ -324,7 +331,7 @@ class VerificationRequestProcessorTest {
         getObjectByKey(RequireSandboxAMQP.AMQP_SERIALIZATION_SERVICE)
             ?: throw CordaRuntimeException(
                 "Entity serialization service not found within the sandbox for identity: " +
-                        "${virtualNodeContext.holdingIdentity}"
+                    "${virtualNodeContext.holdingIdentity}"
             )
 
     @BelongsToContract(TestContract::class)

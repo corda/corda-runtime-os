@@ -5,6 +5,8 @@ plugins {
 
 description 'Permission Manager Implementation'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
@@ -26,6 +28,4 @@ dependencies {
     implementation project(":libs:cache:cache-caffeine")
     implementation project(":libs:crypto:crypto-core")
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

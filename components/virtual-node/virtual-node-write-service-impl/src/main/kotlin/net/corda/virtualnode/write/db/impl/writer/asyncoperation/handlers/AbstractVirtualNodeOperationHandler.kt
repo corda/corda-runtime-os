@@ -58,4 +58,3 @@ internal abstract class AbstractVirtualNodeOperationHandler(
             .build()
     }
 }
-

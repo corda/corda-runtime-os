@@ -108,5 +108,4 @@ class UtxoBaselinedTransactionBuilderTest : UtxoLedgerTest() {
                 .toSignedTransaction()
         }.isInstanceOf(UnsupportedOperationException::class.java)
     }
-
 }

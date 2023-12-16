@@ -26,7 +26,4 @@ dependencies {
     implementation 'net.corda:corda-topic-schema'
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation 'org.slf4j:slf4j-api'
-
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

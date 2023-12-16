@@ -109,10 +109,10 @@ class VirtualNodeRestResourceImplTest {
             if (request.cpiFileChecksum.uppercase() != request.cpiFileChecksum) {
                 throw IllegalArgumentException("CPI checksum must be uppercase at this point")
             }
-            
+
             groupId
         }
-        
+
         whenever(requestFactory.createHoldingIdentity(groupId, request)).thenReturn(holdingIdentity)
         whenever(requestFactory.createVirtualNodeRequest(holdingIdentity, request)).thenReturn(asyncRequest)
 
@@ -182,7 +182,7 @@ class VirtualNodeRestResourceImplTest {
         val requestId = UUID.randomUUID().toString()
         val target = createVirtualNodeRestResourceImpl(mockCoordinatorFactory)
         val errorResponse = VirtualNodeManagementResponseFailure(
-            ExceptionEnvelope(VirtualNodeOperationNotFoundException::class.java.name ,"b")
+            ExceptionEnvelope(VirtualNodeOperationNotFoundException::class.java.name, "b")
         )
 
         val response = VirtualNodeManagementResponse(Instant.now(), errorResponse)
