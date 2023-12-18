@@ -5,13 +5,12 @@ import net.corda.data.p2p.LinkInMessage
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.crypto.InitiatorHandshakeMessage
 import net.corda.data.p2p.crypto.InitiatorHelloMessage
-import net.corda.libs.statemanager.api.State
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.SimpleDominoTile
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.virtualnode.HoldingIdentity
 
-internal abstract class StatefulSessionManagerImpl(coordinatorFactory: LifecycleCoordinatorFactory): SessionManager {
+internal class StatefulSessionManagerImpl(coordinatorFactory: LifecycleCoordinatorFactory): SessionManager {
     sealed class StatefulSessionStatus {
         data class SendSessionNegotiationMessage(val message: OutboundNegotiationMessage): StatefulSessionStatus()
         object SessionPending: StatefulSessionStatus()
@@ -23,20 +22,18 @@ internal abstract class StatefulSessionManagerImpl(coordinatorFactory: Lifecycle
         data class InitiatorHandshake(val initiatorHandshakeMessage: InitiatorHandshakeMessage): OutboundNegotiationMessage()
     }
 
-    protected abstract fun createOrGetOutboundSession(
-        counterparties: List<SessionManager.Counterparties>
-    ): List<Pair<State, StatefulSessionStatus>>
-
-    protected abstract fun getOutboundSession(counterparties: SessionManager.Counterparties): Session?
-
-    protected abstract fun getInboundSession(sessionId: String): Session?
-
-    protected abstract fun processSessionNegotiationMessages(messages: List<LinkInMessage>): List<Pair<State, LinkOutMessage>?>
-
     override fun processOutboundMessages(
         messages: List<AuthenticatedMessageAndKey>
     ): List<SessionManager.SessionState> {
-        TODO("Not yet implemented")
+        return emptyList()
+    }
+
+    override fun getSessionsById(uuids: List<String>): List<SessionManager.SessionDirection> {
+        return emptyList()
+    }
+
+    override fun processSessionMessages(messages: List<LinkInMessage>): List<LinkOutMessage?> {
+        return emptyList()
     }
 
     override fun inboundSessionEstablished(sessionId: String) {
@@ -51,6 +48,10 @@ internal abstract class StatefulSessionManagerImpl(coordinatorFactory: Lifecycle
 
     override fun dataMessageReceived(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity) {
         //No heartbeat manager in the stateful session manager
+        return
+    }
+
+    override fun dataMessageSent(session: Session) {
         return
     }
 

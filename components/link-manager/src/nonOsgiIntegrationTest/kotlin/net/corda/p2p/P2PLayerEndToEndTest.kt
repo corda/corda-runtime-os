@@ -191,7 +191,7 @@ class P2PLayerEndToEndTest {
                 val hostAMarkerReader = hostA.listenForMarkers(hostAMarkers)
                 hostA.sendMessages(numberOfMessages, aliceId, chipId)
 
-                eventually(25.seconds) {
+                eventually(20.seconds) {
                     val messagesWithProcessedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerProcessedMarker }
                         .map { it.key }.toSet()
                     val messagesWithReceivedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerReceivedMarker }
@@ -241,7 +241,7 @@ class P2PLayerEndToEndTest {
                 val hostAMarkerReader = hostA.listenForMarkers(hostAMarkers)
                 hostA.sendMessages(numberOfMessages, receiverId, senderId)
 
-                eventually(25.seconds) {
+                eventually(20.seconds) {
                     val messagesWithProcessedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerProcessedMarker }
                         .map { it.key }.toSet()
                     val messagesWithReceivedMarker = hostAMarkers.filter { it.value!!.marker is LinkManagerReceivedMarker }

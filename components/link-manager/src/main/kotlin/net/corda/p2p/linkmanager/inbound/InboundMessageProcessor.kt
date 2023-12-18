@@ -163,55 +163,10 @@ internal class InboundMessageProcessor(
         val sessionDirectionForMessage = sessionManager.getSessionsById(sessionIdAndMessages.map { it.first })
         for ((i, sessionDirection) in sessionDirectionForMessage.withIndex()) {
             when (sessionDirection) {
-                is SessionManager.SessionDirection.Inbound -> {
-                    sessionManager.dataMessageReceived(
-                        sessionIdAndMessages[i].first,
-                        sessionDirection.counterparties.counterpartyId,
-                        sessionDirection.counterparties.ourId
-                    )
-                    if (isCommunicationAllowed(sessionDirection.counterparties)) {
-                        val message = processLinkManagerPayload(
-                            sessionDirection.counterparties,
-                            sessionDirection.session,
-                            sessionIdAndMessages[i].first,
-                            sessionIdAndMessages[i].second.message
-                        )
-                        messages.addAll(message)
-                        traceEventProcessing(sessionIdAndMessages[i].second.originalRecord, tracingEventName) { message }
-                    } else {
-                        traceEventProcessing(sessionIdAndMessages[i].second.originalRecord, tracingEventName) { emptyList() }
-                    }
-                }
-                is SessionManager.SessionDirection.Outbound -> {
-                    if (isCommunicationAllowed(sessionDirection.counterparties)) {
-                        MessageConverter.extractPayload(
-                            sessionDirection.session,
-                            sessionIdAndMessages[i].first,
-                            sessionIdAndMessages[i].second.message,
-                            MessageAck::fromByteBuffer
-                        )?.let {
-                            when (val ack = it.ack) {
-                                is AuthenticatedMessageAck -> {
-                                    logger.debug { "Processing ack for message ${ack.messageId} from session $sessionIdAndMessages." }
-                                    sessionManager.messageAcknowledged(sessionIdAndMessages[i].first)
-                                    val record = makeMarkerForAckMessage(ack)
-                                    traceEventProcessing(sessionIdAndMessages[i].second.originalRecord, tracingEventName) { listOf(record) }
-                                    messages.add(record)
-                                }
-                                is HeartbeatMessageAck -> {
-                                    logger.debug { "Processing heartbeat ack from session $sessionIdAndMessages." }
-                                    sessionManager.messageAcknowledged(sessionIdAndMessages[i].first)
-                                    traceEventProcessing(sessionIdAndMessages[i].second.originalRecord, tracingEventName) { emptyList() }
-                                }
-                                else -> {
-                                    logger.warn("Received an inbound message with unexpected type for SessionId = $sessionIdAndMessages.")
-                                    traceEventProcessing(sessionIdAndMessages[i].second.originalRecord, tracingEventName) { emptyList() }
-                                }
-                            }
-                        }
-                    } else {
-                        traceEventProcessing(sessionIdAndMessages[i].second.originalRecord, tracingEventName) { emptyList() }
-                    }
+                is SessionManager.SessionDirection.Inbound ->
+                    messages.addAll(processInboundDataMessages(sessionIdAndMessages[i], sessionDirection))
+                is SessionManager.SessionDirection.Outbound -> processOutboundDataMessage(sessionIdAndMessages[i], sessionDirection)?.let {
+                    messages.add(it)
                 }
                 is SessionManager.SessionDirection.NoSession -> {
                     logger.warn(
@@ -223,6 +178,69 @@ internal class InboundMessageProcessor(
         }
         return messages
     }
+
+    private fun processInboundDataMessages(
+        sessionIdAndMessage: Pair<String, TraceableMessage<AvroSealedClasses.DataMessage>>,
+        sessionDirection: SessionManager.SessionDirection.Inbound
+    ): List<Record<*, *>> {
+        sessionManager.dataMessageReceived(
+            sessionIdAndMessage.first,
+            sessionDirection.counterparties.counterpartyId,
+            sessionDirection.counterparties.ourId
+        )
+        return if (isCommunicationAllowed(sessionDirection.counterparties)) {
+            processLinkManagerPayload(
+                sessionDirection.counterparties,
+                sessionDirection.session,
+                sessionIdAndMessage.first,
+                sessionIdAndMessage.second.message
+            ).also { records ->
+                traceEventProcessing(sessionIdAndMessage.second.originalRecord, tracingEventName) { records }
+            }
+        } else {
+            traceEventProcessing(sessionIdAndMessage.second.originalRecord, tracingEventName) { emptyList() }
+            emptyList()
+        }
+    }
+
+    private fun processOutboundDataMessage(
+        sessionIdAndMessage: Pair<String, TraceableMessage<AvroSealedClasses.DataMessage>>,
+        sessionDirection: SessionManager.SessionDirection.Outbound
+    ): Record<*, *>?  {
+        return if (isCommunicationAllowed(sessionDirection.counterparties)) {
+            MessageConverter.extractPayload(
+                sessionDirection.session,
+                sessionIdAndMessage.first,
+                sessionIdAndMessage.second.message,
+                MessageAck::fromByteBuffer
+            )?.let {
+                when (val ack = it.ack) {
+                    is AuthenticatedMessageAck -> {
+                        logger.debug { "Processing ack for message ${ack.messageId} from session $sessionIdAndMessage." }
+                        sessionManager.messageAcknowledged(sessionIdAndMessage.first)
+                        val record = makeMarkerForAckMessage(ack)
+                        traceEventProcessing(sessionIdAndMessage.second.originalRecord, tracingEventName) { listOf(record) }
+                        record
+                    }
+                    is HeartbeatMessageAck -> {
+                        logger.debug { "Processing heartbeat ack from session $sessionIdAndMessage." }
+                        sessionManager.messageAcknowledged(sessionIdAndMessage.first)
+                        traceEventProcessing(sessionIdAndMessage.second.originalRecord, tracingEventName) { emptyList() }
+                        null
+                    }
+                    else -> {
+                        logger.warn("Received an inbound message with unexpected type for SessionId = $sessionIdAndMessage.")
+                        traceEventProcessing(sessionIdAndMessage.second.originalRecord, tracingEventName) { emptyList() }
+                        null
+                    }
+                }
+            }
+        } else {
+            traceEventProcessing(sessionIdAndMessage.second.originalRecord, tracingEventName) { emptyList() }
+            null
+        }
+    }
+
 
     private fun checkIdentityBeforeProcessing(
         counterparties: SessionManager.Counterparties,

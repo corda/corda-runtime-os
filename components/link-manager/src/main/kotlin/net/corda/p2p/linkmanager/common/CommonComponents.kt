@@ -21,6 +21,7 @@ import net.corda.p2p.linkmanager.forwarding.gateway.mtls.ClientCertificatePublis
 import net.corda.p2p.linkmanager.inbound.InboundAssignmentListener
 import net.corda.p2p.linkmanager.sessions.PendingSessionMessageQueuesImpl
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
+import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl
 import net.corda.schema.Schemas
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -44,6 +45,7 @@ internal class CommonComponents(
 ) : LifecycleWithDominoTile {
     private companion object {
         const val LISTENER_NAME = "link.manager.group.policy.listener"
+        const val USE_STATEFUL_SESSION_MANAGER = false
     }
     internal val inboundAssignmentListener = InboundAssignmentListener(
         lifecycleCoordinatorFactory,
@@ -59,19 +61,25 @@ internal class CommonComponents(
         clock
     )
 
-    internal val sessionManager = SessionManagerImpl(
-        groupPolicyProvider,
-        membershipGroupReaderProvider,
-        cryptoOpsClient,
-        messagesPendingSession,
-        publisherFactory,
-        configurationReaderService,
-        lifecycleCoordinatorFactory,
-        messagingConfiguration,
-        inboundAssignmentListener,
-        linkManagerHostingMap,
-        clock = clock,
-    )
+    internal val sessionManager = if(USE_STATEFUL_SESSION_MANAGER){
+        StatefulSessionManagerImpl(
+            lifecycleCoordinatorFactory,
+        )
+    } else {
+        SessionManagerImpl(
+            groupPolicyProvider,
+            membershipGroupReaderProvider,
+            cryptoOpsClient,
+            messagesPendingSession,
+            publisherFactory,
+            configurationReaderService,
+            lifecycleCoordinatorFactory,
+            messagingConfiguration,
+            inboundAssignmentListener,
+            linkManagerHostingMap,
+            clock = clock,
+        )
+    }
 
     private val trustStoresPublisher = TrustStoresPublisher(
         subscriptionFactory,
