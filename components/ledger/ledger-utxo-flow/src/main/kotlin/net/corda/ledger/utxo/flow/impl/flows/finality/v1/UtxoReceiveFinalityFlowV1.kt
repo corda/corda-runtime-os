@@ -191,7 +191,7 @@ class UtxoReceiveFinalityFlowV1(
                 val newTxNotaryKeys = if (newTxNotaryKey is CompositeKey) {
                     require(KeyUtils.isKeyFulfilledBy(newTxNotaryKey, filteredTxNotaryKey)) {
                         "A composite notary key of new transaction $newTxNotaryKey doesn't contain " +
-                                "a filtered transaction notary key $filteredTxNotaryKey"
+                            "a filtered transaction notary key $filteredTxNotaryKey"
                     }
                     newTxNotaryKey.leafKeys.toSet()
                 } else {
@@ -201,14 +201,14 @@ class UtxoReceiveFinalityFlowV1(
                 val newTxNotaryNames = newTxNotaryKeys.map { memberLookup.lookup(it)?.name }
                 require(newTxNotaryNames.contains(filteredTxNotaryName)) {
                     "Notary name of filtered transaction \"${filteredTxNotaryName}\" doesn't match with " +
-                            "any names of initial transaction \"${newTxNotaryNames}\""
+                        "any names of initial transaction \"${newTxNotaryNames}\""
                 }
 
                 val newTxNotaryKeyIds = newTxNotaryKeys.map { it.fullIdHash() }
                 for (signature in signatures) {
                     require(newTxNotaryKeyIds.contains(signature.by)) {
                         "Signature received \"${signature.by}\" is not signed by current notary " +
-                                "\"${notaryInfo.publicKey.fullIdHash()}\""
+                            "\"${notaryInfo.publicKey.fullIdHash()}\""
                     }
                     transactionSignatureVerificationService.verifySignature(
                         filteredTransaction.id,
