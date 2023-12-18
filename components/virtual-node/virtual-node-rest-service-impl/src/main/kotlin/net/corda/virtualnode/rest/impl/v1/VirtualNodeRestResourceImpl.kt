@@ -401,8 +401,7 @@ internal class VirtualNodeRestResourceImpl(
         val cpkDbChangeLogRepository = CpiCpkRepositoryFactory().createCpkDbChangeLogRepository()
         dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction { em ->
             if (request.cpiFileChecksum.isNullOrBlank()) {
-                val cpiMetadataRepository = CpiCpkRepositoryFactory().createCpiMetadataRepository()
-                val cpiMetadata = cpiMetadataRepository.findByFileChecksum(em, request.dbType)
+                val cpiMetadata = CpiCpkRepositoryFactory().createCpiMetadataRepository().findByFileChecksum(em, request.dbType)
                 val changelogsPerCpk = cpkDbChangeLogRepository.findByCpiId(em, cpiMetadata!!.cpiId)
                 val dbChange = VirtualNodeDbChangeLog(changelogsPerCpk)
                 val connection  = dbConnectionManager.getClusterDataSource().connection
@@ -437,17 +436,11 @@ internal class VirtualNodeRestResourceImpl(
         )
         val changeLog = ClassloaderChangeLog(linkedSetOf(changeLogFiles))
 
-        val em = dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!)
-        if(request.cpiFileChecksum.isNullOrBlank()) {
-            em.connection.use {  connection ->
-                StringWriter().use { writer ->
-                    schemaMigrator.createUpdateSql(connection, changeLog, writer)
-                    return ResponseEntity.accepted(writer.toString())
-                }
-            }
-        }
-
-        return ResponseEntity.ok("")
+        val dataSource = dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!)
+        val writer = StringWriter()
+        schemaMigrator.createUpdateSql(dataSource.connection, changeLog, writer)
+        val sql = writer.toString()
+        return ResponseEntity.accepted(sql)
     }
 
     private fun sendAsynchronousRequest(
