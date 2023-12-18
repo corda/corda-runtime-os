@@ -9,7 +9,7 @@ description 'Kryo Serializers for Corda Checkpoints'
 
 ext {
     kryoCglibVersion = '3.1'
-    kryoDexxCollectionVersion = '0.6'
+    kryoDexxCollectionVersion = '0.7'
     kryoJodaTimeVersion = '1.6.2'
     kryoProtobufVersion = '3.6.1'
     kryoWicketVersion = '1.4.17'
