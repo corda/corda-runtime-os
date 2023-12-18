@@ -92,21 +92,7 @@ fun ClusterInfo.onboardMember(
         null
     }
 
-    println("QQQ checking if key ${getCa().name} exists...")
-    if (!keyExists(TENANT_P2P, getCa().name, CAT_TLS)) {
-        println("QQQ Nop, creating it...")
-        disableCertificateRevocationChecks()
-        val tlsKeyId = createKeyFor(TENANT_P2P, getCa().name, CAT_TLS, DEFAULT_KEY_SCHEME)
-        println("QQQ key ID is $tlsKeyId and name is ${getCa().name}")
-        val tlsCsr = generateCsr(x500Name, tlsKeyId)
-        val tlsCert = getCa().generateCert(tlsCsr)
-        val tlsCertFile = File.createTempFile("${this.hashCode()}$CAT_TLS", ".pem").also {
-            it.deleteOnExit()
-            it.writeBytes(tlsCert.toByteArray())
-        }
-        importCertificate(tlsCertFile, CERT_USAGE_P2P, CERT_ALIAS_P2P)
-        tlsCertificateUploadedCallback(tlsCert)
-    }
+    importTlsCertificate(x500Name, tlsCertificateUploadedCallback)
 
     val registrationContext = createRegistrationContext(
         sessionKeyId,

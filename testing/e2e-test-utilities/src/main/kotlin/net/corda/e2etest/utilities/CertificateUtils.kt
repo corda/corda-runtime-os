@@ -30,8 +30,25 @@ fun getCa(): FileSystemCertificatesAuthority = CertificateAuthorityFactory
         }
     ).also { it.save() }
 
-val FileSystemCertificatesAuthority.name: String
-    get() = caName
+@Synchronized
+fun ClusterInfo.importTlsCertificate(
+    x500Name: String,
+    tlsCertificateUploadedCallback: (String) -> Unit = {},
+) {
+    if (!keyExists(TENANT_P2P, caName, CAT_TLS)) {
+        disableCertificateRevocationChecks()
+        val tlsKeyId = createKeyFor(TENANT_P2P, caName, CAT_TLS, DEFAULT_KEY_SCHEME)
+        val tlsCsr = generateCsr(x500Name, tlsKeyId)
+        val tlsCert = getCa().generateCert(tlsCsr)
+        val tlsCertFile = File.createTempFile("${this.hashCode()}$CAT_TLS", ".pem").also {
+            it.deleteOnExit()
+            it.writeText(tlsCert)
+        }
+        importCertificate(tlsCertFile, CERT_USAGE_P2P, CERT_ALIAS_P2P)
+        tlsCertificateUploadedCallback(tlsCert)
+    }
+}
+
 /**
  * Generate a certificate from a CSR as a PEM string.
  * The certificate is also returned as a PEM string.

@@ -58,19 +58,8 @@ fun ClusterInfo.onboardMgm(
         groupPolicyConfig
     )
 
-    println("QQQ checking if key ${getCa().name} exists (II)...")
-    if (!keyExists(TENANT_P2P, getCa().name, CAT_TLS)) {
-        println("QQQ no...")
-        disableCertificateRevocationChecks()
-        val tlsKeyId = createKeyFor(TENANT_P2P, getCa().name, CAT_TLS, DEFAULT_KEY_SCHEME)
-        println("QQQ Key ${getCa().name} id is $tlsKeyId...")
-        val mgmTlsCsr = generateCsr(mgmName, tlsKeyId)
-        val mgmTlsCert = File.createTempFile("${this.hashCode()}$CAT_TLS", ".pem").also {
-            it.deleteOnExit()
-            it.writeBytes(getCa().generateCert(mgmTlsCsr).toByteArray())
-        }
-        importCertificate(mgmTlsCert, CERT_USAGE_P2P, CERT_ALIAS_P2P)
-    }
+    importTlsCertificate(mgmName)
+
     val registrationId = register(mgmHoldingId, registrationContext, waitForApproval = true)
     if (mgmSessionCert != null) {
         configureNetworkParticipant(mgmHoldingId, sessionKeyId, mgmSessionCertAlias)
