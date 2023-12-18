@@ -40,6 +40,23 @@ import org.junit.jupiter.api.Test
 import java.util.*
 import kotlin.test.assertContains
 
+/**
+ * The test requires a transaction signature with Merkle Proof.
+ * Such signature can be produced by the base class 'UtxoLedgerTest' in this module ('components/ledger/ledger-utxo-flow').
+ * The test requires a service implementation of 'MerkleProofProvider' from 'libs/crypto/merkle-impl'. The service
+ * is injected into the SUT (System Under Test).
+ * The actual SUT class 'DigitalSignatureAndMetadataSerialisationModule' is from 'libs/application/application-impl' module,
+ * so the test is not placed in the same module as the class.
+ * There are two reasons:
+ * 1) 'libs/application/application-impl' module has no test dependencies on either
+ * 'testing/ledger/ledger-utxo-base-test' nor 'libs/crypto/merkle-impl', placing test here required new test dependency on
+ * 'libs/crypto/merkle-impl' module only.
+ * 2) If the test was run from withing a module other than 'components/ledger',
+ * then it threw an exception that Sandbox cannot be mocked.
+ *
+ * Placing the test inside here seemed like a reasonable compromise.
+ */
+
 class DigitalSignatureAndMetadataJsonSerializationTests : UtxoLedgerTest() {
 
     private val signedTransaction: UtxoSignedTransactionInternal =
