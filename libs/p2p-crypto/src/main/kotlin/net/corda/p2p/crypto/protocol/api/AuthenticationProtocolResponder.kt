@@ -69,7 +69,7 @@ class AuthenticationProtocolResponder(
     { revocationCheckMode, pemTrustStore, checkRevocation ->
         CertificateValidator(revocationCheckMode, pemTrustStore, checkRevocation)
     }
-): AuthenticationProtocol(certificateValidatorFactory) {
+): AuthenticationProtocol(certificateValidatorFactory), SessionData {
 
     init {
         require(ourMaxMessageSize >= MIN_PACKET_SIZE) { "max message size needs to be at least $MIN_PACKET_SIZE bytes." }
@@ -319,7 +319,7 @@ class AuthenticationProtocolResponder(
         }
     }
 
-    fun toAvro(): AuthenticationProtocolResponderDetails {
+    override fun toAvro(): AuthenticationProtocolResponderDetails {
         return AuthenticationProtocolResponderDetails(
             toAvro(
                 sessionId,

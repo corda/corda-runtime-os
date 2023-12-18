@@ -68,7 +68,7 @@ class AuthenticationProtocolInitiator(
     { revocationCheckMode, pemTrustStore, checkRevocation ->
         CertificateValidator(revocationCheckMode, pemTrustStore, checkRevocation)
     }
-): AuthenticationProtocol(certificateValidatorFactory) {
+): AuthenticationProtocol(certificateValidatorFactory), SessionData {
 
     companion object {
         fun AuthenticationProtocolInitiatorDetails.toCorda(
@@ -279,7 +279,7 @@ class AuthenticationProtocolInitiator(
         }
     }
 
-    fun toAvro(): AuthenticationProtocolInitiatorDetails {
+    override fun toAvro(): AuthenticationProtocolInitiatorDetails {
         return AuthenticationProtocolInitiatorDetails(
             toAvro(
                sessionId,
