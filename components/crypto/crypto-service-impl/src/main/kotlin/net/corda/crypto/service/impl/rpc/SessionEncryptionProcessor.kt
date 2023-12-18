@@ -41,7 +41,6 @@ class SessionEncryptionProcessor(
                     CryptoTenants.P2P,
                     request.plainBytes.array(),
                     request.alias,
-                    request.context.toMap(),
                 )
                 EncryptionOpsResponse(CryptoEncryptionResult(ByteBuffer.wrap(cipherBytes)))
             }

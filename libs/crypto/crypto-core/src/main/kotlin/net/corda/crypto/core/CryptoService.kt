@@ -325,13 +325,11 @@ interface CryptoService {
      * @param alias Optional. Alias of the symmetric key. If no alias is provided, the default
      *   alias for [tenantId] under HSM category 'ENCRYPTION_SECRET' will be used.
      * @param plainBytes The byte array to be encrypted.
-     * @param context Optional. Key/value operation context.
      */
     fun encrypt(
         tenantId: String,
         plainBytes: ByteArray,
         alias: String? = null,
-        context: Map<String, String> = EMPTY_CONTEXT,
     ): ByteArray
 
     /**
@@ -342,12 +340,10 @@ interface CryptoService {
      * @param alias Optional. Alias of the symmetric key. If no alias is provided, the default alias for [tenantId]
      * under HSM category 'ENCRYPTION_SECRET' will be used.
      * @param cipherBytes The byte array to be decrypted.
-     * @param context Optional. Key/value operation context.
      */
     fun decrypt(
         tenantId: String,
         cipherBytes: ByteArray,
         alias: String? = null,
-        context: Map<String, String> = EMPTY_CONTEXT,
     ): ByteArray
 }

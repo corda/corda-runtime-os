@@ -533,7 +533,6 @@ open class SoftCryptoService(
         tenantId: String,
         plainBytes: ByteArray,
         alias: String?,
-        context: Map<String, String>,
     ): ByteArray {
         val keyAlias = alias ?: run {
             tenantInfoService.lookup(tenantId, ENCRYPTION_SECRET)?.masterKeyAlias
@@ -549,7 +548,6 @@ open class SoftCryptoService(
         tenantId: String,
         cipherBytes: ByteArray,
         alias: String?,
-        context: Map<String, String>,
     ): ByteArray {
         val keyAlias = alias ?: run {
             tenantInfoService.lookup(tenantId, ENCRYPTION_SECRET)?.masterKeyAlias

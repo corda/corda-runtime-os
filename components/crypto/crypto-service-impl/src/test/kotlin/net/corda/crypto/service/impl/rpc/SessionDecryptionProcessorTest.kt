@@ -120,26 +120,6 @@ class SessionDecryptionProcessorTest {
     }
 
     @Test
-    fun `process sends the correct context`() {
-        val context = argumentCaptor<Map<String, String>>()
-        whenever(
-            service.decrypt(
-                any(),
-                any(),
-                any(),
-                context.capture(),
-            )
-        ).doReturn(
-            byteArrayOf(),
-        )
-
-        processor.process(request)
-
-        assertThat(context.firstValue)
-            .isEmpty()
-    }
-
-    @Test
     fun `process return error in case service failed`() {
         whenever(
             service.decrypt(

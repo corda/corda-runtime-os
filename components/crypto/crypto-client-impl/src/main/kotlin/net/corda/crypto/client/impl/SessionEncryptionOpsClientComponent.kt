@@ -36,11 +36,11 @@ class SessionEncryptionOpsClientComponent @Activate constructor(
     ),
     configKeys = setOf(MESSAGING_CONFIG),
 ), SessionEncryptionOpsClient {
-    override fun encryptSessionData(plainBytes: ByteArray, alias: String?, context: Map<String, String>): ByteArray =
-        impl.ops.encryptSessionData(plainBytes, alias, context)
+    override fun encryptSessionData(plainBytes: ByteArray, alias: String?): ByteArray =
+        impl.ops.encryptSessionData(plainBytes, alias)
 
-    override fun decryptSessionData(cipherBytes: ByteArray, alias: String?, context: Map<String, String>): ByteArray =
-        impl.ops.decryptSessionData(cipherBytes, alias, context)
+    override fun decryptSessionData(cipherBytes: ByteArray, alias: String?): ByteArray =
+        impl.ops.decryptSessionData(cipherBytes, alias)
 
     override fun createActiveImpl(event: ConfigChangedEvent): Impl =
         Impl(publisherFactory, platformInfoProvider, event)

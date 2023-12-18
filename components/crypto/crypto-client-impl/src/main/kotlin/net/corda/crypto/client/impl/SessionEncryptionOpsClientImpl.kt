@@ -34,7 +34,7 @@ class SessionEncryptionOpsClientImpl(
         val logger: Logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
 
-    fun encryptSessionData(plainBytes: ByteArray, alias: String?, context: Map<String, String>): ByteArray {
+    fun encryptSessionData(plainBytes: ByteArray, alias: String?): ByteArray {
         logger.info(
             "Sending '{}'(alias={})",
             EncryptRpcCommand::class.java.simpleName,
@@ -44,7 +44,6 @@ class SessionEncryptionOpsClientImpl(
             CryptoConsts.Categories.ENCRYPTION_SECRET,
             alias,
             ByteBuffer.wrap(plainBytes),
-            context.toWire()
         )
 
         val response = sender.send<EncryptionOpsResponse>(
@@ -64,7 +63,7 @@ class SessionEncryptionOpsClientImpl(
         }
     }
 
-    fun decryptSessionData(cipherBytes: ByteArray, alias: String?, context: Map<String, String>): ByteArray {
+    fun decryptSessionData(cipherBytes: ByteArray, alias: String?): ByteArray {
         logger.info(
             "Sending '{}'(alias={})",
             DecryptRpcCommand::class.java.simpleName,
@@ -74,7 +73,6 @@ class SessionEncryptionOpsClientImpl(
             CryptoConsts.Categories.ENCRYPTION_SECRET,
             alias,
             ByteBuffer.wrap(cipherBytes),
-            context.toWire()
         )
         val response = sender.send<DecryptionOpsResponse>(
             getRequestUrl(DECRYPT_PATH), request

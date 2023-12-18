@@ -69,16 +69,14 @@ class SessionEncryptionOpsClientImplTest {
             val data = byteArrayOf(1, 2)
             val results = CryptoEncryptionResult(ByteBuffer.wrap(byteArrayOf(3)))
             whenever(response.response).doReturn(results)
-            val context = mapOf("one" to "two")
 
-            client.encryptSessionData(data, "alias", context)
+            client.encryptSessionData(data, "alias")
 
             assertThat(encryptionRequest.firstValue).isEqualTo(
                 EncryptRpcCommand(
                     ENCRYPTION_SECRET,
                     "alias",
                     ByteBuffer.wrap(data),
-                    context.toWire(),
                 )
             )
         }
@@ -88,9 +86,8 @@ class SessionEncryptionOpsClientImplTest {
             val data = byteArrayOf(1, 2)
             val results = CryptoEncryptionResult(ByteBuffer.wrap(byteArrayOf(3)))
             whenever(response.response).doReturn(results)
-            val context = mapOf("one" to "two")
 
-            client.encryptSessionData(data, "alias", context)
+            client.encryptSessionData(data, "alias")
 
             assertThat(url.firstValue).isEqualTo(
                 URI.create("http://localhost:1231/api/5.x/crypto-api/session/encrypt")
@@ -100,10 +97,9 @@ class SessionEncryptionOpsClientImplTest {
         @Test
         fun `it throws an exception if response is empty`() {
             whenever(response.response).doReturn(null)
-            val context = mapOf("one" to "two")
 
             assertThrows<CordaRuntimeException> {
-                client.encryptSessionData(byteArrayOf(1), "alias", context)
+                client.encryptSessionData(byteArrayOf(1), "alias")
             }
         }
 
@@ -112,20 +108,18 @@ class SessionEncryptionOpsClientImplTest {
             val error = ExceptionEnvelope("type", "messate")
             val results = EncryptionOpsError(error)
             whenever(response.response).doReturn(results)
-            val context = mapOf("one" to "two")
 
             assertThrows<CordaRuntimeException> {
-                client.encryptSessionData(byteArrayOf(1), "alias", context)
+                client.encryptSessionData(byteArrayOf(1), "alias")
             }
         }
 
         @Test
         fun `it throws an exception if response is null`() {
             whenever(response.response).doReturn(12)
-            val context = mapOf("one" to "two")
 
             assertThrows<CordaRuntimeException> {
-                client.encryptSessionData(byteArrayOf(1), "alias", context)
+                client.encryptSessionData(byteArrayOf(1), "alias")
             }
         }
     }
@@ -148,16 +142,14 @@ class SessionEncryptionOpsClientImplTest {
             val data = byteArrayOf(1, 2)
             val results = CryptoDecryptionResult(ByteBuffer.wrap(byteArrayOf(3)))
             whenever(response.response).doReturn(results)
-            val context = mapOf("one" to "two")
 
-            client.decryptSessionData(data, "alias", context)
+            client.decryptSessionData(data, "alias")
 
             assertThat(decryptionRequest.firstValue).isEqualTo(
                 DecryptRpcCommand(
                     ENCRYPTION_SECRET,
                     "alias",
                     ByteBuffer.wrap(data),
-                    context.toWire(),
                 )
             )
         }
@@ -167,9 +159,8 @@ class SessionEncryptionOpsClientImplTest {
             val data = byteArrayOf(1, 2)
             val results = CryptoDecryptionResult(ByteBuffer.wrap(byteArrayOf(3)))
             whenever(response.response).doReturn(results)
-            val context = mapOf("one" to "two")
 
-            client.decryptSessionData(data, "alias", context)
+            client.decryptSessionData(data, "alias")
 
             assertThat(url.firstValue).isEqualTo(
                 URI.create("http://localhost:1231/api/5.x/crypto-api/session/decrypt")
@@ -179,10 +170,9 @@ class SessionEncryptionOpsClientImplTest {
         @Test
         fun `it throws an exception if response is empty`() {
             whenever(response.response).doReturn(null)
-            val context = mapOf("one" to "two")
 
             assertThrows<CordaRuntimeException> {
-                client.decryptSessionData(byteArrayOf(1), "alias", context)
+                client.decryptSessionData(byteArrayOf(1), "alias")
             }
         }
 
@@ -191,20 +181,18 @@ class SessionEncryptionOpsClientImplTest {
             val error = ExceptionEnvelope("type", "messate")
             val results = EncryptionOpsError(error)
             whenever(response.response).doReturn(results)
-            val context = mapOf("one" to "two")
 
             assertThrows<CordaRuntimeException> {
-                client.decryptSessionData(byteArrayOf(1), "alias", context)
+                client.decryptSessionData(byteArrayOf(1), "alias")
             }
         }
 
         @Test
         fun `it throws an exception if response is null`() {
             whenever(response.response).doReturn(12)
-            val context = mapOf("one" to "two")
 
             assertThrows<CordaRuntimeException> {
-                client.decryptSessionData(byteArrayOf(1), "alias", context)
+                client.decryptSessionData(byteArrayOf(1), "alias")
             }
         }
     }
