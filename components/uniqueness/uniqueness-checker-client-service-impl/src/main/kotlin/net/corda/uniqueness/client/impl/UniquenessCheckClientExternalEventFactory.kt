@@ -6,7 +6,6 @@ import net.corda.data.uniqueness.UniquenessCheckResponseAvro
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
-import net.corda.schema.Schemas
 import net.corda.uniqueness.datamodel.common.toUniquenessResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.virtualnode.toAvro
@@ -25,7 +24,6 @@ class UniquenessCheckExternalEventFactory :
         parameters: UniquenessCheckExternalEventParams
     ): ExternalEventRecord {
         return ExternalEventRecord(
-            topic = Schemas.UniquenessChecker.UNIQUENESS_CHECK_TOPIC,
             payload = createRequest(parameters, flowExternalEventContext, checkpoint)
         )
     }

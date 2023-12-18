@@ -1,8 +1,8 @@
 package net.corda.rest.test.utils
 
-import java.io.InputStream
 import kong.unirest.HttpRequest
 import kong.unirest.HttpRequestWithBody
+import kong.unirest.MultipartBody
 import kong.unirest.Unirest
 import kong.unirest.apache.ApacheClient
 import net.corda.rest.tools.HttpVerb
@@ -10,8 +10,8 @@ import org.apache.http.conn.ssl.NoopHostnameVerifier
 import org.apache.http.conn.ssl.TrustAllStrategy
 import org.apache.http.impl.client.HttpClients
 import org.apache.http.ssl.SSLContexts
+import java.io.InputStream
 import javax.net.ssl.SSLContext
-import kong.unirest.MultipartBody
 
 data class TestClientFileUpload(val fileContent: InputStream, val fileName: String)
 
@@ -27,7 +27,7 @@ data class WebResponse<T>(val body: T?, val headers: Map<String, String>, val re
 
 interface TestHttpClient {
     fun <T, R> call(verb: HttpVerb, webRequest: WebRequest<T>, responseClass: Class<R>, userName: String = "", password: String = ""):
-            WebResponse<R> where R : Any
+        WebResponse<R> where R : Any
 
     fun <T> call(verb: HttpVerb, webRequest: WebRequest<T>, userName: String = "", password: String = ""): WebResponse<String>
     fun <T> call(verb: HttpVerb, webRequest: WebRequest<T>, bearerToken: String): WebResponse<String>
@@ -37,8 +37,7 @@ interface TestHttpClient {
 class TestHttpClientUnirestImpl(override val baseAddress: String, private val enableSsl: Boolean = false) : TestHttpClient {
 
     override fun <T, R> call(verb: HttpVerb, webRequest: WebRequest<T>, responseClass: Class<R>, userName: String, password: String):
-            WebResponse<R> where R : Any {
-
+        WebResponse<R> where R : Any {
         addSslParams()
 
         var request = when (verb) {
@@ -48,7 +47,7 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
             HttpVerb.DELETE -> Unirest.delete(baseAddress + webRequest.path).basicAuth(userName, password)
         }.addOriginHeader()
 
-        request = if(isMultipartFormRequest(webRequest)) {
+        request = if (isMultipartFormRequest(webRequest)) {
             buildMultipartFormRequest(webRequest, request)
         } else {
             buildApplicationJsonRequest(webRequest, request)
@@ -58,8 +57,11 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
 
         val response = request.asObject(responseClass)
         return WebResponse(
-            response.body, response.headers.all()
-                .associateBy({ it.name }, { it.value }), response.status, response.statusText
+            response.body,
+            response.headers.all()
+                .associateBy({ it.name }, { it.value }),
+            response.status,
+            response.statusText
         )
     }
 
@@ -74,7 +76,6 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
     }
 
     private fun <T> doCall(verb: HttpVerb, webRequest: WebRequest<T>, encodeAuth: HttpRequest<*>.() -> Unit): WebResponse<String> {
-
         addSslParams()
 
         val path = baseAddress + webRequest.path
@@ -87,7 +88,7 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
 
         request.encodeAuth()
 
-        request = if(isMultipartFormRequest(webRequest)) {
+        request = if (isMultipartFormRequest(webRequest)) {
             buildMultipartFormRequest(webRequest, request)
         } else {
             buildApplicationJsonRequest(webRequest, request)
@@ -97,23 +98,26 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
 
         val response = request.asString()
         return WebResponse(
-            response.body, response.headers.all()
-                .associateBy({ it.name }, { it.value }), response.status, response.statusText
+            response.body,
+            response.headers.all()
+                .associateBy({ it.name }, { it.value }),
+            response.status,
+            response.statusText
         )
     }
 
     private fun <T> buildMultipartFormRequest(webRequest: WebRequest<T>, request: HttpRequest<*>): HttpRequest<*> {
         var requestBuilder = request.header("accept", "multipart/form-data")
-        if(request is HttpRequestWithBody) {
+        if (request is HttpRequestWithBody) {
             requestBuilder = request.multiPartContent() as MultipartBody
 
-            if(!webRequest.formParameters.isNullOrEmpty()) {
+            if (!webRequest.formParameters.isNullOrEmpty()) {
                 webRequest.formParameters.forEach {
                     requestBuilder.field(it.key, it.value)
                 }
             }
 
-            if(!webRequest.files.isNullOrEmpty()) {
+            if (!webRequest.files.isNullOrEmpty()) {
                 webRequest.files.forEach { filesForParameter ->
                     addFilesForEachField(filesForParameter, requestBuilder)
                 }
@@ -135,7 +139,7 @@ class TestHttpClientUnirestImpl(override val baseAddress: String, private val en
         requestBuilder.header("accept", "application/json")
         requestBuilder.header("accept", "text/plain")
 
-        if(requestBuilder is HttpRequestWithBody) {
+        if (requestBuilder is HttpRequestWithBody) {
             if (webRequest.body != null) {
                 requestBuilder = requestBuilder.body(webRequest.body)
             }

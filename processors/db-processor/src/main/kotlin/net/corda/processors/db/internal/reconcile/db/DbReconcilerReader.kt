@@ -21,7 +21,6 @@ import org.slf4j.LoggerFactory
  * [GetRecordsErrorEvent] (depending on if the exception is a transient error or not its lifecycle should
  * be set to [LifecycleStatus.DOWN] or [LifecycleStatus.ERROR]). And then the exception needs to be re-thrown
  * for the reconciler to be notified immediately.
- * .
  */
 @Suppress("LongParameterList")
 class DbReconcilerReader<K : Any, V : Any>(
@@ -68,13 +67,13 @@ class DbReconcilerReader<K : Any, V : Any>(
 
     /**
      * [getAllVersionedRecords] is public API for this service i.e. it can be called by other lifecycle services,
-     * therefore it must be guarded from thrown exceptions. No exceptions should escape from it, instead an
+     * therefore it must be guarded against thrown exceptions. No exceptions should escape from it, instead an
      * event should be scheduled notifying the service about the error. Then the calling service which should
      * be following this service will get notified of this service's stop event as well.
      */
     @Suppress("SpreadOperator")
     override fun getAllVersionedRecords(): Stream<VersionedRecord<K, V>> {
-        return reconciliationContextFactory().map { context ->
+        val streamOfStreams: Stream<Stream<VersionedRecord<K, V>>> = reconciliationContextFactory().map { context ->
             try {
                 val currentTransaction = context.getOrCreateEntityManager().transaction
                 currentTransaction.begin()
@@ -85,10 +84,12 @@ class DbReconcilerReader<K : Any, V : Any>(
                     context.close()
                 }
             } catch (e: Exception) {
-                logger.warn("Error while retrieving DB records for reconciliation", e)
-                throw e
+                logger.warn("Error while retrieving DB records for reconciliation for ${context.prettyPrint()}", e)
+                context.close()
+                Stream.empty()
             }
-        }.flatMap { i -> i }
+        }
+        return streamOfStreams.flatMap { i -> i }
     }
 
     override val isRunning: Boolean

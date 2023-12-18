@@ -2,6 +2,8 @@ package net.corda.applications.workers.smoketest.flow
 
 import net.corda.applications.workers.smoketest.utils.TEST_CPB_LOCATION
 import net.corda.applications.workers.smoketest.utils.TEST_CPI_NAME
+import net.corda.e2etest.utilities.ClusterReadiness
+import net.corda.e2etest.utilities.ClusterReadinessChecker
 import net.corda.e2etest.utilities.RPC_FLOW_STATUS_SUCCESS
 import net.corda.e2etest.utilities.awaitRestFlowResult
 import net.corda.e2etest.utilities.conditionallyUploadCordaPackage
@@ -12,10 +14,13 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
+import java.time.Duration
 import java.util.UUID
 
 @Suppress("Unused")
-class AmqpSerializationTests {
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+class AmqpSerializationTests : ClusterReadiness by ClusterReadinessChecker() {
 
     companion object {
         private const val AmqpSerializationTestFlow = "com.r3.corda.testing.smoketests.flow.AmqpSerializationTestFlow"
@@ -28,25 +33,26 @@ class AmqpSerializationTests {
         private val staticMemberList = listOf(
             bobX500,
         )
+    }
 
-        @BeforeAll
-        @JvmStatic
-        internal fun beforeAll() {
-            // Upload test flows if not already uploaded
-            conditionallyUploadCordaPackage(
-                cpiName,
-                TEST_CPB_LOCATION,
-                groupId,
-                staticMemberList
-            )
+    @BeforeAll
+    internal fun beforeAll() {
+        // check cluster is ready
+        assertIsReady(Duration.ofMinutes(1), Duration.ofMillis(100))
+        // Upload test flows if not already uploaded
+        conditionallyUploadCordaPackage(
+            cpiName,
+            TEST_CPB_LOCATION,
+            groupId,
+            staticMemberList
+        )
 
-            // Make sure Virtual Nodes are created
-            val bobActualHoldingId = getOrCreateVirtualNodeFor(bobX500, cpiName)
+        // Make sure Virtual Nodes are created
+        val bobActualHoldingId = getOrCreateVirtualNodeFor(bobX500, cpiName)
 
-            // Just validate the function and actual vnode holding ID hash are in sync
-            // if this fails the X500_BOB formatting could have changed or the hash implementation might have changed
-            assertThat(bobActualHoldingId).isEqualTo(bobActualHoldingId)
-        }
+        // Just validate the function and actual vnode holding ID hash are in sync
+        // if this fails the X500_BOB formatting could have changed or the hash implementation might have changed
+        assertThat(bobActualHoldingId).isEqualTo(bobActualHoldingId)
     }
 
     @Test

@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.NullNode
 import net.corda.utilities.minutes
 import org.apache.commons.text.StringEscapeUtils.escapeJson
+import org.junit.jupiter.api.TestInfo
+import org.slf4j.LoggerFactory
 import java.util.UUID
 
 const val SMOKE_TEST_CLASS_NAME = "com.r3.corda.testing.smoketests.flow.RpcSmokeTestFlow"
@@ -42,12 +44,18 @@ fun startRpcFlow(
     holdingId: String,
     args: Map<String, Any>,
     flowName: String,
-    expectedCode: Int = 202
-) = DEFAULT_CLUSTER.startRpcFlow(holdingId, args, flowName, expectedCode)
+    expectedCode: Int = 202,
+    requestId: String = UUID.randomUUID().toString()
+) = DEFAULT_CLUSTER.startRpcFlow(holdingId, args, flowName, expectedCode, requestId)
 
-fun ClusterInfo.startRpcFlow(holdingId: String, args: Map<String, Any>, flowName: String, expectedCode: Int = 202): String {
+fun ClusterInfo.startRpcFlow(
+    holdingId: String,
+    args: Map<String, Any>,
+    flowName: String,
+    expectedCode: Int = 202,
+    requestId: String = UUID.randomUUID().toString()
+): String {
     return cluster {
-        val requestId = UUID.randomUUID().toString()
 
         assertWithRetry {
             timeout(RETRY_TIMEOUT)
@@ -206,3 +214,37 @@ data class FlowResult (
     val json: JsonNode?,
     val flowError: FlowError?
 )
+
+class TestRequestIdGenerator( testName: String ){
+
+    companion object {
+
+        val logger = LoggerFactory.getLogger(this::class.java)
+
+        private fun getNameFromTestInfo(testInfo: TestInfo) : String{
+            val parameterNumber = Regex("^\\[(\\d+)\\]").find(testInfo.displayName)?.groups?.get(1)?.value
+            val testName = if (!parameterNumber.isNullOrBlank()){
+                    "${testInfo.testMethod.get().name}-param_$parameterNumber"
+            } else {
+                testInfo.displayName.removeSuffix("(TestInfo)")
+            }
+            return if (testName.length > 235){
+                val name = "${testName.takeLast(150)}-${UUID.randomUUID()}"
+                logger.warn("Test exceeding 235 characters, shortening to $name")
+                name
+
+            }
+            else {
+                testName
+            }
+        }
+    }
+    constructor( testInfo: TestInfo) : this(getNameFromTestInfo(testInfo))
+
+    private val baseName: String = Regex("[^-._A-Za-z0-9]").replace(testName, "_")
+    private var count = 0
+
+    val nextId: String get() {
+        return "$baseName-${count++}"
+    }
+}

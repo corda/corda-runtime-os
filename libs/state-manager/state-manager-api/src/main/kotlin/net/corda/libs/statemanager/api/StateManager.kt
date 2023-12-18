@@ -28,10 +28,9 @@ interface StateManager : Lifecycle {
      * persisted and replicas of the underlying persistent storage, if any, are synced.
      *
      * @param states Collection of states to be persisted.
-     * @return Collection of keys for all those states that could not be persisted on the underlying persistent storage,
-     *          along with the actual reason for the failures.
+     * @return Collection of keys for all those states that could not be persisted on the underlying persistent storage.
      */
-    fun create(states: Collection<State>): Map<String, Exception>
+    fun create(states: Collection<State>): Set<String>
 
     /**
      * Get all states referenced by [keys].
@@ -58,9 +57,10 @@ interface StateManager : Lifecycle {
      *
      * @param states Collection of states to be updated.
      * @return Map with the most up-to-date version of the states, associated by key for easier access, that failed
-     *      the optimistic locking check.
+     *      the optimistic locking check. If this state failed to be updated because the key was deleted the key is
+     *      associated with null.
      */
-    fun update(states: Collection<State>): Map<String, State>
+    fun update(states: Collection<State>): Map<String, State?>
 
     /**
      * Delete existing [states].
@@ -133,5 +133,39 @@ interface StateManager : Lifecycle {
     fun findUpdatedBetweenWithMetadataFilter(
         intervalFilter: IntervalFilter,
         metadataFilter: MetadataFilter
+    ): Map<String, State> = findUpdatedBetweenWithMetadataMatchingAll(intervalFilter, listOf(metadataFilter))
+
+    /**
+     * Retrieve all states, updated for the last time between [IntervalFilter.start] (inclusive) and
+     * [IntervalFilter.finish] (inclusive), for which all the specified [metadataFilters] exclusively match.
+     * Each [MetadataFilter.value] is evaluated through the [MetadataFilter.operation] against the value stored inside
+     * the [State.metadata] under the [MetadataFilter.key].
+     * Only states that have been successfully committed and distributed within the underlying
+     * persistent storage are returned.
+     *
+     * @param intervalFilter Time filter to use when searching for states.
+     * @param metadataFilters Filter parameters to use when searching for states.
+     * @return states matching the specified filters.
+     */
+    fun findUpdatedBetweenWithMetadataMatchingAll(
+        intervalFilter: IntervalFilter,
+        metadataFilters: Collection<MetadataFilter>
+    ): Map<String, State>
+
+    /**
+     * Retrieve all states, updated for the last time between [IntervalFilter.start] (inclusive) and
+     * [IntervalFilter.finish] (inclusive), for which any of the specified [metadataFilters] match.
+     * Each [MetadataFilter.value] is evaluated through the [MetadataFilter.operation] against the value stored inside
+     * the [State.metadata] under the [MetadataFilter.key].
+     * Only states that have been successfully committed and distributed within the underlying
+     * persistent storage are returned.
+     *
+     * @param intervalFilter Time filter to use when searching for states.
+     * @param metadataFilters Filter parameters to use when searching for states.
+     * @return states matching the specified filters.
+     */
+    fun findUpdatedBetweenWithMetadataMatchingAny(
+        intervalFilter: IntervalFilter,
+        metadataFilters: Collection<MetadataFilter>
     ): Map<String, State>
 }

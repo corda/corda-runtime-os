@@ -103,6 +103,34 @@ class NotaryExceptionMalformedRequest(
 )
 
 /**
+ * Occurs when a valid signature is not found in received signatures.
+ *
+ * @property errorText The error text produced by signature verification
+ */
+@CordaSerializable
+class NotaryExceptionInvalidSignature(
+    val errorText: String?,
+    txId: SecureHash? = null
+) : NotaryExceptionFatal(
+    "Signature invalid Error: $errorText",
+    txId
+)
+
+/**
+ * Occurs when a received transaction is invalid.
+ *
+ * @property errorText The error text produced by transaction verification
+ */
+@CordaSerializable
+class NotaryExceptionTransactionVerificationFailure(
+    val errorText: String?,
+    txId: SecureHash? = null
+) : NotaryExceptionFatal(
+    "Transaction verification failure Error: $errorText",
+    txId
+)
+
+/**
  * Error type used for scenarios that were unexpected, or couldn't be mapped.
  *
  * @property errorText Any additional details regarding the error

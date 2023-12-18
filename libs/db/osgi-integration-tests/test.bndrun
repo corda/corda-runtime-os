@@ -5,11 +5,12 @@
 -runtrace: true
 
 -runvm: \
-    -DpostgresHost=${project.postgresHost},\
-    -DpostgresPort=${project.postgresPort},\
-    -DpostgresDb=${project.postgresDb},\
-    -DpostgresUser=${project.postgresUser},\
-    -DpostgresPassword=${project.postgresPassword}
+  -DdatabaseHost=${project.databaseHost},\
+  -DdatabasePort=${project.databasePort},\
+  -DdatabaseName=${project.databaseName},\
+  -DdatabaseAdminUser=${project.databaseAdminUser},\
+  -DdatabaseAdminPassword=${project.databaseAdminPassword},\
+  -DdatabaseType=${project.databaseType}
 
 -runsystempackages: \
     sun.security.x509
@@ -25,6 +26,7 @@
     bnd.identity;id='org.osgi.service.jdbc',\
     bnd.identity;id='org.ops4j.pax.jdbc.hsqldb',\
     bnd.identity;id='org.postgresql.jdbc',\
+    bnd.identity;id='com.microsoft.sqlserver.mssql-jdbc',\
     bnd.identity;id='com.r3.testing.testing-cats',\
     bnd.identity;id='com.r3.testing.testing-dogs'
 

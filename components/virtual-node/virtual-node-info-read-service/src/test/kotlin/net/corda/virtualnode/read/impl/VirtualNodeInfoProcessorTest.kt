@@ -33,14 +33,16 @@ class VirtualNodeInfoProcessorTest {
 
     private fun sendOnNextRandomMessage(processor: VirtualNodeInfoProcessor): HoldingIdentity {
         val holdingIdentity = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", UUID.randomUUID().toString())
-        val newVirtualNodeInfo = VirtualNodeInfo(holdingIdentity, CpiIdentifier("ghi", "hjk", secureHash),
+        val newVirtualNodeInfo = VirtualNodeInfo(
+            holdingIdentity, CpiIdentifier("ghi", "hjk", secureHash),
             null,
             UUID.randomUUID(),
             null,
             UUID.randomUUID(),
             null,
             UUID.randomUUID(),
-            timestamp = Instant.now())
+            timestamp = Instant.now()
+        )
         processor.onNext(Record("", holdingIdentity.toAvro(), newVirtualNodeInfo.toAvro()), null, emptyMap())
         return holdingIdentity
     }
@@ -57,6 +59,7 @@ class VirtualNodeInfoProcessorTest {
         UUID.randomUUID(),
         timestamp = Instant.now()
     )
+
     @Test
     fun `register client listener callback before onSnapshot is called`() {
         processor.registerCallback(listener)
@@ -265,7 +268,7 @@ class VirtualNodeInfoProcessorTest {
         // Get all again
         virtualNodeList = processor.getAll()
         assertEquals(2, virtualNodeList.size)
-        val shortHashList = virtualNodeList.map{ it.holdingIdentity.shortHash }
+        val shortHashList = virtualNodeList.map { it.holdingIdentity.shortHash }
         assertTrue(shortHashList.contains(shortHash))
         assertTrue(shortHashList.contains(newShortHash))
     }

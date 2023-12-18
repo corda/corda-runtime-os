@@ -114,6 +114,34 @@ class FlowEventPipelineImplTest {
     }
 
     @Test
+    fun `pipeline exits if flow start operational status is inactive`() {
+        val mockCheckpoint = mock<FlowCheckpoint> {
+            whenever(it.doesExist).thenReturn(true)
+            whenever(it.holdingIdentity).thenReturn(mockHoldingIdentity)
+        }
+        val mockContext = mock<FlowEventContext<Any>> {
+            whenever(it.checkpoint).thenReturn(mockCheckpoint)
+        }
+        val pipeline =
+            FlowEventPipelineImpl(
+                mapOf(),
+                mock(),
+                mock(),
+                mockContext,
+                virtualNodeInfoReadService
+            )
+
+        val mockVirtualNode = mock<VirtualNodeInfo> {
+            whenever(it.flowStartOperationalStatus).thenReturn(OperationalStatus.INACTIVE)
+        }
+        whenever(virtualNodeInfoReadService.get(mockHoldingIdentity)).thenReturn(mockVirtualNode)
+
+        assertThrows<FlowMarkedForKillException> {
+            pipeline.virtualNodeFlowOperationalChecks()
+        }
+    }
+
+    @Test
     fun `execute flow invokes the execute flow pipeline stage`() {
         val pipeline = buildPipeline()
         pipeline.executeFlow(RUN_OR_CONTINUE_TIMEOUT)

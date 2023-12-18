@@ -36,6 +36,9 @@
     "name" : "Key Management API",
     "description" : "The Keys Management API consists of endpoints used to manage public and private key pairs. The API allows you to list scheme codes which are supported by the associated HSM integration, retrieve information about key pairs owned by a tenant, generate a key pair for a tenant, and retrieve a tenant's public key in PEM format."
   }, {
+    "name" : "Key Rotation API",
+    "description" : "Contains operations related to rotation of the wrapping keys."
+  }, {
     "name" : "MGM API",
     "description" : "The MGM API consists of a number of endpoints used to manage membership groups. A membership group is a logical grouping of a number of Corda Identities to communicate and transact with one another with a specific set of CorDapps. The API allows you to generate the group policy for a membership group, required for new members to join the group."
   }, {
@@ -3629,6 +3632,62 @@
         }
       }
     },
+    "/user/{loginname}/otheruserpassword" : {
+      "post" : {
+        "tags" : [ "RBAC User API" ],
+        "description" : "This method updates another user's password, only usable by admin.",
+        "operationId" : "post_user__loginname__otheruserpassword",
+        "parameters" : [ {
+          "name" : "loginname",
+          "in" : "path",
+          "description" : "The login name of the user who's password will be changed",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The login name of the user who's password will be changed",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "password" : {
+                    "type" : "string",
+                    "description" : "The new password to apply.",
+                    "nullable" : false,
+                    "example" : "string"
+                  }
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "\n            A user with the following attributes:\n            id: Unique server generated identifier for the user\n            version: The version of the user; version 0 is assigned to a newly created user\n            updateTimestamp: The date and time when the user was last updated\n            fullName: The full name for the new user\n            loginName: The login name for the new user\n            enabled: If true, the user account is enabled; false, the account is disabled\n            ssoAuth: If true, the user account is enabled for SSO authentication; \n                false, the account is enabled for password authentication\n            passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;\n                    value of null means that the password does not expire\n            parentGroup: An optional identifier of the user group for the new user to be included;\n                    value of null means that the user will belong to the root group\n            properties: An optional set of key/value properties associated with a user account\n            roleAssociations: A set of roles associated with the user account",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserResponseType"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
     "/user/{loginname}/permissionsummary" : {
       "get" : {
         "tags" : [ "RBAC User API" ],
@@ -3743,6 +3802,62 @@
         "responses" : {
           "200" : {
             "description" : "\n            A newly created user with the following attributes:\n            id: Unique server generated identifier for the user\n            version: The version of the user; version 0 is assigned to a newly created user\n            updateTimestamp: The date and time when the user was last updated\n            fullName: The full name for the new user\n            loginName: The login name for the new user\n            enabled: If true, the user account is enabled; false, the account is disabled\n            ssoAuth: If true, the user account is enabled for SSO authentication; \n                false, the account is enabled for password authentication\n            passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;\n                    value of null means that the password does not expire\n            parentGroup: An optional identifier of the user group for the new user to be included;\n                    value of null means that the user will belong to the root group\n            properties: An optional set of key/value properties associated with a user account\n            roleAssociations: A set of roles associated with the user account",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserResponseType"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/user/{loginname}/selfpassword" : {
+      "post" : {
+        "tags" : [ "RBAC User API" ],
+        "description" : "This method updates a users own password.",
+        "operationId" : "post_user__loginname__selfpassword",
+        "parameters" : [ {
+          "name" : "loginname",
+          "in" : "path",
+          "description" : "The login name of the user.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The login name of the user.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "password" : {
+                    "type" : "string",
+                    "description" : "The new password to apply.",
+                    "nullable" : false,
+                    "example" : "string"
+                  }
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "\n            A user with the following attributes:\n            id: Unique server generated identifier for the user\n            version: The version of the user; version 0 is assigned to a newly created user\n            updateTimestamp: The date and time when the user was last updated\n            fullName: The full name for the new user\n            loginName: The login name for the new user\n            enabled: If true, the user account is enabled; false, the account is disabled\n            ssoAuth: If true, the user account is enabled for SSO authentication; \n                false, the account is enabled for password authentication\n            passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;\n                    value of null means that the password does not expire\n            parentGroup: An optional identifier of the user group for the new user to be included;\n                    value of null means that the user will belong to the root group\n            properties: An optional set of key/value properties associated with a user account\n            roleAssociations: A set of roles associated with the user account",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -3983,6 +4098,54 @@
         }
       }
     },
+    "/virtualnode/{virtualnodeshortid}/db" : {
+      "put" : {
+        "tags" : [ "Virtual Node API" ],
+        "description" : "This method updates virtual node connection strings.",
+        "operationId" : "put_virtualnode__virtualnodeshortid__db",
+        "parameters" : [ {
+          "name" : "virtualnodeshortid",
+          "in" : "path",
+          "description" : "Short ID of the virtual node instance to update",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Short ID of the virtual node instance to update",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateVirtualNodeDbRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "The details of the updated virtual node.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AsyncResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
     "/virtualnode/{virtualnodeshortid}/state/{newstate}" : {
       "put" : {
         "tags" : [ "Virtual Node API" ],
@@ -4018,6 +4181,146 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ChangeVirtualNodeStateResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/wrappingkey/getprotocolversion" : {
+      "get" : {
+        "tags" : [ "Key Rotation API" ],
+        "description" : "",
+        "operationId" : "get_wrappingkey_getprotocolversion",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "An integer value specifying the version of the endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32",
+                  "nullable" : false,
+                  "example" : 0
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/wrappingkey/unmanaged/rotation/{oldkeyalias}" : {
+      "post" : {
+        "tags" : [ "Key Rotation API" ],
+        "description" : "This method enables to rotate a current wrapping key with a new wrapping key.",
+        "operationId" : "post_wrappingkey_unmanaged_rotation__oldkeyalias_",
+        "parameters" : [ {
+          "name" : "oldkeyalias",
+          "in" : "path",
+          "description" : "The alias of the current wrapping key to be rotated.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The alias of the current wrapping key to be rotated.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "newKeyAlias" : {
+                    "type" : "string",
+                    "description" : "The alias of the new wrapping key that old one will be rotated with.",
+                    "nullable" : false,
+                    "example" : "string"
+                  }
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Key rotation response",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/KeyRotationResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/wrappingkey/unmanaged/rotation/{requestid}" : {
+      "get" : {
+        "tags" : [ "Key Rotation API" ],
+        "description" : "This method gets the status of the current rotation.",
+        "operationId" : "get_wrappingkey_unmanaged_rotation__requestid_",
+        "parameters" : [ {
+          "name" : "requestid",
+          "in" : "path",
+          "description" : "The requestId obtained when starting key rotation request.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The requestId obtained when starting key rotation request.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Success",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "uniqueItems" : false,
+                  "type" : "array",
+                  "nullable" : false,
+                  "items" : {
+                    "type" : "object",
+                    "properties" : {
+                      "first" : {
+                        "type" : "string",
+                        "nullable" : false,
+                        "example" : "string"
+                      },
+                      "second" : {
+                        "type" : "string",
+                        "nullable" : false,
+                        "example" : "string"
+                      }
+                    },
+                    "example" : "No example available for this type"
+                  }
                 }
               }
             }
@@ -4108,7 +4411,6 @@
             "example" : "string"
           },
           "status" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "IN_PROGRESS",
             "enum" : [ "ACCEPTED", "IN_PROGRESS", "SUCCEEDED", "FAILED", "ABORTED" ]
@@ -4388,7 +4690,6 @@
             "example" : "string"
           },
           "permissionType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -4628,7 +4929,6 @@
       },
       "GenerateCsrWrapperRequest" : {
         "required" : [ "x500Name" ],
-        "type" : "object",
         "properties" : {
           "contextMap" : {
             "type" : "object",
@@ -4855,6 +5155,27 @@
           }
         }
       },
+      "KeyRotationResponse" : {
+        "required" : [ "newKeyAlias", "oldKeyAlias", "requestId" ],
+        "type" : "object",
+        "properties" : {
+          "newKeyAlias" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "oldKeyAlias" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "requestId" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
       "MemberInfoSubmitted" : {
         "required" : [ "data" ],
         "type" : "object",
@@ -4923,7 +5244,6 @@
             "example" : "string"
           },
           "permissionType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -4967,7 +5287,6 @@
             "example" : "string"
           },
           "permissionType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -5004,7 +5323,6 @@
             "example" : "string"
           },
           "status" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "REVOKED",
             "enum" : [ "AVAILABLE", "REVOKED", "CONSUMED", "AUTO_INVALIDATED" ]
@@ -5173,7 +5491,6 @@
             "example" : "2022-06-24T10:15:30Z"
           },
           "registrationStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "SENT_TO_MGM",
             "enum" : [ "NEW", "SENT_TO_MGM", "RECEIVED_BY_MGM", "STARTED_PROCESSING_BY_MGM", "PENDING_MEMBER_VERIFICATION", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "INVALID", "FAILED", "APPROVED" ]
@@ -5270,7 +5587,6 @@
             "example" : "string"
           },
           "inactiveResponseType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "IGNORE",
             "enum" : [ "ERROR", "IGNORE" ]
@@ -5454,6 +5770,42 @@
           }
         }
       },
+      "UpdateVirtualNodeDbRequest" : {
+        "type" : "object",
+        "properties" : {
+          "cryptoDdlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "cryptoDmlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "uniquenessDdlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "uniquenessDmlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "vaultDdlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "vaultDmlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          }
+        },
+        "description" : "Details of the virtual node to be updated"
+      },
       "UserPermissionSummaryResponseType" : {
         "required" : [ "enabled", "lastUpdateTimestamp", "loginName", "permissions" ],
         "type" : "object",
@@ -5575,19 +5927,16 @@
             "$ref" : "#/components/schemas/RouteConfiguration"
           },
           "flowOperationalStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
           },
           "flowP2pOperationalStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
           },
           "flowStartOperationalStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]
@@ -5616,7 +5965,6 @@
             "example" : "string"
           },
           "vaultDbOperationalStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "INACTIVE",
             "enum" : [ "ACTIVE", "INACTIVE" ]

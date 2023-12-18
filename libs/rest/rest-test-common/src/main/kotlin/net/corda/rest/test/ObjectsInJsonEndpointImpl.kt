@@ -14,7 +14,7 @@ class ObjectsInJsonEndpointImpl : ObjectsInJsonEndpoint, PluggableRestResource<O
     override val targetInterface = ObjectsInJsonEndpoint::class.java
 
     override fun createWithOneObject(creationObject: ObjectsInJsonEndpoint.RequestWithJsonObject):
-            ObjectsInJsonEndpoint.ResponseWithJsonObject {
+        ObjectsInJsonEndpoint.ResponseWithJsonObject {
         log.info("Create with one object: $creationObject")
         return ObjectsInJsonEndpoint.ResponseWithJsonObject(creationObject.id, creationObject.obj)
     }

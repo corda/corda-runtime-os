@@ -3,6 +3,7 @@ package net.corda.p2p.gateway
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.DominoTile
@@ -33,9 +34,11 @@ class Gateway(
     subscriptionFactory: SubscriptionFactory,
     publisherFactory: PublisherFactory,
     lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
-    messagingConfiguration: SmartConfig,
     cryptoOpsClient: CryptoOpsClient,
-    avroSchemaRegistry: AvroSchemaRegistry
+    avroSchemaRegistry: AvroSchemaRegistry,
+    platformInfoProvider: PlatformInfoProvider,
+    bootConfig: SmartConfig,
+    messagingConfiguration: SmartConfig,
 ) : LifecycleWithDominoTile {
 
     private val commonComponents = CommonComponents(
@@ -52,11 +55,14 @@ class Gateway(
         messagingConfiguration,
         commonComponents,
         avroSchemaRegistry,
+        platformInfoProvider,
+        bootConfig,
     )
     private val outboundMessageProcessor = OutboundMessageHandler(
         lifecycleCoordinatorFactory,
         configurationReaderService,
         subscriptionFactory,
+        publisherFactory,
         messagingConfiguration,
         avroSchemaRegistry,
         commonComponents,

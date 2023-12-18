@@ -2,7 +2,6 @@ package net.corda.session.mapper.service.integration
 
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
-import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.processor.PubSubProcessor
 import net.corda.messaging.api.records.Record
 import java.util.concurrent.CompletableFuture

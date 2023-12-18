@@ -10,7 +10,7 @@ import net.corda.libs.statemanager.api.MetadataFilter
  */
 interface QueryProvider {
 
-    val createState: String
+    fun createStates(size: Int): String
 
     val deleteStatesByKey: String
 
@@ -24,5 +24,7 @@ interface QueryProvider {
 
     fun findStatesByMetadataMatchingAny(filters: Collection<MetadataFilter>): String
 
-    fun findStatesUpdatedBetweenAndFilteredByMetadataKey(filter: MetadataFilter): String
+    fun findStatesUpdatedBetweenWithMetadataMatchingAll(filters: Collection<MetadataFilter>): String
+
+    fun findStatesUpdatedBetweenWithMetadataMatchingAny(filters: Collection<MetadataFilter>): String
 }

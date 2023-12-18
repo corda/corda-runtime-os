@@ -4,6 +4,7 @@ import net.corda.messaging.api.subscription.listener.StateAndEventListener
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CountDownLatch
 
+@Suppress("LongParameterList")
 class TestStateAndEventListenerStrings(
     private val expectedCommitState: List<Map<String, String>>? = null,
     private val commitStateLatch: CountDownLatch? = null,

@@ -5,12 +5,13 @@
 -runtrace: true
 
 -runvm: \
-    -DpostgresHost=${project.postgresHost},\
-    -DpostgresPort=${project.postgresPort},\
-    -DpostgresDb=${project.postgresDb},\
-    -DpostgresUser=${project.postgresUser},\
-    -DpostgresPassword=${project.postgresPassword},\
-    --add-opens, 'java.base/java.net=ALL-UNNAMED'
+  -DdatabaseHost=${project.databaseHost},\
+  -DdatabasePort=${project.databasePort},\
+  -DdatabaseName=${project.databaseName},\
+  -DdatabaseAdminUser=${project.databaseAdminUser},\
+  -DdatabaseAdminPassword=${project.databaseAdminPassword},\
+  -DdatabaseType=${project.databaseType}
+  --add-opens, 'java.base/java.net=ALL-UNNAMED'
 
 -runsystempackages: \
     javax.xml.stream;version=1.0.0,\

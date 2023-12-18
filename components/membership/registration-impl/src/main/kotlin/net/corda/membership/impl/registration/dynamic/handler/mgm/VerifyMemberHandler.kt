@@ -11,6 +11,7 @@ import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.data.membership.state.RegistrationState
 import net.corda.data.p2p.app.MembershipStatusFilter
 import net.corda.libs.configuration.SmartConfig
+import net.corda.membership.impl.registration.RegistrationLogger
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
@@ -52,13 +53,23 @@ internal class VerifyMemberHandler(
         val mgm = state.mgm
         val member = state.registeringMember
         val registrationId = state.registrationId
+
+        val registrationLogger = RegistrationLogger(logger)
+            .setRegistrationId(registrationId)
+            .setMember(member)
+            .setMgm(mgm)
+
+        registrationLogger.info("Verifying member.")
+
         val messages = try {
             if (!memberTypeChecker.isMgm(mgm)) {
+                registrationLogger.info("Could not verify registration request. Not an MGM.")
                 throw CordaRuntimeException("Could not verify registration request: '$registrationId' with ${mgm.x500Name} - Not an MGM.")
             }
             if (memberTypeChecker.isMgm(member)) {
+                registrationLogger.info("Could not verify registration request. Cannot be an MGM.")
                 throw CordaRuntimeException(
-                    "Could not verify registration request: '$registrationId' member ${member.x500Name} - Can not be an MGM."
+                    "Could not verify registration request: '$registrationId' member ${member.x500Name} - Cannot be an MGM."
                 )
             }
             val setRegistrationRequestStatusCommand = membershipPersistenceClient.setRegistrationRequestStatus(
@@ -79,7 +90,7 @@ internal class VerifyMemberHandler(
                         MembershipStatusFilter.PENDING,
                     )
         } catch (e: Exception) {
-            logger.warn("Member verification failed for registration request: '$registrationId'.", e)
+            registrationLogger.warn("Member verification failed for registration request.", e)
             listOf(
                 Record(
                     Schemas.Membership.REGISTRATION_COMMAND_TOPIC,

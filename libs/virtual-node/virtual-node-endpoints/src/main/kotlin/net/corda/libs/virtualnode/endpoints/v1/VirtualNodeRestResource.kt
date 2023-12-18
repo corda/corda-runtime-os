@@ -3,6 +3,7 @@ package net.corda.libs.virtualnode.endpoints.v1
 import net.corda.libs.virtualnode.endpoints.v1.types.ChangeVirtualNodeStateResponse
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity
+import net.corda.libs.virtualnode.endpoints.v1.types.UpdateVirtualNodeDbRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
 import net.corda.rest.RestResource
@@ -42,6 +43,25 @@ interface VirtualNodeRestResource : RestResource {
     ): ResponseEntity<AsyncResponse>
 
     /**
+     * Requests an update to an existing virtual node database.
+     *
+     * @throws `HttpApiException` If the request returns an exceptional response.
+     */
+    @HttpPUT(
+        path = "{virtualNodeShortId}/db",
+        title = "Update virtual node",
+        description = "This method updates virtual node connection strings.",
+        responseDescription = "The details of the updated virtual node.",
+        minVersion = RestApiVersion.C5_2
+    )
+    fun updateVirtualNodeDb(
+        @RestPathParameter(description = "Short ID of the virtual node instance to update")
+        virtualNodeShortId: String,
+        @ClientRequestBodyParameter(description = "Details of the virtual node to be updated")
+        request: UpdateVirtualNodeDbRequest
+    ): ResponseEntity<AsyncResponse>
+
+    /**
      * Lists all virtual nodes onboarded to the cluster.
      *
      * @throws `HttpApiException` If the request returns an exceptional response.
@@ -68,8 +88,10 @@ interface VirtualNodeRestResource : RestResource {
     fun updateVirtualNodeState(
         @RestPathParameter(description = "Short ID of the virtual node instance to update")
         virtualNodeShortId: String,
-        @RestPathParameter(description = "State to transition virtual node instance into. " +
-                "Possible values are: MAINTENANCE and ACTIVE.")
+        @RestPathParameter(
+            description = "State to transition virtual node instance into. " +
+                "Possible values are: MAINTENANCE and ACTIVE."
+        )
         newState: String
     ): ChangeVirtualNodeStateResponse
 
@@ -103,7 +125,6 @@ interface VirtualNodeRestResource : RestResource {
         @RestPathParameter(description = "The requestId for the operation; obtained during node creation/upgrade")
         requestId: String
     ): AsyncOperationStatus
-
 
     /**
      * Asynchronous endpoint to upgrade a virtual node's CPI.

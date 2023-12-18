@@ -81,7 +81,7 @@ import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.UUID
 
-@Suppress("Unused")
+@Suppress("Unused", "TooManyFunctions", "LongParameterList")
 @Component(service = [FlowServiceTestContext::class])
 class FlowServiceTestContext @Activate constructor(
     @Reference(service = CordaAvroSerializationFactory::class)
@@ -482,6 +482,7 @@ class FlowServiceTestContext @Activate constructor(
         resetFlowFiberCache()
     }
 
+    @Suppress("LongParameterList")
     private fun createAndAddSessionEvent(
         flowId: String,
         sessionId: String,

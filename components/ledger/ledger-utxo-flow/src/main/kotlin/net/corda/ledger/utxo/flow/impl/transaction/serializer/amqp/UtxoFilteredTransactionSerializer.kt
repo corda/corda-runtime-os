@@ -40,7 +40,6 @@ class UtxoFilteredTransactionSerializer @Activate constructor(
         get() = false
 }
 
-
 data class UtxoFilteredTransactionProxy(
     val filteredTransaction: FilteredTransaction
 )

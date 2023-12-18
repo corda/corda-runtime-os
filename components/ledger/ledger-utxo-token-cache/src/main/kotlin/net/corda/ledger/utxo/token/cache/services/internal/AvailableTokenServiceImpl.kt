@@ -1,20 +1,21 @@
 package net.corda.ledger.utxo.token.cache.services.internal
 
 import net.corda.crypto.core.ShortHash
-import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.flow.external.events.responses.exceptions.VirtualNodeException
 import net.corda.ledger.utxo.token.cache.entities.AvailTokenQueryResult
 import net.corda.ledger.utxo.token.cache.entities.CachedToken
-import net.corda.ledger.utxo.token.cache.repositories.UtxoTokenRepository
-import net.corda.ledger.utxo.token.cache.entities.TokenBalance
 import net.corda.ledger.utxo.token.cache.entities.TokenPoolKey
+import net.corda.ledger.utxo.token.cache.entities.internal.TokenBalanceCacheImpl
+import net.corda.ledger.utxo.token.cache.repositories.UtxoTokenRepository
 import net.corda.ledger.utxo.token.cache.services.AvailableTokenService
 import net.corda.ledger.utxo.token.cache.services.TokenSelectionMetrics
 import net.corda.orm.JpaEntitiesRegistry
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.v5.ledger.utxo.token.selection.TokenBalance
+import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 
 @Suppress("LongParameterList")
 class AvailableTokenServiceImpl(
@@ -59,7 +60,7 @@ class AvailableTokenServiceImpl(
         val claimedBalance = claimedTokens.sumOf { it.amount }
         val availableBalance = totalBalance - claimedBalance
 
-        return TokenBalance(availableBalance, totalBalance)
+        return TokenBalanceCacheImpl(availableBalance, totalBalance)
     }
 
     private fun getOrCreateEntityManagerFactory(virtualNode: VirtualNodeInfo) =

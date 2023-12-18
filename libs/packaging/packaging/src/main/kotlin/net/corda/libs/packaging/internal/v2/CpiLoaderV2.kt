@@ -82,6 +82,8 @@ class CpiLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
     private fun calculateHash(cpiBytes: ByteArray) = cpiBytes.hash(DigestAlgorithmName.SHA2_256).bytes
 
     private fun readCpksFromCpb(cpb: InputStream, expansionLocation: Path, cpiLocation: String?): List<Cpk> {
+        val cpkCordappNames = hashSetOf<String>()
+
         return JarInputStream(cpb, false).use { cpbInputStream ->
             readJar(cpbInputStream)
                 .filter { it.entry.name.endsWith(".jar") }
@@ -92,7 +94,13 @@ class CpiLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
                         cpkLocation = cpiLocation.plus("/${it.entry.name}"),
                         verifySignature = false,
                         cpkFileName = Paths.get(it.entry.name).fileName.toString()
-                    )
+                    ).also {
+                        val cpkCordappName = it.metadata.cpkId.name
+                        if (cpkCordappNames.contains(cpkCordappName)) {
+                            throw PackagingException("Multiple CPKs share the Corda-CPK-Cordapp-Name $cpkCordappName.")
+                        }
+                        cpkCordappNames.add(cpkCordappName)
+                    }
                 }
         }
     }

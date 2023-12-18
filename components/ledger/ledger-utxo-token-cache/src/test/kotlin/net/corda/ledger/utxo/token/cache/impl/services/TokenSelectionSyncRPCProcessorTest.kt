@@ -58,15 +58,15 @@ class TokenSelectionSyncRPCProcessorTest {
     private val POOL_CACHE_STATE = mock<PoolCacheState>()
     private val POOL_CACHE_STATE_2 = mock<PoolCacheState>()
 
-    private val tokenSelectionSyncRPCProcessor
-    = TokenSelectionSyncRPCProcessor(
-        eventConverter,
-        entityConverter,
-        tokenPoolCacheManager,
-        claimStateStoreCache,
-        externalEventResponseFactory,
-        TokenSelectionMetricsImpl(UTCClock())
-    )
+    private val tokenSelectionSyncRPCProcessor =
+        TokenSelectionSyncRPCProcessor(
+            eventConverter,
+            entityConverter,
+            tokenPoolCacheManager,
+            claimStateStoreCache,
+            externalEventResponseFactory,
+            TokenSelectionMetricsImpl(UTCClock())
+        )
 
     @Test
     fun `process successfully returns flow event`() {
@@ -89,14 +89,14 @@ class TokenSelectionSyncRPCProcessorTest {
 
         // Ensure the correct arguments are passed to the tokenPoolCacheManager
         val expectedState = POOL_CACHE_STATE_2
-        verify(tokenPoolCacheManager).processEvent(eq(expectedState), eq(POOL_KEY),eq(tokenEvent))
+        verify(tokenPoolCacheManager).processEvent(eq(expectedState), eq(POOL_KEY), eq(tokenEvent))
     }
 
     @Test
     fun `process failure (concurrency check) returns transient exception`() {
         val returnedEvent = FlowEvent(testFlowId, WakeUpWithException())
         val responseRecord = Record("", "", returnedEvent)
-        val processorResponse =  TokenPoolCacheManager.ResponseAndState(
+        val processorResponse = TokenPoolCacheManager.ResponseAndState(
             returnedEvent,
             POOL_CACHE_STATE
         )

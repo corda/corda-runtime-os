@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory
 import java.lang.Thread.sleep
 import java.time.Duration
 import java.util.UUID
+import java.util.concurrent.CompletionException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -43,7 +44,6 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 
     private val log = LoggerFactory.getLogger("${this.javaClass.name}-${config.name}")
 
-    private var clients = listOf<MessagingClient>()
     private lateinit var messageRouter: MessageRouter
     private val mediatorComponentFactory = MediatorComponentFactory(
         config.messageProcessor, config.consumerFactories, config.clientFactories, config.messageRouterFactory
@@ -55,6 +55,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     private val taskManagerHelper = TaskManagerHelper(
         taskManager, stateManagerHelper, metrics
     )
+    private val groupAllocator = GroupAllocator()
     private val uniqueId = UUID.randomUUID().toString()
     private val lifecycleCoordinatorName = LifecycleCoordinatorName(
         "MultiSourceEventMediator--${config.name}", uniqueId
@@ -92,7 +93,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 
     private fun run() {
         running.set(true)
-        clients = mediatorComponentFactory.createClients(::onSerializationError)
+        val clients = mediatorComponentFactory.createClients(::onSerializationError)
         messageRouter = mediatorComponentFactory.createRouter(clients)
         lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
         config.consumerFactories.map { consumerFactory ->
@@ -113,10 +114,11 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                             consumer.subscribe()
                         }
                         pollAndProcessEvents(consumer)
+                        attempts = 0
                     } catch (exception: Exception) {
-                        when (exception) {
+                        val cause = if (exception is CompletionException) exception.cause else exception
+                        when (cause) {
                             is CordaMessageAPIIntermittentException -> {
-                                attempts++
                                 log.warn(
                                     "Multi-source event mediator ${config.name} failed to process records, " +
                                             "Retrying poll and process. Attempts: $attempts.")
@@ -163,7 +165,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         val messages = consumer.poll(pollTimeout)
         val startTimestamp = System.nanoTime()
         if (messages.isNotEmpty()) {
-            var groups = allocateGroups(messages.map { it.toRecord() })
+            var groups = groupAllocator.allocateGroups(messages.map { it.toRecord() }, config)
             var states = stateManager.get(messages.map { it.key.toString() }.distinct())
 
             while (groups.isNotEmpty()) {
@@ -220,16 +222,21 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
 
                 // Persist states changes
                 val failedToCreateKeys = stateManager.create(statesToCreate.values.mapNotNull { it })
-                val failedToCreate = stateManager.get(failedToCreateKeys.keys)
+                val failedToCreate = stateManager.get(failedToCreateKeys)
                 val failedToDelete = stateManager.delete(statesToDelete.values.mapNotNull { it })
                 val failedToUpdate = stateManager.update(statesToUpdate.values.mapNotNull { it })
-                states = failedToCreate + failedToDelete + failedToUpdate
+                val failedToUpdateOptimisticLockFailure = failedToUpdate.mapNotNull { (key, value) -> value?.let { key to it } }.toMap()
+                val failedToUpdateStateDoesNotExist = (failedToUpdate - failedToUpdateOptimisticLockFailure).map { it.key }
+
+                states = failedToCreate + failedToDelete + failedToUpdateOptimisticLockFailure
+
                 groups = if (states.isNotEmpty()) {
-                    allocateGroups(flowEvents.filterKeys { states.containsKey(it) }.values.flatten())
+                    groupAllocator.allocateGroups(flowEvents.filterKeys { states.containsKey(it) }.values.flatten(), config)
                 } else {
                     listOf()
                 }
                 states.keys.forEach { asynchronousOutputs.remove(it) }
+                failedToUpdateStateDoesNotExist.forEach { asynchronousOutputs.remove(it) }
                 sendAsynchronousEvents(asynchronousOutputs.values.flatten())
             }
             metrics.commitTimer.recordCallable {
@@ -312,24 +319,5 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                 }
             }
         }
-    }
-
-    private fun allocateGroups(events: List<Record<K, E>>): List<Map<K, List<Record<K, E>>>> {
-        val groups = mutableListOf<MutableMap<K, List<Record<K, E>>>>()
-        val groupCountBasedOnEvents = (events.size / 20).coerceAtLeast(1)
-        val groupsCount = if (groupCountBasedOnEvents < config.threads) groupCountBasedOnEvents else config.threads
-        for (i in 0 until groupsCount) {
-            groups.add(mutableMapOf())
-        }
-        val buckets = events.groupBy { it.key }
-        val bucketSizes = buckets.keys.sortedByDescending { buckets[it]?.size }
-        for (i in buckets.size - 1 downTo 0 step 1) {
-            val group = groups.minBy { it.values.flatten().size }
-            val key = bucketSizes[i]
-            val records = buckets[key]!!
-            group[key] = records
-        }
-
-        return groups
     }
 }

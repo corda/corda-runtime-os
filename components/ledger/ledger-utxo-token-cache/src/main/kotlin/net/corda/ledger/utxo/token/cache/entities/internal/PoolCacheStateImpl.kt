@@ -104,8 +104,11 @@ class PoolCacheStateImpl(
         val invalidClaims =
             cacheState.tokenClaims.filterNot { it.claimedTokenStateRefs.isNullOrEmpty() }
         if (invalidClaims.isNotEmpty()) {
-             val invalidClaimsId = invalidClaims.map { removeClaim(it.claimId); it.claimId }
-            logger.warn("Invalid claims were found and have been discarded. Invalid claims: ${invalidClaimsId}")
+            val invalidClaimsId = invalidClaims.map {
+                removeClaim(it.claimId)
+                it.claimId
+            }
+            logger.warn("Invalid claims were found and have been discarded. Invalid claims: $invalidClaimsId")
         }
     }
 

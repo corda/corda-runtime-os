@@ -1,10 +1,8 @@
 package net.corda.ledger.utxo.token.cache.impl.services
 
 import net.corda.data.ledger.utxo.token.selection.data.TokenClaim
-import net.corda.data.ledger.utxo.token.selection.state.TokenPoolCacheState
 import net.corda.ledger.utxo.token.cache.impl.POOL_KEY
 import net.corda.ledger.utxo.token.cache.impl.TOKEN_POOL_CACHE_STATE
-import net.corda.ledger.utxo.token.cache.services.StoredPoolClaimState
 import net.corda.ledger.utxo.token.cache.services.PerformanceClaimStateStoreImpl
 import net.corda.ledger.utxo.token.cache.services.TokenPoolCacheManager
 import net.corda.ledger.utxo.token.cache.services.TokenPoolCacheStateSerializationImpl
@@ -41,12 +39,9 @@ class PerformanceClaimStateStoreImplTest {
         serialization.serialize(TOKEN_POOL_CACHE_STATE),
         modifiedTime = now
     )
-    private val stateManager = StateManagerSimulator().apply {
-        this.create(listOf(baseState))
-    }
 
     @Test
-    //@org.junit.jupiter.api.Disabled
+    // @org.junit.jupiter.api.Disabled
     @Suppress("SpreadOperator")
     fun `concurrency simulation`() {
         /*
@@ -60,22 +55,8 @@ class PerformanceClaimStateStoreImplTest {
             this.create(listOf(baseState))
         }
 
-        val initialStoredPoolClaimStateA = StoredPoolClaimState(
-            0, POOL_KEY, TokenPoolCacheState.newBuilder()
-                .setPoolKey(POOL_KEY.toAvro())
-                .setAvailableTokens(listOf())
-                .setTokenClaims(listOf())
-                .build()
-        )
-        val initialStoredPoolClaimStateB = StoredPoolClaimState(
-            0, POOL_KEY, TokenPoolCacheState.newBuilder()
-                .setPoolKey(POOL_KEY.toAvro())
-                .setAvailableTokens(listOf())
-                .setTokenClaims(listOf())
-                .build()
-        )
-        val instanceA = createTarget(initialStoredPoolClaimStateA, slowStateManager)
-        val instanceB = createTarget(initialStoredPoolClaimStateB, slowStateManager)
+        val instanceA = createTarget(slowStateManager)
+        val instanceB = createTarget(slowStateManager)
 
         val claimCount = 100
         var instanceAClaims = (0..claimCount).map { createTokenClaim("A$it") }
@@ -141,9 +122,7 @@ class PerformanceClaimStateStoreImplTest {
                 true
             }
 
-
             allInstanceClaims.add(f2)
-
         }
 
         Timer().scheduleAtFixedRate(0, 100) {
@@ -165,7 +144,6 @@ class PerformanceClaimStateStoreImplTest {
         println("Instance B  Failures: $instanceBFailCount")
     }
 
-
     private fun createTokenClaim(claimId: String): TokenClaim {
         return TokenClaim.newBuilder()
             .setClaimId(claimId)
@@ -174,10 +152,9 @@ class PerformanceClaimStateStoreImplTest {
     }
 
     private fun createTarget(
-        storedPoolClaimState: StoredPoolClaimState,
         sm: StateManager
     ): PerformanceClaimStateStoreImpl {
-        return PerformanceClaimStateStoreImpl(POOL_KEY, storedPoolClaimState, serialization, sm, tokenPoolCacheManager, clock)
+        return PerformanceClaimStateStoreImpl(POOL_KEY, serialization, sm, tokenPoolCacheManager, clock)
     }
 
     class StateManagerSimulator(private val updateSleepTime: Long = 0) : StateManager {
@@ -188,12 +165,11 @@ class PerformanceClaimStateStoreImplTest {
 
         override val name = LifecycleCoordinatorName("StateManagerSimulator", UUID.randomUUID().toString())
 
-        override fun create(states: Collection<State>): Map<String, Exception> {
+        override fun create(states: Collection<State>): Set<String> {
             return lock.withLock {
                 val invalidStates = states
                     .filter { store.containsKey(it.key) }
-                    .map { it.key to IllegalStateException() }
-                    .toMap()
+                    .map { it.key }.toSet()
 
                 states
                     .filterNot { store.containsKey(it.key) }
@@ -207,10 +183,7 @@ class PerformanceClaimStateStoreImplTest {
 
         override fun get(keys: Collection<String>): Map<String, State> {
             return lock.withLock {
-                keys.map { store[it] }
-                    .filterNotNull()
-                    .map { it.key to it }
-                    .toMap()
+                keys.mapNotNull { store[it] }.associateBy { it.key }
             }
         }
 
@@ -254,6 +227,20 @@ class PerformanceClaimStateStoreImplTest {
         override fun findUpdatedBetweenWithMetadataFilter(
             intervalFilter: IntervalFilter,
             metadataFilter: MetadataFilter
+        ): Map<String, State> {
+            TODO("Not yet implemented")
+        }
+
+        override fun findUpdatedBetweenWithMetadataMatchingAll(
+            intervalFilter: IntervalFilter,
+            metadataFilters: Collection<MetadataFilter>
+        ): Map<String, State> {
+            TODO("Not yet implemented")
+        }
+
+        override fun findUpdatedBetweenWithMetadataMatchingAny(
+            intervalFilter: IntervalFilter,
+            metadataFilters: Collection<MetadataFilter>
         ): Map<String, State> {
             TODO("Not yet implemented")
         }

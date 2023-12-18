@@ -1,10 +1,10 @@
 package net.corda.libs.statemanager.impl.tests
 
+import net.corda.libs.statemanager.api.State
+import net.corda.libs.statemanager.api.metadata
 import java.util.UUID
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
-import net.corda.libs.statemanager.api.State
-import net.corda.libs.statemanager.api.metadata
 
 object MultiThreadedTestHelper {
     /**
@@ -16,19 +16,20 @@ object MultiThreadedTestHelper {
          */
         val assignedStates: List<State>,
         /**
-         * The list of States in this group that overlap with the next group. These are states that will have contention with the next
-         * group and can be used for assertions on failed keys.
+         * The list of States in this group that overlap with another group. These are states that will have contention
+         * with other group and can be used for assertions on failed keys.
          */
         val overlappingStates: List<State>
     ) {
         /**
-         * States to test optimistic locking, with some overlapping into the next group's States.
+         * States to test optimistic locking, with some overlapping into other group's States.
          */
         fun getStatesForTest() = assignedStates + overlappingStates
     }
 
     /**
-     * A summary of a thread's assigned state group and keys that failed to update/delete in a multi threaded optimistic locking test.
+     * A summary of a thread's assigned state group and keys that failed to update/delete in a multithreaded optimistic
+     * locking test.
      */
     data class ThreadTestSummary(
         /**
@@ -73,8 +74,9 @@ object MultiThreadedTestHelper {
     }
 
     /**
-     * Divide the given states between the number of threads, such that each group of states has overlapping states with the next
-     * group in round robin fashion. The last group in the list will have overlapping states with the first group.
+     * Divide the given states between the number of threads, such that each group of states has overlapping states
+     * with the next group in round-robin fashion. The last group in the list will have overlapping states with the
+     * first group.
      *
      * Runs the [block] in an executor with the set [numThreads].
      *
@@ -82,8 +84,8 @@ object MultiThreadedTestHelper {
      * @param numThreads the number of threads to test
      * @param sharedStatesPerThread the number of overlapping states per thread to exercise optimistic locking
      * @param block the test code which utilizes StateManager
-     * @return a test summary for each thread, including each thread's assigned States plus its State keys that failed due to optimistic
-     * locking.
+     * @return a test summary for each thread, including each thread's assigned States plus its State keys that failed
+     *  due to optimistic locking.
      */
     fun runMultiThreadedOptimisticLockingTest(
         states: List<State>,
@@ -94,11 +96,13 @@ object MultiThreadedTestHelper {
         val groupedStates = divideStatesBetweenThreads(states, numThreads, sharedStatesPerThread)
 
         val executor = Executors.newFixedThreadPool(numThreads)
-        val futures = executor.invokeAll((0 until numThreads).mapIndexed { threadId, threadGroup ->
-            Callable {
-                block(threadId, groupedStates[threadGroup])
+        val futures = executor.invokeAll(
+            (0 until numThreads).mapIndexed { threadId, threadGroup ->
+                Callable {
+                    block(threadId, groupedStates[threadGroup])
+                }
             }
-        })
+        )
 
         val failedKeysPerThread = futures.map { it.get() }
         return groupedStates.zip(failedKeysPerThread).map {
@@ -108,16 +112,16 @@ object MultiThreadedTestHelper {
 
     /**
      * Divide a list of states between threads so that each thread's group of states contains some states from the next
-     * thread's group, in round robin fashion. A thread's group will contain unique states, plus [sharedStatesPerThread] states from the
-     * next group.
+     * thread's group, in round-robin fashion. A thread's group will contain unique states, plus [sharedStatesPerThread]
+     * states from the next group.
      *
      * Example: a list of [a, b, c, d, e, f, g, h, i] split among 3 threads with 1 shared states per thread results in:
      * [[a, b, c, d], [d, e, f, g], [g, h, i, a]]
      *
      * @param states a list of states to be divided
      * @param numThreads the number of thread groups to divide the states among
-     * @param sharedStatesPerThread the number of states to be shared between thread groups, only one thread can successfully
-     *  update a state with a given version.
+     * @param sharedStatesPerThread the number of states to be shared between thread groups, only one thread can
+     *  successfully update a state with a given version.
      */
     private fun divideStatesBetweenThreads(
         states: List<State>,
@@ -142,4 +146,3 @@ object MultiThreadedTestHelper {
         }
     }
 }
-

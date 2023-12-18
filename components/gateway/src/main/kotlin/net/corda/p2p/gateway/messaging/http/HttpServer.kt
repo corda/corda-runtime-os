@@ -59,6 +59,15 @@ internal class HttpServer(
          *       This is just a last resort to protect against misbehaving clients.
          */
         private const val SERVER_IDLE_TIME_SECONDS = 60 * 10
+
+        /**
+         * If the response code is not any of the below, then the connection should be closed eagerly.
+         * If it's any of the below response codes, it can be kept open.
+         */
+        private val BENIGN_STATUS_CODES = setOf(
+            HttpResponseStatus.OK,
+            HttpResponseStatus.GONE
+        )
     }
 
     private val clientChannels = ConcurrentHashMap<SocketAddress, Channel>()
@@ -81,11 +90,10 @@ internal class HttpServer(
         } else {
             logger.debug("Writing HTTP response to channel $channel")
             val response = HttpHelper.createResponse(message, statusCode)
-            if (statusCode == HttpResponseStatus.OK) {
-                channel.writeAndFlush(response)
-            } else {
-                // if request failed, we close the connection.
+            if (shouldCloseConnection(statusCode)) {
                 channel.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE)
+            } else {
+                channel.writeAndFlush(response)
             }
             logger.debug("Done writing HTTP response to channel $channel")
         }
@@ -177,5 +185,9 @@ internal class HttpServer(
                 logger.info("HTTP Server started")
             }
         }
+    }
+
+    private fun shouldCloseConnection(responseStatus: HttpResponseStatus): Boolean {
+        return responseStatus !in BENIGN_STATUS_CODES
     }
 }

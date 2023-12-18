@@ -54,7 +54,7 @@ class TokenCacheEventProcessorFactoryImpl(
             eventConverter,
             entityConverter,
             tokenPoolCacheManager,
-            ClaimStateStoreCacheImpl(stateManager, serialization, claimStateStoreFactory, clock),
+            ClaimStateStoreCacheImpl(claimStateStoreFactory),
             externalEventResponseFactory,
             tokenSelectionMetrics
         )

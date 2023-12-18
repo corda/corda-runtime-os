@@ -13,18 +13,21 @@ import java.io.FileWriter
 import java.sql.Connection
 import java.sql.DriverManager
 
-
 @CommandLine.Command(
     name = "platform-migration",
-    description = ["Generates SQL commands to perform database schema migration of virtual nodes from one version of " +
-            "Corda Platform Liquibase files to the next."],
+    description = [
+        "Generates SQL commands to perform database schema migration of virtual nodes from one version of " +
+            "Corda Platform Liquibase files to the next."
+    ],
     mixinStandardHelpOptions = true
 )
 class PlatformMigration(private val config: PlatformMigrationConfig = PlatformMigrationConfig()) : Runnable {
     @CommandLine.Option(
         names = ["--jdbc-url"],
-        description = ["JDBC Url of virtual node database/schema. Read access is required for Liquibase tracking tables " +
-                "to determine what the current version of platform schemas each virtual node is currently at."]
+        description = [
+            "JDBC Url of virtual node database/schema. Read access is required for Liquibase tracking tables " +
+                "to determine what the current version of platform schemas each virtual node is currently at."
+        ]
     )
     var jdbcUrl: String? = null
 
@@ -48,8 +51,10 @@ class PlatformMigration(private val config: PlatformMigrationConfig = PlatformMi
 
     @CommandLine.Option(
         names = ["-i", "--input-filename"],
-        description = ["File containing list of Virtual Node Short Holding Ids to migrate. File should contain one short" +
-                "holding Id per line and nothing else. Default is '$HOLDING_ID_FILENAME'"]
+        description = [
+            "File containing list of Virtual Node Short Holding Ids to migrate. File should contain one short" +
+                "holding Id per line and nothing else. Default is '$HOLDING_ID_FILENAME'"
+        ]
     )
     var holdingIdFilename: String = HOLDING_ID_FILENAME
 

@@ -12,12 +12,13 @@ import java.time.Instant
 import kotlin.math.abs
 import kotlin.test.assertIs
 
-class ConsensualLedgerTransactionImplTest: ConsensualLedgerTest() {
+class ConsensualLedgerTransactionImplTest : ConsensualLedgerTest() {
     @Test
     fun `ledger transaction contains the same data what it was created with`() {
         val testTimestamp = Instant.now()
         val signedTransaction = ConsensualTransactionBuilderImpl(
-            consensualSignedTransactionFactory)
+            consensualSignedTransactionFactory
+        )
             .withStates(consensualStateExample)
             .toSignedTransaction()
         val ledgerTransaction = signedTransaction.toLedgerTransaction()

@@ -2,12 +2,12 @@ package net.corda.libs.permissions.manager.factory
 
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
-import net.corda.libs.permissions.manager.PermissionManager
-import net.corda.messaging.api.publisher.RPCSender
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
-import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.libs.permissions.manager.BasicAuthenticationService
+import net.corda.libs.permissions.manager.PermissionManager
+import net.corda.libs.permissions.validation.cache.PermissionValidationCache
+import net.corda.messaging.api.publisher.RPCSender
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -25,7 +25,8 @@ interface PermissionManagerFactory {
      * @param permissionValidationCacheRef the cache holding data used for permission validation
      */
     fun createPermissionManager(
-        config: SmartConfig,
+        restConfig: SmartConfig,
+        rbacConfig: SmartConfig,
         rpcSender: RPCSender<PermissionManagementRequest, PermissionManagementResponse>,
         permissionManagementCacheRef: AtomicReference<PermissionManagementCache?>,
         permissionValidationCacheRef: AtomicReference<PermissionValidationCache?>

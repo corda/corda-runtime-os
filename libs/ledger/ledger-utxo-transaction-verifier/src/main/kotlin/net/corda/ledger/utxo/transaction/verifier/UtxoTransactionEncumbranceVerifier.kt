@@ -6,19 +6,18 @@ import net.corda.v5.ledger.utxo.ContractVerificationFailure
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 
 fun verifyEncumbrance(transaction: UtxoLedgerTransaction): List<ContractVerificationFailure> {
-
     val failureReasons = mutableListOf<ContractVerificationFailure>()
 
     // group input by transaction id (encumbrance is only unique within one transaction output)
     transaction.inputStateAndRefs.groupBy { it.ref.transactionId }.forEach { statesByTx ->
-
 
         // Filter out unencumbered states
         val encumbranceGroups = statesByTx.value.filter { it.state.encumbranceGroup != null }
             // within each tx, group by encumbrance tag, store the output index and the encumbrance group size
             .groupBy(
                 { it.state.encumbranceGroup!!.tag },
-                { EncumbranceInfo(it.ref.index, it.state.encumbranceGroup!!.size) })
+                { EncumbranceInfo(it.ref.index, it.state.encumbranceGroup!!.size) }
+            )
 
         // for each encumbrance group (identified by tx id/tag), run the checks
         encumbranceGroups.forEach { encumbranceGroup ->
@@ -43,7 +42,7 @@ private fun checkEncumbranceGroup(
                 contractStateClassNames = emptyList(),
                 exceptionClassName = IllegalArgumentException::class.java.canonicalName,
                 exceptionMessage = "Encumbrance check failed: State $txId, $index " +
-                        "is used ${infos.size} times as input!"
+                    "is used ${infos.size} times as input!"
             )
         }
 
@@ -61,10 +60,10 @@ private fun checkEncumbranceGroup(
                 contractStateClassNames = emptyList(),
                 exceptionClassName = IllegalArgumentException::class.java.canonicalName,
                 exceptionMessage = "Encumbrance check failed: State $txId, " +
-                        "${encumbranceInfo.stateIndex} is part " +
-                        "of encumbrance group $encumbranceTag, but only " +
-                        "$numberOfStatesPresent states out of " +
-                        "${encumbranceInfo.encumbranceGroupSize} encumbered states are present as inputs."
+                    "${encumbranceInfo.stateIndex} is part " +
+                    "of encumbrance group $encumbranceTag, but only " +
+                    "$numberOfStatesPresent states out of " +
+                    "${encumbranceInfo.encumbranceGroupSize} encumbered states are present as inputs."
             )
         } else {
             null

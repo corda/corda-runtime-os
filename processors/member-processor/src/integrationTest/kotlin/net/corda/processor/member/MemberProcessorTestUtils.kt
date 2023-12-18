@@ -3,6 +3,7 @@ package net.corda.processor.member
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.config.impl.KeyDerivationParameters
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.core.CryptoConsts
@@ -12,6 +13,7 @@ import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceFactory
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
@@ -51,6 +53,7 @@ import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 
+@Suppress("TooManyFunctions")
 class MemberProcessorTestUtils {
     companion object {
 
@@ -102,7 +105,8 @@ class MemberProcessorTestUtils {
             listOf(EncryptionSecretsServiceFactory())
         )
 
-        fun makeCryptoConfig(): SmartConfig = createDefaultCryptoConfig("master-key-pass", "master-key-salt")
+        fun makeCryptoConfig(): SmartConfig = createDefaultCryptoConfig(
+            listOf(KeyDerivationParameters("master-key-pass", "master-key-salt")))
 
         fun makeMessagingConfig(): SmartConfig =
             smartConfigFactory.create(
@@ -286,6 +290,9 @@ class MemberProcessorTestUtils {
 
         fun Publisher.publishDefaultCryptoConf(cryptoConfig: SmartConfig) =
             publishConf(ConfigKeys.CRYPTO_CONFIG, cryptoConfig.root().render())
+
+        fun Publisher.publishEmptyStateManagerConf() =
+            publishConf(ConfigKeys.STATE_MANAGER_CONFIG, SmartConfigImpl.empty().root().render())
 
         fun Publisher.publishGatewayConfig() =
             publishConf(

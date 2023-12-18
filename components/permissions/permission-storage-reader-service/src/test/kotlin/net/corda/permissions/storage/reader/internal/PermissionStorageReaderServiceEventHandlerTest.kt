@@ -67,14 +67,16 @@ class PermissionStorageReaderServiceEventHandlerTest {
     }
     private val registrationHandle = mock<RegistrationHandle>()
     private val coordinator = mock<LifecycleCoordinator>().apply {
-        whenever(followStatusChangesByName(
-            setOf(
-                LifecycleCoordinatorName.forComponent<PermissionManagementCacheService>(),
-                LifecycleCoordinatorName.forComponent<PermissionValidationCacheService>(),
-                LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                LifecycleCoordinatorName.forComponent<DbConnectionManager>()
+        whenever(
+            followStatusChangesByName(
+                setOf(
+                    LifecycleCoordinatorName.forComponent<PermissionManagementCacheService>(),
+                    LifecycleCoordinatorName.forComponent<PermissionValidationCacheService>(),
+                    LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                    LifecycleCoordinatorName.forComponent<DbConnectionManager>()
+                )
             )
-        )).thenReturn(registrationHandle)
+        ).thenReturn(registrationHandle)
     }
 
     private val handler = PermissionStorageReaderServiceEventHandler(
@@ -90,7 +92,8 @@ class PermissionStorageReaderServiceEventHandlerTest {
 
     private val reconciliationConfigMap = mapOf(
         ReconciliationConfig.RECONCILIATION_PERMISSION_SUMMARY_INTERVAL_MS to 12345L,
-        ReconciliationConfig.RECONCILIATION_CPK_WRITE_INTERVAL_MS to 12345L)
+        ReconciliationConfig.RECONCILIATION_CPK_WRITE_INTERVAL_MS to 12345L
+    )
 
     private val dbConfig = configFactory.create(
         ConfigFactory.parseMap(mapOf(JDBC_URL to "dbUrl", DB_USER to "dbUser", DB_PASS to "dbPass"))
@@ -98,13 +101,14 @@ class PermissionStorageReaderServiceEventHandlerTest {
 
     private val reconilationConfig: SmartConfig = configFactory.create(ConfigFactory.parseMap(reconciliationConfigMap))
     private val bootstrapConfig =
-        mapOf(RECONCILIATION_CONFIG to reconilationConfig,
+        mapOf(
+            RECONCILIATION_CONFIG to reconilationConfig,
             DB_CONFIG to dbConfig,
-            MESSAGING_CONFIG to configFactory.create(ConfigFactory.empty()))
+            MESSAGING_CONFIG to configFactory.create(ConfigFactory.empty())
+        )
 
     @Test
     fun `processing a START event follows and starts dependencies`() {
-
         handler.processEvent(StartEvent(), coordinator)
 
         assertNotNull(handler.registrationHandle)
@@ -219,5 +223,4 @@ class PermissionStorageReaderServiceEventHandlerTest {
         verify(permissionStorageReader).reconcilePermissionSummaries()
         verify(coordinator).setTimer(eq("PermissionStorageReaderServiceEventHandler"), eq(11111L), any())
     }
-
 }

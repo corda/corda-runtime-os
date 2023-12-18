@@ -91,7 +91,8 @@ internal class SchemaObjectBuilderTest {
             RecursiveGenericClass::class.java,
             listOf(
                 GenericParameterizedType(
-                    RecursiveGenericClass::class.java, listOf(
+                    RecursiveGenericClass::class.java,
+                    listOf(
                         GenericParameterizedType(String::class.java, emptyList())
                     )
                 )

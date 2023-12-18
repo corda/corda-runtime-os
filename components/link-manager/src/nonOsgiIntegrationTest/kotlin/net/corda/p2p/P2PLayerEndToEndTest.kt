@@ -20,6 +20,7 @@ import net.corda.data.p2p.app.AppMessage
 import net.corda.data.p2p.app.AuthenticatedMessage
 import net.corda.data.p2p.app.AuthenticatedMessageHeader
 import net.corda.data.p2p.app.MembershipStatusFilter
+import net.corda.data.p2p.crypto.protocol.RevocationCheckMode
 import net.corda.data.p2p.markers.AppMessageMarker
 import net.corda.data.p2p.markers.LinkManagerProcessedMarker
 import net.corda.data.p2p.markers.LinkManagerReceivedMarker
@@ -39,6 +40,7 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_REFRESH_THRESHOLD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -65,7 +67,6 @@ import net.corda.messaging.emulation.rpc.RPCTopicServiceImpl
 import net.corda.messaging.emulation.subscription.factory.InMemSubscriptionFactory
 import net.corda.messaging.emulation.topic.service.impl.TopicServiceImpl
 import net.corda.p2p.crypto.protocol.ProtocolConstants
-import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.gateway.Gateway
 import net.corda.p2p.gateway.messaging.RevocationConfig
 import net.corda.p2p.gateway.messaging.RevocationConfigMode
@@ -78,6 +79,7 @@ import net.corda.schema.Schemas.P2P.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.P2P_OUT_MARKERS
 import net.corda.schema.Schemas.P2P.P2P_OUT_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
+import net.corda.schema.configuration.BootConfig.P2P_LINK_MANAGER_WORKER_REST_ENDPOINT
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.registry.impl.AvroSchemaRegistryImpl
@@ -665,6 +667,17 @@ class P2PLayerEndToEndTest {
                 mock(),
                 mock(),
             )
+        private val platformInfoProvider = object : PlatformInfoProvider {
+            override val activePlatformVersion = 1
+            override val localWorkerPlatformVersion = 1
+            override val localWorkerSoftwareVersion = "5.2"
+        }
+        private val bootConfig = SmartConfigFactory.createWithoutSecurityServices()
+            .create(ConfigFactory.empty())
+            .withValue(
+                P2P_LINK_MANAGER_WORKER_REST_ENDPOINT,
+                ConfigValueFactory.fromAnyRef("localhost:8080"),
+            )
 
         private val gateway =
             Gateway(
@@ -672,9 +685,11 @@ class P2PLayerEndToEndTest {
                 subscriptionFactory,
                 publisherFactory,
                 lifecycleCoordinatorFactory,
-                bootstrapConfig,
                 cryptoOpsClient,
-                AvroSchemaRegistryImpl()
+                AvroSchemaRegistryImpl(),
+                platformInfoProvider,
+                bootConfig,
+                bootstrapConfig,
             )
 
         private fun Publisher.publishConfig(key: String, config: Config) {

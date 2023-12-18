@@ -1,21 +1,20 @@
 package net.corda.ledger.utxo.flow.impl.persistence.external.events
 
 import net.corda.data.flow.event.external.ExternalEventContext
-import net.corda.flow.external.events.factory.ExternalEventFactory
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import java.time.Clock
 import net.corda.data.ledger.persistence.FindSignedGroupParameters
 import net.corda.data.ledger.persistence.FindSignedGroupParametersResponse
 import net.corda.data.ledger.persistence.LedgerPersistenceRequest
 import net.corda.data.ledger.persistence.LedgerTypes
-import net.corda.membership.lib.SignedGroupParameters
+import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.membership.lib.GroupParametersFactory
-import net.corda.schema.Schemas
+import net.corda.membership.lib.SignedGroupParameters
 import net.corda.virtualnode.toAvro
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.time.Clock
 
 @Component(service = [ExternalEventFactory::class])
 class FindSignedGroupParametersExternalEventFactory(
@@ -40,7 +39,6 @@ class FindSignedGroupParametersExternalEventFactory(
         parameters: FindSignedGroupParametersParameters
     ): ExternalEventRecord {
         return ExternalEventRecord(
-            topic = Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC,
             payload = LedgerPersistenceRequest.newBuilder()
                 .setTimestamp(clock.instant())
                 .setHoldingIdentity(checkpoint.holdingIdentity.toAvro())

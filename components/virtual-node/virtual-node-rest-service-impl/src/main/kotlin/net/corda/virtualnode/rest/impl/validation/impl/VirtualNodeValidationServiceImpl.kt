@@ -3,16 +3,16 @@ package net.corda.virtualnode.rest.impl.validation.impl
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.core.ShortHash
 import net.corda.crypto.core.ShortHashException
-import net.corda.rest.exception.BadRequestException
-import net.corda.rest.exception.InternalServerException
-import net.corda.rest.exception.InvalidInputDataException
-import net.corda.rest.exception.ResourceAlreadyExistsException
-import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.virtualnode.endpoints.v1.types.CreateVirtualNodeRequest
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.membership.lib.grouppolicy.GroupPolicyParseException
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.rest.exception.BadRequestException
+import net.corda.rest.exception.InternalServerException
+import net.corda.rest.exception.InvalidInputDataException
+import net.corda.rest.exception.ResourceAlreadyExistsException
+import net.corda.rest.exception.ResourceNotFoundException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.OperationalStatus
@@ -72,16 +72,16 @@ internal class VirtualNodeValidationServiceImpl(
         val cpiMeta = cpiInfoReadService.getAll()
             .firstOrNull { it.fileChecksum.toHexString().substring(0, 12) == cpiFileChecksum }
             ?: throw InvalidInputDataException(
-                "No CPI metadata found for checksum '${cpiFileChecksum}'."
+                "No CPI metadata found for checksum '$cpiFileChecksum'."
             )
 
         val groupPolicyJson = cpiMeta.groupPolicy
-            ?: throw InternalServerException("Group policy is missing from CPI metadata '${cpiFileChecksum}'")
+            ?: throw InternalServerException("Group policy is missing from CPI metadata '$cpiFileChecksum'")
 
         val groupId = try {
             GroupPolicyParser.groupIdFromJson(groupPolicyJson)
         } catch (e: GroupPolicyParseException) {
-            throw InternalServerException("Could not find group ID in CPI policy data '${groupPolicyJson}'")
+            throw InternalServerException("Could not find group ID in CPI policy data '$groupPolicyJson'")
         }
 
         // generate a group ID when creating a virtual node for an MGM default group.
@@ -124,10 +124,10 @@ internal class VirtualNodeValidationServiceImpl(
     }
 
     private fun isVirtualNodeInMaintenance(vnode: VirtualNodeInfo) =
-        vnode.flowOperationalStatus == OperationalStatus.INACTIVE
-                && vnode.flowStartOperationalStatus == OperationalStatus.INACTIVE
-                && vnode.flowP2pOperationalStatus == OperationalStatus.INACTIVE
-                && vnode.vaultDbOperationalStatus == OperationalStatus.INACTIVE
+        vnode.flowOperationalStatus == OperationalStatus.INACTIVE &&
+            vnode.flowStartOperationalStatus == OperationalStatus.INACTIVE &&
+            vnode.flowP2pOperationalStatus == OperationalStatus.INACTIVE &&
+            vnode.vaultDbOperationalStatus == OperationalStatus.INACTIVE
 
     private fun parseShortHash(virtualNodeShortId: String): ShortHash {
         return try {

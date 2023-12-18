@@ -274,7 +274,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
 
         if (!future.isDone) {
             future.cancel(true)
-            log.error(timeoutErrorMessage)
+            log.warn(timeoutErrorMessage)
         }
 
         return future

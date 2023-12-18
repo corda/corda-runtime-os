@@ -23,6 +23,6 @@ dependencies {
     implementation 'net.corda:corda-application'
     implementation 'net.corda:corda-db-schema'
 
-    implementation("org.mockito:mockito-core:$mockitoVersion")
-    implementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion")
+    implementation libs.mockito.core
+    implementation libs.mockito.kotlin
 }

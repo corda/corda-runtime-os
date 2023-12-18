@@ -552,7 +552,8 @@ class StaticMemberRegistrationServiceTest {
                 notary,
                 null,
                 emptyList(),
-                emptyList()
+                emptyList(),
+                true
             )
             val mockMemberContext: MemberContext = mock {
                 on { entries } doReturn mapOf(
@@ -744,7 +745,8 @@ class StaticMemberRegistrationServiceTest {
                 notary,
                 null,
                 emptyList(),
-                emptyList()
+                emptyList(),
+                true
             )
             val mockMemberContext: MemberContext = mock {
                 on { entries } doReturn mapOf(

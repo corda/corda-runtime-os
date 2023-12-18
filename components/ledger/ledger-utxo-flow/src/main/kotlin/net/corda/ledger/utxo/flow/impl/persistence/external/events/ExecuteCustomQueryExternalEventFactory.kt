@@ -9,7 +9,6 @@ import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.persistence.query.StableResultSetExecutor
 import net.corda.flow.state.FlowCheckpoint
-import net.corda.schema.Schemas
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Component
 import java.nio.ByteBuffer
@@ -28,7 +27,6 @@ class VaultNamedQueryExternalEventFactory(
         parameters: VaultNamedQueryEventParams
     ): ExternalEventRecord {
         return ExternalEventRecord(
-            topic = Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC,
             payload = LedgerPersistenceRequest.newBuilder()
                 .setTimestamp(clock.instant())
                 .setHoldingIdentity(checkpoint.holdingIdentity.toAvro())

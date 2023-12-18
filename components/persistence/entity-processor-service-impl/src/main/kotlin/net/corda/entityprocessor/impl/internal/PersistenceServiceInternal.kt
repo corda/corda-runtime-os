@@ -10,7 +10,6 @@ import net.corda.data.persistence.FindEntities
 import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.data.persistence.MergeEntities
 import net.corda.data.persistence.PersistEntities
-import net.corda.utilities.serialization.deserialize
 import net.corda.persistence.common.exceptions.InvalidPaginationException
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.virtualnode.HoldingIdentity
@@ -50,9 +49,7 @@ import javax.persistence.criteria.Selection
  * to the given [HoldingIdentity]
  * */
 class PersistenceServiceInternal(
-    private val classProvider: (fullyQualifiedClassName: String) -> Class<*>,
-    private val payloadCheck: (bytes: ByteBuffer) -> ByteBuffer
-) {
+    private val classProvider: (fullyQualifiedClassName: String) -> Class<*>) {
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java.enclosingClass)
     }
@@ -77,7 +74,7 @@ class PersistenceServiceInternal(
         val clazz = classProvider(payload.entityClassName)
         val results = payload.ids.mapNotNull { serializedId ->
             val id = serializationService.deserialize(serializedId.array(), Any::class.java)
-            entityManager.find(clazz, id)?.let { entity -> payloadCheck(serializationService.toBytes(entity)) }
+            entityManager.find(clazz, id)?.let { entity -> serializationService.toBytes(entity) }
         }
         return EntityResponse(results, KeyValuePairList(emptyList()), null)
     }
@@ -91,7 +88,7 @@ class PersistenceServiceInternal(
             val entity = serializationService.deserialize(it.array(), Any::class.java)
             entityManager.merge(entity)
         }
-        return EntityResponse(results.map { payloadCheck(serializationService.toBytes(it)) }, KeyValuePairList(emptyList()), null)
+        return EntityResponse(results.map { serializationService.toBytes(it) }, KeyValuePairList(emptyList()), null)
     }
 
     fun deleteEntities(
@@ -192,7 +189,7 @@ class PersistenceServiceInternal(
         val results = query.resultList
         val result = when (results ) {
             null -> emptyList()
-            else -> results.filterNotNull().map { item -> payloadCheck(serializationService.toBytes(item)) }
+            else -> results.filterNotNull().map { item -> serializationService.toBytes(item) }
         }
         return EntityResponse(result, KeyValuePairList(listOf(KeyValuePair("numberOfRowsFromQuery", results.size.toString()))), null)
     }

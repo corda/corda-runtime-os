@@ -6,6 +6,8 @@ plugins {
 
 description 'Permission data model'
 
+ext.cordaEnableFormatting = true
+
 dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
