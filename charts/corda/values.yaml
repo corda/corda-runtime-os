@@ -82,7 +82,7 @@ metrics:
     keepNames:
       - "corda_mtx_event_processing_seconds_(count|sum|max)"
       - "corda_mtx_event_execution_seconds_(count|sum|max)"
-      - "corda_mtx_event_accrued_lag_(count|sum|max)"
+      - "corda_mtx_event_accrued_lag_seconds_(count|sum|max)"
       - "corda_mtx_event_count_total"
       - "corda_rpc_http_response_time_seconds_(count|sum|max)"
       - "corda_token_selection_execution_time_seconds_(count|sum|max)"
