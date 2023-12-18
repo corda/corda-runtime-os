@@ -15,16 +15,21 @@ import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import java.io.File
+import java.util.UUID
 
+private val caName = UUID.randomUUID().toString()
 /**
  * Get the default CA for testing. This is written to file so it can be shared across tests.
  */
+@Synchronized
 fun getCa(): FileSystemCertificatesAuthority = CertificateAuthorityFactory
     .createFileSystemLocalAuthority(
         KeysFactoryDefinitions("RSA".toAlgorithm(), 3072, null,),
-        File("build${File.separator}tmp${File.separator}ca")
+        File("build${File.separator}tmp${File.separator}ca${File.separator}$caName")
     ).also { it.save() }
 
+val FileSystemCertificatesAuthority.name: String
+    get() = caName
 /**
  * Generate a certificate from a CSR as a PEM string.
  * The certificate is also returned as a PEM string.

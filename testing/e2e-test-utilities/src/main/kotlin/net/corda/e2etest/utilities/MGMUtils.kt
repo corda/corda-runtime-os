@@ -58,9 +58,9 @@ fun ClusterInfo.onboardMgm(
         groupPolicyConfig
     )
 
-    if (!keyExists(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS)) {
+    if (!keyExists(TENANT_P2P, getCa().name, CAT_TLS)) {
         disableCertificateRevocationChecks()
-        val tlsKeyId = createKeyFor(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS, DEFAULT_KEY_SCHEME)
+        val tlsKeyId = createKeyFor(TENANT_P2P, getCa().name, CAT_TLS, DEFAULT_KEY_SCHEME)
         val mgmTlsCsr = generateCsr(mgmName, tlsKeyId)
         val mgmTlsCert = File.createTempFile("${this.hashCode()}$CAT_TLS", ".pem").also {
             it.deleteOnExit()

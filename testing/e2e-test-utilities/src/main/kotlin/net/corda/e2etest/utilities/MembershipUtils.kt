@@ -92,9 +92,9 @@ fun ClusterInfo.onboardMember(
         null
     }
 
-    if (!keyExists(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS)) {
+    if (!keyExists(TENANT_P2P, getCa().name, CAT_TLS)) {
         disableCertificateRevocationChecks()
-        val tlsKeyId = createKeyFor(TENANT_P2P, "$TENANT_P2P$CAT_TLS", CAT_TLS, DEFAULT_KEY_SCHEME)
+        val tlsKeyId = createKeyFor(TENANT_P2P, getCa().name, CAT_TLS, DEFAULT_KEY_SCHEME)
         val tlsCsr = generateCsr(x500Name, tlsKeyId)
         val tlsCert = getCa().generateCert(tlsCsr)
         val tlsCertFile = File.createTempFile("${this.hashCode()}$CAT_TLS", ".pem").also {
