@@ -17,6 +17,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import java.nio.ByteBuffer
+import java.security.PublicKey
 import java.security.Security
 
 class AuthenticationProtocolInitiatorTest {
@@ -39,10 +40,10 @@ cZyj8BXGy1y5rL75SE01/3qwAvSAatoTtVtPlPuHn5U1nGDe3AoaS1LvrqIypJjo
 ODGVZOuwAyZ6676J40yue06DiPpysNULHoZu3PEd+DEWKsCyPq3yYtB7E+HvLUAQ
 AQIDAQAB
 -----END PUBLIC KEY-----
-    """.trimIndent()
+    """
 
     private val publicKey by lazy {
-        publicKeyFactory(publicKeyPem.reader())!!
+        publicKeyPem.toPublicKey()
     }
 
     @Test
@@ -67,7 +68,7 @@ AQIDAQAB
             assertThat(avro.protocolCommonDetails.sessionId).isEqualTo("sessionId")
             assertThat(avro.supportedModes).containsOnly(ProtocolMode.AUTHENTICATION_ONLY)
             assertThat(avro.groupId).isEqualTo("group")
-            assertThat(avro.ourPublicKey.trim()).isEqualTo(publicKeyPem.trim())
+            assertThat(avro.ourPublicKey.toPublicKey()).isEqualTo(publicKey)
             assertThat(avro.certificateCheckMode?.revocationCheckMode).isEqualTo(RevocationCheckMode.HARD_FAIL)
             assertThat(avro.certificateCheckMode?.truststore).containsOnly("one")
         }
@@ -123,4 +124,7 @@ AQIDAQAB
             assertThat(initiator.getSession()).isInstanceOf(AuthenticatedEncryptionSession::class.java)
         }
     }
+
+    private fun String.toPublicKey() : PublicKey =
+        publicKeyFactory(this.reader())!!
 }

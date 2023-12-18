@@ -5,12 +5,13 @@ import org.junit.jupiter.api.Test
 
 class PublicKeyFactoryTest {
     private companion object {
-        const val VALID_KEY_PEM = """
+        private val VALID_KEY_PEM = """
 -----BEGIN PUBLIC KEY-----
 MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE7fFAKpIU1LlAf7S2n4847JcqvgaT
 rVwmQ9GmruPVpC2wEPpFggbVL3/mtm61qoCi81hphd0W9yVhSVwVT0wQHw==
 -----END PUBLIC KEY-----
-        """
+        """.replace("\r", "")
+            .replace("\n", System.lineSeparator())
 
         const val CERTIFICATE_PEM = """
 -----BEGIN CERTIFICATE-----
