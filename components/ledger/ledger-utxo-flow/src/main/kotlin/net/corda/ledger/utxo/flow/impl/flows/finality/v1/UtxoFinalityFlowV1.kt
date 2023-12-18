@@ -126,7 +126,6 @@ class UtxoFinalityFlowV1(
                 }
             }
         } else {
-            // TODO - Optimise this logic.
             val filteredTransactionsAndSignatures = initialTransaction
                 .let { it.inputStateRefs + it.referenceStateRefs }
                 .groupBy { stateRef -> stateRef.transactionId }
