@@ -167,28 +167,27 @@ class UtxoReceiveFinalityFlowV1(
                 filteredTransactionsAndSignatures.flatMap { (filteredTransaction, signatures) ->
                     require(signatures.isNotEmpty()) { "No notary signatures were received" }
                     filteredTransaction.verify()
-                    require(filteredTransaction.notaryName == initialTransaction.notaryName) {
-                        "Notary name of filtered transaction \"${filteredTransaction.notaryName}\" doesn't match with " +
-                            "notary name of initial transaction \"${initialTransaction.notaryName}\""
-                    }
 
                     val filteredTxNotaryKey = filteredTransaction.notaryKey
                     val newTxNotaryKey = initialTransaction.notaryKey
-                    require(filteredTxNotaryKey == newTxNotaryKey) {
-                        "Notary key of filtered transaction \"${filteredTxNotaryKey}\" doesn't match with " +
-                            "notary key of initial transaction \"${newTxNotaryKey}\""
-                    }
-
-                    val newTxNotaryKeyIds = if (newTxNotaryKey is CompositeKey) {
+                    val filteredTxNotaryName = filteredTransaction.notaryName
+                    val newTxNotaryKeys = if (newTxNotaryKey is CompositeKey) {
                         require(KeyUtils.isKeyFulfilledBy(newTxNotaryKey, filteredTxNotaryKey)) {
                             "A composite notary key of new transaction $newTxNotaryKey doesn't contain " +
                                 "a filtered transaction notary key $filteredTxNotaryKey"
                         }
-                        newTxNotaryKey.leafKeys.toSet().map { it.fullIdHash() }
+                        newTxNotaryKey.leafKeys.toSet()
                     } else {
-                        setOf(newTxNotaryKey.fullIdHash())
+                        setOf(newTxNotaryKey)
                     }
 
+                    val newTxNotaryNames = newTxNotaryKeys.map { memberLookup.lookup(it)?.name }
+                    require(newTxNotaryNames.contains(filteredTxNotaryName)) {
+                        "Notary name of filtered transaction \"${filteredTxNotaryName}\" doesn't match with " +
+                            "any names of initial transaction \"${newTxNotaryNames}\""
+                    }
+
+                    val newTxNotaryKeyIds = newTxNotaryKeys.map { it.fullIdHash() }
                     for (signature in signatures) {
                         require(newTxNotaryKeyIds.contains(signature.by)) {
                             "Signature received \"${signature.by}\" is not signed by current notary " +
