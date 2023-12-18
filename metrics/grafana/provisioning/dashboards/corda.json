@@ -119,7 +119,7 @@
                 "uid": "dnOZedS4z"
               },
               "editorMode": "code",
-              "expr": "rate(corda_messaging_processor_time_seconds_sum{messagePatternType=\"Durable\"}[$__rate_interval]) / rate(corda_messaging_processor_time_seconds_count{messagePatternType=\"Durable\"}[$__rate_interval]) ",
+              "expr": "rate(corda_messaging_processor_time_seconds_sum{messagepattern_type=\"Durable\"}[$__rate_interval]) / rate(corda_messaging_processor_time_seconds_count{messagepattern_type=\"Durable\"}[$__rate_interval]) ",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
@@ -210,7 +210,7 @@
                 "uid": "dnOZedS4z"
               },
               "editorMode": "builder",
-              "expr": "sum(rate(corda_messaging_processor_time_seconds_count{messagePatternType=\"Durable\"}[$__rate_interval]))",
+              "expr": "sum(rate(corda_messaging_processor_time_seconds_count{messagepattern_type=\"Durable\"}[$__rate_interval]))",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
@@ -301,7 +301,7 @@
                 "uid": "dnOZedS4z"
               },
               "editorMode": "code",
-              "expr": "rate(corda_messaging_processor_time_seconds_sum{messagePatternType=\"StateAndEvent\"}[$__rate_interval]) / rate(corda_messaging_processor_time_seconds_count{messagePatternType=\"StateAndEvent\"}[$__rate_interval])",
+              "expr": "rate(corda_messaging_processor_time_seconds_sum{messagepattern_type=\"StateAndEvent\"}[$__rate_interval]) / rate(corda_messaging_processor_time_seconds_count{messagepattern_type=\"StateAndEvent\"}[$__rate_interval])",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
@@ -392,7 +392,7 @@
                 "uid": "dnOZedS4z"
               },
               "editorMode": "builder",
-              "expr": "sum(rate(corda_messaging_processor_time_seconds_count{messagePatternType=\"StateAndEvent\"}[$__rate_interval]))",
+              "expr": "sum(rate(corda_messaging_processor_time_seconds_count{messagepattern_type=\"StateAndEvent\"}[$__rate_interval]))",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
@@ -483,7 +483,7 @@
                 "uid": "dnOZedS4z"
               },
               "editorMode": "code",
-              "expr": "rate(corda_messaging_processor_time_seconds_sum{messagePatternType=\"PubSub\"}[$__rate_interval]) / rate(corda_messaging_processor_time_seconds_count{messagePatternType=\"PubSub\"}[$__rate_interval])",
+              "expr": "rate(corda_messaging_processor_time_seconds_sum{messagepattern_type=\"PubSub\"}[$__rate_interval]) / rate(corda_messaging_processor_time_seconds_count{messagepattern_type=\"PubSub\"}[$__rate_interval])",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
@@ -574,7 +574,7 @@
                 "uid": "dnOZedS4z"
               },
               "editorMode": "builder",
-              "expr": "sum(rate(corda_messaging_processor_time_seconds_count{messagePatternType=\"PubSub\"}[$__rate_interval]))",
+              "expr": "sum(rate(corda_messaging_processor_time_seconds_count{messagepattern_type=\"PubSub\"}[$__rate_interval]))",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
@@ -665,7 +665,7 @@
                 "uid": "dnOZedS4z"
               },
               "editorMode": "code",
-              "expr": "rate(corda_messaging_processor_time_seconds_sum{messagePatternType=\"Compacted\"}[$__rate_interval]) / rate(corda_messaging_processor_time_seconds_count{messagePatternType=\"Compacted\"}[$__rate_interval])",
+              "expr": "rate(corda_messaging_processor_time_seconds_sum{messagepattern_type=\"Compacted\"}[$__rate_interval]) / rate(corda_messaging_processor_time_seconds_count{messagepattern_type=\"Compacted\"}[$__rate_interval])",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
@@ -756,7 +756,7 @@
                 "uid": "dnOZedS4z"
               },
               "editorMode": "builder",
-              "expr": "sum(rate(corda_messaging_processor_time_seconds_count{messagePatternType=\"Compacted\"}[$__rate_interval]))",
+              "expr": "sum(rate(corda_messaging_processor_time_seconds_count{messagepattern_type=\"Compacted\"}[$__rate_interval]))",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
@@ -847,7 +847,7 @@
                 "uid": "dnOZedS4z"
               },
               "editorMode": "code",
-              "expr": "rate(corda_messaging_processor_time_seconds_sum{messagePatternType=\"RPC\", operationName=\"rpcResponder\"}[$__rate_interval])/ (rate(corda_messaging_processor_time_seconds_count{messagePatternType=\"RPC\", operationName=\"rpcResponder\"}[$__rate_interval]))",
+              "expr": "rate(corda_messaging_processor_time_seconds_sum{messagepattern_type=\"RPC\", operation_name=\"rpcResponder\"}[$__rate_interval])/ (rate(corda_messaging_processor_time_seconds_count{messagepattern_type=\"RPC\", operation_name=\"rpcResponder\"}[$__rate_interval]))",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
@@ -938,7 +938,7 @@
                 "uid": "dnOZedS4z"
               },
               "editorMode": "builder",
-              "expr": "sum(rate(corda_messaging_processor_time_seconds_count{messagePatternType=\"RPC\", operationName=\"rpcResponder\"}[$__rate_interval]))",
+              "expr": "sum(rate(corda_messaging_processor_time_seconds_count{messagepattern_type=\"RPC\", operation_name=\"rpcResponder\"}[$__rate_interval]))",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
@@ -3603,6 +3603,115 @@
         }
       ],
       "title": "Cache",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      },
+      "id": 70,
+      "panels": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "dnOZedS4z"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 7
+          },
+          "id": 71,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "dnOZedS4z"
+              },
+              "editorMode": "code",
+              "expr": "rate(corda_crypto_rewrap_time_seconds_sum[$__rate_interval]) /\nrate(corda_crypto_rewrap_time_seconds_count[$__rate_interval])",
+              "instant": false,
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Unmanaged Individual Key Rotation",
+          "type": "timeseries"
+        }
+      ],
+      "title": "Crypto",
       "type": "row"
     }
   ],
