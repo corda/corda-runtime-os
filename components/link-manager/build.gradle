@@ -65,6 +65,7 @@ dependencies {
     implementation project(":libs:membership:membership-common")
     implementation project(":components:membership:membership-group-read")
     implementation project(":libs:state-manager:state-manager-api")
+    implementation project(":libs:utilities")
     runtimeOnly project(":libs:web:web-impl")
 
     testImplementation project(":testing:test-utilities")

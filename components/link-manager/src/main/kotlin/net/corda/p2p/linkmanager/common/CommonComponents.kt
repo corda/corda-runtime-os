@@ -23,6 +23,7 @@ import net.corda.p2p.linkmanager.sessions.PendingSessionMessageQueuesImpl
 import net.corda.p2p.linkmanager.sessions.SessionManagerImpl
 import net.corda.p2p.linkmanager.sessions.StatefulSessionManagerImpl
 import net.corda.schema.Schemas
+import net.corda.utilities.flags.Features
 import net.corda.utilities.time.Clock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 
@@ -42,10 +43,10 @@ internal class CommonComponents(
     membershipQueryClient: MembershipQueryClient,
     groupParametersReaderService: GroupParametersReaderService,
     clock: Clock,
+    features: Features = Features(),
 ) : LifecycleWithDominoTile {
     private companion object {
         const val LISTENER_NAME = "link.manager.group.policy.listener"
-        const val USE_STATEFUL_SESSION_MANAGER = false
     }
     internal val inboundAssignmentListener = InboundAssignmentListener(
         lifecycleCoordinatorFactory,
@@ -61,7 +62,7 @@ internal class CommonComponents(
         clock
     )
 
-    internal val sessionManager = if(USE_STATEFUL_SESSION_MANAGER){
+    internal val sessionManager = if(features.useStatefulSessionManager) {
         StatefulSessionManagerImpl(
             lifecycleCoordinatorFactory,
         )
