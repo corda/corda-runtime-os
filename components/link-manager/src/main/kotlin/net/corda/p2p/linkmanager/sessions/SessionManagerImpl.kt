@@ -330,7 +330,13 @@ internal class SessionManagerImpl(
         }
     }
 
-    override fun getSessionById(uuid: String): SessionManager.SessionDirection {
+    override fun getSessionsById(uuids: List<String>): List<SessionManager.SessionDirection> {
+        return uuids.map { uuid ->
+            getSessionsById(uuid)
+        }
+    }
+
+    private fun getSessionsById(uuid: String): SessionManager.SessionDirection {
         return dominoTile.withLifecycleLock {
             val inboundSession = activeInboundSessions[uuid]
             if (inboundSession != null) {
@@ -351,7 +357,13 @@ internal class SessionManagerImpl(
         }
     }
 
-    override fun processSessionMessage(message: LinkInMessage): LinkOutMessage? {
+    override fun processSessionMessages(messages: List<LinkInMessage>): List<LinkOutMessage?> {
+        return messages.map { message ->
+            processSessionMessage(message)
+        }
+    }
+
+    private fun processSessionMessage(message: LinkInMessage): LinkOutMessage? {
         return dominoTile.withLifecycleLock {
             when (val payload = message.payload) {
                 is ResponderHelloMessage -> processResponderHello(payload)

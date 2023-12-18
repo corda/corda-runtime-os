@@ -39,14 +39,6 @@ internal abstract class StatefulSessionManagerImpl(coordinatorFactory: Lifecycle
         TODO("Not yet implemented")
     }
 
-    override fun getSessionById(uuid: String): SessionManager.SessionDirection {
-        TODO("Not yet implemented")
-    }
-
-    override fun processSessionMessage(message: LinkInMessage): LinkOutMessage? {
-        TODO("Not yet implemented")
-    }
-
     override fun inboundSessionEstablished(sessionId: String) {
         //Not needed by the Stateful Session Manager
         return

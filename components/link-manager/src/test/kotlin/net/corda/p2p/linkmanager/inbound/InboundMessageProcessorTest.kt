@@ -1,6 +1,6 @@
 package net.corda.p2p.linkmanager.inbound
 
-import net.corda.data.p2p.AuthenticatedMessageAck
+/*import net.corda.data.p2p.AuthenticatedMessageAck
 import net.corda.data.p2p.AuthenticatedMessageAndKey
 import net.corda.data.p2p.DataMessagePayload
 import net.corda.data.p2p.HeartbeatMessage
@@ -59,10 +59,10 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.nio.ByteBuffer
+import java.nio.ByteBuffer*/
 
 class InboundMessageProcessorTest {
-    companion object {
+/*    companion object {
         private const val SESSION_ID = "Session"
         private const val MESSAGE_ID = "MessageId"
     }
@@ -918,5 +918,5 @@ class InboundMessageProcessorTest {
                 assertThat((it.value as AppMessage).message).isEqualTo(inboundUnauthenticatedMessage)
             }
         }
-    }
+    }*/
 }

@@ -10,8 +10,8 @@ import net.corda.virtualnode.HoldingIdentity
 
 internal interface SessionManager : LifecycleWithDominoTile {
     fun processOutboundMessages(messages: List<AuthenticatedMessageAndKey>): List<SessionState>
-    fun getSessionById(uuid: String): SessionDirection
-    fun processSessionMessage(message: LinkInMessage): LinkOutMessage?
+    fun getSessionsById(uuids: List<String>): List<SessionDirection>
+    fun processSessionMessages(messages: List<LinkInMessage>): List<LinkOutMessage?>
     fun inboundSessionEstablished(sessionId: String)
     fun messageAcknowledged(sessionId: String)
     fun dataMessageReceived(sessionId: String, source: HoldingIdentity, destination: HoldingIdentity)

@@ -64,6 +64,7 @@ internal class OutboundMessageProcessor(
     private var logger = LoggerFactory.getLogger(this::class.java.name)
 
     companion object {
+        private const val tracingEventName = "P2P Link Manager Outbound Event"
         fun recordsForNewSessions(
             state: SessionManager.SessionState.NewSessionsNeeded,
             inboundAssignmentListener: InboundAssignmentListener,
@@ -158,7 +159,7 @@ internal class OutboundMessageProcessor(
 
         return unauthenticatedMessages.map { (message, event) ->
             processUnauthenticatedMessage(message).also { records ->
-                event?.let {event -> traceEventProcessing(event, "P2P Link Manager Outbound Event") { records } }
+                event?.let {event -> traceEventProcessing(event, tracingEventName) { records } }
             }
         }.flatten() + processAuthenticatedMessages(authenticatedMessages)
     }
@@ -300,7 +301,7 @@ internal class OutboundMessageProcessor(
                 is ValidateAuthenticatedMessageResult.NoSessionNeeded -> {
                     messageWithNoSession += result.records
                     message.originalRecord?.let { event ->
-                        traceEventProcessing(event, "P2P Link Manager Outbound Event") { result.records }
+                        traceEventProcessing(event, tracingEventName) { result.records }
                     }
                 }
             }
@@ -415,7 +416,7 @@ internal class OutboundMessageProcessor(
                     if (!isReplay) messagesPendingSession.queueMessage(message, state.sessionCounterparties)
                     recordsForNewSessions(state).also { records ->
                         originalRecord?.let { event ->
-                            traceEventProcessing(event, "P2P Link Manager Outbound Event") { records }
+                            traceEventProcessing(event, tracingEventName) { records }
                         }
                     }
                 }
@@ -426,7 +427,7 @@ internal class OutboundMessageProcessor(
                     }
                     recordsForSessionEstablished(state, message).also { records ->
                         originalRecord?.let { event ->
-                            traceEventProcessing(event, "P2P Link Manager Outbound Event") { records }
+                            traceEventProcessing(event, tracingEventName) { records }
                         }
                     }
                 }
@@ -438,14 +439,14 @@ internal class OutboundMessageProcessor(
                     if (!isReplay) messagesPendingSession.queueMessage(message, state.sessionCounterparties)
                     emptyList<Record<String, *>>().also { records ->
                         originalRecord?.let { event ->
-                            traceEventProcessing(event, "P2P Link Manager Outbound Event") { records }
+                            traceEventProcessing(event, tracingEventName) { records }
                         }
                     }
                 }
                 is SessionManager.SessionState.CannotEstablishSession -> {
                     emptyList<Record<String, *>>().also { records ->
                         originalRecord?.let { event ->
-                            traceEventProcessing(event, "P2P Link Manager Outbound Event") { records }
+                            traceEventProcessing(event, tracingEventName) { records }
                         }
                     }
                 }

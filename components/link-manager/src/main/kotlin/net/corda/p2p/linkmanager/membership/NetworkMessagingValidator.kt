@@ -72,18 +72,17 @@ internal class NetworkMessagingValidator(private val membershipGroupReaderProvid
      *
      * @return result of [func] or null if validation failed.
      */
-    fun <T> invokeIfValidInbound(
+    fun isValidInbound(
         source: HoldingIdentity,
         destination: HoldingIdentity,
-        func: () -> T
-    ): T? = when (val result = validate(source, destination, ValidationDirection.INBOUND)) {
-        is Either.Left -> func()
+    ): Boolean = when (val result = validate(source, destination, ValidationDirection.INBOUND)) {
+        is Either.Left -> true
         is Either.Right -> {
             logger.warn(
                 "Failed validation for allowed messaging from [${source.x500Name}] to " +
                         "[${destination.x500Name}] in group [${source.groupId}] because ${result.b}"
             )
-            null
+            false
         }
     }
 
