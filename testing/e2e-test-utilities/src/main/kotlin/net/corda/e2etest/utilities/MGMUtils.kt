@@ -58,13 +58,13 @@ fun ClusterInfo.onboardMgm(
         groupPolicyConfig
     )
 
-    importTlsCertificate(mgmName)
+    val p2pTlsCertificateChainAlias =  importTlsCertificate(mgmName)
 
     val registrationId = register(mgmHoldingId, registrationContext, waitForApproval = true)
     if (mgmSessionCert != null) {
-        configureNetworkParticipant(mgmHoldingId, sessionKeyId, mgmSessionCertAlias)
+        configureNetworkParticipant(mgmHoldingId, sessionKeyId, p2pTlsCertificateChainAlias, mgmSessionCertAlias)
     } else {
-        configureNetworkParticipant(mgmHoldingId, sessionKeyId)
+        configureNetworkParticipant(mgmHoldingId, sessionKeyId, p2pTlsCertificateChainAlias)
     }
 
     return NetworkOnboardingMetadata(mgmHoldingId, mgmName, registrationId, registrationContext, this)

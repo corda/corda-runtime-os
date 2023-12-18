@@ -32,7 +32,6 @@ const val CAT_NOTARY = "NOTARY"
 const val TENANT_P2P = "p2p"
 const val CERT_USAGE_P2P = "p2p-tls"
 const val CERT_USAGE_SESSION = "p2p-session"
-const val CERT_ALIAS_P2P = "p2p-tls-cert"
 const val CERT_ALIAS_SESSION = "p2p-session-cert"
 const val DEFAULT_KEY_SCHEME = "CORDA.ECDSA.SECP256R1"
 const val DEFAULT_SIGNATURE_SPEC = "SHA256withECDSA"
@@ -92,7 +91,7 @@ fun ClusterInfo.onboardMember(
         null
     }
 
-    importTlsCertificate(x500Name, tlsCertificateUploadedCallback)
+    val p2pTlsCertificateChainAlias = importTlsCertificate(x500Name, tlsCertificateUploadedCallback)
 
     val registrationContext = createRegistrationContext(
         sessionKeyId,
@@ -100,9 +99,9 @@ fun ClusterInfo.onboardMember(
     ) + (getAdditionalContext?.let { it(holdingId) } ?: emptyMap())
 
     if (memberSessionCert != null) {
-        configureNetworkParticipant(holdingId, sessionKeyId, mgmSessionCertAlias)
+        configureNetworkParticipant(holdingId, sessionKeyId, p2pTlsCertificateChainAlias, mgmSessionCertAlias)
     } else {
-        configureNetworkParticipant(holdingId, sessionKeyId)
+        configureNetworkParticipant(holdingId, sessionKeyId, p2pTlsCertificateChainAlias)
     }
 
     val registrationId = register(holdingId, registrationContext, waitForApproval)
@@ -182,12 +181,13 @@ fun ClusterInfo.onboardNotaryMember(
 fun ClusterInfo.configureNetworkParticipant(
     holdingId: String,
     sessionKeyId: String,
+    p2pTlsCertificateChainAlias: String,
     sessionCertAlias: String? = null
 ) {
     return cluster {
         assertWithRetryIgnoringExceptions {
             interval(1.seconds)
-            command { configureNetworkParticipant(holdingId, sessionKeyId, sessionCertAlias) }
+            command { configureNetworkParticipant(holdingId, sessionKeyId, p2pTlsCertificateChainAlias, sessionCertAlias) }
             condition { it.code == ResponseCode.NO_CONTENT.statusCode }
             failMessage("Failed to configure member '$holdingId' as a network participant")
         }

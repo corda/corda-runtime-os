@@ -34,7 +34,8 @@ fun getCa(): FileSystemCertificatesAuthority = CertificateAuthorityFactory
 fun ClusterInfo.importTlsCertificate(
     x500Name: String,
     tlsCertificateUploadedCallback: (String) -> Unit = {},
-) {
+): String {
+    val alias = "cert-$caName"
     if (!keyExists(TENANT_P2P, caName, CAT_TLS)) {
         disableCertificateRevocationChecks()
         val tlsKeyId = createKeyFor(TENANT_P2P, caName, CAT_TLS, DEFAULT_KEY_SCHEME)
@@ -44,9 +45,10 @@ fun ClusterInfo.importTlsCertificate(
             it.deleteOnExit()
             it.writeText(tlsCert)
         }
-        importCertificate(tlsCertFile, CERT_USAGE_P2P, CERT_ALIAS_P2P)
+        importCertificate(tlsCertFile, CERT_USAGE_P2P, alias)
         tlsCertificateUploadedCallback(tlsCert)
     }
+    return alias
 }
 
 /**
