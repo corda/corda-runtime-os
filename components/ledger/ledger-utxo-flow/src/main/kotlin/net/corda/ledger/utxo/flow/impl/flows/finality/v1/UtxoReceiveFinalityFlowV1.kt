@@ -32,6 +32,7 @@ import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData.Audit
+import net.corda.v5.membership.NotaryInfo
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -161,57 +162,7 @@ class UtxoReceiveFinalityFlowV1(
             }
             InitialTransactionPayload(initialTransaction, transferAdditionalSignatures, emptyList(), emptyList())
         } else {
-            val filteredTransactionsAndSignatures =
-                session.receive(FinalityPayload::class.java).filteredTransactionsAndSignatures
-            val dependentStateAndRefs =
-                filteredTransactionsAndSignatures.flatMap { (filteredTransaction, signatures) ->
-                    require(signatures.isNotEmpty()) { "No notary signatures were received" }
-                    filteredTransaction.verify()
-
-                    val filteredTxNotaryKey = filteredTransaction.notaryKey
-                    val newTxNotaryKey = initialTransaction.notaryKey
-                    val filteredTxNotaryName = filteredTransaction.notaryName
-                    val newTxNotaryKeys = if (newTxNotaryKey is CompositeKey) {
-                        require(KeyUtils.isKeyFulfilledBy(newTxNotaryKey, filteredTxNotaryKey)) {
-                            "A composite notary key of new transaction $newTxNotaryKey doesn't contain " +
-                                "a filtered transaction notary key $filteredTxNotaryKey"
-                        }
-                        newTxNotaryKey.leafKeys.toSet()
-                    } else {
-                        setOf(newTxNotaryKey)
-                    }
-
-                    val newTxNotaryNames = newTxNotaryKeys.map { memberLookup.lookup(it)?.name }
-                    require(newTxNotaryNames.contains(filteredTxNotaryName)) {
-                        "Notary name of filtered transaction \"${filteredTxNotaryName}\" doesn't match with " +
-                            "any names of initial transaction \"${newTxNotaryNames}\""
-                    }
-
-                    val newTxNotaryKeyIds = newTxNotaryKeys.map { it.fullIdHash() }
-                    for (signature in signatures) {
-                        require(newTxNotaryKeyIds.contains(signature.by)) {
-                            "Signature received \"${signature.by}\" is not signed by current notary " +
-                                "\"${notaryInfo.publicKey.fullIdHash()}\""
-                        }
-                        transactionSignatureVerificationService.verifySignature(
-                            filteredTransaction.id,
-                            signature,
-                            filteredTransaction.notaryKey
-                        )
-                    }
-                    (filteredTransaction.outputStateAndRefs as Audit<StateAndRef<*>>).values.values
-                }.associateBy { stateRef -> stateRef.ref }
-            val inputStateAndRefs = initialTransaction.inputStateRefs.map { stateRef ->
-                requireNotNull(dependentStateAndRefs[stateRef]) {
-                    "Missing input state and ref from the filtered transaction"
-                }
-            }
-            val referenceStateAndRefs = initialTransaction.referenceStateRefs.map { stateRef ->
-                requireNotNull(dependentStateAndRefs[stateRef]) {
-                    "Missing reference state and ref from the filtered transaction"
-                }
-            }
-            InitialTransactionPayload(initialTransaction, transferAdditionalSignatures, inputStateAndRefs, referenceStateAndRefs)
+            receiveDependencyPayloadAndVerify(initialTransaction, notaryInfo, transferAdditionalSignatures)
         }
     }
     private data class InitialTransactionPayload(
@@ -220,6 +171,70 @@ class UtxoReceiveFinalityFlowV1(
         val inputStateAndRefs: List<StateAndRef<*>>,
         val referenceStateAndRefs: List<StateAndRef<*>>
     )
+
+    @Suspendable
+    private fun receiveDependencyPayloadAndVerify(
+        initialTransaction: UtxoSignedTransactionInternal,
+        notaryInfo: NotaryInfo,
+        transferAdditionalSignatures: Boolean
+    ): InitialTransactionPayload {
+        val filteredTransactionsAndSignatures =
+            session.receive(FinalityPayload::class.java).filteredTransactionsAndSignatures
+        val dependentStateAndRefs =
+            filteredTransactionsAndSignatures.flatMap { (filteredTransaction, signatures) ->
+                require(signatures.isNotEmpty()) { "No notary signatures were received" }
+                filteredTransaction.verify()
+
+                val filteredTxNotaryKey = filteredTransaction.notaryKey
+                val newTxNotaryKey = initialTransaction.notaryKey
+                val filteredTxNotaryName = filteredTransaction.notaryName
+                val newTxNotaryKeys = if (newTxNotaryKey is CompositeKey) {
+                    require(KeyUtils.isKeyFulfilledBy(newTxNotaryKey, filteredTxNotaryKey)) {
+                        "A composite notary key of new transaction $newTxNotaryKey doesn't contain " +
+                                "a filtered transaction notary key $filteredTxNotaryKey"
+                    }
+                    newTxNotaryKey.leafKeys.toSet()
+                } else {
+                    setOf(newTxNotaryKey)
+                }
+
+                val newTxNotaryNames = newTxNotaryKeys.map { memberLookup.lookup(it)?.name }
+                require(newTxNotaryNames.contains(filteredTxNotaryName)) {
+                    "Notary name of filtered transaction \"${filteredTxNotaryName}\" doesn't match with " +
+                            "any names of initial transaction \"${newTxNotaryNames}\""
+                }
+
+                val newTxNotaryKeyIds = newTxNotaryKeys.map { it.fullIdHash() }
+                for (signature in signatures) {
+                    require(newTxNotaryKeyIds.contains(signature.by)) {
+                        "Signature received \"${signature.by}\" is not signed by current notary " +
+                                "\"${notaryInfo.publicKey.fullIdHash()}\""
+                    }
+                    transactionSignatureVerificationService.verifySignature(
+                        filteredTransaction.id,
+                        signature,
+                        filteredTransaction.notaryKey
+                    )
+                }
+                (filteredTransaction.outputStateAndRefs as Audit<StateAndRef<*>>).values.values
+            }.associateBy { stateRef -> stateRef.ref }
+        val inputStateAndRefs = initialTransaction.inputStateRefs.map { stateRef ->
+            requireNotNull(dependentStateAndRefs[stateRef]) {
+                "Missing input state and ref from the filtered transaction"
+            }
+        }
+        val referenceStateAndRefs = initialTransaction.referenceStateRefs.map { stateRef ->
+            requireNotNull(dependentStateAndRefs[stateRef]) {
+                "Missing reference state and ref from the filtered transaction"
+            }
+        }
+        return InitialTransactionPayload(
+            initialTransaction,
+            transferAdditionalSignatures,
+            inputStateAndRefs,
+            referenceStateAndRefs
+        )
+    }
 
     @Suspendable
     private fun verifyLatestGroupParametersAreUsed(initialTransaction: UtxoSignedTransactionInternal): SignedGroupParameters {
