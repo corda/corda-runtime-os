@@ -87,8 +87,11 @@ class SessionCloseProcessorSend(
         nextSeqNum: Int,
     ) : SessionState {
         val sessionId = sessionState.sessionId
-        val sessionProperties = KeyValueStore(sessionState.sessionProperties)
-        val requireClose = sessionProperties[FLOW_SESSION_REQUIRE_CLOSE].toBoolean()
+        val requireClose = sessionState.sessionProperties?.let {
+            val sessionProperties = KeyValueStore(sessionState.sessionProperties)
+            sessionProperties[FLOW_SESSION_REQUIRE_CLOSE].toBoolean()
+        } ?: true
+
         return if (isInitiatedIdentity(sessionId) && sessionState.status !in listOf(SessionStateType.ERROR, SessionStateType.CLOSED)) {
             if (requireClose) {
                 sessionState.apply {
