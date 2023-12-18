@@ -4,6 +4,7 @@ import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.utils.INITIATED_SESSION_ID_SUFFIX
+import net.corda.flow.utils.KeyValueStore
 import net.corda.messaging.api.chunking.MessagingChunkFactory
 import net.corda.session.manager.Constants
 import net.corda.session.manager.impl.SessionManagerImpl
@@ -84,12 +85,15 @@ class SessionStateConfirmedTransitionTest {
             0,
             listOf(),
             1,
-            listOf()
+            listOf(),
+            sessionProperties = KeyValueStore().apply {
+                put(Constants.FLOW_SESSION_REQUIRE_CLOSE, false.toString())
+            }.avro
         )
     }
 
     private fun SessionState.requireClose(requireClose: Boolean) =
-        sessionProperties.apply {
+        KeyValueStore(sessionProperties).apply {
             put(Constants.FLOW_SESSION_REQUIRE_CLOSE, requireClose.toString())
         }
 }
