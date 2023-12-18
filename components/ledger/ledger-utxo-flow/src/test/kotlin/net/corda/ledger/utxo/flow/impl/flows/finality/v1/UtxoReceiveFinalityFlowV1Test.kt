@@ -543,6 +543,7 @@ class UtxoReceiveFinalityFlowV1Test {
         val filteredTransaction = mock<UtxoFilteredTransaction>().also {
             whenever(it.outputStateAndRefs).thenReturn(filteredOutputStateAndRefs)
             whenever(it.notaryKey).thenReturn(publicKeyNotary)
+            whenever(it.notaryName).thenReturn(notaryX500Name)
         }
         val filteredTxAndSig = FilteredTransactionAndSignatures(filteredTransaction, listOf(signatureNotary))
         val finalityPayload = FinalityPayload(signedTransaction, true)
@@ -584,6 +585,7 @@ class UtxoReceiveFinalityFlowV1Test {
         val filteredTransaction = mock<UtxoFilteredTransaction>().also {
             whenever(it.outputStateAndRefs).thenReturn(filteredOutputStateAndRefs)
             whenever(it.notaryKey).thenReturn(publicKeyNotary)
+            whenever(it.notaryName).thenReturn(notaryX500Name)
         }
         val filteredTxAndSig = FilteredTransactionAndSignatures(filteredTransaction, listOf(signatureAnotherNotary))
         val finalityPayload = FinalityPayload(signedTransaction, true)

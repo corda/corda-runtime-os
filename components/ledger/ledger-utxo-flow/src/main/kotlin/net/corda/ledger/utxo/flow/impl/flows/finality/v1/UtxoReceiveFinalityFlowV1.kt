@@ -24,6 +24,8 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.crypto.CompositeKey
+import net.corda.v5.crypto.KeyUtils
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.common.transaction.TransactionSignatureVerificationService
 import net.corda.v5.ledger.utxo.StateAndRef
@@ -165,9 +167,30 @@ class UtxoReceiveFinalityFlowV1(
                 filteredTransactionsAndSignatures.flatMap { (filteredTransaction, signatures) ->
                     require(signatures.isNotEmpty()) { "No notary signatures were received" }
                     filteredTransaction.verify()
+                    require(filteredTransaction.notaryName == initialTransaction.notaryName) {
+                        "Notary name of filtered transaction \"${filteredTransaction.notaryName}\" doesn't match with " +
+                            "notary name of initial transaction \"${initialTransaction.notaryName}\""
+                    }
+
+                    val filteredTxNotaryKey = filteredTransaction.notaryKey
+                    val newTxNotaryKey = initialTransaction.notaryKey
+                    require(filteredTxNotaryKey == newTxNotaryKey) {
+                        "Notary key of filtered transaction \"${filteredTxNotaryKey}\" doesn't match with " +
+                            "notary key of initial transaction \"${newTxNotaryKey}\""
+                    }
+
+                    val newTxNotaryKeyIds = if (newTxNotaryKey is CompositeKey) {
+                        require(KeyUtils.isKeyFulfilledBy(newTxNotaryKey, filteredTxNotaryKey)) {
+                            "A composite notary key of new transaction $newTxNotaryKey doesn't contain " +
+                                "a filtered transaction notary key $filteredTxNotaryKey"
+                        }
+                        newTxNotaryKey.leafKeys.toSet().map { it.fullIdHash() }
+                    } else {
+                        setOf(newTxNotaryKey.fullIdHash())
+                    }
 
                     for (signature in signatures) {
-                        require(notaryInfo.publicKey.fullIdHash() == signature.by) {
+                        require(newTxNotaryKeyIds.contains(signature.by)) {
                             "Signature received \"${signature.by}\" is not signed by current notary " +
                                 "\"${notaryInfo.publicKey.fullIdHash()}\""
                         }
