@@ -56,6 +56,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
     private val taskManagerHelper = TaskManagerHelper(
         taskManager, stateManagerHelper, metrics
     )
+    private val groupAllocator = GroupAllocator()
     private val uniqueId = UUID.randomUUID().toString()
     private val lifecycleCoordinatorName = LifecycleCoordinatorName(
         "MultiSourceEventMediator--${config.name}", uniqueId
@@ -174,7 +175,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         val startTimestamp = System.nanoTime()
         val polledRecords = messages.map { it.toRecord() }
         if (messages.isNotEmpty()) {
-            var groups = allocateGroups(polledRecords)
+            var groups = groupAllocator.allocateGroups(polledRecords, config)
             var statesToProcess = stateManager.get(messages.map { it.key.toString() }.distinct())
 
             while (groups.isNotEmpty()) {
@@ -274,7 +275,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         retrievedStates: Map<String, State>,
         polledEvents: List<Record<K, E>>
     ) = if (retrievedStates.isNotEmpty()) {
-        allocateGroups(polledEvents.filter { retrievedStates.containsKey(it.key.toString()) })
+        groupAllocator.allocateGroups(polledEvents.filter { retrievedStates.containsKey(it.key.toString()) }, config)
     } else {
         listOf()
     }
@@ -325,25 +326,6 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                 }
             }
         }
-    }
-
-    private fun allocateGroups(events: List<Record<K, E>>): List<Map<K, List<Record<K, E>>>> {
-        val groups = mutableListOf<MutableMap<K, List<Record<K, E>>>>()
-        val groupCountBasedOnEvents = (events.size / 20).coerceAtLeast(1)
-        val groupsCount = if (groupCountBasedOnEvents < config.threads) groupCountBasedOnEvents else config.threads
-        for (i in 0 until groupsCount) {
-            groups.add(mutableMapOf())
-        }
-        val buckets = events.groupBy { it.key }
-        val bucketSizes = buckets.keys.sortedByDescending { buckets[it]?.size }
-        for (i in buckets.size - 1 downTo 0 step 1) {
-            val group = groups.minBy { it.values.flatten().size }
-            val key = bucketSizes[i]
-            val records = buckets[key]!!
-            group[key] = records
-        }
-
-        return groups
     }
 
     data class StatestoPersist(

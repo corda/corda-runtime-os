@@ -62,6 +62,7 @@ class Gateway(
         lifecycleCoordinatorFactory,
         configurationReaderService,
         subscriptionFactory,
+        publisherFactory,
         messagingConfiguration,
         avroSchemaRegistry,
         commonComponents,

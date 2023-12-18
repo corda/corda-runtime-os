@@ -84,13 +84,15 @@ class StateManagerImpl(
         val failedByNotExisting = (failedUpdates - failedByOptimisticLocking.keys)
 
         var warning = ""
-        if (failedByOptimisticLocking.isNotEmpty())
+        if (failedByOptimisticLocking.isNotEmpty()) {
             warning += "Optimistic locking prevented updates to the following States: " +
-                    failedByOptimisticLocking.keys.joinToString(postfix = ". ")
+                failedByOptimisticLocking.keys.joinToString(postfix = ". ")
+        }
 
-        if (failedByNotExisting.isNotEmpty())
+        if (failedByNotExisting.isNotEmpty()) {
             warning += "Failed to update the following States because they did not exist or were already deleted: " +
-                    failedByNotExisting.joinToString(postfix = ".")
+                failedByNotExisting.joinToString(postfix = ".")
+        }
 
         logger.warn(warning)
 
@@ -110,8 +112,10 @@ class StateManagerImpl(
             } else {
                 get(failedDeletes).also {
                     if (it.isNotEmpty()) {
-                        logger.warn("Optimistic locking check failed while deleting States" +
-                                " ${failedDeletes.joinToString()}")
+                        logger.warn(
+                            "Optimistic locking check failed while deleting States" +
+                                " ${failedDeletes.joinToString()}"
+                        )
                     }
                 }
             }
