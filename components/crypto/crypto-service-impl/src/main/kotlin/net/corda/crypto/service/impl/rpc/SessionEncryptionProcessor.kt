@@ -5,7 +5,6 @@ import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
-import net.corda.crypto.impl.toMap
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.crypto.wire.ops.encryption.request.EncryptRpcCommand
 import net.corda.data.crypto.wire.ops.encryption.response.CryptoEncryptionResult

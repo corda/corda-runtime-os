@@ -4,7 +4,6 @@ import net.corda.crypto.core.ApiNames.DECRYPT_PATH
 import net.corda.crypto.core.ApiNames.ENCRYPT_PATH
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
-import net.corda.crypto.impl.toWire
 import net.corda.data.crypto.wire.ops.encryption.request.DecryptRpcCommand
 import net.corda.data.crypto.wire.ops.encryption.request.EncryptRpcCommand
 import net.corda.data.crypto.wire.ops.encryption.response.CryptoDecryptionResult

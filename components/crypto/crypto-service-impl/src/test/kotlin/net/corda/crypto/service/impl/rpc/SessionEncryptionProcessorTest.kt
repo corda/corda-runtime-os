@@ -4,7 +4,6 @@ import net.corda.crypto.config.impl.RetryingConfig
 import net.corda.crypto.core.CryptoService
 import net.corda.crypto.core.CryptoTenants
 import net.corda.data.ExceptionEnvelope
-import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.ops.encryption.request.EncryptRpcCommand
 import net.corda.data.crypto.wire.ops.encryption.response.CryptoEncryptionResult
 import net.corda.data.crypto.wire.ops.encryption.response.EncryptionOpsError
@@ -27,7 +26,6 @@ class SessionEncryptionProcessorTest {
                 any(),
                 any(),
                 any(),
-                any(),
             )
         } doReturn byteArrayOf(5, 2)
     }
@@ -39,7 +37,6 @@ class SessionEncryptionProcessorTest {
         "category",
         "alias",
         ByteBuffer.wrap(byteArrayOf(4)),
-        KeyValuePairList(emptyList()),
     )
     private val processor = SessionEncryptionProcessor(
         service,
@@ -67,7 +64,6 @@ class SessionEncryptionProcessorTest {
                 tenant.capture(),
                 any(),
                 any(),
-                any()
             )
         ).doReturn(
             byteArrayOf(),
@@ -87,7 +83,6 @@ class SessionEncryptionProcessorTest {
                 any(),
                 data.capture(),
                 any(),
-                any()
             )
         ).doReturn(
             byteArrayOf(),
@@ -107,7 +102,6 @@ class SessionEncryptionProcessorTest {
                 any(),
                 any(),
                 alias.capture(),
-                any()
             )
         ).doReturn(
             byteArrayOf(),
@@ -123,7 +117,6 @@ class SessionEncryptionProcessorTest {
     fun `process return error in case service failed`() {
         whenever(
             service.encrypt(
-                any(),
                 any(),
                 any(),
                 any(),

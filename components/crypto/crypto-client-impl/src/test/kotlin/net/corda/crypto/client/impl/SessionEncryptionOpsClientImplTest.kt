@@ -1,7 +1,6 @@
 package net.corda.crypto.client.impl
 
 import net.corda.crypto.core.CryptoConsts.Categories.ENCRYPTION_SECRET
-import net.corda.crypto.impl.toWire
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.crypto.wire.ops.encryption.request.DecryptRpcCommand
 import net.corda.data.crypto.wire.ops.encryption.request.EncryptRpcCommand
@@ -59,7 +58,7 @@ class SessionEncryptionOpsClientImplTest {
             val results = CryptoEncryptionResult(ByteBuffer.wrap(data))
             whenever(response.response).doReturn(results)
 
-            val encrypted = client.encryptSessionData(byteArrayOf(1, 2), "alias", mapOf("one" to "two"))
+            val encrypted = client.encryptSessionData(byteArrayOf(1, 2), "alias")
 
             assertThat(encrypted).isEqualTo(data)
         }
@@ -132,7 +131,7 @@ class SessionEncryptionOpsClientImplTest {
             val results = CryptoDecryptionResult(ByteBuffer.wrap(data))
             whenever(response.response).doReturn(results)
 
-            val encrypted = client.decryptSessionData(byteArrayOf(1, 2), "alias", mapOf("one" to "two"))
+            val encrypted = client.decryptSessionData(byteArrayOf(1, 2), "alias")
 
             assertThat(encrypted).isEqualTo(data)
         }
