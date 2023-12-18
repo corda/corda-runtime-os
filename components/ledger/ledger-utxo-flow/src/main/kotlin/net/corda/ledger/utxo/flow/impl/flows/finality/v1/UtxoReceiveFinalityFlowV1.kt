@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality.v1
 
+import net.corda.crypto.core.fullIdHash
 import net.corda.flow.application.GroupParametersLookupInternal
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus
@@ -166,6 +167,10 @@ class UtxoReceiveFinalityFlowV1(
                     filteredTransaction.verify()
 
                     for (signature in signatures) {
+                        require(notaryInfo.publicKey.fullIdHash() == signature.by) {
+                            "Signature received \"${signature.by}\" is not signed by current notary " +
+                                "\"${notaryInfo.publicKey.fullIdHash()}\""
+                        }
                         transactionSignatureVerificationService.verifySignature(
                             filteredTransaction.id,
                             signature,

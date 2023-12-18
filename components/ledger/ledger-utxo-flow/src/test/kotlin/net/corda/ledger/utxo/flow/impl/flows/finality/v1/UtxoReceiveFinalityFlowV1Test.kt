@@ -73,12 +73,6 @@ class UtxoReceiveFinalityFlowV1Test {
         val anotherGroupParametersHash = SecureHashImpl("algo", byteArrayOf(11, 0, 0))
     }
 
-    private val notaryInfo = mock<NotaryInfo>().also {
-        whenever(it.isBackchainRequired).thenReturn(true)
-    }
-    private val notaryLookup = mock<NotaryLookup>().also {
-        whenever(it.lookup(notaryX500Name)).thenReturn(notaryInfo)
-    }
     private val memberLookup = mock<MemberLookup>()
     private val persistenceService = mock<UtxoLedgerPersistenceService>()
     private val groupParametersLookup = mock<GroupParametersLookupInternal>()
@@ -107,12 +101,22 @@ class UtxoReceiveFinalityFlowV1Test {
     private val publicKey2 = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x03)) }
     private val publicKey3 = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x04)) }
     private val publicKeyNotary = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x05)) }
+    private val publicKeyAnotherNotary = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x06)) }
 
     private val signature0 = digitalSignatureAndMetadata(publicKey0, byteArrayOf(1, 2, 0))
     private val signature1 = digitalSignatureAndMetadata(publicKey1, byteArrayOf(1, 2, 3))
     private val signature2 = digitalSignatureAndMetadata(publicKey2, byteArrayOf(1, 2, 4))
     private val signature3 = digitalSignatureAndMetadata(publicKey3, byteArrayOf(1, 2, 5))
     private val signatureNotary = digitalSignatureAndMetadata(publicKeyNotary, byteArrayOf(1, 2, 6))
+    private val signatureAnotherNotary = digitalSignatureAndMetadata(publicKeyAnotherNotary, byteArrayOf(1, 2, 7))
+
+    private val notaryInfo = mock<NotaryInfo>().also {
+        whenever(it.isBackchainRequired).thenReturn(true)
+        whenever(it.publicKey).thenReturn(publicKeyNotary)
+    }
+    private val notaryLookup = mock<NotaryLookup>().also {
+        whenever(it.lookup(notaryX500Name)).thenReturn(notaryInfo)
+    }
 
     private val metadata = mock<TransactionMetadataInternal>()
 
@@ -572,6 +576,34 @@ class UtxoReceiveFinalityFlowV1Test {
         callReceiveFinalityFlow()
 
         verify(flowEngine, timeout(100).times(1)).subFlow(any<TransactionBackchainResolutionFlow>())
+    }
+
+    @Test
+    fun `fail if received signatures in filtered tx are not signed by the notary of initial tx`() {
+        val filteredOutputStateAndRefs = mock<Audit<StateAndRef<*>>>()
+        val filteredTransaction = mock<UtxoFilteredTransaction>().also {
+            whenever(it.outputStateAndRefs).thenReturn(filteredOutputStateAndRefs)
+            whenever(it.notaryKey).thenReturn(publicKeyNotary)
+        }
+        val filteredTxAndSig = FilteredTransactionAndSignatures(filteredTransaction, listOf(signatureAnotherNotary))
+        val finalityPayload = FinalityPayload(signedTransaction, true)
+        val finalityPayloadWithFilteredTx = FinalityPayload(listOf(filteredTxAndSig))
+
+        whenever(notaryInfo.isBackchainRequired).thenReturn(false)
+        whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1, signature2))
+        whenever(session.receive(FinalityPayload::class.java)).thenReturn(finalityPayload, finalityPayloadWithFilteredTx)
+        whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
+        whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
+        whenever(
+            transactionSignatureVerificationService.verifySignature(filteredTransaction.id, signatureNotary, filteredTransaction.notaryKey)
+        )
+            .thenAnswer { }
+
+        assertThatThrownBy { callReceiveFinalityFlow() }
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessageContaining(
+                "Signature received \"${signatureAnotherNotary.by}\" is not signed by current notary \"${notaryInfo.publicKey.fullIdHash()}\""
+            )
     }
 
     private fun callReceiveFinalityFlow(validator: UtxoTransactionValidator = UtxoTransactionValidator { }) {

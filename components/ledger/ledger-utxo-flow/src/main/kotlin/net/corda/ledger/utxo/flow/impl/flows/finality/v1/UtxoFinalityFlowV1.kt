@@ -159,7 +159,6 @@ class UtxoFinalityFlowV1(
                     )
                 }
             flowMessaging.sendAll(FinalityPayload(filteredTransactionsAndSignatures), sessions.toSet())
-            log.info(("SENT FILTERED TRANSACTION!!"))
         }
     }
 
