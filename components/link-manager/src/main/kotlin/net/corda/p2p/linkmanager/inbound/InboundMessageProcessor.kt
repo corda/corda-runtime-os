@@ -34,6 +34,7 @@ import net.corda.data.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.linkmanager.metrics.recordInboundHeartbeatMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordInboundMessagesMetric
 import net.corda.p2p.linkmanager.metrics.recordInboundSessionMessagesMetric
+import net.corda.p2p.linkmanager.metrics.recordOutboundSessionMessagesMetric
 import net.corda.schema.Schemas
 import net.corda.tracing.traceEventProcessing
 import net.corda.utilities.debug
@@ -130,6 +131,7 @@ internal class InboundMessageProcessor(
                                 )
                             )
                             traceEventProcessing(messages[i].originalRecord, tracingEventName) { records }
+                            recordOutboundSessionMessagesMetric(response.header.sourceIdentity, response.header.destinationIdentity)
                             records
                         } else {
                             logger.warn(
@@ -145,6 +147,7 @@ internal class InboundMessageProcessor(
                     else -> {
                         val records = listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), response))
                         traceEventProcessing(messages[i].originalRecord, tracingEventName) { records }
+                        recordOutboundSessionMessagesMetric(response.header.sourceIdentity, response.header.destinationIdentity)
                         records
                     }
                 }
