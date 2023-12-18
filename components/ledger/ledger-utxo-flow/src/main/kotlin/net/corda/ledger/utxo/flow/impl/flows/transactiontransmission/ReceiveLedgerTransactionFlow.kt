@@ -14,7 +14,6 @@ import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.ledger.utxo.VisibilityChecker
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -25,14 +24,11 @@ class ReceiveLedgerTransactionFlow(
 ) : SubFlow<UtxoLedgerTransaction> {
 
     private companion object {
-        private val log: Logger = LoggerFactory.getLogger(ReceiveTransactionFlow::class.java)
+        private val log: Logger = LoggerFactory.getLogger(ReceiveLedgerTransactionFlow::class.java)
     }
 
     @CordaInject
     lateinit var flowEngine: FlowEngine
-
-    @CordaInject
-    lateinit var visibilityChecker: VisibilityChecker
 
     @CordaInject
     lateinit var utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory
