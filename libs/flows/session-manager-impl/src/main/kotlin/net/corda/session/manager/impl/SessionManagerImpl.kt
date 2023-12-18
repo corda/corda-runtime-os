@@ -176,9 +176,10 @@ class SessionManagerImpl @Activate constructor(
     ): List<SessionEvent> {
         val lastReceivedMessageTime = sessionState.lastReceivedMessageTime
 
-        val sessionProperties = KeyValueStore(sessionState.sessionProperties)
-        val sessionTimeout = sessionProperties[FLOW_SESSION_TIMEOUT_MS]?.toInt()
-            ?: config.getInt(FlowConfig.SESSION_TIMEOUT_WINDOW)
+        val sessionTimeout = sessionState.sessionProperties?.let {
+            val sessionProperties = KeyValueStore(sessionState.sessionProperties)
+            sessionProperties[FLOW_SESSION_TIMEOUT_MS]?.toInt()
+        } ?: config.getInt(FlowConfig.SESSION_TIMEOUT_WINDOW)
         val sessionTimeoutTimestamp = lastReceivedMessageTime.plusMillis(sessionTimeout.toLong())
 
         return if (instant > sessionTimeoutTimestamp) {
