@@ -17,26 +17,43 @@ internal class FileSystemCertificatesAuthorityImpl(
 ),
     FileSystemCertificatesAuthority {
     companion object {
+        @Synchronized
+        private fun <T> File.lock(block: () -> T): T {
+            this.mkdirs()
+            val lockFile = File(this, "lock")
+            lockFile.createNewFile()
+            return lockFile.outputStream().use { out ->
+                out.channel.use { channel ->
+                    channel.lock().use {
+                        block()
+                    }
+                }
+            }
+
+
+        }
         fun loadOrGenerate(
             keysFactoryDefinitions: KeysFactoryDefinitions,
             validDuration: Duration,
             home: File,
         ): FileSystemCertificatesAuthority {
             val (firstSerialNumber, defaultPrivateKeyAndCertificate) = if (home.exists()) {
-                val serialNumber = File(home, "serialNumber.txt").readText().toLong()
-                val keyStoreFile = File(home, "keystore.jks")
-                val keyStore = keyStoreFile.inputStream().use { input ->
-                    KeyStore.getInstance("JKS").also { keyStore ->
-                        keyStore.load(input, PASSWORD.toCharArray())
+                home.lock {
+                    val serialNumber = File(home, "serialNumber.txt").readText().toLong()
+                    val keyStoreFile = File(home, "keystore.jks")
+                    val keyStore = keyStoreFile.inputStream().use { input ->
+                        KeyStore.getInstance("JKS").also { keyStore ->
+                            keyStore.load(input, PASSWORD.toCharArray())
+                        }
                     }
+                    val alias = keyStore.aliases().nextElement()
+                    serialNumber to
+                            PrivateKeyWithCertificate(
+                                keyStore.getKey(alias, PASSWORD.toCharArray())
+                                        as PrivateKey,
+                                keyStore.getCertificate(alias)
+                            )
                 }
-                val alias = keyStore.aliases().nextElement()
-                serialNumber to
-                    PrivateKeyWithCertificate(
-                        keyStore.getKey(alias, PASSWORD.toCharArray())
-                            as PrivateKey,
-                        keyStore.getCertificate(alias)
-                    )
             } else {
                 1L to null
             }
@@ -51,10 +68,11 @@ internal class FileSystemCertificatesAuthorityImpl(
     }
 
     override fun save() {
-        home.mkdirs()
-        File(home, "serialNumber.txt").writeText(serialNumber.toString())
-        File(home, "keystore.jks").outputStream().use {
-            asKeyStore("alias").store(it, PASSWORD.toCharArray())
+        home.lock {
+            File(home, "serialNumber.txt").writeText(serialNumber.toString())
+            File(home, "keystore.jks").outputStream().use {
+                asKeyStore("alias").store(it, PASSWORD.toCharArray())
+            }
         }
     }
 }
