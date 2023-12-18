@@ -41,6 +41,7 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companio
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_REFRESH_THRESHOLD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
 import net.corda.libs.platform.PlatformInfoProvider
+import net.corda.libs.statemanager.api.StateManager
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -652,6 +653,8 @@ class P2PLayerEndToEndTest {
             on { getGroupReader(any()) } doReturn groupReader
         }
 
+        private val stateManager = mockLifeCycle<StateManager> {  }
+
         private val linkManager =
             LinkManager(
                 subscriptionFactory,
@@ -666,6 +669,7 @@ class P2PLayerEndToEndTest {
                 membershipGroupReaderProvider,
                 mock(),
                 mock(),
+                stateManager,
             )
         private val platformInfoProvider = object : PlatformInfoProvider {
             override val activePlatformVersion = 1
