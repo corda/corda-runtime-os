@@ -25,7 +25,9 @@ private val caName = UUID.randomUUID().toString()
 fun getCa(): FileSystemCertificatesAuthority = CertificateAuthorityFactory
     .createFileSystemLocalAuthority(
         KeysFactoryDefinitions("RSA".toAlgorithm(), 3072, null,),
-        File("build${File.separator}tmp${File.separator}ca${File.separator}$caName")
+        File("build${File.separator}tmp${File.separator}ca${File.separator}$caName").also {
+            println("QQQ getCa - file is $it")
+        }
     ).also { it.save() }
 
 val FileSystemCertificatesAuthority.name: String
