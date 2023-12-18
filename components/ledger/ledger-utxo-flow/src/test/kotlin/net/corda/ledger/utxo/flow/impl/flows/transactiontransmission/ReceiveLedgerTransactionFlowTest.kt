@@ -3,18 +3,17 @@ package net.corda.ledger.utxo.flow.impl.flows.transactiontransmission
 import net.corda.crypto.core.SecureHashImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.flows.Payload
+import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionInternal
 import net.corda.ledger.utxo.flow.impl.flows.backchain.TransactionBackchainResolutionFlow
 import net.corda.ledger.utxo.flow.impl.flows.backchain.dependencies
 import net.corda.ledger.utxo.flow.impl.flows.finality.v1.UtxoFinalityFlowV1Test.TestContact
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoLedgerTransactionFactory
-import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TransactionState
-import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -43,7 +42,7 @@ class ReceiveLedgerTransactionFlowTest {
     private val sessionAlice = mock<FlowSession>()
 
     private val transaction = mock<WireTransaction>()
-    private val ledgerTransaction = mock<UtxoLedgerTransaction>()
+    private val ledgerTransaction = mock<UtxoLedgerTransactionInternal>()
 
     private val publicKeyAlice = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x01)) }
     private val publicKeyBob = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x02)) }
@@ -56,25 +55,13 @@ class ReceiveLedgerTransactionFlowTest {
     fun beforeEach() {
         whenever(transaction.id).thenReturn(TX_ID_1)
         whenever(flowEngine.subFlow(any<TransactionBackchainResolutionFlow>())).thenReturn(Unit)
-//        whenever(utxoLedgerTransactionFactory.create(transaction)).thenReturn(ledgerTransaction)
+        whenever(utxoLedgerTransactionFactory.create(transaction)).thenReturn(ledgerTransaction)
 
         // Single output State
-//        whenever(transaction.outputStateAndRefs).thenReturn(listOf(stateAndRef))
         whenever(stateAndRef.state).thenReturn(transactionState)
         whenever(transactionState.contractType).thenReturn(TestContact::class.java)
         whenever(transactionState.contractState).thenReturn(testState)
     }
-
-//    @Test
-//    fun `successful verification in receive flow should persist transaction`() {
-//        whenever(sessionAlice.receive(UtxoSignedTransactionInternal::class.java)).thenReturn(transaction)
-//        whenever(visibilityChecker.containsMySigningKeys(listOf(publicKeyAlice))).thenReturn(true)
-//        whenever(visibilityChecker.containsMySigningKeys(listOf(publicKeyBob))).thenReturn(true)
-//
-//        callReceiveTransactionFlow(sessionAlice)
-//
-//        verify(utxoLedgerPersistenceService).persist(transaction, VERIFIED, transaction.getVisibleStateIndexes(visibilityChecker))
-//    }
 
     @Test
     fun `receiving transaction with dependencies should call backchain resolution flow`() {
@@ -99,45 +86,10 @@ class ReceiveLedgerTransactionFlowTest {
         verify(sessionAlice).send(Payload.Success("Successfully received transaction."))
     }
 
-    @Test
-    fun `receiving invalid transaction with signatory signature verification failure should throw exception`() {
-        whenever(sessionAlice.receive(WireTransaction::class.java)).thenReturn(transaction)
-
-        verify(sessionAlice).receive(WireTransaction::class.java)
-        verify(sessionAlice).send(
-            Payload.Failure<List<DigitalSignatureAndMetadata>>(
-                "Failed to verify transaction and signatures of transaction: ${transaction.id}"
-            )
-        )
-    }
-
-    @Test
-    fun `receiving invalid transaction with notary signature verification failure should throw exception`() {
-        whenever(sessionAlice.receive(WireTransaction::class.java)).thenReturn(transaction)
-
-        verify(sessionAlice).receive(WireTransaction::class.java)
-        verify(sessionAlice).send(
-            Payload.Failure<List<DigitalSignatureAndMetadata>>(
-                "Failed to verify transaction and signatures of transaction: ${transaction.id}"
-            )
-        )
-    }
-
-    @Test
-    fun `receiving invalid transaction with transaction verification failure should throw exception`() {
-        whenever(sessionAlice.receive(WireTransaction::class.java)).thenReturn(transaction)
-
-        verify(sessionAlice).receive(WireTransaction::class.java)
-        verify(sessionAlice).send(
-            Payload.Failure<List<DigitalSignatureAndMetadata>>(
-                "Failed to verify transaction and signatures of transaction: ${transaction.id}"
-            )
-        )
-    }
-
     private fun callReceiveTransactionFlow(session: FlowSession) {
         val flow = spy(ReceiveLedgerTransactionFlow(session))
         flow.utxoLedgerTransactionFactory = utxoLedgerTransactionFactory
+        flow.flowEngine = flowEngine
         flow.call()
     }
 
