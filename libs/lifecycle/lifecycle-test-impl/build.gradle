@@ -16,9 +16,9 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'org.jetbrains.kotlin:kotlin-osgi-bundle'
-    implementation "org.assertj:assertj-core:$assertjVersion"
-    implementation "org.mockito:mockito-core:$mockitoVersion"
-    implementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    implementation libs.assertj.core
+    implementation libs.mockito.core
+    implementation libs.mockito.kotlin
     implementation 'net.corda:corda-base'
     implementation 'org.slf4j:slf4j-api'
 }

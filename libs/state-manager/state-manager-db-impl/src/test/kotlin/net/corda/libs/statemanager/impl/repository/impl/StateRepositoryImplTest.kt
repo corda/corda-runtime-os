@@ -35,7 +35,7 @@ class StateRepositoryImplTest {
         assertThat(failed.size).isEqualTo(3)
     }
 
-    private fun createStates(numStates: Int) : Collection<StateEntity> {
+    private fun createStates(numStates: Int): Collection<StateEntity> {
         return (1..numStates).map {
             StateEntity(
                 "foo_$it",

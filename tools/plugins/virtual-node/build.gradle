@@ -47,9 +47,7 @@ dependencies {
     // the Postgres drivers are packaged within the tool itself.
     runtimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 
-    testImplementation 'org.jetbrains.kotlin:kotlin-stdlib'
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation libs.bundles.test
     testImplementation "org.pf4j:pf4j:$pf4jVersion"
     testCompileOnly "net.corda.cli.host:api:$pluginHostVersion"
 }

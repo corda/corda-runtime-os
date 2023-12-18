@@ -598,29 +598,45 @@ class StateManagerIntegrationTest {
             { i, _ -> """{ "number": $i, "boolean": ${i % 2 == 0}, "string": "random_$i" }""" }
         )
 
-        assertThat(stateManager.findByMetadataMatchingAll(listOf(
-            MetadataFilter("number", Operation.GreaterThan, 5),
-            MetadataFilter("number", Operation.LesserThan, 7),
-            MetadataFilter("boolean", Operation.Equals, true),
-            MetadataFilter("string", Operation.Equals, "random_6"),
-        ))).hasSize(1)
+        assertThat(
+            stateManager.findByMetadataMatchingAll(
+                listOf(
+                    MetadataFilter("number", Operation.GreaterThan, 5),
+                    MetadataFilter("number", Operation.LesserThan, 7),
+                    MetadataFilter("boolean", Operation.Equals, true),
+                    MetadataFilter("string", Operation.Equals, "random_6"),
+                )
+            )
+        ).hasSize(1)
 
-        assertThat(stateManager.findByMetadataMatchingAll(listOf(
-            MetadataFilter("number", Operation.GreaterThan, 5),
-            MetadataFilter("number", Operation.LesserThan, 7),
-            MetadataFilter("boolean", Operation.Equals, true),
-            MetadataFilter("string", Operation.Equals, "non_existing_value"),
-        ))).isEmpty()
+        assertThat(
+            stateManager.findByMetadataMatchingAll(
+                listOf(
+                    MetadataFilter("number", Operation.GreaterThan, 5),
+                    MetadataFilter("number", Operation.LesserThan, 7),
+                    MetadataFilter("boolean", Operation.Equals, true),
+                    MetadataFilter("string", Operation.Equals, "non_existing_value"),
+                )
+            )
+        ).isEmpty()
 
-        assertThat(stateManager.findByMetadataMatchingAll(listOf(
-            MetadataFilter("number", Operation.GreaterThan, 0),
-            MetadataFilter("boolean", Operation.Equals, true),
-        ))).hasSize(count / 2)
+        assertThat(
+            stateManager.findByMetadataMatchingAll(
+                listOf(
+                    MetadataFilter("number", Operation.GreaterThan, 0),
+                    MetadataFilter("boolean", Operation.Equals, true),
+                )
+            )
+        ).hasSize(count / 2)
 
-        assertThat(stateManager.findByMetadataMatchingAll(listOf(
-            MetadataFilter("number", Operation.NotEquals, 0),
-            MetadataFilter("string", Operation.Equals, "non_existing_key"),
-        ))).isEmpty()
+        assertThat(
+            stateManager.findByMetadataMatchingAll(
+                listOf(
+                    MetadataFilter("number", Operation.NotEquals, 0),
+                    MetadataFilter("string", Operation.Equals, "non_existing_key"),
+                )
+            )
+        ).isEmpty()
     }
 
     @Test
@@ -634,31 +650,51 @@ class StateManagerIntegrationTest {
             { i, _ -> """{ "number": $i, "boolean": ${i % 2 == 0}, "string": "random_$i" }""" }
         )
 
-        assertThat(stateManager.findByMetadataMatchingAny(listOf(
-            MetadataFilter("number", Operation.Equals, 5),
-            MetadataFilter("number", Operation.Equals, 7),
-            MetadataFilter("string", Operation.Equals, "random_6"),
-        ))).hasSize(3)
+        assertThat(
+            stateManager.findByMetadataMatchingAny(
+                listOf(
+                    MetadataFilter("number", Operation.Equals, 5),
+                    MetadataFilter("number", Operation.Equals, 7),
+                    MetadataFilter("string", Operation.Equals, "random_6"),
+                )
+            )
+        ).hasSize(3)
 
-        assertThat(stateManager.findByMetadataMatchingAny(listOf(
-            MetadataFilter("number", Operation.GreaterThan, 5),
-            MetadataFilter("number", Operation.LesserThan, 7),
-        ))).hasSize(count)
+        assertThat(
+            stateManager.findByMetadataMatchingAny(
+                listOf(
+                    MetadataFilter("number", Operation.GreaterThan, 5),
+                    MetadataFilter("number", Operation.LesserThan, 7),
+                )
+            )
+        ).hasSize(count)
 
-        assertThat(stateManager.findByMetadataMatchingAny(listOf(
-            MetadataFilter("boolean", Operation.Equals, false),
-            MetadataFilter("boolean", Operation.Equals, true),
-        ))).hasSize(count)
+        assertThat(
+            stateManager.findByMetadataMatchingAny(
+                listOf(
+                    MetadataFilter("boolean", Operation.Equals, false),
+                    MetadataFilter("boolean", Operation.Equals, true),
+                )
+            )
+        ).hasSize(count)
 
-        assertThat(stateManager.findByMetadataMatchingAny(listOf(
-            MetadataFilter("number", Operation.GreaterThan, 20),
-            MetadataFilter("boolean", Operation.Equals, true),
-        ))).hasSize(count / 2)
+        assertThat(
+            stateManager.findByMetadataMatchingAny(
+                listOf(
+                    MetadataFilter("number", Operation.GreaterThan, 20),
+                    MetadataFilter("boolean", Operation.Equals, true),
+                )
+            )
+        ).hasSize(count / 2)
 
-        assertThat(stateManager.findByMetadataMatchingAny(listOf(
-            MetadataFilter("number", Operation.Equals, 0),
-            MetadataFilter("string", Operation.Equals, "non_existing_key"),
-        ))).isEmpty()
+        assertThat(
+            stateManager.findByMetadataMatchingAny(
+                listOf(
+                    MetadataFilter("number", Operation.Equals, 0),
+                    MetadataFilter("string", Operation.Equals, "non_existing_key"),
+                )
+            )
+        ).isEmpty()
     }
 
     @Test

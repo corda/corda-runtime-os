@@ -19,7 +19,4 @@ dependencies {
     api project(":libs:rest:rest")
     implementation project(":libs:permissions:permission-manager")
     implementation project(":libs:lifecycle:lifecycle")
-
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

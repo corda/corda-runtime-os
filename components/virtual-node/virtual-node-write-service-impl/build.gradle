@@ -56,9 +56,6 @@ dependencies {
     testImplementation project(':testing:db-testkit')
     testImplementation project(':testing:test-utilities')
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-
     testRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"

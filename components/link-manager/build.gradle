@@ -69,8 +69,6 @@ dependencies {
 
     testImplementation project(":testing:test-utilities")
     testImplementation project(":testing:p2p:certificates")
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
     testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 
@@ -89,6 +87,7 @@ dependencies {
     nonOsgiIntegrationTestImplementation project(":libs:messaging:db-message-bus-impl")
     nonOsgiIntegrationTestImplementation project(":components:crypto:crypto-client")
     nonOsgiIntegrationTestImplementation project(':libs:schema-registry:schema-registry')
+    nonOsgiIntegrationTestImplementation project(':libs:platform-info')
     nonOsgiIntegrationTestImplementation "net.corda:corda-avro-schema"
     nonOsgiIntegrationTestImplementation project(":libs:schema-registry:schema-registry-impl")
     nonOsgiIntegrationTestRuntimeOnly 'org.osgi:osgi.core'

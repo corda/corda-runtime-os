@@ -37,9 +37,6 @@ dependencies {
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "com.google.guava:guava:$guavaVersion"
 
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:test-utilities")
     testImplementation project(':libs:platform-info')
     testImplementation project(':libs:web:web-impl')

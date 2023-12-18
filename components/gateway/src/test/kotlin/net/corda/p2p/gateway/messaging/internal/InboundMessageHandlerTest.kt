@@ -105,7 +105,9 @@ class InboundMessageHandlerTest {
         subscriptionFactory,
         SmartConfigImpl.empty(),
         mock(),
-        avroSchemaRegistry
+        avroSchemaRegistry,
+        mock(),
+        mock(),
     )
 
     @AfterEach

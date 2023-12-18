@@ -22,10 +22,6 @@ dependencies {
     implementation project(':libs:serialization:serialization-internal')
     implementation project(':libs:utilities')
 
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
-
     testImplementation project(':testing:ledger:ledger-common-base-test')
     testImplementation project(':testing:ledger:ledger-utxo-testkit')
     testImplementation project(':testing:test-serialization')

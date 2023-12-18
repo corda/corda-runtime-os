@@ -22,8 +22,4 @@ dependencies {
     implementation project(':libs:messaging:message-bus')
     implementation project(":libs:utilities")
     implementation project(":libs:virtual-node:virtual-node-info")
-
-    testImplementation "org.assertj:assertj-core:$assertjVersion"
-    testImplementation "org.mockito:mockito-core:$mockitoVersion"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
