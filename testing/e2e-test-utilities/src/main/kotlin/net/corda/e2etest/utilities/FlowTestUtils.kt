@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions")
+
 package net.corda.e2etest.utilities
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
@@ -11,8 +13,10 @@ import org.slf4j.LoggerFactory
 import java.util.UUID
 
 const val SMOKE_TEST_CLASS_NAME = "com.r3.corda.testing.smoketests.flow.RpcSmokeTestFlow"
+
 const val RPC_FLOW_STATUS_SUCCESS = "COMPLETED"
 const val RPC_FLOW_STATUS_FAILED = "FAILED"
+
 private val RETRY_TIMEOUT = 6.minutes
 
 fun startRpcFlow(
@@ -100,6 +104,7 @@ fun awaitRestFlowResult(
     holdingId: String,
     requestId: String
 ) = DEFAULT_CLUSTER.awaitRestFlowResult(holdingId, requestId)
+
 fun ClusterInfo.awaitRestFlowResult(holdingId: String, requestId: String): FlowResult {
     return cluster {
         val jsonNode = ObjectMapper().readTree(
@@ -111,7 +116,8 @@ fun ClusterInfo.awaitRestFlowResult(holdingId: String, requestId: String): FlowR
                             (it.toJson()["flowStatus"].textValue() == RPC_FLOW_STATUS_SUCCESS ||
                                     it.toJson()["flowStatus"].textValue() == RPC_FLOW_STATUS_FAILED)
                 }
-            }.body)
+            }.body
+        )
 
         FlowResult(
             jsonNode[FlowResult::flowStatus.name]?.textValue(),
@@ -122,7 +128,7 @@ fun ClusterInfo.awaitRestFlowResult(holdingId: String, requestId: String): FlowR
 }
 
 private fun JsonNode.handlingNulls(): JsonNode? {
-    return when(this) {
+    return when (this) {
         is NullNode -> null
         else -> this
     }
@@ -173,6 +179,24 @@ fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
     }
 }
 
+fun assertStatusFilter(
+    holdingId: String,
+    expectedFlowCount: Int,
+    status: String?
+) = DEFAULT_CLUSTER.assertStatusFilter(holdingId, expectedFlowCount, status)
+
+fun ClusterInfo.assertStatusFilter(holdingId: String, expectedCode: Int, status: String?) {
+    return DEFAULT_CLUSTER.cluster {
+        assertWithRetryIgnoringExceptions {
+            command { multipleFlowStatus(holdingId, status) }
+            timeout(RETRY_TIMEOUT)
+            condition {
+                it.code == expectedCode
+            }
+        }
+    }
+}
+
 fun getFlowClasses(
     holdingId: String
 ) = DEFAULT_CLUSTER.getFlowClasses(holdingId)
@@ -209,42 +233,42 @@ class FlowError {
     var message: String? = null
 }
 
-data class FlowResult (
+data class FlowResult(
     val flowStatus: String?,
     val json: JsonNode?,
     val flowError: FlowError?
 )
 
-class TestRequestIdGenerator( testName: String ){
-
+class TestRequestIdGenerator(testName: String) {
     companion object {
 
         val logger = LoggerFactory.getLogger(this::class.java)
 
-        private fun getNameFromTestInfo(testInfo: TestInfo) : String{
+        private fun getNameFromTestInfo(testInfo: TestInfo): String {
             val parameterNumber = Regex("^\\[(\\d+)\\]").find(testInfo.displayName)?.groups?.get(1)?.value
-            val testName = if (!parameterNumber.isNullOrBlank()){
-                    "${testInfo.testMethod.get().name}-param_$parameterNumber"
+            val testName = if (!parameterNumber.isNullOrBlank()) {
+                "${testInfo.testMethod.get().name}-param_$parameterNumber"
             } else {
                 testInfo.displayName.removeSuffix("(TestInfo)")
             }
-            return if (testName.length > 235){
+            return if (testName.length > 235) {
                 val name = "${testName.takeLast(150)}-${UUID.randomUUID()}"
                 logger.warn("Test exceeding 235 characters, shortening to $name")
                 name
 
-            }
-            else {
+            } else {
                 testName
             }
         }
     }
-    constructor( testInfo: TestInfo) : this(getNameFromTestInfo(testInfo))
+
+    constructor(testInfo: TestInfo) : this(getNameFromTestInfo(testInfo))
 
     private val baseName: String = Regex("[^-._A-Za-z0-9]").replace(testName, "_")
     private var count = 0
 
-    val nextId: String get() {
-        return "$baseName-${count++}"
-    }
+    val nextId: String
+        get() {
+            return "$baseName-${count++}"
+        }
 }
