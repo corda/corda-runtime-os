@@ -1,12 +1,10 @@
 package net.corda.processors.p2p.linkmanager.internal
 
 import com.typesafe.config.ConfigValueFactory
-import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.libs.statemanager.api.State
 import net.corda.libs.statemanager.api.StateManager
@@ -29,7 +27,6 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.linkmanager.LinkManager
 import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
 import net.corda.schema.configuration.BootConfig
-import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Subscription.POLL_TIMEOUT
 import net.corda.utilities.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -104,14 +101,9 @@ class LinkManagerProcessorImpl @Activate constructor(
                 log.info("Link manager processor is ${event.status}")
                 coordinator.updateStatus(event.status)
             }
-            is ConfigChangedEvent -> {
-                log.info("config changed: " + event.config.getConfig(ConfigKeys.STATE_MANAGER_CONFIG))
-            }
             is BootConfigEvent -> {
                 configurationReadService.bootstrapConfig(event.config)
 
-                log.info("boot config: " + event.config.entrySet())
-                log.info("boot config: " + event.config.getConfig(BootConfig.BOOT_STATE_MANAGER).entrySet())
                 val localStateManager = stateManagerFactory.create(event.config.getConfig(BootConfig.BOOT_STATE_MANAGER))
                     .also { it.start() }
                 log.info("StateManager ${localStateManager.name} has been created and started.")
