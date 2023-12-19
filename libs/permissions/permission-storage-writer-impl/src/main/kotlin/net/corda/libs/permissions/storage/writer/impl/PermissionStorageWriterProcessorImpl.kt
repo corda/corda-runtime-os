@@ -52,7 +52,7 @@ class PermissionStorageWriterProcessorImpl(
                 }
                 is ChangeUserPasswordRequest -> {
                     val avroUser = userWriter.changeUserPassword(permissionRequest, request.requestUserId)
-                    permissionStorageReader.publishNewUser(avroUser)
+                    permissionStorageReader.publishUpdatedUser(avroUser)
                     permissionStorageReader.reconcilePermissionSummaries()
                     avroUser
                 }
