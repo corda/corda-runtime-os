@@ -136,7 +136,8 @@ interface FlowRestResource : RestResource {
         holdingIdentityShortHash: String,
         @RestQueryParameter(
             name = "status",
-            description = "Processing status of a flow to filter by. For example - RUNNING, START_REQUESTED, RETRYING, COMPLETED, FAILED, KILLED",
+            description = "Processing status of a flow to filter by. " +
+                    "For example - RUNNING, START_REQUESTED, RETRYING, COMPLETED, FAILED, KILLED",
             required = false
         )
         status: String? = null,
