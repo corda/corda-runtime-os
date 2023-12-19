@@ -46,6 +46,14 @@ bootstrap:
             secretKeyRef:
               name: "state-manager-db-postgresql"
               key: "postgres-password"
+      p2pLinkManager:
+        username:
+          value: "postgres"
+        password:
+          valueFrom:
+            secretKeyRef:
+              name: "state-manager-db-postgresql"
+              key: "postgres-password"
 workers:
   flow:
     stateManager:
