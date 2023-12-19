@@ -23,7 +23,7 @@ internal object TracingUtils {
         return extractedHeaders
     }
 
-    private inline fun<T: Any> extractHeader(
+    private fun<T: Any> extractHeader(
         message: MediatorMessage<T>,
         headerName: String,
         headers: MutableList<Pair<String, String>>
