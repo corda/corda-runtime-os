@@ -8,6 +8,7 @@ import net.corda.messaging.api.mediator.config.EventMediatorConfig
 import net.corda.messaging.api.mediator.config.MediatorConsumerConfig
 import net.corda.messaging.mediator.factory.MediatorComponentFactory
 import net.corda.taskmanager.TaskManager
+import net.corda.tracing.TraceUtils
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.lang.Thread.sleep

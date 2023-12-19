@@ -10,10 +10,10 @@ import net.corda.messaging.api.mediator.MediatorMessage
 import net.corda.messaging.api.mediator.MessagingClient
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_ENDPOINT
 import net.corda.messaging.api.mediator.MessagingClient.Companion.MSG_PROP_KEY
-import net.corda.messaging.utils.TracingUtils
 import net.corda.messaging.utils.HTTPRetryConfig
 import net.corda.messaging.utils.HTTPRetryExecutor
 import net.corda.metrics.CordaMetrics
+import net.corda.tracing.TraceUtils
 import net.corda.tracing.traceSend
 import net.corda.utilities.debug
 import net.corda.utilities.trace
@@ -67,13 +67,13 @@ class RPCClient(
     private fun processMessage(message: MediatorMessage<*>): MediatorMessage<*>? {
         // Extract the tracing headers from the mediator message, so they can be
         // copied into the HTTP request and keep the traceability intact
-        val tracingHeaders = TracingUtils.extractTracingHeaders(message)
+        val tracingHeaders = TraceUtils.extractHeaders(message.properties)
 
         // Build the HTTP request based on the mediator message and the tracing headers
         val request = buildHttpRequest(message, tracingHeaders)
 
 
-        val response = traceHttpSend(tracingHeaders) {
+        val response = traceHttpSend(tracingHeaders, request.uri()) {
             sendWithRetry(request)
         }
 
@@ -86,11 +86,16 @@ class RPCClient(
         }
     }
 
-    private inline fun<T> traceHttpSend(tracingHeaders: List<Pair<String, String>>, send: ()-> T): T {
-        val traceContext = traceSend(tracingHeaders, "http - send - clientId - $id")
+    private inline fun<T> traceHttpSend(tracingHeaders: List<Pair<String, String>>, uri: URI, send: ()-> T): T {
+        val traceContext = traceSend(tracingHeaders, "http - send - uri - $uri")
+
+        traceContext.traceTag("uri", uri.toString())
+
         return traceContext.markInScope().use {
             try {
-                send()
+                val response = send()
+                traceContext.finish()
+                response
             } catch (ex: Exception) {
                 traceContext.errorAndFinish(ex)
                 throw ex
