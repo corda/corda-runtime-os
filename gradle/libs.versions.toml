@@ -7,7 +7,7 @@ bouncycastleVersion = "1.76"
 assertjVersion = "3.24.2"
 junitVersion = "5.10.1"
 mockitoVersion = "5.8.0"
-mockitoKotlinVersion = "4.1.0"
+mockitoKotlinVersion = "5.2.1"
 
 [libraries]
 assertj-core = { group = "org.assertj", name = "assertj-core", version.ref = "assertjVersion" }

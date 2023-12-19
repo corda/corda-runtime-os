@@ -46,6 +46,7 @@
     bnd.identity;id='org.hsqldb.hsqldb',\
     bnd.identity;id='org.ops4j.pax.jdbc.hsqldb',\
     bnd.identity;id='org.osgi.service.jdbc',\
+    bnd.identity;id='org.eclipse.jetty.websocket.server',\
     bnd.identity;id='org.postgresql.jdbc'
 
 -runstartlevel: \
