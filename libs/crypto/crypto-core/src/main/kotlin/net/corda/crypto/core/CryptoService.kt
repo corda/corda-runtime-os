@@ -314,4 +314,36 @@ interface CryptoService {
      *         in the configuration unmanaged keys map or targetAlias is not found
      */
     fun rewrapWrappingKey(tenantId: String, targetAlias: String, newParentKeyAlias: String): Int
+
+    /**
+     * Encrypt [plainBytes] using the symmetric key associated with the given tenant.
+     *
+     * If the key is rotated, the ability to decrypt any data previously encrypted using that key will be lost.
+     *
+     * @param tenantId ID of the tenant owning the key. The tenant must have been assigned the HSM category
+     * 'ENCRYPTION_SECRET'.
+     * @param alias Optional. Alias of the symmetric key. If no alias is provided, the default
+     *   alias for [tenantId] under HSM category 'ENCRYPTION_SECRET' will be used.
+     * @param plainBytes The byte array to be encrypted.
+     */
+    fun encrypt(
+        tenantId: String,
+        plainBytes: ByteArray,
+        alias: String? = null,
+    ): ByteArray
+
+    /**
+     * Decrypt [cipherBytes] using the symmetric key associated with the given tenant.
+     *
+     * @param tenantId ID of the tenant owning the key. The tenant must have been assigned the HSM category
+     * 'ENCRYPTION_SECRET'.
+     * @param alias Optional. Alias of the symmetric key. If no alias is provided, the default alias for [tenantId]
+     * under HSM category 'ENCRYPTION_SECRET' will be used.
+     * @param cipherBytes The byte array to be decrypted.
+     */
+    fun decrypt(
+        tenantId: String,
+        cipherBytes: ByteArray,
+        alias: String? = null,
+    ): ByteArray
 }
