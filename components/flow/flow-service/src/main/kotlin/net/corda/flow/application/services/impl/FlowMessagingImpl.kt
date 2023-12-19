@@ -52,6 +52,7 @@ class FlowMessagingImpl @Activate constructor(
         return doInitiateFlow(x500Name, requireClose)
     }
 
+    @Suspendable
     override fun initiateFlow(x500Name: MemberX500Name, sessionConfiguration: FlowSessionConfiguration): FlowSession {
         return doInitiateFlow(x500Name, sessionConfiguration.isRequireClose, sessionConfiguration.timeout)
     }
@@ -70,6 +71,7 @@ class FlowMessagingImpl @Activate constructor(
         return doInitiateFlow(x500Name, requireClose, sessionTimeout = null, flowContextPropertiesBuilder)
     }
 
+    @Suspendable
     override fun initiateFlow(
         x500Name: MemberX500Name,
         sessionConfiguration: FlowSessionConfiguration,
