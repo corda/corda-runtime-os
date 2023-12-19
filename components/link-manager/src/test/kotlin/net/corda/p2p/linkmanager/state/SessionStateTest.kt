@@ -44,7 +44,7 @@ sP1IEWgiH9eVcdsYcS2qn858tq+YFRZeMV2JRPHxiLylZA5u0T3GXQ4Bm95mkJmz
 oPrD4+MHOuE9mzdCly9ZCUTU21tziQ2XlLQtlB4+IQJV5XM5VGyP3n+JrFgsF79x
 YQIDAQAB
 -----END PUBLIC KEY-----
-    """.trimIndent()
+        """.trimIndent().replace("\n", System.lineSeparator())
 
         @BeforeAll
         @JvmStatic
@@ -63,7 +63,7 @@ YQIDAQAB
     private val message = mock<LinkOutMessage>()
 
     fun testToCorda(
-        avroObject: SpecificRecordBase
+        avroObject: SpecificRecordBase,
     ) {
         whenever(avroSchemaRegistry.deserialize(serialized, SpecificRecordBase::class.java, null)).doReturn(avroObject)
         val sessionData = AvroSessionData(
@@ -74,7 +74,7 @@ YQIDAQAB
         val data = sessionData.toCorda(
             avroSchemaRegistry,
             encryption,
-            mock()
+            mock(),
         )
 
         assertSoftly {
@@ -103,7 +103,7 @@ YQIDAQAB
                             ByteBuffer.wrap(byteArrayOf(3)),
                         ),
                         ByteBuffer.wrap(byteArrayOf(3)),
-                    )
+                    ),
                 ),
                 null,
                 null,
@@ -120,7 +120,7 @@ YQIDAQAB
             ),
             InitiatorStep.SESSION_ESTABLISHED,
             listOf(ProtocolMode.AUTHENTICATION_ONLY, ProtocolMode.AUTHENTICATED_ENCRYPTION),
-            "$publicKeyPem\n",
+            "$publicKeyPem${System.lineSeparator()}",
             "groupId",
             null,
             null,
@@ -146,7 +146,7 @@ YQIDAQAB
                             "alg-2",
                             ByteBuffer.wrap(byteArrayOf(3)),
                         ),
-                    )
+                    ),
                 ),
                 null,
                 null,
@@ -185,7 +185,7 @@ YQIDAQAB
                     "alg-2",
                     ByteBuffer.wrap(byteArrayOf(3)),
                 ),
-            )
+            ),
         )
 
         testToCorda(testObject)
@@ -193,7 +193,7 @@ YQIDAQAB
 
     @Test
     fun `test toCorda for AuthenticatedEncryptionSession`() {
-        val testObject =  Session(
+        val testObject = Session(
             "sessionId",
             300,
             AuthenticatedEncryptionSessionDetails(
@@ -207,7 +207,7 @@ YQIDAQAB
                     ByteBuffer.wrap(byteArrayOf(3)),
                 ),
                 ByteBuffer.wrap(byteArrayOf(3)),
-            )
+            ),
         )
 
         testToCorda(testObject)
@@ -234,7 +234,7 @@ YQIDAQAB
                     "alg-2",
                     ByteBuffer.wrap(byteArrayOf(3)),
                 ),
-            )
+            ),
         )
         val data = avroSession.toCorda() as AuthenticatedSession
         whenever(avroSchemaRegistry.serialize(avroSession)).thenReturn(serialized)
@@ -253,5 +253,4 @@ YQIDAQAB
             assertThat(avroSessionData.encryptedSessionData.array()).isEqualTo(encrypted)
         }
     }
-
 }
