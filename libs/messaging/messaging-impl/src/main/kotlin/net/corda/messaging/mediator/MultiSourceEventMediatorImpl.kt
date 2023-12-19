@@ -20,6 +20,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.factory.MediatorComponentFactory
 import net.corda.messaging.mediator.metrics.EventMediatorMetrics
+import net.corda.messaging.utils.TracingUtils
 import net.corda.messaging.utils.toRecord
 import net.corda.taskmanager.TaskManager
 import net.corda.utilities.debug
@@ -297,25 +298,22 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
         output.forEach { message ->
             val destination = messageRouter.getDestination(message)
             if (destination.type == RoutingDestination.Type.ASYNCHRONOUS) {
+                // Kafka
                 busEvents.compute(key) { _, value ->
                     val list = value ?: mutableListOf()
                     list.add(message)
                     list
                 }
             } else {
+                // Http
                 @Suppress("UNCHECKED_CAST")
                 val reply = with(destination) {
                     message.addProperty(MessagingClient.MSG_PROP_ENDPOINT, endpoint)
                     client.send(message) as MediatorMessage<E>?
                 }
                 if (reply != null) {
-                    queue.addLast(
-                        Record(
-                            "",
-                            event.key,
-                            reply.payload,
-                        )
-                    )
+                    // Convert reply into a record and added to the queue, so it can be processed later on
+                    queue.addLast(Record("", event.key, reply.payload, headers = TracingUtils.extractTracingHeaders(message)))
                 }
             }
         }
