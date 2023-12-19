@@ -1,8 +1,7 @@
 package net.corda.libs.permissions.storage.writer.impl.user.impl
 
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
-import net.corda.data.permissions.management.user.ChangeUserPasswordOtherRequest
-import net.corda.data.permissions.management.user.ChangeUserPasswordSelfRequest
+import net.corda.data.permissions.management.user.ChangeUserPasswordRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.libs.permissions.storage.common.converter.toAvroUser
@@ -45,22 +44,17 @@ class UserWriterImpl(
         }
     }
 
-    override fun changeUserPasswordSelf(
-        request: ChangeUserPasswordSelfRequest,
+    override fun changeUserPassword(
+        request: ChangeUserPasswordRequest,
         requestUserId: String
     ): net.corda.data.permissions.User {
-        TODO("Not yet implemented")
-    }
-
-    override fun changeUserPasswordOther(
-        request: ChangeUserPasswordOtherRequest,
-        requestUserId: String
-    ): AvroUser {
-        log.debug { "Received request to change password for user: ${request.username}" }
+        log.debug { "Received request to change password for user: ${request.requestedBy}" }
         return entityManagerFactory.transaction { entityManager ->
 
             val validator = EntityValidationUtil(entityManager)
-            val user = validator.validateAndGetUniqueUser(request.username)
+            val user = validator.validateAndGetUniqueUser(request.requestedBy)
+
+            println("old password hash: ${user.hashedPassword}")
 
             user.hashedPassword = request.hashedNewPassword
             user.saltValue = request.saltValue

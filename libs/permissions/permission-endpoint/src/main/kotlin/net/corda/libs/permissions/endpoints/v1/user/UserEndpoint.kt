@@ -122,7 +122,7 @@ interface UserEndpoint : RestResource {
     ): UserResponseType
 
     @HttpPOST(
-        path = "{loginName}/selfpassword",
+        path = "/selfpassword",
         description = "This method updates a users own password.",
         responseDescription = """
             A user with the following attributes:
@@ -143,8 +143,6 @@ interface UserEndpoint : RestResource {
         minVersion = RestApiVersion.C5_2
     )
     fun changeUserPasswordSelf(
-        @RestPathParameter(description = "The login name of the user.")
-        loginName: String,
         @ClientRequestBodyParameter(
             description = "The new password to apply.",
             required = true,
@@ -154,7 +152,7 @@ interface UserEndpoint : RestResource {
     ): UserResponseType
 
     @HttpPOST(
-        path = "{loginName}/otheruserpassword",
+        path = "/otheruserpassword",
         description = "This method updates another user's password, only usable by admin.",
         responseDescription = """
             A user with the following attributes:
@@ -175,8 +173,12 @@ interface UserEndpoint : RestResource {
         minVersion = RestApiVersion.C5_2
     )
     fun changeOtherUserPassword(
-        @RestPathParameter(description = "The login name of the user who's password will be changed")
-        loginName: String,
+        @ClientRequestBodyParameter(
+            description = "Username for the password change.",
+            required = true,
+            name = "username"
+        )
+        username: String,
         @ClientRequestBodyParameter(
             description = "The new password to apply.",
             required = true,

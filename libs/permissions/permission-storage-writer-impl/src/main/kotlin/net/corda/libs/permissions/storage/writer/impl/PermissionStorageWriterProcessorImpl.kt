@@ -11,8 +11,7 @@ import net.corda.data.permissions.management.role.AddPermissionToRoleRequest
 import net.corda.data.permissions.management.role.CreateRoleRequest
 import net.corda.data.permissions.management.role.RemovePermissionFromRoleRequest
 import net.corda.data.permissions.management.user.AddRoleToUserRequest
-import net.corda.data.permissions.management.user.ChangeUserPasswordOtherRequest
-import net.corda.data.permissions.management.user.ChangeUserPasswordSelfRequest
+import net.corda.data.permissions.management.user.ChangeUserPasswordRequest
 import net.corda.data.permissions.management.user.CreateUserRequest
 import net.corda.data.permissions.management.user.RemoveRoleFromUserRequest
 import net.corda.libs.permissions.storage.reader.PermissionStorageReader
@@ -51,15 +50,9 @@ class PermissionStorageWriterProcessorImpl(
                     permissionStorageReader.publishNewRole(avroRole)
                     avroRole
                 }
-                is ChangeUserPasswordSelfRequest -> {
-                    val avroUser = userWriter.changeUserPasswordSelf(permissionRequest, request.requestUserId)
+                is ChangeUserPasswordRequest -> {
+                    val avroUser = userWriter.changeUserPassword(permissionRequest, request.requestUserId)
                     permissionStorageReader.publishNewUser(avroUser)
-                    permissionStorageReader.reconcilePermissionSummaries()
-                    avroUser
-                }
-                is ChangeUserPasswordOtherRequest -> {
-                    val avroUser = userWriter.changeUserPasswordOther(permissionRequest, request.requestUserId)
-                    permissionStorageReader.publishUpdatedUser(avroUser)
                     permissionStorageReader.reconcilePermissionSummaries()
                     avroUser
                 }
