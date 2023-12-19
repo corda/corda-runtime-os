@@ -12,10 +12,10 @@ import net.corda.data.p2p.crypto.protocol.SecretKeySpec as AvroSecretKeySpec
 /**
  * A marker interface supposed to be implemented by the different types of sessions supported by the authentication protocol.
  */
-interface Session {
+interface Session: SerialisableSessionData {
     val sessionId: String
 
-    fun toAvro(): AvroSession
+    override fun toAvro(): AvroSession
 
     companion object {
 
