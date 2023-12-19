@@ -110,6 +110,7 @@ class LinkManagerProcessorImpl @Activate constructor(
 
                 val localStateManager = stateManagerFactory.create(event.config.getConfig(BootConfig.BOOT_STATE_MANAGER))
                     .also { it.start() }
+                log.info("boot config: " + event.config.getConfig(BootConfig.BOOT_STATE_MANAGER).entrySet())
                 log.info("StateManager ${localStateManager.name} has been created and started.")
                 localStateManager.create(listOf(State("test", byteArrayOf(1))))
 
