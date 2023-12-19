@@ -56,7 +56,7 @@ YQIDAQAB
     private val decrypted = byteArrayOf(1)
     private val encrypted = byteArrayOf(2)
     private val serialized = ByteBuffer.wrap(decrypted)
-    private val encryption = mock<SessionEncryptionOpsClient> {
+    private val encryptionClient = mock<SessionEncryptionOpsClient> {
         on { decryptSessionData(eq(encrypted), anyOrNull()) } doReturn decrypted
         on { encryptSessionData(eq(decrypted), anyOrNull()) } doReturn encrypted
     }
@@ -75,7 +75,7 @@ YQIDAQAB
 
         val data = sessionData.toCorda(
             avroSchemaRegistry,
-            encryption,
+            encryptionClient,
             mock(),
         )
 
@@ -247,7 +247,7 @@ YQIDAQAB
 
         val avroSessionData = sessionState.toAvro(
             avroSchemaRegistry = avroSchemaRegistry,
-            encryption = encryption,
+            encryptionClient = encryptionClient,
         )
 
         assertSoftly {

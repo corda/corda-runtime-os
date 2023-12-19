@@ -22,11 +22,11 @@ internal data class SessionState(
     companion object {
         fun AvroSessionData.toCorda(
             avroSchemaRegistry: AvroSchemaRegistry,
-            encryption: SessionEncryptionOpsClient,
+            encryptionClient: SessionEncryptionOpsClient,
             checkRevocation: CheckRevocation,
         ): SessionState {
             val rawData = ByteBuffer.wrap(
-                encryption.decryptSessionData(this.encryptedSessionData.array()),
+                encryptionClient.decryptSessionData(this.encryptedSessionData.array()),
             )
             val sessionData = when (val type = avroSchemaRegistry.getClassType(rawData)) {
                 AuthenticationProtocolInitiatorDetails::class.java -> {
@@ -61,11 +61,11 @@ internal data class SessionState(
 
     fun toAvro(
         avroSchemaRegistry: AvroSchemaRegistry,
-        encryption: SessionEncryptionOpsClient,
+        encryptionClient: SessionEncryptionOpsClient,
     ): AvroSessionData {
         val sessionAvroData = sessionData.toAvro()
         val rawData = avroSchemaRegistry.serialize(sessionAvroData)
-        val encryptedData = encryption.encryptSessionData(rawData.array())
+        val encryptedData = encryptionClient.encryptSessionData(rawData.array())
         return AvroSessionData(
             message,
             ByteBuffer.wrap(encryptedData),
