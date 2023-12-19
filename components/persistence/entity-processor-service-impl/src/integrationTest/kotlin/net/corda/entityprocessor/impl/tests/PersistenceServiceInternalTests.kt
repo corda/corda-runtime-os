@@ -704,6 +704,27 @@ class PersistenceServiceInternalTests {
         assertThat(resultsWithNotNull).isEmpty()
     }
 
+    @Test
+    fun `find with named query can handle nullable parameters with OR condition and returns result`() {
+        persistDogs()
+
+        val resultsWithNull = assertQuery(
+            QuerySetup.NamedQuery(params = mapOf("nullableParam" to null), query = "Dog.nullableParamOrCondition"),
+            0,
+            100
+        )
+
+        assertThat(resultsWithNull).isNotEmpty
+
+        val resultsWithNotNull = assertQuery(
+            QuerySetup.NamedQuery(params = mapOf("nullableParam" to "Butch 1"), query = "Dog.nullableParamOrCondition"),
+            0,
+            100
+        )
+
+        assertThat(resultsWithNotNull).hasSize(1)
+    }
+
 
     private fun createEntitySandbox(dbConnectionManager: DbConnectionManager) =
         EntitySandboxServiceFactory().create(
