@@ -1,4 +1,5 @@
 @file:JvmName("SandboxGroupContextServiceUtils")
+
 package net.corda.sandboxgroupcontext.service.impl
 
 import net.corda.cpk.read.CpkReadService
@@ -76,7 +77,7 @@ typealias SatisfiedServiceReferences = Map<String, SortedMap<ServiceReference<*>
  * in EVERY process.
  */
 @Suppress("TooManyFunctions")
-@Component(service = [ SandboxGroupContextService::class, CacheEviction::class ])
+@Component(service = [SandboxGroupContextService::class, CacheEviction::class])
 @RequireSandboxCrypto
 @RequireSandboxHooks
 @RequireCordaSystem
@@ -90,7 +91,8 @@ class SandboxGroupContextServiceImpl @Activate constructor(
     private val bundleContext: BundleContext
 ) : SandboxGroupContextService, CacheControl {
     private companion object {
-        private const val SANDBOX_FACTORY_FILTER = "(&($SERVICE_SCOPE=$SCOPE_PROTOTYPE)($COMPONENT_NAME=*)(!$CORDA_SANDBOX_FILTER))"
+        private const val SANDBOX_FACTORY_FILTER =
+            "(&($SERVICE_SCOPE=$SCOPE_PROTOTYPE)($COMPONENT_NAME=*)(!$CORDA_SANDBOX_FILTER))"
         private const val CORDA_UNINJECTABLE_FILTER = "(corda.uninjectable=*)"
         private const val CORDA_MARKER_ONLY_FILTER = "(corda.marker.only=*)"
 
@@ -127,7 +129,12 @@ class SandboxGroupContextServiceImpl @Activate constructor(
 
     override fun resizeCache(type: SandboxGroupType, capacity: Long) = lock.withLock {
         if (capacity != cache.capacities[type]) {
-            logger.info("Changing Sandbox cache capacity for type {} from {} to {}", type, cache.capacities[type], capacity)
+            logger.info(
+                "Changing Sandbox cache capacity for type {} from {} to {}",
+                type,
+                cache.capacities[type],
+                capacity
+            )
             cache.resize(type, capacity)
         }
     }
@@ -149,7 +156,7 @@ class SandboxGroupContextServiceImpl @Activate constructor(
         cache.addEvictionListener(type, listener)
     }
 
-    override fun removeEvictionListener(type: SandboxGroupType, listener: EvictionListener): Boolean = lock.withLock{
+    override fun removeEvictionListener(type: SandboxGroupType, listener: EvictionListener): Boolean = lock.withLock {
         cache.removeEvictionListener(type, listener)
     }
 
@@ -167,17 +174,20 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                 if (cpks.size != vnc.cpkFileChecksums.size) {
                     val receivedIdentifiers = cpks.map { it.metadata.cpkId }
                     val missing = setOf(vnc.cpkFileChecksums) - setOf(receivedIdentifiers)
-                    logger.error("Not all CPKs could be retrieved for this virtual node context ({})\r\n" +
-                        "- Wanted all of: {}\r\n" +
-                        "- Returned: {}\r\n" +
-                        "- Missing: {}",
+                    logger.error(
+                        "Not all CPKs could be retrieved for this virtual node context ({})\r\n" +
+                            "- Wanted all of: {}\r\n" +
+                            "- Returned: {}\r\n" +
+                            "- Missing: {}",
                         vnc, vnc.cpkFileChecksums, receivedIdentifiers, missing
                     )
                     throw CordaRuntimeException("Not all CPKs could be retrieved for this virtual node context ($vnc)")
                 }
                 if (cpks.isEmpty()) {
-                    throw CordaRuntimeException("No CPKs in this virtual node context. " +
-                            "State and contract classes must be defined inside a contract CPK. ($vnc)")
+                    throw CordaRuntimeException(
+                        "No CPKs in this virtual node context. " +
+                            "State and contract classes must be defined inside a contract CPK. ($vnc)"
+                    )
                 }
 
                 val sandboxGroup = sandboxCreationService.createSandboxGroup(cpks, vnc.sandboxGroupType.name)
@@ -195,8 +205,10 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                 val initializerAutoCloseable =
                     initializer.initializeSandboxGroupContext(vnc.holdingIdentity, sandboxGroupContext)
 
-                logger.debug("Created {} sandbox {} for holding identity={}",
-                    vnc.sandboxGroupType, sandboxGroup.id, vnc.holdingIdentity)
+                logger.info(
+                    "Created {} sandbox {} for vnode={} name={}",
+                    vnc.sandboxGroupType, sandboxGroup.id, vnc.holdingIdentity.shortHash, vnc.holdingIdentity.x500Name
+                )
 
                 // Wrapped SandboxGroupContext, specifically to set closeable and forward on all other calls.
 
@@ -211,6 +223,11 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                     }
 
                     // And unload the (OSGi) sandbox group
+                    logger.info(
+                        "Unloading bundle for {} sandbox for holding identity={}",
+                        sandboxGroupContext.virtualNodeContext.sandboxGroupType,
+                        sandboxGroupContext.virtualNodeContext.holdingIdentity
+                    )
                     sandboxCreationService.unloadSandboxGroup(sandboxGroupContext.sandboxGroup)
                 }
             }!!
@@ -264,7 +281,8 @@ class SandboxGroupContextServiceImpl @Activate constructor(
         val sandboxBundles = bundles + getCordaSystemBundles(sandboxGroupType)
 
         val serviceMarkerType = sandboxGroupType.serviceMarkerType
-        val sandboxFilter = vnc.serviceFilter?.let { filter -> "(&$SANDBOX_FACTORY_FILTER$filter)" } ?: SANDBOX_FACTORY_FILTER
+        val sandboxFilter =
+            vnc.serviceFilter?.let { filter -> "(&$SANDBOX_FACTORY_FILTER$filter)" } ?: SANDBOX_FACTORY_FILTER
         bundleContext.getServiceReferences(serviceMarkerType, sandboxFilter).forEach { serviceRef ->
             try {
                 serviceRef.serviceClassNames
@@ -278,7 +296,10 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                         if (systemFilter.match(serviceRef)) {
                             // We always load interfaces for system services.
                             serviceRef.loadCommonService(serviceType)
-                        } else if (!uninjectableFilter.match(serviceRef) && accessControlContext.checkServicePermission(serviceType)) {
+                        } else if (!uninjectableFilter.match(serviceRef) && accessControlContext.checkServicePermission(
+                                serviceType
+                            )
+                        ) {
                             // Only accept those service types for which this sandbox also has a bundle wiring.
                             sandboxBundles.loadCommonService(serviceType)
                         } else {
@@ -528,7 +549,8 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                     createNonInjectables(closeables)
 
                     if (!registerComplexInjectables(targetContext, closeables)) {
-                        logger.warn("Failed to create sandbox injectables: {}",
+                        logger.warn(
+                            "Failed to create sandbox injectables: {}",
                             injectables.values
                                 .flatMapTo(LinkedHashSet(), ServiceDefinition::serviceClassNames)
                                 .joinToString()
@@ -596,7 +618,10 @@ class SandboxGroupContextServiceImpl @Activate constructor(
          * Iterate over [injectables], registering those whose requirements can be satisfied.
          * @return true if at least one new injectable service was registered.
          */
-        private fun registerComplexInjectables(targetContext: BundleContext, closeables: Deque<AutoCloseable>): Boolean {
+        private fun registerComplexInjectables(
+            targetContext: BundleContext,
+            closeables: Deque<AutoCloseable>
+        ): Boolean {
             var modified = false
             val iter = injectables.iterator()
             while (iter.hasNext()) {
@@ -645,7 +670,8 @@ class SandboxGroupContextServiceImpl @Activate constructor(
                     serviceFactory.serviceReference.copyPropertiesForSandbox(sandboxId)
                 )
                 if (logger.isDebugEnabled) {
-                    logger.debug("Registered sandbox service {}[{}] for bundle [{}][{}]",
+                    logger.debug(
+                        "Registered sandbox service {}[{}] for bundle [{}][{}]",
                         serviceObj::class.java.simpleName,
                         serviceClassNames.joinToString(),
                         targetContext.bundle.symbolicName,
@@ -840,7 +866,10 @@ private fun ServiceReference<*>.loadCommonService(serviceClassName: String): Cla
 /**
  * Locate the metadata service implementation called [serviceClassName] within this [Bundle].
  */
-private fun Bundle.loadMetadataService(serviceClassName: String, isMetadataService: (Class<*>) -> Boolean): Pair<Class<*>, Bundle>? {
+private fun Bundle.loadMetadataService(
+    serviceClassName: String,
+    isMetadataService: (Class<*>) -> Boolean
+): Pair<Class<*>, Bundle>? {
     try {
         val serviceClass = loadClass(serviceClassName)
         if (isMetadataService(serviceClass)) {

@@ -115,14 +115,16 @@ class SandboxGroupContextComponentImpl @Activate constructor(
     }
 
     private fun onConfigChangeEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        val config = event.config.getConfig(ConfigKeys.SANDBOX_CONFIG)
+//        val config =
+        event.config.getConfig(ConfigKeys.SANDBOX_CONFIG)
 
         SandboxGroupType.values().forEach {
-            val cacheSize = try {
-                config.getConfig(it.name.lowercase()).getLong(ConfigKeys.SANDBOX_CACHE_SIZE)
-            } catch (e: ConfigException.Missing) {
-                SANDBOX_CACHE_SIZE_DEFAULT
-            }
+            val cacheSize = 1L
+//                try {
+//                config.getConfig(it.name.lowercase()).getLong(ConfigKeys.SANDBOX_CACHE_SIZE)
+//            } catch (e: ConfigException.Missing) {
+//                SANDBOX_CACHE_SIZE_DEFAULT
+//            }
 
             logger.info("Re-creating Sandbox ${it.name} cache with size: {}", cacheSize)
             resizeCache(it, cacheSize)
@@ -206,6 +208,9 @@ class SandboxGroupContextComponentImpl @Activate constructor(
 
     override fun resizeCache(type: SandboxGroupType, capacity: Long) {
         (sandboxGroupContextService as? CacheControl
-            ?: throw IllegalStateException("Sandbox $type cache could not be resized to $capacity")).resizeCache(type, capacity)
+            ?: throw IllegalStateException("Sandbox $type cache could not be resized to $capacity")).resizeCache(
+            type,
+            capacity
+        )
     }
 }
