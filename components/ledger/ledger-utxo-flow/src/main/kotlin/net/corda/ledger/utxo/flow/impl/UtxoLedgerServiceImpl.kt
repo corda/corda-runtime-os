@@ -4,7 +4,6 @@ import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.persistence.query.ResultSetFactory
 import net.corda.flow.pipeline.sessions.protocol.FlowProtocolStore
 import net.corda.ledger.common.data.transaction.TransactionStatus
-import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoFinalityFlow
 import net.corda.ledger.utxo.flow.impl.flows.finality.UtxoReceiveFinalityFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.ReceiveAndUpdateTransactionBuilderFlow
@@ -12,7 +11,7 @@ import net.corda.ledger.utxo.flow.impl.flows.transactionbuilder.SendTransactionB
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.ReceiveLedgerTransactionFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.ReceiveTransactionFlow
 import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.SendTransactionFlow
-import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.SendWireTransactionFlow
+import net.corda.ledger.utxo.flow.impl.flows.transactiontransmission.SendAsLedgerTransactionFlow
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerPersistenceService
 import net.corda.ledger.utxo.flow.impl.persistence.UtxoLedgerStateQueryService
 import net.corda.ledger.utxo.flow.impl.persistence.VaultNamedParameterizedQueryImpl
@@ -288,8 +287,8 @@ class UtxoLedgerServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun sendWireTransaction(signedTransaction: UtxoSignedTransaction, sessions: List<FlowSession>) {
-        flowEngine.subFlow(SendWireTransactionFlow(signedTransaction, sessions))
+    override fun sendAsLedgerTransaction(signedTransaction: UtxoSignedTransaction, sessions: List<FlowSession>) {
+        flowEngine.subFlow(SendAsLedgerTransactionFlow(signedTransaction, sessions))
     }
 
     @Suspendable

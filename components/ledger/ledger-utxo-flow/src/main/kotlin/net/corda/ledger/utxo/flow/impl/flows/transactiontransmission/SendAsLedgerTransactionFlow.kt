@@ -17,7 +17,7 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.LoggerFactory
 
 @CordaSystemFlow
-class SendWireTransactionFlow(
+class SendAsLedgerTransactionFlow(
     private val transaction: UtxoSignedTransaction,
     private val sessions: List<FlowSession>
 ) : SubFlow<Unit> {

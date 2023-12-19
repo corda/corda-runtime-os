@@ -20,7 +20,7 @@ import org.mockito.kotlin.spy
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
-class SendWireTransactionFlowTest {
+class SendAsLedgerTransactionFlowTest {
 
     private companion object {
         val TX_ID = SecureHashImpl("SHA", byteArrayOf(1, 1, 1, 1))
@@ -99,7 +99,7 @@ class SendWireTransactionFlowTest {
     }
 
     private fun callSendTransactionFlow(signedTransaction: UtxoSignedTransaction, sessions: List<FlowSession>) {
-        val flow = spy(SendWireTransactionFlow(signedTransaction, sessions))
+        val flow = spy(SendAsLedgerTransactionFlow(signedTransaction, sessions))
 
         flow.flowEngine = flowEngine
         flow.flowMessaging = flowMessaging
