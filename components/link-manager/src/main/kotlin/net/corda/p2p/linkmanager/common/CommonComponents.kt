@@ -104,7 +104,6 @@ internal class CommonComponents(
         NamedLifecycle.of(groupPolicyProvider),
         NamedLifecycle.of(membershipGroupReaderProvider),
         NamedLifecycle.of(cryptoOpsClient),
-        NamedLifecycle.of(stateManager),
     )
 
     private val externalManagedDependencies = listOf(
@@ -126,7 +125,7 @@ internal class CommonComponents(
             mtlsClientCertificatePublisher.dominoTile.coordinatorName,
         ) + externalDependencies.map {
             it.name
-        },
+        } + stateManager.name,
         managedChildren = listOf(
             linkManagerHostingMap.dominoTile.toNamedLifecycle(),
             messagesPendingSession.dominoTile.toNamedLifecycle(),

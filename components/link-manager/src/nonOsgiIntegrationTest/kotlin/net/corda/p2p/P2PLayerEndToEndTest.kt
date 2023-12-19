@@ -572,8 +572,11 @@ class P2PLayerEndToEndTest {
                     }
                 }?.public
 
-        private inline fun  <reified T: Lifecycle> mockLifeCycle(stubbing: KStubbing<T>.(T) -> Unit): T {
-            val name = LifecycleCoordinatorName.forComponent<T>()
+        private inline fun  <reified T: Lifecycle> mockLifeCycle(
+            coordinatorName: LifecycleCoordinatorName? = null,
+            stubbing: KStubbing<T>.(T) -> Unit
+        ): T {
+            val name = coordinatorName ?: LifecycleCoordinatorName.forComponent<T>()
             val coordinator = lifecycleCoordinatorFactory.createCoordinator(name) { _, coordinator ->
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
@@ -653,7 +656,10 @@ class P2PLayerEndToEndTest {
             on { getGroupReader(any()) } doReturn groupReader
         }
 
-        private val stateManager = mockLifeCycle<StateManager> {  }
+        private val stateManagerName = mock<LifecycleCoordinatorName>()
+        private val stateManager = mockLifeCycle<StateManager>(stateManagerName) {
+            on { name } doReturn stateManagerName
+        }
 
         private val linkManager =
             LinkManager(
