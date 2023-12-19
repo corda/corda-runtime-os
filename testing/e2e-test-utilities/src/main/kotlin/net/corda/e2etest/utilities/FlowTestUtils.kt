@@ -181,9 +181,9 @@ fun awaitMultipleRpcFlowFinished(holdingId: String, expectedFlowCount: Int) {
 
 fun assertStatusFilter(
     holdingId: String,
-    expectedFlowCount: Int,
+    expectedCode: Int,
     status: String?
-) = DEFAULT_CLUSTER.assertStatusFilter(holdingId, expectedFlowCount, status)
+) = DEFAULT_CLUSTER.assertStatusFilter(holdingId, expectedCode, status)
 
 fun ClusterInfo.assertStatusFilter(holdingId: String, expectedCode: Int, status: String?) {
     return DEFAULT_CLUSTER.cluster {
