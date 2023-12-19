@@ -20,9 +20,9 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.mediator.factory.MediatorComponentFactory
 import net.corda.messaging.mediator.metrics.EventMediatorMetrics
-import net.corda.messaging.utils.TracingUtils
 import net.corda.messaging.utils.toRecord
 import net.corda.taskmanager.TaskManager
+import net.corda.tracing.TraceUtils
 import net.corda.utilities.debug
 import org.slf4j.LoggerFactory
 import java.lang.Thread.sleep
@@ -313,7 +313,7 @@ class MultiSourceEventMediatorImpl<K : Any, S : Any, E : Any>(
                 }
                 if (reply != null) {
                     // Convert reply into a record and added to the queue, so it can be processed later on
-                    queue.addLast(Record("", event.key, reply.payload, headers = TracingUtils.extractTracingHeaders(message)))
+                    queue.addLast(Record("", event.key, reply.payload, headers = TraceUtils.extractHeaders(message.properties)))
                 }
             }
         }
