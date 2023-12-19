@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager.state
 
+import net.corda.crypto.client.SessionEncryptionOpsClient
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.crypto.protocol.AuthenticationProtocolInitiatorDetails
 import net.corda.data.p2p.crypto.protocol.AuthenticationProtocolResponderDetails
@@ -9,7 +10,6 @@ import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder.Compani
 import net.corda.p2p.crypto.protocol.api.CheckRevocation
 import net.corda.p2p.crypto.protocol.api.SerialisableSessionData
 import net.corda.p2p.crypto.protocol.api.Session.Companion.toCorda
-import net.corda.p2p.linkmanager.stubs.Encryption
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.nio.ByteBuffer
@@ -22,11 +22,11 @@ internal data class SessionState(
     companion object {
         fun AvroSessionData.toCorda(
             avroSchemaRegistry: AvroSchemaRegistry,
-            encryption: Encryption,
+            encryption: SessionEncryptionOpsClient,
             checkRevocation: CheckRevocation,
         ): SessionState {
             val rawData = ByteBuffer.wrap(
-                encryption.decrypt(this.encryptedSessionData.array()),
+                encryption.decryptSessionData(this.encryptedSessionData.array()),
             )
             val sessionData = when (val type = avroSchemaRegistry.getClassType(rawData)) {
                 AuthenticationProtocolInitiatorDetails::class.java -> {
@@ -61,11 +61,11 @@ internal data class SessionState(
 
     fun toAvro(
         avroSchemaRegistry: AvroSchemaRegistry,
-        encryption: Encryption,
+        encryption: SessionEncryptionOpsClient,
     ): AvroSessionData {
         val sessionAvroData = sessionData.toAvro()
         val rawData = avroSchemaRegistry.serialize(sessionAvroData)
-        val encryptedData = encryption.encrypt(rawData.array())
+        val encryptedData = encryption.encryptSessionData(rawData.array())
         return AvroSessionData(
             message,
             ByteBuffer.wrap(encryptedData),

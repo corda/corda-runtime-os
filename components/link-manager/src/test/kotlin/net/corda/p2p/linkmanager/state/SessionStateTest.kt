@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager.state
 
+import net.corda.crypto.client.SessionEncryptionOpsClient
 import net.corda.data.p2p.LinkOutMessage
 import net.corda.data.p2p.crypto.ProtocolMode
 import net.corda.data.p2p.crypto.protocol.AuthenticatedEncryptionSessionDetails
@@ -14,7 +15,6 @@ import net.corda.data.p2p.crypto.protocol.Session
 import net.corda.p2p.crypto.protocol.api.AuthenticatedSession
 import net.corda.p2p.crypto.protocol.api.Session.Companion.toCorda
 import net.corda.p2p.linkmanager.state.SessionState.Companion.toCorda
-import net.corda.p2p.linkmanager.stubs.Encryption
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.apache.avro.specific.SpecificRecordBase
@@ -24,6 +24,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -55,9 +56,9 @@ YQIDAQAB
     private val decrypted = byteArrayOf(1)
     private val encrypted = byteArrayOf(2)
     private val serialized = ByteBuffer.wrap(decrypted)
-    private val encryption = mock<Encryption> {
-        on { decrypt(eq(encrypted)) } doReturn decrypted
-        on { encrypt(eq(decrypted)) } doReturn encrypted
+    private val encryption = mock<SessionEncryptionOpsClient> {
+        on { decryptSessionData(eq(encrypted), anyOrNull()) } doReturn decrypted
+        on { encryptSessionData(eq(decrypted), anyOrNull()) } doReturn encrypted
     }
     private val avroSchemaRegistry = mock<AvroSchemaRegistry>()
     private val message = mock<LinkOutMessage>()
