@@ -30,6 +30,7 @@ import net.corda.v5.crypto.KeyUtils
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
 import net.corda.v5.ledger.notary.plugin.core.NotaryExceptionFatal
+import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.UtxoLedgerService
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.Logger
@@ -68,6 +69,9 @@ class UtxoFinalityFlowV1(
 
     @CordaInject
     lateinit var utxoLedgerService: UtxoLedgerService
+
+    @CordaInject
+    lateinit var notarySignatureVerificationService: NotarySignatureVerificationService
 
     @Suspendable
     override fun call(): UtxoSignedTransaction {
@@ -136,6 +140,16 @@ class UtxoFinalityFlowV1(
                     }
                     val newTxNotaryKey = initialTransaction.notaryKey
                     val dependencyNotaryKey = dependency.notaryKey
+                    require(initialTransaction.notaryName == dependency.notaryName) {
+                        "Notary name of filtered transaction \"${dependency.notaryName}\" doesn't match with " +
+                            "any names of initial transaction \"${initialTransaction.notaryName}\""
+                    }
+                    notarySignatureVerificationService.verifyNotarySignatures(
+                        dependency,
+                        initialTransaction.notaryKey,
+                        dependency.signatures,
+                        mutableMapOf()
+                    )
 
                     val newTxNotaryKeyIds = if (newTxNotaryKey is CompositeKey) {
                         require(KeyUtils.isKeyFulfilledBy(newTxNotaryKey, dependencyNotaryKey)) {
@@ -143,7 +157,7 @@ class UtxoFinalityFlowV1(
                                 "a dependency notary key $dependencyNotaryKey"
                         }
 
-                        newTxNotaryKey.leafKeys.toSet().map { it.fullIdHash() }
+                        newTxNotaryKey.leafKeys.toSet()
                     } else {
                         setOf(newTxNotaryKey.fullIdHash())
                     }
@@ -347,7 +361,10 @@ class UtxoFinalityFlowV1(
         @Suppress("deprecation", "removal")
         return java.security.AccessController.doPrivileged(
             PrivilegedExceptionAction {
-                pluggableNotaryDetails.flowClass.getConstructor(UtxoSignedTransaction::class.java, MemberX500Name::class.java).newInstance(
+                pluggableNotaryDetails.flowClass.getConstructor(
+                    UtxoSignedTransaction::class.java,
+                    MemberX500Name::class.java
+                ).newInstance(
                     transaction,
                     virtualNodeSelectorService.selectVirtualNode(transaction.notaryName)
                 )

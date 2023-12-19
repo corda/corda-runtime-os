@@ -42,6 +42,7 @@ import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.common.transaction.TransactionSignatureException
 import net.corda.v5.ledger.common.transaction.TransactionSignatureVerificationService
+import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.VisibilityChecker
@@ -83,6 +84,7 @@ class UtxoReceiveFinalityFlowV1Test {
     private val transactionSignatureVerificationService = mock<TransactionSignatureVerificationService>()
     private val signedGroupParametersVerifier = mock<SignedGroupParametersVerifier>()
     private val visibilityChecker = mock<VisibilityChecker>()
+    private val notarySignatureVerificationService = mock<NotarySignatureVerificationService>()
 
     private val platformProperties = mock<ContextPlatformProperties>().also { properties ->
         whenever(properties.set(any(), any())).thenAnswer {}
@@ -97,9 +99,6 @@ class UtxoReceiveFinalityFlowV1Test {
     private val session = mock<FlowSession>()
 
     private val memberInfo = mock<MemberInfo>()
-    private val memberInfoNotary = mock<MemberInfo>().also {
-        whenever(it.name).thenReturn(notaryX500Name)
-    }
 
     private val publicKey0 = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x01)) }
     private val publicKey1 = mock<PublicKey>().also { whenever(it.encoded).thenReturn(byteArrayOf(0x02)) }
@@ -123,6 +122,7 @@ class UtxoReceiveFinalityFlowV1Test {
     private val notaryInfo = mock<NotaryInfo>().also {
         whenever(it.isBackchainRequired).thenReturn(true)
         whenever(it.publicKey).thenReturn(publicKeyNotary)
+        whenever(it.name).thenReturn(notaryX500Name)
     }
     private val notaryLookup = mock<NotaryLookup>().also {
         whenever(it.lookup(notaryX500Name)).thenReturn(notaryInfo)
@@ -130,14 +130,26 @@ class UtxoReceiveFinalityFlowV1Test {
 
     private val metadata = mock<TransactionMetadataInternal>()
 
-    private val currentGroupParameters = mock<SignedGroupParameters>()
-
+    private val currentGroupParameters = mock<SignedGroupParameters>().also {
+        whenever(it.hash).thenReturn(transactionGroupParametersHash)
+        whenever(it.notaries).thenReturn(listOf(notaryInfo))
+    }
     private val ledgerTransaction = mock<UtxoLedgerTransactionImpl>()
     private val signedTransaction = mock<UtxoSignedTransactionInternal>()
     private val signedTransactionWithOwnKeys = mock<UtxoSignedTransactionInternal>()
     private val notarizedTransaction = mock<UtxoSignedTransactionInternal>()
     private val receivedPayloadV2 = FinalityPayload(signedTransaction, true)
     private val receivedPayloadV2ForTwoParties = FinalityPayload(signedTransaction, false)
+
+    private val filteredOutputStateAndRefs = mock<Audit<StateAndRef<*>>>()
+    private val filteredTransaction = mock<UtxoFilteredTransaction>().also {
+        whenever(it.outputStateAndRefs).thenReturn(filteredOutputStateAndRefs)
+        whenever(it.notaryKey).thenReturn(publicKeyNotary)
+        whenever(it.notaryName).thenReturn(notaryX500Name)
+    }
+    private val filteredTxAndSig = FilteredTransactionAndSignatures(filteredTransaction, listOf(signatureNotary))
+    private val finalityPayload = FinalityPayload(signedTransaction, true)
+    private val finalityPayloadWithFilteredTx = FinalityPayload(listOf(filteredTxAndSig))
 
     @BeforeEach
     fun beforeEach() {
@@ -147,8 +159,6 @@ class UtxoReceiveFinalityFlowV1Test {
         whenever(session.receive(FinalityPayload::class.java)).thenReturn(receivedPayloadV2)
 
         whenever(memberLookup.myInfo()).thenReturn(memberInfo)
-        whenever(memberLookup.lookup(publicKeyNotary)).thenReturn(memberInfoNotary)
-
         whenever(memberInfo.ledgerKeys).thenReturn(listOf(publicKey1, publicKey2))
 
         whenever(flowEngine.subFlow(any<TransactionBackchainResolutionFlow>())).thenReturn(Unit)
@@ -179,7 +189,6 @@ class UtxoReceiveFinalityFlowV1Test {
         whenever(metadata.getMembershipGroupParametersHash()).thenReturn(transactionGroupParametersHash.toString())
 
         whenever(groupParametersLookup.currentGroupParameters).thenReturn(currentGroupParameters)
-        whenever(currentGroupParameters.hash).thenReturn(transactionGroupParametersHash)
     }
 
     @Test
@@ -550,25 +559,11 @@ class UtxoReceiveFinalityFlowV1Test {
 
     @Test
     fun `skip backchain with a backchain not required notary`() {
-        val filteredOutputStateAndRefs = mock<Audit<StateAndRef<*>>>()
-        val filteredTransaction = mock<UtxoFilteredTransaction>().also {
-            whenever(it.outputStateAndRefs).thenReturn(filteredOutputStateAndRefs)
-            whenever(it.notaryKey).thenReturn(publicKeyNotary)
-            whenever(it.notaryName).thenReturn(notaryX500Name)
-        }
-        val filteredTxAndSig = FilteredTransactionAndSignatures(filteredTransaction, listOf(signatureNotary))
-        val finalityPayload = FinalityPayload(signedTransaction, true)
-        val finalityPayloadWithFilteredTx = FinalityPayload(listOf(filteredTxAndSig))
-
         whenever(notaryInfo.isBackchainRequired).thenReturn(false)
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1, signature2))
         whenever(session.receive(FinalityPayload::class.java)).thenReturn(finalityPayload, finalityPayloadWithFilteredTx)
         whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
         whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
-        whenever(
-            transactionSignatureVerificationService.verifySignature(filteredTransaction.id, signatureNotary, filteredTransaction.notaryKey)
-        )
-            .thenAnswer { }
 
         callReceiveFinalityFlow()
 
@@ -595,70 +590,55 @@ class UtxoReceiveFinalityFlowV1Test {
         val filteredOutputStateAndRefs = mock<Audit<StateAndRef<*>>>()
         val filteredTransaction = mock<UtxoFilteredTransaction>().also {
             whenever(it.outputStateAndRefs).thenReturn(filteredOutputStateAndRefs)
-            whenever(it.notaryKey).thenReturn(publicKeyNotary)
+            whenever(it.notaryKey).thenReturn(publicKeyAnotherNotary)
             whenever(it.notaryName).thenReturn(notaryX500Name)
         }
         val filteredTxAndSig = FilteredTransactionAndSignatures(filteredTransaction, listOf(signatureAnotherNotary))
         val finalityPayload = FinalityPayload(signedTransaction, true)
         val finalityPayloadWithFilteredTx = FinalityPayload(listOf(filteredTxAndSig))
 
-        whenever(notaryInfo.isBackchainRequired).thenReturn(false)
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1, signature2))
         whenever(session.receive(FinalityPayload::class.java)).thenReturn(finalityPayload, finalityPayloadWithFilteredTx)
         whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
         whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
-        whenever(
-            transactionSignatureVerificationService.verifySignature(filteredTransaction.id, signatureNotary, filteredTransaction.notaryKey)
-        )
-            .thenAnswer { }
+
+        whenever(notaryInfo.isBackchainRequired).thenReturn(false)
+        whenever(notarySignatureVerificationService.verifyNotarySignatures(any(), any(), any(), any()))
+            .thenThrow(CordaRuntimeException("Failed to verify signature"))
 
         assertThatThrownBy { callReceiveFinalityFlow() }
-            .isInstanceOf(IllegalArgumentException::class.java)
+            .isInstanceOf(CordaRuntimeException::class.java)
             .hasMessageContaining(
-                "Signature received \"${signatureAnotherNotary.by}\" is not signed by current notary \"${notaryInfo.publicKey.fullIdHash()}\""
+                "Failed to verify signature"
             )
     }
 
     @Test
     fun `fail if notary name of filtered tx doesn't match with one in initial tx`() {
-        val filteredOutputStateAndRefs = mock<Audit<StateAndRef<*>>>()
-        val filteredTransaction = mock<UtxoFilteredTransaction>().also {
-            whenever(it.outputStateAndRefs).thenReturn(filteredOutputStateAndRefs)
-            whenever(it.notaryKey).thenReturn(publicKeyNotary)
-            whenever(it.notaryName).thenReturn(notaryX500Name)
-        }
-        val filteredTxAndSig = FilteredTransactionAndSignatures(filteredTransaction, listOf(signatureNotary))
-        val finalityPayload = FinalityPayload(signedTransaction, true)
-        val finalityPayloadWithFilteredTx = FinalityPayload(listOf(filteredTxAndSig))
-
         val anotherNotaryInfo = mock<NotaryInfo>().also {
             whenever(it.isBackchainRequired).thenReturn(false)
             whenever(it.publicKey).thenReturn(publicKeyAnotherNotary)
-        }
-        val memberInfoAnotherNotary = mock<MemberInfo>().also {
             whenever(it.name).thenReturn(anotherNotaryX500Name)
         }
-        whenever(memberLookup.lookup(publicKeyAnotherNotary)).thenReturn(memberInfoAnotherNotary)
+
+        whenever(currentGroupParameters.notaries).thenReturn(listOf(anotherNotaryInfo))
+
         whenever(anotherNotaryInfo.isBackchainRequired).thenReturn(false)
         whenever(anotherNotaryInfo.name).thenReturn(anotherNotaryX500Name)
-        whenever(memberInfoNotary.name).thenReturn(notaryX500Name)
         whenever(notaryLookup.lookup(anotherNotaryX500Name)).thenReturn(anotherNotaryInfo)
+
         whenever(signedTransaction.notaryName).thenReturn(anotherNotaryX500Name)
         whenever(signedTransaction.notaryKey).thenReturn(publicKeyAnotherNotary)
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1, signature2))
         whenever(session.receive(FinalityPayload::class.java)).thenReturn(finalityPayload, finalityPayloadWithFilteredTx)
         whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
         whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
-        whenever(
-            transactionSignatureVerificationService.verifySignature(filteredTransaction.id, signatureNotary, filteredTransaction.notaryKey)
-        )
-            .thenAnswer { }
 
         assertThatThrownBy { callReceiveFinalityFlow() }
             .isInstanceOf(IllegalArgumentException::class.java)
             .hasMessageContaining(
                 "Notary name of filtered transaction \"${filteredTransaction.notaryName}\" doesn't match with " +
-                    "any names of initial transaction \"${setOf(signedTransaction.notaryName)}\""
+                    "notary name of initial transaction \"${anotherNotaryX500Name}\""
             )
     }
 
@@ -674,23 +654,34 @@ class UtxoReceiveFinalityFlowV1Test {
         val finalityPayload = FinalityPayload(signedTransaction, true)
         val finalityPayloadWithFilteredTx = FinalityPayload(listOf(filteredTxAndSig))
 
+        whenever(notaryInfo.publicKey).thenReturn(compositeKeyNotary)
         whenever(notaryInfo.isBackchainRequired).thenReturn(false)
+
+        whenever(currentGroupParameters.notaries).thenReturn(listOf(notaryInfo))
+
         whenever(signedTransaction.notaryKey).thenReturn(compositeKeyNotary)
         whenever(signedTransaction.addMissingSignatures()).thenReturn(signedTransactionWithOwnKeys to listOf(signature1, signature2))
+
         whenever(session.receive(FinalityPayload::class.java)).thenReturn(finalityPayload, finalityPayloadWithFilteredTx)
         whenever(session.receive(List::class.java)).thenReturn(listOf(signature3))
         whenever(session.receive(Payload::class.java)).thenReturn(Payload.Success(listOf(signatureNotary)))
+
         whenever(
-            transactionSignatureVerificationService.verifySignature(filteredTransaction.id, signatureNotary, filteredTransaction.notaryKey)
-        )
-            .thenAnswer { }
+            notarySignatureVerificationService.verifyNotarySignatures(
+                filteredTransaction,
+                signedTransaction.notaryKey,
+                listOf(signatureNotary),
+                mutableMapOf()
+            )
+        ).thenAnswer { }
 
         callReceiveFinalityFlow()
 
-        verify(transactionSignatureVerificationService).verifySignature(
-            filteredTransaction.id,
-            signatureNotary,
-            filteredTransaction.notaryKey
+        verify(notarySignatureVerificationService).verifyNotarySignatures(
+            filteredTransaction,
+            signedTransaction.notaryKey,
+            listOf(signatureNotary),
+            mutableMapOf()
         )
     }
 
@@ -706,6 +697,7 @@ class UtxoReceiveFinalityFlowV1Test {
         flow.utxoLedgerGroupParametersPersistenceService = utxoLedgerGroupParametersPersistenceService
         flow.signedGroupParametersVerifier = signedGroupParametersVerifier
         flow.transactionSignatureVerificationService = transactionSignatureVerificationService
+        flow.notarySignatureVerificationService = notarySignatureVerificationService
         flow.call()
     }
 

@@ -1,6 +1,5 @@
 package net.corda.ledger.utxo.flow.impl.flows.finality.v1
 
-import net.corda.crypto.core.fullIdHash
 import net.corda.flow.application.GroupParametersLookupInternal
 import net.corda.ledger.common.data.transaction.TransactionMetadataInternal
 import net.corda.ledger.common.data.transaction.TransactionStatus
@@ -24,15 +23,13 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.crypto.CompositeKey
-import net.corda.v5.crypto.KeyUtils
 import net.corda.v5.ledger.common.NotaryLookup
 import net.corda.v5.ledger.common.transaction.TransactionSignatureVerificationService
+import net.corda.v5.ledger.utxo.NotarySignatureVerificationService
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionValidator
 import net.corda.v5.ledger.utxo.transaction.filtered.UtxoFilteredData.Audit
-import net.corda.v5.membership.NotaryInfo
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -71,6 +68,9 @@ class UtxoReceiveFinalityFlowV1(
 
     @CordaInject
     lateinit var utxoLedgerTransactionFactory: UtxoLedgerTransactionFactory
+
+    @CordaInject
+    lateinit var notarySignatureVerificationService: NotarySignatureVerificationService
 
     @Suspendable
     override fun call(): UtxoSignedTransaction {
@@ -162,9 +162,10 @@ class UtxoReceiveFinalityFlowV1(
             }
             InitialTransactionPayload(initialTransaction, transferAdditionalSignatures, emptyList(), emptyList())
         } else {
-            receiveDependencyPayloadAndVerify(initialTransaction, notaryInfo, transferAdditionalSignatures)
+            receiveDependencyPayloadAndVerify(initialTransaction, transferAdditionalSignatures)
         }
     }
+
     private data class InitialTransactionPayload(
         val initialTransaction: UtxoSignedTransactionInternal,
         val transferAdditionalSignatures: Boolean,
@@ -175,47 +176,32 @@ class UtxoReceiveFinalityFlowV1(
     @Suspendable
     private fun receiveDependencyPayloadAndVerify(
         initialTransaction: UtxoSignedTransactionInternal,
-        notaryInfo: NotaryInfo,
         transferAdditionalSignatures: Boolean
     ): InitialTransactionPayload {
         val filteredTransactionsAndSignatures =
             session.receive(FinalityPayload::class.java).filteredTransactionsAndSignatures
+        val groupParameters = groupParametersLookup.currentGroupParameters
+        val notary = requireNotNull(groupParameters.notaries.first { it.name == initialTransaction.notaryName }) {
+            "Notary from initial transaction \"${initialTransaction.notaryName}\" cannot be found in group parameter notaries."
+        }
+
         val dependentStateAndRefs =
             filteredTransactionsAndSignatures.flatMap { (filteredTransaction, signatures) ->
                 require(signatures.isNotEmpty()) { "No notary signatures were received" }
                 filteredTransaction.verify()
 
-                val filteredTxNotaryKey = filteredTransaction.notaryKey
-                val newTxNotaryKey = initialTransaction.notaryKey
-                val filteredTxNotaryName = filteredTransaction.notaryName
-                val newTxNotaryKeys = if (newTxNotaryKey is CompositeKey) {
-                    require(KeyUtils.isKeyFulfilledBy(newTxNotaryKey, filteredTxNotaryKey)) {
-                        "A composite notary key of new transaction $newTxNotaryKey doesn't contain " +
-                            "a filtered transaction notary key $filteredTxNotaryKey"
-                    }
-                    newTxNotaryKey.leafKeys.toSet()
-                } else {
-                    setOf(newTxNotaryKey)
+                require(notary.name == filteredTransaction.notaryName) {
+                    "Notary name of filtered transaction \"${filteredTransaction.notaryName}\" doesn't match with " +
+                        "notary name of initial transaction \"${notary.name}\""
                 }
 
-                val newTxNotaryNames = newTxNotaryKeys.map { memberLookup.lookup(it)?.name }
-                require(newTxNotaryNames.contains(filteredTxNotaryName)) {
-                    "Notary name of filtered transaction \"${filteredTxNotaryName}\" doesn't match with " +
-                        "any names of initial transaction \"${newTxNotaryNames}\""
-                }
+                notarySignatureVerificationService.verifyNotarySignatures(
+                    filteredTransaction,
+                    notary.publicKey,
+                    signatures,
+                    mutableMapOf()
+                )
 
-                val newTxNotaryKeyIds = newTxNotaryKeys.map { it.fullIdHash() }
-                for (signature in signatures) {
-                    require(newTxNotaryKeyIds.contains(signature.by)) {
-                        "Signature received \"${signature.by}\" is not signed by current notary " +
-                            "\"${notaryInfo.publicKey.fullIdHash()}\""
-                    }
-                    transactionSignatureVerificationService.verifySignature(
-                        filteredTransaction.id,
-                        signature,
-                        filteredTransaction.notaryKey
-                    )
-                }
                 (filteredTransaction.outputStateAndRefs as Audit<StateAndRef<*>>).values.values
             }.associateBy { stateRef -> stateRef.ref }
         val inputStateAndRefs = initialTransaction.inputStateRefs.map { stateRef ->
@@ -362,17 +348,16 @@ class UtxoReceiveFinalityFlowV1(
 
         val notarySignatures = when (notarySignaturesPayload) {
             is Payload.Success -> notarySignaturesPayload.getOrThrow()
-            is Payload.Failure ->
-                {
-                    val message = "Notarization failed. Failure received from ${session.counterparty} for transaction " +
-                        "${transaction.id} with message: ${notarySignaturesPayload.message}"
-                    log.warn(message)
-                    val reason = notarySignaturesPayload.reason
-                    if (reason != null && reason.toFinalityNotarizationFailureType() == FinalityNotarizationFailureType.FATAL) {
-                        persistInvalidTransaction(transaction)
-                    }
-                    throw CordaRuntimeException(message)
+            is Payload.Failure -> {
+                val message = "Notarization failed. Failure received from ${session.counterparty} for transaction " +
+                    "${transaction.id} with message: ${notarySignaturesPayload.message}"
+                log.warn(message)
+                val reason = notarySignaturesPayload.reason
+                if (reason != null && reason.toFinalityNotarizationFailureType() == FinalityNotarizationFailureType.FATAL) {
+                    persistInvalidTransaction(transaction)
                 }
+                throw CordaRuntimeException(message)
+            }
         }
 
         if (notarySignatures.isEmpty()) {
