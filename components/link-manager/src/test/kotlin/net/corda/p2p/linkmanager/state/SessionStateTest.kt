@@ -62,10 +62,11 @@ YQIDAQAB
     private val avroSchemaRegistry = mock<AvroSchemaRegistry>()
     private val message = mock<LinkOutMessage>()
 
-    fun testToCorda(
+    private fun testToCorda(
         avroObject: SpecificRecordBase,
     ) {
-        whenever(avroSchemaRegistry.deserialize(serialized, SpecificRecordBase::class.java, null)).doReturn(avroObject)
+        whenever(avroSchemaRegistry.getClassType(serialized)).doReturn(avroObject::class.java)
+        whenever(avroSchemaRegistry.deserialize(serialized, avroObject::class.java, null)).doReturn(avroObject)
         val sessionData = AvroSessionData(
             message,
             ByteBuffer.wrap(encrypted),
@@ -177,11 +178,11 @@ YQIDAQAB
             "sessionId",
             300,
             AuthenticatedSessionDetails(
-                net.corda.data.p2p.crypto.protocol.SecretKeySpec(
+                SecretKeySpec(
                     "alg",
                     ByteBuffer.wrap(byteArrayOf(1)),
                 ),
-                net.corda.data.p2p.crypto.protocol.SecretKeySpec(
+                SecretKeySpec(
                     "alg-2",
                     ByteBuffer.wrap(byteArrayOf(3)),
                 ),
@@ -226,11 +227,11 @@ YQIDAQAB
             "sessionId",
             300,
             AuthenticatedSessionDetails(
-                net.corda.data.p2p.crypto.protocol.SecretKeySpec(
+                SecretKeySpec(
                     "alg",
                     ByteBuffer.wrap(byteArrayOf(1)),
                 ),
-                net.corda.data.p2p.crypto.protocol.SecretKeySpec(
+                SecretKeySpec(
                     "alg-2",
                     ByteBuffer.wrap(byteArrayOf(3)),
                 ),

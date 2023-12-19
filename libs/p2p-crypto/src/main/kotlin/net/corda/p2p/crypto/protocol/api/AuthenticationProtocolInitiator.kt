@@ -68,7 +68,7 @@ class AuthenticationProtocolInitiator(
     { revocationCheckMode, pemTrustStore, checkRevocation ->
         CertificateValidator(revocationCheckMode, pemTrustStore, checkRevocation)
     }
-): AuthenticationProtocol(certificateValidatorFactory), SessionData {
+): AuthenticationProtocol(certificateValidatorFactory), SerialisableSessionData {
 
     companion object {
         fun AuthenticationProtocolInitiatorDetails.toCorda(

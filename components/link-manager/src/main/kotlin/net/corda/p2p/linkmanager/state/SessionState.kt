@@ -7,18 +7,17 @@ import net.corda.data.p2p.crypto.protocol.Session
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator.Companion.toCorda
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder.Companion.toCorda
 import net.corda.p2p.crypto.protocol.api.CheckRevocation
+import net.corda.p2p.crypto.protocol.api.SerialisableSessionData
 import net.corda.p2p.crypto.protocol.api.Session.Companion.toCorda
-import net.corda.p2p.crypto.protocol.api.SessionData
 import net.corda.p2p.linkmanager.stubs.Encryption
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import org.apache.avro.specific.SpecificRecordBase
 import java.nio.ByteBuffer
 import net.corda.data.p2p.state.SessionState as AvroSessionData
 
 internal data class SessionState(
     val message: LinkOutMessage,
-    val sessionData: SessionData,
+    val sessionData: SerialisableSessionData,
 ) {
     companion object {
         fun AvroSessionData.toCorda(
@@ -26,29 +25,39 @@ internal data class SessionState(
             encryption: Encryption,
             checkRevocation: CheckRevocation,
         ): SessionState {
-            val rawData = encryption.decrypt(this.encryptedSessionData.array())
-            val avroSessionData = avroSchemaRegistry.deserialize(
-                ByteBuffer.wrap(rawData),
-                SpecificRecordBase::class.java,
-                null,
+            val rawData = ByteBuffer.wrap(
+                encryption.decrypt(this.encryptedSessionData.array()),
             )
-            val sessionData = when (avroSessionData) {
-                is AuthenticationProtocolInitiatorDetails ->
-                    avroSessionData.toCorda(checkRevocation)
-                is AuthenticationProtocolResponderDetails ->
-                    avroSessionData.toCorda()
-                is Session -> avroSessionData.toCorda().let {
-                    (it as? SessionData) ?: throw CordaRuntimeException("Unexpected type: ${it.javaClass}")
+            val sessionData = when (val type = avroSchemaRegistry.getClassType(rawData)) {
+                AuthenticationProtocolInitiatorDetails::class.java -> {
+                    avroSchemaRegistry.deserialize(
+                        rawData,
+                        AuthenticationProtocolInitiatorDetails::class.java,
+                        null,
+                    ).toCorda(checkRevocation)
                 }
-                else -> throw CordaRuntimeException("Unexpected type: ${avroSessionData.javaClass}")
+                AuthenticationProtocolResponderDetails::class.java -> {
+                    avroSchemaRegistry.deserialize(
+                        rawData,
+                        AuthenticationProtocolResponderDetails::class.java,
+                        null,
+                    ).toCorda()
+                }
+                Session::class.java -> {
+                    avroSchemaRegistry.deserialize(
+                        rawData,
+                        Session::class.java,
+                        null,
+                    ).toCorda()
+                }
+                else -> throw CordaRuntimeException("Unexpected type: $type")
             }
             return SessionState(
                 message = this.message,
-                sessionData = sessionData
+                sessionData = sessionData,
             )
         }
     }
-
 
     fun toAvro(
         avroSchemaRegistry: AvroSchemaRegistry,
@@ -59,7 +68,7 @@ internal data class SessionState(
         val encryptedData = encryption.encrypt(rawData.array())
         return AvroSessionData(
             message,
-            ByteBuffer.wrap(encryptedData)
+            ByteBuffer.wrap(encryptedData),
         )
     }
 }

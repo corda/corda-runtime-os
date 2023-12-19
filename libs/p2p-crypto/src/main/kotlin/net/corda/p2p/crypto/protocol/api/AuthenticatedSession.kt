@@ -24,7 +24,7 @@ import kotlin.concurrent.withLock
 class AuthenticatedSession(override val sessionId: String,
                            private val outboundSecretKey: SecretKey,
                            private val inboundSecretKey: SecretKey,
-                           val maxMessageSize: Int): Session, SessionData {
+                           val maxMessageSize: Int): Session, SerialisableSessionData {
 
     private val provider = BouncyCastleProvider.PROVIDER_NAME
     private val generationHMac = Mac.getInstance(HMAC_ALGO, provider).apply {

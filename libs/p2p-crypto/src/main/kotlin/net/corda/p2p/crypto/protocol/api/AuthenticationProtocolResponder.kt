@@ -69,7 +69,7 @@ class AuthenticationProtocolResponder(
     { revocationCheckMode, pemTrustStore, checkRevocation ->
         CertificateValidator(revocationCheckMode, pemTrustStore, checkRevocation)
     }
-): AuthenticationProtocol(certificateValidatorFactory), SessionData {
+): AuthenticationProtocol(certificateValidatorFactory), SerialisableSessionData {
 
     init {
         require(ourMaxMessageSize >= MIN_PACKET_SIZE) { "max message size needs to be at least $MIN_PACKET_SIZE bytes." }
