@@ -38,6 +38,7 @@ dependencies {
     implementation "com.nimbusds:oauth2-oidc-sdk:$nimbusVersion"
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.jcip-annotations:$jcipAnnotationsVersion"
     implementation "io.swagger.core.v3:swagger-core:$swaggerVersion"
+    implementation libs.jetty.http2.server
 
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation project(":libs:rest:rest-common")
