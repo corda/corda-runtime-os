@@ -566,25 +566,13 @@ class ClusterBuilder {
             createRbacUserBody(enabled, fullName, password, loginName, parentGroup, passwordExpiry)
         )
 
-    @Suppress("LongParameterList")
-    fun changeUserPasswordSelf(
-        loginName: String,
-        password: String,
-    ) =
-        post(
-            "/api/$REST_API_VERSION_PATH/user/$loginName/selfpassword",
-            """{"password": "$password"}"""
-        )
+    fun changeUserPasswordSelf(password: String) =
+        post("/api/$REST_API_VERSION_PATH/user/selfpassword",
+            """{"password": "$password"}""")
 
-    @Suppress("LongParameterList")
-    fun changeUserPasswordOther(
-        loginName: String,
-        password: String,
-    ) =
-        post(
-            "/api/$REST_API_VERSION_PATH/user/$loginName/otheruserpassword",
-            """{"password": "$password"}"""
-        )
+    fun changeUserPasswordOther(username: String, password: String) =
+        post("/api/$REST_API_VERSION_PATH/user/otheruserpassword",
+            """{"username": "$username", "password": "$password"}""")
 
     /** Get an RBAC user for a specific login name */
     fun getRbacUser(loginName: String) =
