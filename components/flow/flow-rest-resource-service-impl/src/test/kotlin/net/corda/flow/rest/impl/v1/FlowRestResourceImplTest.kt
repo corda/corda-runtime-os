@@ -9,6 +9,7 @@ import net.corda.flow.rest.FlowStatusCacheService
 import net.corda.flow.rest.factory.MessageFactory
 import net.corda.flow.rest.v1.FlowRestResource
 import net.corda.flow.rest.v1.types.request.StartFlowParameters
+import net.corda.flow.rest.v1.types.response.FlowStatusResponse
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -60,6 +61,7 @@ import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import kotlin.test.assertNotNull
 
 class FlowRestResourceImplTest {
 
@@ -140,6 +142,18 @@ class FlowRestResourceImplTest {
         whenever(messageFactory.createStartFlowStatus(any(), any(), any())).thenReturn(FlowStatus().apply {
             key = FlowKey()
         })
+        whenever(messageFactory.createFlowStatusResponse(any())).thenAnswer { invocation ->
+            val flowStatus = invocation.getArgument<FlowStatus>(0)
+            FlowStatusResponse(
+                VALID_SHORT_HASH,
+                null,
+                null,
+                flowStatus?.flowStatus?.toString() ?: "STATUS",
+                null,
+                null,
+                Instant.now()
+            )
+        }
         whenever(publisherFactory.createPublisher(any(), any())).thenReturn(publisher)
         whenever(publisher.batchPublish(any())).thenReturn(CompletableFuture<Unit>().apply { complete(Unit) })
 
@@ -240,12 +254,15 @@ class FlowRestResourceImplTest {
 
         whenever(flowStatusCacheService.getStatusesPerIdentity(any())).thenReturn(listOf(completed, failed))
         val flowRestResource = createFlowRestResource()
-        flowRestResource.getMultipleFlowStatus(VALID_SHORT_HASH, "COMPLETED")
+        val responses = flowRestResource.getMultipleFlowStatus(VALID_SHORT_HASH, "COMPLETED")
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, times(1)).getStatusesPerIdentity(any())
         verify(messageFactory, times(1)).createFlowStatusResponse(any())
         verify(fatalErrorFunction, never()).invoke()
+        assertNotNull(responses.flowStatusResponses)
+        assertEquals(1, responses.flowStatusResponses.size)
+        assertEquals("COMPLETED", responses.flowStatusResponses.first().flowStatus)
     }
 
     @Test
@@ -257,12 +274,15 @@ class FlowRestResourceImplTest {
 
         whenever(flowStatusCacheService.getStatusesPerIdentity(any())).thenReturn(listOf(completed, failed))
         val flowRestResource = createFlowRestResource()
-        flowRestResource.getMultipleFlowStatus(VALID_SHORT_HASH, "FAILED")
+        val responses = flowRestResource.getMultipleFlowStatus(VALID_SHORT_HASH, "FAILED")
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, times(1)).getStatusesPerIdentity(any())
         verify(messageFactory, times(1)).createFlowStatusResponse(any())
         verify(fatalErrorFunction, never()).invoke()
+        assertNotNull(responses.flowStatusResponses)
+        assertEquals(1, responses.flowStatusResponses.size)
+        assertEquals("FAILED", responses.flowStatusResponses.first().flowStatus)
     }
 
     @Test
